@@ -177,7 +177,7 @@ img {
   border-radius: 4px;
   border: 1px solid var(--border-default);
   background: var(--surface-72);
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -198,7 +198,7 @@ img {
   border-radius: 3px;
   border: 1px solid var(--border-soft);
   background: var(--bg-raised);
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   font-size: 0.74rem;
   display: inline-flex;
   align-items: center;
@@ -274,7 +274,7 @@ img {
   padding: 0 6px;
   border-radius: 999px;
   background: var(--bg-raised);
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -596,7 +596,7 @@ img {
 .metric-note {
   margin: 8px 0 0;
   font-size: 0.88rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .doc-callout {
@@ -607,15 +607,15 @@ img {
 }
 
 .doc-callout.info {
-  background: color-mix(in srgb, var(--signal-info-soft) 55%, white);
+  background: var(--signal-info-soft);
 }
 
 .doc-callout.warning {
-  background: color-mix(in srgb, var(--signal-warning-soft) 66%, white);
+  background: var(--signal-warning-soft);
 }
 
 .doc-callout.success {
-  background: color-mix(in srgb, var(--signal-success-soft) 60%, white);
+  background: var(--signal-success-soft);
 }
 
 .doc-list {
@@ -648,7 +648,7 @@ img {
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
   background: var(--bg-raised);
 }
 
@@ -684,7 +684,7 @@ img {
   border-bottom: 1px solid var(--border-soft);
   background: var(--code-head-bg);
   font-size: 0.78rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .code-head-dots {
@@ -781,7 +781,7 @@ img {
   padding: 0 0 10px;
   text-align: left;
   font-size: 0.82rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .doc-table thead th {
@@ -852,7 +852,7 @@ img {
 
 .link-card-desc {
   font-size: 0.9rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .filters {
@@ -1017,7 +1017,7 @@ img {
 .flow-strip-file {
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   white-space: nowrap;
 }
 
@@ -1027,14 +1027,14 @@ img {
   padding: 0 8px;
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   white-space: nowrap;
 }
 
 .flow-strip-edge::before {
   content: "→";
   margin-right: 6px;
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
 }
 
 .pass-cards,
@@ -1315,7 +1315,7 @@ img {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
 }
 
 .feature-mosaic {
@@ -1469,7 +1469,7 @@ img {
 
 .pipeline-arrow {
   justify-self: center;
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   font-size: 1.1rem;
 }
 
@@ -1487,7 +1487,7 @@ img {
 
 .pipeline-tile-copy {
   font-size: 0.82rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .pipeline-image-frame {
@@ -1558,7 +1558,7 @@ img {
 
 .highlight-copy {
   font-size: 0.9rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .testimonial-section {
@@ -1601,7 +1601,7 @@ img {
 }
 
 .testimonial-role {
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .home-cta {
@@ -1647,7 +1647,7 @@ img {
   display: grid;
   grid-template-columns: 1.2fr repeat(4, minmax(0, 1fr));
   gap: 16px;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .site-footer-brand {
@@ -1674,7 +1674,7 @@ img {
   font-size: 0.78rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
 }
 
 .site-footer-links {
@@ -1684,7 +1684,7 @@ img {
 
 .site-footer-links a {
   text-decoration: none;
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
 }
 
 .site-footer-newsletter {
@@ -1700,7 +1700,7 @@ img {
 }
 
 .site-footer-newsletter span {
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
 }
 
 .section-panel.home-quickstart,
@@ -1713,6 +1713,16 @@ img {
   border-radius: 0;
 }
 
+:root[data-theme='dark'] .doc-chip {
+  background: var(--surface-84);
+}
+
+:root[data-theme='dark'] .doc-chip.accent,
+:root[data-theme='dark'] .doc-chip.success,
+:root[data-theme='dark'] .doc-chip.warning {
+  border-color: transparent;
+}
+
 .feature-card,
 .highlight-item,
 .home-cta-media,
@@ -1721,7 +1731,7 @@ img {
 }
 
 .site-footer-note {
-  color: var(--fg-tertiary);
+  color: var(--fg-secondary);
   font-size: 0.82rem;
 }
 
