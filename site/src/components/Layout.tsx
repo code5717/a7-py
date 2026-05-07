@@ -1,75 +1,217 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import { useTheme } from '../hooks/useTheme'
+import { EXAMPLES } from '../content/examples'
+import { NAV_GROUPS, PAGE_META, PRIMARY_NAV, SECTION_SEARCH_ITEMS } from '../content/navigation'
+import { lockBodyScroll } from '../utils/scrollLock'
 
-type PrimaryNavItem =
-  | { kind: 'route'; to: string; label: string; end?: boolean }
-  | { kind: 'link'; href: string; label: string }
-
-const PRIMARY_NAV: PrimaryNavItem[] = [
-  { kind: 'route', to: '/', label: 'Docs', end: true },
-  { kind: 'route', to: '/start', label: 'Guide' },
-  { kind: 'route', to: '/language', label: 'Reference' },
-  { kind: 'route', to: '/examples', label: 'Examples' },
-  { kind: 'route', to: '/testing', label: 'Playground' },
-  { kind: 'route', to: '/changelog', label: 'Blog' },
-  { kind: 'link', href: 'https://github.com/Airbus5717/a7-py', label: 'GitHub ↗' },
+const SEARCH_ITEMS = [
+  ...NAV_GROUPS.flatMap((group) =>
+    group.items.map((item) => ({
+      to: item.to,
+      label: item.label,
+      group: group.label,
+      detail: item.note,
+    })),
+  ),
+  ...SECTION_SEARCH_ITEMS,
+  ...EXAMPLES.map((example) => ({
+    to: `/examples?example=${example.id}`,
+    label: example.title,
+    group: 'Example',
+    detail: `${example.file} · ${example.desc}`,
+  })),
 ]
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { pathname } = useLocation()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchPanelRef = useRef<HTMLElement>(null)
+  const sidebarRef = useRef<HTMLElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const previousSearchFocusRef = useRef<HTMLElement | null>(null)
+  const previousSidebarFocusRef = useRef<HTMLElement | null>(null)
+  const { pathname, hash } = useLocation()
   const { preference, resolvedTheme, darkExtensionActive, cycleTheme } = useTheme()
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    if (!query) {
+      return SEARCH_ITEMS.slice(0, 8)
+    }
+
+    return SEARCH_ITEMS.filter((item) =>
+      `${item.label} ${item.group} ${item.detail}`.toLowerCase().includes(query),
+    ).slice(0, 10)
+  }, [searchQuery])
+
+  useEffect(() => {
+    const meta = PAGE_META[pathname] ?? PAGE_META['/']
+    document.title = `${meta.title} | A7`
+
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+    if (description) {
+      description.content = meta.description
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+
+    if (!hash) {
+      window.scrollTo({ top: 0, left: 0 })
+      return
+    }
+
+    window.setTimeout(() => {
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
+    }, 0)
+  }, [hash, pathname])
 
   useEffect(() => {
     if (!sidebarOpen) {
       return
     }
 
-    const previousOverflow = document.body.style.overflow
+    const releaseScrollLock = lockBodyScroll()
+    previousSidebarFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const fallbackFocus = menuButtonRef.current
+    window.setTimeout(() => {
+      const firstFocusable = sidebarRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      firstFocusable?.focus()
+    }, 0)
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setSidebarOpen(false)
+        return
+      }
+
+      if (event.key !== 'Tab' || !sidebarRef.current) {
+        return
+      }
+
+      const focusables = sidebarRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+
+      if (focusables.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
-    document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.body.style.overflow = previousOverflow
+      releaseScrollLock()
       document.removeEventListener('keydown', handleKeyDown)
+      ;(previousSidebarFocusRef.current ?? fallbackFocus)?.focus()
     }
   }, [sidebarOpen])
 
   useEffect(() => {
-    document.documentElement.classList.add('reveal-ready')
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      const isTypingTarget =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
 
-    const elements = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'))
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible')
-            observer.unobserve(entry.target)
-          }
-        })
-      },
-      {
-        threshold: 0.14,
-        rootMargin: '0px 0px -8% 0px',
-      },
-    )
+      if (
+        (event.key === '/' || event.code === 'Slash') &&
+        !isTypingTarget &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        event.preventDefault()
+        setSearchOpen(true)
+        return
+      }
 
-    elements.forEach((element, index) => {
-      element.classList.remove('is-visible')
-      element.style.setProperty('--reveal-delay', `${(index % 6) * 80}ms`)
-      observer.observe(element)
-    })
+      if (event.key === 'Escape') {
+        setSearchOpen(false)
+      }
+    }
 
-    return () => observer.disconnect()
-  }, [pathname])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return
+    }
+
+    const releaseScrollLock = lockBodyScroll()
+    previousSearchFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    window.setTimeout(() => searchInputRef.current?.focus(), 0)
+
+    return () => {
+      releaseScrollLock()
+      previousSearchFocusRef.current?.focus()
+    }
+  }, [searchOpen])
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return
+    }
+
+    const handleSearchKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || !searchPanelRef.current) {
+        return
+      }
+
+      const focusables = searchPanelRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+
+      if (focusables.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleSearchKeyDown)
+    return () => document.removeEventListener('keydown', handleSearchKeyDown)
+  }, [searchOpen])
 
   return (
     <div className="app-shell">
@@ -79,7 +221,12 @@ export default function Layout() {
 
       {sidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)} />}
 
-      <aside className={`app-sidebar${sidebarOpen ? ' open' : ''}`} aria-hidden={!sidebarOpen}>
+      <aside
+        ref={sidebarRef}
+        className={`app-sidebar${sidebarOpen ? ' open' : ''}`}
+        aria-label="Mobile documentation navigation"
+        aria-modal={sidebarOpen ? 'true' : undefined}
+      >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </aside>
 
@@ -116,7 +263,12 @@ export default function Layout() {
             </nav>
 
             <div className="site-header-tools">
-              <button type="button" className="site-search" aria-label="Search documentation">
+              <button
+                type="button"
+                className="site-search"
+                aria-label="Search documentation"
+                onClick={() => setSearchOpen(true)}
+              >
                 <span className="site-search-label">
                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <circle cx="11" cy="11" r="6.5" />
@@ -158,6 +310,7 @@ export default function Layout() {
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
+                ref={menuButtonRef}
                 className="site-menu-button"
                 aria-label="Open site navigation"
               >
@@ -170,38 +323,124 @@ export default function Layout() {
           </div>
         </header>
 
-        <header className="mobile-header">
-          <div className="mobile-header-row">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="icon-button"
-              aria-label="Open docs navigation"
-            >
-              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <strong className="nav-brand-mark">A7</strong>
-            <span className="nav-brand-text">Documentation</span>
-          </div>
-        </header>
-
         <main id="main-content" className="app-main-inner" tabIndex={-1}>
           <Outlet />
         </main>
 
-        {pathname !== '/' ? (
-          <footer className="app-footer">
-            <div className="app-footer-inner">
-              <span>A7 Programming Language</span>
-              <a href="https://github.com/Airbus5717/a7-py" target="_blank" rel="noopener noreferrer">
-                GitHub
-              </a>
+        <footer className="app-footer">
+          <div className="app-footer-inner site-footer-grid">
+            <div className="site-footer-brand">
+              <div className="site-footer-title">A7</div>
+              <div>The A7 Project</div>
+              <div>MIT License</div>
             </div>
-          </footer>
-        ) : null}
+
+            <div className="site-footer-column">
+              <h3>Learn</h3>
+              <div className="site-footer-links">
+                <Link to="/start">Getting Started</Link>
+                <Link to="/language">Language</Link>
+                <Link to="/examples">Examples</Link>
+                <Link to="/pipeline">Pipeline</Link>
+              </div>
+            </div>
+
+            <div className="site-footer-column">
+              <h3>Community</h3>
+              <div className="site-footer-links">
+                <a href="https://github.com/Airbus5717/a7-py" target="_blank" rel="noopener noreferrer">
+                  GitHub
+                </a>
+                <Link to="/contributing">Contributing</Link>
+                <Link to="/status">Status</Link>
+                <Link to="/changelog">Changelog</Link>
+              </div>
+            </div>
+
+            <div className="site-footer-column">
+              <h3>Resources</h3>
+              <div className="site-footer-links">
+                <Link to="/internals">Internals</Link>
+                <Link to="/testing">Testing</Link>
+                <Link to="/stdlib">Stdlib</Link>
+                <Link to="/cli">CLI</Link>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
+
+      {searchOpen ? (
+        <div className="search-overlay" role="presentation" onMouseDown={() => setSearchOpen(false)}>
+          <section
+            ref={searchPanelRef}
+            className="search-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="search-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="search-panel-head">
+              <div>
+                <p className="search-panel-kicker">Docs search</p>
+                <h2 id="search-title" className="search-panel-title">Find a page or example</h2>
+              </div>
+              <button type="button" className="icon-button" onClick={() => setSearchOpen(false)} aria-label="Close search">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <label className="search-input-wrap">
+              <span className="search-input-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <circle cx="11" cy="11" r="6.5" />
+                  <path strokeLinecap="round" d="M16 16l4 4" />
+                </svg>
+              </span>
+              <input
+                type="search"
+                ref={searchInputRef}
+                className="search-input"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search language, examples, CLI..."
+                aria-label="Search documentation"
+              />
+            </label>
+            <div className="search-result-status" role="status" aria-live="polite">
+              {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+              {searchQuery.trim() ? ` for "${searchQuery.trim()}"` : ''}
+            </div>
+
+            <div className="search-results" aria-label="Search results">
+              {searchResults.length > 0 ? (
+                <ul className="search-result-list">
+                  {searchResults.map((item) => (
+                    <li key={`${item.group}-${item.label}`}>
+                      <NavLink
+                        to={item.to}
+                        className="search-result"
+                        onClick={() => setSearchOpen(false)}
+                      >
+                        <span className="search-result-group">{item.group}</span>
+                        <span className="search-result-label">{item.label}</span>
+                        <span className="search-result-detail">{item.detail}</span>
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="search-empty" role="status">
+                  <span>No matching docs.</span>
+                  <span>Try language, CLI, pipeline, testing, or an example name.</span>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }

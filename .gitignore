@@ -18,5 +18,7 @@ examples/*.zig
 # Local agent configs/instructions
 .agents/
 .claude/
+.hermes/
+skills-lock.json
 AGENTS.md
 CLAUDE.md

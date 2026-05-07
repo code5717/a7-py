@@ -1,18 +1,23 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useHighlight } from '../hooks/useHighlight'
+import { lockBodyScroll } from '../utils/scrollLock'
 
 interface CodeModalProps {
   title: string
   code: string
   onClose: () => void
+  runCommand?: string
+  lineCount?: number
 }
 
-export default function CodeModal({ title, code, onClose }: CodeModalProps) {
+export default function CodeModal({ title, code, onClose, runCommand, lineCount }: CodeModalProps) {
   const html = useHighlight(code, 'a7')
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const [copied, setCopied] = useState<'source' | 'command' | null>(null)
+  const copyResetRef = useRef<number | null>(null)
 
   useEffect(() => {
     previousFocusRef.current =
@@ -51,15 +56,34 @@ export default function CodeModal({ title, code, onClose }: CodeModalProps) {
     }
 
     document.addEventListener('keydown', handleKey)
-    document.body.style.overflow = 'hidden'
+    const releaseScrollLock = lockBodyScroll()
     closeButtonRef.current?.focus()
 
     return () => {
       document.removeEventListener('keydown', handleKey)
-      document.body.style.overflow = ''
+      releaseScrollLock()
       previousFocusRef.current?.focus()
+      if (copyResetRef.current !== null) {
+        window.clearTimeout(copyResetRef.current)
+      }
     }
   }, [onClose])
+
+  const copyText = async (kind: 'source' | 'command', value: string) => {
+    if (!navigator.clipboard) {
+      return
+    }
+
+    await navigator.clipboard.writeText(value)
+    setCopied(kind)
+    if (copyResetRef.current !== null) {
+      window.clearTimeout(copyResetRef.current)
+    }
+    copyResetRef.current = window.setTimeout(() => {
+      setCopied(null)
+      copyResetRef.current = null
+    }, 1400)
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -72,9 +96,30 @@ export default function CodeModal({ title, code, onClose }: CodeModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-head">
-          <h2 id={titleId} className="modal-title">
-            <code className="doc-inline-code">{title}</code>
-          </h2>
+          <div className="modal-title-group">
+            <h2 id={titleId} className="modal-title">
+              <code className="doc-inline-code">{title}</code>
+            </h2>
+            {lineCount ? <p className="modal-meta">{lineCount} {lineCount === 1 ? 'line' : 'lines'}</p> : null}
+          </div>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="code-action-button"
+              onClick={() => void copyText('source', code)}
+            >
+              {copied === 'source' ? 'Copied source' : 'Copy source'}
+            </button>
+            {runCommand ? (
+              <button
+                type="button"
+                className="code-action-button"
+                onClick={() => void copyText('command', runCommand)}
+              >
+                {copied === 'command' ? 'Copied command' : 'Copy run command'}
+              </button>
+            ) : null}
+          </div>
           <button
             type="button"
             ref={closeButtonRef}

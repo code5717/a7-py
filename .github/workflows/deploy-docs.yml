@@ -48,6 +48,10 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
+      - name: Lint docs
+        working-directory: site
+        run: npm run lint -- --max-warnings=0
+
       - name: Build docs
         working-directory: site
         run: npm run build

@@ -71,7 +71,7 @@ uv run python main.py --verbose examples/009_struct.a7`}
             meaning,
           ])}
         />
-        <p className="text-tertiary" style={{ marginTop: 'var(--space-1)', fontSize: '0.9rem' }}>
+        <p className="text-tertiary text-small mt-1">
           Stable across versions. Safe to use in CI scripts.
         </p>
       </SectionPanel>

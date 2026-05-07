@@ -18,7 +18,7 @@ export default function Testing() {
     <div className="page">
       <PageHeader
         title="Testing"
-        summary="Test layers, how to run them, what they cover."
+        summary="Commands and coverage."
       />
 
       <section className="metric-grid">

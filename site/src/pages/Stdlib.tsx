@@ -11,16 +11,27 @@ const ioFunctions = [
 
 const mathFunctions = [
   ['sqrt_f32(x: f32) f32', 'Square root'],
-  ['sqrt_f64(x: f64) f64', 'Square root (f64)'],
-  ['abs_f32(x: f32) f32', 'Absolute value (float)'],
-  ['abs_i32(x: i32) i32', 'Absolute value (int)'],
+  ['sqrt_f64(x: f64) f64', 'Square root'],
+  ['abs_f32(x: f32) f32', 'Absolute value'],
+  ['abs_f64(x: f64) f64', 'Absolute value'],
   ['floor_f32(x: f32) f32', 'Floor'],
+  ['floor_f64(x: f64) f64', 'Floor'],
   ['ceil_f32(x: f32) f32', 'Ceiling'],
+  ['ceil_f64(x: f64) f64', 'Ceiling'],
+  ['sin_f32(x: f32) f32', 'Sine'],
   ['sin_f64(x: f64) f64', 'Sine'],
+  ['cos_f32(x: f32) f32', 'Cosine'],
   ['cos_f64(x: f64) f64', 'Cosine'],
-  ['pow_f64(x: f64, y: f64) f64', 'Power'],
-  ['min_i32(a: i32, b: i32) i32', 'Minimum'],
-  ['max_i32(a: i32, b: i32) i32', 'Maximum'],
+  ['tan_f32(x: f32) f32', 'Tangent'],
+  ['tan_f64(x: f64) f64', 'Tangent'],
+  ['log_f32(x: f32) f32', 'Natural log'],
+  ['log_f64(x: f64) f64', 'Natural log'],
+  ['exp_f32(x: f32) f32', 'Exponential'],
+  ['exp_f64(x: f64) f64', 'Exponential'],
+  ['min_f32(a: f32, b: f32) f32', 'Minimum'],
+  ['min_f64(a: f64, b: f64) f64', 'Minimum'],
+  ['max_f32(a: f32, b: f32) f32', 'Maximum'],
+  ['max_f64(a: f64, b: f64) f64', 'Maximum'],
 ]
 
 const intrinsics = [
@@ -77,16 +88,16 @@ main :: fn() {
 
 main :: fn() {
     x := sqrt_f32(16.0)
-    y := abs_i32(-42)
-    z := pow_f64(2.0, 10.0)
+    y := abs_f64(-42.0)
+    z := max_f32(2.0, 10.0)
 }`}
         />
       </SectionPanel>
 
-      <SectionPanel title="mem and string">
+      <SectionPanel title="Stub modules" subtitle="These files exist in the source tree but are not registered as available stdlib modules yet.">
         <ul className="doc-list">
-          <li><strong>mem</strong> — byte-copy, fill, zero, compare, raw alloc/free.</li>
-          <li><strong>string</strong> — length, compare, find, contains, starts_with, ends_with.</li>
+          <li><strong>mem</strong> — source stub only; byte-copy/fill/alloc APIs are not documented as available.</li>
+          <li><strong>string</strong> — source stub only; string utility APIs are not documented as available.</li>
         </ul>
       </SectionPanel>
 

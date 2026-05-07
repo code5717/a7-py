@@ -18,7 +18,7 @@ export default function Contributing() {
     <div className="page">
       <PageHeader
         title="Contributing"
-        summary="How to set up, make changes, and stay consistent."
+        summary="Setup, workflow, checks."
       />
 
       <SectionPanel title="Setup">
@@ -45,7 +45,7 @@ PYTHONPATH=. uv run pytest --tb=no -q`}
           <li>Read the code near your change before editing.</li>
           <li>Run tests before and after.</li>
           <li>One concern per commit.</li>
-          <li>Update <code className="doc-inline-code">CHANGELOG.md</code>, <code className="doc-inline-code">MISSING_FEATURES.md</code>, and <code className="doc-inline-code">CLAUDE.md</code> when relevant.</li>
+          <li>Update <code className="doc-inline-code">CHANGELOG.md</code>, <code className="doc-inline-code">MISSING_FEATURES.md</code>, and <code className="doc-inline-code">AGENTS.md</code> when relevant.</li>
         </ol>
       </SectionPanel>
 
@@ -56,7 +56,7 @@ PYTHONPATH=. uv run pytest --tb=no -q`}
 PYTHONPATH=. uv run pytest -k "generic" -v        # filter by name
 PYTHONPATH=. uv run pytest test/test_tokenizer.py  # one file`}
         />
-        <ul className="doc-list" style={{ marginTop: 'var(--space-2)' }}>
+        <ul className="doc-list mt-2">
           <li>All existing tests must pass.</li>
           <li>New features need tests. Bug fixes need regression tests.</li>
         </ul>

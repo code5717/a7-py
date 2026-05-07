@@ -13,13 +13,8 @@ export default function CodeBlock({ code, lang, title }: CodeBlockProps) {
     <figure className="code-shell" data-reveal>
       {(title || lang) && (
         <figcaption className="code-head">
-          <span className="code-head-dots" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
           <span className="code-head-title">{title || lang}</span>
-          <span className="code-head-meta">{lang ? 'A7' : ''}</span>
+          {lang ? <span className="code-head-meta">{lang}</span> : null}
         </figcaption>
       )}
       {html ? (

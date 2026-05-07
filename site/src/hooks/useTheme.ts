@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
-type ResolvedTheme = 'light' | 'dark' | 'extension-dark'
+type ResolvedTheme = 'light' | 'dark'
 
 const STORAGE_KEY = 'a7-docs-theme'
 
@@ -55,16 +55,15 @@ export function useTheme() {
     updateExtensionState()
 
     const observer = new MutationObserver(updateExtensionState)
-    observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true })
+    observer.observe(document.documentElement, { attributes: true })
+    if (document.body) {
+      observer.observe(document.body, { attributes: true, childList: true })
+    }
 
     return () => observer.disconnect()
   }, [])
 
   const resolvedTheme = useMemo<ResolvedTheme>(() => {
-    if (darkExtensionActive) {
-      return 'extension-dark'
-    }
-
     if (preference === 'dark') {
       return 'dark'
     }
@@ -74,7 +73,7 @@ export function useTheme() {
     }
 
     return prefersDark ? 'dark' : 'light'
-  }, [darkExtensionActive, preference, prefersDark])
+  }, [preference, prefersDark])
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, preference)
@@ -83,9 +82,9 @@ export function useTheme() {
   useEffect(() => {
     const root = document.documentElement
     root.dataset.themePreference = preference
-    root.dataset.theme = resolvedTheme === 'dark' ? 'dark' : 'light'
+    root.dataset.theme = resolvedTheme
     root.dataset.darkExtensionActive = darkExtensionActive ? 'true' : 'false'
-    root.style.colorScheme = resolvedTheme === 'dark' ? 'dark' : 'light'
+    root.style.colorScheme = resolvedTheme
   }, [darkExtensionActive, preference, resolvedTheme])
 
   const cycleTheme = () => {

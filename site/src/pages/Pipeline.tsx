@@ -49,10 +49,10 @@ export default function Pipeline() {
     <div className="page">
       <PageHeader
         title="Pipeline"
-        summary="Source goes in, Zig or C comes out. Five stages, all iterative."
+        summary="Five iterative stages from source to output."
       />
 
-      <SectionPanel>
+      <SectionPanel title="Pipeline stages">
         <p className="text-secondary">
           <code className="doc-inline-code">Source</code> &rarr; <code className="doc-inline-code">Tokens</code> &rarr;{' '}
           <code className="doc-inline-code">AST</code> &rarr; <code className="doc-inline-code">Annotated AST</code> &rarr;{' '}
@@ -66,14 +66,14 @@ export default function Pipeline() {
             <div className="pipeline-stage-head">
               <span className="pipeline-stage-num">{stage.num}</span>
               <div>
-                <h2 className="section-title" style={{ marginBottom: 4 }}>
+                <h2 className="section-title mb-1">
                   {stage.name}
                 </h2>
                 <code className="doc-inline-code">{stage.file}</code>
               </div>
             </div>
-            <p className="text-secondary" style={{ marginTop: 'var(--space-2)' }}>{stage.desc}</p>
-            <p className="text-tertiary" style={{ fontSize: '0.88rem' }}>
+            <p className="text-secondary mt-2">{stage.desc}</p>
+            <p className="text-tertiary text-tiny">
               {stage.input} &rarr; {stage.output}
             </p>
           </article>
@@ -85,6 +85,14 @@ export default function Pipeline() {
           <li>No recursive AST walks anywhere. Everything uses explicit stacks.</li>
           <li>Preprocessor annotations (<code className="doc-inline-code">emit_name</code>, <code className="doc-inline-code">is_mutable</code>, <code className="doc-inline-code">resolved_type</code>) bridge stages so the backend doesn't recompute.</li>
           <li>Backend is pluggable. <code className="doc-inline-code">src/backends/base.py</code> defines the contract.</li>
+        </ul>
+      </SectionPanel>
+
+      <SectionPanel title="Backend notes">
+        <ul className="doc-list">
+          <li>Zig and C backends both emit source from the annotated AST.</li>
+          <li>C output is validated with <code className="doc-inline-code">zig cc</code> for current examples.</li>
+          <li>Match expressions, range-pattern edge cases, and new backend parity checks should be verified before relying on newly added forms.</li>
         </ul>
       </SectionPanel>
     </div>

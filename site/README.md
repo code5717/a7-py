@@ -24,7 +24,9 @@ npm run preview
 
 ```bash
 cd site
-npm run lint
+npm run lint -- --max-warnings=0
+npm run typecheck
+npm run build
 ```
 
 Repository-level docs style checks:
@@ -44,13 +46,26 @@ Primary shared UI primitives live in `site/src/components/`.
 
 The current site direction is:
 
-- warm monochrome, paper-toned surfaces
+- minimal terminal-brutalist dark mode with graphite surfaces, amber action color, and restrained cyan focus/info accents
 - editorial serif display type with a restrained sans body
 - 1px border discipline and flat panels
 - top navigation plus drawer-based full route navigation
-- image-led home page with framed media and minimal motion via reveal-on-scroll
+- image-led home page and social preview assets from `site/public/` plus source assets in `site/src/assets/`
+- concise, product-like copy with no fake testimonials
+- keyboard-accessible docs search overlay from the header search button and `/` shortcut
 - built-in `light` / `dark` / `system` theme modes with persistence
 - dark-extension detection to avoid double-dark styling when browser extensions inject their own theme layer
+
+## Adding a Docs Page
+
+When adding or renaming a page, update these pieces together:
+
+- route registration in `site/src/App.tsx`
+- primary/sidebar navigation and `PAGE_META` in `site/src/content/navigation.ts`
+- section search entries for important anchors
+- footer links if the page is a major docs group
+- route-specific content with `SectionPanel` titles for stable anchors
+- `npm run lint -- --max-warnings=0`, `npm run typecheck`, and `npm run build`
 
 ## Deployment
 

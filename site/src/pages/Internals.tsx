@@ -39,7 +39,7 @@ export default function Internals() {
     <div className="page">
       <PageHeader
         title="Internals"
-        summary="How the compiler is structured, file by file."
+        summary="Compiler structure by file."
       />
 
       {/* ── Pipeline flow ── */}
@@ -58,7 +58,7 @@ export default function Internals() {
             </div>
           ))}
         </div>
-        <p className="text-tertiary" style={{ marginTop: 'var(--space-2)', fontSize: '0.88rem' }}>
+        <p className="text-tertiary text-tiny mt-2">
           All traversals are iterative. The full pipeline works at <code className="doc-inline-code">sys.setrecursionlimit(100)</code>.
         </p>
       </section>
@@ -85,7 +85,7 @@ export default function Internals() {
 
       {/* ── Semantic analysis ── */}
       <SectionPanel title="Semantic analysis">
-        <p className="text-secondary" style={{ marginBottom: 'var(--space-2)' }}>
+        <p className="text-secondary mb-2">
           Three sequential passes. Each is gated — downstream only runs if upstream succeeds.
           Errors within a pass are collected, not thrown.
         </p>
@@ -94,7 +94,7 @@ export default function Internals() {
             <span className="pass-card-num">1</span>
             <div>
               <strong>Name resolution</strong>
-              <p className="text-tertiary" style={{ margin: '2px 0 0' }}>Builds SymbolTable with hierarchical scopes</p>
+              <p className="text-tertiary pass-card-copy">Builds SymbolTable with hierarchical scopes</p>
               <code className="flow-strip-file">src/passes/name_resolution.py</code>
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function Internals() {
             <span className="pass-card-num">2</span>
             <div>
               <strong>Type checking</strong>
-              <p className="text-tertiary" style={{ margin: '2px 0 0' }}>Inference, checking, produces node_types map</p>
+              <p className="text-tertiary pass-card-copy">Inference, checking, produces node_types map</p>
               <code className="flow-strip-file">src/passes/type_checker.py</code>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function Internals() {
             <span className="pass-card-num">3</span>
             <div>
               <strong>Semantic validation</strong>
-              <p className="text-tertiary" style={{ margin: '2px 0 0' }}>Control flow, memory, defer, match exhaustiveness</p>
+              <p className="text-tertiary pass-card-copy">Control flow, memory, defer, match exhaustiveness</p>
               <code className="flow-strip-file">src/passes/semantic_validator.py</code>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function Internals() {
 
       {/* ── Preprocessor ── */}
       <SectionPanel title="Preprocessor">
-        <p className="text-secondary" style={{ marginBottom: 'var(--space-2)' }}>
+        <p className="text-secondary mb-2">
           Runs after semantic analysis. Nine sub-passes, all iterative.
           Passes 1-3 run bottom-up on the whole tree. Passes 4-9 run per function.
         </p>
@@ -135,14 +135,14 @@ export default function Internals() {
 
       {/* ── Annotations ── */}
       <SectionPanel title="Annotations">
-        <p className="text-secondary" style={{ marginBottom: 'var(--space-2)' }}>
+        <p className="text-secondary mb-2">
           Set by the preprocessor, consumed by the backend. This is how stages talk without recomputation.
         </p>
         <div className="annotation-grid">
           {annotationList.map((a) => (
             <div key={a.name} className="annotation-card">
               <code className="doc-inline-code">{a.name}</code>
-              <span className="text-tertiary" style={{ fontSize: '0.84rem' }}>{a.desc}</span>
+              <span className="text-tertiary text-micro">{a.desc}</span>
             </div>
           ))}
         </div>
@@ -150,7 +150,7 @@ export default function Internals() {
 
       {/* ── AST design ── */}
       <SectionPanel title="AST design">
-        <p className="text-secondary" style={{ marginBottom: 'var(--space-2)' }}>
+        <p className="text-secondary mb-2">
           Flat union pattern: one <code className="doc-inline-code">ASTNode</code> dataclass, ~40 optional fields,
           discriminated by <code className="doc-inline-code">NodeKind</code> enum (44 kinds).
         </p>
@@ -163,8 +163,8 @@ export default function Internals() {
             [<strong key="st">Statements</strong>, 'BLOCK, IF_STMT, WHILE, FOR, FOR_IN, MATCH, BREAK, CONTINUE, RETURN, DEFER, DEL, ASSIGNMENT'],
           ]}
         />
-        <div style={{ marginTop: 'var(--space-2)' }}>
-          <h3 className="section-subtitle" style={{ marginBottom: 'var(--space-1)' }}>Critical attribute names</h3>
+        <div className="mt-2">
+          <h3 className="section-subtitle mb-1">Critical attribute names</h3>
           <DataTable
             headers={['Correct', 'Wrong', 'Nodes']}
             rows={[
@@ -179,7 +179,7 @@ export default function Internals() {
 
       {/* ── Type system ── */}
       <SectionPanel title="Type system">
-        <p className="text-secondary" style={{ marginBottom: 'var(--space-2)' }}>
+        <p className="text-secondary mb-2">
           Frozen dataclasses — immutable and hashable. Used as dict keys in type maps.
         </p>
         <DataTable

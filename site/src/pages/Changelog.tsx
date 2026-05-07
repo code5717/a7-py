@@ -7,6 +7,9 @@ const releases = [
     date: '',
     groups: {
       Added: [
+        'Labeled loops for while, for, and for-in with labeled break/continue in Zig and C backends.',
+        'Slice expressions in the C backend plus slice/index validation in the type checker.',
+        'Match expression type checking, bool/enum exhaustiveness, wildcard patterns, and return-path validation.',
         'Error stage verifier and matrix tests for mode/format contracts.',
         'Examples end-to-end verifier with golden output fixtures.',
         'CLI v2 mode/format contract with stable exit codes.',
@@ -15,6 +18,7 @@ const releases = [
         'Unskipped previously deferred semantic tests to surface concrete implementation gaps.',
       ],
       Changed: [
+        'Docs site refresh with corrected quickstart commands, route labels, examples, and status wording.',
         'All AST traversals converted to iterative stack-based form.',
         'Semantic errors collected without hard-stop.',
         'Backend reads preprocessor annotations instead of recomputing.',
@@ -67,7 +71,7 @@ export default function Changelog() {
           <div className="stack-2">
             {Object.entries(release.groups).map(([groupName, changes]) => (
               <section key={groupName}>
-                <h3 className="section-subtitle" style={{ marginBottom: 8 }}>
+                <h3 className="section-subtitle mb-2">
                   <span className={`doc-chip ${chipTone(groupName)}`}>{groupName}</span>
                 </h3>
                 <ul className="doc-list">

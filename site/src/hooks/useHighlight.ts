@@ -9,8 +9,8 @@ function getHighlighter() {
     highlighterPromise = createHighlighterCore({
       engine: createOnigurumaEngine(import('shiki/wasm')),
       themes: [
-        import('shiki/themes/github-light.mjs'),
-        import('shiki/themes/github-dark.mjs'),
+        import('shiki/themes/github-light-high-contrast.mjs'),
+        import('shiki/themes/github-dark-high-contrast.mjs'),
       ],
       langs: [
         import('shiki/langs/odin.mjs'),
@@ -41,7 +41,7 @@ export function useHighlight(code: string, lang?: string) {
       if (cancelled) return
       const result = h.codeToHtml(code, {
         lang: mapped,
-        themes: { light: 'github-light', dark: 'github-dark' },
+        themes: { light: 'github-light-high-contrast', dark: 'github-dark-high-contrast' },
       })
       setHtml(result)
     })

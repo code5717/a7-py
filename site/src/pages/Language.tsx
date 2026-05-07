@@ -77,7 +77,7 @@ export default function Language() {
       <PageHeader
         eyebrow="Reference"
         title="Language Reference"
-        summary="Complete A7 syntax reference: lexical rules, literals, declarations, expressions, control flow, types, memory, generics, modules, and grammar."
+        summary="Syntax, types, memory, modules, and grammar."
       />
 
       <SectionPanel title="At a Glance">
@@ -108,7 +108,7 @@ export default function Language() {
           ]}
         />
 
-        <h3 className="section-title" style={{ fontSize: '1.1rem', marginTop: 'var(--space-3)' }}>Comments</h3>
+        <h3 className="section-title subsection-title spaced">Comments</h3>
         <CodeBlock
           lang="a7"
           code={`// Single-line comment
@@ -120,7 +120,7 @@ export default function Language() {
 */`}
         />
 
-        <h3 className="section-title" style={{ fontSize: '1.1rem', marginTop: 'var(--space-3)' }}>Keywords</h3>
+        <h3 className="section-title subsection-title spaced">Keywords</h3>
         <DataTable
           caption="Reserved keyword groups in the tokenizer."
           headers={['Group', 'Keywords']}
@@ -157,7 +157,7 @@ export default function Language() {
       </SectionPanel>
 
       <SectionPanel title="Type System">
-        <h3 className="section-title" style={{ fontSize: '1.1rem' }}>Primitive Types</h3>
+        <h3 className="section-title subsection-title">Primitive Types</h3>
         <DataTable
           caption="Primitive value types in A7."
           headers={['Type', 'Size', 'Meaning']}
@@ -168,7 +168,7 @@ export default function Language() {
           ])}
         />
 
-        <h3 className="section-title" style={{ fontSize: '1.1rem', marginTop: 'var(--space-3)' }}>Composite and Derived Types</h3>
+        <h3 className="section-title subsection-title spaced">Composite and Derived Types</h3>
         <DataTable
           caption="Common type expressions."
           headers={['Category', 'Syntax', 'Description']}
@@ -227,7 +227,7 @@ main :: fn() {
     local_const :: 42
 }`}
         />
-        <p className="text-secondary" style={{ marginTop: 'var(--space-1)' }}>
+        <p className="text-secondary mt-1">
           Use <code className="doc-inline-code">::</code> for immutable declarations and <code className="doc-inline-code">:=</code> for mutable declarations.
         </p>
       </SectionPanel>
@@ -303,9 +303,12 @@ match code {
     else: { io.println("unknown") }
 }`}
         />
-        <p className="text-secondary" style={{ marginTop: 'var(--space-1)' }}>
-          <code className="doc-inline-code">fall</code> is available for explicit fallthrough inside <code className="doc-inline-code">match</code> case bodies.
+        <p className="text-secondary mt-1">
+          <code className="doc-inline-code">fall</code> is parsed as a statement, but semantic validation and backend lowering are still open.
         </p>
+        <DocCallout tone="warning">
+          Backend note: match statements and expressions are implemented, but C backend parity still needs hardening for expression-heavy match usage and advanced range-pattern cases. Use the example verifier before relying on new match forms in C output.
+        </DocCallout>
       </SectionPanel>
 
       <SectionPanel title="Functions">
@@ -363,7 +366,7 @@ main :: fn() {
     }
 }`}
         />
-        <p className="text-secondary" style={{ marginTop: 'var(--space-1)' }}>
+        <p className="text-secondary mt-1">
           Address-of and dereference use property syntax: <code className="doc-inline-code">.adr</code> and <code className="doc-inline-code">.val</code>.
         </p>
       </SectionPanel>
@@ -412,7 +415,7 @@ pub length :: fn(v: Vec2) f32 {
     ret sqrt_f32(v.x * v.x + v.y * v.y)
 }`}
         />
-        <p className="text-secondary" style={{ marginTop: 'var(--space-1)' }}>
+        <p className="text-secondary mt-1">
           Every <code className="doc-inline-code">.a7</code> file is a module. Use <code className="doc-inline-code">pub</code> to export top-level declarations and struct fields.
         </p>
       </SectionPanel>
@@ -435,7 +438,7 @@ pub length :: fn(v: Vec2) f32 {
           rows={OPERATORS.map(([category, ops]) => [category, <code className="doc-inline-code" key={category}>{ops}</code>])}
         />
 
-        <h3 className="section-title" style={{ fontSize: '1.1rem', marginTop: 'var(--space-3)' }}>Precedence (High to Low)</h3>
+        <h3 className="section-title subsection-title spaced">Precedence (High to Low)</h3>
         <DataTable
           headers={['Level', 'Operators']}
           rows={OP_PRECEDENCE.map(([level, ops]) => [level, <code className="doc-inline-code" key={level}>{ops}</code>])}
@@ -486,7 +489,7 @@ type_expr :=
           Parsing coverage is complete for the language surface described here. The compiler runs tokenization, parsing, semantic passes, preprocessing, and code generation (Zig and C backends) end-to-end.
         </DocCallout>
         <DocCallout tone="warning">
-          A small set of semantic features are still open. For exact pass/fail status and failing test references, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
+          A small set of semantic features are still open: fall lowering, advanced match diagnostics, generic constraint internals, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
         </DocCallout>
       </SectionPanel>
     </div>

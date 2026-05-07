@@ -14,7 +14,7 @@ export default function Start() {
     <div className="page">
       <PageHeader
         title="Getting Started"
-        summary="Clone, install, compile your first file."
+        summary="Install. Write. Run."
       />
 
       <SectionPanel title="Requirements">
@@ -42,22 +42,22 @@ uv sync`}
         <CodeBlock
           lang="bash"
           code={`# Compile to Zig
-uv run python main.py hello.a7
+uv run python main.py examples/001_hello.a7
 
-# Run it
+# Run generated output if you wrote hello.zig locally
 zig run hello.zig
 
 # Other modes
-uv run python main.py --mode tokens hello.a7   # just tokens
-uv run python main.py --mode ast hello.a7       # parse tree
-uv run python main.py --format json hello.a7    # JSON output`}
+uv run python main.py --mode tokens examples/001_hello.a7
+uv run python main.py --mode ast examples/001_hello.a7
+uv run python main.py --format json examples/001_hello.a7`}
         />
       </SectionPanel>
 
       <SectionPanel title="Next">
         <ul className="doc-list">
           <li><Link to="/language">Language Reference</Link> — full syntax</li>
-          <li><Link to="/examples">Examples</Link> — 36 programs to read</li>
+          <li><Link to="/examples">Examples</Link> — runnable programs to read</li>
           <li><Link to="/cli">CLI</Link> — all flags and modes</li>
         </ul>
       </SectionPanel>

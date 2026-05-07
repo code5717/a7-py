@@ -12,9 +12,9 @@
   --space-7: 88px;
   --space-8: 120px;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
   color-scheme: light;
 }
@@ -50,7 +50,7 @@
   --bg-panel: #ffffff;
   --bg-raised: var(--paper-1);
   --bg-inset: var(--paper-2);
-  --bg-quiet: rgba(255, 255, 255, 0.72);
+  --bg-quiet: var(--paper-1);
 
   --fg-primary: var(--ink-900);
   --fg-secondary: var(--ink-700);
@@ -60,7 +60,7 @@
   --border-soft: var(--line-soft);
   --border-default: var(--line-strong);
   --border-emphasis: rgba(24, 23, 22, 0.2);
-  --border-focus: rgba(24, 23, 22, 0.36);
+  --border-focus: rgba(24, 23, 22, 0.4);
 
   --accent-700: var(--ink-900);
   --accent-600: var(--ink-800);
@@ -81,79 +81,74 @@
   --scrollbar-thumb-hover: rgba(24, 23, 22, 0.28);
   --overlay-bg: rgba(24, 23, 22, 0.18);
   --code-head-bg: var(--paper-1);
-  --sidebar-bg: rgba(251, 251, 250, 0.94);
-  --mobile-header-bg: rgba(251, 251, 250, 0.88);
+  --sidebar-bg: var(--bg-panel);
+  --site-header-bg: var(--bg-panel);
 
-  --body-overlay-start: rgba(255, 255, 255, 0.7);
-  --body-overlay-end: rgba(255, 255, 255, 0.4);
-  --grid-line: rgba(24, 23, 22, 0.024);
   --link-underline: rgba(24, 23, 22, 0.18);
-  --surface-72: rgba(255, 255, 255, 0.72);
-  --surface-78: rgba(255, 255, 255, 0.78);
-  --surface-80: rgba(255, 255, 255, 0.8);
-  --surface-82: rgba(255, 255, 255, 0.82);
-  --surface-84: rgba(255, 255, 255, 0.84);
-  --surface-88: rgba(255, 255, 255, 0.88);
-  --surface-92: rgba(255, 255, 255, 0.92);
-  --surface-50: rgba(255, 255, 255, 0.5);
-  --panel-gradient-start: rgba(255, 255, 255, 0.86);
-  --panel-gradient-end: rgba(255, 255, 255, 0.78);
-  --hero-image-overlay: rgba(255, 255, 255, 0.12);
-  --media-image-overlay: rgba(255, 255, 255, 0.08);
-  --elevated-shadow: 0 2px 8px rgba(24, 23, 22, 0.04);
-  --modal-overlay-strong: rgba(24, 23, 22, 0.24);
-  --button-solid-bg: #1a1918;
+
+  --surface-50: var(--bg-panel);
+  --surface-72: var(--bg-panel);
+  --surface-78: var(--bg-panel);
+  --surface-80: var(--bg-panel);
+  --surface-82: var(--bg-panel);
+  --surface-84: var(--bg-raised);
+  --surface-88: var(--bg-raised);
+  --surface-92: var(--bg-raised);
+
+  --elevated-shadow: none;
+  --modal-overlay-strong: rgba(24, 23, 22, 0.36);
+  --button-solid-bg: #181716;
   --button-solid-fg: #ffffff;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --paper-0: #111110;
-  --paper-1: #171614;
-  --paper-2: #1e1c1a;
-  --paper-3: #262320;
-  --paper-4: #2d2a26;
+  --paper-0: #0a0d10;
+  --paper-1: #10151a;
+  --paper-2: #161c22;
+  --paper-3: #1d252d;
+  --paper-4: #27313a;
 
-  --ink-900: #f3efe8;
-  --ink-800: #e6e0d6;
-  --ink-700: #d9d1c5;
-  --ink-600: #c4b9aa;
-  --ink-500: #ada192;
-  --ink-400: #968b7f;
+  --ink-900: #f4f1e8;
+  --ink-800: #e4ded0;
+  --ink-700: #cfc6b7;
+  --ink-600: #aba293;
+  --ink-500: #827a70;
+  --ink-400: #615c55;
 
-  --line-strong: #4b443c;
-  --line-soft: #38322c;
+  --line-strong: #2a323b;
+  --line-soft: #1a2028;
 
-  --blue-soft: #183444;
-  --blue-text: #7fc2eb;
-  --green-soft: #1b3220;
-  --green-text: #9ac49b;
-  --yellow-soft: #3c3012;
-  --yellow-text: #e8c76d;
-  --red-soft: #3f1f20;
-  --red-text: #ef9892;
+  --blue-soft: #0c2530;
+  --blue-text: #88c8e0;
+  --green-soft: #0d2a20;
+  --green-text: #88c2a0;
+  --yellow-soft: #261c0a;
+  --yellow-text: #d6b878;
+  --red-soft: #2c1517;
+  --red-text: #d8908b;
 
-  --bg-canvas: #12110f;
-  --bg-panel: #1a1816;
-  --bg-raised: #22201d;
-  --bg-inset: #2a2622;
-  --bg-quiet: #211e1b;
+  --bg-canvas: #0a0d10;
+  --bg-panel: #11171d;
+  --bg-raised: #182028;
+  --bg-inset: #0c1116;
+  --bg-quiet: #121922;
 
-  --fg-primary: #f3efe8;
-  --fg-secondary: #d4ccbf;
-  --fg-tertiary: #a89e90;
-  --fg-muted: #7d7368;
+  --fg-primary: #f4f1e8;
+  --fg-secondary: #d6cfbf;
+  --fg-tertiary: #a39988;
+  --fg-muted: #6e6759;
 
-  --border-soft: #2b2722;
-  --border-default: #3b352e;
-  --border-emphasis: rgba(243, 239, 232, 0.24);
-  --border-focus: rgba(243, 239, 232, 0.42);
+  --border-soft: #1f2731;
+  --border-default: #2c3640;
+  --border-emphasis: rgba(244, 241, 232, 0.22);
+  --border-focus: rgba(244, 241, 232, 0.42);
 
-  --accent-700: #f3efe8;
-  --accent-600: #e2dbcf;
-  --accent-500: #d1c7b7;
-  --accent-soft: #2a2622;
+  --accent-700: var(--ink-900);
+  --accent-600: var(--ink-800);
+  --accent-500: var(--ink-700);
+  --accent-soft: var(--paper-2);
 
   --signal-info: var(--blue-text);
   --signal-info-soft: var(--blue-soft);
@@ -164,32 +159,27 @@
   --signal-danger: var(--red-text);
   --signal-danger-soft: var(--red-soft);
 
-  --selection-bg: rgba(243, 239, 232, 0.22);
-  --scrollbar-thumb: rgba(243, 239, 232, 0.24);
-  --scrollbar-thumb-hover: rgba(243, 239, 232, 0.36);
-  --overlay-bg: rgba(0, 0, 0, 0.42);
-  --code-head-bg: #221f1b;
-  --sidebar-bg: rgba(18, 17, 15, 0.96);
-  --mobile-header-bg: rgba(18, 17, 15, 0.94);
+  --selection-bg: rgba(244, 241, 232, 0.18);
+  --scrollbar-thumb: rgba(244, 241, 232, 0.18);
+  --scrollbar-thumb-hover: rgba(244, 241, 232, 0.32);
+  --overlay-bg: rgba(0, 0, 0, 0.62);
+  --code-head-bg: var(--bg-raised);
+  --sidebar-bg: var(--bg-panel);
+  --site-header-bg: var(--bg-panel);
 
-  --body-overlay-start: rgba(255, 255, 255, 0.03);
-  --body-overlay-end: rgba(0, 0, 0, 0);
-  --grid-line: rgba(243, 239, 232, 0.035);
-  --link-underline: rgba(243, 239, 232, 0.22);
-  --surface-72: #211e1b;
-  --surface-78: #25211d;
-  --surface-80: #28241f;
-  --surface-82: #2b2722;
-  --surface-84: #2e2924;
-  --surface-88: #322c27;
-  --surface-92: #38312b;
-  --surface-50: #231f1b;
-  --panel-gradient-start: #24201c;
-  --panel-gradient-end: #1d1a17;
-  --hero-image-overlay: rgba(0, 0, 0, 0.24);
-  --media-image-overlay: rgba(0, 0, 0, 0.18);
-  --elevated-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
-  --modal-overlay-strong: rgba(0, 0, 0, 0.54);
-  --button-solid-bg: #f3efe8;
-  --button-solid-fg: #151412;
+  --link-underline: rgba(244, 241, 232, 0.32);
+
+  --surface-50: var(--bg-panel);
+  --surface-72: var(--bg-panel);
+  --surface-78: var(--bg-panel);
+  --surface-80: var(--bg-panel);
+  --surface-82: var(--bg-panel);
+  --surface-84: var(--bg-raised);
+  --surface-88: var(--bg-raised);
+  --surface-92: var(--bg-raised);
+
+  --elevated-shadow: none;
+  --modal-overlay-strong: rgba(0, 0, 0, 0.72);
+  --button-solid-bg: #f4f1e8;
+  --button-solid-fg: #0d1013;
 }

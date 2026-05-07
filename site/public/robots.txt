@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://airbus5717.github.io/a7-py/sitemap.xml

@@ -1,16 +1,20 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>A7 Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script>
-      // SPA redirect for GitHub Pages
-      // Redirects 404s back to index.html with the path as a query param
-      var path = window.location.pathname;
-      window.location.replace(
-        window.location.origin + '/a7-py/' + '?p=' + encodeURIComponent(path)
-      );
+      ;(function () {
+        var base = '/a7-py'
+        var path = window.location.pathname
+        var route = path.indexOf(base) === 0 ? path.slice(base.length) : path
+        route = route.replace(/\/index\.html$/, '') || '/'
+        window.location.replace(base + '/#' + route + window.location.search + window.location.hash)
+      })()
     </script>
   </head>
-  <body></body>
+  <body>
+    <p><a href="/a7-py/#/">Open A7 docs</a></p>
+  </body>
 </html>

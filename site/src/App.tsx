@@ -12,6 +12,7 @@ import Testing from './pages/Testing'
 import Status from './pages/Status'
 import Contributing from './pages/Contributing'
 import Changelog from './pages/Changelog'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="status" element={<Status />} />
         <Route path="contributing" element={<Contributing />} />
         <Route path="changelog" element={<Changelog />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   )

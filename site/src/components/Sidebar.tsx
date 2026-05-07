@@ -1,39 +1,5 @@
 import { NavLink } from 'react-router-dom'
-
-const NAV_GROUPS = [
-  {
-    label: 'Overview',
-    items: [
-      { to: '/', label: 'Home', note: 'Project map and quick commands' },
-      { to: '/start', label: 'Getting Started', note: 'Install and first compile run' },
-    ],
-  },
-  {
-    label: 'Reference',
-    items: [
-      { to: '/language', label: 'Language', note: 'Types, control flow, generics' },
-      { to: '/cli', label: 'CLI', note: 'Modes, flags, exit codes' },
-      { to: '/pipeline', label: 'Pipeline', note: 'Compiler stage flow' },
-      { to: '/stdlib', label: 'Standard Library', note: 'Builtins and modules' },
-    ],
-  },
-  {
-    label: 'Learn',
-    items: [
-      { to: '/examples', label: 'Examples', note: '36 runnable A7 programs' },
-      { to: '/internals', label: 'Internals', note: 'File-by-file architecture' },
-      { to: '/testing', label: 'Testing', note: 'Quality gates and scripts' },
-    ],
-  },
-  {
-    label: 'Project',
-    items: [
-      { to: '/status', label: 'Status', note: 'Current completeness and gaps' },
-      { to: '/contributing', label: 'Contributing', note: 'Workflow and standards' },
-      { to: '/changelog', label: 'Changelog', note: 'Release history' },
-    ],
-  },
-]
+import { NAV_GROUPS } from '../content/navigation'
 
 export default function Sidebar({ onClose }: { onClose: () => void }) {
   return (

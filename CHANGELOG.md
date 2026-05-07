@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Rebuilt the home page around an image-led docs landing composition with a framed code hero, quick-start strip, feature bento, pipeline overview, and structured footer.
   - Normalized shared docs primitives (`PageHeader`, `SectionPanel`, `MetricTile`, code/table/callout styling) so content pages inherit the same minimalist visual system.
   - Added light, dark, and system theme support with a header theme toggle and detection for extension-driven dark mode so site styling does not stack awkwardly with tools like Dark Reader.
+  - Revised the dark theme into a quieter terminal-brutalist direction, replaced remote placeholder imagery with a local generated hero asset, made the header search control functional, reduced marketing copy, and removed fake testimonial content.
+  - Tightened example-card wrapping, search dialog semantics, shared scroll locking, and responsive home-section padding so compact layouts do not collide with panel borders.
+  - Added a documentation 404 route and social preview metadata for a cleaner fallback and share surface.
 
 - **Semantic Coverage Expansion**
   - Unskipped 9 previously skipped semantic tests across `test/test_semantic_generics.py` and `test/test_semantic_control_flow.py`.
