@@ -10,7 +10,7 @@ Validates semantic rules beyond type checking:
 from typing import List, Optional, Set
 
 from src.ast_nodes import ASTNode, NodeKind, LiteralKind
-from src.symbol_table import SymbolTable
+from src.symbol_table import SymbolKind, SymbolTable
 from src.semantic_context import SemanticContext
 from src.types import Type, TypeKind, ReferenceType, EnumType
 from src.errors import SemanticError, SemanticErrorType, SourceSpan
@@ -44,6 +44,8 @@ class SemanticValidationPass:
 
         # Track allocations for new/del validation
         self.allocations: Set[str] = set()
+        self._function_graph: dict[str, set[str]] = {}
+        self._function_spans: dict[str, Optional[SourceSpan]] = {}
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> None:
         """
@@ -92,6 +94,8 @@ class SemanticValidationPass:
         if node.kind != NodeKind.PROGRAM:
             self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"Expected program node, got {node.kind}")
             return
+
+        self._validate_no_recursion(node)
 
         # Visit all declarations
         for decl in node.declarations or []:
@@ -395,6 +399,127 @@ class SemanticValidationPass:
             alloc_type = node.target_type
             # Could track allocation for leak detection
             pass
+
+    def _validate_no_recursion(self, program: ASTNode) -> None:
+        """Reject direct and mutual recursion between top-level functions."""
+        functions = {
+            decl.name: decl
+            for decl in program.declarations or []
+            if decl.kind == NodeKind.FUNCTION and decl.name
+        }
+        self._function_spans = {name: func.span for name, func in functions.items()}
+        self._function_graph = {
+            name: self._collect_function_calls(func.body, set(functions))
+            for name, func in functions.items()
+        }
+
+        reported_nodes: set[str] = set()
+        for name in functions:
+            if name in reported_nodes:
+                continue
+            path = self._find_recursion_path(name)
+            if not path:
+                continue
+            reported_nodes.update(path)
+            self.add_error(
+                SemanticErrorType.RECURSION_NOT_ALLOWED,
+                self._function_spans.get(name),
+                f"Cycle: {' -> '.join(path)}",
+            )
+
+    def _find_recursion_path(self, start: str) -> Optional[list[str]]:
+        stack: list[tuple[str, list[str]]] = [(start, [start])]
+        while stack:
+            current, path = stack.pop()
+            for callee in sorted(self._function_graph.get(current, set()), reverse=True):
+                if callee == start:
+                    return path + [callee]
+                if callee in path:
+                    continue
+                stack.append((callee, path + [callee]))
+        return None
+
+    def _collect_function_calls(self, root: Optional[ASTNode], function_names: set[str]) -> set[str]:
+        if root is None:
+            return set()
+
+        calls: set[str] = set()
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            if node is None:
+                continue
+
+            if node.kind == NodeKind.CALL:
+                callee = self._direct_callee_name(node)
+                if callee in function_names:
+                    calls.add(callee)
+
+            for child in self._iter_child_nodes(node):
+                stack.append(child)
+
+        return calls
+
+    def _direct_callee_name(self, node: ASTNode) -> Optional[str]:
+        if node.kind != NodeKind.CALL or not node.function:
+            return None
+        function = node.function
+        if function.kind != NodeKind.IDENTIFIER or not function.name:
+            return None
+
+        symbol = self.symbols.lookup(function.name)
+        if symbol and symbol.kind != SymbolKind.FUNCTION:
+            return None
+        return function.name
+
+    def _iter_child_nodes(self, node: ASTNode) -> List[ASTNode]:
+        children: List[ASTNode] = []
+        for attr in (
+            "body",
+            "value",
+            "left",
+            "right",
+            "operand",
+            "function",
+            "object",
+            "index",
+            "start",
+            "end",
+            "pointer",
+            "expression",
+            "condition",
+            "then_expr",
+            "else_expr",
+            "statement",
+            "target",
+            "literal",
+            "init",
+            "update",
+            "iterable",
+            "then_stmt",
+            "else_stmt",
+        ):
+            child = getattr(node, attr, None)
+            if isinstance(child, ASTNode):
+                children.append(child)
+
+        for attr in (
+            "statements",
+            "declarations",
+            "parameters",
+            "arguments",
+            "field_inits",
+            "elements",
+            "cases",
+            "else_case",
+            "patterns",
+        ):
+            value = getattr(node, attr, None)
+            if isinstance(value, ASTNode):
+                children.append(value)
+            elif value:
+                children.extend(child for child in value if isinstance(child, ASTNode))
+        return children
 
     def _report_unreachable_in_block(self, statements: List[ASTNode]) -> None:
         """Report statements that cannot execute after a block-local terminator."""

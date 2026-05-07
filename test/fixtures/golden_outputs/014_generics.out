@@ -1,2 +1,3 @@
-=== Generics ===
-Generic features are demonstrated in parser/semantic tests.
+=== Generics Status ===
+Generic functions are validated in semantic tests.
+C backend generic lowering is tracked before runtime examples.

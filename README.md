@@ -128,11 +128,11 @@ Source (.a7) → Tokenizer → Parser → Semantic Analysis (3-pass) → AST Pre
 
 1. **Tokenizer**. Lexes source into tokens. Handles single-token generics (`$T`), nested comments, and number formats.
 2. **Parser**. Uses recursive descent with precedence climbing. Parses all A7 constructs.
-3. **Semantic Analysis**. Runs name resolution, type checking with inference, and control flow validation.
+3. **Semantic Analysis**. Runs name resolution, type checking with inference, control flow validation, and recursion rejection.
 4. **AST Preprocessing**. Runs 9 sub-passes: sugar lowering, stdlib resolution, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
 5. **Backend Code Generation**. Translates AST to valid Zig or C source code.
 
-All AST traversals are iterative with no recursion. The pipeline works with Python's recursion limit set to 100.
+All AST traversals are iterative with no recursion. A7 source recursion is also rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead. The pipeline works with Python's recursion limit set to 100.
 
 ## Integer Type Guidance
 
@@ -147,6 +147,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Types**: Primitives, arrays, slices, pointers, generics, raw and aliased function types, inline structs
 - **Declarations**: Functions, structs, enums, unions, variables, constants, type aliases
 - **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
+- **Function Rules**: Direct and mutual recursion are semantic errors
 - **Expressions**: All operators with proper precedence, casts, if-expressions, struct/array literals
 - **Memory**: Property-based pointer syntax (`.adr`, `.val`), new/delete, defer cleanup
 - **Imports**: Module system with named imports, using imports, aliased imports

@@ -1,15 +1,42 @@
-// String utility examples (deterministic)
+// String utility examples
 
 io :: import "std/io"
+
+length :: fn(text: string) usize {
+    count: usize = 0
+    for ch in text {
+        if ch == '\0' {
+            ret count
+        }
+        count += 1
+    }
+    ret count
+}
+
+contains :: fn(text: string, needle: char) bool {
+    for ch in text {
+        if ch == needle {
+            ret true
+        }
+    }
+    ret false
+}
 
 main :: fn() {
     io.println("=== String Utils ===")
 
-    text: string = "Hello"
-    io.println("text = {}", text)
-    io.println("first char = {}", 'H')
+    text: string = "Hello, A7"
+    prefix := text[0..5]
 
-    greeting := "Hello, A7"
-    io.println("greeting = {}", greeting)
-    io.println("string utilities complete")
+    io.println("text = {}", text)
+    io.println("len = {}", length(text))
+
+    io.print("prefix = ")
+    for ch in prefix {
+        io.print("{}", ch)
+    }
+    io.println("")
+
+    io.println("contains A = {}", contains(text, 'A'))
+    io.println("contains z = {}", contains(text, 'z'))
 }

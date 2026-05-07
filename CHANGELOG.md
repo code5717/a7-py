@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   receives `contents: write`.
 - Tag-based PyPI publishing now waits for the draft GitHub release job to
   succeed before requesting the protected `pypi` environment.
+- Semantic validation now rejects direct and mutual recursion; source programs
+  should use loops, explicit stacks, or index-based worklists instead.
+- Expanded incomplete runnable examples for function pointers, inline struct
+  returns, linked-list traversal, iterative binary-tree traversal, and string
+  utilities; tightened example catalog copy where language support is still
+  status-only.
 
 ## [0.3.0] - 2026-05-07
 

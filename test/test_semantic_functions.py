@@ -8,7 +8,7 @@ Covers:
 - Function call argument matching
 - Return statement validation
 - Variadic functions
-- Recursive functions
+- Recursion rejection
 - Function pointers and higher-order functions
 """
 
@@ -329,11 +329,11 @@ class TestVariadicFunctions:
         assert expect_success(source)
 
 
-class TestRecursiveFunctions:
-    """Test recursive function support."""
+class TestRecursionBan:
+    """Test that recursive function cycles are rejected."""
 
-    def test_simple_recursion(self):
-        """Test simple recursive function."""
+    def test_direct_recursion_is_rejected(self):
+        """Test direct self-recursive functions."""
         source = """
         factorial :: fn(n: i32) i32 {
             if n <= 1 {
@@ -346,10 +346,10 @@ class TestRecursiveFunctions:
             result := factorial(5)
         }
         """
-        assert expect_success(source)
+        assert expect_error(source, "recursion")
 
-    def test_mutual_recursion(self):
-        """Test mutually recursive functions."""
+    def test_mutual_recursion_is_rejected(self):
+        """Test mutually recursive function cycles."""
         source = """
         is_even :: fn(n: i32) bool {
             if n == 0 {
@@ -367,6 +367,23 @@ class TestRecursiveFunctions:
 
         main :: fn() {
             x := is_even(10)
+        }
+        """
+        assert expect_error(source, "recursion")
+
+    def test_iterative_rewrite_is_allowed(self):
+        """Test the allowed iterative equivalent."""
+        source = """
+        factorial :: fn(n: i32) i32 {
+            result := 1
+            for i := 2; i <= n; i += 1 {
+                result *= i
+            }
+            ret result
+        }
+
+        main :: fn() {
+            result := factorial(5)
         }
         """
         assert expect_success(source)

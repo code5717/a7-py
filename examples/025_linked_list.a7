@@ -1,12 +1,38 @@
-// Linked-list themed sample
+// Linked-list traversal with explicit next indexes
 
 io :: import "std/io"
+
+Node :: struct {
+    value: i32
+    next: isize
+}
 
 main :: fn() {
     io.println("=== Linked List ===")
 
-    values: [3]i32 = [10, 20, 30]
-    for i, value in values {
-        io.println("node {} = {}", i, value)
+    n0 := Node{value: 10, next: 1}
+    n1 := Node{value: 20, next: 2}
+    n2 := Node{value: 30, next: -1}
+
+    current: isize = 0
+    total := 0
+
+    while current >= 0 {
+        value := match current {
+            case 0: n0.value
+            case 1: n1.value
+            else: n2.value
+        }
+        next := match current {
+            case 0: n0.next
+            case 1: n1.next
+            else: n2.next
+        }
+
+        io.println("node {} = {}", current, value)
+        total += value
+        current = next
     }
+
+    io.println("total = {}", total)
 }

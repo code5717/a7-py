@@ -1,6 +1,9 @@
-// Function dispatch example (minimal runnable sample)
+// Function pointers and higher-order calls
 
 io :: import "std/io"
+
+BinaryOp :: fn(i32, i32) i32
+UnaryOp :: fn(i32) i32
 
 add :: fn(a: i32, b: i32) i32 {
     ret a + b
@@ -10,10 +13,25 @@ sub :: fn(a: i32, b: i32) i32 {
     ret a - b
 }
 
-main :: fn() {
-    io.println("=== Function Dispatch ===")
+double :: fn(value: i32) i32 {
+    ret value * 2
+}
 
-    use_add := true
-    result := if use_add { add(8, 3) } else { sub(8, 3) }
-    io.println("result = {}", result)
+apply_binary :: fn(op: BinaryOp, a: i32, b: i32) i32 {
+    ret op(a, b)
+}
+
+apply_unary :: fn(op: UnaryOp, value: i32) i32 {
+    ret op(value)
+}
+
+main :: fn() {
+    io.println("=== Function Pointers ===")
+
+    raw: fn(i32, i32) i32 = add
+    op: BinaryOp = sub
+
+    io.println("raw add = {}", raw(8, 3))
+    io.println("aliased sub = {}", apply_binary(op, 8, 3))
+    io.println("callback double = {}", apply_unary(double, 11))
 }

@@ -1,23 +1,14 @@
-// Inline-struct themed sample using named structs for runtime stability
+// Inline struct return values
 
 io :: import "std/io"
 
-Point :: struct {
-    x: i32
-    y: i32
-}
-
-Rect :: struct {
-    w: i32
-    h: i32
+make_point :: fn(x: i32, y: i32) struct { x: i32, y: i32 } {
+    ret struct { x: i32, y: i32 } { x: x, y: y }
 }
 
 main :: fn() {
     io.println("=== Inline Structs ===")
 
-    point := Point{x: 3, y: 4}
-    rect := Rect{w: 7, h: 2}
-
+    point := make_point(3, 4)
     io.println("point = ({}, {})", point.x, point.y)
-    io.println("area = {}", rect.w * rect.h)
 }

@@ -136,11 +136,22 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [ ] Propagate generic type parameters through call chains.
   Notes: `Vec(i32).push(x)` should infer `x: i32` without annotation.
 
+- [ ] Lower generic functions in the C backend.
+  Files: `src/backends/c.py`, `src/generics.py`, `examples/014_generics.a7`
+  Notes: generic functions are covered by parser/semantic tests and Zig can emit some `anytype` forms, but release examples cannot use runtime generics until C has a concrete lowering strategy.
+
+- [ ] Complete runtime union construction and field access.
+  Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`, `examples/016_unions.a7`
+  Notes: union declarations lower in both backends; source-level field construction/access is still status-only in the runnable examples.
+
 - [x] Validate return-type consistency across all branches.
   Notes: type checking visits returns inside blocks, if/else branches, and match branches; explicit regression coverage locks this down.
 
 - [x] Flag dead code after unconditional return/break/continue.
   Notes: semantic validation now rejects block-local statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
+
+- [x] Reject direct and mutual recursion during semantic validation.
+  Notes: A7 source must use loops, explicit stacks, or index-based worklists for repeated work.
 
 - [x] Check exhaustiveness of match statements.
   Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Exact duplicate patterns and unreachable branches after wildcard or full bool/enum coverage are diagnosed separately.

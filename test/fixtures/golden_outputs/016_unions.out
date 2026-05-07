@@ -1,2 +1,3 @@
-=== Unions ===
-Union type declared successfully
+=== Unions Status ===
+Union type declaration lowers in both backends.
+Runtime union field access is tracked separately.

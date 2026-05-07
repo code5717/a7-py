@@ -822,13 +822,22 @@ class TestComplexPrograms:
     """Test complete, realistic programs."""
 
     def test_fibonacci_function(self):
-        """Test recursive fibonacci function."""
+        """Test iterative fibonacci function."""
         source = """
         fib :: fn(n: i32) i32 {
             if n <= 1 {
                 ret n
             }
-            ret fib(n - 1) + fib(n - 2)
+            prev := 0
+            curr := 1
+            i := 2
+            while i <= n {
+                next := prev + curr
+                prev = curr
+                curr = next
+                i += 1
+            }
+            ret curr
         }
 
         main :: fn() {

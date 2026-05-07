@@ -1,8 +1,13 @@
-// Generics demonstration (minimal runnable sample)
+// Generics status note
+//
+// Parser and semantic tests cover generic functions, type parameters, and
+// constraints. The runnable example stays explicit because release artifacts
+// must pass both Zig and C backends, and C generic lowering is still tracked.
 
 io :: import "std/io"
 
 main :: fn() {
-    io.println("=== Generics ===")
-    io.println("Generic features are demonstrated in parser/semantic tests.")
+    io.println("=== Generics Status ===")
+    io.println("Generic functions are validated in semantic tests.")
+    io.println("C backend generic lowering is tracked before runtime examples.")
 }

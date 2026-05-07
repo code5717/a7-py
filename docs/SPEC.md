@@ -686,7 +686,34 @@ where
 }
 ```
 
-### 6.2 Function Parameter Immutability
+### 6.2 Recursion
+
+Recursion is not part of A7. A function may not call itself directly, and
+groups of functions may not call each other in a cycle. Semantic validation
+reports these call cycles before backend code generation.
+
+Use loops, explicit stacks, or index-based worklists for repeated work.
+
+```a7
+// ERROR: direct recursion is rejected
+factorial :: fn(n: i32) i32 {
+    if n <= 1 {
+        ret 1
+    }
+    ret n * factorial(n - 1)
+}
+
+// OK: iterative rewrite
+factorial_iter :: fn(n: i32) i32 {
+    result := 1
+    for i := 2; i <= n; i += 1 {
+        result *= i
+    }
+    ret result
+}
+```
+
+### 6.3 Function Parameter Immutability
 
 **All function parameters in A7 are immutable by design.** This includes both value parameters and pointer parameters - the parameters themselves cannot be reassigned, though data can be modified through pointer dereferencing.
 
@@ -717,7 +744,7 @@ main :: fn() {
 }
 ```
 
-### 6.3 Function Types
+### 6.4 Function Types
 
 ```a7
 // Function pointer type
@@ -731,7 +758,7 @@ apply :: fn(op: BinaryOp, x: i32, y: i32) i32 {
 result := apply(add, 10, 20)
 ```
 
-### 6.4 Methods
+### 6.5 Methods
 
 ```a7
 // Methods are functions with receiver
@@ -1926,7 +1953,34 @@ sincos :: fn(angle: f64) struct { sin: f64, cos: f64 } {
 }
 ```
 
-### 6.2 Function Parameter Immutability
+### 6.2 Recursion
+
+Recursion is not part of A7. A function may not call itself directly, and
+groups of functions may not call each other in a cycle. Semantic validation
+reports these call cycles before backend code generation.
+
+Use loops, explicit stacks, or index-based worklists for repeated work.
+
+```a7
+// ERROR: direct recursion is rejected
+factorial :: fn(n: i32) i32 {
+    if n <= 1 {
+        ret 1
+    }
+    ret n * factorial(n - 1)
+}
+
+// OK: iterative rewrite
+factorial_iter :: fn(n: i32) i32 {
+    result := 1
+    for i := 2; i <= n; i += 1 {
+        result *= i
+    }
+    ret result
+}
+```
+
+### 6.3 Function Parameter Immutability
 
 **All function parameters in A7 are immutable by design.** This includes both value parameters and pointer parameters - the parameters themselves cannot be reassigned, though data can be modified through pointer dereferencing.
 
@@ -1957,7 +2011,7 @@ main :: fn() {
 }
 ```
 
-### 6.3 Function Types
+### 6.4 Function Types
 
 ```a7
 // Function pointer type
@@ -1971,7 +2025,7 @@ apply :: fn(op: BinaryOp, x: i32, y: i32) i32 {
 result := apply(add, 10, 20)
 ```
 
-### 6.4 Methods
+### 6.5 Methods
 
 ```a7
 // Methods are functions with receiver

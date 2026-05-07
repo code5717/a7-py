@@ -316,7 +316,7 @@ error: Already defined: Variable 'i'
 | 030_calculator.a7 | 114 | io module, return types |
 | 031_number_guessing.a7 | 145 | io module, struct access, RNG |
 | 032_prime_numbers.a7 | 4 | variable shadowing |
-| 033_fibonacci.a7 | 111 | recursion, memoization, array ops |
+| 033_fibonacci.a7 | 111 | iterative sequence generation, memoization-style storage, array ops |
 | 034_string_utils.a7 | 161 | string ops, array ops, symbol resolution |
 | 035_matrix.a7 | 204 | 2D arrays, array ops, symbol resolution |
 

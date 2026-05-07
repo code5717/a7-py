@@ -1,5 +1,6 @@
 === String Utils ===
-text = Hello
-first char = H
-greeting = Hello, A7
-string utilities complete
+text = Hello, A7
+len = 9
+prefix = Hello
+contains A = true
+contains z = false

@@ -79,6 +79,7 @@ class SemanticErrorType(Enum):
     MISSING_TYPE_ANNOTATION = "missing_type_annotation"
     NON_EXHAUSTIVE_MATCH = "non_exhaustive_match"
     UNSUPPORTED_FALLTHROUGH = "unsupported_fallthrough"
+    RECURSION_NOT_ALLOWED = "recursion_not_allowed"
 
     # Import errors
     CIRCULAR_IMPORT = "circular_import"
@@ -235,6 +236,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Missing type annotation",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Non-exhaustive match",
         SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Fallthrough is not implemented",
+        SemanticErrorType.RECURSION_NOT_ALLOWED: "Recursion is not allowed",
 
         # Import errors
         SemanticErrorType.CIRCULAR_IMPORT: "Circular import detected",
@@ -283,6 +285,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Add a type annotation or an initializer for this declaration",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Add missing cases or an else/wildcard branch to cover remaining values",
         SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Remove fall or rewrite the match case explicitly until fallthrough lowering is implemented",
+        SemanticErrorType.RECURSION_NOT_ALLOWED: "Rewrite the function using loops, explicit stacks, or another iterative structure",
 
         # Import errors
         SemanticErrorType.CIRCULAR_IMPORT: "Reorganize modules to remove circular dependencies",

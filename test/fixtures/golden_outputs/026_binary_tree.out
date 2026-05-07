@@ -1,4 +1,5 @@
 === Binary Tree ===
-root = 10
-left = 5
-right = 15
+visit 10
+visit 5
+visit 15
+total = 30

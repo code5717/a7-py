@@ -1,15 +1,68 @@
-// Binary-tree themed sample
+// Binary-tree traversal without recursion
 
 io :: import "std/io"
+
+Node :: struct {
+    value: i32
+    left: usize
+    right: usize
+}
+
+node_value :: fn(index: usize, root: Node, left: Node, right: Node) i32 {
+    ret match index {
+        case 0: root.value
+        case 1: left.value
+        else: right.value
+    }
+}
+
+node_left :: fn(index: usize, root: Node, left: Node, right: Node) usize {
+    ret match index {
+        case 0: root.left
+        case 1: left.left
+        else: right.left
+    }
+}
+
+node_right :: fn(index: usize, root: Node, left: Node, right: Node) usize {
+    ret match index {
+        case 0: root.right
+        case 1: left.right
+        else: right.right
+    }
+}
 
 main :: fn() {
     io.println("=== Binary Tree ===")
 
-    root := 10
-    left := 5
-    right := 15
+    empty: usize = 3
+    root := Node{value: 10, left: 1, right: 2}
+    left := Node{value: 5, left: empty, right: empty}
+    right := Node{value: 15, left: empty, right: empty}
 
-    io.println("root = {}", root)
-    io.println("left = {}", left)
-    io.println("right = {}", right)
+    stack: [3]usize = [cast(usize, 0), cast(usize, 0), cast(usize, 0)]
+    top: usize = 1
+    total := 0
+
+    while top > 0 {
+        top -= 1
+        index := stack[top]
+        value := node_value(index, root, left, right)
+        io.println("visit {}", value)
+        total += value
+
+        right_index := node_right(index, root, left, right)
+        if right_index != empty {
+            stack[top] = right_index
+            top += 1
+        }
+
+        left_index := node_left(index, root, left, right)
+        if left_index != empty {
+            stack[top] = left_index
+            top += 1
+        }
+    }
+
+    io.println("total = {}", total)
 }

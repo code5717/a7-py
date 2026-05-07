@@ -1,2 +1,4 @@
-=== Function Dispatch ===
-result = 11
+=== Function Pointers ===
+raw add = 11
+aliased sub = 5
+callback double = 22

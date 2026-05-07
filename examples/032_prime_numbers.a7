@@ -1,4 +1,4 @@
-// Prime number algorithms (minimal runnable sample)
+// Prime checking and GCD
 
 io :: import "std/io"
 

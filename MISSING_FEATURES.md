@@ -42,6 +42,7 @@
 28. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
 29. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
 30. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
+31. Semantic validation rejects direct and mutual recursion; repeated work must use loops, explicit stacks, or index-based worklists.
 
 ---
 
@@ -65,6 +66,8 @@
 4. **Backend semantic parity hardening**
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
+   - C backend generic function lowering is not implemented; generic coverage remains semantic/test-level rather than runtime example-level.
+   - Union declarations lower, but runtime union field construction/access is not yet a completed source-language workflow.
 
 5. **Release publishing activation**
    - Local package builds and artifact checks exist.

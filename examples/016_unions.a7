@@ -1,4 +1,8 @@
-// Union declaration in A7
+// Union declaration status
+//
+// Union declarations lower in both backends. Runtime field construction and
+// field access are still tracked separately, so this example is intentionally
+// limited to declaration coverage.
 
 io :: import "std/io"
 
@@ -8,6 +12,7 @@ Value :: union {
 }
 
 main :: fn() {
-    io.println("=== Unions ===")
-    io.println("Union type declared successfully")
+    io.println("=== Unions Status ===")
+    io.println("Union type declaration lowers in both backends.")
+    io.println("Runtime union field access is tracked separately.")
 }
