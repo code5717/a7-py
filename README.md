@@ -158,6 +158,8 @@ All AST traversals are iterative with no recursion. The pipeline works with Pyth
 - Documentation website: `https://airbus5717.github.io/a7-py/`
 - `docs/SPEC.md` - Language specification
 - `RELEASE.md` - Release/debug build checklist
+- `SECURITY.md` - Security policy and trust boundary
+- `RELEASE_READINESS_REVIEW.md` - Current release-readiness audit
 - `examples/` - 36 sample programs
 - `MISSING_FEATURES.md` - Feature status and roadmap
 - `CHANGELOG.md` - Change history

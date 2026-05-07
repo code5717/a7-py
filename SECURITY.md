@@ -1,0 +1,46 @@
+# Security Policy
+
+## Supported Versions
+
+`a7-py` is pre-1.0. Security fixes are made on `master` unless a release branch
+is created later.
+
+## Trust Boundary
+
+`a7-py` is not a sandbox.
+
+The compiler reads A7 source, emits Zig or C, and the verification scripts build
+and execute native binaries. Compiled A7 programs can do anything the generated
+program and host runtime allow. Only compile and run A7 source you trust.
+
+## Local Verification
+
+Before release or broad testing, run:
+
+```bash
+./run_all_tests.sh
+uv build
+cd site && npm run build
+```
+
+The full gate includes parser/tokenizer tests, semantic tests, Zig and C backend
+tests, example runtime verification, debug/release artifact builds, error-stage
+checks, docs style checks, and full pytest.
+
+## Known Security-Relevant Limitations
+
+- No sandboxing for compiled programs.
+- No ownership or borrow-style lifetime model yet.
+- Import/module loading still needs stronger fail-closed behavior.
+- C and Zig backend parity checks exist for examples but are not a proof for all
+  possible programs.
+- Tag-based package publishing is not configured yet.
+
+These limitations are tracked in `MISSING_FEATURES.md`, `TODO.md`, and
+`RELEASE.md`.
+
+## Reporting
+
+Open a private security advisory or contact the repository owner before opening
+public issues for exploitable crashes, unsafe generated code, or release
+pipeline compromise.

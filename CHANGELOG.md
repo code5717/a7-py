@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added an installed `a7` CLI entrypoint via `pyproject.toml`.
   - Added `scripts/build_examples.py` to build debug/release native artifacts for Zig and C example outputs and verify each binary against golden fixtures.
   - Added `RELEASE.md` with local release gates, artifact layout, tagging steps, and security caveats.
+  - Added `SECURITY.md` and `RELEASE_READINESS_REVIEW.md` to document trust boundaries, residual release risks, and verification evidence.
   - Added release-tooling pytest coverage for the installed CLI and debug build script.
   - Added a GitHub Actions CI workflow for Python, backend, package, docs, and artifact checks.
 
