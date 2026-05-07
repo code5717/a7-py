@@ -33,7 +33,7 @@ not factually provable from local tests alone.
 - `./run_all_tests.sh`
 - `uv build`
 - `uvx pip-audit --strict`
-- `uvx bandit -r src scripts -q`
+- `uvx bandit -r src scripts -q --severity-level medium`
 - `uv run python scripts/check_no_secrets.py`
 - `cd site && npm audit --omit=dev --audit-level=moderate`
 - `cd site && npm run build`
@@ -106,9 +106,10 @@ not factually provable from local tests alone.
 - GitHub Pages deploy currently emits an upstream `punycode` deprecation warning
   from `actions/deploy-pages@v5`; the workflow succeeds and no repo-side
   replacement is currently available.
-- Bandit reports only low-severity findings after the formatter fix: expected
-  subprocess usage in trusted release/example verifier scripts, plus a false
-  positive on the `bad_token_at_global` error-code string.
+- Bandit reports no medium/high-severity findings after the formatter fix. Its
+  remaining low-severity findings are expected subprocess usage in trusted
+  release/example verifier scripts, plus a false positive on the
+  `bad_token_at_global` error-code string.
 
 ## Recommended Next Pass
 
