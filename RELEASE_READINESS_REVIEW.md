@@ -33,6 +33,7 @@ not factually provable from local tests alone.
 - `./run_all_tests.sh`
 - `uv build`
 - `uvx pip-audit --strict`
+- `uvx bandit -r src scripts -q`
 - `uv run python scripts/check_no_secrets.py`
 - `cd site && npm audit --omit=dev --audit-level=moderate`
 - `cd site && npm run build`
@@ -83,6 +84,8 @@ not factually provable from local tests alone.
 - Release/security checklist shell snippets now use subshells so they can be
   copied and run literally.
 - README now points to the current `code5717.github.io/a7-py` documentation URL.
+- Formatter symbol collection no longer hides broad exceptions during console
+  or Markdown report generation.
 
 ## Residual Risks
 
@@ -103,6 +106,9 @@ not factually provable from local tests alone.
 - GitHub Pages deploy currently emits an upstream `punycode` deprecation warning
   from `actions/deploy-pages@v5`; the workflow succeeds and no repo-side
   replacement is currently available.
+- Bandit reports only low-severity findings after the formatter fix: expected
+  subprocess usage in trusted release/example verifier scripts, plus a false
+  positive on the `bad_token_at_global` error-code string.
 
 ## Recommended Next Pass
 

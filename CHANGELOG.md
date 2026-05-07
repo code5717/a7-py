@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Formatter symbol collection now surfaces traversal failures instead of
+  silently swallowing broad exceptions, reducing hidden documentation/reporting
+  failures found during static security review.
+
 ## [0.3.0] - 2026-05-07
 
 ### Added

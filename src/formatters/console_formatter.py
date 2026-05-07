@@ -219,16 +219,12 @@ class ConsoleFormatter:
     def _collect_symbols(self, symbol_table) -> list:
         """Collect symbols from a symbol table for display."""
         symbols = []
-        try:
-            # Walk scopes
-            scope = symbol_table.current_scope if hasattr(symbol_table, 'current_scope') else None
-            if scope is None and hasattr(symbol_table, 'global_scope'):
-                scope = symbol_table.global_scope
+        scope = symbol_table.current_scope if hasattr(symbol_table, 'current_scope') else None
+        if scope is None and hasattr(symbol_table, 'global_scope'):
+            scope = symbol_table.global_scope
 
-            visited = set()
-            self._walk_scope(scope, symbols, "global", visited)
-        except Exception:
-            pass
+        visited = set()
+        self._walk_scope(scope, symbols, "global", visited)
         return symbols
 
     def _walk_scope(self, scope, symbols: list, scope_name: str, visited: set):
