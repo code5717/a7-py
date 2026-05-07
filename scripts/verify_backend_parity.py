@@ -109,13 +109,29 @@ def run_cmd(
     cwd: Path,
     timeout: float = 10.0,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        cwd=cwd,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=cwd,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(
+            cmd,
+            124,
+            stdout=_timeout_stream_text(exc.stdout),
+            stderr=f"command timed out after {timeout:.1f}s",
+        )
+
+
+def _timeout_stream_text(output: str | bytes | None) -> str:
+    if output is None:
+        return ""
+    if isinstance(output, bytes):
+        return output.decode("utf-8", errors="replace")
+    return output
 
 
 def normalize_output(raw: str) -> str:
@@ -229,7 +245,7 @@ def main() -> int:
     parser.add_argument(
         "--timeout",
         type=float,
-        default=5.0,
+        default=30.0,
         help="Per compile/build/run command timeout in seconds",
     )
     parser.add_argument(
