@@ -102,8 +102,9 @@ attached.
 
 The same tag workflow publishes the Python package distributions to PyPI through
 Trusted Publishing/OIDC. The GitHub `pypi` environment exists and requires
-review by `code5717`. Before the first real publish, configure the PyPI project
-trusted publisher with:
+review by `code5717`. As of the latest release-readiness audit, `a7-py` is not
+yet a public PyPI project. Before the first real publish, create or preconfigure
+the PyPI project trusted publisher with:
 
 - owner: `code5717`
 - repository: `a7-py`

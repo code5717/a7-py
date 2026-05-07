@@ -83,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Corrected release/security checklist shell snippets and the README documentation-site URL.
   - Updated the release-readiness review with hosted CI/Pages evidence, a repeatable latest-run check, and the remaining upstream Pages action warning.
   - Created the protected GitHub `pypi` environment and updated release docs to distinguish it from the remaining PyPI trusted-publisher setup.
+  - Documented that `a7-py` is not yet public on PyPI and still needs first-publish trusted-publisher setup.
   - Corrected memory-safety documentation so the spec no longer claims unimplemented lifetime, double-free, use-after-free, or bounds-check guarantees.
   - Marked the tensor/AI/GPU section as planned design work instead of current language support.
   - De-scoped `std/string`, `std/mem`, and `std/collections` from current stdlib documentation; only virtual `io` and `math` modules are documented as implemented.

@@ -17,7 +17,7 @@ const missing = [
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal plus compile-time constant range overlaps are diagnosed. Non-constant symbolic intervals and true capture patterns remain open.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for every new language feature.' },
-  { name: 'Publishing activation', desc: 'PyPI publishing is wired and the GitHub pypi environment requires review; the PyPI trusted publisher still needs live configuration before first publish.' },
+  { name: 'Publishing activation', desc: 'PyPI publishing is wired and the GitHub pypi environment requires review; a7-py is not yet public on PyPI, so trusted publishing still needs live configuration before first publish.' },
 ]
 
 export default function Status() {
@@ -62,7 +62,7 @@ export default function Status() {
           <li>Add non-constant symbolic interval range-overlap match diagnostics.</li>
           <li>Improve type checker: control-flow narrowing and deeper assignment compatibility.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>
-          <li>Configure the PyPI trusted publisher for repository code5717/a7-py, workflow release.yml, and environment pypi.</li>
+          <li>Create or configure the PyPI trusted publisher for project a7-py, repository code5717/a7-py, workflow release.yml, and environment pypi.</li>
         </ol>
       </SectionPanel>
     </div>

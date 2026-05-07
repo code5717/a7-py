@@ -71,7 +71,8 @@
    - Tag-triggered draft GitHub releases are configured.
    - Tag-triggered PyPI publishing is wired through Trusted Publishing/OIDC.
    - The GitHub `pypi` environment exists and requires maintainer review.
-   - The PyPI project must still be configured to trust repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi` before the first real publish.
+   - `a7-py` is not yet a public PyPI project.
+   - The PyPI project must still be created or configured to trust repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi` before the first real publish.
 
 6. **Module-system parity**
    - Missing or broken local imports now fail closed.

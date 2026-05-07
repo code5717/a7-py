@@ -41,6 +41,7 @@ not factually provable from local tests alone.
 - hosted CI and Deploy Docs runs passed after the workflow updates; before
   tagging, re-check the latest commit with
   `gh run list --branch master --limit 6`
+- PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
 
@@ -92,8 +93,9 @@ not factually provable from local tests alone.
 - Built-in stdlib imports are virtual and still need unification with file-based
   module semantics.
 - Backend parity is verified for examples, not all possible source programs.
-- Tag-based PyPI publishing is wired, but the PyPI project still needs the
-  matching trusted-publisher configuration before the first real publish.
+- Tag-based PyPI publishing is wired, but `a7-py` is not yet a public PyPI
+  project and still needs matching trusted-publisher configuration before the
+  first real publish.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
 - Secret scanning is pattern-based and should be supplemented by repository host
@@ -107,6 +109,6 @@ not factually provable from local tests alone.
 1. Expand differential backend tests beyond examples.
 2. Unify virtual stdlib imports with file-based module semantics.
 3. Design and implement `fall` backend lowering.
-4. Configure the PyPI trusted publisher for repository `code5717/a7-py`,
-   workflow `release.yml`, and environment `pypi`.
+4. Create or preconfigure the PyPI trusted publisher for project `a7-py`,
+   repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi`.
 5. Add stronger hosted secret scanning if the repository host supports it.
