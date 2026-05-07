@@ -1256,6 +1256,8 @@ class TypeCheckingPass:
             return SliceType(obj_type.element_type)
         if isinstance(obj_type, SliceType):
             return SliceType(obj_type.element_type)
+        if obj_type.equals(STRING):
+            return SliceType(CHAR)
 
         self.add_type_error(TypeErrorType.REQUIRES_ARRAY_OR_SLICE, node.span, got_type=str(obj_type))
         return UNKNOWN

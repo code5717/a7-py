@@ -13,6 +13,7 @@ from ..ast_nodes import ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp, Assig
 from ..errors import CodegenError
 from ..types import (
     ArrayType,
+    CHAR,
     EnumType,
     FunctionType,
     GenericInstanceType,
@@ -21,6 +22,7 @@ from ..types import (
     PrimitiveType,
     ReferenceType,
     SliceType,
+    STRING,
     StructType,
     TypeKind,
     UnionType,
@@ -166,6 +168,7 @@ class CCodeGenerator(CodeGenerator):
         self._needs_math = False
         self._needs_ptr_helper = False
         self._needs_float_helper = False
+        self._needs_string = False
 
         self._declared_structs: Set[str] = set()
         self._declared_enums: Set[str] = set()
@@ -210,6 +213,7 @@ class CCodeGenerator(CodeGenerator):
         self._needs_math = False
         self._needs_ptr_helper = False
         self._needs_float_helper = False
+        self._needs_string = False
 
         self._declared_structs = set()
         self._declared_enums = set()
@@ -331,6 +335,19 @@ class CCodeGenerator(CodeGenerator):
                 self._needs_stddef = True
                 self._semantic_type_to_c(result_type)
 
+            if node.kind == NodeKind.SLICE:
+                source_type = self._type_map.get(id(node.object)) if node.object else None
+                if source_type is not None and source_type.equals(STRING):
+                    self._needs_stddef = True
+                    if node.end is None:
+                        self._needs_string = True
+
+            if node.kind in {NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
+                iterable_type = self._type_map.get(id(node.iterable)) if node.iterable else None
+                if iterable_type is not None and iterable_type.equals(STRING):
+                    self._needs_stddef = True
+                    self._needs_string = True
+
             if node.kind in {NodeKind.NEW_EXPR, NodeKind.DEL}:
                 self._needs_stdlib = True
                 self._needs_stddef = True
@@ -398,6 +415,8 @@ class CCodeGenerator(CodeGenerator):
             includes.append("stddef.h")
         if self._needs_math:
             includes.append("math.h")
+        if self._needs_string:
+            includes.append("string.h")
 
         for header in includes:
             lines.append(f"#include <{header}>")
@@ -1322,7 +1341,14 @@ class CCodeGenerator(CodeGenerator):
             elem = self._semantic_type_to_c(type_obj.element_type) or "uint8_t"
             name = f"a7_slice_{elem.replace(' ', '_').replace('*', 'ptr')}"
             if name not in self._slice_type_names:
-                fake = ASTNode(kind=NodeKind.TYPE_SLICE, element_type=ASTNode(kind=NodeKind.TYPE_IDENTIFIER, name=elem))
+                if isinstance(type_obj.element_type, PrimitiveType):
+                    fake_element = ASTNode(
+                        kind=NodeKind.TYPE_PRIMITIVE,
+                        type_name=type_obj.element_type.name,
+                    )
+                else:
+                    fake_element = ASTNode(kind=NodeKind.TYPE_IDENTIFIER, name=elem)
+                fake = ASTNode(kind=NodeKind.TYPE_SLICE, element_type=fake_element)
                 self._slice_type_names[name] = name
                 self._slice_type_defs.append((name, fake))
             self._needs_stddef = True
@@ -1869,17 +1895,21 @@ class CCodeGenerator(CodeGenerator):
         return f"{iterable_expr}[{idx_name}]"
 
     def _iterable_cache_type(self, iterable_type) -> str:
+        if iterable_type is not None and iterable_type.equals(STRING):
+            return "const char*"
         if isinstance(iterable_type, SliceType):
             return self._semantic_type_to_c(iterable_type) or "void*"
         if isinstance(iterable_type, ArrayType):
             elem = self._semantic_type_to_c(iterable_type.element_type) or "int32_t"
             return f"{elem}*"
         raise CodegenError(
-            "C backend: for-in iteration currently requires an array or slice value",
+            "C backend: for-in iteration currently requires an array, slice, or string value",
             None,
         )
 
     def _iterable_element_type(self, iterable_type) -> str:
+        if iterable_type is not None and iterable_type.equals(STRING):
+            return "char"
         if isinstance(iterable_type, ArrayType):
             return self._semantic_type_to_c(iterable_type.element_type) or "int32_t"
         if isinstance(iterable_type, SliceType):
@@ -1892,24 +1922,28 @@ class CCodeGenerator(CodeGenerator):
             return str(iterable_type.size)
         if isinstance(iterable_type, SliceType):
             return f"({iterable_expr}).len"
+        if iterable_type is not None and iterable_type.equals(STRING):
+            return f"strlen({iterable_expr})"
         if iterable_node and iterable_node.kind == NodeKind.IDENTIFIER:
             return f"A7_ARRAY_LEN({iterable_expr})"
         raise CodegenError(
-            "C backend: for-in iteration currently requires an array or slice value",
+            "C backend: for-in iteration currently requires an array, slice, or string value",
             iterable_node.span if iterable_node else None,
         )
 
     def _emit_slice_expr(self, node: ASTNode) -> str:
         source_type = self._type_map.get(id(node.object)) if node.object else None
-        if not isinstance(source_type, (ArrayType, SliceType)):
+        is_string_source = source_type is not None and source_type.equals(STRING)
+        if not isinstance(source_type, (ArrayType, SliceType)) and not is_string_source:
             raise CodegenError(
-                "C backend: slice expressions currently require an array or slice value",
+                "C backend: slice expressions currently require an array, slice, or string value",
                 node.span,
             )
 
         result_type = self._type_map.get(id(node))
         if not isinstance(result_type, SliceType):
-            result_type = SliceType(source_type.element_type)
+            element_type = CHAR if is_string_source else source_type.element_type
+            result_type = SliceType(element_type)
 
         slice_c_type = self._semantic_type_to_c(result_type) or "void*"
         object_expr = self._emit_expr(node.object)
@@ -1918,9 +1952,13 @@ class CCodeGenerator(CodeGenerator):
         if isinstance(source_type, ArrayType):
             end_expr = self._emit_expr(node.end) if node.end else str(source_type.size)
             data_expr = f"&({object_expr})[(size_t)({start_expr})]"
-        else:
+        elif isinstance(source_type, SliceType):
             end_expr = self._emit_expr(node.end) if node.end else f"({object_expr}).len"
             data_expr = f"({object_expr}).data + (size_t)({start_expr})"
+        else:
+            end_expr = self._emit_expr(node.end) if node.end else f"strlen({object_expr})"
+            elem_c_type = self._semantic_type_to_c(result_type.element_type) or "char"
+            data_expr = f"({elem_c_type}*)&({object_expr})[(size_t)({start_expr})]"
 
         len_expr = f"((size_t)({end_expr}) - (size_t)({start_expr}))"
         return f"(({slice_c_type}){{ .data = {data_expr}, .len = {len_expr} }})"

@@ -30,9 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Slice Expressions in C Backend**
   - `arr[1..4]` on arrays and slices now emits compound-literal slice structs.
   - Indexing and `for-in` iteration over slice values supported.
+  - `string[start..end]` and `string[start..]` now type-check as `[]char` and run on both Zig and C backends.
+  - C backend `for-in` iteration now supports direct `string` values instead of only array and slice values.
 
 - **Type Checker: Slice and Index Validation**
-  - `visit_slice_expr`: validates source is array/slice, checks start/end are integral, returns `SliceType`.
+  - `visit_slice_expr`: validates source is array/slice/string, checks start/end are integral, returns `SliceType`.
   - `visit_index_expr`: now rejects non-integer index expressions.
 
 ### Changed

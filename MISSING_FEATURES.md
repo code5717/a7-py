@@ -36,6 +36,7 @@
 22. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
 23. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
 24. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
+25. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in both Zig and C backends.
 
 ---
 

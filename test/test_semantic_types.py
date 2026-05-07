@@ -18,7 +18,7 @@ from src.passes.name_resolution import NameResolutionPass
 from src.passes.type_checker import TypeCheckingPass
 from src.passes.semantic_validator import SemanticValidationPass
 from src.errors import SemanticError, CompilerError
-from src.types import PointerType, PrimitiveType
+from src.types import PointerType, PrimitiveType, SliceType
 
 
 def parse_program(source: str):
@@ -247,6 +247,41 @@ class TestArrayAndSliceTypes:
         assert str(field_types["ptr"].pointee_type) == "i32"
         assert isinstance(field_types["len"], PrimitiveType)
         assert field_types["len"].name == "usize"
+
+    def test_string_slice_type_is_char_slice(self):
+        """Slicing a string produces a dynamic char slice."""
+        source = """
+        main :: fn() {
+            text: string = "abcdef"
+            chunk := text[1..4]
+            first := chunk[0]
+        }
+        """
+        program = parse_program(source)
+        resolver = NameResolutionPass()
+        symbols = resolver.analyze(program, "<test>")
+        assert not resolver.errors
+
+        checker = TypeCheckingPass(symbols)
+        checker.analyze(program, "<test>")
+        assert not checker.errors
+
+        slice_types = []
+        stack = [program]
+        while stack:
+            node = stack.pop()
+            if getattr(node, "kind", None) == NodeKind.SLICE:
+                slice_types.append(checker.get_type(node))
+            for value in vars(node).values():
+                if isinstance(value, list):
+                    stack.extend(item for item in value if hasattr(item, "kind"))
+                elif hasattr(value, "kind"):
+                    stack.append(value)
+
+        assert len(slice_types) == 1
+        assert isinstance(slice_types[0], SliceType)
+        assert isinstance(slice_types[0].element_type, PrimitiveType)
+        assert slice_types[0].element_type.name == "char"
 
     def test_slice_unknown_field_is_rejected(self):
         """Only ptr and len are valid built-in slice fields."""

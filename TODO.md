@@ -45,9 +45,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`
   Notes: slice field access now type-checks `ptr` as `ptr T` and `len` as `usize`; C lowers `ptr` to the slice data field and `len` to the slice length field, while Zig uses native slice fields.
 
-- [ ] Implement string slicing (`string[2..5]`).
+- [x] Implement string slicing (`string[2..5]`).
   Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`
-  Notes: array/slice sub-slicing works, string slicing does not.
+  Notes: string slicing now type-checks as `[]char`; Zig lowers to native byte slicing and C lowers to the existing slice struct representation, using `strlen` for open-ended slices.
 
 - [ ] Implement generic constraint resolution beyond placeholder level.
   Files: `src/generics.py`
@@ -170,7 +170,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add semantic regression tests for front-end schema gaps.
   Files: `test/test_semantic_control_flow.py`, `test/test_semantic_comprehensive.py`
-  Notes: added cases for deferred statement checking, return-payload traversal, and non-iterable `for-in`. Remaining feature gaps such as slice fields, string slicing, and `fall` still need implementation-specific coverage.
+  Notes: added cases for deferred statement checking, return-payload traversal, non-iterable `for-in`, slice fields, and string slicing. `fall` still needs implementation-specific coverage once lowering is designed.
 
 - [x] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
   Files: `test/test_parser_combinatorial.py`, `test/test_parser_integration.py`

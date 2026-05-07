@@ -272,6 +272,9 @@ slice.len      // Number of elements (usize)
 // ASCII encoded string
 name: string = "Hello"
 
+// String slicing produces a []char byte slice
+part := name[1..4]
+
 // String is equivalent to
 string :: struct {
     ptr: ref u8
@@ -585,6 +588,7 @@ for i, value in array {
 for char in string[2..5] {
     print(char)
 }
+// string[2..5] has type []char.
 
 // Complex conditions using and/or
 while running and not should_exit() {
@@ -1550,6 +1554,9 @@ slice.len      // Number of elements (usize)
 // ASCII encoded string
 name: string = "Hello"
 
+// String slicing produces a []char byte slice
+part := name[1..4]
+
 // String is equivalent to
 string :: struct {
     ptr: ref u8
@@ -1839,6 +1846,7 @@ for i, value in array {
 for char in string[2..5] {
     print(char)
 }
+// string[2..5] has type []char.
 ```
 
 ### 5.4 Jump Statements

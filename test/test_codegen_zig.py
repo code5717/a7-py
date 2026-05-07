@@ -231,6 +231,48 @@ main :: fn() {
         ok, err = zig_ast_check(zig)
         assert ok, err
 
+    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+    def test_string_slices_compile_and_run(self, tmp_path):
+        source = tmp_path / "string_slice.a7"
+        output = tmp_path / "string_slice.zig"
+        binary = tmp_path / "string_slice"
+        source.write_text(
+            '''
+io :: import "std/io"
+
+main :: fn() {
+    text: string = "abcdef"
+    for ch in text[1..4] {
+        io.print("{}", ch)
+    }
+    for ch in text[4..] {
+        io.print("{}", ch)
+    }
+    io.println("")
+}
+'''.strip(),
+            encoding="utf-8",
+        )
+
+        compiler = A7Compiler(verbose=False)
+        assert compiler.compile_file(str(source), str(output))
+        build = subprocess.run(
+            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert build.returncode == 0, build.stderr
+
+        run = subprocess.run(
+            [str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == 0, run.stdout + run.stderr
+        assert (run.stdout + run.stderr).strip() == "bcdef"
+
     def test_constant_declaration(self):
         source = 'PI :: 3.14\n'
         zig = compile_a7_to_zig(source)
