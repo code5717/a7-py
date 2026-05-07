@@ -72,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.
   - Switched the docs syntax highlighter from the Oniguruma WASM engine to Shiki's JavaScript regex engine, removing the docs build chunk-size warning.
   - Corrected memory-safety documentation so the spec no longer claims unimplemented lifetime, double-free, use-after-free, or bounds-check guarantees.
+  - Marked the tensor/AI/GPU section as planned design work instead of current language support.
 
 - **Import handling**
   - Local file-based imports now load dependencies during semantic analysis and fail closed on missing or broken modules.

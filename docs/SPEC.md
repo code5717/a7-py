@@ -39,7 +39,7 @@ It features:
 - **Static typing** with type inference
 - **Compile-time generics** via monomorphization
 - **Manual memory management** with safety features
-- **Array programming for AI** with broadcasting and vectorized operations
+- **Planned array programming for AI** with broadcasting and vectorized operations
 - **Multidimensional tensors** with efficient memory layouts
 - **File-based module system** with controlled visibility
 - **Zero-cost abstractions**
@@ -982,11 +982,14 @@ Not yet implemented:
 
 ---
 
-## 9. Array Programming for AI
+## 9. Planned Array Programming for AI
 
 ### 9.1 Multidimensional Arrays
 
-A7 provides powerful array programming features designed for AI and scientific computing workloads.
+This section is a design target, not current implementation status. Tensor
+types, broadcasting, vectorized tensor operators, AI primitives, GPU movement,
+and performance annotations are not implemented yet. Current release status is
+tracked in `MISSING_FEATURES.md` and `TODO.md`.
 
 #### Tensor Types
 ```a7

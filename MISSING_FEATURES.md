@@ -71,7 +71,7 @@
    - Tag-triggered PyPI publishing is wired through Trusted Publishing/OIDC.
    - The PyPI project must still be configured to trust repository `code5717/a7-py`, workflow `release.yml`, and GitHub environment `pypi` before the first real publish.
 
-7. **Module-system parity**
+6. **Module-system parity**
    - Missing or broken local imports now fail closed.
    - Built-in stdlib imports are still virtual and should be unified with file-based module semantics later.
 
@@ -79,4 +79,4 @@
 
 ## Out of Scope for This Snapshot
 
-- Package ecosystem, registry/distribution workflows, and broader tooling are intentionally secondary to language-core correctness.
+- Broader package ecosystem and tooling work remain secondary to language-core correctness.
