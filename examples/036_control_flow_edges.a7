@@ -1,0 +1,54 @@
+// Control-flow edge cases with runtime verification
+
+io :: import "std/io"
+
+main :: fn() {
+    io.println("=== Control Flow Edges ===")
+
+    numbers: [5]i32 = [3, 5, 7, 9, 11]
+    middle := numbers[1..4]
+
+    slice_total := 0
+    for value in middle {
+        slice_total += value
+    }
+    io.println("slice total = {}", slice_total)
+
+    break_total := 0
+    outer_break: for value in numbers {
+        if value == 7 {
+            break outer_break
+        }
+        break_total += value
+    }
+
+    continue_total := 0
+    outer_continue: for value in numbers {
+        if value == 7 {
+            continue outer_continue
+        }
+        continue_total += value
+    }
+    io.println("labeled totals = {} {}", break_total, continue_total)
+
+    selected := 2
+    match selected {
+        case 1: {
+            value := 10
+            defer io.println("case cleanup {}", value)
+            io.println("case body {}", value)
+        }
+        case 2: {
+            value := slice_total
+            defer io.println("case cleanup {}", value)
+            io.println("case body {}", value)
+        }
+        else: {
+            value := 0
+            defer io.println("case cleanup {}", value)
+            io.println("case body {}", value)
+        }
+    }
+
+    io.println("after match")
+}

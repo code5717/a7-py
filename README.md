@@ -160,7 +160,7 @@ All AST traversals are iterative with no recursion. The pipeline works with Pyth
 - `RELEASE.md` - Release/debug build checklist
 - `SECURITY.md` - Security policy and trust boundary
 - `RELEASE_READINESS_REVIEW.md` - Current release-readiness audit
-- `examples/` - 36 sample programs
+- `examples/` - 37 sample programs
 - `MISSING_FEATURES.md` - Feature status and roadmap
 - `CHANGELOG.md` - Change history
 - `docs/ERROR_ANALYSIS.md` - Historical error-analysis snapshot, not current status

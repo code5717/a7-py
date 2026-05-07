@@ -1,7 +1,7 @@
 # TODO
 
 Current backlog for the A7 compiler, organized by priority tier.
-Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 36/36 examples pass e2e.
+Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 37/37 examples pass e2e.
 
 ---
 
@@ -180,8 +180,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `test/test_codegen_zig.py`
   Notes: added a compile/run regression for labeled `for-in`, labeled `continue`, and labeled indexed `for-in`; indexed loop variables use `usize`, matching array/slice lengths and Zig's native indexed loop value.
 
-- [ ] Add example-level verification for labeled loops, sub-slicing, and match-case `defer` scope.
+- [x] Add example-level verification for labeled loops, sub-slicing, and match-case `defer` scope.
   Files: `examples/`, `test/fixtures/golden_outputs/`
+  Notes: `036_control_flow_edges.a7` now verifies labeled break/continue, array sub-slicing, and match-case defer scope through Zig and C golden-output checks.
 
 - [x] Add report-contract tests for verification scripts (not just exit status).
   Files: `test/test_examples_e2e.py`, `test/test_examples_e2e_c.py`

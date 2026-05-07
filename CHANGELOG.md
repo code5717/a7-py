@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Indexed `for-in` loop variables now type-check as `usize`, matching slice lengths, array indices, and backend-native indexed iteration.
   - Added parser coverage for labeled `continue`, nested labeled loops, labeled `for-in` forms, and malformed non-loop labels.
   - Example E2E tests now assert verifier JSON report contracts instead of only checking process exit status.
+  - Added `036_control_flow_edges.a7` to verify labeled loops, array sub-slicing, and match-case `defer` scope through golden-output E2E checks.
 
 - **Documentation state**
   - Marked the old error-analysis report as historical and corrected the archive index so it no longer points at removed generated artifacts.

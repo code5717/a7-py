@@ -40,6 +40,7 @@ const EXAMPLE_META = {
   '033_fibonacci.a7': { title: 'Fibonacci', category: 'Algorithms', desc: 'Multiple implementations with memoization' },
   '034_string_utils.a7': { title: 'String Utils', category: 'Applications', desc: 'Text processing utilities' },
   '035_matrix.a7': { title: 'Matrix Ops', category: 'Applications', desc: 'Matrix operations and linear algebra' },
+  '036_control_flow_edges.a7': { title: 'Control Flow Edges', category: 'Control Flow', desc: 'Labeled loops, slices, and match-case defer scope' },
 } as const
 
 function titleFromFile(file: string) {

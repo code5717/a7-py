@@ -39,12 +39,12 @@ def test_examples_end_to_end_outputs_match_goldens_c_backend(tmp_path: Path) -> 
     )
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode == 0, combined
-    assert "Examples verified (C backend): 36/36" in result.stdout
+    assert "Examples verified (C backend): 37/37" in result.stdout
 
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["ok"] is True
-    assert payload["passed"] == payload["total"] == 36
-    assert len(payload["results"]) == 36
+    assert payload["passed"] == payload["total"] == 37
+    assert len(payload["results"]) == 37
     for item in payload["results"]:
         assert item["compile_ok"] is True
         assert item["syntax_ok"] is True

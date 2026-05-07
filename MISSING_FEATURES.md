@@ -2,7 +2,7 @@
 
 **Compiler Status**: Full pipeline runs (Tokenizer -> Parser -> Semantic -> Preprocessor -> Codegen).  
 **Current Test Status**: check with `PYTHONPATH=. uv run pytest --tb=no -q`.  
-**Examples**: 36/36 pass end-to-end compile + build + run + output verification.
+**Examples**: 37/37 pass end-to-end compile + build + run + output verification.
 
 ---
 
