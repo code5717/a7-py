@@ -72,6 +72,11 @@ not factually provable from local tests alone.
   after the curl.md docs-surface update; downloaded release bundles and Python
   distributions were reconstructed under `dist/` and verified with
   `scripts/verify_release_manifest.py`.
+- manual release workflow dispatch `25527020391` passed on commit `67da15e`
+  after archive-content verification was added. Downloaded release bundles and
+  Python distributions were reconstructed under `dist/`; docs/native archives
+  passed `scripts/verify_archive_contents.py`, and `SHA256SUMS` passed
+  `scripts/verify_release_manifest.py`.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
