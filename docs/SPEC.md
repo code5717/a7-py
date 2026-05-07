@@ -539,7 +539,7 @@ match color {
     }
     case Color.Green: {
         print("Green")
-        fall  // Parsed; full semantic/codegen fallthrough behavior is still being finalized
+        fall  // Parsed, but currently rejected until fallthrough semantics are finalized
     }
     case Color.Blue: {
         print("Green or Blue")
@@ -1797,7 +1797,7 @@ match color {
     }
     case Color.Green: {
         print("Green")
-        fall  // Parsed; full semantic/codegen fallthrough behavior is still being finalized
+        fall  // Parsed, but currently rejected until fallthrough semantics are finalized
     }
     case Color.Blue: {
         print("Green or Blue")
@@ -2855,7 +2855,8 @@ Status snapshot (2026-05-07):
 ### E.1 Current Open Gaps
 
 1. **`fall` semantic/codegen behavior**
-   - `fall` parses, but full semantic validation and backend lowering are still pending.
+   - `fall` parses and fails closed with a semantic diagnostic.
+   - Full fallthrough semantics and backend lowering are still pending.
 
 2. **Advanced match diagnostics**
    - Exhaustiveness for bool/enum is implemented.

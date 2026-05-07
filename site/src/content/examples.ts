@@ -12,7 +12,7 @@ const EXAMPLE_META = {
   '005_for_loop.a7': { title: 'For Loops', category: 'Control Flow', desc: 'C-style and range-based loops' },
   '006_if.a7': { title: 'Conditionals', category: 'Control Flow', desc: 'If-else statements and expressions' },
   '007_while.a7': { title: 'While Loops', category: 'Control Flow', desc: 'While loop patterns' },
-  '008_switch.a7': { title: 'Match', category: 'Control Flow', desc: 'Pattern matching with ranges and fallthrough' },
+  '008_switch.a7': { title: 'Match', category: 'Control Flow', desc: 'Pattern matching with literals and ranges' },
   '009_struct.a7': { title: 'Structs', category: 'Types', desc: 'Struct declarations and initialization' },
   '010_enum.a7': { title: 'Enums', category: 'Types', desc: 'Enumerations with explicit values' },
   '011_memory.a7': { title: 'Memory', category: 'Memory', desc: 'Heap allocation with new/del' },

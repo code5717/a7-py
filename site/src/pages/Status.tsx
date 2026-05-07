@@ -12,7 +12,7 @@ const done = [
 ]
 
 const missing = [
-  { name: 'fall statement semantics', desc: 'fall is parsed but not yet validated or lowered in semantic/codegen passes.' },
+  { name: 'fall statement semantics', desc: 'fall is parsed and rejected with a semantic diagnostic until fallthrough semantics and backend lowering are designed.' },
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal range overlaps are diagnosed. Symbolic range overlap and true capture patterns remain open.' },
   { name: 'Generic constraint internals', desc: 'Inline type-set constraint resolution in generics.py is still placeholder-level.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
@@ -58,7 +58,7 @@ export default function Status() {
 
       <SectionPanel title="Next priorities">
         <ol className="doc-list">
-          <li>Implement fall statement validation and backend lowering.</li>
+          <li>Design fallthrough semantics, then implement fall statement lowering.</li>
           <li>Add symbolic/computed range-overlap match diagnostics.</li>
           <li>Improve type checker: control-flow narrowing, return consistency, dead code detection.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>

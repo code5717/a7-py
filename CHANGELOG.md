@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Fallthrough handling**
   - `fall` now fails closed with a semantic diagnostic, and both backends raise codegen errors if a `FALL` node reaches them.
+  - Clarified docs and site copy to describe `fall` as parsed and deliberately rejected until fallthrough semantics are designed.
 
 - **C backend iteration**
   - `for-in` and indexed `for-in` now cache array/slice iterable expressions before loop lowering so side-effectful iterables are evaluated once.

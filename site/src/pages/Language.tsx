@@ -305,10 +305,10 @@ match code {
 }`}
         />
         <p className="text-secondary mt-1">
-          <code className="doc-inline-code">fall</code> is parsed as a statement, but semantic validation and backend lowering are still open.
+          <code className="doc-inline-code">fall</code> is parsed as a statement and currently rejected with a semantic diagnostic until fallthrough semantics are designed.
         </p>
         <DocCallout tone="warning">
-          Backend note: C match expressions support side-effect-free scrutinees for literal, enum, range, and wildcard patterns. Side-effectful scrutinees and identifier-capture patterns still fail closed.
+          Backend note: C match expressions support literal, enum, range, wildcard, existing-identifier patterns, and single-evaluation lowering for side-effectful scrutinees. True identifier-capture patterns remain open.
         </DocCallout>
       </SectionPanel>
 
