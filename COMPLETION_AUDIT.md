@@ -23,21 +23,21 @@ Deliverables implied by the active objective:
 | Requirement | Evidence | Status |
 | --- | --- | --- |
 | Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
-| Security dependency audit | Hosted CI run `25526858099`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
-| Secret scanning | Hosted CI run `25526858099`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
-| Python test suite | Hosted CI run `25526858099`; local full gate evidence in `RELEASE_READINESS_REVIEW.md` | Passing |
-| Error-stage behavior | Hosted CI run `25526858099`; `scripts/verify_error_stages.py` | Passing |
-| Zig example E2E | Hosted CI run `25526858099`; `scripts/verify_examples_e2e.py` | Passing |
-| C example E2E | Hosted CI run `25526858099`; `scripts/verify_examples_e2e_c.py` | Passing |
-| Zig/C backend parity | Hosted CI run `25526858099`; `scripts/verify_backend_parity.py` | Passing selected suite |
-| Debug artifacts | Hosted CI run `25526858099`; `scripts/build_examples.py --profile debug --backend both --clean` | Passing |
-| Release artifacts | Hosted CI run `25526858099`; `scripts/build_examples.py --profile release --backend both --clean` | Passing |
-| Python package build | Hosted CI run `25526858099`; local clean `rm -rf dist && uv build` | Passing |
+| Security dependency audit | Hosted CI run `25527971161`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
+| Secret scanning | Hosted CI run `25527971161`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
+| Python test suite | Hosted CI run `25527971161`; local full gate evidence in `RELEASE_READINESS_REVIEW.md` | Passing |
+| Error-stage behavior | Hosted CI run `25527971161`; `scripts/verify_error_stages.py` | Passing |
+| Zig example E2E | Hosted CI run `25527971161`; `scripts/verify_examples_e2e.py` | Passing |
+| C example E2E | Hosted CI run `25527971161`; `scripts/verify_examples_e2e_c.py` | Passing |
+| Zig/C backend parity | Hosted CI run `25527971161`; `scripts/verify_backend_parity.py` | Passing selected suite |
+| Debug artifacts | Hosted CI run `25527971161`; `scripts/build_examples.py --profile debug --backend both --clean` | Passing |
+| Release artifacts | Hosted CI run `25527971161`; `scripts/build_examples.py --profile release --backend both --clean` | Passing |
+| Python package build | Hosted CI run `25527971161`; local clean `rm -rf dist && uv build` | Passing |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
 | Release checksums and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, and re-checks hashes before upload | Covered |
-| Docs style/build | Hosted CI run `25526858099`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
-| Docs deploy | Hosted Deploy Docs run `25526858082` | Passing |
-| curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, sitemap and robots entries | Implemented |
+| Docs style/build | Hosted CI run `25527971161`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
+| Docs deploy | Hosted Deploy Docs run `25527971188`; hosted fetches for `/llms.txt`, `/docs/index.md`, and `/docs/plugins/codex.md` | Passing |
+| curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |
 | Release workflow | `.github/workflows/release.yml`, manual dispatch run `25527020391` on commit `67da15e`; downloaded artifacts verified with `scripts/verify_archive_contents.py` and `scripts/verify_release_manifest.py` | Passing for non-tag validation |
 | PyPI publishing | `.github/workflows/release.yml`, GitHub `pypi` environment documented | Blocked until PyPI project/trusted publisher exists |
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs | Implemented for named call cycles |

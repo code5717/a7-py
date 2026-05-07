@@ -77,6 +77,15 @@ not factually provable from local tests alone.
   Python distributions were reconstructed under `dist/`; docs/native archives
   passed `scripts/verify_archive_contents.py`, and `SHA256SUMS` passed
   `scripts/verify_release_manifest.py`.
+- hosted CI run `25527971161` passed on commit `48847f8` after the expanded
+  curl.md navigation update, including docs style, secret scanning, docs
+  dependency audit, docs lint/build, pytest, Python dependency audit,
+  error-stage verification, Zig/C example verification, backend parity, debug
+  artifacts, release artifacts, and package build.
+- hosted Deploy Docs run `25527971188` passed on commit `48847f8`; hosted
+  fetches for `/a7-py/llms.txt`, `/a7-py/docs/index.md`, and
+  `/a7-py/docs/plugins/codex.md` confirmed the deployed curl.md navigation and
+  plugin docs.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
@@ -139,6 +148,9 @@ not factually provable from local tests alone.
 - `llms.txt`, `llms-full.txt`, and public Markdown docs under
   `site/public/docs/` provide stable curl.md/agent entry points for CLI,
   language, compiler, examples, release, and status information.
+- The public docs map now follows Introduction, Guide, Plugins, LLM Resources,
+  Contributing, and A7 Reference groups, with static Markdown pages for API/SDK,
+  agent/editor plugins, skills, deploy, and kitchen-sink coverage.
 - Site metadata, README, robots, and sitemap now consistently use
   `https://code5717.github.io/a7-py/`.
 - Local release documentation now explicitly cleans `dist/` before package
