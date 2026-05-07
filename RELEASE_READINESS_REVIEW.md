@@ -49,16 +49,17 @@ not factually provable from local tests alone.
 - `a7-py` is not a sandbox. Do not compile or run untrusted A7 source.
 - `fall` is parsed but not semantically validated or lowered.
 - Full ownership/lifetime safety is not implemented.
-- Import/module loading still has fail-open behavior that should be hardened.
+- Built-in stdlib imports are virtual and still need unification with file-based
+  module semantics.
 - Backend parity is verified for examples, not all possible source programs.
 - Tag-based publishing is not wired.
 - Automated supply-chain scanning is not configured.
 
 ## Recommended Next Pass
 
-1. Make import/module loading fail closed with source-language diagnostics.
-2. Replace Zig backend `@compileError("unsupported")` fallbacks with compiler
+1. Replace Zig backend `@compileError("unsupported")` fallbacks with compiler
    codegen errors.
-3. Add tag-based release workflow after choosing the package publishing target.
-4. Add dependency and secret scanning to CI.
-5. Expand differential backend tests beyond examples.
+2. Add tag-based release workflow after choosing the package publishing target.
+3. Add dependency and secret scanning to CI.
+4. Expand differential backend tests beyond examples.
+5. Unify virtual stdlib imports with file-based module semantics.

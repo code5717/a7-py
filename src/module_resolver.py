@@ -54,6 +54,14 @@ class ModuleResolver:
         # Track currently loading modules for circular dependency detection
         self.loading_stack: List[str] = []
 
+        # Built-in stdlib modules are resolved by StdlibRegistry and backend
+        # mappings, not by on-disk .a7 files.
+        self.virtual_modules: Set[str] = {"std/io", "std/math", "io", "math"}
+
+    def is_virtual_module(self, module_path: str) -> bool:
+        """Return True when an import is provided by the built-in stdlib registry."""
+        return module_path in self.virtual_modules
+
     def resolve_module_path(self, module_path: str) -> Optional[str]:
         """
         Resolve a module path to a file path.
@@ -94,20 +102,21 @@ class ModuleResolver:
         if module_path in self.loaded_modules:
             return self.loaded_modules[module_path]
 
+        if self.is_virtual_module(module_path):
+            return None
+
         # Check for circular dependency
         if module_path in self.loading_stack:
             cycle = " -> ".join(self.loading_stack + [module_path])
             raise SemanticError(
-                f"Circular dependency detected: {cycle}",
-                module_path
+                f"Circular dependency detected: {cycle}"
             )
 
         # Resolve module path to file
         file_path = self.resolve_module_path(module_path)
         if not file_path:
             raise SemanticError(
-                f"Module '{module_path}' not found in search paths: {self.search_paths}",
-                module_path
+                f"Module '{module_path}' not found in search paths: {self.search_paths}"
             )
 
         # Mark as loading
@@ -115,7 +124,7 @@ class ModuleResolver:
 
         try:
             # Read the source file
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 source = f.read()
 
             # Tokenize and parse
@@ -157,10 +166,7 @@ class ModuleResolver:
 
             # Recursively load dependencies
             for dep_path in deps:
-                try:
-                    self.load_module(dep_path)
-                except Exception:
-                    pass  # Don't fail the parent module for dependency errors
+                self.load_module(dep_path)
 
             return module_info
 
@@ -221,14 +227,15 @@ class ModuleResolver:
         loaded = []
         for module_path in import_paths:
             try:
+                if self.is_virtual_module(module_path):
+                    continue
                 module_info = self.load_module(module_path)
                 if module_info:
                     loaded.append(module_info)
             except SemanticError as e:
                 # Re-raise with better context
                 raise SemanticError(
-                    f"Error loading module '{module_path}' imported by '{current_path}': {str(e)}",
-                    current_path
+                    f"Error loading module '{module_path}' imported by '{current_path}': {str(e)}"
                 )
 
         return loaded
@@ -282,8 +289,7 @@ class ModuleResolver:
         # Check for cycles
         if len(result) != len(self.loaded_modules):
             raise SemanticError(
-                "Circular dependency detected in module graph",
-                "<module_resolver>"
+                "Circular dependency detected in module graph"
             )
 
         return result

@@ -65,6 +65,45 @@ main :: fn() {
     assert not out.exists()
 
 
+def test_cli_missing_local_import_returns_semantic_error(tmp_path):
+    src = tmp_path / "missing_import.a7"
+    out = tmp_path / "missing_import.zig"
+    src.write_text(
+        """
+missing :: import "missing/module"
+
+main :: fn() {}
+""".strip()
+    )
+
+    result = run_cli(["--format", "json", str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SEMANTIC
+    payload = json.loads(result.stdout)
+    assert payload["error"]["category"] == "semantic"
+    assert "module" in payload["error"]["details"][0]["message"].lower()
+    assert not out.exists()
+
+
+def test_cli_virtual_stdlib_import_does_not_require_a7_file(tmp_path):
+    src = tmp_path / "stdlib_import.a7"
+    out = tmp_path / "stdlib_import.zig"
+    src.write_text(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    io.println("ok")
+}
+""".strip()
+    )
+
+    result = run_cli([str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SUCCESS
+    assert out.exists()
+
+
 def test_cli_parse_error_json_mode_returns_error_object(tmp_path):
     src = tmp_path / "parse_error_json.a7"
     src.write_text(

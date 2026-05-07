@@ -31,7 +31,7 @@ checks, docs style checks, and full pytest.
 
 - No sandboxing for compiled programs.
 - No ownership or borrow-style lifetime model yet.
-- Import/module loading still needs stronger fail-closed behavior.
+- Built-in stdlib imports are virtual and not yet unified with file-based module semantics.
 - C and Zig backend parity checks exist for examples but are not a proof for all
   possible programs.
 - Tag-based package publishing is not configured yet.

@@ -128,7 +128,7 @@ Added coverage:
 
 ### Error handling
 
-- Import/module loading is still best-effort in `src/compile.py`; unresolved modules can be under-reported.
+- Local file-based import loading now fails closed during semantic analysis; virtual stdlib imports still need a unified design with file-based modules.
 - C backend unsupported features should fail earlier with source-language diagnostics instead of surfacing as backend limitations.
 - The pytest matrix and standalone verifier still duplicate scenario logic; they are aligned now, but should share fixtures or a manifest.
 - Existing success tests prove examples pass, but they are not a full negative conformance suite for every parser and semantic branch.
@@ -140,4 +140,3 @@ Added coverage:
 3. Add semantic tests for `fall`, slice fields, string slicing, and import failures once the intended behavior is decided.
 4. Add optimizer tests for constant propagation and dead-code elimination before implementing those passes.
 5. Add backend parity tests where the same source must either succeed on both Zig/C or fail before backend selection.
-

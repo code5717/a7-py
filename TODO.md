@@ -76,9 +76,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/stdlib/string.py`, `src/stdlib/mem.py`, `src/stdlib/__init__.py`
   Notes: registry only wires `io` and `math`; `string` and `mem` are documented but stubbed.
 
-- [ ] Stop treating import/module loading as best-effort.
+- [x] Stop treating import/module loading as best-effort.
   Files: `src/compile.py`, `src/module_resolver.py`
-  Notes: import processing swallows failures, under-reporting broken imports.
+  Notes: fixed for local file-based imports; missing or broken dependencies now fail as semantic errors while virtual stdlib imports remain supported.
 
 - [ ] Unify built-in stdlib imports with file-based module resolution.
   Files: `src/module_resolver.py`, `src/passes/name_resolution.py`, `src/stdlib/__init__.py`

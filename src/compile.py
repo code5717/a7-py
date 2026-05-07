@@ -21,7 +21,7 @@ from rich.console import Console
 
 from .ast_preprocessor import ASTPreprocessor
 from .backends import get_backend
-from .errors import CompilerError, ParseError, display_error, display_errors
+from .errors import CompilerError, ParseError, SemanticError, display_error, display_errors
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
 from .passes import NameResolutionPass, SemanticValidationPass, TypeCheckingPass
@@ -233,15 +233,26 @@ class A7Compiler:
                         str(Path(__file__).parent.parent / "stdlib"),
                     ]
                 )
+                import_errors: list[Any] = []
                 try:
-                    module_resolver.process_imports(ast)
-                except Exception:
-                    pass
+                    module_resolver.load_program_dependencies(ast, str(input_path))
+                except SemanticError as e:
+                    import_errors.append(e)
 
                 name_resolver = NameResolutionPass()
                 name_resolver.source_lines = source_lines
                 symbol_table = name_resolver.analyze(ast, str(input_path))
                 nr_ok = len(name_resolver.errors) == 0
+                import_ok = len(import_errors) == 0
+                semantic_passes.append(
+                    {
+                        "name": "Import Resolution",
+                        "ok": import_ok,
+                        "errors": len(import_errors),
+                    }
+                )
+                if import_errors:
+                    all_errors.extend(import_errors)
                 semantic_passes.append(
                     {
                         "name": "Name Resolution",
@@ -252,7 +263,7 @@ class A7Compiler:
                 if name_resolver.errors:
                     all_errors.extend(name_resolver.errors)
 
-                if nr_ok:
+                if import_ok and nr_ok:
                     type_checker = TypeCheckingPass(symbol_table)
                     type_checker.source_lines = source_lines
                     type_checker.analyze(ast, str(input_path))
