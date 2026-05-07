@@ -84,6 +84,16 @@ uvx pip-audit --strict
 
 The Python and docs dependency audits are separate release-gate commands above.
 
+To create a local checksum manifest for package files, docs archives, or native
+artifact archives, run:
+
+```bash
+uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
+```
+
+The tag release workflow generates `dist/SHA256SUMS` after all release archives
+are built and attaches it to the draft GitHub release.
+
 ## Tagging
 
 1. Update `CHANGELOG.md` by moving relevant `Unreleased` notes under a version.

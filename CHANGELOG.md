@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   concrete verification evidence, residual risks, and incomplete requirements.
 - Documented clean local package builds by removing `dist/` before `uv build`
   so stale versioned artifacts do not contaminate manual release prep.
+- Added release artifact checksum manifest generation and wired `SHA256SUMS`
+  into tag-created draft GitHub releases.
 
 ## [0.3.0] - 2026-05-07
 

@@ -128,6 +128,8 @@ not factually provable from local tests alone.
   release upload.
 - `COMPLETION_AUDIT.md` maps the release-readiness objective to concrete
   verification evidence and records the requirements that remain incomplete.
+- Release tooling now generates a deterministic `SHA256SUMS` manifest for
+  draft GitHub release artifacts.
 
 ## Residual Risks
 

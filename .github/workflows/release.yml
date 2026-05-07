@@ -91,11 +91,15 @@ jobs:
       - name: Archive release example artifacts
         run: tar -czf dist/a7-example-artifacts-release.tar.gz -C build release
 
+      - name: Generate release checksums
+        run: uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
+
       - name: Upload release bundles
         uses: actions/upload-artifact@v7
         with:
           name: release-bundles
           path: |
+            dist/SHA256SUMS
             dist/a7-docs-site.tar.gz
             dist/a7-example-artifacts-release.tar.gz
           if-no-files-found: error
@@ -125,6 +129,7 @@ jobs:
         with:
           draft: true
           files: |
+            dist/SHA256SUMS
             dist/a7_py-*.tar.gz
             dist/a7_py-*.whl
             dist/a7-docs-site.tar.gz

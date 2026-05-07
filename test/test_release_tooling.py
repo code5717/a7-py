@@ -5,6 +5,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 
@@ -64,3 +65,55 @@ def test_debug_build_script_verifies_single_zig_example(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "Build artifacts verified: 1/1" in result.stdout
+
+
+def test_release_manifest_has_stable_checksums(tmp_path: Path) -> None:
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    alpha = dist / "alpha.txt"
+    beta = dist / "beta.txt"
+    hidden = dist / ".ignored"
+    output = dist / "SHA256SUMS"
+    beta.write_text("beta\n", encoding="utf-8")
+    alpha.write_text("alpha\n", encoding="utf-8")
+    hidden.write_text("ignored\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_release_manifest.py",
+            str(dist),
+            "--output",
+            str(output),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    content = output.read_text(encoding="utf-8")
+    assert "# A7 Release Artifact Checksums" in content
+    assert f"{sha256(b'alpha\n').hexdigest()}  6  " in content
+    assert f"{sha256(b'beta\n').hexdigest()}  5  " in content
+    assert ".ignored" not in content
+    assert "SHA256SUMS" not in "\n".join(content.splitlines()[3:])
+
+
+def test_release_manifest_fails_for_missing_path(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_release_manifest.py",
+            str(tmp_path / "missing"),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 2
+    assert "artifact path does not exist" in result.stderr

@@ -17,6 +17,12 @@ Clean `dist/` before `uv build` so local package output contains only the
 current version. GitHub release jobs run in a clean runner, but local release
 prep should not rely on stale artifacts being absent.
 
+Generate checksums before uploading local artifacts:
+
+```bash
+uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
+```
+
 ## Debug and Release Artifacts
 
 ```bash
