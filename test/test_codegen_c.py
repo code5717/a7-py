@@ -162,6 +162,35 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_for_in_caches_side_effectful_slice_iterable(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+calls := 0
+
+make_tail :: fn(arr: [4]i32) []i32 {
+    calls += 1
+    ret arr[1..4]
+}
+
+main :: fn() {
+    arr: [4]i32 = [1, 2, 3, 4]
+    total := 0
+    for x in make_tail(arr) {
+        total += x
+    }
+    io.println("{} {}", total, calls)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "9 1"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_honors_labeled_break_and_continue(tmp_path: Path) -> None:
     result = build_and_run_c(
         """

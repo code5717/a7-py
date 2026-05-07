@@ -25,9 +25,9 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `src/backends/zig.py`
   Notes: unsupported expression nodes now raise `CodegenError` during A7 compilation.
 
-- [ ] Stop C slice/iteration lowering from re-evaluating side-effectful expressions.
+- [x] Stop C slice/iteration lowering from re-evaluating side-effectful expressions.
   Files: `src/backends/c.py`
-  Notes: `for-in` and sub-slice lowering reuse the iterable expression multiple times, duplicating side effects.
+  Notes: `for-in` and indexed `for-in` now cache array/slice iterable expressions in a generated local before loop length and element access.
 
 - [x] Reject non-iterables in `for-in` and indexed `for-in` during type checking.
   Files: `src/passes/type_checker.py`

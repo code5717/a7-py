@@ -48,6 +48,8 @@ not factually provable from local tests alone.
   build.
 - GitHub release workflow now creates a draft release for `v*` tags with Python
   package artifacts, docs site archive, and release example artifacts.
+- C backend `for-in` lowering now caches iterable expressions before loop
+  length and element access.
 - GitHub Pages deploy now uses `npm ci` with `site/package-lock.json`.
 - README, SPEC, release docs, status docs, and agent docs describe the same
   release commands.
