@@ -149,6 +149,7 @@ class SemanticValidationPass:
             nd = item
             if nd.kind == NodeKind.BLOCK:
                 scope_depth = self.symbols.get_scope_depth()
+                self._report_unreachable_in_block(nd.statements or [])
                 # Schedule: pop defers after block statements
                 stack.append(('action', lambda sd=scope_depth: self.context.pop_defers_at_depth(sd)))
                 # Push statements in reverse so first executes first
@@ -184,6 +185,7 @@ class SemanticValidationPass:
             elif nd.kind == NodeKind.MATCH:
                 # Schedule else case
                 if nd.else_case:
+                    self._report_unreachable_in_block(nd.else_case)
                     for stmt in reversed(nd.else_case):
                         stack.append(('visit_stmt', stmt))
                 # Schedule case branches
@@ -193,6 +195,7 @@ class SemanticValidationPass:
                         if case_stmt:
                             stack.append(('visit_stmt', case_stmt))
                         elif case.statements:
+                            self._report_unreachable_in_block(case.statements)
                             for stmt in reversed(case.statements):
                                 stack.append(('visit_stmt', stmt))
 
@@ -392,6 +395,93 @@ class SemanticValidationPass:
             alloc_type = node.target_type
             # Could track allocation for leak detection
             pass
+
+    def _report_unreachable_in_block(self, statements: List[ASTNode]) -> None:
+        """Report statements that cannot execute after a block-local terminator."""
+        terminated = False
+        terminator: Optional[ASTNode] = None
+        for stmt in statements:
+            if terminated:
+                self.add_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    stmt.span,
+                    f"Statement after '{self._terminator_name(terminator)}' is unreachable",
+                )
+                continue
+
+            if self._statement_exits_current_block(stmt):
+                terminated = True
+                terminator = stmt
+
+    def _terminator_name(self, node: Optional[ASTNode]) -> str:
+        if node is None:
+            return "terminator"
+        if node.kind == NodeKind.RETURN:
+            return "ret"
+        if node.kind == NodeKind.BREAK:
+            return "break"
+        if node.kind == NodeKind.CONTINUE:
+            return "continue"
+        if node.kind == NodeKind.FALL:
+            return "fall"
+        if node.kind == NodeKind.IF_STMT:
+            return "if"
+        if node.kind == NodeKind.MATCH:
+            return "match"
+        return node.kind.name.lower()
+
+    def _statement_exits_current_block(self, node: Optional[ASTNode]) -> bool:
+        """Return True when a statement prevents later statements in the same block."""
+        if node is None:
+            return False
+
+        if node.kind == NodeKind.RETURN:
+            return self.context.in_function()
+
+        if node.kind == NodeKind.BREAK:
+            return self.context.validate_break(node.label)
+
+        if node.kind == NodeKind.CONTINUE:
+            return self.context.validate_continue(node.label)
+
+        if node.kind == NodeKind.FALL:
+            return True
+
+        if node.kind == NodeKind.BLOCK:
+            return self._block_exits_current_block(node.statements or [])
+
+        if node.kind == NodeKind.IF_STMT:
+            return (
+                node.then_stmt is not None
+                and node.else_stmt is not None
+                and self._statement_exits_current_block(node.then_stmt)
+                and self._statement_exits_current_block(node.else_stmt)
+            )
+
+        if node.kind == NodeKind.MATCH:
+            if not node.cases:
+                return False
+
+            for case in node.cases:
+                case_stmt = getattr(case, "statement", None)
+                if case_stmt is not None:
+                    if not self._statement_exits_current_block(case_stmt):
+                        return False
+                elif not self._block_exits_current_block(getattr(case, "statements", None) or []):
+                    return False
+
+            if node.else_case:
+                return self._block_exits_current_block(node.else_case)
+
+            return self._is_match_exhaustive(node)
+
+        return False
+
+    def _block_exits_current_block(self, statements: List[ASTNode]) -> bool:
+        for stmt in statements:
+            if self._statement_exits_current_block(stmt):
+                return True
+        return False
 
     def _returns_on_all_paths(self, node: ASTNode) -> bool:
         """Check if a node returns on all execution paths (iterative)."""

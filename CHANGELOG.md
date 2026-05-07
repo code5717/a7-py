@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `visit_slice_expr`: validates source is array/slice/string, checks start/end are integral, returns `SliceType`.
   - `visit_index_expr`: now rejects non-integer index expressions.
 
+- **Unreachable code validation**
+  - Semantic validation now rejects block-local statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
+  - Added control-flow regression coverage for reachable and unreachable branch combinations.
+
 - **Match Diagnostics**
   - Duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions.
   - Wildcard-first and fully covered bool/enum match cases now make later case patterns and else branches unreachable.
@@ -63,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Integer guidance and examples**
   - Updated the Fibonacci/frontpage example to use `usize` for count/index values and `u64` for the computed sequence value.
-  - Documented integer type selection: `usize` for sizes and indices, `isize` for signed offsets, and fixed-width integers for explicit data-width semantics.
+  - Documented integer type selection: `usize` for memory sizes and indices, `isize` only for signed pointer-adjacent offsets, and fixed-width integers for explicit data-width semantics.
 
 - **Release documentation and verification gates**
   - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, debug/release artifact workflow, and PyPI publishing setup.

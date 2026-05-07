@@ -41,6 +41,7 @@
 27. C backend `match` statements with range patterns lower through portable `if` chains.
 28. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
 29. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
+30. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
 
 ---
 

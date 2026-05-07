@@ -971,6 +971,77 @@ class TestReturnTypeBranchValidation:
         assert expect_error(source, "return type mismatch")
 
 
+class TestUnreachableCodeValidation:
+    """Statements after block-local terminators should be rejected."""
+
+    def test_unreachable_after_return_is_rejected(self):
+        source = """
+        value :: fn() i32 {
+            ret 1
+            x := 2
+        }
+        """
+        assert expect_error(source, "unreachable")
+
+    def test_unreachable_after_break_is_rejected(self):
+        source = """
+        main :: fn() {
+            while true {
+                break
+                x := 1
+            }
+        }
+        """
+        assert expect_error(source, "unreachable")
+
+    def test_unreachable_after_continue_is_rejected(self):
+        source = """
+        main :: fn() {
+            while true {
+                continue
+                x := 1
+            }
+        }
+        """
+        assert expect_error(source, "unreachable")
+
+    def test_unreachable_after_if_with_all_returning_branches_is_rejected(self):
+        source = """
+        value :: fn(flag: bool) i32 {
+            if flag {
+                ret 1
+            } else {
+                ret 2
+            }
+            x := 3
+        }
+        """
+        assert expect_error(source, "unreachable")
+
+    def test_reachable_after_if_with_one_returning_branch_is_allowed(self):
+        source = """
+        value :: fn(flag: bool) i32 {
+            if flag {
+                ret 1
+            }
+            ret 2
+        }
+        """
+        assert expect_success(source)
+
+    def test_unreachable_after_exhaustive_match_returning_branches_is_rejected(self):
+        source = """
+        value :: fn(flag: bool) i32 {
+            match flag {
+                case true: ret 1
+                case false: ret 2
+            }
+            x := 3
+        }
+        """
+        assert expect_error(source, "unreachable")
+
+
 class TestDeferStatements:
     """Test defer statement validation."""
 

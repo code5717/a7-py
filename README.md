@@ -135,9 +135,9 @@ All AST traversals are iterative with no recursion. The pipeline works with Pyth
 
 ## Integer Type Guidance
 
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It maps to the target's native size type (`usize` in Zig, `size_t` in C).
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the only pointer-sized integer that should appear in memory shape APIs, and it maps to `usize` in Zig and `size_t` in C.
 
-Use `isize` only when the value is a signed pointer-sized offset or a difference between positions. Do not use it as the default signed integer type.
+Use `isize` only when the value is a signed pointer-sized offset or a difference between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
 
 Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range. Small arithmetic examples can use `i32`; counters and indexes should usually use `usize`.
 

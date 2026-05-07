@@ -60,7 +60,7 @@ export default function Status() {
         <ol className="doc-list">
           <li>Design fallthrough semantics, then implement fall statement lowering.</li>
           <li>Add non-constant symbolic interval range-overlap match diagnostics.</li>
-          <li>Improve type checker: control-flow narrowing, return consistency, dead code detection.</li>
+          <li>Improve type checker: control-flow narrowing and deeper assignment compatibility.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>
           <li>Configure the PyPI trusted publisher and protected GitHub pypi environment.</li>
         </ol>

@@ -26,8 +26,8 @@ const PRIMITIVE_TYPES: Array<[string, string, string]> = [
   ['char', '1 byte', 'ASCII character'],
   ['i8 i16 i32 i64', '1 to 8 bytes', 'Signed integers'],
   ['u8 u16 u32 u64', '1 to 8 bytes', 'Unsigned integers'],
-  ['usize', 'Platform-sized', 'Sizes, lengths, and indices'],
-  ['isize', 'Platform-sized', 'Signed offsets and pointer differences'],
+  ['usize', 'Platform-sized', 'Memory sizes, lengths, and indices'],
+  ['isize', 'Platform-sized', 'Signed pointer offsets only'],
   ['f32 f64', '4 or 8 bytes', 'IEEE-754 floating-point'],
   ['string', 'Pointer + length', 'Immutable string view'],
 ]

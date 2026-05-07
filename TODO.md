@@ -139,8 +139,8 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [x] Validate return-type consistency across all branches.
   Notes: type checking visits returns inside blocks, if/else branches, and match branches; explicit regression coverage locks this down.
 
-- [ ] Flag dead code after unconditional return/break/continue.
-  Notes: reachability analysis is not implemented.
+- [x] Flag dead code after unconditional return/break/continue.
+  Notes: semantic validation now rejects block-local statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
 
 - [x] Check exhaustiveness of match statements.
   Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Exact duplicate patterns and unreachable branches after wildcard or full bool/enum coverage are diagnosed separately.

@@ -241,7 +241,11 @@ A7's type system consists of:
 - On 32-bit platforms: 4 bytes (same as i32/u32)
 - On 64-bit platforms: 8 bytes (same as i64/u64)
 
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. Use `isize` only for signed pointer-sized offsets or differences between positions. Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range.
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the memory-shape integer and maps to `usize` in Zig and `size_t` in C.
+
+Use `isize` only for signed pointer-sized offsets or differences between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
+
+Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range. Small arithmetic examples may use `i32`; counters and indexes should usually use `usize`.
 
 ### 3.3 Composite Types
 
@@ -622,6 +626,8 @@ outer: for i := 0; i < 10; i += 1 {
     }
 }
 ```
+
+Semantic validation reports unreachable statements that appear later in the same block after `ret`, a valid `break` or `continue`, `fall`, or an `if`/`match` statement whose branches all terminate.
 
 ---
 
@@ -1531,7 +1537,11 @@ A7's type system consists of:
 - On 32-bit platforms: 4 bytes (same as i32/u32)
 - On 64-bit platforms: 8 bytes (same as i64/u64)
 
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. Use `isize` only for signed pointer-sized offsets or differences between positions. Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range.
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the memory-shape integer and maps to `usize` in Zig and `size_t` in C.
+
+Use `isize` only for signed pointer-sized offsets or differences between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
+
+Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range. Small arithmetic examples may use `i32`; counters and indexes should usually use `usize`.
 
 ### 3.3 Composite Types
 
@@ -1877,6 +1887,8 @@ outer: for i := 0; i < 10; i += 1 {
     }
 }
 ```
+
+Semantic validation reports unreachable statements that appear later in the same block after `ret`, a valid `break` or `continue`, `fall`, or an `if`/`match` statement whose branches all terminate.
 
 ---
 
