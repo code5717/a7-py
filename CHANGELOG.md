@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Tokenizer diagnostics**
   - String literals now reject unknown escape sequences and malformed `\xHH` escapes during tokenization.
+  - Valid string escapes are decoded in AST literals and re-escaped for backend output, so runtime output matches source escape semantics.
 
 - **Semantic coverage accounting**
   - Added explicit regression tests for return type mismatches inside if branches, match branches, and nested blocks.

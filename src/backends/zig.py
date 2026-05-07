@@ -1034,9 +1034,8 @@ class ZigCodeGenerator(CodeGenerator):
                 s += ".0"
             return s
         elif lk == LiteralKind.STRING:
-            # val is the unquoted content, raw is the original quoted form
             if isinstance(val, str):
-                return f'"{val}"'
+                return self._quote_zig_string(val)
             return raw if raw else '""'
         elif lk == LiteralKind.CHAR:
             if isinstance(val, str):
@@ -1510,6 +1509,26 @@ class ZigCodeGenerator(CodeGenerator):
                 result.append(s[i])
                 i += 1
         return "".join(result)
+
+    def _quote_zig_string(self, text: str) -> str:
+        out: list[str] = ['"']
+        for ch in text:
+            if ch == "\\":
+                out.append("\\\\")
+            elif ch == '"':
+                out.append('\\"')
+            elif ch == "\n":
+                out.append("\\n")
+            elif ch == "\t":
+                out.append("\\t")
+            elif ch == "\r":
+                out.append("\\r")
+            elif ch == "\0":
+                out.append("\\x00")
+            else:
+                out.append(ch)
+        out.append('"')
+        return "".join(out)
 
     def _loop_label_name(self, label: Optional[str]) -> Optional[str]:
         if not label:

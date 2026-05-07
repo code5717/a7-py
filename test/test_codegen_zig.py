@@ -204,6 +204,16 @@ main :: fn() {
         assert 'pub fn main() void' in zig
         assert 'std.debug.print("Hello, World!\\n", .{})' in zig
 
+    def test_string_escapes_are_emitted_as_zig_escapes(self):
+        source = r'''
+io :: import "std/io"
+main :: fn() {
+    io.print("line\nquote: \"A\"\x21")
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert 'std.debug.print("line\\nquote: \\"A\\"!", .{})' in zig
+
     def test_constant_declaration(self):
         source = 'PI :: 3.14\n'
         zig = compile_a7_to_zig(source)

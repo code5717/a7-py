@@ -532,6 +532,43 @@ def create_span_from_tokens(start_token: Token, end_token: Token) -> SourceSpan:
     )
 
 
+def _unescape_literal_content(content: str) -> str:
+    """Decode tokenizer-validated escape sequences from literal content."""
+    escapes = {
+        "n": "\n",
+        "t": "\t",
+        "r": "\r",
+        "\\": "\\",
+        "'": "'",
+        '"': '"',
+        "0": "\0",
+    }
+    out: list[str] = []
+    i = 0
+    while i < len(content):
+        ch = content[i]
+        if ch != "\\":
+            out.append(ch)
+            i += 1
+            continue
+
+        if i + 1 >= len(content):
+            out.append("\\")
+            i += 1
+            continue
+
+        escape = content[i + 1]
+        if escape == "x" and i + 3 < len(content):
+            out.append(chr(int(content[i + 2 : i + 4], 16)))
+            i += 4
+            continue
+
+        out.append(escapes.get(escape, escape))
+        i += 2
+
+    return "".join(out)
+
+
 def create_literal_from_token(token: Token) -> ASTNode:
     """Create a literal AST node from a token."""
     span = create_span_from_token(token)
@@ -551,36 +588,13 @@ def create_literal_from_token(token: Token) -> ASTNode:
     elif token.type == TokenType.FLOAT_LITERAL:
         return create_literal(LiteralKind.FLOAT, float(token.value), token.value, span)
     elif token.type == TokenType.CHAR_LITERAL:
-        # Parse character value (handle escape sequences)
         char_content = token.value[1:-1]  # Remove quotes
-        if char_content.startswith("\\"):
-            if char_content == "\\n":
-                value = "\n"
-            elif char_content == "\\t":
-                value = "\t"
-            elif char_content == "\\r":
-                value = "\r"
-            elif char_content == "\\\\":
-                value = "\\"
-            elif char_content == "\\'":
-                value = "'"
-            elif char_content == '\\"':
-                value = '"'
-            elif char_content == "\\0":
-                value = "\0"
-            elif char_content.startswith("\\x"):
-                hex_value = char_content[2:]
-                value = chr(int(hex_value, 16))
-            else:
-                value = char_content[1]  # Unknown escape, take literal
-        else:
-            value = char_content
+        value = _unescape_literal_content(char_content)
         return create_literal(LiteralKind.CHAR, value, token.value, span)
     elif token.type == TokenType.STRING_LITERAL:
-        # Parse string value (handle escape sequences)
         string_content = token.value[1:-1]  # Remove quotes
-        # TODO: Proper string escape sequence parsing
-        return create_literal(LiteralKind.STRING, string_content, token.value, span)
+        value = _unescape_literal_content(string_content)
+        return create_literal(LiteralKind.STRING, value, token.value, span)
     elif token.type == TokenType.TRUE_LITERAL:
         return create_literal(LiteralKind.BOOLEAN, True, token.value, span)
     elif token.type == TokenType.FALSE_LITERAL:

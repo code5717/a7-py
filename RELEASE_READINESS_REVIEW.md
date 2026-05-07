@@ -51,7 +51,8 @@ not factually provable from local tests alone.
 - C backend `for-in` lowering now caches iterable expressions before loop
   length and element access.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`
-  escapes.
+  escapes, and valid escapes are decoded/re-emitted so generated binaries print
+  the intended characters.
 - Semantic regression coverage now explicitly checks return type mismatches
   inside if branches, match branches, and nested blocks.
 - Bool and enum match exhaustiveness diagnostics are covered for statements and

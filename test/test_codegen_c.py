@@ -191,6 +191,23 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_string_escapes_have_runtime_effect(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        r'''
+io :: import "std/io"
+
+main :: fn() {
+    io.print("line\nquote: \"A\"\x21")
+}
+''',
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout == 'line\nquote: "A"!'
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_honors_labeled_break_and_continue(tmp_path: Path) -> None:
     result = build_and_run_c(
         """

@@ -106,6 +106,13 @@ class TestLiterals:
         assert const_decl.value.literal_kind == LiteralKind.STRING
         assert const_decl.value.literal_value == "hello world"
 
+    def test_string_literal_escapes_are_decoded(self):
+        """Test parsing string literal escape sequences."""
+        ast = parse_a7(r'x :: "line\nquote: \"A\"\x21"')
+        const_decl = ast.declarations[0]
+        assert const_decl.value.literal_kind == LiteralKind.STRING
+        assert const_decl.value.literal_value == 'line\nquote: "A"!'
+
     def test_char_literals(self):
         """Test parsing character literals."""
         test_cases = [

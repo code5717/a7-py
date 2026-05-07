@@ -228,8 +228,8 @@ These are entire subsystems. Each needs a design decision before implementation 
 ## Parser / Tokenizer Debt
 
 - [x] Implement tokenizer validation for invalid escape sequences.
-  Files: `src/tokens.py`
-  Notes: string literals now reject unknown escapes and malformed `\xHH` escapes during tokenization.
+  Files: `src/tokens.py`, `src/ast_nodes.py`, `src/backends/zig.py`
+  Notes: string literals now reject unknown escapes and malformed `\xHH` escapes during tokenization, decode valid escapes into AST literal values, and re-emit escaped backend string literals.
 
 - [ ] Clean up stale "not yet implemented" comments in parser tests.
   Files: `test/test_parser_missing_constructs.py`, `test/test_parser_advanced_edge_cases.py`, `test/test_parser_stress_tests.py`
