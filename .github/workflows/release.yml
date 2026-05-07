@@ -92,7 +92,15 @@ jobs:
         run: tar -czf dist/a7-example-artifacts-release.tar.gz -C build release
 
       - name: Generate release checksums
-        run: uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
+        run: |
+          sdist="$(ls dist/a7_py-*.tar.gz)"
+          wheel="$(ls dist/a7_py-*.whl)"
+          uv run python scripts/generate_release_manifest.py dist \
+            --output dist/SHA256SUMS \
+            --require "$sdist" \
+            --require "$wheel" \
+            --require dist/a7-docs-site.tar.gz \
+            --require dist/a7-example-artifacts-release.tar.gz
 
       - name: Upload release bundles
         uses: actions/upload-artifact@v7

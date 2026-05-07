@@ -92,7 +92,8 @@ uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 ```
 
 The tag release workflow generates `dist/SHA256SUMS` after all release archives
-are built and attaches it to the draft GitHub release.
+are built, verifies that the manifest contains the package, docs, and native
+artifact archives, then attaches it to the draft GitHub release.
 
 ## Tagging
 

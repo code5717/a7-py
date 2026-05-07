@@ -117,3 +117,48 @@ def test_release_manifest_fails_for_missing_path(tmp_path: Path) -> None:
 
     assert result.returncode == 2
     assert "artifact path does not exist" in result.stderr
+
+
+def test_release_manifest_requires_expected_paths(tmp_path: Path) -> None:
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    artifact = dist / "artifact.tar.gz"
+    output = dist / "SHA256SUMS"
+    artifact.write_text("artifact\n", encoding="utf-8")
+
+    ok_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_release_manifest.py",
+            str(dist),
+            "--output",
+            str(output),
+            "--require",
+            artifact.as_posix(),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert ok_result.returncode == 0, ok_result.stderr or ok_result.stdout
+
+    bad_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_release_manifest.py",
+            str(dist),
+            "--output",
+            str(output),
+            "--require",
+            "dist/missing.tar.gz",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert bad_result.returncode == 1
+    assert "manifest missing required artifact paths" in bad_result.stderr

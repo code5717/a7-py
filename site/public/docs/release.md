@@ -23,6 +23,9 @@ Generate checksums before uploading local artifacts:
 uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 ```
 
+The tag workflow also verifies that `SHA256SUMS` contains the expected package,
+docs, and native artifact archives before upload.
+
 ## Debug and Release Artifacts
 
 ```bash

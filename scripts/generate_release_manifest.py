@@ -94,6 +94,24 @@ def render_manifest(entries: list[ManifestEntry], commit: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+def parse_manifest_paths(path: Path) -> set[str]:
+    paths: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("  ", 2)
+        if len(parts) != 3:
+            raise ValueError(f"invalid manifest line: {line}")
+        paths.add(parts[2])
+    return paths
+
+
+def verify_manifest(manifest_path: Path, required_paths: list[str]) -> tuple[bool, list[str]]:
+    manifest_paths = parse_manifest_paths(manifest_path)
+    missing = [path for path in required_paths if path not in manifest_paths]
+    return not missing, missing
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate SHA-256 checksums for release artifacts")
     parser.add_argument(
@@ -105,6 +123,12 @@ def main() -> int:
         "--output",
         default="",
         help="Optional output path. Writes to stdout when omitted.",
+    )
+    parser.add_argument(
+        "--require",
+        action="append",
+        default=[],
+        help="Required manifest path. May be supplied multiple times.",
     )
     args = parser.parse_args()
 
@@ -125,7 +149,17 @@ def main() -> int:
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(content, encoding="utf-8")
+        if args.require:
+            ok, missing = verify_manifest(output_path, args.require)
+            if not ok:
+                print("manifest missing required artifact paths:", file=sys.stderr)
+                for path in missing:
+                    print(f"- {path}", file=sys.stderr)
+                return 1
     else:
+        if args.require:
+            print("--require needs --output so the manifest can be verified", file=sys.stderr)
+            return 2
         print(content, end="")
 
     return 0
