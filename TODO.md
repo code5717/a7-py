@@ -56,8 +56,11 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [x] Add exact match pattern redundancy diagnostics.
   Notes: duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions; wildcard-first and fully covered bool/enum cases also make later cases/else branches unreachable.
 
-- [ ] Add range match overlap diagnostics.
-  Notes: overlapping numeric/char range patterns are still not detected.
+- [x] Add literal range match overlap diagnostics.
+  Notes: overlapping numeric/char literal ranges, literals covered by previous ranges, and ranges containing previous literals now emit diagnostics.
+
+- [ ] Add symbolic/computed range match overlap diagnostics.
+  Notes: range overlap checks currently only cover literal numeric/char endpoints.
 
 ### C Backend Parity
 

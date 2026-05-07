@@ -2861,7 +2861,8 @@ Status snapshot (2026-05-07):
    - Exhaustiveness for bool/enum is implemented.
    - Exact duplicate bool, enum, and scalar literal patterns are diagnosed.
    - Wildcard-first and fully covered bool/enum cases make later cases and else branches unreachable.
-   - Numeric/char range overlap diagnostics are still incomplete.
+   - Literal numeric/char range overlaps are diagnosed.
+   - Symbolic/computed range overlap diagnostics are still incomplete.
 
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.

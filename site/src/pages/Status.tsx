@@ -13,7 +13,7 @@ const done = [
 
 const missing = [
   { name: 'fall statement semantics', desc: 'fall is parsed but not yet validated or lowered in semantic/codegen passes.' },
-  { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, and fully covered bool/enum cases are diagnosed. Range overlap remains open.' },
+  { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal range overlaps are diagnosed. Symbolic range overlap remains open.' },
   { name: 'Generic constraint internals', desc: 'Inline type-set constraint resolution in generics.py is still placeholder-level.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for new language features.' },
@@ -59,7 +59,7 @@ export default function Status() {
       <SectionPanel title="Next priorities">
         <ol className="doc-list">
           <li>Implement fall statement validation and backend lowering.</li>
-          <li>Add range-overlap match diagnostics.</li>
+          <li>Add symbolic/computed range-overlap match diagnostics.</li>
           <li>Improve type checker: control-flow narrowing, return consistency, dead code detection.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>
           <li>Wire tag-based package publishing once release hosting is chosen.</li>

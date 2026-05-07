@@ -773,6 +773,62 @@ class TestMatchStatements:
         """
         assert expect_error(source, "cover all enum")
 
+    def test_overlapping_numeric_range_patterns_are_rejected(self):
+        """Numeric range patterns should not overlap previous numeric ranges."""
+        source = """
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case 1..5: x := 1
+                case 5..10: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
+    def test_literal_after_covering_range_is_rejected(self):
+        """A literal covered by a previous range is unreachable."""
+        source = """
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case 1..5: x := 1
+                case 3: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "covered by previous range pattern")
+
+    def test_range_after_seen_literal_overlap_is_rejected(self):
+        """A range that contains a previous literal is overlapping."""
+        source = """
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case 3: x := 1
+                case 1..5: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous literal pattern")
+
+    def test_overlapping_char_range_patterns_are_rejected(self):
+        """Char range patterns should not overlap previous char ranges."""
+        source = """
+        main :: fn() {
+            c: char = 'd'
+            match c {
+                case 'a'..'f': x := 1
+                case 'd'..'z': x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
 
 class TestReturnTypeBranchValidation:
     """Return type checks should apply inside every reachable branch."""

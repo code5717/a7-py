@@ -50,7 +50,8 @@
 2. **Advanced match diagnostics**
    - Exact duplicate bool, enum, and scalar literal case patterns are diagnosed.
    - Wildcard-first and fully covered bool/enum cases make later case patterns and else branches unreachable.
-   - Numeric/char range overlap remains incomplete.
+   - Literal numeric/char range overlaps are diagnosed.
+   - Symbolic/computed range overlap remains incomplete.
 
 3. **Memory/lifetime model**
    - Current validation covers basic `del` reference checks.

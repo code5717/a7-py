@@ -823,6 +823,7 @@ class TypeCheckingPass:
         bool_coverage: Set[bool] = set()
         enum_coverage: Set[str] = set()
         seen_patterns: Dict[Tuple[str, Any], ASTNode] = {}
+        seen_ranges: List[Tuple[str, float, float, ASTNode]] = []
         wildcard_pattern: Optional[ASTNode] = None
 
         # Visit all case branches
@@ -834,6 +835,7 @@ class TypeCheckingPass:
                     pattern_kind,
                     pattern_value,
                     seen_patterns,
+                    seen_ranges,
                     wildcard_pattern,
                     self._match_full_coverage_reason(scrutinee_type, bool_coverage, enum_coverage),
                 )
@@ -1394,6 +1396,7 @@ class TypeCheckingPass:
         bool_coverage: Set[bool] = set()
         enum_coverage: Set[str] = set()
         seen_patterns: Dict[Tuple[str, Any], ASTNode] = {}
+        seen_ranges: List[Tuple[str, float, float, ASTNode]] = []
         wildcard_pattern: Optional[ASTNode] = None
 
         branch_types: List[Type] = []
@@ -1405,6 +1408,7 @@ class TypeCheckingPass:
                     pattern_kind,
                     pattern_value,
                     seen_patterns,
+                    seen_ranges,
                     wildcard_pattern,
                     self._match_full_coverage_reason(scrutinee_type, bool_coverage, enum_coverage),
                 )
@@ -1471,6 +1475,7 @@ class TypeCheckingPass:
         pattern_kind: Optional[str],
         pattern_value: Optional[object],
         seen_patterns: Dict[Tuple[str, Any], ASTNode],
+        seen_ranges: List[Tuple[str, float, float, ASTNode]],
         wildcard_pattern: Optional[ASTNode],
         full_coverage_reason: Optional[str],
     ) -> Optional[ASTNode]:
@@ -1506,7 +1511,48 @@ class TypeCheckingPass:
             )
             return wildcard_pattern
 
+        range_key = self._match_pattern_range(pattern)
+        if range_key is None and key is not None:
+            range_hit = self._literal_covered_by_seen_range(key, seen_ranges)
+            if range_hit is not None:
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    pattern.span,
+                    context=(
+                        f"match pattern '{self._format_match_pattern(pattern)}' is unreachable "
+                        f"because it is covered by previous range pattern '{self._format_match_pattern(range_hit)}'"
+                    ),
+                )
+                return wildcard_pattern
+
+        if range_key is not None:
+            overlap = self._find_overlapping_match_range(range_key, seen_ranges)
+            if overlap is not None:
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    pattern.span,
+                    context=(
+                        f"match range pattern '{self._format_match_pattern(pattern)}' overlaps "
+                        f"previous range pattern '{self._format_match_pattern(overlap)}'"
+                    ),
+                )
+                return wildcard_pattern
+
+            literal_overlap = self._find_seen_literal_in_range(range_key, seen_patterns)
+            if literal_overlap is not None:
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    pattern.span,
+                    context=(
+                        f"match range pattern '{self._format_match_pattern(pattern)}' overlaps "
+                        f"previous literal pattern '{self._format_match_pattern(literal_overlap)}'"
+                    ),
+                )
+                return wildcard_pattern
+
         if key is None:
+            if range_key is not None:
+                seen_ranges.append((*range_key, pattern))
             return wildcard_pattern
 
         seen_patterns[key] = pattern
@@ -1514,6 +1560,110 @@ class TypeCheckingPass:
             return pattern
 
         return wildcard_pattern
+
+    def _match_pattern_range(self, pattern: ASTNode) -> Optional[Tuple[str, float, float]]:
+        """Return a comparable inclusive range for literal numeric/char ranges."""
+        if pattern.kind != NodeKind.PATTERN_RANGE:
+            return None
+
+        start_literal = self._match_pattern_literal(pattern.start) if pattern.start else None
+        end_literal = self._match_pattern_literal(pattern.end) if pattern.end else None
+        if start_literal is None or end_literal is None:
+            return None
+
+        start = self._range_literal_value(start_literal)
+        end = self._range_literal_value(end_literal)
+        if start is None or end is None:
+            return None
+
+        start_kind, start_value = start
+        end_kind, end_value = end
+        if start_kind != end_kind:
+            return None
+
+        low = min(start_value, end_value)
+        high = max(start_value, end_value)
+        return (start_kind, low, high)
+
+    def _range_literal_value(self, literal: ASTNode) -> Optional[Tuple[str, float]]:
+        """Normalize literal values that can participate in range overlap checks."""
+        if literal.literal_kind in {LiteralKind.INTEGER, LiteralKind.FLOAT}:
+            return ("number", float(literal.literal_value))
+
+        if literal.literal_kind == LiteralKind.CHAR:
+            value = str(literal.literal_value or "")
+            if len(value) != 1:
+                return None
+            return ("char", float(ord(value)))
+
+        return None
+
+    def _literal_covered_by_seen_range(
+        self,
+        key: Tuple[str, Any],
+        seen_ranges: List[Tuple[str, float, float, ASTNode]],
+    ) -> Optional[ASTNode]:
+        """Return a previous range that covers this literal key, if any."""
+        literal = self._literal_key_range_value(key)
+        if literal is None:
+            return None
+
+        literal_kind, value = literal
+        for range_kind, low, high, range_pattern in seen_ranges:
+            if literal_kind == range_kind and low <= value <= high:
+                return range_pattern
+
+        return None
+
+    def _literal_key_range_value(self, key: Tuple[str, Any]) -> Optional[Tuple[str, float]]:
+        """Normalize a literal pattern key for range containment checks."""
+        if len(key) != 3 or key[0] != "literal":
+            return None
+
+        literal_kind = key[1]
+        literal_value = key[2]
+        if literal_kind in {LiteralKind.INTEGER, LiteralKind.FLOAT}:
+            return ("number", float(literal_value))
+
+        if literal_kind == LiteralKind.CHAR:
+            value = str(literal_value or "")
+            if len(value) != 1:
+                return None
+            return ("char", float(ord(value)))
+
+        return None
+
+    def _find_overlapping_match_range(
+        self,
+        range_key: Tuple[str, float, float],
+        seen_ranges: List[Tuple[str, float, float, ASTNode]],
+    ) -> Optional[ASTNode]:
+        """Return a previous range pattern that overlaps this range, if any."""
+        current_kind, current_low, current_high = range_key
+        for seen_kind, seen_low, seen_high, seen_pattern in seen_ranges:
+            if current_kind != seen_kind:
+                continue
+            if current_low <= seen_high and seen_low <= current_high:
+                return seen_pattern
+
+        return None
+
+    def _find_seen_literal_in_range(
+        self,
+        range_key: Tuple[str, float, float],
+        seen_patterns: Dict[Tuple[str, Any], ASTNode],
+    ) -> Optional[ASTNode]:
+        """Return a previous literal pattern that falls inside this range, if any."""
+        range_kind, low, high = range_key
+        for key, pattern in seen_patterns.items():
+            literal = self._literal_key_range_value(key)
+            if literal is None:
+                continue
+            literal_kind, value = literal
+            if literal_kind == range_kind and low <= value <= high:
+                return pattern
+
+        return None
 
     def _match_full_coverage_reason(
         self,
