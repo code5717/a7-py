@@ -188,6 +188,8 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 
 - Documentation website: `https://code5717.github.io/a7-py/`
 - Agent/curl.md docs entry point: `https://code5717.github.io/a7-py/llms.txt`
+- Agent docs index: `https://code5717.github.io/a7-py/docs/index.md`
+- Full agent context: `https://code5717.github.io/a7-py/llms-full.txt`
 - `docs/SPEC.md` - Language specification
 - `RELEASE.md` - Release/debug build checklist
 - `SECURITY.md` - Security policy and trust boundary

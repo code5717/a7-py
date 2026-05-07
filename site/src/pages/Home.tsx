@@ -41,20 +41,20 @@ const QUICKSTART = [
 
 const FEATURES = [
   {
-    title: 'Simple core',
-    copy: 'Small syntax. Direct control.',
+    title: 'Agent-ready markdown',
+    copy: 'llms.txt, full context, and route-level docs.',
   },
   {
-    title: 'Memory safety',
-    copy: 'Explicit pointers. No runtime magic.',
+    title: 'CLI first',
+    copy: 'Commands, exit codes, and JSON output are documented.',
   },
   {
-    title: 'Predictable performance',
-    copy: 'Low-level control that stays readable.',
+    title: 'Verified examples',
+    copy: 'Zig and C outputs are checked against golden output.',
   },
   {
-    title: 'Zero-cost abstractions',
-    copy: 'Generics, modules, direct output.',
+    title: 'Honest status',
+    copy: 'Known gaps stay visible for agents and maintainers.',
   },
 ]
 
@@ -67,13 +67,17 @@ const PIPELINE = [
 ]
 
 const HIGHLIGHTS = [
-  { title: 'Algebraic data types', copy: 'Compact data models.' },
-  { title: 'Pattern matching', copy: 'Statements and expressions with current backend notes.' },
-  { title: 'Static diagnostics', copy: 'Type-aware checks.' },
-  { title: 'Manual memory', copy: 'Visible allocation and deletion.' },
-  { title: 'Straight-line control', copy: 'Readable loops and branches.' },
-  { title: 'Small and fast', copy: 'Lean compiler. Clear output.' },
+  { title: 'Introduction', copy: 'Start, install, why, FAQ.' },
+  { title: 'Guide', copy: 'Features, agent usage, CLI, API.' },
+  { title: 'Plugins', copy: 'Codex, Claude, Cursor, OpenCode.' },
+  { title: 'LLM resources', copy: 'Skills, llms.txt, full context.' },
+  { title: 'Contributing', copy: 'Develop, deploy, kitchen sink.' },
+  { title: 'A7 reference', copy: 'Language, examples, compiler, status.' },
 ]
+
+function publicDocsPath(path: string) {
+  return `${import.meta.env.BASE_URL.replace(/\/$/, '')}${path}`
+}
 
 function QuickstartCommand({ step, label, command }: { step: string; label: string; command: string }) {
   const [copied, setCopied] = useState(false)
@@ -135,19 +139,19 @@ export default function Home() {
     <div className="page home-page">
       <section className="home-hero" data-reveal>
         <div className="home-hero-copy">
-          <span className="page-header-eyebrow">A7 docs · unreleased</span>
+          <span className="page-header-eyebrow">A7 docs · curl.md ready</span>
           <h1 className="page-header-title">A7, simple, fast.</h1>
           <p className="page-header-summary">
-            A small systems language with explicit control flow, clear diagnostics, and direct compiler output.
+            A small systems language with fetchable docs, direct compiler output, and verified examples.
           </p>
 
           <div className="home-hero-actions">
             <Link to="/start" className="primary-action">
               Getting Started <span aria-hidden="true">→</span>
             </Link>
-            <Link to="/language" className="secondary-action">
-              Language Reference <span aria-hidden="true">→</span>
-            </Link>
+            <a href={publicDocsPath('/llms.txt')} className="secondary-action">
+              llms.txt <span aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
 
@@ -163,7 +167,7 @@ export default function Home() {
           <p className="quickstart-label">Quick start</p>
           <h2 className="quickstart-title">From zero to running.</h2>
           <p className="text-tertiary text-small">
-            Requires Python 3.13+, uv, and Zig if you want to run generated Zig output.
+            Python 3.13+, uv, and Zig for generated output.
           </p>
         </div>
 
@@ -212,10 +216,10 @@ export default function Home() {
 
       <SectionPanel className="home-highlights highlights-section">
         <div className="highlights-intro">
-          <p className="section-label">Language highlights</p>
-          <h2 className="home-section-title">Small feature set. Sharp edges removed.</h2>
-          <Link to="/language" className="pipeline-intro-link">
-            Explore the language <span aria-hidden="true">→</span>
+          <p className="section-label">Docs map</p>
+          <h2 className="home-section-title">Built for curl.md fetches.</h2>
+          <Link to="/features" className="pipeline-intro-link">
+            Browse guide <span aria-hidden="true">→</span>
           </Link>
         </div>
 

@@ -422,24 +422,22 @@ export default function Layout() {
             </div>
 
             <div className="site-footer-column">
-              <h3>Learn</h3>
+              <h3>Guide</h3>
               <div className="site-footer-links">
                 <Link to="/start">Getting Started</Link>
-                <Link to="/language">Language</Link>
-                <Link to="/examples">Examples</Link>
-                <Link to="/internals#pipeline">Pipeline</Link>
+                <Link to="/features">Features</Link>
+                <Link to="/agent-usage">Agent Usage</Link>
+                <Link to="/cli">CLI</Link>
               </div>
             </div>
 
             <div className="site-footer-column">
-              <h3>Community</h3>
+              <h3>Plugins</h3>
               <div className="site-footer-links">
-                <a href="https://github.com/code5717/a7-py" target="_blank" rel="noopener noreferrer">
-                  GitHub
-                </a>
-                <Link to="/contributing">Contributing</Link>
-                <Link to="/status">Status</Link>
-                <Link to="/changelog">Changelog</Link>
+                <Link to="/plugins/codex">Codex</Link>
+                <Link to="/plugins/claude">Claude Code</Link>
+                <Link to="/plugins/cursor">Cursor</Link>
+                <Link to="/plugins/opencode">OpenCode</Link>
               </div>
             </div>
 
@@ -491,7 +489,7 @@ export default function Layout() {
                 className="search-input"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search language, examples, CLI..."
+                placeholder="Search docs, plugins, CLI..."
                 aria-label="Search documentation"
               />
             </label>

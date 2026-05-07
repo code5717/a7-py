@@ -12,8 +12,21 @@ This file aggregates the public curl.md-friendly Markdown docs for A7. Use it wh
 - `/a7-py/docs/faq.md`
 - `/a7-py/docs/features.md`
 - `/a7-py/docs/agent-usage.md`
-- `/a7-py/docs/language.md`
 - `/a7-py/docs/cli.md`
+- `/a7-py/docs/api.md`
+- `/a7-py/docs/plugins.md`
+- `/a7-py/docs/plugins/amp.md`
+- `/a7-py/docs/plugins/claude.md`
+- `/a7-py/docs/plugins/codex.md`
+- `/a7-py/docs/plugins/cursor.md`
+- `/a7-py/docs/plugins/opencode.md`
+- `/a7-py/docs/plugins/pi.md`
+- `/a7-py/docs/skills.md`
+- `/a7-py/docs/dev/develop.md`
+- `/a7-py/docs/dev/deploy.md`
+- `/a7-py/docs/dev/kitchen-sink.md`
+- `/a7-py/docs/changelog.md`
+- `/a7-py/docs/language.md`
 - `/a7-py/docs/compiler.md`
 - `/a7-py/docs/pipeline.md`
 - `/a7-py/docs/testing.md`
@@ -22,7 +35,6 @@ This file aggregates the public curl.md-friendly Markdown docs for A7. Use it wh
 - `/a7-py/docs/release.md`
 - `/a7-py/docs/status.md`
 - `/a7-py/docs/contributing.md`
-- `/a7-py/docs/changelog.md`
 
 ## Getting Started
 
@@ -168,6 +180,89 @@ Rules for generated changes:
 - Keep agent Markdown docs aligned when public docs change.
 - Update repo docs when language behavior changes.
 - Treat tests as evidence, not a substitute for code and hosted workflow review.
+
+## API and SDK
+
+A7 currently ships as a local compiler and repository toolchain. There is no hosted API service and no published SDK package yet.
+
+Supported automation surfaces:
+
+- CLI: `uv run a7 [OPTIONS] <file.a7>`
+- Compatibility wrapper: `uv run python main.py [OPTIONS] <file.a7>`
+- JSON output: `--format json`
+- Markdown reports: `--mode doc --doc-out PATH`
+- Static agent docs: `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and `/a7-py/docs/index.md`
+
+Recipes:
+
+```bash
+uv run a7 examples/001_hello.a7
+uv run a7 --backend c examples/001_hello.a7
+uv run a7 --mode semantic --format json examples/001_hello.a7
+uv run a7 --mode doc --doc-out out.md examples/001_hello.a7
+```
+
+## Plugins
+
+Shared fetch order:
+
+```text
+https://code5717.github.io/a7-py/llms.txt
+https://code5717.github.io/a7-py/docs/index.md
+https://code5717.github.io/a7-py/llms-full.txt
+```
+
+Plugin pages:
+
+- `/a7-py/docs/plugins/amp.md`
+- `/a7-py/docs/plugins/claude.md`
+- `/a7-py/docs/plugins/codex.md`
+- `/a7-py/docs/plugins/cursor.md`
+- `/a7-py/docs/plugins/opencode.md`
+- `/a7-py/docs/plugins/pi.md`
+
+Shared rules:
+
+- Do not generate recursive A7 examples.
+- Prefer `usize` for lengths and indices.
+- Prefer `isize` for signed pointer-sized differences.
+- Verify code changes with local commands before trusting prose.
+
+## Skills
+
+Agent skill guidance:
+
+- Read `AGENTS.md` before changing the repo.
+- Use `llms.txt` for routing and `llms-full.txt` for one-file context.
+- Never generate recursive A7 source.
+- Use loops, explicit stacks, queues, and index-based worklists.
+- Treat tests as evidence, not as a substitute for source review.
+
+## Development and Deploy
+
+Development:
+
+```bash
+uv sync
+uv run python scripts/check_docs_style.py
+PYTHONPATH=. uv run pytest --tb=no -q
+```
+
+Site build:
+
+```bash
+cd site
+npm ci
+npm run build
+npm run preview
+```
+
+Deploy verification:
+
+```bash
+curl -fsS https://code5717.github.io/a7-py/llms.txt
+curl -fsS https://code5717.github.io/a7-py/docs/index.md
+```
 
 ## Language and Library
 

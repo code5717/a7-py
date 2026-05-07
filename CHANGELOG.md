@@ -47,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first-class page metadata, and visible Markdown links from the docs app.
 - Added release archive content verification so docs/native artifact tarballs
   must contain required curl.md entry points and example outputs before upload.
+- Reworked the public docs map around curl.md-friendly Introduction, Guide,
+  Plugins, LLM Resources, and Contributing groups, including static Markdown
+  pages for API/SDK, agent plugins, skills, deploy, and kitchen-sink coverage.
 
 ## [0.3.0] - 2026-05-07
 

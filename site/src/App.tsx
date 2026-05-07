@@ -11,6 +11,7 @@ import Status from './pages/Status'
 import Contributing from './pages/Contributing'
 import Changelog from './pages/Changelog'
 import NotFound from './pages/NotFound'
+import CurlDocsPage from './pages/CurlDocsPage'
 
 const CLI_ANCHORS = { modes: 'modes', flags: 'flags' }
 const PIPELINE_ANCHORS = { 'pipeline-stages': 'pipeline', 'backend-notes': 'backend-notes' }
@@ -60,11 +61,22 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="start" element={<Start />} />
+        <Route path="installation" element={<CurlDocsPage />} />
+        <Route path="why" element={<CurlDocsPage />} />
+        <Route path="faq" element={<CurlDocsPage />} />
         <Route path="language" element={<Language />} />
+        <Route path="features" element={<CurlDocsPage />} />
+        <Route path="agent-usage" element={<CurlDocsPage />} />
         <Route
           path="cli"
           element={<LegacySectionAlias anchor="cli" anchorMap={CLI_ANCHORS}><Start /></LegacySectionAlias>}
         />
+        <Route path="api" element={<CurlDocsPage />} />
+        <Route path="plugins" element={<CurlDocsPage />} />
+        <Route path="plugins/:plugin" element={<CurlDocsPage />} />
+        <Route path="skills" element={<CurlDocsPage />} />
+        <Route path="llms" element={<CurlDocsPage />} />
+        <Route path="llms-full" element={<CurlDocsPage />} />
         <Route
           path="pipeline"
           element={<LegacySectionAlias anchor="pipeline" anchorMap={PIPELINE_ANCHORS}><Internals /></LegacySectionAlias>}
@@ -81,6 +93,9 @@ export default function App() {
         />
         <Route path="status" element={<Status />} />
         <Route path="contributing" element={<Contributing />} />
+        <Route path="develop" element={<CurlDocsPage />} />
+        <Route path="deploy" element={<CurlDocsPage />} />
+        <Route path="kitchen-sink" element={<CurlDocsPage />} />
         <Route path="changelog" element={<Changelog />} />
         <Route path="*" element={<NotFound />} />
       </Route>

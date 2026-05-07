@@ -1,3 +1,5 @@
+import { CURL_DOC_GROUPS, CURL_DOC_ITEMS } from './curlDocs'
+
 export type PrimaryNavItem =
   | { kind: 'route'; to: string; label: string; end?: boolean }
   | { kind: 'link'; href: string; label: string }
@@ -18,47 +20,41 @@ export type SectionSearchItem = {
 export const PRIMARY_NAV: PrimaryNavItem[] = [
   { kind: 'route', to: '/', label: 'Docs', end: true },
   { kind: 'route', to: '/start', label: 'Start' },
-  { kind: 'route', to: '/language', label: 'Language' },
-  { kind: 'route', to: '/examples', label: 'Examples' },
-  { kind: 'route', to: '/internals', label: 'Compiler' },
-  { kind: 'route', to: '/status', label: 'Status' },
+  { kind: 'route', to: '/features', label: 'Guide' },
+  { kind: 'route', to: '/plugins', label: 'Plugins' },
+  { kind: 'route', to: '/skills', label: 'LLM' },
+  { kind: 'route', to: '/develop', label: 'Contribute' },
   { kind: 'link', href: 'https://github.com/code5717/a7-py', label: 'GitHub ↗' },
 ]
 
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  ...CURL_DOC_GROUPS.map((group) => ({
+    label: group.label,
+    items: group.items.map((item) => ({
+      to: item.route,
+      label: item.label,
+      note: item.note,
+    })),
+  })),
   {
-    label: 'Overview',
+    label: 'A7 Reference',
     items: [
-      { to: '/', label: 'Home', note: 'Project map and quick commands' },
-      { to: '/start', label: 'Getting Started', note: 'Install and first compile run' },
-      { to: '/start#cli', label: 'CLI', note: 'Modes, flags, exit codes' },
-    ],
-  },
-  {
-    label: 'Reference',
-    items: [
-      { to: '/language', label: 'Language', note: 'Types, control flow, generics' },
-      { to: '/language#standard-library', label: 'Standard Library', note: 'stdlib, io, math, intrinsics' },
+      { to: '/language', label: 'Language', note: 'Syntax, types, modules, and stdlib' },
       { to: '/examples', label: 'Examples', note: 'Runnable A7 programs' },
-    ],
-  },
-  {
-    label: 'Compiler',
-    items: [
-      { to: '/internals', label: 'Compiler', note: 'Pipeline, architecture, testing' },
-      { to: '/internals#pipeline', label: 'Pipeline', note: 'Compiler stage flow' },
-      { to: '/internals#testing', label: 'Testing', note: 'Quality gates and scripts' },
+      { to: '/internals', label: 'Compiler', note: 'Pipeline, architecture, and tests' },
       { to: '/status', label: 'Status', note: 'Current completeness and gaps' },
     ],
   },
-  {
-    label: 'Project',
-    items: [
-      { to: '/contributing', label: 'Contributing', note: 'Workflow and standards' },
-      { to: '/changelog', label: 'Changelog', note: 'Release history' },
-    ],
-  },
 ]
+
+const CURL_PAGE_META = Object.fromEntries(CURL_DOC_ITEMS.map((item) => [
+  item.route,
+  {
+    title: item.label,
+    description: item.note,
+    markdownPath: item.markdownPath,
+  },
+]))
 
 export const PAGE_META: Record<string, { title: string; description: string; markdownPath?: string }> = {
   '/': {
@@ -121,6 +117,7 @@ export const PAGE_META: Record<string, { title: string; description: string; mar
     description: 'Current and historical A7 compiler and docs changes.',
     markdownPath: '/docs/changelog.md',
   },
+  ...CURL_PAGE_META,
 }
 
 export const SECTION_SEARCH_ITEMS: SectionSearchItem[] = [

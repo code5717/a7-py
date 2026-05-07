@@ -104,11 +104,11 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --paper-0: #0a0d10;
-  --paper-1: #10151a;
-  --paper-2: #161c22;
-  --paper-3: #1d252d;
-  --paper-4: #27313a;
+  --paper-0: #0d0d0b;
+  --paper-1: #151410;
+  --paper-2: #1c1a15;
+  --paper-3: #252219;
+  --paper-4: #302b20;
 
   --ink-900: #f4f1e8;
   --ink-800: #e4ded0;
@@ -117,8 +117,8 @@
   --ink-500: #827a70;
   --ink-400: #615c55;
 
-  --line-strong: #2a323b;
-  --line-soft: #1a2028;
+  --line-strong: #3b3529;
+  --line-soft: #29251d;
 
   --blue-soft: #0c2530;
   --blue-text: #88c8e0;
@@ -129,11 +129,11 @@
   --red-soft: #2c1517;
   --red-text: #d8908b;
 
-  --bg-canvas: #0a0d10;
-  --bg-panel: #11171d;
-  --bg-raised: #182028;
-  --bg-inset: #0c1116;
-  --bg-quiet: #121922;
+  --bg-canvas: #0d0d0b;
+  --bg-panel: #151410;
+  --bg-raised: #1d1b16;
+  --bg-inset: #10100d;
+  --bg-quiet: #181713;
 
   --fg-primary: #f4f1e8;
   --fg-secondary: #d6cfbf;

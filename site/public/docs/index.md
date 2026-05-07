@@ -10,30 +10,47 @@ Use these pages when you need stable, text-first A7 documentation without scrapi
 - [Installation](/a7-py/docs/installation.md): Install Python, uv, Zig, and repository dependencies.
 - [Why A7](/a7-py/docs/why.md): Project goals, constraints, and current fit.
 - [FAQ](/a7-py/docs/faq.md): Short answers for agents and maintainers.
-- [Language and Library](/a7-py/docs/language.md): Core syntax, integer guidance, stdlib, and no-recursion rule.
-- [Status](/a7-py/docs/status.md): Implemented surface, remaining gaps, and release risks.
 
 ## Guide
 
 - [Features](/a7-py/docs/features.md): Implemented language and compiler capabilities.
 - [Agent Usage](/a7-py/docs/agent-usage.md): Fetch order, verification commands, and trust boundaries for coding agents.
 - [CLI](/a7-py/docs/cli.md): Modes, flags, exit codes, and JSON output.
-- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, test layers, parity checks, and local release gate.
-- [Examples](/a7-py/docs/examples.md): Runnable programs and verification commands.
-- [Release](/a7-py/docs/release.md): Debug/release artifact builds, package build, dependency audits, and publishing status.
+- [API and SDK](/a7-py/docs/api.md): Automation entry points and current limits.
+- [Plugins](/a7-py/docs/plugins.md): Agent and editor integration map.
 
-## Route Aliases
+## Plugins
 
-- [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
-- [Testing](/a7-py/docs/testing.md): Alias for verification commands.
-- [Standard Library](/a7-py/docs/stdlib.md): Alias for current stdlib surface.
+- [Amp](/a7-py/docs/plugins/amp.md): Use A7 docs from Amp.
+- [Claude Code](/a7-py/docs/plugins/claude.md): Use A7 docs from Claude Code.
+- [Codex](/a7-py/docs/plugins/codex.md): Use A7 docs from Codex.
+- [Cursor](/a7-py/docs/plugins/cursor.md): Use A7 docs from Cursor.
+- [OpenCode](/a7-py/docs/plugins/opencode.md): Use A7 docs from OpenCode.
+- [Pi](/a7-py/docs/plugins/pi.md): Use A7 docs from Pi.
 
 ## LLM Resources
 
+- [Skills](/a7-py/docs/skills.md): Agent skill guidance and repo rules.
 - [llms.txt](/a7-py/llms.txt): Compact agent entry point.
 - [llms-full.txt](/a7-py/llms-full.txt): Single-file aggregate of the public Markdown docs.
-- [Contributing](/a7-py/docs/contributing.md): Repo workflow, post-change checklist, and docs sync rules.
+
+## Contributing
+
+- [Contributing](/a7-py/docs/dev/develop.md): Local development workflow.
+- [Deploy](/a7-py/docs/dev/deploy.md): Docs deploy and release notes.
+- [Kitchen Sink](/a7-py/docs/dev/kitchen-sink.md): Markdown component coverage.
 - [Changelog](/a7-py/docs/changelog.md): Current release notes and notable changes.
+
+## A7 References
+
+- [Language and Library](/a7-py/docs/language.md): Core syntax, integer guidance, stdlib, and no-recursion rule.
+- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, test layers, parity checks, and local release gate.
+- [Examples](/a7-py/docs/examples.md): Runnable programs and verification commands.
+- [Release](/a7-py/docs/release.md): Debug/release artifact builds, package build, dependency audits, and publishing status.
+- [Status](/a7-py/docs/status.md): Implemented surface, remaining gaps, and release risks.
+- [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
+- [Testing](/a7-py/docs/testing.md): Alias for verification commands.
+- [Standard Library](/a7-py/docs/stdlib.md): Alias for current stdlib surface.
 
 ## Source References
 

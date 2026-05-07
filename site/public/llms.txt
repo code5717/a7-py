@@ -4,7 +4,7 @@
 
 A7 is a statically typed systems language compiler implemented in Python. It compiles A7 source to Zig and C, rejects source recursion, and verifies examples through compile/build/run/output gates.
 
-## Start Here
+## Introduction
 
 - [Docs Index](/a7-py/docs/index.md): Navigation for curl.md and coding agents.
 - [Full Context](/a7-py/llms-full.txt): Single-file aggregate of the public Markdown docs.
@@ -12,22 +12,42 @@ A7 is a statically typed systems language compiler implemented in Python. It com
 - [Installation](/a7-py/docs/installation.md): Toolchain and local docs setup.
 - [Why A7](/a7-py/docs/why.md): Project goals, non-goals, and fit.
 - [FAQ](/a7-py/docs/faq.md): Short answers for agent workflows.
-- [Language and Library](/a7-py/docs/language.md): Syntax, type guidance, stdlib, and recursion rule.
-- [CLI](/a7-py/docs/cli.md): Compiler modes, flags, exit codes, and automation commands.
 
-## Deeper References
+## Guide
 
 - [Features](/a7-py/docs/features.md): Implemented language, compiler, and verification capabilities.
 - [Agent Usage](/a7-py/docs/agent-usage.md): Fetch order, verification commands, and trust boundaries.
+- [CLI](/a7-py/docs/cli.md): Compiler modes, flags, exit codes, and automation commands.
+- [API and SDK](/a7-py/docs/api.md): Automation entry points and current limits.
+- [Plugins](/a7-py/docs/plugins.md): Agent and editor integration map.
+
+## Plugins
+
+- [Amp](/a7-py/docs/plugins/amp.md): Use A7 docs from Amp.
+- [Claude Code](/a7-py/docs/plugins/claude.md): Use A7 docs from Claude Code.
+- [Codex](/a7-py/docs/plugins/codex.md): Use A7 docs from Codex.
+- [Cursor](/a7-py/docs/plugins/cursor.md): Use A7 docs from Cursor.
+- [OpenCode](/a7-py/docs/plugins/opencode.md): Use A7 docs from OpenCode.
+- [Pi](/a7-py/docs/plugins/pi.md): Use A7 docs from Pi.
+
+## LLM Resources
+
+- [Skills](/a7-py/docs/skills.md): Agent skill guidance and repo rules.
+
+## Contributing
+
+- [Contributing](/a7-py/docs/dev/develop.md): Local development workflow.
+- [Deploy](/a7-py/docs/dev/deploy.md): Docs deploy and release notes.
+- [Kitchen Sink](/a7-py/docs/dev/kitchen-sink.md): Markdown component coverage.
+- [Changelog](/a7-py/docs/changelog.md): Current release notes and notable changes.
+
+## A7 References
+
+- [Language and Library](/a7-py/docs/language.md): Syntax, type guidance, stdlib, and recursion rule.
 - [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, parity verifier, and release gate.
 - [Examples](/a7-py/docs/examples.md): Example catalog and verification commands.
 - [Release](/a7-py/docs/release.md): Debug/release artifacts, package build, audits, and publishing status.
 - [Status](/a7-py/docs/status.md): Current implementation status and known gaps.
-- [Contributing](/a7-py/docs/contributing.md): Repo workflow, checks, and docs sync rules.
-- [Changelog](/a7-py/docs/changelog.md): Current release notes and notable changes.
-
-## Route Aliases
-
 - [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
 - [Testing](/a7-py/docs/testing.md): Alias for verification commands.
 - [Standard Library](/a7-py/docs/stdlib.md): Alias for current stdlib surface.

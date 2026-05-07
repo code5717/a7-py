@@ -10,8 +10,21 @@
   <url><loc>https://code5717.github.io/a7-py/docs/faq.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/features.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/agent-usage.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/language.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/cli.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/api.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins/amp.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins/claude.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins/codex.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins/cursor.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins/opencode.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/plugins/pi.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/skills.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/dev/develop.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/dev/deploy.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/dev/kitchen-sink.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/changelog.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/language.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/compiler.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/pipeline.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/testing.md</loc></url>
@@ -20,5 +33,4 @@
   <url><loc>https://code5717.github.io/a7-py/docs/release.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/status.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/contributing.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/changelog.md</loc></url>
 </urlset>
