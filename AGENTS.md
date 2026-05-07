@@ -27,6 +27,17 @@ backend tests, example e2e, debug + release artifacts, error-stage matrix,
 docs style). Run it before tagging or before reporting a task as done when
 changes are non-trivial.
 
+## A7 Source Rules
+
+- A7 source recursion is banned. Semantic validation rejects both direct and
+  mutual recursion as compile-time errors; do not author examples, tests, or
+  docs that rely on recursive A7 functions.
+- Port recursive algorithms to loops, explicit stacks, or index-based
+  worklists (see `examples/025_linked_list.a7` and
+  `examples/026_binary_tree.a7` for the expected style).
+- This rule applies to A7 source only. Compiler internals already use
+  iterative AST traversals; keep them that way.
+
 ## Post-Change Checklist
 
 After making major changes (new language features, bug fixes, backend
@@ -38,6 +49,10 @@ committing:
 3. **docs/SPEC.md** — update if language semantics or syntax changed
 4. **MISSING_FEATURES.md** — mark completed gaps or document new ones
 5. **TODO.md** — check off completed items or add newly discovered work
+
+Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
+`CHANGELOG.md`, `MISSING_FEATURES.md`, and `TODO.md` — drift between them is
+treated as a bug.
 
 ## Security Caveat
 

@@ -20,5 +20,13 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 - Package build: `uv build`
 - Docs site build: `cd site && npm install && npm run build`
 
+## Key Rules (short form)
+
+- A7 source recursion is banned; the compiler reports direct and mutual
+  recursion as semantic errors. Use loops, explicit stacks, or index-based
+  worklists in examples and tests.
+- Keep `README.md`, `docs/SPEC.md`, `CHANGELOG.md`, `MISSING_FEATURES.md`,
+  and `TODO.md` aligned with any user-visible change.
+
 See `AGENTS.md` for the full workflow, post-change checklist, and security
 caveats.
