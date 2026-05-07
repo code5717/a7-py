@@ -28,7 +28,7 @@ export default function Start() {
       <SectionPanel title="Install">
         <CodeBlock
           lang="bash"
-          code={`git clone https://github.com/Airbus5717/a7-py.git
+          code={`git clone https://github.com/code5717/a7-py.git
 cd a7-py
 uv sync`}
         />

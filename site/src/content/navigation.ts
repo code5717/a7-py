@@ -24,7 +24,7 @@ export const PRIMARY_NAV: PrimaryNavItem[] = [
   { kind: 'route', to: '/examples', label: 'Examples' },
   { kind: 'route', to: '/testing', label: 'Testing' },
   { kind: 'route', to: '/changelog', label: 'Changelog' },
-  { kind: 'link', href: 'https://github.com/Airbus5717/a7-py', label: 'GitHub ↗' },
+  { kind: 'link', href: 'https://github.com/code5717/a7-py', label: 'GitHub ↗' },
 ]
 
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [

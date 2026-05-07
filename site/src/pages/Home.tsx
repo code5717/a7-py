@@ -33,7 +33,7 @@ main :: fn() {
 }`
 
 const QUICKSTART = [
-  { step: '01', label: 'Clone', command: 'git clone https://github.com/Airbus5717/a7-py.git' },
+  { step: '01', label: 'Clone', command: 'git clone https://github.com/code5717/a7-py.git' },
   { step: '02', label: 'Enter', command: 'cd a7-py' },
   { step: '03', label: 'Install', command: 'uv sync' },
   { step: '04', label: 'Run', command: 'uv run python main.py examples/001_hello.a7' },
@@ -238,7 +238,7 @@ export default function Home() {
               Get started <span aria-hidden="true">→</span>
             </Link>
             <a
-              href="https://github.com/Airbus5717/a7-py"
+              href="https://github.com/code5717/a7-py"
               className="secondary-action"
               target="_blank"
               rel="noopener noreferrer"

@@ -92,7 +92,7 @@ cd site && npm audit --omit=dev --audit-level=moderate
 5. Tag and push:
 
 ```bash
-git tag -a v0.1.0 -m "A7 v0.1.0"
+git tag -a v0.3.0 -m "A7 v0.3.0"
 git push origin master --tags
 ```
 

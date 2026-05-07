@@ -348,7 +348,7 @@ export default function Layout() {
             <div className="site-footer-column">
               <h3>Community</h3>
               <div className="site-footer-links">
-                <a href="https://github.com/Airbus5717/a7-py" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/code5717/a7-py" target="_blank" rel="noopener noreferrer">
                   GitHub
                 </a>
                 <Link to="/contributing">Contributing</Link>

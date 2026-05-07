@@ -41,7 +41,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
 
       <div className="nav-foot">
         <a
-          href="https://github.com/Airbus5717/a7-py"
+          href="https://github.com/code5717/a7-py"
           target="_blank"
           rel="noopener noreferrer"
           className="nav-foot-link"

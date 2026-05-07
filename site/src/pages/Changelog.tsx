@@ -4,7 +4,7 @@ import SectionPanel from '../components/SectionPanel'
 const releases = [
   {
     version: '0.3.0',
-    date: '',
+    date: '2026-05-07',
     groups: {
       Added: [
         'Labeled loops for while, for, and for-in with labeled break/continue in Zig and C backends.',
