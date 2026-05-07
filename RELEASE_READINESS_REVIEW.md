@@ -42,11 +42,10 @@ not factually provable from local tests alone.
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
-- hosted CI run `25520030936` passed for commit `452d176` before the backend
-  parity verifier was added:
-  docs, pytest, dependency audits, error-stage verification, Zig and C example
-  verification, debug artifacts, release artifacts, and package build
-- hosted Deploy Docs run `25520030885` passed for commit `452d176`
+- hosted CI and Deploy Docs must be checked after each release-candidate push;
+  the current workflows cover docs, pytest, dependency audits, error-stage
+  verification, Zig and C example verification, backend parity checks, debug
+  artifacts, release artifacts, and package build.
 - manual release workflow dispatch passed on `master` after the PyPI publish
   dependency update; run `25517785179` uploaded
   `python-package-distributions` artifact `6864726540` and `release-bundles`
