@@ -162,3 +162,62 @@ def test_release_manifest_requires_expected_paths(tmp_path: Path) -> None:
 
     assert bad_result.returncode == 1
     assert "manifest missing required artifact paths" in bad_result.stderr
+
+
+def test_verify_release_manifest_detects_tampering(tmp_path: Path) -> None:
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    artifact = dist / "artifact.tar.gz"
+    manifest = dist / "SHA256SUMS"
+    artifact.write_text("artifact\n", encoding="utf-8")
+
+    generate = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_release_manifest.py",
+            str(dist),
+            "--output",
+            str(manifest),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert generate.returncode == 0, generate.stderr or generate.stdout
+
+    verify = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_release_manifest.py",
+            str(manifest),
+            "--base-dir",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert verify.returncode == 0, verify.stderr or verify.stdout
+    assert "release manifest verified: 1 artifacts" in verify.stdout
+
+    artifact.write_text("tampered\n", encoding="utf-8")
+    tampered = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_release_manifest.py",
+            str(manifest),
+            "--base-dir",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert tampered.returncode == 1
+    assert "release manifest verification failed" in tampered.stderr

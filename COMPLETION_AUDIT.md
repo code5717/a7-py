@@ -34,7 +34,7 @@ Deliverables implied by the active objective:
 | Release artifacts | Hosted CI run `25524022065`; `scripts/build_examples.py --profile release --backend both --clean` | Passing |
 | Python package build | Hosted CI run `25524022065`; local clean `rm -rf dist && uv build` | Passing |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
-| Release checksums | `scripts/generate_release_manifest.py`; `test/test_release_tooling.py`; release workflow validates required artifact paths before uploading `SHA256SUMS` | Covered |
+| Release checksums | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `test/test_release_tooling.py`; release workflow validates required paths and re-checks hashes before upload | Covered |
 | Docs style/build | Hosted CI run `25524022065`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
 | Docs deploy | Hosted Deploy Docs run `25524022056` | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/docs/*.md`, sitemap and robots entries | Implemented |

@@ -101,6 +101,7 @@ jobs:
             --require "$wheel" \
             --require dist/a7-docs-site.tar.gz \
             --require dist/a7-example-artifacts-release.tar.gz
+          uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
 
       - name: Upload release bundles
         uses: actions/upload-artifact@v7

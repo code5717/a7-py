@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   into tag-created draft GitHub releases.
 - Release checksum generation now fails closed if expected package, docs, or
   native artifact archive paths are absent from `SHA256SUMS`.
+- Added release manifest verification so CI and maintainers can re-check
+  recorded artifact hashes and sizes before upload.
 
 ## [0.3.0] - 2026-05-07
 

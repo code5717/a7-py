@@ -135,7 +135,8 @@ not factually provable from local tests alone.
   verification evidence and records the requirements that remain incomplete.
 - Release tooling now generates a deterministic `SHA256SUMS` manifest for
   draft GitHub release artifacts and verifies that expected package, docs, and
-  native artifact archive paths are present before upload.
+  native artifact archive paths are present before upload, then re-checks the
+  recorded hashes and sizes on disk.
 
 ## Residual Risks
 
