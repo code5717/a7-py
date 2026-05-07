@@ -250,9 +250,9 @@ class SemanticValidationPass:
         # Mark function as having return
         self.context.mark_function_returns()
 
-        # Visit return expression
-        if node.expression:
-            self.visit_expression(node.expression)
+        # RETURN nodes store their payload in `value`.
+        if node.value:
+            self.visit_expression(node.value)
 
     def visit_defer_stmt(self, node: ASTNode) -> None:
         """Validate a defer statement."""
@@ -260,9 +260,13 @@ class SemanticValidationPass:
             self.add_error(SemanticErrorType.DEFER_OUTSIDE_FUNCTION, node.span)
             return
 
-        # Add defer to context
+        # Add defer to context and validate the deferred statement.
         scope_depth = self.symbols.get_scope_depth()
-        if node.expression:
+        deferred_stmt = getattr(node, "statement", None)
+        if deferred_stmt:
+            self.context.add_defer(deferred_stmt, scope_depth)
+            self.visit_statement(deferred_stmt)
+        elif node.expression:
             self.context.add_defer(node.expression, scope_depth)
             self.visit_expression(node.expression)
 

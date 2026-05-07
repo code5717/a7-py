@@ -37,8 +37,8 @@ const QUICKSTART = [
 
 const FEATURES = [
   {
-    title: 'No recursion',
-    copy: 'Iterative control by default.',
+    title: 'Simple core',
+    copy: 'Small syntax. Direct control.',
   },
   {
     title: 'Memory safety',
@@ -67,7 +67,7 @@ const HIGHLIGHTS = [
   { title: 'Pattern matching', copy: 'Statements and expressions with current backend notes.' },
   { title: 'Static diagnostics', copy: 'Type-aware checks.' },
   { title: 'Manual memory', copy: 'Visible allocation and deletion.' },
-  { title: 'Iterators, not recursion', copy: 'Stack-safe traversal.' },
+  { title: 'Straight-line control', copy: 'Readable loops and branches.' },
   { title: 'Small and fast', copy: 'Lean compiler. Clear output.' },
 ]
 
@@ -132,7 +132,7 @@ export default function Home() {
       <section className="home-hero" data-reveal>
         <div className="home-hero-copy">
           <span className="page-header-eyebrow">A7 docs · unreleased</span>
-          <h1 className="page-header-title">A7, without recursion.</h1>
+          <h1 className="page-header-title">A7, simple, fast.</h1>
           <p className="page-header-summary">
             A small systems language with explicit control flow, clear diagnostics, and direct compiler output.
           </p>
@@ -227,7 +227,7 @@ export default function Home() {
 
       <SectionPanel className="home-cta-panel home-cta">
         <div className="home-cta-copy">
-          <h2 className="home-cta-title">Build without recursion.</h2>
+          <h2 className="home-cta-title">A7, simple, fast.</h2>
           <p>Start with one file.</p>
           <div className="home-cta-actions">
             <Link to="/start" className="primary-action">

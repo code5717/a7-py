@@ -21,6 +21,10 @@
    - bool/enum exhaustiveness (or explicit `else` / wildcard),
    - wildcard pattern parsing (`case _:`),
    - return-path correctness for exhaustive enum/bool `match` without `else`.
+10. Deferred statement payloads are traversed by type checking and semantic validation.
+11. `ret` payloads are traversed through the semantic validator's `value` field.
+12. `for-in` and indexed `for-in` reject scalar/non-iterable expressions during type checking.
+13. Constant folding covers arithmetic, boolean logic, literal comparisons, and integer bitwise expressions.
 
 ---
 

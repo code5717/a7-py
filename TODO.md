@@ -9,13 +9,13 @@ Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 36/36 examples p
 
 These are bugs and schema mismatches in already-implemented features.
 
-- [ ] Fix the `defer` AST schema mismatch in semantic analysis.
+- [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `src/passes/type_checker.py`, `src/passes/semantic_validator.py`
-  Notes: the parser stores deferred work in `statement`, but both semantic passes read `expression`, so deferred calls and `del` statements skip type-checking.
+  Notes: fixed; deferred `statement` payloads are now traversed by type checking and semantic validation, with regression coverage.
 
-- [ ] Fix the `return` AST schema mismatch in semantic validation.
+- [x] Fix the `return` AST schema mismatch in semantic validation.
   Files: `src/passes/semantic_validator.py`
-  Notes: `ret` payloads are stored in `value`, but semantic validation traverses `expression`, skipping return-payload validation.
+  Notes: fixed; semantic validation now traverses `value`, with a schema regression test.
 
 - [ ] Implement `fall` end-to-end instead of only parsing it.
   Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`
@@ -29,9 +29,9 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `src/backends/c.py`
   Notes: `for-in` and sub-slice lowering reuse the iterable expression multiple times, duplicating side effects.
 
-- [ ] Reject non-iterables in `for-in` and indexed `for-in` during type checking.
+- [x] Reject non-iterables in `for-in` and indexed `for-in` during type checking.
   Files: `src/passes/type_checker.py`
-  Notes: `for x in 42 {}` falls through with `UNKNOWN` instead of a diagnostic.
+  Notes: fixed; array, slice, and string remain accepted iterables, while scalar iterables now produce a type diagnostic.
 
 ---
 
@@ -121,8 +121,8 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 ### Optimization Passes (high-leverage, low-complexity)
 
-- [ ] Constant folding: evaluate compile-time-known arithmetic, comparisons, and boolean logic.
-  Notes: `2 + 3` → `5`, `true && false` → `false`. Covers the most common redundancy.
+- [x] Constant folding: evaluate compile-time-known arithmetic, comparisons, and boolean logic.
+  Notes: arithmetic, boolean logic, literal comparisons, and integer bitwise folds are covered. More advanced propagation remains separate work.
 
 - [ ] Dead code elimination: drop unreachable statements after return/break/continue and unused local variables.
   Notes: reachability + `is_used` annotations already exist; just need a pass that prunes the AST.
@@ -167,9 +167,9 @@ These are entire subsystems. Each needs a design decision before implementation 
 - [ ] Update `run_all_tests.sh` to include C backend tests, C example verifier, and error-stage matrix.
   Files: `run_all_tests.sh`, `test/test_codegen_c.py`, `test/test_examples_e2e_c.py`, `test/test_error_stage_matrix.py`
 
-- [ ] Add semantic regression tests for front-end schema gaps.
+- [x] Add semantic regression tests for front-end schema gaps.
   Files: `test/test_semantic_control_flow.py`, `test/test_semantic_comprehensive.py`
-  Notes: missing cases for deferred statement type-checking, return-payload traversal, non-iterable `for-in`, slice fields, string slicing, `fall`.
+  Notes: added cases for deferred statement checking, return-payload traversal, and non-iterable `for-in`. Remaining feature gaps such as slice fields, string slicing, and `fall` still need implementation-specific coverage.
 
 - [ ] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
   Files: `test/test_parser_combinatorial.py`, `test/test_parser_integration.py`
@@ -188,6 +188,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [ ] Deduplicate error-stage audit logic between script and pytest matrix.
   Files: `scripts/verify_error_stages.py`, `test/test_error_stage_matrix.py`
+  Notes: still duplicated, but both surfaces now include deferred semantic error coverage.
 
 - [ ] Run docs/style verification from `run_all_tests.sh`, not only in CI.
   Files: `run_all_tests.sh`, `scripts/check_docs_style.py`

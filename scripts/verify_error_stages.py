@@ -147,6 +147,12 @@ def build_stage_sources(tmp_dir: Path) -> dict[str, Path]:
         encoding="utf-8",
     )
 
+    deferred_semantic_error = tmp_dir / "deferred_semantic_error.a7"
+    deferred_semantic_error.write_text(
+        "main :: fn() {\n    x: i32 = 1\n    defer del x\n}\n",
+        encoding="utf-8",
+    )
+
     ok_program = tmp_dir / "ok.a7"
     ok_program.write_text("main :: fn() {}\n", encoding="utf-8")
 
@@ -154,6 +160,7 @@ def build_stage_sources(tmp_dir: Path) -> dict[str, Path]:
         "tokenize": tokenize_error,
         "parse": parse_error,
         "semantic": semantic_error,
+        "deferred_semantic": deferred_semantic_error,
         "ok": ok_program,
     }
 
@@ -216,6 +223,21 @@ def run_audit(selected_modes: list[str], selected_formats: list[str]) -> list[Au
                     must_not_have_output_artifact=(mode == "compile" and output_format == "json"),
                 )
                 results.append(AuditResult("semantic_error", mode, output_format, passed, detail))
+
+            # Deferred statements should report semantic errors from their payloads.
+            for mode in selected_modes:
+                if mode not in SEMANTIC_MODES:
+                    continue
+                proc = run_cli(["--mode", mode, *fmt_args, str(sources["deferred_semantic"])])
+                passed, detail = verify_error_common(
+                    proc,
+                    expected_exit=6,
+                    output_format=output_format,
+                    expected_category="semantic" if output_format == "json" else None,
+                    must_contain=["reference"] if output_format == "human" else None,
+                    must_not_have_output_artifact=(mode == "compile" and output_format == "json"),
+                )
+                results.append(AuditResult("deferred_semantic_error", mode, output_format, passed, detail))
 
             # Semantic should be skipped in ast mode
             if "ast" in selected_modes:

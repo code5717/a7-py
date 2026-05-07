@@ -366,6 +366,40 @@ class TestConstantFolding:
         val = stmts[0].value
         assert val.literal_value is False
 
+    def test_numeric_comparison_folds_to_boolean(self):
+        """2 + 3 == 5 should fold through arithmetic and comparison."""
+        ast = preprocess("main :: fn() { x := 2 + 3 == 5 }")
+        stmts = get_function_stmts(ast)
+        val = stmts[0].value
+        assert val.kind == NodeKind.LITERAL
+        assert val.literal_kind == LiteralKind.BOOLEAN
+        assert val.literal_value is True
+
+    def test_string_equality_folds_to_boolean(self):
+        """Equal literal strings should fold for == comparisons."""
+        ast = preprocess('main :: fn() { x := "a" == "a" }')
+        stmts = get_function_stmts(ast)
+        val = stmts[0].value
+        assert val.kind == NodeKind.LITERAL
+        assert val.literal_kind == LiteralKind.BOOLEAN
+        assert val.literal_value is True
+
+    def test_bitwise_integer_ops_fold(self):
+        """Integer bitwise expressions should fold when both operands are literals."""
+        ast = preprocess("main :: fn() { x := (6 & 3) | 8 }")
+        stmts = get_function_stmts(ast)
+        val = stmts[0].value
+        assert val.kind == NodeKind.LITERAL
+        assert val.literal_kind == LiteralKind.INTEGER
+        assert val.literal_value == 10
+
+    def test_negative_shift_not_folded(self):
+        """Invalid constant shifts stay in the AST for semantic/codegen diagnostics."""
+        ast = preprocess("main :: fn() { x := 1 << -1 }")
+        stmts = get_function_stmts(ast)
+        val = stmts[0].value
+        assert val.kind == NodeKind.BINARY
+
 
 # ===========================================================================
 # 3. Mutation Analysis

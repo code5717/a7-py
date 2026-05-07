@@ -656,7 +656,10 @@ class TypeCheckingPass:
                 pass
 
             elif nd.kind == NodeKind.DEFER:
-                if nd.expression:
+                deferred_stmt = getattr(nd, "statement", None)
+                if deferred_stmt:
+                    self.visit_statement(deferred_stmt)
+                elif nd.expression:
                     self.visit_expression(nd.expression)
 
             elif nd.kind == NodeKind.DEL:
@@ -781,6 +784,13 @@ class TypeCheckingPass:
             element_type = iterable_type.element_type
         elif iterable_type.equals(STRING):
             element_type = CHAR
+        elif not iterable_type.equals(UNKNOWN):
+            self.add_type_error(
+                TypeErrorType.REQUIRES_ARRAY_OR_SLICE,
+                node.iterable.span if node.iterable else node.span,
+                got_type=str(iterable_type),
+                context="for-in requires an array, slice, or string iterable",
+            )
 
         # Update iterator variable type
         if node.iterator:

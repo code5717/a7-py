@@ -66,6 +66,12 @@ def stage_sources(tmp_path: Path) -> dict[str, Path]:
         encoding="utf-8",
     )
 
+    deferred_semantic_error = tmp_path / "deferred_semantic_error.a7"
+    deferred_semantic_error.write_text(
+        "main :: fn() {\n    x: i32 = 1\n    defer del x\n}\n",
+        encoding="utf-8",
+    )
+
     ok_program = tmp_path / "ok.a7"
     ok_program.write_text("main :: fn() {}\n", encoding="utf-8")
 
@@ -73,6 +79,7 @@ def stage_sources(tmp_path: Path) -> dict[str, Path]:
         "tokenize": tokenize_error,
         "parse": parse_error,
         "semantic": semantic_error,
+        "deferred_semantic": deferred_semantic_error,
         "ok": ok_program,
     }
 
@@ -173,6 +180,32 @@ def test_semantic_errors_are_well_handled(
         assert payload["status"] == "error"
         assert payload["error"]["category"] == "semantic"
         assert payload["stages"]["parse"]["ok"] is True
+        assert payload["stages"]["semantic"]["ok"] is False
+        if mode == "compile":
+            assert "output_path" not in payload["artifacts"]
+
+
+@pytest.mark.parametrize("mode", SEMANTIC_MODES)
+@pytest.mark.parametrize("output_format", FORMATS)
+def test_deferred_statement_errors_are_well_handled(
+    stage_sources: dict[str, Path], mode: str, output_format: str
+) -> None:
+    args = ["--mode", mode]
+    if output_format == "json":
+        args += ["--format", "json"]
+    args += [str(stage_sources["deferred_semantic"])]
+
+    result = run_cli(args)
+
+    assert result.returncode == ExitCode.SEMANTIC
+    if output_format == "human":
+        combined = (result.stdout + result.stderr).lower()
+        assert "reference" in combined
+        assert "defer" in combined or "del" in combined
+    else:
+        payload = parse_json_output(result)
+        assert payload["status"] == "error"
+        assert payload["error"]["category"] == "semantic"
         assert payload["stages"]["semantic"]["ok"] is False
         if mode == "compile":
             assert "output_path" not in payload["artifacts"]

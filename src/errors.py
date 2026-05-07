@@ -216,15 +216,21 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
 
         # Scope errors
         SemanticErrorType.BREAK_OUTSIDE_LOOP: "Break statement outside loop",
+        SemanticErrorType.BREAK_UNDEFINED_LABEL: "Break label is not defined",
         SemanticErrorType.CONTINUE_OUTSIDE_LOOP: "Continue statement outside loop",
+        SemanticErrorType.CONTINUE_UNDEFINED_LABEL: "Continue label is not defined",
         SemanticErrorType.RETURN_OUTSIDE_FUNCTION: "Return statement outside function",
+        SemanticErrorType.DEFER_OUTSIDE_FUNCTION: "Defer statement outside function",
 
         # Semantic validation
         SemanticErrorType.UNREACHABLE_CODE: "Unreachable code",
         SemanticErrorType.MISSING_RETURN: "Missing return statement",
+        SemanticErrorType.CANNOT_ASSIGN_TO_IMMUTABLE: "Cannot assign to immutable binding",
         SemanticErrorType.INVALID_DEFER_SCOPE: "Invalid defer scope",
         SemanticErrorType.MEMORY_LEAK: "Potential memory leak",
         SemanticErrorType.DOUBLE_FREE: "Potential double free",
+        SemanticErrorType.DELETE_NON_REFERENCE: "Delete requires a reference type",
+        SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Nil requires a reference type",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Missing type annotation",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Non-exhaustive match",
 
@@ -257,15 +263,21 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
 
         # Scope errors
         SemanticErrorType.BREAK_OUTSIDE_LOOP: "Break can only be used inside a loop",
+        SemanticErrorType.BREAK_UNDEFINED_LABEL: "Use a label that is visible from this break statement",
         SemanticErrorType.CONTINUE_OUTSIDE_LOOP: "Continue can only be used inside a loop",
+        SemanticErrorType.CONTINUE_UNDEFINED_LABEL: "Use a label that is visible from this continue statement",
         SemanticErrorType.RETURN_OUTSIDE_FUNCTION: "Return can only be used inside a function",
+        SemanticErrorType.DEFER_OUTSIDE_FUNCTION: "Defer can only be used inside a function",
 
         # Semantic validation
         SemanticErrorType.UNREACHABLE_CODE: "Remove unreachable code or fix control flow",
         SemanticErrorType.MISSING_RETURN: "Add a return statement that covers all code paths",
+        SemanticErrorType.CANNOT_ASSIGN_TO_IMMUTABLE: "Declare the binding with := if it needs to be reassigned",
         SemanticErrorType.INVALID_DEFER_SCOPE: "Defer statements must be used carefully with scoping rules",
         SemanticErrorType.MEMORY_LEAK: "Ensure all allocated memory is freed",
         SemanticErrorType.DOUBLE_FREE: "Ensure memory is only freed once",
+        SemanticErrorType.DELETE_NON_REFERENCE: "Only values with reference type can be deleted",
+        SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Use nil only where a reference type is expected",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Add a type annotation or an initializer for this declaration",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Add missing cases or an else/wildcard branch to cover remaining values",
 

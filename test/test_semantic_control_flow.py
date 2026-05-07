@@ -15,6 +15,7 @@ Covers:
 import pytest
 from src.tokens import Tokenizer
 from src.parser import Parser
+from src.ast_nodes import ASTNode, LiteralKind, NodeKind
 from src.passes.name_resolution import NameResolutionPass
 from src.passes.type_checker import TypeCheckingPass
 from src.passes.semantic_validator import SemanticValidationPass
@@ -687,3 +688,55 @@ class TestDeferStatements:
         cleanup_y :: fn() { }
         """
         assert expect_success(source)
+
+    def test_deferred_del_of_non_reference_is_rejected(self):
+        """Deferred statements should be type/semantic checked like normal statements."""
+        source = """
+        main :: fn() {
+            x: i32 = 10
+            defer del x
+        }
+        """
+        assert expect_error(source, "reference")
+
+
+class TestSemanticValidatorSchemaTraversal:
+    """Regression tests for parser/semantic AST field-name contracts."""
+
+    def test_return_value_payload_is_visited_by_semantic_validator(self):
+        ret_value = ASTNode(kind=NodeKind.LITERAL, literal_kind=LiteralKind.INTEGER, literal_value=1)
+        ret_stmt = ASTNode(kind=NodeKind.RETURN, value=ret_value)
+        func_node = ASTNode(kind=NodeKind.FUNCTION, name="main")
+        validator = SemanticValidationPass(None, {})
+        visited = []
+
+        validator.context.enter_function("main", None, func_node)
+        validator.visit_expression = visited.append
+
+        validator.visit_return_stmt(ret_stmt)
+
+        assert visited == [ret_value]
+
+
+class TestForInIterableValidation:
+    """Test iterable type validation for for-in loops."""
+
+    def test_for_in_rejects_non_iterable_expression(self):
+        source = """
+        main :: fn() {
+            for x in 42 {
+                y := x
+            }
+        }
+        """
+        assert expect_error(source, "array or slice")
+
+    def test_indexed_for_in_rejects_non_iterable_expression(self):
+        source = """
+        main :: fn() {
+            for i, x in 42 {
+                y := i + x
+            }
+        }
+        """
+        assert expect_error(source, "array or slice")

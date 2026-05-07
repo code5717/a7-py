@@ -608,7 +608,12 @@ class ASTPreprocessor:
         if lval is None or rval is None:
             return node
 
-        if isinstance(lval, (int, float)) and isinstance(rval, (int, float)):
+        numeric_literals = (
+            isinstance(lval, (int, float)) and not isinstance(lval, bool) and
+            isinstance(rval, (int, float)) and not isinstance(rval, bool)
+        )
+
+        if numeric_literals:
             result = None
             try:
                 if op == BinaryOp.ADD:
@@ -621,6 +626,16 @@ class ASTPreprocessor:
                     result = lval // rval if isinstance(lval, int) and isinstance(rval, int) else lval / rval
                 elif op == BinaryOp.MOD and rval != 0:
                     result = lval % rval
+                elif op == BinaryOp.BIT_AND and isinstance(lval, int) and isinstance(rval, int):
+                    result = lval & rval
+                elif op == BinaryOp.BIT_OR and isinstance(lval, int) and isinstance(rval, int):
+                    result = lval | rval
+                elif op == BinaryOp.BIT_XOR and isinstance(lval, int) and isinstance(rval, int):
+                    result = lval ^ rval
+                elif op == BinaryOp.BIT_SHL and isinstance(lval, int) and isinstance(rval, int) and rval >= 0:
+                    result = lval << rval
+                elif op == BinaryOp.BIT_SHR and isinstance(lval, int) and isinstance(rval, int) and rval >= 0:
+                    result = lval >> rval
             except (ZeroDivisionError, OverflowError):
                 return node
 
@@ -632,6 +647,32 @@ class ASTPreprocessor:
                     literal_kind=lk,
                     literal_value=result,
                     raw_text=str(result),
+                    span=node.span,
+                )
+
+        comparable_literals = numeric_literals or left.literal_kind == right.literal_kind
+        if comparable_literals:
+            result = None
+            if op == BinaryOp.EQ:
+                result = lval == rval
+            elif op == BinaryOp.NE:
+                result = lval != rval
+            elif numeric_literals and op == BinaryOp.LT:
+                result = lval < rval
+            elif numeric_literals and op == BinaryOp.LE:
+                result = lval <= rval
+            elif numeric_literals and op == BinaryOp.GT:
+                result = lval > rval
+            elif numeric_literals and op == BinaryOp.GE:
+                result = lval >= rval
+
+            if result is not None:
+                self.changes_made += 1
+                return ASTNode(
+                    kind=NodeKind.LITERAL,
+                    literal_kind=LiteralKind.BOOLEAN,
+                    literal_value=result,
+                    raw_text=str(result).lower(),
                     span=node.span,
                 )
 

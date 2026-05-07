@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Compiler handling and test coverage expansion**
+  - Added semantic regression coverage for deferred statement payloads, return payload traversal, and non-iterable `for-in` diagnostics.
+  - Expanded AST preprocessor tests for constant folding of numeric comparisons, literal equality, and integer bitwise operators.
+  - Expanded `scripts/verify_error_stages.py` and `test/test_error_stage_matrix.py` so deferred semantic errors are checked across all semantic-capable modes and human/JSON output.
+
 - **Labeled Loops** (both backends)
   - `outer: while`, `outer: for`, `outer: for-in` with `break outer` / `continue outer`.
   - Zig backend emits native labeled loops; C backend lowers to goto-based control flow.
@@ -21,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `visit_index_expr`: now rejects non-integer index expressions.
 
 ### Changed
+- **Semantic and preprocessing correctness**
+  - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
+  - `ret` semantic validation now traverses the parser's `value` payload.
+  - `for-in` and indexed `for-in` now reject non-array, non-slice, non-string iterables during type checking.
+  - Semantic diagnostics now include concrete messages/advice for deferred delete/reference failures and related scope/immutability cases.
+  - Constant folding now covers comparisons and integer bitwise operators in addition to arithmetic and boolean logic.
+
 - **Documentation Site Redesign**
   - Reworked the React/Vite docs frontend under `site/` into a cleaner editorial layout with a warm monochrome token system, flatter panels, and a top-led navigation shell.
   - Rebuilt the home page around an image-led docs landing composition with a framed code hero, quick-start strip, feature bento, pipeline overview, and structured footer.
