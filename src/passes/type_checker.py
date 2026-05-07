@@ -4,7 +4,7 @@ Type checking pass for A7 semantic analysis.
 Performs type inference, type checking, and type compatibility validation.
 """
 
-from typing import Optional, List, Dict, Set, Tuple
+from typing import Any, Optional, List, Dict, Set, Tuple
 
 from src.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, LiteralKind
 from src.symbol_table import SymbolTable, Symbol, SymbolKind
@@ -822,11 +822,20 @@ class TypeCheckingPass:
         has_catch_all = bool(node.else_case)
         bool_coverage: Set[bool] = set()
         enum_coverage: Set[str] = set()
+        seen_patterns: Dict[Tuple[str, Any], ASTNode] = {}
+        wildcard_pattern: Optional[ASTNode] = None
 
         # Visit all case branches
         for case in (node.cases or []):
             for pattern in (case.patterns or []):
                 pattern_kind, pattern_value = self._validate_match_pattern(pattern, scrutinee_type)
+                wildcard_pattern = self._check_match_pattern_redundancy(
+                    pattern,
+                    pattern_kind,
+                    pattern_value,
+                    seen_patterns,
+                    wildcard_pattern,
+                )
                 if pattern_kind == "wildcard":
                     has_catch_all = True
                 elif pattern_kind == "bool":
@@ -847,6 +856,13 @@ class TypeCheckingPass:
 
         # Visit else case
         if node.else_case:
+            if wildcard_pattern is not None:
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    self._match_else_span(node.else_case) or node.span,
+                    context="match else branch is unreachable because a previous wildcard pattern covers all values",
+                )
+
             self._enter_matching_scope("match_else")
             try:
                 for stmt in node.else_case:
@@ -1370,11 +1386,20 @@ class TypeCheckingPass:
         has_catch_all = isinstance(node.else_case, ASTNode)
         bool_coverage: Set[bool] = set()
         enum_coverage: Set[str] = set()
+        seen_patterns: Dict[Tuple[str, Any], ASTNode] = {}
+        wildcard_pattern: Optional[ASTNode] = None
 
         branch_types: List[Type] = []
         for case in (node.cases or []):
             for pattern in (case.patterns or []):
                 pattern_kind, pattern_value = self._validate_match_pattern(pattern, scrutinee_type)
+                wildcard_pattern = self._check_match_pattern_redundancy(
+                    pattern,
+                    pattern_kind,
+                    pattern_value,
+                    seen_patterns,
+                    wildcard_pattern,
+                )
                 if pattern_kind == "wildcard":
                     has_catch_all = True
                 elif pattern_kind == "bool":
@@ -1387,6 +1412,12 @@ class TypeCheckingPass:
                 branch_types.append(self.visit_expression(case_expr))
 
         if isinstance(node.else_case, ASTNode):
+            if wildcard_pattern is not None:
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    node.else_case.span,
+                    context="match else branch is unreachable because a previous wildcard pattern covers all values",
+                )
             branch_types.append(self.visit_expression(node.else_case))
 
         self._check_match_exhaustiveness(
@@ -1419,6 +1450,120 @@ class TypeCheckingPass:
             return UNKNOWN
 
         return result_type
+
+    def _check_match_pattern_redundancy(
+        self,
+        pattern: ASTNode,
+        pattern_kind: Optional[str],
+        pattern_value: Optional[object],
+        seen_patterns: Dict[Tuple[str, Any], ASTNode],
+        wildcard_pattern: Optional[ASTNode],
+    ) -> Optional[ASTNode]:
+        """Emit diagnostics for exact duplicate or unreachable match patterns."""
+        if wildcard_pattern is not None:
+            self.add_semantic_error(
+                SemanticErrorType.UNREACHABLE_CODE,
+                pattern.span,
+                context=(
+                    f"match pattern '{self._format_match_pattern(pattern)}' is unreachable "
+                    "because a previous wildcard pattern covers all values"
+                ),
+            )
+            return wildcard_pattern
+
+        key = self._match_pattern_key(pattern, pattern_kind, pattern_value)
+        if key is None:
+            return wildcard_pattern
+
+        if key in seen_patterns:
+            self.add_semantic_error(
+                SemanticErrorType.UNREACHABLE_CODE,
+                pattern.span,
+                context=f"redundant match pattern '{self._format_match_pattern(pattern)}'",
+            )
+            return wildcard_pattern
+
+        seen_patterns[key] = pattern
+        if pattern_kind == "wildcard":
+            return pattern
+
+        return wildcard_pattern
+
+    def _match_pattern_key(
+        self,
+        pattern: ASTNode,
+        pattern_kind: Optional[str],
+        pattern_value: Optional[object],
+    ) -> Optional[Tuple[str, Any]]:
+        """Return a comparable key for patterns with exact coverage."""
+        if pattern_kind == "wildcard":
+            return ("wildcard", None)
+
+        if pattern_kind == "bool":
+            return ("bool", bool(pattern_value))
+
+        if pattern_kind == "enum" and isinstance(pattern_value, str):
+            return ("enum", pattern.enum_type or "", pattern_value)
+
+        literal = self._match_pattern_literal(pattern)
+        if literal is None:
+            return None
+
+        return ("literal", literal.literal_kind, literal.literal_value)
+
+    def _match_pattern_literal(self, pattern: ASTNode) -> Optional[ASTNode]:
+        """Return the literal node embedded in a literal pattern."""
+        if pattern.kind == NodeKind.PATTERN_LITERAL and pattern.literal:
+            literal = pattern.literal
+            return literal if literal.kind == NodeKind.LITERAL else None
+
+        if pattern.kind == NodeKind.LITERAL:
+            return pattern
+
+        return None
+
+    def _format_match_pattern(self, pattern: ASTNode) -> str:
+        """Format a match pattern for diagnostics."""
+        if pattern.kind == NodeKind.PATTERN_WILDCARD:
+            return "_"
+
+        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+            return pattern.name or "<identifier>"
+
+        if pattern.kind == NodeKind.PATTERN_ENUM:
+            return f"{pattern.enum_type}.{pattern.variant}"
+
+        if pattern.kind == NodeKind.PATTERN_RANGE:
+            start = self._format_match_pattern(pattern.start) if pattern.start else ""
+            end = self._format_match_pattern(pattern.end) if pattern.end else ""
+            return f"{start}..{end}"
+
+        literal = self._match_pattern_literal(pattern)
+        if literal is not None:
+            value = literal.literal_value
+            if literal.literal_kind == LiteralKind.STRING:
+                return f'"{value}"'
+            if literal.literal_kind == LiteralKind.CHAR:
+                return f"'{value}'"
+            if literal.literal_kind == LiteralKind.BOOLEAN:
+                return "true" if value else "false"
+            if literal.literal_kind == LiteralKind.NIL:
+                return "nil"
+            return str(value)
+
+        return pattern.kind.name.lower()
+
+    def _match_else_span(self, else_case: object) -> Optional[SourceSpan]:
+        """Find the best available span for a match else branch."""
+        if isinstance(else_case, ASTNode):
+            return else_case.span
+
+        if isinstance(else_case, list) and else_case:
+            first = else_case[0]
+            if isinstance(first, ASTNode):
+                return first.span
+
+        return None
 
     def _validate_match_pattern(self, pattern: ASTNode, scrutinee_type: Type) -> Tuple[Optional[str], Optional[object]]:
         """Type-check a match pattern against the scrutinee type.

@@ -48,8 +48,9 @@
    - Full fallthrough semantics and backend lowering are not implemented yet.
 
 2. **Advanced match diagnostics**
-   - No overlap/redundancy diagnostics for case patterns.
-   - No unreachable-branch detection for wildcard-first or fully-covered prior patterns.
+   - Exact duplicate bool, enum, and scalar literal case patterns are diagnosed.
+   - Wildcard-first cases make later case patterns and else branches unreachable.
+   - Range overlap and fully-covered prior bool/enum cases before later branches are still incomplete.
 
 3. **Memory/lifetime model**
    - Current validation covers basic `del` reference checks.

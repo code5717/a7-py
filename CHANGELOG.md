@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `visit_slice_expr`: validates source is array/slice/string, checks start/end are integral, returns `SliceType`.
   - `visit_index_expr`: now rejects non-integer index expressions.
 
+- **Match Diagnostics**
+  - Duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions.
+  - Wildcard-first match cases now make later case patterns and else branches unreachable.
+
 ### Changed
 - **Integer guidance and examples**
   - Updated the Fibonacci/frontpage example to use `usize` for count/index values and `u64` for the computed sequence value.

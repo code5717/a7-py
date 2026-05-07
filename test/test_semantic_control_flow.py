@@ -634,6 +634,79 @@ class TestMatchStatements:
         """
         assert expect_success(source)
 
+    def test_duplicate_bool_match_pattern_is_rejected(self):
+        """Duplicate bool cases should be reported as unreachable."""
+        source = """
+        main :: fn() {
+            flag: bool = true
+            match flag {
+                case true: x := 1
+                case true: x := 2
+                case false: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "redundant match pattern")
+
+    def test_duplicate_enum_match_pattern_is_rejected(self):
+        """Duplicate enum cases should be reported as unreachable."""
+        source = """
+        Color :: enum {
+            Red,
+            Green,
+        }
+
+        main :: fn() {
+            c: Color = Color.Red
+            match c {
+                case Color.Red: x := 1
+                case Color.Red: x := 2
+                case Color.Green: x := 3
+            }
+        }
+        """
+        assert expect_error(source, "redundant match pattern")
+
+    def test_duplicate_literal_match_pattern_is_rejected(self):
+        """Duplicate scalar literal patterns should be reported as unreachable."""
+        source = """
+        main :: fn() {
+            n: i32 = 1
+            x := match n {
+                case 1: 10
+                case 1: 20
+                else: 0
+            }
+        }
+        """
+        assert expect_error(source, "redundant match pattern")
+
+    def test_wildcard_before_later_case_is_rejected(self):
+        """Cases after a wildcard pattern are unreachable."""
+        source = """
+        main :: fn() {
+            n: i32 = 1
+            match n {
+                case _: x := 0
+                case 1: x := 1
+            }
+        }
+        """
+        assert expect_error(source, "previous wildcard")
+
+    def test_wildcard_before_else_is_rejected(self):
+        """Else after a wildcard case is unreachable."""
+        source = """
+        main :: fn() {
+            flag: bool = true
+            x := match flag {
+                case _: 1
+                else: 0
+            }
+        }
+        """
+        assert expect_error(source, "else branch is unreachable")
+
 
 class TestReturnTypeBranchValidation:
     """Return type checks should apply inside every reachable branch."""
