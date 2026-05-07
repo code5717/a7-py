@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Extended docs style checking to include `RELEASE.md`.
   - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.
   - Switched the docs syntax highlighter from the Oniguruma WASM engine to Shiki's JavaScript regex engine, removing the docs build chunk-size warning.
-  - Opted GitHub workflows into Node 24 JavaScript action execution to avoid the hosted Node 20 deprecation path.
+  - Upgraded first-party GitHub workflow actions to Node 24-compatible majors and opted workflows into Node 24 JavaScript action execution.
   - Corrected memory-safety documentation so the spec no longer claims unimplemented lifetime, double-free, use-after-free, or bounds-check guarantees.
   - Marked the tensor/AI/GPU section as planned design work instead of current language support.
   - De-scoped `std/string`, `std/mem`, and `std/collections` from current stdlib documentation; only virtual `io` and `math` modules are documented as implemented.
