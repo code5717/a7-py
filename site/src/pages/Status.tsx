@@ -7,7 +7,7 @@ const done = [
   { name: 'Semantic analysis', desc: 'Name resolution, type checking with inference, control flow and memory checks, slice/index validation.' },
   { name: 'Preprocessing', desc: 'Nine sub-passes: lowering, resolution, mutation, usage, shadowing, hoisting, folding.' },
   { name: 'Zig backend', desc: 'Full translation with type mapping, pointer handling, hoisting, annotations, labeled loops.' },
-  { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, and core match forms are present; backend parity checks should keep expanding.' },
+  { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, range match statements, and core match expressions are present; backend parity checks should keep expanding.' },
   { name: 'Release tooling', desc: 'Installed CLI entrypoint plus debug/release artifact verification for Zig and C example builds.' },
 ]
 

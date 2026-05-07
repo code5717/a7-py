@@ -900,6 +900,10 @@ class CCodeGenerator(CodeGenerator):
         self.output.write("}\n")
 
     def _visit_match(self, node: ASTNode) -> None:
+        if self._match_stmt_needs_if_chain(node):
+            self._visit_match_as_if_chain(node)
+            return
+
         expr = self._emit_expr(node.expression) if node.expression else "0"
         self._write_indent()
         self.output.write(f"switch ({expr}) {{\n")
@@ -933,6 +937,65 @@ class CCodeGenerator(CodeGenerator):
                 self._emit_stmt_or_block(None)
             self._write_indent()
             self.output.write("break;\n")
+
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _match_stmt_needs_if_chain(self, node: ASTNode) -> bool:
+        return any(
+            pattern.kind == NodeKind.PATTERN_RANGE
+            for case in (node.cases or [])
+            for pattern in (case.patterns or [])
+        )
+
+    def _visit_match_as_if_chain(self, node: ASTNode) -> None:
+        expr = self._emit_expr(node.expression) if node.expression else "0"
+        expr_type = self._semantic_type_to_c(self._type_map.get(id(node.expression))) or "int32_t"
+        if expr_type == "int32_t":
+            self._needs_stdint = True
+
+        temp_name = self._unique_name("__a7_match")
+        self._write_indent()
+        self.output.write("{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{expr_type} {temp_name} = {expr};\n")
+
+        emitted_branch = False
+        emitted_unconditional = False
+        for case in (node.cases or []):
+            patterns = case.patterns or []
+            if not patterns or emitted_unconditional:
+                continue
+
+            condition = self._emit_match_expr_condition(temp_name, patterns)
+            if condition is None:
+                prefix = "else " if emitted_branch else ""
+                self._write_indent()
+                self.output.write(f"{prefix}")
+                self._emit_stmt_or_block(getattr(case, "statement", None))
+                emitted_branch = True
+                emitted_unconditional = True
+                continue
+
+            self._write_indent()
+            self.output.write("else " if emitted_branch else "")
+            self.output.write(f"if ({condition}) ")
+            self._emit_stmt_or_block(getattr(case, "statement", None))
+            emitted_branch = True
+
+        if node.else_case and not emitted_unconditional:
+            self._write_indent()
+            if emitted_branch:
+                self.output.write("else ")
+            if isinstance(node.else_case, list):
+                stmt = node.else_case[0] if node.else_case else None
+                self._emit_stmt_or_block(stmt)
+            elif isinstance(node.else_case, ASTNode):
+                self._emit_stmt_or_block(node.else_case)
+            else:
+                self._emit_stmt_or_block(None)
 
         self.dedent()
         self._write_indent()

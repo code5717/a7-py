@@ -76,9 +76,13 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/backends/c.py`
   Notes: inline calls such as function arguments still fail closed because portable C needs statement-level lowering at each expression site.
 
-- [ ] C backend: range patterns and identifier-capture patterns.
+- [x] C backend: range patterns in match statements.
   Files: `src/backends/c.py`
-  Notes: range patterns are supported for side-effect-free match expressions, but match statements still reject range patterns. Identifier-capture patterns remain unsupported in C lowering.
+  Notes: match statements with range patterns now lower to portable `if` chains with a cached scrutinee.
+
+- [ ] C backend: identifier-capture patterns.
+  Files: `src/backends/c.py`
+  Notes: identifier-capture patterns remain unsupported in C match statement and expression lowering.
 
 - [ ] C backend: function-typed declarations.
   Files: `src/backends/c.py`

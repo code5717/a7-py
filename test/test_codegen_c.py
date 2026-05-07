@@ -283,6 +283,37 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_supports_match_statement_range_patterns(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    value := 7
+    match value {
+        case 0..3: {
+            io.println("low")
+        }
+        case 4, 5: {
+            io.println("mid")
+        }
+        case 6..9: {
+            io.println("high")
+        }
+        else: {
+            io.println("other")
+        }
+    }
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "high"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_c_backend_match_expression_side_effectful_scrutinee_var_init(tmp_path: Path) -> None:
     src = tmp_path / "match_expr_call.a7"
     out = tmp_path / "match_expr_call.c"

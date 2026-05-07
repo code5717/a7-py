@@ -92,7 +92,7 @@ export default function Pipeline() {
         <ul className="doc-list">
           <li>Zig and C backends both emit source from the annotated AST.</li>
           <li>C output is validated with <code className="doc-inline-code">zig cc</code> for current examples.</li>
-          <li>Match expressions, range-pattern edge cases, and new backend parity checks should be verified before relying on newly added forms.</li>
+          <li>New match forms and backend parity checks should be verified before relying on newly added forms.</li>
         </ul>
       </SectionPanel>
     </div>
