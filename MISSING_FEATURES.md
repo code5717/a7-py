@@ -37,6 +37,7 @@
 23. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
 24. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
 25. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in both Zig and C backends.
+26. C backend side-effect-free `match` expressions now lower for literal, enum, range, and wildcard patterns.
 
 ---
 
@@ -59,6 +60,7 @@
 
 5. **Backend semantic parity hardening**
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
+   - C `match` expressions with side-effectful scrutinees still fail closed pending a portable single-evaluation lowering.
 
 6. **Release publishing automation**
    - Local package builds and artifact checks exist.

@@ -1046,7 +1046,7 @@ class CCodeGenerator(CodeGenerator):
             eexpr = self._emit_expr(node.else_expr) if node.else_expr else "0"
             return f"(({cond}) ? ({texpr}) : ({eexpr}))"
         if kind == NodeKind.MATCH_EXPR:
-            raise CodegenError("C backend: match expressions are not implemented", node.span)
+            return self._emit_match_expr(node)
         if kind == NodeKind.STRUCT_INIT:
             return self._emit_struct_init(node)
         if kind == NodeKind.ARRAY_INIT:
@@ -1962,6 +1962,95 @@ class CCodeGenerator(CodeGenerator):
 
         len_expr = f"((size_t)({end_expr}) - (size_t)({start_expr}))"
         return f"(({slice_c_type}){{ .data = {data_expr}, .len = {len_expr} }})"
+
+    def _emit_match_expr(self, node: ASTNode) -> str:
+        scrutinee = node.expression
+        if not self._is_side_effect_free_match_scrutinee(scrutinee):
+            raise CodegenError(
+                "C backend: match expressions with side-effectful scrutinees are not implemented",
+                node.span,
+            )
+
+        scrutinee_expr = self._emit_expr(scrutinee) if scrutinee else "0"
+        default_expr = self._emit_expr(node.else_case) if isinstance(node.else_case, ASTNode) else "0"
+        result = f"({default_expr})"
+
+        for case in reversed(node.cases or []):
+            case_expr_node = getattr(case, "expression", None)
+            if case_expr_node is None:
+                continue
+            case_expr = self._emit_expr(case_expr_node)
+            condition = self._emit_match_expr_condition(scrutinee_expr, case.patterns or [])
+            if condition is None:
+                result = f"({case_expr})"
+            else:
+                result = f"(({condition}) ? ({case_expr}) : {result})"
+
+        return result
+
+    def _emit_match_expr_condition(self, scrutinee_expr: str, patterns: list[ASTNode]) -> Optional[str]:
+        conditions: list[str] = []
+        for pattern in patterns:
+            condition = self._emit_match_pattern_condition(scrutinee_expr, pattern)
+            if condition is None:
+                return None
+            conditions.append(condition)
+        if not conditions:
+            return "0"
+        return " || ".join(f"({condition})" for condition in conditions)
+
+    def _emit_match_pattern_condition(self, scrutinee_expr: str, pattern: ASTNode) -> Optional[str]:
+        if pattern.kind == NodeKind.PATTERN_WILDCARD:
+            return None
+        if pattern.kind == NodeKind.PATTERN_LITERAL:
+            value = self._emit_expr(pattern.literal) if pattern.literal else "0"
+            return f"({scrutinee_expr}) == ({value})"
+        if pattern.kind == NodeKind.PATTERN_ENUM:
+            if pattern.enum_type and pattern.variant:
+                value = f"{self._sanitize_name(pattern.enum_type)}_{self._sanitize_name(pattern.variant)}"
+                return f"({scrutinee_expr}) == ({value})"
+            raise CodegenError("C backend: malformed enum pattern in match expression", pattern.span)
+        if pattern.kind == NodeKind.PATTERN_RANGE:
+            start = self._emit_pattern(pattern.start) if pattern.start else "0"
+            end = self._emit_pattern(pattern.end) if pattern.end else "0"
+            return f"({scrutinee_expr}) >= ({start}) && ({scrutinee_expr}) <= ({end})"
+        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+            raise CodegenError(
+                "C backend: identifier capture patterns are not supported in match expressions",
+                pattern.span,
+            )
+        value = self._emit_expr(pattern)
+        return f"({scrutinee_expr}) == ({value})"
+
+    def _is_side_effect_free_match_scrutinee(self, node: Optional[ASTNode]) -> bool:
+        if node is None:
+            return True
+        if node.kind in {
+            NodeKind.LITERAL,
+            NodeKind.IDENTIFIER,
+            NodeKind.FIELD_ACCESS,
+            NodeKind.INDEX,
+            NodeKind.SLICE,
+            NodeKind.DEREF,
+        }:
+            children = [
+                getattr(node, "object", None),
+                getattr(node, "index", None),
+                getattr(node, "start", None),
+                getattr(node, "end", None),
+                getattr(node, "pointer", None),
+            ]
+            return all(self._is_side_effect_free_match_scrutinee(child) for child in children if child is not None)
+        if node.kind == NodeKind.UNARY:
+            return self._is_side_effect_free_match_scrutinee(node.operand)
+        if node.kind == NodeKind.BINARY:
+            return (
+                self._is_side_effect_free_match_scrutinee(node.left)
+                and self._is_side_effect_free_match_scrutinee(node.right)
+            )
+        if node.kind == NodeKind.CAST:
+            return self._is_side_effect_free_match_scrutinee(node.expression)
+        return False
 
     def _emit_pattern(self, node: ASTNode) -> str:
         if node is None:

@@ -307,7 +307,7 @@ match code {
           <code className="doc-inline-code">fall</code> is parsed as a statement, but semantic validation and backend lowering are still open.
         </p>
         <DocCallout tone="warning">
-          Backend note: match statements and expressions are implemented, but C backend parity still needs hardening for expression-heavy match usage and advanced range-pattern cases. Use the example verifier before relying on new match forms in C output.
+          Backend note: C match expressions support side-effect-free scrutinees for literal, enum, range, and wildcard patterns. Side-effectful scrutinees and identifier-capture patterns still fail closed.
         </DocCallout>
       </SectionPanel>
 

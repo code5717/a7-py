@@ -58,13 +58,17 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 ### C Backend Parity
 
-- [ ] C backend: `match` expressions.
+- [x] C backend: side-effect-free `match` expressions.
   Files: `src/backends/c.py`
-  Notes: `NodeKind.MATCH_EXPR` raises `CodegenError`; Zig backend handles it.
+  Notes: literal, enum, range, and wildcard patterns now lower to chained conditional expressions when the scrutinee is side-effect-free.
+
+- [ ] C backend: side-effectful `match` expression scrutinees.
+  Files: `src/backends/c.py`
+  Notes: function-call and other side-effectful scrutinees still fail closed because portable C needs a single-evaluation lowering strategy.
 
 - [ ] C backend: range patterns and identifier-capture patterns.
   Files: `src/backends/c.py`
-  Notes: front end parses and validates these, C lowering rejects them.
+  Notes: range patterns are supported for side-effect-free match expressions, but match statements still reject range patterns. Identifier-capture patterns remain unsupported in C lowering.
 
 - [ ] C backend: function-typed declarations.
   Files: `src/backends/c.py`

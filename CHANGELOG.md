@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `string[start..end]` and `string[start..]` now type-check as `[]char` and run on both Zig and C backends.
   - C backend `for-in` iteration now supports direct `string` values instead of only array and slice values.
 
+- **C Backend Match Expressions**
+  - Side-effect-free `match` expressions now lower to C conditional expressions for literal, enum, range, and wildcard patterns.
+  - Match expressions with side-effectful scrutinees fail closed until a portable single-evaluation lowering exists.
+
 - **Type Checker: Slice and Index Validation**
   - `visit_slice_expr`: validates source is array/slice/string, checks start/end are integral, returns `SliceType`.
   - `visit_index_expr`: now rejects non-integer index expressions.
