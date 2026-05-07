@@ -63,6 +63,8 @@ Run this before tagging:
 cd site && npm run build
 cd ..
 uv build
+uvx pip-audit --strict
+cd site && npm audit --omit=dev --audit-level=moderate
 ```
 
 `run_all_tests.sh` includes:
@@ -77,6 +79,8 @@ uv build
 - CLI error-stage matrix verification
 - docs style checks
 - full pytest suite
+- Python dependency audit
+- docs runtime dependency audit
 
 ## Tagging
 

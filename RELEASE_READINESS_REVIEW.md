@@ -25,6 +25,8 @@ not factually provable from local tests alone.
 - `uv run python scripts/build_examples.py --profile release --backend both --clean`
 - `./run_all_tests.sh`
 - `uv build`
+- `uvx pip-audit --strict`
+- `cd site && npm audit --omit=dev --audit-level=moderate`
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
@@ -53,13 +55,14 @@ not factually provable from local tests alone.
   module semantics.
 - Backend parity is verified for examples, not all possible source programs.
 - Tag-based publishing is not wired.
-- Automated supply-chain scanning is not configured.
+- Dependency audits are configured for known advisories, not unknown supply-chain
+  compromise.
 
 ## Recommended Next Pass
 
 1. Replace Zig backend `@compileError("unsupported")` fallbacks with compiler
    codegen errors.
 2. Add tag-based release workflow after choosing the package publishing target.
-3. Add dependency and secret scanning to CI.
+3. Add secret scanning to CI.
 4. Expand differential backend tests beyond examples.
 5. Unify virtual stdlib imports with file-based module semantics.

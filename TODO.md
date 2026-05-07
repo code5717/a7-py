@@ -201,7 +201,15 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add CI coverage for release-oriented gates.
   Files: `.github/workflows/ci.yml`, `.github/workflows/deploy-docs.yml`, `site/package-lock.json`
-  Notes: CI now installs Zig, runs pytest, error-stage checks, both backend E2E verifiers, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
+  Notes: CI now installs Zig, runs pytest, dependency audits, error-stage checks, both backend E2E verifiers, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
+
+- [x] Add dependency-audit checks for release readiness.
+  Files: `.github/workflows/ci.yml`, `RELEASE.md`, `SECURITY.md`
+  Notes: Python dependencies use `uvx pip-audit --strict`; docs runtime dependencies use `npm audit --omit=dev --audit-level=moderate`.
+
+- [ ] Add secret scanning to CI.
+  Files: `.github/workflows/`
+  Notes: dependency advisory checks are present; secret scanning still needs a selected tool and policy.
 
 - [ ] Add tag-based publishing automation.
   Files: `.github/workflows/`

@@ -33,6 +33,9 @@ jobs:
       - name: Run pytest
         run: PYTHONPATH=. uv run pytest --tb=no -q
 
+      - name: Audit Python dependencies
+        run: uvx pip-audit --strict
+
       - name: Verify error stages
         run: PYTHONPATH=. uv run python scripts/verify_error_stages.py --mode-set all --format both
 
@@ -78,6 +81,10 @@ jobs:
       - name: Install docs dependencies
         working-directory: site
         run: npm ci
+
+      - name: Audit docs runtime dependencies
+        working-directory: site
+        run: npm audit --omit=dev --audit-level=moderate
 
       - name: Lint docs
         working-directory: site

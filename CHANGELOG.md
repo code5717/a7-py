@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `RELEASE.md` with local release gates, artifact layout, tagging steps, and security caveats.
   - Added `SECURITY.md` and `RELEASE_READINESS_REVIEW.md` to document trust boundaries, residual release risks, and verification evidence.
   - Added release-tooling pytest coverage for the installed CLI and debug build script.
-  - Added a GitHub Actions CI workflow for Python, backend, package, docs, and artifact checks.
+  - Added a GitHub Actions CI workflow for Python, backend, package, docs, dependency audit, and artifact checks.
 
 - **Compiler handling and test coverage expansion**
   - Added semantic regression coverage for deferred statement payloads, return payload traversal, and non-iterable `for-in` diagnostics.

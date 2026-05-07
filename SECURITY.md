@@ -20,7 +20,9 @@ Before release or broad testing, run:
 ```bash
 ./run_all_tests.sh
 uv build
+uvx pip-audit --strict
 cd site && npm run build
+cd site && npm audit --omit=dev --audit-level=moderate
 ```
 
 The full gate includes parser/tokenizer tests, semantic tests, Zig and C backend
@@ -35,6 +37,7 @@ checks, docs style checks, and full pytest.
 - C and Zig backend parity checks exist for examples but are not a proof for all
   possible programs.
 - Tag-based package publishing is not configured yet.
+- Dependency audits check known advisories, not unknown vulnerabilities.
 
 These limitations are tracked in `MISSING_FEATURES.md`, `TODO.md`, and
 `RELEASE.md`.
