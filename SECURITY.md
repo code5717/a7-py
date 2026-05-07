@@ -21,6 +21,7 @@ Before release or broad testing, run:
 ./run_all_tests.sh
 uv build
 uvx pip-audit --strict
+uv run python scripts/check_no_secrets.py
 cd site && npm run build
 cd site && npm audit --omit=dev --audit-level=moderate
 ```
@@ -38,6 +39,8 @@ checks, docs style checks, and full pytest.
   possible programs.
 - Tag-based package publishing is not configured yet.
 - Dependency audits check known advisories, not unknown vulnerabilities.
+- The committed-secrets check is pattern-based and should be treated as a guard,
+  not a complete data-loss prevention system.
 
 These limitations are tracked in `MISSING_FEATURES.md`, `TODO.md`, and
 `RELEASE.md`.

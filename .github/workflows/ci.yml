@@ -71,6 +71,9 @@ jobs:
       - name: Check docs writing style
         run: uv run python scripts/check_docs_style.py
 
+      - name: Check for committed secrets
+        run: uv run python scripts/check_no_secrets.py
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

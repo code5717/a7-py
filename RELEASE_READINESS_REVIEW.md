@@ -26,6 +26,7 @@ not factually provable from local tests alone.
 - `./run_all_tests.sh`
 - `uv build`
 - `uvx pip-audit --strict`
+- `uv run python scripts/check_no_secrets.py`
 - `cd site && npm audit --omit=dev --audit-level=moderate`
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
@@ -57,11 +58,13 @@ not factually provable from local tests alone.
 - Tag-based publishing is not wired.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
+- Secret scanning is pattern-based and should be supplemented by repository host
+  protections when publishing publicly.
 
 ## Recommended Next Pass
 
 1. Add tag-based release workflow after choosing the package publishing target.
-2. Add secret scanning to CI.
-3. Expand differential backend tests beyond examples.
-4. Unify virtual stdlib imports with file-based module semantics.
-5. Implement `fall` semantic validation and backend lowering.
+2. Expand differential backend tests beyond examples.
+3. Unify virtual stdlib imports with file-based module semantics.
+4. Implement `fall` semantic validation and backend lowering.
+5. Add tag-based release workflow after choosing the package publishing target.

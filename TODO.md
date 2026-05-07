@@ -207,9 +207,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `.github/workflows/ci.yml`, `RELEASE.md`, `SECURITY.md`
   Notes: Python dependencies use `uvx pip-audit --strict`; docs runtime dependencies use `npm audit --omit=dev --audit-level=moderate`.
 
-- [ ] Add secret scanning to CI.
+- [x] Add secret scanning to CI.
   Files: `.github/workflows/`
-  Notes: dependency advisory checks are present; secret scanning still needs a selected tool and policy.
+  Notes: `scripts/check_no_secrets.py` provides a lightweight committed-secret pattern scan in local and CI gates.
 
 - [ ] Add tag-based publishing automation.
   Files: `.github/workflows/`

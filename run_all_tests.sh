@@ -80,6 +80,9 @@ run_check "Error Stage Verification (mode/format matrix):" \
 run_check "Docs Style Check:" \
     uv run python scripts/check_docs_style.py
 
+run_check "Secrets Check:" \
+    uv run python scripts/check_no_secrets.py
+
 run_check "TOTAL (All Pytest Tests):" \
     uv run pytest --tb=no -q
 

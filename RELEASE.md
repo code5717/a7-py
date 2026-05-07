@@ -78,6 +78,7 @@ cd site && npm audit --omit=dev --audit-level=moderate
 - release artifact build verification for Zig and C
 - CLI error-stage matrix verification
 - docs style checks
+- committed secrets check
 - full pytest suite
 - Python dependency audit
 - docs runtime dependency audit
