@@ -59,8 +59,11 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [x] Add literal range match overlap diagnostics.
   Notes: overlapping numeric/char literal ranges, literals covered by previous ranges, and ranges containing previous literals now emit diagnostics.
 
-- [ ] Add symbolic/computed range match overlap diagnostics.
-  Notes: range overlap checks currently only cover literal numeric/char endpoints.
+- [x] Add constant/computed-constant range match overlap diagnostics.
+  Notes: literal, constant identifier, and simple constant-expression numeric/char endpoints now participate in range overlap and covered-literal diagnostics.
+
+- [ ] Add non-constant symbolic interval match overlap diagnostics.
+  Notes: range overlap checks do not reason about runtime symbolic intervals.
 
 - [ ] Define and implement true variable-binding match patterns.
   Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`

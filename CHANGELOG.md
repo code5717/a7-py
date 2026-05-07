@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions.
   - Wildcard-first and fully covered bool/enum match cases now make later case patterns and else branches unreachable.
   - Literal numeric/char range overlaps, literals covered by previous ranges, and ranges containing previous literals now emit diagnostics.
+  - Compile-time constant numeric/char range endpoints now participate in range-overlap and covered-literal diagnostics.
 
 ### Changed
 - **Integer guidance and examples**

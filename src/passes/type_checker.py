@@ -1618,17 +1618,12 @@ class TypeCheckingPass:
         return wildcard_pattern
 
     def _match_pattern_range(self, pattern: ASTNode) -> Optional[Tuple[str, float, float]]:
-        """Return a comparable inclusive range for literal numeric/char ranges."""
+        """Return a comparable inclusive range for statically-known numeric/char ranges."""
         if pattern.kind != NodeKind.PATTERN_RANGE:
             return None
 
-        start_literal = self._match_pattern_literal(pattern.start) if pattern.start else None
-        end_literal = self._match_pattern_literal(pattern.end) if pattern.end else None
-        if start_literal is None or end_literal is None:
-            return None
-
-        start = self._range_literal_value(start_literal)
-        end = self._range_literal_value(end_literal)
+        start = self._range_pattern_value(pattern.start, set()) if pattern.start else None
+        end = self._range_pattern_value(pattern.end, set()) if pattern.end else None
         if start is None or end is None:
             return None
 
@@ -1641,16 +1636,92 @@ class TypeCheckingPass:
         high = max(start_value, end_value)
         return (start_kind, low, high)
 
-    def _range_literal_value(self, literal: ASTNode) -> Optional[Tuple[str, float]]:
+    def _range_pattern_value(self, pattern: Optional[ASTNode], resolving: Set[str]) -> Optional[Tuple[str, int | float]]:
+        """Resolve literals and constant identifiers to comparable range values."""
+        if pattern is None:
+            return None
+
+        literal = self._match_pattern_literal(pattern)
+        if literal is not None:
+            return self._range_literal_value(literal)
+
+        name = None
+        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+            name = pattern.name
+        elif pattern.kind == NodeKind.IDENTIFIER:
+            name = pattern.name
+
+        if name:
+            if name in resolving:
+                return None
+            symbol = self.symbols.lookup(name)
+            if symbol is None or symbol.kind != SymbolKind.CONSTANT or symbol.node is None:
+                return None
+            value_node = getattr(symbol.node, "value", None)
+            return self._range_const_expr_value(value_node, resolving | {name})
+
+        return self._range_const_expr_value(pattern, resolving)
+
+    def _range_const_expr_value(self, node: Optional[ASTNode], resolving: Set[str]) -> Optional[Tuple[str, int | float]]:
+        """Evaluate simple compile-time constant expressions for range diagnostics."""
+        if node is None:
+            return None
+
+        literal = self._match_pattern_literal(node)
+        if literal is not None:
+            return self._range_literal_value(literal)
+
+        if node.kind == NodeKind.IDENTIFIER:
+            return self._range_pattern_value(node, resolving)
+
+        if node.kind == NodeKind.UNARY:
+            value = self._range_const_expr_value(node.operand, resolving)
+            if value is None:
+                return None
+            kind, number = value
+            if kind != "number":
+                return None
+            if node.operator == UnaryOp.NEG:
+                return ("number", -number)
+            return None
+
+        if node.kind == NodeKind.BINARY:
+            left = self._range_const_expr_value(node.left, resolving)
+            right = self._range_const_expr_value(node.right, resolving)
+            if left is None or right is None:
+                return None
+            left_kind, left_value = left
+            right_kind, right_value = right
+            if left_kind != "number" or right_kind != "number":
+                return None
+            if node.operator == BinaryOp.ADD:
+                return ("number", left_value + right_value)
+            if node.operator == BinaryOp.SUB:
+                return ("number", left_value - right_value)
+            if node.operator == BinaryOp.MUL:
+                return ("number", left_value * right_value)
+            if node.operator == BinaryOp.DIV and right_value != 0:
+                if isinstance(left_value, int) and isinstance(right_value, int):
+                    return ("number", left_value // right_value)
+                return ("number", left_value / right_value)
+            if node.operator == BinaryOp.MOD and right_value != 0:
+                return ("number", left_value % right_value)
+
+        return None
+
+    def _range_literal_value(self, literal: ASTNode) -> Optional[Tuple[str, int | float]]:
         """Normalize literal values that can participate in range overlap checks."""
-        if literal.literal_kind in {LiteralKind.INTEGER, LiteralKind.FLOAT}:
+        if literal.literal_kind == LiteralKind.INTEGER:
+            return ("number", int(literal.literal_value))
+
+        if literal.literal_kind == LiteralKind.FLOAT:
             return ("number", float(literal.literal_value))
 
         if literal.literal_kind == LiteralKind.CHAR:
             value = str(literal.literal_value or "")
             if len(value) != 1:
                 return None
-            return ("char", float(ord(value)))
+            return ("char", ord(value))
 
         return None
 
@@ -1756,7 +1827,15 @@ class TypeCheckingPass:
 
         literal = self._match_pattern_literal(pattern)
         if literal is None:
-            return None
+            constant = self._range_pattern_value(pattern, set())
+            if constant is None:
+                return None
+            kind, value = constant
+            if kind == "char":
+                return ("literal", LiteralKind.CHAR, chr(int(value)))
+            if isinstance(value, float):
+                return ("literal", LiteralKind.FLOAT, value)
+            return ("literal", LiteralKind.INTEGER, value)
 
         return ("literal", literal.literal_kind, literal.literal_value)
 

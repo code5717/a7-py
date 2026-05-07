@@ -829,6 +829,110 @@ class TestMatchStatements:
         """
         assert expect_error(source, "overlaps previous range pattern")
 
+    def test_overlapping_constant_range_patterns_are_rejected(self):
+        """Ranges with constant endpoints should participate in overlap checks."""
+        source = """
+        LOW :: 1
+        MID :: 5
+        HIGH :: 10
+
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case LOW..MID: x := 1
+                case MID..HIGH: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
+    def test_computed_constant_range_patterns_are_rejected(self):
+        """Ranges with simple computed constants should participate in overlap checks."""
+        source = """
+        BASE :: 2
+        LOW :: BASE + 1
+        MID :: BASE * 3
+        HIGH :: 12
+
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case LOW..MID: x := 1
+                case 5..HIGH: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
+    def test_integer_division_constant_ranges_use_integer_semantics(self):
+        """Computed range constants should match existing integer constant-folding semantics."""
+        source = """
+        START :: 5 / 2
+        END :: 8 / 2
+
+        main :: fn() {
+            n: i32 = 3
+            match n {
+                case START..END: x := 1
+                case 2..3: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
+    def test_char_constant_range_patterns_are_rejected(self):
+        """Char constants should participate in range overlap checks."""
+        source = """
+        LOW :: 'a'
+        MID :: 'm'
+        HIGH :: 'z'
+
+        main :: fn() {
+            c: char = 'd'
+            match c {
+                case LOW..MID: x := 1
+                case 'f'..HIGH: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
+    def test_constant_literal_after_covering_range_is_rejected(self):
+        """A constant literal covered by a previous range is unreachable."""
+        source = """
+        TARGET :: 3
+
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case 1..5: x := 1
+                case TARGET: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "covered by previous range pattern")
+
+    def test_constant_literal_before_covering_range_is_rejected(self):
+        """A range covering a previous constant literal should be overlapping."""
+        source = """
+        TARGET :: 3
+
+        main :: fn() {
+            n: i32 = 4
+            match n {
+                case TARGET: x := 1
+                case 1..5: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous literal pattern")
+
 
 class TestReturnTypeBranchValidation:
     """Return type checks should apply inside every reachable branch."""
