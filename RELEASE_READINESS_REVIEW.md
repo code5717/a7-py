@@ -37,8 +37,9 @@ not factually provable from local tests alone.
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
-- hosted CI for commit `064fde6` passed Python and docs jobs
-- hosted Deploy Docs for commit `064fde6` passed build and deploy jobs
+- hosted CI and Deploy Docs runs passed after the workflow updates; before
+  tagging, re-check the latest commit with
+  `gh run list --branch master --limit 6`
 
 ## Fixed In This Pass
 
