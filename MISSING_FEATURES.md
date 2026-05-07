@@ -61,14 +61,11 @@
    - Current validation covers basic `del` reference checks.
    - Ownership/borrow-style lifetime guarantees are not implemented.
 
-4. **Generic constraint internals**
-   - Inline type-set constraint resolution in `src/generics.py` is still placeholder-level (`resolve_generic_constraint`).
-
-5. **Backend semantic parity hardening**
+4. **Backend semantic parity hardening**
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
 
-6. **Release publishing automation**
+5. **Release publishing automation**
    - Local package builds and artifact checks exist.
    - Tag-triggered draft GitHub releases are configured.
    - PyPI/package-registry publishing is not configured yet.

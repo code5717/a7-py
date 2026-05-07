@@ -2869,10 +2869,7 @@ Status snapshot (2026-05-07):
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.
 
-4. **Generic constraint internals**
-   - Some generic-constraint helper internals remain placeholder-level and need completion.
-
-5. **Backend semantic parity hardening**
+4. **Backend semantic parity hardening**
    - Differential parity checks across backends should continue expanding for new language features.
    - C lowers side-effectful `match` expression scrutinees through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
    - C lowers raw `fn(...)` parameter and variable declarations as function pointers.

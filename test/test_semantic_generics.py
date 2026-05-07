@@ -22,6 +22,8 @@ from src.passes.name_resolution import NameResolutionPass
 from src.passes.type_checker import TypeCheckingPass
 from src.passes.semantic_validator import SemanticValidationPass
 from src.errors import SemanticError, CompilerError
+from src.generics import resolve_generic_constraint
+from src.types import F64, I32, I64, NUMERIC
 
 
 def parse_program(source: str):
@@ -78,6 +80,33 @@ def expect_error(source: str, error_fragment: str = None) -> bool:
         if error_fragment:
             return error_fragment.lower() in str(e).lower()
         return True
+
+
+class TestGenericConstraintHelpers:
+    """Direct coverage for generic constraint helper internals."""
+
+    def test_resolve_predefined_constraint_identifier(self):
+        ast = parse_program("Box($T: Numeric) :: struct { value: $T }")
+        constraint = ast.declarations[0].generic_params[0].constraint
+
+        resolved = resolve_generic_constraint(constraint)
+
+        assert resolved == NUMERIC
+
+    def test_resolve_inline_type_set_constraint(self):
+        ast = parse_program("Box($T: @type_set(i32, i64, f64)) :: struct { value: $T }")
+        constraint = ast.declarations[0].generic_params[0].constraint
+
+        resolved = resolve_generic_constraint(constraint)
+
+        assert resolved is not None
+        assert resolved.types == frozenset({I32, I64, F64})
+
+    def test_invalid_inline_type_set_member_returns_none(self):
+        ast = parse_program("Box($T: @type_set(i32, MissingType)) :: struct { value: $T }")
+        constraint = ast.declarations[0].generic_params[0].constraint
+
+        assert resolve_generic_constraint(constraint) is None
 
 
 class TestGenericFunctions:
@@ -201,6 +230,49 @@ class TestGenericConstraints:
         # This should error - f64 not in IntOnly type set
         result = expect_error(source, "constraint")
         assert isinstance(result, bool)
+
+    def test_declared_generic_constraint_allows_matching_type(self):
+        """Explicit generic declaration constraints should allow matching arguments."""
+        source = """
+        IntOnly :: @type_set(i32, i64)
+
+        process($T: IntOnly) :: fn(value: $T) $T {
+            ret value
+        }
+
+        main :: fn() {
+            x := process(42)
+        }
+        """
+        assert expect_success(source)
+
+    def test_declared_generic_constraint_rejects_mismatched_type(self):
+        """Explicit generic declaration constraints should reject non-member arguments."""
+        source = """
+        IntOnly :: @type_set(i32, i64)
+
+        process($T: IntOnly) :: fn(value: $T) $T {
+            ret value
+        }
+
+        main :: fn() {
+            x := process(3.14)
+        }
+        """
+        assert expect_error(source, "constraint")
+
+    def test_inline_declared_generic_constraint_rejects_mismatched_type(self):
+        """Inline type-set constraints should reject non-member arguments."""
+        source = """
+        process($T: @type_set(i32, i64)) :: fn(value: $T) $T {
+            ret value
+        }
+
+        main :: fn() {
+            x := process(3.14)
+        }
+        """
+        assert expect_error(source, "constraint")
 
     def test_multiple_constraints(self):
         """Test multiple generic parameters with different constraints."""

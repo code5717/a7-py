@@ -49,9 +49,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`
   Notes: string slicing now type-checks as `[]char`; Zig lowers to native byte slicing and C lowers to the existing slice struct representation, using `strlen` for open-ended slices.
 
-- [ ] Implement generic constraint resolution beyond placeholder level.
+- [x] Implement generic constraint resolution beyond placeholder level.
   Files: `src/generics.py`
-  Notes: `resolve_generic_constraint` is still a stub.
+  Notes: predefined constraints, local `@type_set(...)` aliases, and inline `@type_set(...)` constraints now resolve; generic function declarations remain callable from the outer scope and inferred call arguments are checked against declared constraints.
 
 - [x] Add exact match pattern redundancy diagnostics.
   Notes: duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions; wildcard-first and fully covered bool/enum cases also make later cases/else branches unreachable.

@@ -8,13 +8,13 @@ const done = [
   { name: 'Preprocessing', desc: 'Nine sub-passes: lowering, resolution, mutation, usage, shadowing, hoisting, folding.' },
   { name: 'Zig backend', desc: 'Full translation with type mapping, pointer handling, hoisting, annotations, labeled loops.' },
   { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, function pointers, range and identifier match patterns, and side-effectful match expressions are present; backend parity checks should keep expanding.' },
+  { name: 'Generic constraints', desc: 'Predefined, aliased, and inline type-set constraints resolve for declared generic functions and are checked at inferred call sites.' },
   { name: 'Release tooling', desc: 'Installed CLI entrypoint plus debug/release artifact verification for Zig and C example builds.' },
 ]
 
 const missing = [
   { name: 'fall statement semantics', desc: 'fall is parsed and rejected with a semantic diagnostic until fallthrough semantics and backend lowering are designed.' },
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal plus compile-time constant range overlaps are diagnosed. Non-constant symbolic intervals and true capture patterns remain open.' },
-  { name: 'Generic constraint internals', desc: 'Inline type-set constraint resolution in generics.py is still placeholder-level.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for every new language feature.' },
   { name: 'Automated publishing', desc: 'Local package builds are available, but tag-based package publishing is not wired yet.' },

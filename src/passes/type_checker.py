@@ -9,6 +9,7 @@ from typing import Any, Optional, List, Dict, Set, Tuple
 from src.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, LiteralKind
 from src.symbol_table import SymbolTable, Symbol, SymbolKind
 from src.semantic_context import SemanticContext
+from src.generics import resolve_generic_constraint
 from src.types import (
     Type, TypeKind,
     PrimitiveType, ArrayType, SliceType, PointerType, ReferenceType,
@@ -54,6 +55,7 @@ class TypeCheckingPass:
         self._scope_reuse_positions: Dict[tuple[int, str], int] = {}
         self._resolving_type_aliases: Set[str] = set()
         self._resolved_type_aliases: Set[str] = set()
+        self._generic_constraints: Dict[str, TypeSet] = {}
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
         """
@@ -75,6 +77,7 @@ class TypeCheckingPass:
         self._scope_reuse_positions = {}
         self._resolving_type_aliases = set()
         self._resolved_type_aliases = set()
+        self._generic_constraints = {}
 
         # Visit the program
         self.visit_program(program)
@@ -225,41 +228,72 @@ class TypeCheckingPass:
         before any function bodies are type-checked.
         """
         func_name = node.name or "<anonymous>"
+        previous_constraints = self._generic_constraints
+        self._generic_constraints = self._generic_constraints_from_params(node.generic_params or [])
+        func_type: Optional[FunctionType] = None
 
-        # Resolve return type
-        return_type = self.resolve_type_node(node.return_type) if node.return_type else None
+        try:
+            # Resolve return type
+            return_type = self.resolve_type_node(node.return_type) if node.return_type else None
 
-        # Resolve parameter types
-        param_types = []
-        if node.parameters:
-            for param in node.parameters:
-                param_type = self.resolve_type_node(param.param_type) if param.param_type else UNKNOWN
-                param_types.append(param_type)
+            # Resolve parameter types
+            param_types = []
+            if node.parameters:
+                for param in node.parameters:
+                    param_type = self.resolve_type_node(param.param_type) if param.param_type else UNKNOWN
+                    param_types.append(param_type)
 
-        # Check for variadic
-        is_variadic = node.is_variadic or False
-        if not is_variadic and node.parameters:
-            last_param = node.parameters[-1]
-            is_variadic = getattr(last_param, 'is_variadic', False) or False
+            # Check for variadic
+            is_variadic = node.is_variadic or False
+            if not is_variadic and node.parameters:
+                last_param = node.parameters[-1]
+                is_variadic = getattr(last_param, 'is_variadic', False) or False
 
-        variadic_type = None
-        if is_variadic and node.parameters:
-            last_param = node.parameters[-1]
-            if last_param.param_type:
-                variadic_type = self.resolve_type_node(last_param.param_type)
+            variadic_type = None
+            if is_variadic and node.parameters:
+                last_param = node.parameters[-1]
+                if last_param.param_type:
+                    variadic_type = self.resolve_type_node(last_param.param_type)
 
-        # Create function type
-        func_type = FunctionType(
-            param_types=tuple(param_types),
-            return_type=return_type,
-            is_variadic=is_variadic,
-            variadic_type=variadic_type
-        )
+            # Create function type
+            func_type = FunctionType(
+                param_types=tuple(param_types),
+                return_type=return_type,
+                is_variadic=is_variadic,
+                variadic_type=variadic_type
+            )
+        finally:
+            self._generic_constraints = previous_constraints
 
         # Update function symbol
         func_symbol = self.symbols.lookup(func_name)
-        if func_symbol:
+        if func_symbol and func_type is not None:
             func_symbol.type = func_type
+
+    def _generic_constraints_from_params(self, generic_params: List[ASTNode]) -> Dict[str, TypeSet]:
+        """Resolve declared generic parameter constraints by parameter name."""
+        constraints: Dict[str, TypeSet] = {}
+        for param in generic_params:
+            if param.kind != NodeKind.GENERIC_PARAM or not param.name:
+                continue
+            resolved = self._resolve_generic_constraint_node(param.constraint)
+            if resolved is not None:
+                constraints[param.name] = resolved
+        return constraints
+
+    def _resolve_generic_constraint_node(self, constraint_node: Optional[ASTNode]) -> Optional[TypeSet]:
+        """Resolve inline, predefined, or locally aliased generic type-set constraints."""
+        resolved = resolve_generic_constraint(constraint_node)
+        if resolved is not None or constraint_node is None:
+            return resolved
+
+        if constraint_node.kind == NodeKind.TYPE_IDENTIFIER:
+            name = constraint_node.name or constraint_node.type_name or ""
+            symbol = self.symbols.lookup(name)
+            if symbol and symbol.kind == SymbolKind.CONSTANT and symbol.node is not None:
+                return resolve_generic_constraint(getattr(symbol.node, "value", None))
+
+        return None
 
     def register_struct_type(self, node: ASTNode) -> None:
         """Register a struct type."""
@@ -441,7 +475,10 @@ class TypeCheckingPass:
 
         elif node.kind == NodeKind.TYPE_GENERIC:
             if node.name and not node.type_name and not node.type_args:
-                return GenericParamType(name=node.name)
+                return GenericParamType(
+                    name=node.name,
+                    constraint=self._generic_constraints.get(node.name),
+                )
             else:
                 base_name = node.type_name or ""
                 type_args = []
@@ -477,80 +514,85 @@ class TypeCheckingPass:
     def visit_function_decl(self, node: ASTNode) -> None:
         """Visit and type check a function declaration."""
         func_name = node.name or "<anonymous>"
+        previous_constraints = self._generic_constraints
+        self._generic_constraints = self._generic_constraints_from_params(node.generic_params or [])
 
-        # Enter function scope for parameter and body processing
-        self._enter_matching_scope(f"function_{func_name}")
+        try:
+            # Enter function scope for parameter and body processing
+            self._enter_matching_scope(f"function_{func_name}")
 
-        # Resolve return type
-        return_type = self.resolve_type_node(node.return_type) if node.return_type else None
+            # Resolve return type
+            return_type = self.resolve_type_node(node.return_type) if node.return_type else None
 
-        # Resolve parameter types and update existing parameter symbols
-        param_types = []
-        if node.parameters:
-            for param in node.parameters:
-                param_type = self.resolve_type_node(param.param_type) if param.param_type else UNKNOWN
-                param_types.append(param_type)
+            # Resolve parameter types and update existing parameter symbols
+            param_types = []
+            if node.parameters:
+                for param in node.parameters:
+                    param_type = self.resolve_type_node(param.param_type) if param.param_type else UNKNOWN
+                    param_types.append(param_type)
 
-                # Update existing parameter symbol's type (symbol was defined during name resolution)
-                param_name = param.name or ""
-                existing_symbol = self.symbols.lookup(param_name)
-                if existing_symbol:
-                    existing_symbol.type = param_type
-                else:
-                    # Symbol wasn't defined by name resolution - define it now
-                    param_symbol = Symbol(
-                        name=param_name,
-                        kind=SymbolKind.VARIABLE,
-                        type=param_type,
-                        node=param,
-                        is_mutable=False
-                    )
-                    self.symbols.define(param_symbol)
+                    # Update existing parameter symbol's type (symbol was defined during name resolution)
+                    param_name = param.name or ""
+                    existing_symbol = self.symbols.lookup(param_name)
+                    if existing_symbol:
+                        existing_symbol.type = param_type
+                    else:
+                        # Symbol wasn't defined by name resolution - define it now
+                        param_symbol = Symbol(
+                            name=param_name,
+                            kind=SymbolKind.VARIABLE,
+                            type=param_type,
+                            node=param,
+                            is_mutable=False
+                        )
+                        self.symbols.define(param_symbol)
 
-        # Check for variadic (variadic flag may be on function node or last parameter)
-        is_variadic = node.is_variadic or False
-        if not is_variadic and node.parameters:
-            # Check if last parameter is variadic
-            last_param = node.parameters[-1]
-            is_variadic = getattr(last_param, 'is_variadic', False) or False
+            # Check for variadic (variadic flag may be on function node or last parameter)
+            is_variadic = node.is_variadic or False
+            if not is_variadic and node.parameters:
+                # Check if last parameter is variadic
+                last_param = node.parameters[-1]
+                is_variadic = getattr(last_param, 'is_variadic', False) or False
 
-        variadic_type = None
-        if is_variadic and node.parameters:
-            last_param = node.parameters[-1]
-            if last_param.param_type:
-                variadic_type = self.resolve_type_node(last_param.param_type)
+            variadic_type = None
+            if is_variadic and node.parameters:
+                last_param = node.parameters[-1]
+                if last_param.param_type:
+                    variadic_type = self.resolve_type_node(last_param.param_type)
 
-        # Create function type
-        func_type = FunctionType(
-            param_types=tuple(param_types),
-            return_type=return_type,
-            is_variadic=is_variadic,
-            variadic_type=variadic_type
-        )
+            # Create function type
+            func_type = FunctionType(
+                param_types=tuple(param_types),
+                return_type=return_type,
+                is_variadic=is_variadic,
+                variadic_type=variadic_type
+            )
 
-        # Update function symbol (in outer scope)
-        func_symbol = self.symbols.lookup(func_name)
-        if func_symbol:
-            func_symbol.type = func_type
+            # Update function symbol (in outer scope)
+            func_symbol = self.symbols.lookup(func_name)
+            if func_symbol:
+                func_symbol.type = func_type
 
-        # Enter function context
-        self.context.enter_function(func_name, return_type, node)
+            # Enter function context
+            self.context.enter_function(func_name, return_type, node)
 
-        # Type check body
-        if node.body:
-            self.visit_statement(node.body)
+            # Type check body
+            if node.body:
+                self.visit_statement(node.body)
 
-        # Check that non-void functions have return
-        if return_type is not None and not self.context.function_has_return():
-            # Allow functions that might not return (e.g., always infinite loop)
-            # This is a warning-level issue, not an error
-            pass
+            # Check that non-void functions have return
+            if return_type is not None and not self.context.function_has_return():
+                # Allow functions that might not return (e.g., always infinite loop)
+                # This is a warning-level issue, not an error
+                pass
 
-        # Exit function context
-        self.context.exit_function()
+            # Exit function context
+            self.context.exit_function()
 
-        # Exit function scope
-        self.symbols.exit_scope()
+            # Exit function scope
+            self.symbols.exit_scope()
+        finally:
+            self._generic_constraints = previous_constraints
 
     def visit_const_decl(self, node: ASTNode) -> None:
         """Visit a constant declaration."""
@@ -1167,6 +1209,7 @@ class TypeCheckingPass:
         # Check for generic type inference
         generic_mapping = self._infer_generic_types(func_type, arg_types)
         if generic_mapping:
+            self._check_generic_constraints(func_type, generic_mapping, node.span)
             # Substitute generic types in param_types for type checking
             resolved_param_types = [self._substitute_generic(pt, generic_mapping) for pt in func_type.param_types]
         else:
@@ -1204,6 +1247,49 @@ class TypeCheckingPass:
             return_type = self._substitute_generic(return_type, generic_mapping)
 
         return return_type
+
+    def _check_generic_constraints(
+        self,
+        func_type: FunctionType,
+        generic_mapping: Dict[str, Type],
+        span: Optional[SourceSpan],
+    ) -> None:
+        """Validate inferred generic arguments against declared constraints."""
+        seen: Set[str] = set()
+        stack: List[Type] = list(func_type.param_types)
+        if func_type.return_type:
+            stack.append(func_type.return_type)
+
+        while stack:
+            current = stack.pop()
+            if isinstance(current, GenericParamType):
+                if current.name in seen:
+                    continue
+                seen.add(current.name)
+                concrete = generic_mapping.get(current.name)
+                if concrete is not None and current.constraint and not current.constraint.contains(concrete):
+                    self.add_semantic_error(
+                        SemanticErrorType.CONSTRAINT_VIOLATION,
+                        span,
+                        context=(
+                            f"Generic parameter '${current.name}' requires {current.constraint}, "
+                            f"got {concrete}"
+                        ),
+                    )
+            elif isinstance(current, ReferenceType):
+                stack.append(current.referent_type)
+            elif isinstance(current, PointerType):
+                stack.append(current.pointee_type)
+            elif isinstance(current, ArrayType):
+                stack.append(current.element_type)
+            elif isinstance(current, SliceType):
+                stack.append(current.element_type)
+            elif isinstance(current, FunctionType):
+                stack.extend(current.param_types)
+                if current.return_type:
+                    stack.append(current.return_type)
+            elif isinstance(current, GenericInstanceType):
+                stack.extend(current.type_args)
 
     def _infer_generic_types(self, func_type: FunctionType, arg_types: List[Type]) -> Dict[str, Type]:
         """

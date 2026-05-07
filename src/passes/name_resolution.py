@@ -140,12 +140,6 @@ class NameResolutionPass:
         """Visit a function declaration."""
         func_name = node.name or "<anonymous>"
 
-        # Register generic parameters first
-        if node.generic_params:
-            self.symbols.enter_scope(f"generic_{func_name}")
-            for gparam in node.generic_params:
-                self.visit_generic_param(gparam)
-
         # Create function symbol (type will be determined in type checking pass)
         func_symbol = Symbol(
             name=func_name,
@@ -163,6 +157,12 @@ class NameResolutionPass:
         # Enter function scope
         self.symbols.enter_scope(f"function_{func_name}")
 
+        # Register generic parameters in the function scope. The function symbol itself
+        # must remain in the parent scope so generic functions are callable by name.
+        if node.generic_params:
+            for gparam in node.generic_params:
+                self.visit_generic_param(gparam)
+
         # Register parameters
         if node.parameters:
             for param in node.parameters:
@@ -174,10 +174,6 @@ class NameResolutionPass:
 
         # Exit function scope
         self.symbols.exit_scope()
-
-        # Exit generic scope if present
-        if node.generic_params:
-            self.symbols.exit_scope()
 
     def visit_generic_param(self, node: ASTNode) -> None:
         """Visit a generic parameter declaration."""

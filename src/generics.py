@@ -10,9 +10,9 @@ from dataclasses import dataclass
 
 from src.types import (
     Type, TypeKind, GenericParamType, GenericInstanceType, TypeSet,
-    StructType, StructField, FunctionType, get_predefined_type_set
+    StructType, StructField, FunctionType, get_primitive_type, get_predefined_type_set
 )
-from src.ast_nodes import ASTNode
+from src.ast_nodes import ASTNode, NodeKind
 
 
 @dataclass
@@ -296,17 +296,35 @@ def resolve_generic_constraint(constraint_node: Optional[ASTNode]) -> Optional[T
         return None
 
     # Check for predefined type set by name
-    if hasattr(constraint_node, 'type_name'):
-        type_set_name = constraint_node.type_name
+    type_set_name = getattr(constraint_node, 'type_name', None) or getattr(constraint_node, 'name', None)
+    if type_set_name:
         predefined = get_predefined_type_set(type_set_name)
         if predefined:
             return predefined
 
     # Check for inline type set
-    if hasattr(constraint_node, 'types'):
-        # Would need to resolve each type in the set
-        # For now, return None (placeholder)
-        pass
+    if constraint_node.kind == NodeKind.TYPE_SET:
+        resolved_types = []
+        for type_node in constraint_node.types or []:
+            resolved = _resolve_constraint_member_type(type_node)
+            if resolved is None:
+                return None
+            resolved_types.append(resolved)
+        return TypeSet(types=frozenset(resolved_types))
+
+    return None
+
+
+def _resolve_constraint_member_type(type_node: Optional[ASTNode]) -> Optional[Type]:
+    """Resolve a type node that appears inside an inline generic constraint set."""
+    if type_node is None:
+        return None
+
+    if type_node.kind == NodeKind.TYPE_PRIMITIVE:
+        return get_primitive_type(type_node.type_name or "")
+
+    if type_node.kind == NodeKind.TYPE_IDENTIFIER:
+        return get_primitive_type(type_node.name or type_node.type_name or "")
 
     return None
 

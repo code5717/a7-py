@@ -54,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Literal numeric/char range overlaps, literals covered by previous ranges, and ranges containing previous literals now emit diagnostics.
   - Compile-time constant numeric/char range endpoints now participate in range-overlap and covered-literal diagnostics.
 
+- **Generic Constraints**
+  - Generic function declarations such as `process($T: IntOnly) :: fn(value: $T) $T` are now registered in the outer scope and callable by name.
+  - Declared generic constraints now resolve predefined sets, local `@type_set(...)` aliases, and inline `@type_set(...)` constraints.
+  - Inferred generic call arguments now emit constraint-violation diagnostics when they do not satisfy the declared type set.
+
 ### Changed
 - **Integer guidance and examples**
   - Updated the Fibonacci/frontpage example to use `usize` for count/index values and `u64` for the computed sequence value.
