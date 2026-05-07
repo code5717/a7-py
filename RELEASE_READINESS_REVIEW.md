@@ -55,7 +55,8 @@ not factually provable from local tests alone.
 ## Residual Risks
 
 - `a7-py` is not a sandbox. Do not compile or run untrusted A7 source.
-- `fall` is parsed but not semantically validated or lowered.
+- `fall` is parsed and rejected during semantic validation; full fallthrough
+  lowering is not implemented.
 - Full ownership/lifetime safety is not implemented.
 - Built-in stdlib imports are virtual and still need unification with file-based
   module semantics.
@@ -71,6 +72,6 @@ not factually provable from local tests alone.
 
 1. Expand differential backend tests beyond examples.
 2. Unify virtual stdlib imports with file-based module semantics.
-3. Implement `fall` semantic validation and backend lowering.
+3. Design and implement `fall` backend lowering.
 4. Add PyPI or package-registry publishing after choosing the target.
 5. Add stronger hosted secret scanning if the repository host supports it.

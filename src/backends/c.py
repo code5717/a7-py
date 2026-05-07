@@ -276,6 +276,8 @@ class CCodeGenerator(CodeGenerator):
             self._visit_break(node)
         elif kind == NodeKind.CONTINUE:
             self._visit_continue(node)
+        elif kind == NodeKind.FALL:
+            raise CodegenError("C backend: fallthrough is not implemented", node.span)
         elif kind == NodeKind.DEFER:
             self._visit_defer(node)
         elif kind == NodeKind.DEL:

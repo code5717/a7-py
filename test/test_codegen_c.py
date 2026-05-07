@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 
 from src.backends import get_backend, list_backends
+from src.ast_nodes import ASTNode, NodeKind
+from src.errors import CodegenError
 from src.compile import ExitCode
 
 
@@ -75,6 +77,13 @@ def test_backend_registry_exposes_c_backend() -> None:
     assert backend.file_extension == ".c"
     assert backend.language_name == "C"
     assert "c" in list_backends()
+
+
+def test_c_backend_fall_statement_raises_codegen_error() -> None:
+    backend = get_backend("c")
+
+    with pytest.raises(CodegenError, match="fallthrough is not implemented"):
+        backend.visit(ASTNode(NodeKind.FALL))
 
 
 def test_cli_backend_c_default_output_extension(tmp_path: Path) -> None:

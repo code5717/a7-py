@@ -17,9 +17,9 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `src/passes/semantic_validator.py`
   Notes: fixed; semantic validation now traverses `value`, with a schema regression test.
 
-- [ ] Implement `fall` end-to-end instead of only parsing it.
+- [x] Fail closed for `fall` until fallthrough lowering is designed.
   Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`
-  Notes: `NodeKind.FALL` is parsed and documented, but semantic validation and backend lowering are still pending.
+  Notes: `NodeKind.FALL` now produces a semantic error and both backends raise `CodegenError` if it reaches codegen. Full fallthrough lowering remains a future language-design item.
 
 - [x] Replace Zig backend `@compileError("unsupported: ...")` fallbacks with compiler-side codegen errors.
   Files: `src/backends/zig.py`
@@ -218,6 +218,10 @@ These are entire subsystems. Each needs a design decision before implementation 
 - [ ] Add PyPI or package-registry publishing.
   Files: `.github/workflows/`
   Notes: GitHub release artifacts are automated; package registry target still needs a decision.
+
+- [ ] Design and implement `fall` lowering.
+  Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`, `docs/SPEC.md`
+  Notes: current behavior is fail-closed; supporting fallthrough needs explicit semantics and backend lowering, especially for Zig.
 
 ---
 

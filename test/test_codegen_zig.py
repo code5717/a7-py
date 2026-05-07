@@ -186,6 +186,12 @@ class TestCodePatterns:
         with pytest.raises(CodegenError, match="unsupported expression node 'FALL'"):
             codegen._emit_expr(ASTNode(NodeKind.FALL))
 
+    def test_fall_statement_raises_codegen_error(self):
+        codegen = ZigCodeGenerator()
+
+        with pytest.raises(CodegenError, match="fallthrough is not implemented"):
+            codegen.visit(ASTNode(NodeKind.FALL))
+
     def test_hello_world(self):
         source = '''
 io :: import "std/io"

@@ -202,6 +202,8 @@ class SemanticValidationPass:
                 self.visit_continue_stmt(nd)
             elif nd.kind == NodeKind.RETURN:
                 self.visit_return_stmt(nd)
+            elif nd.kind == NodeKind.FALL:
+                self.visit_fall_stmt(nd)
             elif nd.kind == NodeKind.DEFER:
                 self.visit_defer_stmt(nd)
             elif nd.kind == NodeKind.DEL:
@@ -253,6 +255,10 @@ class SemanticValidationPass:
         # RETURN nodes store their payload in `value`.
         if node.value:
             self.visit_expression(node.value)
+
+    def visit_fall_stmt(self, node: ASTNode) -> None:
+        """Reject fallthrough until source-language semantics are implemented."""
+        self.add_error(SemanticErrorType.UNSUPPORTED_FALLTHROUGH, node.span)
 
     def visit_defer_stmt(self, node: ASTNode) -> None:
         """Validate a defer statement."""

@@ -104,6 +104,32 @@ main :: fn() {
     assert out.exists()
 
 
+def test_cli_fallthrough_returns_semantic_error_and_skips_codegen(tmp_path):
+    src = tmp_path / "fallthrough.a7"
+    out = tmp_path / "fallthrough.zig"
+    src.write_text(
+        """
+main :: fn() {
+    x := 1
+    match x {
+        case 1: {
+            fall
+        }
+        case 2: {}
+    }
+}
+""".strip()
+    )
+
+    result = run_cli(["--format", "json", str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SEMANTIC
+    payload = json.loads(result.stdout)
+    assert payload["error"]["category"] == "semantic"
+    assert "fallthrough" in payload["error"]["details"][0]["message"].lower()
+    assert not out.exists()
+
+
 def test_cli_parse_error_json_mode_returns_error_object(tmp_path):
     src = tmp_path / "parse_error_json.a7"
     src.write_text(

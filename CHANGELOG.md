@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Zig backend diagnostics**
   - Unsupported expression nodes now raise compiler-side `CodegenError` instead of emitting Zig `@compileError` fallback expressions.
 
+- **Fallthrough handling**
+  - `fall` now fails closed with a semantic diagnostic, and both backends raise codegen errors if a `FALL` node reaches them.
+
 - **Semantic and preprocessing correctness**
   - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
   - `ret` semantic validation now traverses the parser's `value` payload.

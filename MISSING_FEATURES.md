@@ -30,13 +30,15 @@
 16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
 17. Local file-based imports now fail closed during semantic analysis instead of swallowing module loading failures.
 18. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
+19. `fall` now fails closed with a semantic error instead of being ignored or reaching backend output.
 
 ---
 
 ## Remaining Language-First Gaps
 
-1. **`fall` statement semantics**
-   - `fall` is parsed (`NodeKind.FALL`) but not yet validated or lowered in semantic/codegen passes.
+1. **`fall` statement lowering**
+   - `fall` is parsed (`NodeKind.FALL`) and rejected during semantic validation.
+   - Full fallthrough semantics and backend lowering are not implemented yet.
 
 2. **Advanced match diagnostics**
    - No overlap/redundancy diagnostics for case patterns.

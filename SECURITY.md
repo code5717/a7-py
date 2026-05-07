@@ -34,6 +34,8 @@ checks, docs style checks, and full pytest.
 
 - No sandboxing for compiled programs.
 - No ownership or borrow-style lifetime model yet.
+- `fall` is rejected until fallthrough semantics and backend lowering are
+  designed.
 - Built-in stdlib imports are virtual and not yet unified with file-based module semantics.
 - C and Zig backend parity checks exist for examples but are not a proof for all
   possible programs.
