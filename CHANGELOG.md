@@ -78,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.
   - Switched the docs syntax highlighter from the Oniguruma WASM engine to Shiki's JavaScript regex engine, removing the docs build chunk-size warning.
   - Upgraded first-party GitHub workflow actions to Node 24-compatible majors and opted workflows into Node 24 JavaScript action execution.
+  - Upgraded GitHub Pages, artifact, and release workflow actions to Node 24-compatible majors.
   - Replaced the third-party Zig setup action with a checksum-verified Zig 0.15.2 install step in CI and release workflows.
   - Corrected memory-safety documentation so the spec no longer claims unimplemented lifetime, double-free, use-after-free, or bounds-check guarantees.
   - Marked the tensor/AI/GPU section as planned design work instead of current language support.

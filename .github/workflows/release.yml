@@ -69,7 +69,7 @@ jobs:
         run: uv build
 
       - name: Upload Python package distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-package-distributions
           path: |
@@ -92,7 +92,7 @@ jobs:
         run: tar -czf dist/a7-example-artifacts-release.tar.gz -C build release
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           files: |
@@ -113,7 +113,7 @@ jobs:
       id-token: write
     steps:
       - name: Download Python package distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-package-distributions
           path: dist
