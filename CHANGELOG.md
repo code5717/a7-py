@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Upgraded first-party GitHub workflow actions to Node 24-compatible majors and opted workflows into Node 24 JavaScript action execution.
   - Upgraded GitHub Pages, artifact, and release workflow actions to Node 24-compatible majors.
   - Replaced the third-party Zig setup action with a checksum-verified Zig 0.15.2 install step in CI and release workflows.
+  - Corrected release/security checklist shell snippets and the README documentation-site URL.
   - Corrected memory-safety documentation so the spec no longer claims unimplemented lifetime, double-free, use-after-free, or bounds-check guarantees.
   - Marked the tensor/AI/GPU section as planned design work instead of current language support.
   - De-scoped `std/string`, `std/mem`, and `std/collections` from current stdlib documentation; only virtual `io` and `math` modules are documented as implemented.

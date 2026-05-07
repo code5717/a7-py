@@ -22,8 +22,8 @@ Before release or broad testing, run:
 uv build
 uvx pip-audit --strict
 uv run python scripts/check_no_secrets.py
-cd site && npm run build
-cd site && npm audit --omit=dev --audit-level=moderate
+(cd site && npm run build)
+(cd site && npm audit --omit=dev --audit-level=moderate)
 ```
 
 The full gate includes parser/tokenizer tests, semantic tests, Zig and C backend

@@ -169,7 +169,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 
 ## Learn More
 
-- Documentation website: `https://airbus5717.github.io/a7-py/`
+- Documentation website: `https://code5717.github.io/a7-py/`
 - `docs/SPEC.md` - Language specification
 - `RELEASE.md` - Release/debug build checklist
 - `SECURITY.md` - Security policy and trust boundary

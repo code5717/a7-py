@@ -16,7 +16,7 @@ A release should contain:
 
 - Python 3.13+
 - `uv`
-- `zig` on `PATH`
+- Zig 0.15.2 on `PATH`
 - Node.js 22+ for the docs site
 
 ## Debug Builds
@@ -60,11 +60,10 @@ Run this before tagging:
 
 ```bash
 ./run_all_tests.sh
-cd site && npm run build
-cd ..
+(cd site && npm run build)
 uv build
 uvx pip-audit --strict
-cd site && npm audit --omit=dev --audit-level=moderate
+(cd site && npm audit --omit=dev --audit-level=moderate)
 ```
 
 `run_all_tests.sh` includes:
