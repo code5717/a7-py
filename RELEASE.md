@@ -61,6 +61,7 @@ Run this before tagging:
 ```bash
 ./run_all_tests.sh
 (cd site && npm run build)
+rm -rf dist
 uv build
 uvx pip-audit --strict
 (cd site && npm audit --omit=dev --audit-level=moderate)
@@ -100,6 +101,10 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`. The workflow reruns
 the release gate, builds the Python package, builds the docs site, builds
 release example artifacts, and creates a draft GitHub release with those files
 attached.
+
+When building locally, remove `dist/` before `uv build`. The release workflow
+runs on a clean GitHub runner, but local `dist/` can otherwise retain older
+versioned wheels or source distributions that should not be uploaded.
 
 Manual `workflow_dispatch` runs validate the release gate and artifact build
 steps without creating a GitHub release or publishing to PyPI.

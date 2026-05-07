@@ -37,6 +37,7 @@ not factually provable from local tests alone.
 - `uv run python scripts/verify_backend_parity.py`
 - `./run_all_tests.sh`
 - `uv build`
+- local `dist/` cleanup before package builds
 - `uvx pip-audit --strict`
 - `uvx bandit -r src scripts -q --severity-level medium`
 - `uv run python scripts/check_no_secrets.py`
@@ -122,6 +123,9 @@ not factually provable from local tests alone.
   and status information.
 - Site metadata, README, robots, and sitemap now consistently use
   `https://code5717.github.io/a7-py/`.
+- Local release documentation now explicitly cleans `dist/` before package
+  builds so stale versioned artifacts are not accidentally mixed into a manual
+  release upload.
 
 ## Residual Risks
 
@@ -149,6 +153,9 @@ not factually provable from local tests alone.
   remaining low-severity findings are expected subprocess usage in trusted
   release/example verifier scripts, plus a false positive on the
   `bad_token_at_global` error-code string.
+- Local package directories such as `dist/` and `build/` are generated
+  workspace state. Rebuild them from the documented commands before uploading
+  artifacts manually.
 
 ## Recommended Next Pass
 

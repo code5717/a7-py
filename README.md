@@ -106,8 +106,12 @@ Each built binary is executed and compared with `test/fixtures/golden_outputs/*.
 Build the Python package:
 
 ```bash
+rm -rf dist
 uv build
 ```
+
+Cleaning `dist/` first prevents stale older package artifacts from being mixed
+with the current release build.
 
 The installed CLI entrypoint is `a7`:
 

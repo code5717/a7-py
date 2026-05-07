@@ -7,10 +7,15 @@ Run before tagging:
 ```bash
 ./run_all_tests.sh
 (cd site && npm run build)
+rm -rf dist
 uv build
 uvx pip-audit --strict
 (cd site && npm audit --omit=dev --audit-level=moderate)
 ```
+
+Clean `dist/` before `uv build` so local package output contains only the
+current version. GitHub release jobs run in a clean runner, but local release
+prep should not rely on stale artifacts being absent.
 
 ## Debug and Release Artifacts
 
