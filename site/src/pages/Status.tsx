@@ -7,7 +7,7 @@ const done = [
   { name: 'Semantic analysis', desc: 'Name resolution, type checking with inference, control flow and memory checks, slice/index validation.' },
   { name: 'Preprocessing', desc: 'Nine sub-passes: lowering, resolution, mutation, usage, shadowing, hoisting, folding.' },
   { name: 'Zig backend', desc: 'Full translation with type mapping, pointer handling, hoisting, annotations, labeled loops.' },
-  { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, raw and aliased function pointers, range and identifier match patterns, and core match expressions are present; backend parity checks should keep expanding.' },
+  { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, function pointers, range and identifier match patterns, and side-effectful match expressions are present; backend parity checks should keep expanding.' },
   { name: 'Release tooling', desc: 'Installed CLI entrypoint plus debug/release artifact verification for Zig and C example builds.' },
 ]
 
@@ -16,7 +16,7 @@ const missing = [
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal range overlaps are diagnosed. Symbolic range overlap and true capture patterns remain open.' },
   { name: 'Generic constraint internals', desc: 'Inline type-set constraint resolution in generics.py is still placeholder-level.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
-  { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand. Side-effectful match scrutinees are supported in variable initializers; inline expression contexts remain open.' },
+  { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for every new language feature.' },
   { name: 'Automated publishing', desc: 'Local package builds are available, but tag-based package publishing is not wired yet.' },
 ]
 

@@ -76,9 +76,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/backends/c.py`
   Notes: variable initializers now cache the scrutinee in a generated local before assigning the lowered conditional result.
 
-- [ ] C backend: side-effectful `match` expression scrutinees in non-declaration expression contexts.
+- [x] C backend: side-effectful `match` expression scrutinees in non-declaration expression contexts.
   Files: `src/backends/c.py`
-  Notes: inline calls such as function arguments still fail closed because portable C needs statement-level lowering at each expression site.
+  Notes: return values, assignments, variable initializer subexpressions, function arguments, and I/O arguments now lower through generated result temps and branch chains.
 
 - [x] C backend: range patterns in match statements.
   Files: `src/backends/c.py`

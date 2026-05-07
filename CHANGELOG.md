@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Match statements with literal range patterns now lower to portable C `if` chains with a cached scrutinee.
   - Existing-identifier match patterns now lower to C comparisons in both match statements and match expressions.
   - Variable initializers using side-effectful `match` scrutinees now cache the scrutinee in a generated local before evaluating patterns.
-  - Other side-effectful `match` expression contexts still fail closed until they have portable statement-level lowering.
+  - Side-effectful `match` scrutinees in return values, assignments, variable initializer subexpressions, function arguments, and I/O arguments now lower through generated result temps and branch chains.
 
 - **C Backend Function Pointers**
   - Raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.

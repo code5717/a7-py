@@ -722,10 +722,10 @@ class CCodeGenerator(CodeGenerator):
                 self._emit_side_effectful_match_var_init(name, c_type, node.value)
                 return
 
-            self._write_indent()
-            init = self._emit_expr(node.value)
+            init = self._emit_expr_prepared(node.value)
             if self._is_null_literal(node.value) and not c_type.endswith("*"):
                 c_type = "void*"
+            self._write_indent()
             self.output.write(f"{c_type} {name} = {init};\n")
         else:
             self._write_indent()
@@ -1020,17 +1020,19 @@ class CCodeGenerator(CodeGenerator):
             self._main_has_return = True
 
         self._emit_deferred_unwind(0)
-        self._write_indent()
 
         if self._inside_main and node.value is None:
+            self._write_indent()
             self.output.write("return 0;\n")
             return
 
         if node.value is None:
+            self._write_indent()
             self.output.write("return;\n")
             return
 
-        value_expr = self._emit_expr(node.value)
+        value_expr = self._emit_expr_prepared(node.value)
+        self._write_indent()
         self.output.write(f"return {value_expr};\n")
 
     def _visit_break(self, node: ASTNode) -> None:
@@ -1072,7 +1074,7 @@ class CCodeGenerator(CodeGenerator):
 
     def _visit_assignment(self, node: ASTNode) -> None:
         target = self._emit_expr(node.target) if node.target else "/*target*/"
-        value = self._emit_expr(node.value) if node.value else "/*value*/"
+        value = self._emit_expr_prepared(node.value) if node.value else "/*value*/"
         op = getattr(node, "operator", None) or getattr(node, "op", AssignOp.ASSIGN)
         cop = self._assign_op_to_c(op)
         self._write_indent()
@@ -1084,7 +1086,7 @@ class CCodeGenerator(CodeGenerator):
         if self._is_io_call(node.expression):
             self._emit_io_call_stmt(node.expression)
             return
-        expr = self._emit_expr(node.expression)
+        expr = self._emit_expr_prepared(node.expression)
         self._write_indent()
         self.output.write(f"{expr};\n")
 
@@ -1151,6 +1153,54 @@ class CCodeGenerator(CodeGenerator):
             return self._emit_type_node(node)
 
         raise CodegenError(f"C backend: unsupported expression node '{kind.name}'", node.span)
+
+    def _emit_expr_prepared(self, node: ASTNode) -> str:
+        """Emit expression text, hoisting side-effectful match expressions into temps."""
+        if node is None:
+            return "0"
+
+        if node.kind == NodeKind.MATCH_EXPR and not self._is_side_effect_free_match_scrutinee(node.expression):
+            return self._emit_side_effectful_match_expr_temp(node)
+
+        kind = node.kind
+        if kind == NodeKind.BINARY:
+            left = self._emit_expr_prepared(node.left)
+            right = self._emit_expr_prepared(node.right)
+            return f"({left} {self._binary_op_to_c(node.operator)} {right})"
+        if kind == NodeKind.UNARY:
+            operand = self._emit_expr_prepared(node.operand)
+            if node.operator == UnaryOp.NEG:
+                return f"(-({operand}))"
+            if node.operator == UnaryOp.NOT:
+                return f"(!({operand}))"
+            if node.operator == UnaryOp.BIT_NOT:
+                return f"(~({operand}))"
+            return f"({operand})"
+        if kind == NodeKind.CALL:
+            return self._emit_call_prepared(node)
+        if kind == NodeKind.INDEX:
+            obj = self._emit_expr_prepared(node.object)
+            idx = self._emit_expr_prepared(node.index)
+            return f"{self._emit_index_base_expr(node.object, obj)}[(size_t)({idx})]"
+        if kind == NodeKind.FIELD_ACCESS:
+            return self._emit_field_access_prepared(node)
+        if kind == NodeKind.ADDRESS_OF:
+            operand = self._emit_expr_prepared(node.operand)
+            return f"&({operand})"
+        if kind == NodeKind.DEREF:
+            pointer = self._emit_expr_prepared(node.pointer)
+            return f"*({pointer})"
+        if kind == NodeKind.CAST:
+            target = self._emit_type_node(node.target_type)
+            expr = self._emit_expr_prepared(node.expression)
+            return f"(({target})({expr}))"
+        if kind == NodeKind.IF_EXPR:
+            cond = self._emit_expr_prepared(node.condition)
+            texpr = self._emit_expr_prepared(node.then_expr)
+            eexpr = self._emit_expr_prepared(node.else_expr) if node.else_expr else "0"
+            return f"(({cond}) ? ({texpr}) : ({eexpr}))"
+
+        return self._emit_expr(node)
 
     def _emit_literal(self, node: ASTNode) -> str:
         lk = node.literal_kind
@@ -1223,6 +1273,31 @@ class CCodeGenerator(CodeGenerator):
         args = ", ".join(self._emit_expr(a) for a in (node.arguments or []))
         return f"{func}({args})"
 
+    def _emit_call_prepared(self, node: ASTNode) -> str:
+        if self._is_io_call(node):
+            raise CodegenError(
+                "C backend: io.print/io.println cannot be used as expression values",
+                node.span,
+            )
+
+        canonical = getattr(node, "stdlib_canonical", None)
+        if canonical in self._MATH_CALL_MAP:
+            self._needs_math = True
+            fn = self._MATH_CALL_MAP[canonical]
+            args = ", ".join(self._emit_expr_prepared(a) for a in (node.arguments or []))
+            return f"{fn}({args})"
+
+        if canonical and canonical.startswith("std.math."):
+            short_name = canonical.split(".")[-1]
+            fn = self._MATH_CALL_MAP.get(canonical, short_name)
+            self._needs_math = True
+            args = ", ".join(self._emit_expr_prepared(a) for a in (node.arguments or []))
+            return f"{fn}({args})"
+
+        func = self._emit_expr_prepared(node.function)
+        args = ", ".join(self._emit_expr_prepared(a) for a in (node.arguments or []))
+        return f"{func}({args})"
+
     def _emit_field_access(self, node: ASTNode) -> str:
         field = self._sanitize_name(node.field or "field")
 
@@ -1244,6 +1319,29 @@ class CCodeGenerator(CodeGenerator):
             return f"({pointer})->{field}"
 
         obj = self._emit_expr(node.object)
+        return f"({obj}).{field}"
+
+    def _emit_field_access_prepared(self, node: ASTNode) -> str:
+        field = self._sanitize_name(node.field or "field")
+
+        if node.object and node.object.kind == NodeKind.IDENTIFIER:
+            obj_name = node.object.name or ""
+            if obj_name in self._declared_enums and field in self._enum_variants.get(obj_name, set()):
+                return f"{self._sanitize_name(obj_name)}_{field}"
+
+        object_type = self._type_map.get(id(node.object)) if node.object is not None else None
+        if isinstance(object_type, SliceType):
+            obj = self._emit_expr_prepared(node.object)
+            if field == "ptr":
+                return f"({obj}).data"
+            if field == "len":
+                return f"({obj}).len"
+
+        if node.object and node.object.kind == NodeKind.DEREF:
+            pointer = self._emit_expr_prepared(node.object.pointer)
+            return f"({pointer})->{field}"
+
+        obj = self._emit_expr_prepared(node.object)
         return f"({obj}).{field}"
 
     def _emit_struct_init(self, node: ASTNode) -> str:
@@ -1554,7 +1652,7 @@ class CCodeGenerator(CodeGenerator):
         fmt_arg = args[0]
         value_args = args[1:]
         fmt_raw = self._extract_plain_format(fmt_arg)
-        printf_fmt, converted_args = self._convert_format(fmt_raw, value_args)
+        printf_fmt, converted_args = self._convert_format(fmt_raw, value_args, prepared=True)
 
         if add_newline:
             printf_fmt += "\n"
@@ -1585,7 +1683,7 @@ class CCodeGenerator(CodeGenerator):
             return expr[1:-1]
         return "{}"
 
-    def _convert_format(self, fmt: str, args: list[ASTNode]) -> tuple[str, list[str]]:
+    def _convert_format(self, fmt: str, args: list[ASTNode], prepared: bool = False) -> tuple[str, list[str]]:
         out: list[str] = []
         converted: list[str] = []
         i = 0
@@ -1594,7 +1692,7 @@ class CCodeGenerator(CodeGenerator):
         while i < len(fmt):
             if i + 1 < len(fmt) and fmt[i] == "{" and fmt[i + 1] == "}":
                 if arg_idx < len(args):
-                    spec, expr = self._format_io_arg(args[arg_idx])
+                    spec, expr = self._format_io_arg(args[arg_idx], prepared=prepared)
                     out.append(spec)
                     converted.append(expr)
                     arg_idx += 1
@@ -1612,7 +1710,7 @@ class CCodeGenerator(CodeGenerator):
 
         # Append any extra args that had no placeholder.
         while arg_idx < len(args):
-            spec, expr = self._format_io_arg(args[arg_idx])
+            spec, expr = self._format_io_arg(args[arg_idx], prepared=prepared)
             if out and not out[-1].endswith(" "):
                 out.append(" ")
             out.append(spec)
@@ -1621,9 +1719,9 @@ class CCodeGenerator(CodeGenerator):
 
         return "".join(out), converted
 
-    def _format_io_arg(self, arg: ASTNode) -> tuple[str, str]:
+    def _format_io_arg(self, arg: ASTNode, prepared: bool = False) -> tuple[str, str]:
         sem_type = self._type_map.get(id(arg))
-        expr = self._emit_expr(arg)
+        expr = self._emit_expr_prepared(arg) if prepared else self._emit_expr(arg)
 
         if arg.kind == NodeKind.CALL:
             canonical = getattr(arg, "stdlib_canonical", None)
@@ -2096,6 +2194,81 @@ class CCodeGenerator(CodeGenerator):
         self._write_indent()
         self.output.write("}\n")
 
+    def _emit_side_effectful_match_expr_temp(self, node: ASTNode) -> str:
+        result_type = self._semantic_type_to_c(self._type_map.get(id(node))) or "int32_t"
+        scrutinee = node.expression
+        scrutinee_type = self._semantic_type_to_c(self._type_map.get(id(scrutinee))) or "int32_t"
+        if result_type == "int32_t" or scrutinee_type == "int32_t":
+            self._needs_stdint = True
+
+        result_name = self._unique_name("__a7_match_result")
+        scrutinee_name = self._unique_name("__a7_match")
+
+        self._write_indent()
+        self.output.write(f"{result_type} {result_name};\n")
+        self._write_indent()
+        self.output.write("{\n")
+        self.indent()
+        scrutinee_expr = self._emit_expr_prepared(scrutinee) if scrutinee else "0"
+        self._write_indent()
+        self.output.write(f"{scrutinee_type} {scrutinee_name} = {scrutinee_expr};\n")
+
+        emitted_branch = False
+        emitted_unconditional = False
+        for case in node.cases or []:
+            case_expr_node = getattr(case, "expression", None)
+            if case_expr_node is None or emitted_unconditional:
+                continue
+
+            condition = self._emit_match_expr_condition(scrutinee_name, case.patterns or [])
+            prefix = "else " if emitted_branch else ""
+            if condition is None:
+                self._write_indent()
+                self.output.write(f"{prefix}{{\n")
+                self.indent()
+                case_expr = self._emit_expr_prepared(case_expr_node)
+                self._write_indent()
+                self.output.write(f"{result_name} = {case_expr};\n")
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+                emitted_branch = True
+                emitted_unconditional = True
+                continue
+
+            self._write_indent()
+            self.output.write(f"{prefix}if ({condition}) {{\n")
+            self.indent()
+            case_expr = self._emit_expr_prepared(case_expr_node)
+            self._write_indent()
+            self.output.write(f"{result_name} = {case_expr};\n")
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            emitted_branch = True
+
+        if not emitted_unconditional:
+            else_expr_node = node.else_case if isinstance(node.else_case, ASTNode) else None
+            prefix = "else " if emitted_branch else ""
+            self._write_indent()
+            self.output.write(f"{prefix}{{\n")
+            self.indent()
+            else_expr = (
+                self._emit_expr_prepared(else_expr_node)
+                if else_expr_node is not None
+                else self._default_value(None, result_type)
+            )
+            self._write_indent()
+            self.output.write(f"{result_name} = {else_expr};\n")
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+        return result_name
+
     def _emit_match_expr_with_scrutinee(self, node: ASTNode, scrutinee_expr: str) -> str:
         default_expr = self._emit_expr(node.else_case) if isinstance(node.else_case, ASTNode) else "0"
         result = f"({default_expr})"
@@ -2122,6 +2295,8 @@ class CCodeGenerator(CodeGenerator):
             conditions.append(condition)
         if not conditions:
             return "0"
+        if len(conditions) == 1:
+            return conditions[0]
         return " || ".join(f"({condition})" for condition in conditions)
 
     def _emit_match_pattern_condition(self, scrutinee_expr: str, pattern: ASTNode) -> Optional[str]:
@@ -2129,24 +2304,24 @@ class CCodeGenerator(CodeGenerator):
             return None
         if pattern.kind == NodeKind.PATTERN_LITERAL:
             value = self._emit_expr(pattern.literal) if pattern.literal else "0"
-            return f"({scrutinee_expr}) == ({value})"
+            return f"{scrutinee_expr} == {value}"
         if pattern.kind == NodeKind.PATTERN_ENUM:
             if pattern.enum_type and pattern.variant:
                 value = f"{self._sanitize_name(pattern.enum_type)}_{self._sanitize_name(pattern.variant)}"
-                return f"({scrutinee_expr}) == ({value})"
+                return f"{scrutinee_expr} == {value}"
             raise CodegenError("C backend: malformed enum pattern in match expression", pattern.span)
         if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
             name = pattern.name or ""
             if name == "_":
                 return None
             value = self._sanitize_name(getattr(pattern, "emit_name", None) or name)
-            return f"({scrutinee_expr}) == ({value})"
+            return f"{scrutinee_expr} == {value}"
         if pattern.kind == NodeKind.PATTERN_RANGE:
             start = self._emit_pattern(pattern.start) if pattern.start else "0"
             end = self._emit_pattern(pattern.end) if pattern.end else "0"
-            return f"({scrutinee_expr}) >= ({start}) && ({scrutinee_expr}) <= ({end})"
+            return f"{scrutinee_expr} >= {start} && {scrutinee_expr} <= {end}"
         value = self._emit_expr(pattern)
-        return f"({scrutinee_expr}) == ({value})"
+        return f"{scrutinee_expr} == {value}"
 
     def _is_side_effect_free_match_scrutinee(self, node: Optional[ASTNode]) -> bool:
         if node is None:

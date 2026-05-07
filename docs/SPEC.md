@@ -2873,8 +2873,7 @@ Status snapshot (2026-05-07):
 
 5. **Backend semantic parity hardening**
    - Differential parity checks across backends should continue expanding for new language features.
-   - C lowers side-effectful `match` expression scrutinees in variable initializers by caching the scrutinee once.
-   - C still rejects side-effectful `match` expression scrutinees in non-declaration expression contexts.
+   - C lowers side-effectful `match` expression scrutinees through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
    - C lowers raw `fn(...)` parameter and variable declarations as function pointers.
    - Function-type aliases resolve in semantic analysis and lower as C typedefs.
 

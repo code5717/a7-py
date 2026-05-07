@@ -440,10 +440,9 @@ main :: fn() {
     assert run.stdout.strip() == "10"
 
 
-def test_c_backend_match_expression_side_effectful_scrutinee_in_expression_fails_closed(tmp_path: Path) -> None:
-    src = tmp_path / "match_expr_call_inline.a7"
-    out = tmp_path / "match_expr_call_inline.c"
-    src.write_text(
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_c_backend_match_expression_side_effectful_scrutinee_in_io_arg(tmp_path: Path) -> None:
+    result = build_and_run_c(
         """
 io :: import "std/io"
 
@@ -457,15 +456,54 @@ main :: fn() {
         else: 0
     })
 }
-""".strip(),
-        encoding="utf-8",
+""",
+        tmp_path,
     )
 
-    result = run_cli(["--backend", "c", "--output", str(out), str(src)])
-    assert result.returncode == ExitCode.CODEGEN
-    output = result.stdout + result.stderr
-    assert "side-effectful scrutinees" in output
-    assert "variable initializers" in output
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "10"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_c_backend_match_expression_side_effectful_scrutinee_in_assignment_return_and_call(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+value :: fn() i32 {
+    ret 2
+}
+
+pick :: fn() i32 {
+    ret match value() {
+        case 2: 20
+        else: 0
+    }
+}
+
+identity :: fn(x: i32) i32 {
+    ret x
+}
+
+main :: fn() {
+    x: i32 = 0
+    x = match value() {
+        case 2: 7
+        else: 1
+    }
+    y := identity(match value() {
+        case 2: 5
+        else: 0
+    })
+    z := pick()
+    io.println("{} {} {}", x, y, z)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "7 5 20"
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
