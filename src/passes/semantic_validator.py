@@ -10,7 +10,7 @@ Validates semantic rules beyond type checking:
 from typing import List, Optional, Set
 
 from src.ast_nodes import ASTNode, NodeKind, LiteralKind
-from src.symbol_table import SymbolKind, SymbolTable
+from src.symbol_table import SymbolTable
 from src.semantic_context import SemanticContext
 from src.types import Type, TypeKind, ReferenceType, EnumType
 from src.errors import SemanticError, SemanticErrorType, SourceSpan
@@ -189,8 +189,9 @@ class SemanticValidationPass:
             elif nd.kind == NodeKind.MATCH:
                 # Schedule else case
                 if nd.else_case:
-                    self._report_unreachable_in_block(nd.else_case)
-                    for stmt in reversed(nd.else_case):
+                    else_statements = self._as_statement_list(nd.else_case)
+                    self._report_unreachable_in_block(else_statements)
+                    for stmt in reversed(else_statements):
                         stack.append(('visit_stmt', stmt))
                 # Schedule case branches
                 if nd.cases:
@@ -409,7 +410,7 @@ class SemanticValidationPass:
         }
         self._function_spans = {name: func.span for name, func in functions.items()}
         self._function_graph = {
-            name: self._collect_function_calls(func.body, set(functions))
+            name: self._collect_function_calls(func, set(functions))
             for name, func in functions.items()
         }
 
@@ -439,7 +440,154 @@ class SemanticValidationPass:
                 stack.append((callee, path + [callee]))
         return None
 
-    def _collect_function_calls(self, root: Optional[ASTNode], function_names: set[str]) -> set[str]:
+    def _collect_function_calls(self, function: ASTNode, function_names: set[str]) -> set[str]:
+        if function.body is None:
+            return set()
+
+        calls: set[str] = set()
+        shadowed = {
+            param.name
+            for param in function.parameters or []
+            if param.name in function_names
+        }
+        stack: list[tuple[str, object, int, set[str]]] = [
+            ("stmt", function.body, 0, shadowed)
+        ]
+
+        while stack:
+            action, payload, index, active_shadowed = stack.pop()
+
+            if action == "stmt_list":
+                statements = payload if isinstance(payload, list) else []
+                if index >= len(statements):
+                    continue
+                next_shadowed = self._schedule_statement_calls(
+                    statements[index],
+                    function_names,
+                    set(active_shadowed),
+                    calls,
+                    stack,
+                )
+                stack.append(("stmt_list", statements, index + 1, next_shadowed))
+                continue
+
+            if isinstance(payload, ASTNode):
+                self._schedule_statement_calls(
+                    payload,
+                    function_names,
+                    set(active_shadowed),
+                    calls,
+                    stack,
+                )
+
+        return calls
+
+    def _schedule_statement_calls(
+        self,
+        node: ASTNode,
+        function_names: set[str],
+        shadowed: set[str],
+        calls: set[str],
+        stack: list[tuple[str, object, int, set[str]]],
+    ) -> set[str]:
+        """Collect calls in one statement and schedule nested statement scopes."""
+        if node.kind == NodeKind.BLOCK:
+            stack.append(("stmt_list", node.statements or [], 0, set(shadowed)))
+
+        elif node.kind in (NodeKind.VAR, NodeKind.CONST):
+            if node.value:
+                calls.update(self._collect_expression_calls(node.value, function_names, shadowed))
+            if node.name in function_names:
+                shadowed.add(node.name)
+
+        elif node.kind == NodeKind.FUNCTION:
+            # Nested functions introduce a local name for following statements.
+            # Their bodies are validated independently where supported; they are
+            # not calls made by the containing function.
+            if node.name in function_names:
+                shadowed.add(node.name)
+
+        elif node.kind == NodeKind.EXPRESSION_STMT:
+            if node.expression:
+                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+
+        elif node.kind == NodeKind.RETURN:
+            if node.value:
+                calls.update(self._collect_expression_calls(node.value, function_names, shadowed))
+
+        elif node.kind == NodeKind.ASSIGNMENT:
+            if node.target:
+                calls.update(self._collect_expression_calls(node.target, function_names, shadowed))
+            if node.value:
+                calls.update(self._collect_expression_calls(node.value, function_names, shadowed))
+
+        elif node.kind == NodeKind.DEL:
+            if node.expression:
+                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+
+        elif node.kind == NodeKind.DEFER:
+            if node.expression:
+                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+            if node.statement:
+                stack.append(("stmt", node.statement, 0, set(shadowed)))
+
+        elif node.kind == NodeKind.IF_STMT:
+            if node.condition:
+                calls.update(self._collect_expression_calls(node.condition, function_names, shadowed))
+            if node.then_stmt:
+                stack.append(("stmt", node.then_stmt, 0, set(shadowed)))
+            if node.else_stmt:
+                stack.append(("stmt", node.else_stmt, 0, set(shadowed)))
+
+        elif node.kind == NodeKind.WHILE:
+            if node.condition:
+                calls.update(self._collect_expression_calls(node.condition, function_names, shadowed))
+            if node.body:
+                stack.append(("stmt", node.body, 0, set(shadowed)))
+
+        elif node.kind == NodeKind.FOR:
+            loop_shadowed = set(shadowed)
+            if node.init:
+                loop_shadowed = self._schedule_statement_calls(node.init, function_names, loop_shadowed, calls, stack)
+            if node.condition:
+                calls.update(self._collect_expression_calls(node.condition, function_names, loop_shadowed))
+            if node.update:
+                calls.update(self._collect_expression_calls(node.update, function_names, loop_shadowed))
+            if node.body:
+                stack.append(("stmt", node.body, 0, loop_shadowed))
+
+        elif node.kind in (NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED):
+            loop_shadowed = set(shadowed)
+            if node.iterable:
+                calls.update(self._collect_expression_calls(node.iterable, function_names, loop_shadowed))
+            if node.iterator in function_names:
+                loop_shadowed.add(node.iterator)
+            if node.index_var in function_names:
+                loop_shadowed.add(node.index_var)
+            if node.body:
+                stack.append(("stmt", node.body, 0, loop_shadowed))
+
+        elif node.kind == NodeKind.MATCH:
+            if node.expression:
+                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+            for case in node.cases or []:
+                case_stmt = getattr(case, "statement", None)
+                if case_stmt:
+                    stack.append(("stmt", case_stmt, 0, set(shadowed)))
+                else:
+                    stack.append(("stmt_list", case.statements or [], 0, set(shadowed)))
+            else_statements = self._as_statement_list(node.else_case)
+            if else_statements:
+                stack.append(("stmt_list", else_statements, 0, set(shadowed)))
+
+        return shadowed
+
+    def _collect_expression_calls(
+        self,
+        root: Optional[ASTNode],
+        function_names: set[str],
+        shadowed: set[str],
+    ) -> set[str]:
         if root is None:
             return set()
 
@@ -451,26 +599,33 @@ class SemanticValidationPass:
                 continue
 
             if node.kind == NodeKind.CALL:
-                callee = self._direct_callee_name(node)
+                callee = self._direct_callee_name(node, shadowed)
                 if callee in function_names:
                     calls.add(callee)
 
+            if node.kind == NodeKind.FUNCTION:
+                continue
+
             for child in self._iter_child_nodes(node):
                 stack.append(child)
-
         return calls
 
-    def _direct_callee_name(self, node: ASTNode) -> Optional[str]:
+    def _direct_callee_name(self, node: ASTNode, shadowed: set[str]) -> Optional[str]:
         if node.kind != NodeKind.CALL or not node.function:
             return None
         function = node.function
         if function.kind != NodeKind.IDENTIFIER or not function.name:
             return None
-
-        symbol = self.symbols.lookup(function.name)
-        if symbol and symbol.kind != SymbolKind.FUNCTION:
+        if function.name in shadowed:
             return None
         return function.name
+
+    def _as_statement_list(self, value: object) -> List[ASTNode]:
+        if isinstance(value, ASTNode):
+            return [value]
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, ASTNode)]
+        return []
 
     def _iter_child_nodes(self, node: ASTNode) -> List[ASTNode]:
         children: List[ASTNode] = []

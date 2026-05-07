@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   succeed before requesting the protected `pypi` environment.
 - Semantic validation now rejects direct and mutual recursion; source programs
   should use loops, explicit stacks, or index-based worklists instead.
+  The recursion graph respects local function-pointer shadowing, so indirect
+  calls through local variables are not misreported as named recursion.
 - Expanded incomplete runnable examples for function pointers, inline struct
   returns, linked-list traversal, iterative binary-tree traversal, and string
   utilities; tightened example catalog copy where language support is still

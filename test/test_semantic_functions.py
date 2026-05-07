@@ -388,6 +388,24 @@ class TestRecursionBan:
         """
         assert expect_success(source)
 
+    def test_local_function_pointer_shadow_does_not_look_recursive(self):
+        """A local function pointer can shadow a top-level function name."""
+        source = """
+        bar :: fn(x: i32) i32 {
+            ret x * 2
+        }
+
+        foo :: fn(x: i32) i32 {
+            foo: fn(i32) i32 = bar
+            ret foo(x)
+        }
+
+        main :: fn() {
+            result := foo(5)
+        }
+        """
+        assert expect_success(source)
+
 
 class TestFunctionPointers:
     """Test function pointer and higher-order function support."""
