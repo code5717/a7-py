@@ -21,9 +21,9 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`
   Notes: `NodeKind.FALL` is parsed and documented, but semantic validation and backend lowering are still pending.
 
-- [ ] Replace Zig backend `@compileError("unsupported: ...")` fallbacks with compiler-side codegen errors.
+- [x] Replace Zig backend `@compileError("unsupported: ...")` fallbacks with compiler-side codegen errors.
   Files: `src/backends/zig.py`
-  Notes: unsupported AST nodes should fail during compilation, not after emitting Zig source.
+  Notes: unsupported expression nodes now raise `CodegenError` during A7 compilation.
 
 - [ ] Stop C slice/iteration lowering from re-evaluating side-effectful expressions.
   Files: `src/backends/c.py`

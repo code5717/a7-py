@@ -1015,7 +1015,7 @@ class ZigCodeGenerator(CodeGenerator):
                       NodeKind.TYPE_GENERIC):
             return self._emit_type_node(node)
         else:
-            return f"@compileError(\"unsupported: {kind.name}\")"
+            raise CodegenError(f"Zig backend: unsupported expression node '{kind.name}'", node.span)
 
     def _emit_literal(self, node: ASTNode) -> str:
         """Emit a literal value."""

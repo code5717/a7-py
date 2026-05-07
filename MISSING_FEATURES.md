@@ -29,6 +29,7 @@
 15. Debug/release example artifact verification is available through `scripts/build_examples.py`.
 16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
 17. Local file-based imports now fail closed during semantic analysis instead of swallowing module loading failures.
+18. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
 
 ---
 

@@ -60,9 +60,8 @@ not factually provable from local tests alone.
 
 ## Recommended Next Pass
 
-1. Replace Zig backend `@compileError("unsupported")` fallbacks with compiler
-   codegen errors.
-2. Add tag-based release workflow after choosing the package publishing target.
-3. Add secret scanning to CI.
-4. Expand differential backend tests beyond examples.
-5. Unify virtual stdlib imports with file-based module semantics.
+1. Add tag-based release workflow after choosing the package publishing target.
+2. Add secret scanning to CI.
+3. Expand differential backend tests beyond examples.
+4. Unify virtual stdlib imports with file-based module semantics.
+5. Implement `fall` semantic validation and backend lowering.

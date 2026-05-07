@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Local file-based imports now load dependencies during semantic analysis and fail closed on missing or broken modules.
   - Built-in stdlib imports such as `std/io` and `std/math` remain virtual so existing examples do not require on-disk stdlib `.a7` files.
 
+- **Zig backend diagnostics**
+  - Unsupported expression nodes now raise compiler-side `CodegenError` instead of emitting Zig `@compileError` fallback expressions.
+
 - **Semantic and preprocessing correctness**
   - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
   - `ret` semantic validation now traverses the parser's `value` payload.

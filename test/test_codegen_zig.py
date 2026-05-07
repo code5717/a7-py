@@ -21,7 +21,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.compile import A7Compiler
 from src.tokens import Tokenizer
 from src.parser import Parser
+from src.ast_nodes import ASTNode, NodeKind
 from src.backends.zig import ZigCodeGenerator
+from src.errors import CodegenError
 from src.passes import NameResolutionPass, TypeCheckingPass, SemanticValidationPass
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
@@ -177,6 +179,12 @@ class TestZigAstCheck:
 
 class TestCodePatterns:
     """Test that specific A7 constructs produce expected Zig patterns."""
+
+    def test_unsupported_expression_raises_codegen_error(self):
+        codegen = ZigCodeGenerator()
+
+        with pytest.raises(CodegenError, match="unsupported expression node 'FALL'"):
+            codegen._emit_expr(ASTNode(NodeKind.FALL))
 
     def test_hello_world(self):
         source = '''
