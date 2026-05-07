@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `visit_index_expr`: now rejects non-integer index expressions.
 
 ### Changed
+- **Integer guidance and examples**
+  - Updated the Fibonacci/frontpage example to use `usize` for count/index values and `u64` for the computed sequence value.
+  - Documented integer type selection: `usize` for sizes and indices, `isize` for signed offsets, and fixed-width integers for explicit data-width semantics.
+
 - **Release documentation and verification gates**
   - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, and debug/release artifact workflow.
   - Expanded `run_all_tests.sh` to include C backend tests, C example verification, debug/release artifact verification, error-stage verification, docs style checks, and full pytest.

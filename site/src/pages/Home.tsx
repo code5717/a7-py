@@ -5,26 +5,30 @@ import SectionPanel from '../components/SectionPanel'
 
 const FIBONACCI = `io :: import "std/io"
 
-fib :: fn(n: i32) i32 {
-    if n <= 1 {
-        ret n
+fib :: fn(n: usize) u64 {
+    if n < 2 {
+        ret cast(u64, n)
     }
 
-    a := 0
-    b := 1
+    prev: u64 = 0
+    acc: u64 = 1
+    i: usize = 2
 
-    for i := 2; i <= n; i += 1 {
-        next := a + b
-        a = b
-        b = next
+    while i <= n {
+        next := prev + acc
+        prev = acc
+        acc = next
+        i += 1
     }
 
-    ret b
+    ret acc
 }
 
 main :: fn() {
-    for i := 0; i < 10; i += 1 {
+    i: usize = 0
+    while i < 10 {
         io.println("fib({}) = {}", i, fib(i))
+        i += 1
     }
 }`
 

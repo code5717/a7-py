@@ -128,6 +128,14 @@ Source (.a7) → Tokenizer → Parser → Semantic Analysis (3-pass) → AST Pre
 
 All AST traversals are iterative with no recursion. The pipeline works with Python's recursion limit set to 100.
 
+## Integer Type Guidance
+
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It maps to the target's native size type (`usize` in Zig, `size_t` in C).
+
+Use `isize` only when the value is a signed pointer-sized offset or a difference between positions. Do not use it as the default signed integer type.
+
+Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range. Small arithmetic examples can use `i32`; counters and indexes should usually use `usize`.
+
 ## What Works
 
 - **Types**: Primitives, arrays, slices, pointers, generics, function types, inline structs

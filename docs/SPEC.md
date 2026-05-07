@@ -242,7 +242,7 @@ A7's type system consists of:
 - On 32-bit platforms: 4 bytes (same as i32/u32)
 - On 64-bit platforms: 8 bytes (same as i64/u64)
 
-These types are primarily used for memory sizes, array indices, and pointer arithmetic.
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. Use `isize` only for signed pointer-sized offsets or differences between positions. Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range.
 
 ### 3.3 Composite Types
 
@@ -1524,7 +1524,7 @@ A7's type system consists of:
 - On 32-bit platforms: 4 bytes (same as i32/u32)
 - On 64-bit platforms: 8 bytes (same as i64/u64)
 
-These types are primarily used for memory sizes, array indices, and pointer arithmetic.
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. Use `isize` only for signed pointer-sized offsets or differences between positions. Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range.
 
 ### 3.3 Composite Types
 
