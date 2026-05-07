@@ -1,0 +1,329 @@
+# A7 Docs Full Context
+
+This file aggregates the public curl.md-friendly Markdown docs for A7. Use it when a single fetch is easier than following `llms.txt`.
+
+## Navigation
+
+- `/a7-py/llms.txt`
+- `/a7-py/docs/index.md`
+- `/a7-py/docs/getting-started.md`
+- `/a7-py/docs/installation.md`
+- `/a7-py/docs/why.md`
+- `/a7-py/docs/faq.md`
+- `/a7-py/docs/features.md`
+- `/a7-py/docs/agent-usage.md`
+- `/a7-py/docs/language.md`
+- `/a7-py/docs/cli.md`
+- `/a7-py/docs/compiler.md`
+- `/a7-py/docs/pipeline.md`
+- `/a7-py/docs/testing.md`
+- `/a7-py/docs/stdlib.md`
+- `/a7-py/docs/examples.md`
+- `/a7-py/docs/release.md`
+- `/a7-py/docs/status.md`
+- `/a7-py/docs/contributing.md`
+- `/a7-py/docs/changelog.md`
+
+## Getting Started
+
+Requirements:
+
+- Python 3.13+
+- `uv`
+- Zig 0.15.2 to build and run generated Zig/C outputs
+
+Install:
+
+```bash
+git clone https://github.com/code5717/a7-py.git
+cd a7-py
+uv sync
+```
+
+Compile:
+
+```bash
+uv run python main.py examples/001_hello.a7
+uv run a7 examples/001_hello.a7
+uv run python main.py --backend c examples/001_hello.a7
+```
+
+Run verification:
+
+```bash
+PYTHONPATH=. uv run pytest
+uv run python scripts/verify_examples_e2e.py
+uv run python scripts/verify_examples_e2e_c.py
+uv run python scripts/verify_backend_parity.py
+./run_all_tests.sh
+```
+
+First rule: A7 source recursion is banned. Direct and mutual recursion are semantic errors.
+
+## Installation
+
+Use Python 3.13+, `uv`, and Zig 0.15.2.
+
+```bash
+uv run a7 --help
+zig version
+```
+
+Build local docs:
+
+```bash
+cd site
+npm ci
+npm run build
+npm run preview
+```
+
+## Why A7
+
+A7 is a small systems-language compiler project focused on readable source, explicit control flow, and direct Zig/C output.
+
+Design goals:
+
+- Keep the language surface small enough to audit.
+- Prefer loops, explicit stacks, and worklists over recursion.
+- Make compiler stages visible.
+- Keep generated artifacts inspectable.
+- Document gaps honestly.
+
+Current fit: compiler and language-design work, backend parity testing, and a compact examples corpus. A7 is not a sandbox and is not yet a published PyPI package.
+
+## FAQ
+
+Recursion is not allowed. Use loops, explicit stacks, queues, or index-based worklists.
+
+Use `usize` for sizes, lengths, and indices. Use `isize` for signed pointer-sized offsets or position differences. Use fixed-width integers such as `i32`, `u64`, or `f64` when the data has a fixed width or numeric domain.
+
+A7 is not memory safe yet. The compiler has basic checks around `del` and references, but it does not implement full ownership, borrowing, lifetime, double-free, or use-after-free guarantees.
+
+Do not run untrusted A7 source. A7 emits native Zig or C programs.
+
+Current virtual stdlib support is limited to `std/io` and `std/math`.
+
+## Features
+
+Language:
+
+- Static typing with inference in supported contexts.
+- Functions, structs, enums, unions, aliases, modules, and generics.
+- `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
+- Arrays, slices, string slices, pointers, references, and manual `new` / `del`.
+- `defer` and unreachable-statement diagnostics.
+- Direct and mutual source-recursion diagnostics.
+
+Compiler:
+
+- Tokenizer, parser, semantic validation, AST preprocessing, and backend codegen.
+- Zig backend and C11 backend.
+- Stable CLI modes and exit codes.
+- Human and JSON output formats.
+- Markdown pipeline report generation.
+
+Verification:
+
+- Pytest coverage for tokenizer, parser, semantic, codegen, CLI, and release tooling.
+- Zig and C example end-to-end verification against golden output.
+- Selected backend parity checks.
+- Debug and release artifact builds for examples.
+- Release checksum manifest generation and verification.
+
+## Agent Usage
+
+Fetch order:
+
+```text
+https://code5717.github.io/a7-py/llms.txt
+https://code5717.github.io/a7-py/docs/index.md
+https://code5717.github.io/a7-py/llms-full.txt
+```
+
+Local source of truth:
+
+- `README.md`
+- `docs/SPEC.md`
+- `MISSING_FEATURES.md`
+- `TODO.md`
+- `RELEASE.md`
+- `AGENTS.md`
+
+Preferred commands:
+
+```bash
+uv sync
+uv run a7 examples/001_hello.a7
+PYTHONPATH=. uv run pytest --tb=no -q
+uv run python scripts/verify_examples_e2e.py
+uv run python scripts/verify_examples_e2e_c.py
+uv run python scripts/verify_backend_parity.py
+./run_all_tests.sh
+```
+
+Rules for generated changes:
+
+- Do not write recursive A7 examples or tests.
+- Keep agent Markdown docs aligned when public docs change.
+- Update repo docs when language behavior changes.
+- Treat tests as evidence, not a substitute for code and hosted workflow review.
+
+## Language and Library
+
+A7 is a statically typed systems language with type inference, manual memory operations, modules, generics, and Zig/C backends.
+
+Source recursion is banned. Direct and mutual recursion are rejected during semantic validation. Repeated work should be expressed with loops, explicit stacks, queues, or index-based worklists.
+
+Integer type guidance:
+
+- Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices.
+- Use `isize` for signed pointer-sized offsets or differences between positions.
+- Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has a fixed width or range.
+- Small arithmetic examples can use `i32`; indexes and counters should usually use `usize`.
+
+Current virtual stdlib support:
+
+- `std/io`: `io.println`, `io.print`, `io.eprintln`
+- `std/math`: `sqrt`, `abs`, `floor`, `ceil`, `sin`, `cos`, `tan`, `log`, `exp`, `min`, `max` with `f32` and `f64` typed variants
+
+Source stubs such as `mem` and `string` exist in the repository but are not registered public stdlib modules yet.
+
+## CLI
+
+Entrypoints:
+
+```bash
+uv run a7 [OPTIONS] <file.a7>
+uv run python main.py [OPTIONS] <file.a7>
+```
+
+Modes:
+
+- `compile`: full pipeline and code generation
+- `tokens`: tokenize only
+- `ast`: tokenize and parse
+- `semantic`: tokenize, parse, and check
+- `pipeline`: full pipeline with intermediate output
+- `doc`: generate a Markdown report
+
+Flags:
+
+- `--verbose`: show intermediate results
+- `--mode MODE`: select compiler stage
+- `--format json`: emit structured JSON
+- `--backend zig|c`: select target backend
+- `--doc-out PATH`: write Markdown report
+
+Exit codes:
+
+```text
+0 success
+2 bad arguments
+3 file not found
+4 tokenizer error
+5 parse error
+6 semantic error
+7 codegen error
+8 internal bug
+```
+
+## Compiler and Tests
+
+Pipeline:
+
+```text
+Source (.a7) -> Tokenizer -> Parser -> Semantic Analysis -> AST Preprocessing -> Backend Codegen -> Zig/C output
+```
+
+Backends:
+
+- Zig backend emits Zig source.
+- C backend emits C11 source and is validated with `zig cc`.
+- `scripts/build_examples.py` builds debug and release artifacts for both backends.
+
+Verification:
+
+```bash
+PYTHONPATH=. uv run pytest --tb=no -q
+uv run python scripts/verify_examples_e2e.py
+uv run python scripts/verify_examples_e2e_c.py
+uv run python scripts/verify_backend_parity.py
+uv run python scripts/verify_error_stages.py
+uv run python scripts/build_examples.py --profile debug --backend both --clean
+uv run python scripts/build_examples.py --profile release --backend both --clean
+./run_all_tests.sh
+```
+
+## Examples
+
+The repository contains 37 runnable example programs in `examples/`.
+
+```bash
+uv run python scripts/verify_examples_e2e.py
+uv run python scripts/verify_examples_e2e_c.py
+```
+
+Both verifiers compile, build, run, and compare output against `test/fixtures/golden_outputs/*.out`.
+
+## Release
+
+Full local gate:
+
+```bash
+./run_all_tests.sh
+(cd site && npm run build)
+rm -rf dist
+uv build
+uvx pip-audit --strict
+(cd site && npm audit --omit=dev --audit-level=moderate)
+```
+
+Generate checksums:
+
+```bash
+uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
+uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
+```
+
+Tag-triggered draft GitHub releases are configured. PyPI publishing is wired through Trusted Publishing/OIDC, but the public `a7-py` PyPI project must still be created or configured to trust repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi`.
+
+## Status
+
+Current state:
+
+- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig/C code generation are implemented.
+- Direct and mutual source recursion are semantic errors.
+- Debug/release artifact verification is available for both backends.
+- Example end-to-end verification is available for both Zig and C.
+- Selected Zig/C backend parity verification is available.
+
+Known gaps:
+
+- `fall` is parsed but rejected until fallthrough semantics are designed.
+- Advanced match diagnostics still have incomplete symbolic interval overlap handling.
+- Ownership/borrow-style lifetime guarantees are not implemented.
+- C backend generic function lowering is not implemented.
+- Runtime union construction/access remains incomplete as a source-language workflow.
+- Built-in stdlib imports are virtual and should later be unified with file-based module semantics.
+- PyPI publishing requires final trusted-publisher setup before the first real release.
+
+## Contributing
+
+Workflow:
+
+1. Read `AGENTS.md` for repo workflow and source rules.
+2. Make the smallest change that addresses the issue.
+3. Keep examples, docs, and tests aligned.
+4. Run focused checks first, then the full gate for non-trivial changes.
+
+Docs sync:
+
+- `CHANGELOG.md`
+- `README.md`
+- `docs/SPEC.md`
+- `MISSING_FEATURES.md`
+- `TODO.md`
+- `site/public/llms.txt`
+- `site/public/llms-full.txt`
+- `site/public/docs/`

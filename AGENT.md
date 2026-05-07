@@ -8,7 +8,8 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
   `AGENTS.md`.
 - **User-facing docs:** [`README.md`](README.md) and [`RELEASE.md`](RELEASE.md)
   remain authoritative for end users.
-- **Agent/curl docs:** [`site/public/llms.txt`](site/public/llms.txt) and
+- **Agent/curl docs:** [`site/public/llms.txt`](site/public/llms.txt),
+  [`site/public/llms-full.txt`](site/public/llms-full.txt), and
   [`site/public/docs/index.md`](site/public/docs/index.md) are the
   agent-readable public docs entry points derived from the authoritative docs.
 
@@ -23,7 +24,8 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 - Backend parity: `uv run python scripts/verify_backend_parity.py`
 - Package build: `uv build`
 - Docs site build: `cd site && npm install && npm run build`
-- Agent/curl.md docs: `site/public/llms.txt` and `site/public/docs/`
+- Agent/curl.md docs: `site/public/llms.txt`, `site/public/llms-full.txt`,
+  and `site/public/docs/`
 
 ## Key Rules (short form)
 
@@ -32,8 +34,9 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
   worklists in examples and tests.
 - Keep `README.md`, `docs/SPEC.md`, `CHANGELOG.md`, `MISSING_FEATURES.md`,
   and `TODO.md` aligned with any user-visible change.
-- Keep `site/public/llms.txt` and `site/public/docs/` aligned when site
-  navigation, release commands, CLI behavior, or public docs structure changes.
+- Keep `site/public/llms.txt`, `site/public/llms-full.txt`, and
+  `site/public/docs/` aligned when site navigation, release commands, CLI
+  behavior, or public docs structure changes.
 
 See `AGENTS.md` for the full workflow, post-change checklist, and security
 caveats.

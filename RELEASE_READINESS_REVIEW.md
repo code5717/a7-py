@@ -64,6 +64,10 @@ not factually provable from local tests alone.
   docs archive, release example artifact archive, checksum generation, and
   release-bundle upload. Downloaded `release-bundles` contained `SHA256SUMS`,
   `a7-docs-site.tar.gz`, and `a7-example-artifacts-release.tar.gz`.
+- manual release workflow dispatch `25525956855` passed after manifest
+  verification was added; downloaded release bundles and Python distributions
+  were reconstructed under `dist/` and verified with
+  `scripts/verify_release_manifest.py`.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
@@ -123,9 +127,9 @@ not factually provable from local tests alone.
 - Public docs-site top navigation is reduced and old CLI, stdlib, pipeline, and
   testing pages are consolidated into Start, Language, and Compiler sections
   with compatibility aliases and verified hash scrolling.
-- `llms.txt` and public Markdown docs under `site/public/docs/` provide stable
-  curl.md/agent entry points for CLI, language, compiler, examples, release,
-  and status information.
+- `llms.txt`, `llms-full.txt`, and public Markdown docs under
+  `site/public/docs/` provide stable curl.md/agent entry points for CLI,
+  language, compiler, examples, release, and status information.
 - Site metadata, README, robots, and sitemap now consistently use
   `https://code5717.github.io/a7-py/`.
 - Local release documentation now explicitly cleans `dist/` before package

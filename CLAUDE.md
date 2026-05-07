@@ -3,9 +3,9 @@
 Project-level guidance for Claude Code. Mirrors `AGENTS.md`; treat that file
 as the canonical agent guide and keep both in sync. `README.md` and
 `RELEASE.md` remain the authoritative user-facing docs.
-For terminal/curl workflows, `site/public/llms.txt` and
-`site/public/docs/index.md` are the agent-readable docs entry points derived
-from the authoritative docs.
+For terminal/curl workflows, `site/public/llms.txt`,
+`site/public/llms-full.txt`, and `site/public/docs/index.md` are the
+agent-readable docs entry points derived from the authoritative docs.
 
 ## Running the Compiler
 
@@ -25,7 +25,8 @@ the `main.py` wrapper when working from a fresh checkout.
 - Package build: `uv build`
 - Docs site build: `cd site && npm install && npm run build`
 - Agent/curl.md docs preview: `cd site && npm run build && npm run preview`
-  then check `/a7-py/llms.txt` and `/a7-py/docs/index.md`.
+  then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
+  `/a7-py/docs/index.md`.
 
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
 parser/semantic/codegen tests, example e2e for Zig and C, backend parity,
@@ -33,9 +34,9 @@ debug + release artifacts, error-stage matrix, docs style, secrets check).
 Run it before reporting a non-trivial task as done.
 
 The public docs site also ships Markdown entry points for agent tooling under
-`site/public/llms.txt` and `site/public/docs/`. Keep those files aligned with
-`README.md`, `RELEASE.md`, and user-visible site navigation when docs structure
-changes.
+`site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
+Keep those files aligned with `README.md`, `RELEASE.md`, and user-visible site
+navigation when docs structure changes.
 
 ## A7 Source Rules
 
@@ -57,13 +58,14 @@ When language features, backends, or user-facing behavior change, update:
 3. `docs/SPEC.md` — language semantics or syntax
 4. `MISSING_FEATURES.md` — close or open gaps
 5. `TODO.md` — check off or add follow-ups
-6. `site/public/llms.txt` and `site/public/docs/` — update agent/curl.md entry
-   points when site navigation, release commands, CLI behavior, or public docs
-   structure changes
+6. `site/public/llms.txt`, `site/public/llms-full.txt`, and
+   `site/public/docs/` — update agent/curl.md entry points when site
+   navigation, release commands, CLI behavior, or public docs structure changes
 
 Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
-`CHANGELOG.md`, `MISSING_FEATURES.md`, `TODO.md`, `site/public/llms.txt`, and
-`site/public/docs/` — drift between them is treated as a bug.
+`CHANGELOG.md`, `MISSING_FEATURES.md`, `TODO.md`, `site/public/llms.txt`,
+`site/public/llms-full.txt`, and `site/public/docs/` — drift between them is
+treated as a bug.
 
 ## Security Caveat
 

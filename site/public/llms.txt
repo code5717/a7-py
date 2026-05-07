@@ -7,16 +7,30 @@ A7 is a statically typed systems language compiler implemented in Python. It com
 ## Start Here
 
 - [Docs Index](/a7-py/docs/index.md): Navigation for curl.md and coding agents.
+- [Full Context](/a7-py/llms-full.txt): Single-file aggregate of the public Markdown docs.
 - [Getting Started](/a7-py/docs/getting-started.md): Install, compile, run, and test A7.
+- [Installation](/a7-py/docs/installation.md): Toolchain and local docs setup.
+- [Why A7](/a7-py/docs/why.md): Project goals, non-goals, and fit.
+- [FAQ](/a7-py/docs/faq.md): Short answers for agent workflows.
 - [Language and Library](/a7-py/docs/language.md): Syntax, type guidance, stdlib, and recursion rule.
 - [CLI](/a7-py/docs/cli.md): Compiler modes, flags, exit codes, and automation commands.
 
 ## Deeper References
 
+- [Features](/a7-py/docs/features.md): Implemented language, compiler, and verification capabilities.
+- [Agent Usage](/a7-py/docs/agent-usage.md): Fetch order, verification commands, and trust boundaries.
 - [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, parity verifier, and release gate.
 - [Examples](/a7-py/docs/examples.md): Example catalog and verification commands.
 - [Release](/a7-py/docs/release.md): Debug/release artifacts, package build, audits, and publishing status.
 - [Status](/a7-py/docs/status.md): Current implementation status and known gaps.
+- [Contributing](/a7-py/docs/contributing.md): Repo workflow, checks, and docs sync rules.
+- [Changelog](/a7-py/docs/changelog.md): Current release notes and notable changes.
+
+## Route Aliases
+
+- [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
+- [Testing](/a7-py/docs/testing.md): Alias for verification commands.
+- [Standard Library](/a7-py/docs/stdlib.md): Alias for current stdlib surface.
 
 ## Human Site
 

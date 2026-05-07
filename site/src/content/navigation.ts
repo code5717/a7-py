@@ -60,54 +60,66 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ]
 
-export const PAGE_META: Record<string, { title: string; description: string }> = {
+export const PAGE_META: Record<string, { title: string; description: string; markdownPath?: string }> = {
   '/': {
     title: 'A7 Docs',
     description: 'Documentation for the A7 compiler, runnable examples, CLI, language reference, and current status.',
+    markdownPath: '/docs/index.md',
   },
   '/start': {
     title: 'Getting Started',
     description: 'Install the A7 compiler repository and run the first example with uv.',
+    markdownPath: '/docs/getting-started.md',
   },
   '/language': {
     title: 'Language Reference',
     description: 'A7 syntax, types, control flow, memory, modules, generics, and implementation notes.',
+    markdownPath: '/docs/language.md',
   },
   '/cli': {
     title: 'CLI',
     description: 'A7 compiler modes, flags, output formats, and exit codes.',
+    markdownPath: '/docs/cli.md',
   },
   '/pipeline': {
     title: 'Compiler Pipeline',
     description: 'Tokenizer, parser, semantic validation, preprocessing, and backend code generation.',
+    markdownPath: '/docs/compiler.md',
   },
   '/stdlib': {
     title: 'Standard Library',
     description: 'A7 standard library modules, math builtins, IO calls, and compiler intrinsics.',
+    markdownPath: '/docs/language.md',
   },
   '/examples': {
     title: 'Examples',
     description: 'Addressable runnable A7 example programs with local run commands.',
+    markdownPath: '/docs/examples.md',
   },
   '/internals': {
     title: 'Internals',
     description: 'A7 compiler architecture and source-map overview.',
+    markdownPath: '/docs/compiler.md',
   },
   '/testing': {
     title: 'Testing',
     description: 'Repository test commands, example verifier, and docs quality gates.',
+    markdownPath: '/docs/compiler.md',
   },
   '/status': {
     title: 'Status',
     description: 'Current A7 implementation status, completed work, and open language gaps.',
+    markdownPath: '/docs/status.md',
   },
   '/contributing': {
     title: 'Contributing',
     description: 'A7 contribution workflow, local checks, and project standards.',
+    markdownPath: '/docs/contributing.md',
   },
   '/changelog': {
     title: 'Changelog',
     description: 'Current and historical A7 compiler and docs changes.',
+    markdownPath: '/docs/changelog.md',
   },
 }
 

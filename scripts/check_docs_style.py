@@ -68,6 +68,11 @@ def iter_doc_paths(root: Path) -> list[Path]:
         paths.update(site_pages.rglob("*.md"))
         paths.update(site_pages.rglob("*.mdx"))
 
+    public_docs = root / "site" / "public"
+    if public_docs.exists():
+        paths.update((public_docs / "docs").rglob("*.md"))
+        paths.update(public_docs.glob("llms*.txt"))
+
     return sorted(paths)
 
 

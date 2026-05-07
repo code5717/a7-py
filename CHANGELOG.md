@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   native artifact archive paths are absent from `SHA256SUMS`.
 - Added release manifest verification so CI and maintainers can re-check
   recorded artifact hashes and sizes before upload.
+- Expanded curl.md-friendly docs with a full-context aggregate, route aliases,
+  first-class page metadata, and visible Markdown links from the docs app.
 
 ## [0.3.0] - 2026-05-07
 

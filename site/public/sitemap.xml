@@ -2,12 +2,23 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://code5717.github.io/a7-py/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/llms.txt</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/llms-full.txt</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/index.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/getting-started.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/installation.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/why.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/faq.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/features.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/agent-usage.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/language.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/cli.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/compiler.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/pipeline.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/testing.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/stdlib.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/examples.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/release.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/status.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/contributing.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/changelog.md</loc></url>
 </urlset>

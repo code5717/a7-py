@@ -69,6 +69,10 @@ function scrollToRouteAnchor(routeHash: string) {
   window.setTimeout(() => scrollAnchorIntoView(anchor), 1500)
 }
 
+function publicDocsPath(path: string) {
+  return `${import.meta.env.BASE_URL.replace(/\/$/, '')}${path}`
+}
+
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -81,6 +85,8 @@ export default function Layout() {
   const previousSidebarFocusRef = useRef<HTMLElement | null>(null)
   const { pathname, hash } = useLocation()
   const { preference, resolvedTheme, darkExtensionActive, cycleTheme } = useTheme()
+  const pageMeta = PAGE_META[pathname] ?? PAGE_META['/']
+  const markdownHref = pageMeta.markdownPath ? publicDocsPath(pageMeta.markdownPath) : publicDocsPath('/docs/index.md')
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -95,14 +101,23 @@ export default function Layout() {
   }, [searchQuery])
 
   useEffect(() => {
-    const meta = PAGE_META[pathname] ?? PAGE_META['/']
-    document.title = `${meta.title} | A7`
+    document.title = `${pageMeta.title} | A7`
 
     const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')
     if (description) {
-      description.content = meta.description
+      description.content = pageMeta.description
     }
-  }, [pathname])
+
+    let alternate = document.querySelector<HTMLLinkElement>('link[data-a7-markdown-alternate]')
+    if (!alternate) {
+      alternate = document.createElement('link')
+      alternate.dataset.a7MarkdownAlternate = 'true'
+      alternate.rel = 'alternate'
+      alternate.type = 'text/markdown'
+      document.head.appendChild(alternate)
+    }
+    alternate.href = new URL(markdownHref, window.location.origin).toString()
+  }, [markdownHref, pageMeta.description, pageMeta.title])
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -330,6 +345,10 @@ export default function Layout() {
             </nav>
 
             <div className="site-header-tools">
+              <a className="markdown-link" href={markdownHref}>
+                Markdown
+              </a>
+
               <button
                 type="button"
                 className="site-search"
@@ -427,10 +446,10 @@ export default function Layout() {
             <div className="site-footer-column">
               <h3>Resources</h3>
               <div className="site-footer-links">
-                <Link to="/internals">Internals</Link>
-                <Link to="/internals#testing">Testing section</Link>
-                <Link to="/language#standard-library">Stdlib section</Link>
-                <Link to="/start#cli">CLI section</Link>
+                <a href={publicDocsPath('/llms.txt')}>llms.txt</a>
+                <a href={publicDocsPath('/llms-full.txt')}>llms-full.txt</a>
+                <a href={publicDocsPath('/docs/index.md')}>Markdown docs</a>
+                <a href={markdownHref}>This page as Markdown</a>
               </div>
             </div>
           </div>
