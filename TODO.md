@@ -107,14 +107,14 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [ ] Propagate generic type parameters through call chains.
   Notes: `Vec(i32).push(x)` should infer `x: i32` without annotation.
 
-- [ ] Validate return-type consistency across all branches.
-  Notes: currently only checks the last return; divergent branches slip through.
+- [x] Validate return-type consistency across all branches.
+  Notes: type checking visits returns inside blocks, if/else branches, and match branches; explicit regression coverage locks this down.
 
 - [ ] Flag dead code after unconditional return/break/continue.
   Notes: reachability analysis is not implemented.
 
-- [ ] Check exhaustiveness of match statements.
-  Notes: non-exhaustive matches on enums silently fall through at runtime.
+- [x] Check exhaustiveness of match statements.
+  Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Pattern overlap/redundancy diagnostics remain separate work.
 
 - [ ] Validate assignment compatibility beyond top-level type equality.
   Notes: nested struct/array type mismatches (e.g. `[4]i32` vs `[4]f32`) are not caught.

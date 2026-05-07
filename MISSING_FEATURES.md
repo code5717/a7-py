@@ -33,6 +33,8 @@
 19. `fall` now fails closed with a semantic error instead of being ignored or reaching backend output.
 20. C backend `for-in` lowering now caches array/slice iterable expressions so side-effectful iterables are evaluated once.
 21. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes.
+22. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
+23. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
 
 ---
 

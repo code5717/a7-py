@@ -635,6 +635,43 @@ class TestMatchStatements:
         assert expect_success(source)
 
 
+class TestReturnTypeBranchValidation:
+    """Return type checks should apply inside every reachable branch."""
+
+    def test_if_branch_return_type_mismatch_is_rejected(self):
+        source = """
+        value :: fn(flag: bool) i32 {
+            if flag {
+                ret "bad"
+            } else {
+                ret 1
+            }
+        }
+        """
+        assert expect_error(source, "return type mismatch")
+
+    def test_match_branch_return_type_mismatch_is_rejected(self):
+        source = """
+        value :: fn(flag: bool) i32 {
+            match flag {
+                case true: ret "bad"
+                case false: ret 1
+            }
+        }
+        """
+        assert expect_error(source, "return type mismatch")
+
+    def test_nested_block_return_type_mismatch_is_rejected(self):
+        source = """
+        value :: fn() i32 {
+            {
+                ret "bad"
+            }
+        }
+        """
+        assert expect_error(source, "return type mismatch")
+
+
 class TestDeferStatements:
     """Test defer statement validation."""
 

@@ -52,6 +52,10 @@ not factually provable from local tests alone.
   length and element access.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`
   escapes.
+- Semantic regression coverage now explicitly checks return type mismatches
+  inside if branches, match branches, and nested blocks.
+- Bool and enum match exhaustiveness diagnostics are covered for statements and
+  expressions.
 - GitHub Pages deploy now uses `npm ci` with `site/package-lock.json`.
 - README, SPEC, release docs, status docs, and agent docs describe the same
   release commands.
