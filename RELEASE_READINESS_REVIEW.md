@@ -58,6 +58,8 @@ not factually provable from local tests alone.
   build.
 - GitHub release workflow now creates a draft release for `v*` tags with Python
   package artifacts, docs site archive, and release example artifacts.
+- Manual release workflow dispatch validates gates and artifacts without
+  creating a GitHub release or publishing to PyPI.
 - Release tags now publish package distributions to PyPI through Trusted
   Publishing/OIDC after the release gate passes.
 - C backend `for-in` lowering now caches iterable expressions before loop

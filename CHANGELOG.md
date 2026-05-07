@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Formatter symbol collection now surfaces traversal failures instead of
   silently swallowing broad exceptions, reducing hidden documentation/reporting
   failures found during static security review.
+- Manual release workflow dispatch now validates gates and artifacts without
+  creating a GitHub release; draft release creation remains limited to `v*`
+  tags.
 
 ## [0.3.0] - 2026-05-07
 

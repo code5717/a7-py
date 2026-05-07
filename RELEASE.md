@@ -100,6 +100,9 @@ the release gate, builds the Python package, builds the docs site, builds
 release example artifacts, and creates a draft GitHub release with those files
 attached.
 
+Manual `workflow_dispatch` runs validate the release gate and artifact build
+steps without creating a GitHub release or publishing to PyPI.
+
 The same tag workflow publishes the Python package distributions to PyPI through
 Trusted Publishing/OIDC. The GitHub `pypi` environment exists and requires
 review by `code5717`. As of the latest release-readiness audit, `a7-py` is not
