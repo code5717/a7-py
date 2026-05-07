@@ -163,6 +163,7 @@ All AST traversals are iterative with no recursion. The pipeline works with Pyth
 - `examples/` - 36 sample programs
 - `MISSING_FEATURES.md` - Feature status and roadmap
 - `CHANGELOG.md` - Change history
+- `docs/ERROR_ANALYSIS.md` - Historical error-analysis snapshot, not current status
 
 ## Docs Development
 

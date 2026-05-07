@@ -56,6 +56,8 @@ not factually provable from local tests alone.
   inside if branches, match branches, and nested blocks.
 - Bool and enum match exhaustiveness diagnostics are covered for statements and
   expressions.
+- Historical error-analysis docs are labeled as non-current and no longer
+  conflict with release status.
 - GitHub Pages deploy now uses `npm ci` with `site/package-lock.json`.
 - README, SPEC, release docs, status docs, and agent docs describe the same
   release commands.

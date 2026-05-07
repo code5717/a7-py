@@ -62,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added explicit regression tests for return type mismatches inside if branches, match branches, and nested blocks.
   - Updated the tracked backlog to reflect existing bool/enum match exhaustiveness diagnostics.
 
+- **Documentation state**
+  - Marked the old error-analysis report as historical and corrected the archive index so it no longer points at removed generated artifacts.
+
 - **Semantic and preprocessing correctness**
   - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
   - `ret` semantic validation now traverses the parser's `value` payload.

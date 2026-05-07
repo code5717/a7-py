@@ -250,5 +250,6 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `README.md`, `MISSING_FEATURES.md`, `docs/SPEC.md`, `plan.md`
   Notes: README, SPEC, site status/testing pages, and release docs now describe current backend/build gates and open caveats.
 
-- [ ] Fix broken documentation links and mark historical docs as archived.
+- [x] Fix broken documentation links and mark historical docs as archived.
   Files: `README.md`, `docs/SPEC.md`, `docs/archive/README.md`, `docs/ERROR_ANALYSIS.md`
+  Notes: `docs/ERROR_ANALYSIS.md` is now labeled as historical, README describes it as non-current, and the archive index no longer points to removed generated artifacts.
