@@ -371,7 +371,7 @@ class TestStringAndCharLiteralEdgeCases:
                 parse_a7(char_lit)
 
     def test_invalid_escape_sequences(self):
-        """Test invalid escape sequences in strings - currently not validated."""
+        """Test invalid escape sequences in strings."""
         from src.errors import TokenizerError
         
         # Test cases that should cause TokenizerError due to unclosed strings
@@ -383,18 +383,15 @@ class TestStringAndCharLiteralEdgeCases:
             with pytest.raises(TokenizerError):
                 parse_a7(invalid_str)
         
-        # Test cases that currently parse without validation but shouldn't
-        # TODO: Tokenizer should validate escape sequences and report errors
-        invalid_but_parseable = [
+        invalid_escapes = [
             'x := "invalid\\q"',  # Invalid escape
-            'z := "\\x"',  # Incomplete hex escape  
+            'z := "\\x"',  # Incomplete hex escape
             'w := "\\xZZ"',  # Invalid hex digits
         ]
-        
-        # Currently these parse successfully without validation
-        for invalid_str in invalid_but_parseable:
-            ast = parse_a7(invalid_str)
-            assert ast is not None
+
+        for invalid_str in invalid_escapes:
+            with pytest.raises(TokenizerError):
+                parse_a7(invalid_str)
 
 
 class TestStructLiteralContextProblems:

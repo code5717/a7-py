@@ -2768,6 +2768,7 @@ The A7 compiler provides specific error messages for lexical analysis failures:
 - `"The string is not closed"` - Unterminated string literal
 - `"The char is not closed"` - Unterminated character literal  
 - `"Tabs '\\t' are unsupported"` - Tab character found (not supported)
+- `"Invalid string escape sequence"` - Unknown escape or malformed `\xHH` escape in a string literal
 - `"Identifier is too long"` - Identifier exceeds 100 characters
 - `"Number is too long"` - Numeric literal exceeds 100 characters
 

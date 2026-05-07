@@ -582,9 +582,7 @@ class Tokenizer:
 
         while self.current_char() and self.current_char() != '"':
             if self.current_char() == "\\":
-                self.advance()  # Escape character
-                if self.current_char():
-                    self.advance()  # Escaped character
+                self._consume_string_escape(start_line, start_column)
             else:
                 self.advance()
 
@@ -605,6 +603,56 @@ class Tokenizer:
         # For multi-line strings, we need to use the stored start position
         token = Token(TokenType.STRING_LITERAL, string_text, start_line, start_column)
         self.tokens.append(token)
+
+    def _consume_string_escape(self, start_line: int, start_column: int) -> None:
+        escape_line = self.line
+        escape_column = self.column
+        self.advance()  # Backslash
+        escape_char = self.current_char()
+
+        if escape_char is None:
+            raise TokenizerError.from_type_and_location(
+                TokenizerErrorType.NOT_CLOSED_STRING,
+                start_line,
+                start_column,
+                1,
+                self.filename,
+                self.source_lines,
+            )
+
+        if escape_char == "x":
+            self.advance()  # 'x'
+            for _ in range(2):
+                if (
+                    self.current_char()
+                    and self.current_char().lower() in "0123456789abcdef"
+                ):
+                    self.advance()
+                    continue
+                raise TokenizerError.from_type_and_location(
+                    TokenizerErrorType.INVALID_ESCAPE_CHAR,
+                    escape_line,
+                    escape_column,
+                    max(1, self.column - escape_column + 1),
+                    self.filename,
+                    self.source_lines,
+                    "Invalid string escape sequence",
+                )
+            return
+
+        if escape_char in "ntr\\'\"0":
+            self.advance()
+            return
+
+        raise TokenizerError.from_type_and_location(
+            TokenizerErrorType.INVALID_ESCAPE_CHAR,
+            escape_line,
+            escape_column,
+            2,
+            self.filename,
+            self.source_lines,
+            "Invalid string escape sequence",
+        )
 
     def _tokenize_char(self):
         """Tokenize character literals."""

@@ -227,8 +227,9 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 ## Parser / Tokenizer Debt
 
-- [ ] Implement tokenizer validation for invalid escape sequences.
+- [x] Implement tokenizer validation for invalid escape sequences.
   Files: `src/tokens.py`
+  Notes: string literals now reject unknown escapes and malformed `\xHH` escapes during tokenization.
 
 - [ ] Clean up stale "not yet implemented" comments in parser tests.
   Files: `test/test_parser_missing_constructs.py`, `test/test_parser_advanced_edge_cases.py`, `test/test_parser_stress_tests.py`

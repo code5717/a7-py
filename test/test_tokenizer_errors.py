@@ -84,6 +84,23 @@ class TestTokenizerErrors:
             assert "The string is not closed" in error.message
             # Note: The exact line/column may vary based on where tokenizer detects the error
 
+    def test_invalid_string_escape_sequences(self):
+        """Test invalid string escape sequences."""
+        test_cases = [
+            r'"invalid \q escape"',
+            r'"incomplete \x escape"',
+            r'"bad hex \xZZ escape"',
+        ]
+
+        for source in test_cases:
+            tokenizer = Tokenizer(source)
+
+            with pytest.raises(TokenizerError) as exc_info:
+                tokenizer.tokenize()
+
+            error = exc_info.value
+            assert "Invalid string escape sequence" in error.message
+
     def test_unterminated_char_literals(self):
         """Test unterminated or invalid character literals."""
         test_cases = [

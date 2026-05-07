@@ -32,6 +32,7 @@
 18. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
 19. `fall` now fails closed with a semantic error instead of being ignored or reaching backend output.
 20. C backend `for-in` lowering now caches array/slice iterable expressions so side-effectful iterables are evaluated once.
+21. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes.
 
 ---
 

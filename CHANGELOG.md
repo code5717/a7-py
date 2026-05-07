@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **C backend iteration**
   - `for-in` and indexed `for-in` now cache array/slice iterable expressions before loop lowering so side-effectful iterables are evaluated once.
 
+- **Tokenizer diagnostics**
+  - String literals now reject unknown escape sequences and malformed `\xHH` escapes during tokenization.
+
 - **Semantic and preprocessing correctness**
   - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
   - `ret` semantic validation now traverses the parser's `value` payload.
