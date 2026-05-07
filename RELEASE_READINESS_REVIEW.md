@@ -126,6 +126,8 @@ not factually provable from local tests alone.
 - Local release documentation now explicitly cleans `dist/` before package
   builds so stale versioned artifacts are not accidentally mixed into a manual
   release upload.
+- `COMPLETION_AUDIT.md` maps the release-readiness objective to concrete
+  verification evidence and records the requirements that remain incomplete.
 
 ## Residual Risks
 

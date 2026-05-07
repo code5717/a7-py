@@ -1,0 +1,73 @@
+# A7 Completion Audit
+
+Date: 2026-05-08
+
+This audit maps the active release-readiness objective to concrete evidence.
+It is intentionally strict: a green test run is not treated as proof that every
+language feature, release path, or security boundary is complete.
+
+## Objective Restated
+
+Deliverables implied by the active objective:
+
+1. Identify vulnerabilities and implementation problems.
+2. Fix every issue that can be fixed safely in the current pass.
+3. Repeat verification until the current implementation has defensible release
+   confidence.
+4. Prepare debug builds, release builds, release packaging, publishing workflow,
+   and documentation.
+5. Do not claim completion if factual confidence is weaker than the objective.
+
+## Prompt-to-Artifact Checklist
+
+| Requirement | Evidence | Status |
+| --- | --- | --- |
+| Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
+| Security dependency audit | Hosted CI run `25524022065`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
+| Secret scanning | Hosted CI run `25524022065`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
+| Python test suite | Hosted CI run `25524022065`; local full gate evidence in `RELEASE_READINESS_REVIEW.md` | Passing |
+| Error-stage behavior | Hosted CI run `25524022065`; `scripts/verify_error_stages.py` | Passing |
+| Zig example E2E | Hosted CI run `25524022065`; `scripts/verify_examples_e2e.py` | Passing |
+| C example E2E | Hosted CI run `25524022065`; `scripts/verify_examples_e2e_c.py` | Passing |
+| Zig/C backend parity | Hosted CI run `25524022065`; `scripts/verify_backend_parity.py` | Passing selected suite |
+| Debug artifacts | Hosted CI run `25524022065`; `scripts/build_examples.py --profile debug --backend both --clean` | Passing |
+| Release artifacts | Hosted CI run `25524022065`; `scripts/build_examples.py --profile release --backend both --clean` | Passing |
+| Python package build | Hosted CI run `25524022065`; local clean `rm -rf dist && uv build` | Passing |
+| Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
+| Docs style/build | Hosted CI run `25524022065`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
+| Docs deploy | Hosted Deploy Docs run `25524022056` | Passing |
+| curl.md/agent documentation | `site/public/llms.txt`, `site/public/docs/*.md`, sitemap and robots entries | Implemented |
+| Release workflow | `.github/workflows/release.yml`, manual dispatch evidence in `RELEASE_READINESS_REVIEW.md` | Configured |
+| PyPI publishing | `.github/workflows/release.yml`, GitHub `pypi` environment documented | Blocked until PyPI project/trusted publisher exists |
+| No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs | Implemented for named call cycles |
+| No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |
+
+## Incomplete Or Weakly Covered Areas
+
+These prevent a factual "100% confident" claim:
+
+1. The compiler is not a sandbox; native output can execute host-level behavior.
+2. Backend parity is selected and expanding, not exhaustive over all valid A7
+   programs.
+3. `fall` parses and fails closed, but final fallthrough semantics and backend
+   lowering are not designed.
+4. Full ownership, borrowing, lifetime, use-after-free, and double-free
+   guarantees are not implemented.
+5. Built-in stdlib imports are still virtual and not unified with file-based
+   module resolution.
+6. C backend generic function lowering is not implemented.
+7. Runtime union construction and field-access workflows remain incomplete.
+8. PyPI publishing is wired but cannot be proven until the public PyPI project
+   and trusted publisher are created/configured outside this repository.
+9. Secret scanning is pattern-based and should be backed by repository-host
+   protections for public release.
+10. Dependency audits cover known advisories, not unknown supply-chain
+    compromise.
+
+## Conclusion
+
+The implementation is release-candidate ready for the documented current
+language surface, with strong local and hosted verification. It is not
+factually possible to claim 100% confidence or zero vulnerabilities from the
+available evidence. The remaining work is tracked in `MISSING_FEATURES.md`,
+`TODO.md`, and `RELEASE_READINESS_REVIEW.md`.

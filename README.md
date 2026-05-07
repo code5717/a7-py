@@ -184,6 +184,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - `RELEASE.md` - Release/debug build checklist
 - `SECURITY.md` - Security policy and trust boundary
 - `RELEASE_READINESS_REVIEW.md` - Current release-readiness audit
+- `COMPLETION_AUDIT.md` - Strict objective-to-evidence release audit
 - `examples/` - 37 sample programs
 - `MISSING_FEATURES.md` - Feature status and roadmap
 - `CHANGELOG.md` - Change history

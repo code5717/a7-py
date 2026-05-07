@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   slice fields, indexed slice iteration, and string slice iteration.
 - Added curl.md-friendly public Markdown docs and an `llms.txt` entry point
   for agent and terminal documentation workflows.
+- Added `COMPLETION_AUDIT.md` to map the release-readiness objective to
+  concrete verification evidence, residual risks, and incomplete requirements.
+- Documented clean local package builds by removing `dist/` before `uv build`
+  so stale versioned artifacts do not contaminate manual release prep.
 
 ## [0.3.0] - 2026-05-07
 
