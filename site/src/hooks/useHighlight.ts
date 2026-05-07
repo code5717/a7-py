@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { createHighlighterCore, type HighlighterCore } from 'shiki/core'
-import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
 
 let highlighterPromise: Promise<HighlighterCore> | null = null
 
 function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighterCore({
-      engine: createOnigurumaEngine(import('shiki/wasm')),
+      engine: createJavaScriptRegexEngine(),
       themes: [
         import('shiki/themes/github-light-high-contrast.mjs'),
         import('shiki/themes/github-dark-high-contrast.mjs'),

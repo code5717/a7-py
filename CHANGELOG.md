@@ -70,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Expanded `run_all_tests.sh` to include C backend tests, C example verification, debug/release artifact verification, error-stage verification, docs style checks, and full pytest.
   - Extended docs style checking to include `RELEASE.md`.
   - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.
+  - Switched the docs syntax highlighter from the Oniguruma WASM engine to Shiki's JavaScript regex engine, removing the docs build chunk-size warning.
 
 - **Import handling**
   - Local file-based imports now load dependencies during semantic analysis and fail closed on missing or broken modules.
