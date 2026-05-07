@@ -183,8 +183,9 @@ These are entire subsystems. Each needs a design decision before implementation 
 - [ ] Add example-level verification for labeled loops, sub-slicing, and match-case `defer` scope.
   Files: `examples/`, `test/fixtures/golden_outputs/`
 
-- [ ] Add report-contract tests for verification scripts (not just exit status).
+- [x] Add report-contract tests for verification scripts (not just exit status).
   Files: `test/test_examples_e2e.py`, `test/test_examples_e2e_c.py`
+  Notes: Zig and C example verifier tests now request JSON reports and assert totals plus per-example compile/syntax/build/run/output flags.
 
 - [ ] Deduplicate Zig/C example verification scripts.
   Files: `scripts/verify_examples_e2e.py`, `scripts/verify_examples_e2e_c.py`
