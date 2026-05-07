@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Variable initializers using side-effectful `match` scrutinees now cache the scrutinee in a generated local before evaluating patterns.
   - Other side-effectful `match` expression contexts still fail closed until they have portable statement-level lowering.
 
+- **C Backend Function Pointers**
+  - Raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.
+
 - **Type Checker: Slice and Index Validation**
   - `visit_slice_expr`: validates source is array/slice/string, checks start/end are integral, returns `SliceType`.
   - `visit_index_expr`: now rejects non-integer index expressions.

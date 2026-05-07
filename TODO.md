@@ -88,9 +88,13 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/backends/c.py`
   Notes: existing identifiers in match patterns now lower as comparisons in C match statements and expressions.
 
-- [ ] C backend: function-typed declarations.
+- [x] C backend: raw function-typed parameter and variable declarations.
   Files: `src/backends/c.py`
-  Notes: function pointer type emission is blocked.
+  Notes: raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.
+
+- [ ] Function-type aliases in semantic analysis and C lowering.
+  Files: `src/passes/type_checker.py`, `src/backends/c.py`
+  Notes: aliases such as `BinaryOp :: fn(i32, i32) i32` still resolve as unknown in semantic analysis.
 
 ### Module System / Stdlib
 

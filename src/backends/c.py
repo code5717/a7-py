@@ -667,6 +667,10 @@ class CCodeGenerator(CodeGenerator):
         alias = self._sanitize_name(node.name or "Alias")
         if node.value is None:
             raise CodegenError("C backend: type alias missing target type", node.span)
+        if node.value.kind == NodeKind.TYPE_FUNCTION:
+            self._write_indent()
+            self.output.write(f"typedef {self._emit_function_pointer_declarator(node.value, alias)};\n")
+            return
         target = self._emit_type_node(node.value)
         self._write_indent()
         self.output.write(f"typedef {target} {alias};\n")
@@ -697,6 +701,16 @@ class CCodeGenerator(CodeGenerator):
             else:
                 self._write_indent()
                 self.output.write(f"{elem_type} {name}[{size}] = {{0}};\n")
+            return
+
+        if explicit_type and explicit_type.kind == NodeKind.TYPE_FUNCTION:
+            self._write_indent()
+            if node.value:
+                init = self._emit_expr(node.value)
+                self.output.write(f"{self._emit_declarator(explicit_type, name)} = {init};\n")
+            else:
+                self._needs_stddef = True
+                self.output.write(f"{self._emit_declarator(explicit_type, name)} = NULL;\n")
             return
 
         c_type = self._infer_decl_type(explicit_type, node.value, node)
@@ -1308,7 +1322,7 @@ class CCodeGenerator(CodeGenerator):
             return self._register_slice_type(node)
         if kind == NodeKind.TYPE_FUNCTION:
             raise CodegenError(
-                "C backend: function types are not yet supported in emitted declarations",
+                "C backend: function types require a named declarator in C",
                 node.span,
             )
         if kind == NodeKind.TYPE_STRUCT:
@@ -1480,8 +1494,10 @@ class CCodeGenerator(CodeGenerator):
         param_parts: list[str] = []
         for i, param in enumerate(node.parameters or []):
             pname = self._sanitize_name(param.name or f"arg{i}")
-            ptype = self._emit_type_node(param.param_type) if param.param_type else "int32_t"
-            param_parts.append(f"{ptype} {pname}")
+            if param.param_type:
+                param_parts.append(self._emit_declarator(param.param_type, pname))
+            else:
+                param_parts.append(f"int32_t {pname}")
         params = ", ".join(param_parts) if param_parts else "void"
 
         prefix = ""
@@ -1490,6 +1506,20 @@ class CCodeGenerator(CodeGenerator):
         if not prototype and name != "main" and getattr(node, "is_public", False) is False:
             prefix = "static "
         return f"{prefix}{return_type} {name}({params})"
+
+    def _emit_declarator(self, type_node: ASTNode, name: str) -> str:
+        if type_node.kind == NodeKind.TYPE_FUNCTION:
+            return self._emit_function_pointer_declarator(type_node, name)
+        return f"{self._emit_type_node(type_node)} {name}"
+
+    def _emit_function_pointer_declarator(self, type_node: ASTNode, name: str) -> str:
+        return_type = self._emit_type_node(type_node.return_type) if type_node.return_type else "void"
+        param_types = [
+            self._emit_type_node(param_type)
+            for param_type in (type_node.parameter_types or [])
+        ]
+        params = ", ".join(param_types) if param_types else "void"
+        return f"{return_type} (*{name})({params})"
 
     # ------------------------------------------------------------------
     # IO lowering

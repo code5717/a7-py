@@ -351,6 +351,43 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_supports_function_pointer_declarations(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+add :: fn(a: i32, b: i32) i32 {
+    ret a + b
+}
+
+double :: fn(value: i32) i32 {
+    ret value * 2
+}
+
+apply_unary :: fn(f: fn(i32) i32, value: i32) i32 {
+    ret f(value)
+}
+
+apply_binary :: fn(op: fn(i32, i32) i32, a: i32, b: i32) i32 {
+    ret op(a, b)
+}
+
+main :: fn() {
+    raw: fn(i32, i32) i32 = add
+    a := raw(2, 3)
+    b := apply_binary(raw, 5, 8)
+    c := apply_unary(double, 11)
+    io.println("{} {} {}", a, b, c)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "5 13 22"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_c_backend_match_expression_side_effectful_scrutinee_var_init(tmp_path: Path) -> None:
     src = tmp_path / "match_expr_call.a7"
     out = tmp_path / "match_expr_call.c"

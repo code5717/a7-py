@@ -40,6 +40,7 @@
 26. C backend side-effect-free `match` expressions now lower for literal, enum, range, and wildcard patterns.
 27. C backend `match` statements with range patterns lower through portable `if` chains.
 28. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
+29. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
 
 ---
 
@@ -67,6 +68,7 @@
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
    - C `match` expressions with side-effectful scrutinees are supported in variable initializers through generated single-evaluation locals.
    - C `match` expressions with side-effectful scrutinees in non-declaration expression contexts still fail closed pending statement-level lowering.
+   - Function-type aliases such as `BinaryOp :: fn(i32, i32) i32` still need semantic support before they can be relied on across backends.
 
 6. **Release publishing automation**
    - Local package builds and artifact checks exist.
