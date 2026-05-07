@@ -13,7 +13,7 @@ A7 draws inspiration from practical systems programming languages that prioritiz
 
 ## Quick Start
 
-**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager). Install [Zig](https://ziglang.org/) to build and run generated Zig/C outputs.
+**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager). Install [Zig 0.15.2](https://ziglang.org/download/) to build and run generated Zig/C outputs; CI pins the same version for repeatable artifact checks.
 
 ```bash
 # Install uv (if needed)
