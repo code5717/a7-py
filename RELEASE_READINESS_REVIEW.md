@@ -19,6 +19,8 @@ The repository is substantially more release-ready than before this pass:
   upload/download, and draft GitHub releases
 - checksum-verified Zig 0.15.2 install steps in CI and release workflows
 - protected GitHub `pypi` environment requiring `code5717` review
+- semantic recursion rejection for direct and mutual named call cycles, with
+  scope-aware handling for local function-pointer shadowing
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -39,9 +41,10 @@ not factually provable from local tests alone.
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
-- hosted CI and Deploy Docs runs passed after the workflow updates; before
-  tagging, re-check the latest commit with
-  `gh run list --branch master --limit 6`
+- hosted CI run `25519819833` passed for commit `13bf369`:
+  docs, pytest, dependency audits, error-stage verification, Zig and C example
+  verification, debug artifacts, release artifacts, and package build
+- hosted Deploy Docs run `25519819834` passed for commit `13bf369`
 - manual release workflow dispatch passed on `master` after the PyPI publish
   dependency update; run `25517785179` uploaded
   `python-package-distributions` artifact `6864726540` and `release-bundles`
@@ -96,6 +99,9 @@ not factually provable from local tests alone.
 - README now points to the current `code5717.github.io/a7-py` documentation URL.
 - Formatter symbol collection no longer hides broad exceptions during console
   or Markdown report generation.
+- Semantic validation now rejects direct and mutual recursion and avoids false
+  recursion reports when a local function-pointer variable shadows a top-level
+  function name.
 
 ## Residual Risks
 
