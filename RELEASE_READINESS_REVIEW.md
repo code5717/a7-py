@@ -15,6 +15,9 @@ The repository is substantially more release-ready than before this pass:
   example artifacts
 - tag-based PyPI publishing workflow using Trusted Publishing/OIDC
 - release checklist, security policy, and updated status docs
+- Node 24-compatible GitHub workflow actions for CI, Pages deploy, artifact
+  upload/download, and draft GitHub releases
+- checksum-verified Zig 0.15.2 install steps in CI and release workflows
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -34,6 +37,8 @@ not factually provable from local tests alone.
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
+- hosted CI for commit `064fde6` passed Python and docs jobs
+- hosted Deploy Docs for commit `064fde6` passed build and deploy jobs
 
 ## Fixed In This Pass
 
@@ -66,6 +71,13 @@ not factually provable from local tests alone.
 - GitHub Pages deploy now uses `npm ci` with `site/package-lock.json`.
 - README, SPEC, release docs, status docs, and agent docs describe the same
   release commands.
+- CI and release workflows pin Zig 0.15.2 through a checksum-verified install
+  instead of a third-party JavaScript setup action.
+- First-party GitHub Actions, Pages, artifact, and draft-release actions are on
+  Node 24-compatible majors.
+- Release/security checklist shell snippets now use subshells so they can be
+  copied and run literally.
+- README now points to the current `code5717.github.io/a7-py` documentation URL.
 
 ## Residual Risks
 
@@ -83,6 +95,9 @@ not factually provable from local tests alone.
   compromise.
 - Secret scanning is pattern-based and should be supplemented by repository host
   protections when publishing publicly.
+- GitHub Pages deploy currently emits an upstream `punycode` deprecation warning
+  from `actions/deploy-pages@v5`; the workflow succeeds and no repo-side
+  replacement is currently available.
 
 ## Recommended Next Pass
 
