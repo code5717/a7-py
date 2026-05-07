@@ -34,11 +34,11 @@ Deliverables implied by the active objective:
 | Release artifacts | Hosted CI run `25524022065`; `scripts/build_examples.py --profile release --backend both --clean` | Passing |
 | Python package build | Hosted CI run `25524022065`; local clean `rm -rf dist && uv build` | Passing |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
-| Release checksums | `scripts/generate_release_manifest.py`; `test/test_release_tooling.py`; release workflow uploads `dist/SHA256SUMS` | Covered |
+| Release checksums | `scripts/generate_release_manifest.py`; `test/test_release_tooling.py`; release workflow run `25524734727` uploaded `SHA256SUMS` in `release-bundles` | Covered |
 | Docs style/build | Hosted CI run `25524022065`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
 | Docs deploy | Hosted Deploy Docs run `25524022056` | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/docs/*.md`, sitemap and robots entries | Implemented |
-| Release workflow | `.github/workflows/release.yml`, manual dispatch evidence in `RELEASE_READINESS_REVIEW.md` | Configured |
+| Release workflow | `.github/workflows/release.yml`, manual dispatch run `25524734727` | Passing for non-tag validation |
 | PyPI publishing | `.github/workflows/release.yml`, GitHub `pypi` environment documented | Blocked until PyPI project/trusted publisher exists |
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs | Implemented for named call cycles |
 | No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |

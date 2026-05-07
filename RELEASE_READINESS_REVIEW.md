@@ -59,6 +59,11 @@ not factually provable from local tests alone.
   `python-package-distributions` artifact `6864726540` and `release-bundles`
   artifact `6864741365`, while tag-only GitHub release and PyPI publish jobs
   were skipped as intended.
+- manual release workflow dispatch passed again on `master` after checksum
+  manifest wiring; run `25524734727` completed release gate, package build,
+  docs archive, release example artifact archive, checksum generation, and
+  release-bundle upload. Downloaded `release-bundles` contained `SHA256SUMS`,
+  `a7-docs-site.tar.gz`, and `a7-example-artifacts-release.tar.gz`.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
