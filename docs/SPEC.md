@@ -966,12 +966,19 @@ if large == nil {
 }
 ```
 
-### 8.4 Memory Safety Rules
+### 8.4 Memory Safety Status
 
-1. **No dangling pointers**: Compiler tracks lifetimes
-2. **No double-free**: `del` sets pointer to nil
-3. **No use-after-free**: Nil check required after del
-4. **Bounds checking**: Array access checked in debug mode
+Current implementation:
+
+1. `new` and `del` parse, type-check, and lower for the implemented backends.
+2. `del` is validated for reference-like values.
+3. `defer del value` can express manual cleanup at scope exit.
+
+Not yet implemented:
+
+1. Ownership, borrowing, or lifetime analysis that proves absence of dangling pointers.
+2. Static double-free or use-after-free prevention beyond the current basic shape checks.
+3. General array/slice bounds-check insertion by the A7 compiler.
 
 ---
 
@@ -2142,12 +2149,19 @@ if large == nil {
 }
 ```
 
-### 8.4 Memory Safety Rules
+### 8.4 Memory Safety Status
 
-1. **No dangling pointers**: Compiler tracks lifetimes
-2. **No double-free**: `del` sets pointer to nil
-3. **No use-after-free**: Nil check required after del
-4. **Bounds checking**: Array access checked in debug mode
+Current implementation:
+
+1. `new` and `del` parse, type-check, and lower for the implemented backends.
+2. `del` is validated for reference-like values.
+3. `defer del value` can express manual cleanup at scope exit.
+
+Not yet implemented:
+
+1. Ownership, borrowing, or lifetime analysis that proves absence of dangling pointers.
+2. Static double-free or use-after-free prevention beyond the current basic shape checks.
+3. General array/slice bounds-check insertion by the A7 compiler.
 
 ---
 
