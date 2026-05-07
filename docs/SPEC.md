@@ -22,7 +22,7 @@
 6. [Functions](#functions)
 7. [Generics](#generics)
 8. [Memory Management](#memory-management)
-9. [Array Programming for AI](#array-programming-for-ai)
+9. [Planned Array Programming for AI](#planned-array-programming-for-ai)
 10. [Modules and Visibility](#modules-and-visibility)
 11. [Built-in Functions and Operators](#built-in-functions-and-operators)
 12. [Tokens and AST Components](#tokens-and-ast-components)
@@ -39,8 +39,7 @@ It features:
 - **Static typing** with type inference
 - **Compile-time generics** via monomorphization
 - **Manual memory management** with safety features
-- **Planned array programming for AI** with broadcasting and vectorized operations
-- **Multidimensional tensors** with efficient memory layouts
+- **Planned array programming for AI** with broadcasting, vectorized operations, and multidimensional tensors
 - **File-based module system** with controlled visibility
 - **Zero-cost abstractions**
 - **Platform-aware integer types** (isize/usize)
@@ -858,9 +857,9 @@ Result :: union {
 
 ### 7.3 Type Sets and Constraints
 
-> **Implementation Status**: Type-set syntax is partially implemented. Current known gaps are:
-> top-level `@type_set(...)` expression parsing in declarations, and constraint-aware
-> checking for generic arithmetic.
+> **Implementation Status**: Type-set syntax is implemented for predefined sets,
+> local `@type_set(...)` aliases, and inline constraints on declared generic
+> functions. Inferred call arguments are checked against declared type sets.
 
 Type sets are defined using the `@type_set()` builtin function:
 
@@ -877,15 +876,13 @@ SmallInts :: @type_set(i8, u8, i16, u16)
 BigInts :: @type_set(i64, u64)
 ```
 
-**Future Constraint Syntax** (planned for semantic analysis phase):
+**Current Constraint Syntax**:
 ```a7
-// Constraint syntax will allow restricting generic types
-// Note: This is planned syntax, not yet enforced
-abs :: fn(x: $T) $T {  // where $T: Numeric
+abs($T: Numeric) :: fn(x: $T) $T {
     ret if x < 0 { -x } else { x }
 }
 
-min :: fn(a: $T, b: $T) $T {  // where $T: Numeric
+min($T: Numeric) :: fn(a: $T, b: $T) $T {
     ret if a < b { a } else { b }
 }
 ```
@@ -2044,9 +2041,9 @@ p := Pair(i32, string){42, "answer"}
 
 ### 7.3 Type Sets and Constraints
 
-> **Implementation Status**: Type-set syntax is partially implemented. Current known gaps are:
-> top-level `@type_set(...)` expression parsing in declarations, and constraint-aware
-> checking for generic arithmetic.
+> **Implementation Status**: Type-set syntax is implemented for predefined sets,
+> local `@type_set(...)` aliases, and inline constraints on declared generic
+> functions. Inferred call arguments are checked against declared type sets.
 
 Type sets are defined using the `@type_set()` builtin function:
 
@@ -2063,15 +2060,13 @@ SmallInts :: @type_set(i8, u8, i16, u16)
 BigInts :: @type_set(i64, u64)
 ```
 
-**Future Constraint Syntax** (planned for semantic analysis phase):
+**Current Constraint Syntax**:
 ```a7
-// Constraint syntax will allow restricting generic types
-// Note: This is planned syntax, not yet enforced
-abs :: fn(x: $T) $T {  // where $T: Numeric
+abs($T: Numeric) :: fn(x: $T) $T {
     ret if x < 0 { -x } else { x }
 }
 
-min :: fn(a: $T, b: $T) $T {  // where $T: Numeric
+min($T: Numeric) :: fn(a: $T, b: $T) $T {
     ret if a < b { a } else { b }
 }
 ```
