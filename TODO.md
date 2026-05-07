@@ -172,8 +172,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `test/test_semantic_control_flow.py`, `test/test_semantic_comprehensive.py`
   Notes: added cases for deferred statement checking, return-payload traversal, and non-iterable `for-in`. Remaining feature gaps such as slice fields, string slicing, and `fall` still need implementation-specific coverage.
 
-- [ ] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
+- [x] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
   Files: `test/test_parser_combinatorial.py`, `test/test_parser_integration.py`
+  Notes: parser combinatorial tests now assert labeled `continue`, nested `for`/`while` labels, labeled `for-in` forms, and malformed non-loop labels.
 
 - [x] Add Zig regression coverage for labeled `for-in` and indexed `for-in`.
   Files: `test/test_codegen_zig.py`

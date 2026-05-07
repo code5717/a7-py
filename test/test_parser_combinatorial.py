@@ -8,6 +8,7 @@ all valid combinations parse correctly.
 import pytest
 from src.parser import parse_a7
 from src.ast_nodes import NodeKind
+from src.errors import ParseError
 
 
 class TestTypeCombinations:
@@ -562,6 +563,98 @@ class TestControlFlowCombinations:
         # Parse code
         result = parse_a7(code)
         assert result.kind == NodeKind.PROGRAM
+
+    def test_labeled_continue_and_nested_labeled_loops(self):
+        """Labeled continue and nested loop labels should be preserved in the AST."""
+        code = """
+        main :: fn() {
+            outer: for i := 0; i < 10; i += 1 {
+                inner: while keep_going {
+                    if should_skip {
+                        continue outer
+                    }
+                    if should_stop {
+                        break inner
+                    }
+                }
+            }
+        }
+        """
+
+        result = parse_a7(code)
+        main = result.declarations[0]
+        outer_loop = main.body.statements[0]
+        inner_loop = outer_loop.body.statements[0]
+        continue_stmt = inner_loop.body.statements[0].then_stmt.statements[0]
+        break_stmt = inner_loop.body.statements[1].then_stmt.statements[0]
+
+        assert outer_loop.kind == NodeKind.FOR
+        assert outer_loop.label == "outer"
+        assert inner_loop.kind == NodeKind.WHILE
+        assert inner_loop.label == "inner"
+        assert continue_stmt.kind == NodeKind.CONTINUE
+        assert continue_stmt.label == "outer"
+        assert break_stmt.kind == NodeKind.BREAK
+        assert break_stmt.label == "inner"
+
+    def test_labeled_for_in_and_indexed_for_in_parse_labels(self):
+        """Labels should work on both for-in loop forms."""
+        code = """
+        main :: fn() {
+            arr: [3]i32 = [1, 2, 3]
+
+            values: for value in arr {
+                continue values
+            }
+
+            indexed: for i, value in arr {
+                break indexed
+            }
+        }
+        """
+
+        result = parse_a7(code)
+        main = result.declarations[0]
+        for_in = main.body.statements[1]
+        indexed_for_in = main.body.statements[2]
+
+        assert for_in.kind == NodeKind.FOR_IN
+        assert for_in.label == "values"
+        assert for_in.body.statements[0].kind == NodeKind.CONTINUE
+        assert for_in.body.statements[0].label == "values"
+        assert indexed_for_in.kind == NodeKind.FOR_IN_INDEXED
+        assert indexed_for_in.label == "indexed"
+        assert indexed_for_in.index_var == "i"
+        assert indexed_for_in.iterator == "value"
+        assert indexed_for_in.body.statements[0].kind == NodeKind.BREAK
+        assert indexed_for_in.body.statements[0].label == "indexed"
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            """
+            main :: fn() {
+                bad:
+            }
+            """,
+            """
+            main :: fn() {
+                bad: if condition {
+                    work()
+                }
+            }
+            """,
+            """
+            main :: fn() {
+                bad: continue
+            }
+            """,
+        ],
+    )
+    def test_malformed_loop_labels_are_rejected(self, code):
+        """Labels are only valid directly before loop statements."""
+        with pytest.raises(ParseError):
+            parse_a7(code)
 
     def test_match_statement_variants(self):
         """Test all match statement forms."""

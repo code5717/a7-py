@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added explicit regression tests for return type mismatches inside if branches, match branches, and nested blocks.
   - Updated the tracked backlog to reflect existing bool/enum match exhaustiveness diagnostics.
   - Indexed `for-in` loop variables now type-check as `usize`, matching slice lengths, array indices, and backend-native indexed iteration.
+  - Added parser coverage for labeled `continue`, nested labeled loops, labeled `for-in` forms, and malformed non-loop labels.
 
 - **Documentation state**
   - Marked the old error-analysis report as historical and corrected the archive index so it no longer points at removed generated artifacts.
