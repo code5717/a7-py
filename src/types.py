@@ -76,7 +76,7 @@ class Type:
 
 @dataclass(frozen=True)
 class PrimitiveType(Type):
-    """Primitive types: i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char, string."""
+    """Primitive scalar and builtin value types."""
     name: str
 
     def __init__(self, name: str):
@@ -87,10 +87,17 @@ class PrimitiveType(Type):
         return isinstance(other, PrimitiveType) and self.name == other.name
 
     def is_numeric(self) -> bool:
-        return self.name in {'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'f32', 'f64'}
+        return self.name in {
+            'i8', 'i16', 'i32', 'i64', 'isize',
+            'u8', 'u16', 'u32', 'u64', 'usize',
+            'f32', 'f64',
+        }
 
     def is_integral(self) -> bool:
-        return self.name in {'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64'}
+        return self.name in {
+            'i8', 'i16', 'i32', 'i64', 'isize',
+            'u8', 'u16', 'u32', 'u64', 'usize',
+        }
 
     def is_floating(self) -> bool:
         return self.name in {'f32', 'f64'}
@@ -540,11 +547,13 @@ I8 = PrimitiveType('i8')
 I16 = PrimitiveType('i16')
 I32 = PrimitiveType('i32')
 I64 = PrimitiveType('i64')
+ISIZE = PrimitiveType('isize')
 
 U8 = PrimitiveType('u8')
 U16 = PrimitiveType('u16')
 U32 = PrimitiveType('u32')
 U64 = PrimitiveType('u64')
+USIZE = PrimitiveType('usize')
 
 F32 = PrimitiveType('f32')
 F64 = PrimitiveType('f64')
@@ -553,10 +562,10 @@ VOID = VoidType()
 UNKNOWN = UnknownType()
 
 # Predefined type sets
-NUMERIC_TYPES = frozenset({I8, I16, I32, I64, U8, U16, U32, U64, F32, F64})
-INTEGER_TYPES = frozenset({I8, I16, I32, I64, U8, U16, U32, U64})
-SIGNED_INT_TYPES = frozenset({I8, I16, I32, I64})
-UNSIGNED_INT_TYPES = frozenset({U8, U16, U32, U64})
+NUMERIC_TYPES = frozenset({I8, I16, I32, I64, ISIZE, U8, U16, U32, U64, USIZE, F32, F64})
+INTEGER_TYPES = frozenset({I8, I16, I32, I64, ISIZE, U8, U16, U32, U64, USIZE})
+SIGNED_INT_TYPES = frozenset({I8, I16, I32, I64, ISIZE})
+UNSIGNED_INT_TYPES = frozenset({U8, U16, U32, U64, USIZE})
 FLOAT_TYPES = frozenset({F32, F64})
 
 NUMERIC = TypeSet(NUMERIC_TYPES, name='Numeric')
@@ -573,8 +582,8 @@ def get_primitive_type(name: str) -> Optional[PrimitiveType]:
         'bool': BOOL,
         'char': CHAR,
         'string': STRING,
-        'i8': I8, 'i16': I16, 'i32': I32, 'i64': I64,
-        'u8': U8, 'u16': U16, 'u32': U32, 'u64': U64,
+        'i8': I8, 'i16': I16, 'i32': I32, 'i64': I64, 'isize': ISIZE,
+        'u8': U8, 'u16': U16, 'u32': U32, 'u64': U64, 'usize': USIZE,
         'f32': F32, 'f64': F64,
     }
     return primitives.get(name)

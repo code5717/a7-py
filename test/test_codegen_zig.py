@@ -214,6 +214,23 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         assert 'std.debug.print("line\\nquote: \\"A\\"!", .{})' in zig
 
+    def test_slice_ptr_and_len_fields_emit_zig_slice_fields(self):
+        source = '''
+io :: import "std/io"
+main :: fn() {
+    arr: [4]i32 = [10, 20, 30, 40]
+    tail := arr[1..4]
+    ptr := tail.ptr
+    io.println("{} {}", tail.len, ptr.val)
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "tail.ptr" in zig
+        assert "tail.len" in zig
+        assert "ptr[0]" in zig
+        ok, err = zig_ast_check(zig)
+        assert ok, err
+
     def test_constant_declaration(self):
         source = 'PI :: 3.14\n'
         zig = compile_a7_to_zig(source)

@@ -9,6 +9,7 @@ from typing import Optional, Dict, Set
 
 from ..ast_nodes import ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp, AssignOp
 from ..errors import CodegenError
+from ..types import PointerType
 from .base import CodeGenerator
 
 
@@ -1167,8 +1168,11 @@ class ZigCodeGenerator(CodeGenerator):
         return f"&{operand}"
 
     def _emit_deref(self, node: ASTNode) -> str:
-        """Emit dereference (.val → .?.*)."""
+        """Emit dereference (.val)."""
         pointer = self._emit_expr(node.pointer)
+        pointer_type = self._type_map.get(id(node.pointer)) if node.pointer else None
+        if isinstance(pointer_type, PointerType):
+            return f"{pointer}[0]"
         return f"{pointer}.?.*"
 
     def _emit_cast(self, node: ASTNode) -> str:

@@ -16,6 +16,7 @@ from src.types import (
     UnionType, UnionField, GenericParamType, GenericInstanceType,
     TypeSet, VoidType, UnknownType,
     BOOL, CHAR, STRING, I8, I16, I32, I64, U8, U16, U32, U64, F32, F64,
+    USIZE,
     VOID, UNKNOWN, NUMERIC, INTEGER,
     get_primitive_type, get_predefined_type_set
 )
@@ -1275,6 +1276,18 @@ class TypeCheckingPass:
             concrete_struct = self._resolve_generic_instance_struct(obj_type)
             if concrete_struct is not None:
                 obj_type = concrete_struct
+
+        if isinstance(obj_type, SliceType):
+            if field_name == "ptr":
+                return PointerType(obj_type.element_type)
+            if field_name == "len":
+                return USIZE
+            self.add_type_error(
+                TypeErrorType.NO_SUCH_FIELD,
+                node.span,
+                context=f"Slice '{obj_type}' has no field '{field_name}'",
+            )
+            return UNKNOWN
 
         if isinstance(obj_type, StructType):
             field = obj_type.get_field(field_name)

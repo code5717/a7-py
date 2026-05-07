@@ -1127,6 +1127,14 @@ class CCodeGenerator(CodeGenerator):
             if obj_name in self._declared_enums and field in self._enum_variants.get(obj_name, set()):
                 return f"{self._sanitize_name(obj_name)}_{field}"
 
+        object_type = self._type_map.get(id(node.object)) if node.object is not None else None
+        if isinstance(object_type, SliceType):
+            obj = self._emit_expr(node.object)
+            if field == "ptr":
+                return f"({obj}).data"
+            if field == "len":
+                return f"({obj}).len"
+
         if node.object and node.object.kind == NodeKind.DEREF:
             pointer = self._emit_expr(node.object.pointer)
             return f"({pointer})->{field}"

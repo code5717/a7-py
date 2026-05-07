@@ -57,6 +57,7 @@ not factually provable from local tests alone.
   inside if branches, match branches, and nested blocks.
 - Bool and enum match exhaustiveness diagnostics are covered for statements and
   expressions.
+- `slice.ptr` and `slice.len` now type-check and lower in both Zig and C.
 - Historical error-analysis docs are labeled as non-current and no longer
   conflict with release status.
 - GitHub Pages deploy now uses `npm ci` with `site/package-lock.json`.

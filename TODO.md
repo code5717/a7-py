@@ -41,9 +41,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 ### Type System / Semantics
 
-- [ ] Add source-language support for `slice.ptr` / `slice.len`.
+- [x] Add source-language support for `slice.ptr` / `slice.len`.
   Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`
-  Notes: spec documents it, type checker rejects it.
+  Notes: slice field access now type-checks `ptr` as `ptr T` and `len` as `usize`; C lowers `ptr` to the slice data field and `len` to the slice length field, while Zig uses native slice fields.
 
 - [ ] Implement string slicing (`string[2..5]`).
   Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`

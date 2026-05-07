@@ -35,6 +35,7 @@
 21. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes; valid escapes are decoded into AST literals and re-escaped for backend output.
 22. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
 23. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
+24. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
 
 ---
 

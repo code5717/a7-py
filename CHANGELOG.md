@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation state**
   - Marked the old error-analysis report as historical and corrected the archive index so it no longer points at removed generated artifacts.
 
+- **Slice fields**
+  - Added source-language support for `slice.ptr` and `slice.len` in type checking and both backends.
+  - Added `isize` and `usize` to primitive type resolution so slice lengths can use the documented `usize` type.
+
 - **Semantic and preprocessing correctness**
   - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
   - `ret` semantic validation now traverses the parser's `value` payload.

@@ -208,6 +208,50 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_supports_slice_ptr_and_len_fields(tmp_path: Path) -> None:
+    src = tmp_path / "slice_fields.a7"
+    out = tmp_path / "slice_fields.c"
+    bin_path = tmp_path / "slice_fields"
+    src.write_text(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    arr: [4]i32 = [10, 20, 30, 40]
+    tail := arr[1..4]
+    ptr := tail.ptr
+    io.println("{} {}", tail.len, ptr.val)
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = run_cli(["--backend", "c", "--output", str(out), str(src)])
+    assert result.returncode == ExitCode.SUCCESS, result.stdout + result.stderr
+
+    generated = out.read_text(encoding="utf-8")
+    assert "(tail).len" in generated
+    assert "(tail).data" in generated
+
+    build = subprocess.run(
+        ["zig", "cc", "-std=c11", str(out), "-lm", "-o", str(bin_path)],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert build.returncode == 0, build.stderr
+
+    run = subprocess.run(
+        [str(bin_path)],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert run.returncode == 0, run.stdout + run.stderr
+    assert run.stdout.strip() == "3 20"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_honors_labeled_break_and_continue(tmp_path: Path) -> None:
     result = build_and_run_c(
         """

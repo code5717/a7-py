@@ -13,10 +13,12 @@ Covers:
 import pytest
 from src.tokens import Tokenizer
 from src.parser import Parser
+from src.ast_nodes import NodeKind
 from src.passes.name_resolution import NameResolutionPass
 from src.passes.type_checker import TypeCheckingPass
 from src.passes.semantic_validator import SemanticValidationPass
 from src.errors import SemanticError, CompilerError
+from src.types import PointerType, PrimitiveType
 
 
 def parse_program(source: str):
@@ -209,6 +211,53 @@ class TestArrayAndSliceTypes:
         }
         """
         assert expect_success(source)
+
+    def test_slice_ptr_and_len_field_types(self):
+        """Test built-in slice fields."""
+        source = """
+        main :: fn() {
+            arr: [4]i32 = [1, 2, 3, 4]
+            s := arr[1..3]
+            p := s.ptr
+            n := s.len
+        }
+        """
+        program = parse_program(source)
+        resolver = NameResolutionPass()
+        symbols = resolver.analyze(program, "<test>")
+        assert not resolver.errors
+
+        checker = TypeCheckingPass(symbols)
+        checker.analyze(program, "<test>")
+        assert not checker.errors
+
+        field_types = {}
+        stack = [program]
+        while stack:
+            node = stack.pop()
+            if getattr(node, "kind", None) == NodeKind.FIELD_ACCESS:
+                field_types[node.field] = checker.get_type(node)
+            for value in vars(node).values():
+                if isinstance(value, list):
+                    stack.extend(item for item in value if hasattr(item, "kind"))
+                elif hasattr(value, "kind"):
+                    stack.append(value)
+
+        assert isinstance(field_types["ptr"], PointerType)
+        assert str(field_types["ptr"].pointee_type) == "i32"
+        assert isinstance(field_types["len"], PrimitiveType)
+        assert field_types["len"].name == "usize"
+
+    def test_slice_unknown_field_is_rejected(self):
+        """Only ptr and len are valid built-in slice fields."""
+        source = """
+        main :: fn() {
+            arr: [4]i32 = [1, 2, 3, 4]
+            s := arr[1..3]
+            bad := s.capacity
+        }
+        """
+        assert expect_error(source, "no field")
 
     def test_array_element_access(self):
         """Test array element access type checking."""
