@@ -2860,8 +2860,8 @@ Status snapshot (2026-05-07):
 2. **Advanced match diagnostics**
    - Exhaustiveness for bool/enum is implemented.
    - Exact duplicate bool, enum, and scalar literal patterns are diagnosed.
-   - Wildcard-first cases make later cases and else branches unreachable.
-   - Range overlap and fully-covered-case reachability diagnostics are still incomplete.
+   - Wildcard-first and fully covered bool/enum cases make later cases and else branches unreachable.
+   - Numeric/char range overlap diagnostics are still incomplete.
 
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.

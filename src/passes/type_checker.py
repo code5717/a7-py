@@ -835,6 +835,7 @@ class TypeCheckingPass:
                     pattern_value,
                     seen_patterns,
                     wildcard_pattern,
+                    self._match_full_coverage_reason(scrutinee_type, bool_coverage, enum_coverage),
                 )
                 if pattern_kind == "wildcard":
                     has_catch_all = True
@@ -861,6 +862,12 @@ class TypeCheckingPass:
                     SemanticErrorType.UNREACHABLE_CODE,
                     self._match_else_span(node.else_case) or node.span,
                     context="match else branch is unreachable because a previous wildcard pattern covers all values",
+                )
+            elif full_coverage_reason := self._match_full_coverage_reason(scrutinee_type, bool_coverage, enum_coverage):
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    self._match_else_span(node.else_case) or node.span,
+                    context=f"match else branch is unreachable because previous cases cover all {full_coverage_reason} values",
                 )
 
             self._enter_matching_scope("match_else")
@@ -1399,6 +1406,7 @@ class TypeCheckingPass:
                     pattern_value,
                     seen_patterns,
                     wildcard_pattern,
+                    self._match_full_coverage_reason(scrutinee_type, bool_coverage, enum_coverage),
                 )
                 if pattern_kind == "wildcard":
                     has_catch_all = True
@@ -1417,6 +1425,12 @@ class TypeCheckingPass:
                     SemanticErrorType.UNREACHABLE_CODE,
                     node.else_case.span,
                     context="match else branch is unreachable because a previous wildcard pattern covers all values",
+                )
+            elif full_coverage_reason := self._match_full_coverage_reason(scrutinee_type, bool_coverage, enum_coverage):
+                self.add_semantic_error(
+                    SemanticErrorType.UNREACHABLE_CODE,
+                    node.else_case.span,
+                    context=f"match else branch is unreachable because previous cases cover all {full_coverage_reason} values",
                 )
             branch_types.append(self.visit_expression(node.else_case))
 
@@ -1458,6 +1472,7 @@ class TypeCheckingPass:
         pattern_value: Optional[object],
         seen_patterns: Dict[Tuple[str, Any], ASTNode],
         wildcard_pattern: Optional[ASTNode],
+        full_coverage_reason: Optional[str],
     ) -> Optional[ASTNode]:
         """Emit diagnostics for exact duplicate or unreachable match patterns."""
         if wildcard_pattern is not None:
@@ -1472,10 +1487,7 @@ class TypeCheckingPass:
             return wildcard_pattern
 
         key = self._match_pattern_key(pattern, pattern_kind, pattern_value)
-        if key is None:
-            return wildcard_pattern
-
-        if key in seen_patterns:
+        if key is not None and key in seen_patterns:
             self.add_semantic_error(
                 SemanticErrorType.UNREACHABLE_CODE,
                 pattern.span,
@@ -1483,11 +1495,42 @@ class TypeCheckingPass:
             )
             return wildcard_pattern
 
+        if full_coverage_reason is not None:
+            self.add_semantic_error(
+                SemanticErrorType.UNREACHABLE_CODE,
+                pattern.span,
+                context=(
+                    f"match pattern '{self._format_match_pattern(pattern)}' is unreachable "
+                    f"because previous cases cover all {full_coverage_reason} values"
+                ),
+            )
+            return wildcard_pattern
+
+        if key is None:
+            return wildcard_pattern
+
         seen_patterns[key] = pattern
         if pattern_kind == "wildcard":
             return pattern
 
         return wildcard_pattern
+
+    def _match_full_coverage_reason(
+        self,
+        scrutinee_type: Type,
+        bool_coverage: Set[bool],
+        enum_coverage: Set[str],
+    ) -> Optional[str]:
+        """Return a coverage label when previous patterns already cover the scrutinee."""
+        if scrutinee_type.equals(BOOL) and bool_coverage == {True, False}:
+            return "bool"
+
+        if isinstance(scrutinee_type, EnumType):
+            declared_variants = {variant.name for variant in scrutinee_type.variants}
+            if declared_variants and declared_variants <= enum_coverage:
+                return f"enum '{scrutinee_type.name}'"
+
+        return None
 
     def _match_pattern_key(
         self,

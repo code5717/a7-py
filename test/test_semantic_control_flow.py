@@ -707,6 +707,72 @@ class TestMatchStatements:
         """
         assert expect_error(source, "else branch is unreachable")
 
+    def test_bool_full_coverage_before_later_case_is_rejected(self):
+        """Cases after true and false are unreachable for bool matches."""
+        source = """
+        main :: fn() {
+            flag: bool = true
+            match flag {
+                case true: x := 1
+                case false: x := 0
+                case _: x := 2
+            }
+        }
+        """
+        assert expect_error(source, "cover all bool values")
+
+    def test_bool_full_coverage_before_else_is_rejected(self):
+        """Else after true and false is unreachable for bool matches."""
+        source = """
+        main :: fn() {
+            flag: bool = true
+            x := match flag {
+                case true: 1
+                case false: 0
+                else: 2
+            }
+        }
+        """
+        assert expect_error(source, "cover all bool values")
+
+    def test_enum_full_coverage_before_later_case_is_rejected(self):
+        """Cases after every enum variant is covered are unreachable."""
+        source = """
+        Color :: enum {
+            Red,
+            Green,
+        }
+
+        main :: fn() {
+            c: Color = Color.Red
+            match c {
+                case Color.Red: x := 1
+                case Color.Green: x := 2
+                case _: x := 3
+            }
+        }
+        """
+        assert expect_error(source, "cover all enum")
+
+    def test_enum_full_coverage_before_else_is_rejected(self):
+        """Else after every enum variant is covered is unreachable."""
+        source = """
+        Color :: enum {
+            Red,
+            Green,
+        }
+
+        main :: fn() {
+            c: Color = Color.Red
+            x := match c {
+                case Color.Red: 1
+                case Color.Green: 2
+                else: 3
+            }
+        }
+        """
+        assert expect_error(source, "cover all enum")
+
 
 class TestReturnTypeBranchValidation:
     """Return type checks should apply inside every reachable branch."""

@@ -54,10 +54,10 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Notes: `resolve_generic_constraint` is still a stub.
 
 - [x] Add exact match pattern redundancy diagnostics.
-  Notes: duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions; wildcard-first cases also make later cases/else branches unreachable.
+  Notes: duplicate bool, enum, and scalar literal patterns now emit unreachable-code diagnostics in match statements and expressions; wildcard-first and fully covered bool/enum cases also make later cases/else branches unreachable.
 
-- [ ] Add range and full-coverage match overlap diagnostics.
-  Notes: range overlap and cases/else branches after full bool or enum coverage are still not detected.
+- [ ] Add range match overlap diagnostics.
+  Notes: overlapping numeric/char range patterns are still not detected.
 
 ### C Backend Parity
 
@@ -121,7 +121,7 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Notes: reachability analysis is not implemented.
 
 - [x] Check exhaustiveness of match statements.
-  Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Exact duplicate patterns and wildcard-first unreachable branches are diagnosed separately.
+  Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Exact duplicate patterns and unreachable branches after wildcard or full bool/enum coverage are diagnosed separately.
 
 - [ ] Validate assignment compatibility beyond top-level type equality.
   Notes: nested struct/array type mismatches (e.g. `[4]i32` vs `[4]f32`) are not caught.
