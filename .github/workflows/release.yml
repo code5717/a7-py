@@ -91,6 +91,21 @@ jobs:
       - name: Archive release example artifacts
         run: tar -czf dist/a7-example-artifacts-release.tar.gz -C build release
 
+      - name: Verify release archive contents
+        run: |
+          uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz \
+            --require dist/llms.txt \
+            --require dist/llms-full.txt \
+            --require dist/docs/index.md \
+            --require dist/docs/agent-usage.md \
+            --require dist/docs/release.md \
+            --require dist/docs/status.md
+          uv run python scripts/verify_archive_contents.py dist/a7-example-artifacts-release.tar.gz \
+            --require release/zig/src/001_hello.zig \
+            --require release/zig/bin/001_hello \
+            --require release/c/src/001_hello.c \
+            --require release/c/bin/001_hello
+
       - name: Generate release checksums
         run: |
           sdist="$(ls dist/a7_py-*.tar.gz)"

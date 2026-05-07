@@ -5,6 +5,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+import tarfile
 from hashlib import sha256
 from pathlib import Path
 
@@ -221,3 +222,54 @@ def test_verify_release_manifest_detects_tampering(tmp_path: Path) -> None:
 
     assert tampered.returncode == 1
     assert "release manifest verification failed" in tampered.stderr
+
+
+def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> None:
+    archive_path = tmp_path / "docs.tar.gz"
+    docs_dir = tmp_path / "dist"
+    docs_dir.mkdir()
+    (docs_dir / "llms.txt").write_text("index\n", encoding="utf-8")
+    nested = docs_dir / "docs"
+    nested.mkdir()
+    (nested / "index.md").write_text("# Docs\n", encoding="utf-8")
+
+    with tarfile.open(archive_path, "w:gz") as archive:
+        archive.add(docs_dir / "llms.txt", arcname="dist/llms.txt")
+        archive.add(nested / "index.md", arcname="dist/docs/index.md")
+
+    ok_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_archive_contents.py",
+            str(archive_path),
+            "--require",
+            "dist/llms.txt",
+            "--require",
+            "./dist/docs/index.md",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert ok_result.returncode == 0, ok_result.stderr or ok_result.stdout
+    assert "archive content verified" in ok_result.stdout
+
+    missing_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_archive_contents.py",
+            str(archive_path),
+            "--require",
+            "dist/llms-full.txt",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert missing_result.returncode == 1
+    assert "archive content verification failed" in missing_result.stderr
+    assert "dist/llms-full.txt" in missing_result.stderr

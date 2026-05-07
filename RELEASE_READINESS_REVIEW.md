@@ -145,6 +145,9 @@ not factually provable from local tests alone.
   draft GitHub release artifacts and verifies that expected package, docs, and
   native artifact archive paths are present before upload, then re-checks the
   recorded hashes and sizes on disk.
+- Release tooling now verifies required members inside the docs and native
+  example archives before checksum generation, including `llms.txt`,
+  `llms-full.txt`, public Markdown docs, and `001_hello` Zig/C outputs.
 
 ## Residual Risks
 

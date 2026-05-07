@@ -90,12 +90,13 @@ artifact archives, run:
 ```bash
 uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
+uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --require dist/llms.txt --require dist/llms-full.txt
 ```
 
 The tag release workflow generates `dist/SHA256SUMS` after all release archives
 are built, verifies that the manifest contains the package, docs, and native
-artifact archives, re-checks the hashes and sizes on disk, then attaches it to
-the draft GitHub release.
+artifact archives, verifies required archive members, re-checks the hashes and
+sizes on disk, then attaches it to the draft GitHub release.
 
 ## Tagging
 

@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recorded artifact hashes and sizes before upload.
 - Expanded curl.md-friendly docs with a full-context aggregate, route aliases,
   first-class page metadata, and visible Markdown links from the docs app.
+- Added release archive content verification so docs/native artifact tarballs
+  must contain required curl.md entry points and example outputs before upload.
 
 ## [0.3.0] - 2026-05-07
 

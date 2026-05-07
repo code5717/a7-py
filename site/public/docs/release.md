@@ -22,11 +22,12 @@ Generate checksums before uploading local artifacts:
 ```bash
 uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
+uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --require dist/llms.txt --require dist/llms-full.txt
 ```
 
 The tag workflow also verifies that `SHA256SUMS` contains the expected package,
-docs, and native artifact archives before upload, then re-checks the hashes and
-sizes on disk.
+docs, and native artifact archives before upload. It also checks required
+archive members, then re-checks the hashes and sizes on disk.
 
 ## Debug and Release Artifacts
 

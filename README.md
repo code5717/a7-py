@@ -118,6 +118,7 @@ Generate a checksum manifest for release artifacts:
 ```bash
 uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
+uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --require dist/llms.txt --require dist/llms-full.txt
 ```
 
 The installed CLI entrypoint is `a7`:
