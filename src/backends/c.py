@@ -700,13 +700,21 @@ class CCodeGenerator(CodeGenerator):
             return
 
         c_type = self._infer_decl_type(explicit_type, node.value, node)
-        self._write_indent()
         if node.value:
+            if (
+                node.value.kind == NodeKind.MATCH_EXPR
+                and not self._is_side_effect_free_match_scrutinee(node.value.expression)
+            ):
+                self._emit_side_effectful_match_var_init(name, c_type, node.value)
+                return
+
+            self._write_indent()
             init = self._emit_expr(node.value)
             if self._is_null_literal(node.value) and not c_type.endswith("*"):
                 c_type = "void*"
             self.output.write(f"{c_type} {name} = {init};\n")
         else:
+            self._write_indent()
             default = self._default_value(explicit_type, c_type)
             self.output.write(f"{c_type} {name} = {default};\n")
 
@@ -1967,11 +1975,35 @@ class CCodeGenerator(CodeGenerator):
         scrutinee = node.expression
         if not self._is_side_effect_free_match_scrutinee(scrutinee):
             raise CodegenError(
-                "C backend: match expressions with side-effectful scrutinees are not implemented",
+                "C backend: match expressions with side-effectful scrutinees are only supported in variable initializers",
                 node.span,
             )
 
         scrutinee_expr = self._emit_expr(scrutinee) if scrutinee else "0"
+        return self._emit_match_expr_with_scrutinee(node, scrutinee_expr)
+
+    def _emit_side_effectful_match_var_init(self, name: str, c_type: str, node: ASTNode) -> None:
+        scrutinee = node.expression
+        scrutinee_type = self._semantic_type_to_c(self._type_map.get(id(scrutinee))) or "int32_t"
+        if scrutinee_type == "int32_t":
+            self._needs_stdint = True
+
+        temp_name = self._unique_name("__a7_match")
+        self._write_indent()
+        self.output.write(f"{c_type} {name};\n")
+        self._write_indent()
+        self.output.write("{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{scrutinee_type} {temp_name} = {self._emit_expr(scrutinee)};\n")
+        result = self._emit_match_expr_with_scrutinee(node, temp_name)
+        self._write_indent()
+        self.output.write(f"{name} = {result};\n")
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _emit_match_expr_with_scrutinee(self, node: ASTNode, scrutinee_expr: str) -> str:
         default_expr = self._emit_expr(node.else_case) if isinstance(node.else_case, ASTNode) else "0"
         result = f"({default_expr})"
 

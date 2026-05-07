@@ -62,7 +62,8 @@
 
 5. **Backend semantic parity hardening**
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
-   - C `match` expressions with side-effectful scrutinees still fail closed pending a portable single-evaluation lowering.
+   - C `match` expressions with side-effectful scrutinees are supported in variable initializers through generated single-evaluation locals.
+   - C `match` expressions with side-effectful scrutinees in non-declaration expression contexts still fail closed pending statement-level lowering.
 
 6. **Release publishing automation**
    - Local package builds and artifact checks exist.

@@ -68,9 +68,13 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/backends/c.py`
   Notes: literal, enum, range, and wildcard patterns now lower to chained conditional expressions when the scrutinee is side-effect-free.
 
-- [ ] C backend: side-effectful `match` expression scrutinees.
+- [x] C backend: side-effectful `match` expression scrutinees in variable initializers.
   Files: `src/backends/c.py`
-  Notes: function-call and other side-effectful scrutinees still fail closed because portable C needs a single-evaluation lowering strategy.
+  Notes: variable initializers now cache the scrutinee in a generated local before assigning the lowered conditional result.
+
+- [ ] C backend: side-effectful `match` expression scrutinees in non-declaration expression contexts.
+  Files: `src/backends/c.py`
+  Notes: inline calls such as function arguments still fail closed because portable C needs statement-level lowering at each expression site.
 
 - [ ] C backend: range patterns and identifier-capture patterns.
   Files: `src/backends/c.py`

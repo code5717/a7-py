@@ -282,11 +282,15 @@ main :: fn() {
     assert result.stdout.strip() == "20 200 2 8"
 
 
-def test_c_backend_match_expression_side_effectful_scrutinee_fails_closed(tmp_path: Path) -> None:
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_c_backend_match_expression_side_effectful_scrutinee_var_init(tmp_path: Path) -> None:
     src = tmp_path / "match_expr_call.a7"
     out = tmp_path / "match_expr_call.c"
+    bin_path = tmp_path / "match_expr_call"
     src.write_text(
         """
+io :: import "std/io"
+
 value :: fn() i32 {
     ret 1
 }
@@ -296,6 +300,53 @@ main :: fn() {
         case 1: 10
         else: 0
     }
+    io.println("{}", x)
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = run_cli(["--backend", "c", "--output", str(out), str(src)])
+    assert result.returncode == ExitCode.SUCCESS, result.stdout + result.stderr
+
+    generated = out.read_text(encoding="utf-8")
+    assert "__a7_match_" in generated
+    assert generated.count("value()") == 1
+
+    build = subprocess.run(
+        ["zig", "cc", "-std=c11", str(out), "-lm", "-o", str(bin_path)],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert build.returncode == 0, build.stderr
+
+    run = subprocess.run(
+        [str(bin_path)],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert run.returncode == 0, run.stdout + run.stderr
+    assert run.stdout.strip() == "10"
+
+
+def test_c_backend_match_expression_side_effectful_scrutinee_in_expression_fails_closed(tmp_path: Path) -> None:
+    src = tmp_path / "match_expr_call_inline.a7"
+    out = tmp_path / "match_expr_call_inline.c"
+    src.write_text(
+        """
+io :: import "std/io"
+
+value :: fn() i32 {
+    ret 1
+}
+
+main :: fn() {
+    io.println("{}", match value() {
+        case 1: 10
+        else: 0
+    })
 }
 """.strip(),
         encoding="utf-8",
@@ -303,7 +354,9 @@ main :: fn() {
 
     result = run_cli(["--backend", "c", "--output", str(out), str(src)])
     assert result.returncode == ExitCode.CODEGEN
-    assert "side-effectful scrutinees" in result.stdout + result.stderr
+    output = result.stdout + result.stderr
+    assert "side-effectful scrutinees" in output
+    assert "variable initializers" in output
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")

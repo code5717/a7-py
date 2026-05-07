@@ -16,7 +16,7 @@ const missing = [
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal range overlaps are diagnosed. Symbolic range overlap remains open.' },
   { name: 'Generic constraint internals', desc: 'Inline type-set constraint resolution in generics.py is still placeholder-level.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
-  { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for new language features.' },
+  { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand. Side-effectful match scrutinees are supported in variable initializers; inline expression contexts remain open.' },
   { name: 'Automated publishing', desc: 'Local package builds are available, but tag-based package publishing is not wired yet.' },
 ]
 
