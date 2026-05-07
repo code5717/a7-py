@@ -24,6 +24,51 @@ const SEARCH_ITEMS = [
   })),
 ]
 
+function getRouteAnchor(routeHash: string) {
+  if (routeHash) {
+    return routeHash.slice(1)
+  }
+
+  const rawHash = window.location.hash
+  const anchorIndex = rawHash.indexOf('#', 1)
+  const routeAliasAnchors: Record<string, string> = {
+    '#/cli': 'cli',
+    '#/pipeline': 'pipeline',
+    '#/stdlib': 'standard-library',
+    '#/testing': 'testing',
+  }
+
+  return anchorIndex >= 0 ? rawHash.slice(anchorIndex + 1) : (routeAliasAnchors[rawHash] ?? '')
+}
+
+function scrollAnchorIntoView(anchor: string) {
+  const element = document.getElementById(anchor)
+
+  if (!element) {
+    return
+  }
+
+  const stickyOffset = 86
+  const top = Math.max(0, element.getBoundingClientRect().top + window.scrollY - stickyOffset)
+
+  window.scrollTo({ top, left: 0 })
+}
+
+function scrollToRouteAnchor(routeHash: string) {
+  const anchor = getRouteAnchor(routeHash)
+
+  if (!anchor) {
+    window.scrollTo({ top: 0, left: 0 })
+    return
+  }
+
+  window.setTimeout(() => scrollAnchorIntoView(anchor), 0)
+  window.setTimeout(() => scrollAnchorIntoView(anchor), 80)
+  window.setTimeout(() => scrollAnchorIntoView(anchor), 240)
+  window.setTimeout(() => scrollAnchorIntoView(anchor), 750)
+  window.setTimeout(() => scrollAnchorIntoView(anchor), 1500)
+}
+
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -64,15 +109,37 @@ export default function Layout() {
       window.history.scrollRestoration = 'manual'
     }
 
-    if (!hash) {
-      window.scrollTo({ top: 0, left: 0 })
-      return
-    }
-
-    window.setTimeout(() => {
-      document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
-    }, 0)
+    scrollToRouteAnchor(hash)
   }, [hash, pathname])
+
+  useEffect(() => {
+    const handleHashChange = () => scrollToRouteAnchor('')
+    let lastHash = window.location.hash
+    let correctUntil = 0
+
+    const hashWatcher = window.setInterval(() => {
+      if (window.location.hash !== lastHash) {
+        lastHash = window.location.hash
+        correctUntil = Date.now() + 2500
+      }
+
+      if (Date.now() > correctUntil) {
+        return
+      }
+
+      const anchor = getRouteAnchor('')
+
+      if (anchor) {
+        scrollAnchorIntoView(anchor)
+      }
+    }, 100)
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => {
+      window.clearInterval(hashWatcher)
+      window.removeEventListener('hashchange', handleHashChange)
+    }
+  }, [])
 
   useEffect(() => {
     if (!sidebarOpen) {
@@ -341,7 +408,7 @@ export default function Layout() {
                 <Link to="/start">Getting Started</Link>
                 <Link to="/language">Language</Link>
                 <Link to="/examples">Examples</Link>
-                <Link to="/pipeline">Pipeline</Link>
+                <Link to="/internals#pipeline">Pipeline</Link>
               </div>
             </div>
 
@@ -361,9 +428,9 @@ export default function Layout() {
               <h3>Resources</h3>
               <div className="site-footer-links">
                 <Link to="/internals">Internals</Link>
-                <Link to="/testing">Testing</Link>
-                <Link to="/stdlib">Stdlib</Link>
-                <Link to="/cli">CLI</Link>
+                <Link to="/internals#testing">Testing section</Link>
+                <Link to="/language#standard-library">Stdlib section</Link>
+                <Link to="/start#cli">CLI section</Link>
               </div>
             </div>
           </div>

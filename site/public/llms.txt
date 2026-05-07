@@ -1,0 +1,24 @@
+# A7 Docs
+
+> Agent-ready documentation entry point for the A7 compiler and language.
+
+A7 is a statically typed systems language compiler implemented in Python. It compiles A7 source to Zig and C, rejects source recursion, and verifies examples through compile/build/run/output gates.
+
+## Start Here
+
+- [Docs Index](/a7-py/docs/index.md): Navigation for curl.md and coding agents.
+- [Getting Started](/a7-py/docs/getting-started.md): Install, compile, run, and test A7.
+- [Language and Library](/a7-py/docs/language.md): Syntax, type guidance, stdlib, and recursion rule.
+- [CLI](/a7-py/docs/cli.md): Compiler modes, flags, exit codes, and automation commands.
+
+## Deeper References
+
+- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, parity verifier, and release gate.
+- [Examples](/a7-py/docs/examples.md): Example catalog and verification commands.
+- [Release](/a7-py/docs/release.md): Debug/release artifacts, package build, audits, and publishing status.
+- [Status](/a7-py/docs/status.md): Current implementation status and known gaps.
+
+## Human Site
+
+- [A7 Docs App](/a7-py/): Interactive docs site.
+- [GitHub Repository](https://github.com/code5717/a7-py): Source, tests, examples, and release workflows.

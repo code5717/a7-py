@@ -72,6 +72,37 @@ const INTRINSICS: Array<[string, string]> = [
   ['@likely(cond), @unlikely(cond)', 'Branch prediction hint'],
 ]
 
+const IO_FUNCTIONS: Array<[string, string]> = [
+  ['io.println(s: string)', 'Print with newline'],
+  ['io.print(s: string)', 'Print without newline'],
+  ['io.eprintln(s: string)', 'Print to stderr'],
+]
+
+const MATH_FUNCTIONS: Array<[string, string]> = [
+  ['sqrt_f32(x: f32) f32', 'Square root'],
+  ['sqrt_f64(x: f64) f64', 'Square root'],
+  ['abs_f32(x: f32) f32', 'Absolute value'],
+  ['abs_f64(x: f64) f64', 'Absolute value'],
+  ['floor_f32(x: f32) f32', 'Floor'],
+  ['floor_f64(x: f64) f64', 'Floor'],
+  ['ceil_f32(x: f32) f32', 'Ceiling'],
+  ['ceil_f64(x: f64) f64', 'Ceiling'],
+  ['sin_f32(x: f32) f32', 'Sine'],
+  ['sin_f64(x: f64) f64', 'Sine'],
+  ['cos_f32(x: f32) f32', 'Cosine'],
+  ['cos_f64(x: f64) f64', 'Cosine'],
+  ['tan_f32(x: f32) f32', 'Tangent'],
+  ['tan_f64(x: f64) f64', 'Tangent'],
+  ['log_f32(x: f32) f32', 'Natural log'],
+  ['log_f64(x: f64) f64', 'Natural log'],
+  ['exp_f32(x: f32) f32', 'Exponential'],
+  ['exp_f64(x: f64) f64', 'Exponential'],
+  ['min_f32(a: f32, b: f32) f32', 'Minimum'],
+  ['min_f64(a: f64, b: f64) f64', 'Minimum'],
+  ['max_f32(a: f32, b: f32) f32', 'Maximum'],
+  ['max_f64(a: f64, b: f64) f64', 'Maximum'],
+]
+
 export default function Language() {
   return (
     <div className="page">
@@ -419,6 +450,46 @@ pub length :: fn(v: Vec2) f32 {
         <p className="text-secondary mt-1">
           Every <code className="doc-inline-code">.a7</code> file is a module. Use <code className="doc-inline-code">pub</code> to export top-level declarations and struct fields.
         </p>
+      </SectionPanel>
+
+      <SectionPanel title="Standard Library" id="standard-library">
+        <p className="text-secondary">
+          Current virtual stdlib support is intentionally small: <code className="doc-inline-code">std/io</code> and{' '}
+          <code className="doc-inline-code">std/math</code>. Source stubs such as <code className="doc-inline-code">mem</code> and{' '}
+          <code className="doc-inline-code">string</code> exist in the repository, but are not registered as public modules yet.
+        </p>
+        <h3 id="io" className="section-title subsection-title spaced">io</h3>
+        <DataTable
+          caption="Standard io module functions."
+          headers={['Function', 'Description']}
+          rows={IO_FUNCTIONS.map(([sig, desc]) => [
+            <code className="doc-inline-code" key={sig}>{sig}</code>,
+            desc,
+          ])}
+        />
+        <CodeBlock
+          lang="a7"
+          code={`io :: import "std/io"
+
+main :: fn() {
+    io.println("Hello, World!")
+    io.print("no newline")
+}`}
+        />
+        <h3 id="math" className="section-title subsection-title spaced">math</h3>
+        <DataTable
+          caption="Standard math module functions."
+          headers={['Function', 'Description']}
+          rows={MATH_FUNCTIONS.map(([sig, desc]) => [
+            <code className="doc-inline-code" key={sig}>{sig}</code>,
+            desc,
+          ])}
+        />
+        <h3 id="stub-modules" className="section-title subsection-title spaced">Stub modules</h3>
+        <ul className="doc-list">
+          <li><strong>mem</strong> — source stub only; byte-copy/fill/alloc APIs are not registered as available modules yet.</li>
+          <li><strong>string</strong> — source stub only; string utility APIs are not registered as available modules yet.</li>
+        </ul>
       </SectionPanel>
 
       <SectionPanel title="Builtins and Intrinsics">

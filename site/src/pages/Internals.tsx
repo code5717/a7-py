@@ -34,6 +34,15 @@ const annotationList = [
   { name: 'stdlib_canonical', desc: 'builtin mapping' },
 ]
 
+const testLayers = [
+  ['Tokenizer', 'test/test_tokenizer.py', 'Token generation, literals, keywords, operators, error cases.'],
+  ['Parser', 'test/test_parser_*.py', 'AST generation for language constructs.'],
+  ['Semantic', 'test/test_semantic_*.py', 'Name resolution, type checking, validations.'],
+  ['Codegen', 'test/test_codegen_zig.py, test/test_codegen_c.py', 'Zig/C emission and build checks.'],
+  ['End-to-end', 'test/test_examples_e2e*.py', 'Compile, build, run, compare golden output.'],
+  ['Release gate', 'run_all_tests.sh', 'Full local gate, artifact builds, docs style, error matrix.'],
+]
+
 export default function Internals() {
   return (
     <div className="page">
@@ -43,8 +52,7 @@ export default function Internals() {
       />
 
       {/* ── Pipeline flow ── */}
-      <section className="section-panel">
-        <h2 className="section-title">Pipeline</h2>
+      <SectionPanel title="Pipeline" id="pipeline">
         <div className="flow-strip">
           {stages.map((s, i) => (
             <div key={s.label} className="flow-strip-item">
@@ -61,7 +69,7 @@ export default function Internals() {
         <p className="text-tertiary text-tiny mt-2">
           All traversals are iterative. The full pipeline works at <code className="doc-inline-code">sys.setrecursionlimit(100)</code>.
         </p>
-      </section>
+      </SectionPanel>
 
       {/* ── Core modules ── */}
       <SectionPanel title="Modules">
@@ -198,7 +206,7 @@ export default function Internals() {
       </SectionPanel>
 
       {/* ── Backend + errors + symbols ── */}
-      <SectionPanel title="Backend lifecycle">
+      <SectionPanel title="Backend lifecycle" id="backend-notes">
         <CodeBlock code={`# 1. reset()  — clear state
 # 2. scan     — iterative walk to detect new/del/io usage
 # 3. preamble — emit imports + allocator setup
@@ -208,6 +216,27 @@ export default function Internals() {
 # Both backends read preprocessor annotations AND
 # re-analyze mutations/usage locally (dual analysis)
 # --backend c selects C11 output (validated with zig cc)`} />
+      </SectionPanel>
+
+      <SectionPanel title="Testing" id="testing">
+        <div id="scripts" />
+        <CodeBlock
+          lang="bash"
+          code={`PYTHONPATH=. uv run pytest --tb=no -q
+uv run python scripts/verify_examples_e2e.py
+uv run python scripts/verify_examples_e2e_c.py
+uv run python scripts/verify_backend_parity.py
+./run_all_tests.sh`}
+        />
+        <DataTable
+          caption="Verification layers by scope."
+          headers={['Layer', 'Files', 'Scope']}
+          rows={testLayers.map(([name, file, desc]) => [
+            name,
+            <code className="doc-inline-code" key={`${name}-file`}>{file}</code>,
+            desc,
+          ])}
+        />
       </SectionPanel>
 
       <SectionPanel title="Errors and symbols">

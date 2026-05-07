@@ -80,8 +80,8 @@ uvx pip-audit --strict
 - docs style checks
 - committed secrets check
 - full pytest suite
-- Python dependency audit
-- docs runtime dependency audit
+
+The Python and docs dependency audits are separate release-gate commands above.
 
 ## Tagging
 

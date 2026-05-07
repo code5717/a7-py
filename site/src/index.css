@@ -171,7 +171,7 @@ img {
 .site-nav-link.active {
   color: var(--fg-primary);
   border-color: var(--border-emphasis);
-  background: var(--surface-72);
+  background: var(--bg-raised);
 }
 
 .site-nav-link:active {
@@ -275,7 +275,7 @@ img {
 
 .theme-toggle:hover {
   border-color: var(--border-emphasis);
-  background: var(--bg-panel);
+  background: var(--bg-raised);
 }
 
 .theme-toggle:active {
@@ -312,7 +312,7 @@ img {
 .site-menu-button:hover,
 .icon-button:hover {
   border-color: var(--border-emphasis);
-  background: var(--bg-panel);
+  background: var(--bg-raised);
 }
 
 .site-menu-button:active,
@@ -443,7 +443,7 @@ img {
 .nav-link:hover,
 .nav-link.active {
   border-color: var(--border-soft);
-  background: var(--surface-82);
+  background: var(--bg-raised);
 }
 
 .nav-link-title {
@@ -709,7 +709,7 @@ img {
 .doc-callout {
   padding: 12px 18px;
   border: 0;
-  border-left: 2px solid var(--border-default);
+  border-left: 3px solid var(--border-default);
   border-radius: 0;
   background: transparent;
   color: var(--fg-secondary);

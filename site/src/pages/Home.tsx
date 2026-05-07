@@ -190,7 +190,7 @@ export default function Home() {
           <p className="pipeline-intro-copy">
             Five visible stages from source to generated code.
           </p>
-          <Link to="/pipeline" className="pipeline-intro-link">
+          <Link to="/internals#pipeline" className="pipeline-intro-link">
             Learn more <span aria-hidden="true">→</span>
           </Link>
         </div>

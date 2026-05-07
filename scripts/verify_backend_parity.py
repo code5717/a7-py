@@ -85,6 +85,90 @@ main :: fn() {
     io.println("mul = {}", apply(op, 6, 7))
 }
 ''',
+    "slice_index_fields": r'''
+io :: import "std/io"
+
+main :: fn() {
+    arr: [4]i32 = [10, 20, 30, 40]
+    tail := arr[1..4]
+    ptr := tail.ptr
+    total := tail[0]
+    for x in tail {
+        total += x
+    }
+    index_sum: usize = 0
+    indexed_value_total := 0
+    for i, x in tail {
+        index_sum += i
+        indexed_value_total += x
+    }
+    io.println("slice = {} {} {}", tail.len, ptr.val, total)
+    io.println("indexed = {} {}", index_sum, indexed_value_total)
+}
+''',
+    "match_statement_ranges": r'''
+io :: import "std/io"
+
+main :: fn() {
+    value := 7
+    match value {
+        case 0: io.println("zero")
+        case 1..5: io.println("small")
+        case 6..10: io.println("medium")
+        else: io.println("large")
+    }
+}
+''',
+    "match_expression_side_effects": r'''
+io :: import "std/io"
+
+calls: i32 = 0
+
+value :: fn() i32 {
+    calls += 1
+    ret 2
+}
+
+pick :: fn() i32 {
+    ret match value() {
+        case 2: 20
+        else: 0
+    }
+}
+
+identity :: fn(x: i32) i32 {
+    ret x
+}
+
+main :: fn() {
+    x: i32 = 0
+    x = match value() {
+        case 2: 7
+        else: 1
+    }
+    y := identity(match value() {
+        case 2: 5
+        else: 0
+    })
+    z := pick()
+    io.println("match = {} {} {} {}", x, y, z, calls)
+}
+''',
+    "string_slice_iteration": r'''
+io :: import "std/io"
+
+main :: fn() {
+    text: string = "abcdef"
+    io.print("text = ")
+    for ch in text[1..4] {
+        io.print("{}", ch)
+    }
+    for ch in text[4..] {
+        io.print("{}", ch)
+    }
+    io.println("")
+}
+''',
 }
 
 
@@ -101,6 +185,12 @@ class ParityResult:
     @property
     def ok(self) -> bool:
         return self.zig_ok and self.c_ok and self.output_match
+
+
+def result_to_json(result: ParityResult) -> dict[str, object]:
+    data = asdict(result)
+    data["ok"] = result.ok
+    return data
 
 
 def run_cmd(
@@ -285,7 +375,7 @@ def main() -> int:
                     "passed": passed,
                     "total": total,
                     "ok": passed == total,
-                    "results": [asdict(result) for result in results],
+                    "results": [result_to_json(result) for result in results],
                 },
                 indent=2,
             ),

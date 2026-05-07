@@ -17,13 +17,11 @@ export type SectionSearchItem = {
 
 export const PRIMARY_NAV: PrimaryNavItem[] = [
   { kind: 'route', to: '/', label: 'Docs', end: true },
-  { kind: 'route', to: '/start', label: 'Getting Started' },
+  { kind: 'route', to: '/start', label: 'Start' },
   { kind: 'route', to: '/language', label: 'Language' },
-  { kind: 'route', to: '/cli', label: 'CLI' },
-  { kind: 'route', to: '/stdlib', label: 'Stdlib' },
   { kind: 'route', to: '/examples', label: 'Examples' },
-  { kind: 'route', to: '/testing', label: 'Testing' },
-  { kind: 'route', to: '/changelog', label: 'Changelog' },
+  { kind: 'route', to: '/internals', label: 'Compiler' },
+  { kind: 'route', to: '/status', label: 'Status' },
   { kind: 'link', href: 'https://github.com/code5717/a7-py', label: 'GitHub ↗' },
 ]
 
@@ -33,29 +31,29 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { to: '/', label: 'Home', note: 'Project map and quick commands' },
       { to: '/start', label: 'Getting Started', note: 'Install and first compile run' },
+      { to: '/start#cli', label: 'CLI', note: 'Modes, flags, exit codes' },
     ],
   },
   {
     label: 'Reference',
     items: [
       { to: '/language', label: 'Language', note: 'Types, control flow, generics' },
-      { to: '/cli', label: 'CLI', note: 'Modes, flags, exit codes' },
-      { to: '/pipeline', label: 'Pipeline', note: 'Compiler stage flow' },
-      { to: '/stdlib', label: 'Standard Library', note: 'Builtins and modules' },
+      { to: '/language#standard-library', label: 'Standard Library', note: 'stdlib, io, math, intrinsics' },
+      { to: '/examples', label: 'Examples', note: 'Runnable A7 programs' },
     ],
   },
   {
-    label: 'Learn',
+    label: 'Compiler',
     items: [
-      { to: '/examples', label: 'Examples', note: 'Runnable A7 programs' },
-      { to: '/internals', label: 'Internals', note: 'File-by-file architecture' },
-      { to: '/testing', label: 'Testing', note: 'Quality gates and scripts' },
+      { to: '/internals', label: 'Compiler', note: 'Pipeline, architecture, testing' },
+      { to: '/internals#pipeline', label: 'Pipeline', note: 'Compiler stage flow' },
+      { to: '/internals#testing', label: 'Testing', note: 'Quality gates and scripts' },
+      { to: '/status', label: 'Status', note: 'Current completeness and gaps' },
     ],
   },
   {
     label: 'Project',
     items: [
-      { to: '/status', label: 'Status', note: 'Current completeness and gaps' },
       { to: '/contributing', label: 'Contributing', note: 'Workflow and standards' },
       { to: '/changelog', label: 'Changelog', note: 'Release history' },
     ],
@@ -85,7 +83,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   },
   '/stdlib': {
     title: 'Standard Library',
-    description: 'Implemented A7 standard library modules, math builtins, IO calls, and compiler intrinsics.',
+    description: 'A7 standard library modules, math builtins, IO calls, and compiler intrinsics.',
   },
   '/examples': {
     title: 'Examples',
@@ -120,13 +118,9 @@ export const SECTION_SEARCH_ITEMS: SectionSearchItem[] = [
   { to: '/language#generics', label: 'Generics', group: 'Language section', detail: 'Generic parameters, @type_set constraints, current gaps' },
   { to: '/language#memory-and-pointers', label: 'Memory and Pointers', group: 'Language section', detail: 'new, del, defer, .adr, .val, nil' },
   { to: '/language#builtins-and-intrinsics', label: 'Builtins and Intrinsics', group: 'Language section', detail: '@size_of, @align_of, @type_name, @type_set' },
-  { to: '/cli#modes', label: 'CLI Modes', group: 'CLI section', detail: 'compile, tokens, ast, semantic, pipeline, doc' },
-  { to: '/cli#flags', label: 'CLI Flags', group: 'CLI section', detail: '--mode, --format, --verbose, --doc-out' },
-  { to: '/pipeline#pipeline-stages', label: 'Pipeline Stages', group: 'Pipeline section', detail: 'Tokenizer, parser, semantic validation, preprocessing, codegen' },
-  { to: '/pipeline#backend-notes', label: 'Backend Notes', group: 'Pipeline section', detail: 'Zig and C backend behavior and limitations' },
-  { to: '/stdlib#io', label: 'io module', group: 'Stdlib section', detail: 'print, println, eprintln' },
-  { to: '/stdlib#math', label: 'math module', group: 'Stdlib section', detail: 'sqrt, abs, floor, ceil, sin, cos, tan, log, exp, min, max f32/f64 builtins' },
-  { to: '/stdlib#stub-modules', label: 'Stub modules', group: 'Stdlib section', detail: 'Source stubs are not available stdlib modules yet' },
+  { to: '/start#cli', label: 'CLI Modes and Flags', group: 'CLI', detail: 'compile, tokens, ast, semantic, pipeline, doc, flags, exit codes' },
+  { to: '/internals#pipeline', label: 'Pipeline Stages', group: 'Compiler pipeline', detail: 'Tokenizer, parser, semantic validation, preprocessing, codegen' },
+  { to: '/language#standard-library', label: 'Standard Library', group: 'Stdlib', detail: 'stdlib, io, math, planned stub modules, compiler intrinsics' },
   { to: '/status#open-gaps', label: 'Open gaps', group: 'Status section', detail: 'fall semantics, match diagnostics, memory model, generic constraints' },
-  { to: '/testing#scripts', label: 'Golden output verifier', group: 'Testing section', detail: 'Example compile, build, run, and output checks' },
+  { to: '/internals#testing', label: 'Golden output verifier', group: 'Testing', detail: 'Example compile, build, run, and output checks' },
 ]

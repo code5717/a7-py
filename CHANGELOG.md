@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status-only.
 - Added a selected Zig/C backend parity verifier that compiles, builds, runs,
   and compares non-example smoke programs across both native backends.
+- Expanded the parity verifier to cover match statements, match expressions,
+  slice fields, indexed slice iteration, and string slice iteration.
+- Added curl.md-friendly public Markdown docs and an `llms.txt` entry point
+  for agent and terminal documentation workflows.
 
 ## [0.3.0] - 2026-05-07
 

@@ -1,6 +1,6 @@
 # Release Readiness Review
 
-Date: 2026-05-07
+Date: 2026-05-08
 
 ## Result
 
@@ -21,6 +21,8 @@ The repository is substantially more release-ready than before this pass:
 - protected GitHub `pypi` environment requiring `code5717` review
 - semantic recursion rejection for direct and mutual named call cycles, with
   scope-aware handling for local function-pointer shadowing
+- consolidated docs-site navigation with curl.md-friendly Markdown entry points
+  under `site/public/llms.txt` and `site/public/docs/`
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -39,7 +41,12 @@ not factually provable from local tests alone.
 - `uvx bandit -r src scripts -q --severity-level medium`
 - `uv run python scripts/check_no_secrets.py`
 - `cd site && npm audit --omit=dev --audit-level=moderate`
-- `cd site && npm run build`
+- `cd site && npm run check`
+- direct Chromium CDP preview checks for canonical and compatibility hash links
+  such as `#/language#standard-library`, `#/stdlib`, `#/pipeline#backend-notes`,
+  and `#/cli#flags`
+- preview HTTP checks for `/a7-py/llms.txt`, `/a7-py/docs/index.md`,
+  `/a7-py/docs/status.md`, `/a7-py/sitemap.xml`, and `/a7-py/robots.txt`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
 - hosted CI and Deploy Docs must be checked after each release-candidate push;
@@ -105,7 +112,16 @@ not factually provable from local tests alone.
   recursion reports when a local function-pointer variable shadows a top-level
   function name.
 - Selected non-example programs now run through both Zig and C backends and
-  compare runtime output.
+  compare runtime output, including match statements/expressions, slices,
+  string slices, labels, and function pointers.
+- Public docs-site top navigation is reduced and old CLI, stdlib, pipeline, and
+  testing pages are consolidated into Start, Language, and Compiler sections
+  with compatibility aliases and verified hash scrolling.
+- `llms.txt` and public Markdown docs under `site/public/docs/` provide stable
+  curl.md/agent entry points for CLI, language, compiler, examples, release,
+  and status information.
+- Site metadata, README, robots, and sitemap now consistently use
+  `https://code5717.github.io/a7-py/`.
 
 ## Residual Risks
 
@@ -116,7 +132,9 @@ not factually provable from local tests alone.
 - Built-in stdlib imports are virtual and still need unification with file-based
   module semantics.
 - Backend parity is verified for examples and selected differential smoke
-  programs, not all possible source programs.
+  programs, including core control flow, match, slices, string slices, labels,
+  and function pointers. It is still not exhaustive for all possible source
+  programs.
 - Tag-based PyPI publishing is wired, but `a7-py` is not yet a public PyPI
   project and still needs matching trusted-publisher configuration before the
   first real publish.
