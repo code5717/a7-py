@@ -246,7 +246,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add tag-based release artifact automation.
   Files: `.github/workflows/`
-  Notes: `release.yml` creates a draft GitHub release for `v*` tags with Python package artifacts, docs site archive, and release example artifacts. Manual dispatch validates the release gate and artifact build without creating a release.
+  Notes: `release.yml` creates a draft GitHub release for `v*` tags with Python package artifacts, docs site archive, and release example artifacts. Manual dispatch validates the release gate and artifact build without creating a release. Release permissions are split so only the tag-only draft release job gets `contents: write`.
 
 - [x] Add PyPI or package-registry publishing.
   Files: `.github/workflows/`

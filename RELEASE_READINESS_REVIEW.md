@@ -60,6 +60,9 @@ not factually provable from local tests alone.
   package artifacts, docs site archive, and release example artifacts.
 - Manual release workflow dispatch validates gates and artifacts without
   creating a GitHub release or publishing to PyPI.
+- Release workflow permissions are split so the gate/artifact build job keeps
+  read-only repository contents access; only the tag-only draft release job gets
+  `contents: write`.
 - Release tags now publish package distributions to PyPI through Trusted
   Publishing/OIDC after the release gate passes.
 - C backend `for-in` lowering now caches iterable expressions before loop

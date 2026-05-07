@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manual release workflow dispatch now validates gates and artifacts without
   creating a GitHub release; draft release creation remains limited to `v*`
   tags.
+- Release workflow permissions are split so the gate/artifact build job runs
+  with read-only repository contents access; only the tag-only draft release job
+  receives `contents: write`.
 
 ## [0.3.0] - 2026-05-07
 

@@ -103,6 +103,10 @@ attached.
 Manual `workflow_dispatch` runs validate the release gate and artifact build
 steps without creating a GitHub release or publishing to PyPI.
 
+The workflow keeps release permissions split: the gate/artifact build job uses
+read-only repository contents access, and only the tag-only draft release job
+uses `contents: write`.
+
 The same tag workflow publishes the Python package distributions to PyPI through
 Trusted Publishing/OIDC. The GitHub `pypi` environment exists and requires
 review by `code5717`. As of the latest release-readiness audit, `a7-py` is not
