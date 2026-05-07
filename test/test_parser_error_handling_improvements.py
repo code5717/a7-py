@@ -460,6 +460,7 @@ class TestParserInfiniteLoopPrevention:
             "(((((((",  # Multiple opening parens
             "}}}}}}",  # Multiple closing braces
             "++++++",  # Multiple operators
+            "main :: fn() { x := match y { 0 => 1 } }",  # Missing case/else keyword
         ]
         
         for malformed in error_causing_inputs:

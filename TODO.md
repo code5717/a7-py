@@ -214,7 +214,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
   Files: `test/test_parser_combinatorial.py`, `test/test_parser_integration.py`
-  Notes: parser combinatorial tests now assert labeled `continue`, nested `for`/`while` labels, labeled `for-in` forms, and malformed non-loop labels.
+  Notes: parser combinatorial tests now assert `@label` loop prefixes, labeled `continue`, nested `for`/`while` labels, labeled `for-in` forms, and malformed or old `label:` labels.
 
 - [x] Add Zig regression coverage for labeled `for-in` and indexed `for-in`.
   Files: `test/test_codegen_zig.py`
@@ -245,7 +245,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add CI coverage for release-oriented gates.
   Files: `.github/workflows/ci.yml`, `.github/workflows/deploy-docs.yml`, `site/package-lock.json`
-  Notes: CI now installs Zig, runs pytest, dependency audits, error-stage checks, both backend E2E verifiers, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
+  Notes: CI now installs Zig, runs pytest, dependency audits, error-stage checks, both backend E2E verifiers, selected backend parity checks, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
 
 - [x] Add dependency-audit checks for release readiness.
   Files: `.github/workflows/ci.yml`, `RELEASE.md`, `SECURITY.md`

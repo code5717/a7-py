@@ -550,8 +550,8 @@ class TestControlFlowCombinations:
             }
 
             // Labeled loops
-            outer: for i := 0; i < 10; i += 1 {
-                inner: for j := 0; j < 10; j += 1 {
+            @outer for i := 0; i < 10; i += 1 {
+                @inner for j := 0; j < 10; j += 1 {
                     if done {
                         break outer
                     }
@@ -568,8 +568,8 @@ class TestControlFlowCombinations:
         """Labeled continue and nested loop labels should be preserved in the AST."""
         code = """
         main :: fn() {
-            outer: for i := 0; i < 10; i += 1 {
-                inner: while keep_going {
+            @outer for i := 0; i < 10; i += 1 {
+                @inner while keep_going {
                     if should_skip {
                         continue outer
                     }
@@ -603,11 +603,11 @@ class TestControlFlowCombinations:
         main :: fn() {
             arr: [3]i32 = [1, 2, 3]
 
-            values: for value in arr {
+            @values for value in arr {
                 continue values
             }
 
-            indexed: for i, value in arr {
+            @indexed for i, value in arr {
                 break indexed
             }
         }
@@ -654,6 +654,18 @@ class TestControlFlowCombinations:
     def test_malformed_loop_labels_are_rejected(self, code):
         """Labels are only valid directly before loop statements."""
         with pytest.raises(ParseError):
+            parse_a7(code)
+
+    def test_colon_loop_labels_are_rejected(self):
+        """Use @label before loops instead of the old label: spelling."""
+        code = """
+        main :: fn() {
+            outer: for i := 0; i < 3; i += 1 {
+                break outer
+            }
+        }
+        """
+        with pytest.raises(ParseError, match="@label"):
             parse_a7(code)
 
     def test_match_statement_variants(self):

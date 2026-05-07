@@ -797,7 +797,7 @@ class TestControlFlowCreativity:
         """Test break/continue in complex nesting."""
         code = """
         main :: fn() {
-            outer: for i := 0; i < 10; i += 1 {
+            @outer for i := 0; i < 10; i += 1 {
                 for j := 0; j < 10; j += 1 {
                     if i == j {
                         continue

@@ -950,6 +950,24 @@ class Parser:
         """Parse statements."""
         start_token = self.current()
 
+        # Loop label prefix: @outer for ... / @outer while ...
+        if self.match(TokenType.BUILTIN_ID) and self.peek().type in (
+            TokenType.FOR,
+            TokenType.WHILE,
+        ):
+            label_token = self.advance()
+            label = label_token.value[1:]
+            if not label:
+                raise ParseError.from_token(
+                    "Expected loop label name after '@'",
+                    label_token,
+                    self.filename,
+                    self.source_lines,
+                )
+            loop_stmt = self.parse_statement()
+            loop_stmt.label = label
+            return loop_stmt
+
         # Return statement
         if self.match(TokenType.RET):
             self.advance()
@@ -1028,14 +1046,15 @@ class Parser:
                     span=create_span_from_token(name_token),
                 )
             elif lookahead.type == TokenType.COLON:
-                # Check if this is a labeled loop: label: for/while
+                # Reject the old label: spelling for loop labels.
                 peek2 = self.peek(2)
                 if peek2.type in (TokenType.FOR, TokenType.WHILE):
-                    label_token = self.advance()
-                    self.consume(TokenType.COLON)
-                    loop_stmt = self.parse_statement()
-                    loop_stmt.label = label_token.value
-                    return loop_stmt
+                    raise ParseError.from_token(
+                        "Use '@label' before a loop instead of 'label:'",
+                        self.current(),
+                        self.filename,
+                        self.source_lines,
+                    )
 
                 # Explicit type annotation: name: type = value (initialization optional)
                 name_token = self.advance()
@@ -1835,7 +1854,11 @@ class Parser:
         cases = []
         else_case = None
 
-        while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+        while not self.at_end():
+            self.skip_terminators()
+            if self.match(TokenType.RIGHT_BRACE) or self.at_end():
+                break
+
             if self.match(TokenType.CASE):
                 case_token = self.advance()
 
@@ -1860,6 +1883,14 @@ class Parser:
                 else_token = self.advance()
                 self.consume(TokenType.COLON)
                 else_case = self.parse_expression()
+
+            else:
+                raise ParseError.from_token(
+                    "Expected 'case' or 'else' in match expression",
+                    self.current(),
+                    self.filename,
+                    self.source_lines,
+                )
 
             self.skip_terminators()
 

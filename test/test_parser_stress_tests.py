@@ -247,7 +247,7 @@ class TestParserBoundaryConditions:
                         result += current
                     }
                     else: {
-                        inner_loop: for j := 0; j < 10; j += 1 {
+                        @inner_loop for j := 0; j < 10; j += 1 {
                             if temp.val * cast(T, j) > current {
                                 break inner_loop
                             }

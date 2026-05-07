@@ -27,8 +27,9 @@ uv run python scripts/check_no_secrets.py
 ```
 
 The full gate includes parser/tokenizer tests, semantic tests, Zig and C backend
-tests, example runtime verification, debug/release artifact builds, error-stage
-checks, docs style checks, and full pytest.
+tests, example runtime verification, selected Zig/C backend parity checks,
+debug/release artifact builds, error-stage checks, docs style checks, and full
+pytest.
 
 ## Known Security-Relevant Limitations
 

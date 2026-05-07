@@ -492,11 +492,11 @@ main :: fn() {
     def test_labeled_break_continue(self):
         source = '''
 main :: fn() {
-    outer_break: while true {
+    @outer_break while true {
         break outer_break
     }
 
-    outer_continue: for i := 0; i < 2; i += 1 {
+    @outer_continue for i := 0; i < 2; i += 1 {
         continue outer_continue
     }
 }
@@ -516,7 +516,7 @@ main :: fn() {
     arr: [3]i32 = [1, 2, 3]
 
     break_total := 0
-    outer_break: for x in arr {
+    @outer_break for x in arr {
         if x == 2 {
             break outer_break
         }
@@ -524,7 +524,7 @@ main :: fn() {
     }
 
     continue_total := 0
-    outer_continue: for x in arr {
+    @outer_continue for x in arr {
         if x == 2 {
             continue outer_continue
         }
@@ -532,7 +532,7 @@ main :: fn() {
     }
 
     indexed_total: usize = 0
-    outer_indexed: for i, x in arr {
+    @outer_indexed for i, x in arr {
         if i == 2 {
             break outer_indexed
         }
@@ -693,11 +693,11 @@ main :: fn() {
     def test_labeled_loop_ast_check(self):
         source = '''
 main :: fn() {
-    outer_break: while true {
+    @outer_break while true {
         break outer_break
     }
 
-    outer_continue: for i := 0; i < 2; i += 1 {
+    @outer_continue for i := 0; i < 2; i += 1 {
         continue outer_continue
     }
 }

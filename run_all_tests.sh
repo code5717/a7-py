@@ -68,6 +68,9 @@ run_check "Examples E2E Verification (compile/build/run/output):" \
 run_check "Examples E2E Verification (C backend compile/build/run/output):" \
     uv run python scripts/verify_examples_e2e_c.py
 
+run_check "Backend Parity Verification (Zig vs C runtime output):" \
+    uv run python scripts/verify_backend_parity.py
+
 run_check "Debug Artifact Build Verification (Zig and C):" \
     uv run python scripts/build_examples.py --profile debug --backend both --clean
 

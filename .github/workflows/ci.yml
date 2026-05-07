@@ -57,6 +57,9 @@ jobs:
       - name: Verify examples through C
         run: uv run python scripts/verify_examples_e2e_c.py
 
+      - name: Verify backend parity
+        run: uv run python scripts/verify_backend_parity.py
+
       - name: Build debug artifacts
         run: uv run python scripts/build_examples.py --profile debug --backend both --clean
 

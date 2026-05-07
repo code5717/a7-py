@@ -74,6 +74,7 @@ PYTHONPATH=. uv run pytest test/test_tokenizer.py  # Specific test file
 PYTHONPATH=. uv run pytest -k "generic" -v         # Targeted tests
 uv run python scripts/verify_examples_e2e.py       # Compile/build/run + output checks for all examples
 uv run python scripts/verify_examples_e2e_c.py     # Same flow via C backend + zig cc
+uv run python scripts/verify_backend_parity.py     # Selected Zig/C differential smoke checks
 uv run python scripts/verify_error_stages.py       # Error-stage audit across modes and formats
 uv run python scripts/build_examples.py --profile debug --backend both --clean
 uv run python scripts/build_examples.py --profile release --backend both --clean
@@ -162,6 +163,8 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - Example end-to-end verification is available for both backends:
   - `uv run python scripts/verify_examples_e2e.py`
   - `uv run python scripts/verify_examples_e2e_c.py`
+- Selected Zig/C differential smoke checks are available through
+  `scripts/verify_backend_parity.py`.
 - Debug/release artifact verification is available through `scripts/build_examples.py`.
 - Tag releases publish package artifacts through PyPI Trusted Publishing once the PyPI project trusted publisher is configured.
 - Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `MISSING_FEATURES.md`.

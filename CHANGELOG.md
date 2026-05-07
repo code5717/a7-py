@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns, linked-list traversal, iterative binary-tree traversal, and string
   utilities; tightened example catalog copy where language support is still
   status-only.
+- Added a selected Zig/C backend parity verifier that compiles, builds, runs,
+  and compares non-example smoke programs across both native backends.
 
 ## [0.3.0] - 2026-05-07
 
@@ -48,7 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Expanded `scripts/verify_error_stages.py` and `test/test_error_stage_matrix.py` so deferred semantic errors are checked across all semantic-capable modes and human/JSON output.
 
 - **Labeled Loops** (both backends)
-  - `outer: while`, `outer: for`, `outer: for-in` with `break outer` / `continue outer`.
+  - `@outer while`, `@outer for`, `@outer for-in` with `break outer` / `continue outer`.
+  - The old `outer: for` spelling is rejected so `name:` remains reserved for typed bindings, fields, and case-like syntax.
   - Zig backend emits native labeled loops; C backend lowers to goto-based control flow.
 
 - **Slice Expressions in C Backend**
@@ -357,7 +360,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Inline type sets: `fn($T: @type_set(i32, i64), x: T) T`
     - AST stores constraint on GENERIC_PARAM nodes
   - **Labeled Loops**: Implemented for all loop forms (while, for, for-in, indexed for-in)
-    - Syntax: `outer: for i := 0; i < 10; i += 1 { break outer }`
+    - Syntax: `@outer for i := 0; i < 10; i += 1 { break outer }`
     - Zig backend emits native labeled loops (`label: while ...`, `break :label`)
     - C backend lowers to goto-based control flow with unique labels
   - **Builtin Intrinsics**: All `@function` intrinsics now parse correctly

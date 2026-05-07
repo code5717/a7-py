@@ -73,6 +73,7 @@ uvx pip-audit --strict
 - Zig and C backend tests
 - Zig example compile/build/run/output verification
 - C example compile/build/run/output verification
+- selected Zig/C backend parity verification beyond examples
 - debug artifact build verification for Zig and C
 - release artifact build verification for Zig and C
 - CLI error-stage matrix verification

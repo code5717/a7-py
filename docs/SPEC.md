@@ -617,8 +617,8 @@ break
 // Continue to next iteration
 continue
 
-// Break/continue with label
-outer: for i := 0; i < 10; i += 1 {
+// Break/continue with loop label
+@outer for i := 0; i < 10; i += 1 {
     for j := 0; j < 10; j += 1 {
         if condition {
             break outer
@@ -626,6 +626,10 @@ outer: for i := 0; i < 10; i += 1 {
     }
 }
 ```
+
+Loop labels use `@name` directly before a loop statement. The old
+`name: for ...` spelling is rejected because `name:` is reserved for typed
+bindings, fields, and case-like syntax.
 
 Semantic validation reports unreachable statements that appear later in the same block after `ret`, a valid `break` or `continue`, `fall`, or an `if`/`match` statement whose branches all terminate.
 
@@ -1905,8 +1909,8 @@ break
 // Continue to next iteration
 continue
 
-// Break/continue with label
-outer: for i := 0; i < 10; i += 1 {
+// Break/continue with loop label
+@outer for i := 0; i < 10; i += 1 {
     for j := 0; j < 10; j += 1 {
         if condition {
             break outer
@@ -1914,6 +1918,10 @@ outer: for i := 0; i < 10; i += 1 {
     }
 }
 ```
+
+Loop labels use `@name` directly before a loop statement. The old
+`name: for ...` spelling is rejected because `name:` is reserved for typed
+bindings, fields, and case-like syntax.
 
 Semantic validation reports unreachable statements that appear later in the same block after `ret`, a valid `break` or `continue`, `fall`, or an `if`/`match` statement whose branches all terminate.
 
@@ -2801,11 +2809,15 @@ statement =
     | block_stmt
     | if_stmt
     | match_stmt
+    | loop_label loop_stmt
     | for_stmt
     | while_stmt
     | jump_stmt
     | defer_stmt
     | var_decl
+
+loop_label = "@" identifier
+loop_stmt = for_stmt | while_stmt
 
 jump_stmt = 
     | "ret" expr?

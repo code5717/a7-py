@@ -32,6 +32,7 @@ not factually provable from local tests alone.
 - `PYTHONPATH=. uv run pytest test/test_release_tooling.py -q`
 - `uv run python scripts/build_examples.py --profile debug --backend both --clean`
 - `uv run python scripts/build_examples.py --profile release --backend both --clean`
+- `uv run python scripts/verify_backend_parity.py`
 - `./run_all_tests.sh`
 - `uv build`
 - `uvx pip-audit --strict`
@@ -41,10 +42,11 @@ not factually provable from local tests alone.
 - `cd site && npm run build`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
 - `git diff --check`
-- hosted CI run `25519819833` passed for commit `13bf369`:
+- hosted CI run `25520030936` passed for commit `452d176` before the backend
+  parity verifier was added:
   docs, pytest, dependency audits, error-stage verification, Zig and C example
   verification, debug artifacts, release artifacts, and package build
-- hosted Deploy Docs run `25519819834` passed for commit `13bf369`
+- hosted Deploy Docs run `25520030885` passed for commit `452d176`
 - manual release workflow dispatch passed on `master` after the PyPI publish
   dependency update; run `25517785179` uploaded
   `python-package-distributions` artifact `6864726540` and `release-bundles`
@@ -60,7 +62,8 @@ not factually provable from local tests alone.
 - `scripts/build_examples.py` builds and verifies debug/release artifacts for
   both backends.
 - `run_all_tests.sh` now covers C backend tests, C E2E, error-stage audit,
-  debug/release artifact builds, docs style, and full pytest.
+  selected Zig/C backend parity checks, debug/release artifact builds, docs
+  style, and full pytest.
 - GitHub CI now runs Python tests, backend verifiers, artifact builds, package
   build, dependency audits, secret scanning, docs style, docs lint, and docs
   build.
@@ -102,6 +105,8 @@ not factually provable from local tests alone.
 - Semantic validation now rejects direct and mutual recursion and avoids false
   recursion reports when a local function-pointer variable shadows a top-level
   function name.
+- Selected non-example programs now run through both Zig and C backends and
+  compare runtime output.
 
 ## Residual Risks
 
@@ -111,7 +116,8 @@ not factually provable from local tests alone.
 - Full ownership/lifetime safety is not implemented.
 - Built-in stdlib imports are virtual and still need unification with file-based
   module semantics.
-- Backend parity is verified for examples, not all possible source programs.
+- Backend parity is verified for examples and selected differential smoke
+  programs, not all possible source programs.
 - Tag-based PyPI publishing is wired, but `a7-py` is not yet a public PyPI
   project and still needs matching trusted-publisher configuration before the
   first real publish.

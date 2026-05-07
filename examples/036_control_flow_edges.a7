@@ -15,7 +15,7 @@ main :: fn() {
     io.println("slice total = {}", slice_total)
 
     break_total := 0
-    outer_break: for value in numbers {
+    @outer_break for value in numbers {
         if value == 7 {
             break outer_break
         }
@@ -23,7 +23,7 @@ main :: fn() {
     }
 
     continue_total := 0
-    outer_continue: for value in numbers {
+    @outer_continue for value in numbers {
         if value == 7 {
             continue outer_continue
         }

@@ -558,7 +558,7 @@ io :: import "std/io"
 
 main :: fn() {
     break_total := 0
-    outer_break: for i := 0; i < 3; i += 1 {
+    @outer_break for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
             if j == 1 {
                 break outer_break
@@ -569,7 +569,7 @@ main :: fn() {
     }
 
     continue_total := 0
-    outer_continue: for i := 0; i < 2; i += 1 {
+    @outer_continue for i := 0; i < 2; i += 1 {
         for j := 0; j < 3; j += 1 {
             if j == 1 {
                 continue outer_continue

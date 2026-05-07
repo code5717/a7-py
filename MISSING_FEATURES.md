@@ -8,7 +8,7 @@
 
 ## Recently Completed (Language Core)
 
-1. **Labeled loops** — `outer: while`, `outer: for`, `outer: for-in` with `break outer` / `continue outer` in both Zig and C backends.
+1. **Labeled loops** — `@outer while`, `@outer for`, `@outer for-in` with `break outer` / `continue outer` in both Zig and C backends.
 2. **Slice expressions in C backend** — `arr[1..4]` on arrays and slices, including indexing and `for-in` over slices.
 3. **Type checker: slice and index validation** — `visit_slice_expr` returns `SliceType`; `visit_index_expr` rejects non-integer indices.
 4. `match` expressions are type-checked and participate in expression typing.
@@ -27,7 +27,7 @@
 13. Constant folding covers arithmetic, boolean logic, literal comparisons, and integer bitwise expressions.
 14. Installed CLI entrypoint (`a7`) is wired through `pyproject.toml`.
 15. Debug/release example artifact verification is available through `scripts/build_examples.py`.
-16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
+16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, selected Zig/C parity smoke checks, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
 17. Local file-based imports now fail closed during semantic analysis instead of swallowing module loading failures.
 18. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
 19. `fall` now fails closed with a semantic error instead of being ignored or reaching backend output.
