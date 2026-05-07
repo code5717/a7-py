@@ -101,9 +101,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 ### Module System / Stdlib
 
-- [ ] Implement or de-scope `string` and `mem` stdlib modules.
+- [x] Implement or de-scope `string` and `mem` stdlib modules.
   Files: `src/stdlib/string.py`, `src/stdlib/mem.py`, `src/stdlib/__init__.py`
-  Notes: registry only wires `io` and `math`; `string` and `mem` are documented but stubbed.
+  Notes: de-scoped from current release docs. SPEC now marks `std/string`, `std/mem`, and `std/collections` as planned, while current virtual stdlib support is limited to `io` and `math`.
 
 - [x] Stop treating import/module loading as best-effort.
   Files: `src/compile.py`, `src/module_resolver.py`

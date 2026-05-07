@@ -2222,14 +2222,19 @@ parent :: import "../utils"
 subfolder :: import "subfolder/helper"
 ```
 
-### 10.3 Standard Library Files
+### 10.3 Standard Library Status
 
-The standard library consists of individual `.a7` files in a predefined path:
-- `math.a7` - Mathematical functions
-- `io.a7` - Input/output operations
-- `string.a7` - String manipulation
-- `memory.a7` - Memory utilities
-- `collections.a7` - Data structures
+Current implementation:
+
+- `std/io` and `io` are virtual modules backed by compiler/backend mappings.
+- `std/math` and `math` are virtual modules backed by compiler/backend mappings.
+- Local file imports such as `./vector` resolve from on-disk `.a7` files.
+
+Planned, not implemented as public stdlib modules yet:
+
+- `std/string`
+- `std/mem`
+- `std/collections`
 
 ### 10.4 Visibility Rules
 
@@ -2269,7 +2274,14 @@ These functions are handled specially by the compiler and use the `@` prefix:
 
 ### 10.2 Standard Library Functions
 
-Non-polymorphic functions with fixed signatures (part of standard library, not builtins):
+Current virtual modules provide `io.print`, `io.println`, `io.eprintln`, and
+math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
+`math.sin`, `math.cos`, `math.tan`, `math.log`, `math.exp`, `math.min`, and
+`math.max`. Some typed math builtin spellings such as `sqrt_f32` and `sqrt_f64`
+also map through the stdlib registry.
+
+The broader string, ASCII, memory, assertion, and allocation function list below
+is planned API shape, not current implementation:
 
 ```a7
 // Math functions (specific signatures, no generics)
