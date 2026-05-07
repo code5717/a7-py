@@ -42,10 +42,11 @@ not factually provable from local tests alone.
 - hosted CI and Deploy Docs runs passed after the workflow updates; before
   tagging, re-check the latest commit with
   `gh run list --branch master --limit 6`
-- manual release workflow dispatch passed on `master` after the least-privilege
-  workflow split; run `25516874127` uploaded `python-package-distributions` and
-  `release-bundles`, while tag-only GitHub release and PyPI publish jobs were
-  skipped as intended.
+- manual release workflow dispatch passed on `master` after the PyPI publish
+  dependency update; run `25517785179` uploaded
+  `python-package-distributions` artifact `6864726540` and `release-bundles`
+  artifact `6864741365`, while tag-only GitHub release and PyPI publish jobs
+  were skipped as intended.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
