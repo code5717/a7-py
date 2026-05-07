@@ -114,6 +114,11 @@ The installed CLI entrypoint is `a7`:
 uv run a7 --help
 ```
 
+Release tags build distributions, attach them to the draft GitHub release, and
+publish to PyPI through Trusted Publishing/OIDC. Before the first publish, the
+PyPI project must trust repository `code5717/a7-py`, workflow `release.yml`, and
+the protected GitHub environment `pypi`.
+
 ## Compilation Pipeline
 
 ```
@@ -156,6 +161,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
   - `uv run python scripts/verify_examples_e2e.py`
   - `uv run python scripts/verify_examples_e2e_c.py`
 - Debug/release artifact verification is available through `scripts/build_examples.py`.
+- Tag releases publish package artifacts through PyPI Trusted Publishing once the PyPI trusted publisher is configured.
 - Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `MISSING_FEATURES.md`.
 - Zig backend handles the current example suite and most AST node types; unsupported source constructs should continue moving to compiler-side diagnostics.
 - C backend targets C11 and is validated with `zig cc`

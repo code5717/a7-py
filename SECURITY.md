@@ -39,7 +39,9 @@ checks, docs style checks, and full pytest.
 - Built-in stdlib imports are virtual and not yet unified with file-based module semantics.
 - C and Zig backend parity checks exist for examples but are not a proof for all
   possible programs.
-- Tag-based package publishing is not configured yet.
+- Tag-based package publishing uses GitHub OIDC/PyPI Trusted Publishing; the PyPI
+  project must be configured to trust only the intended repository, workflow, and
+  protected `pypi` environment before first use.
 - Dependency audits check known advisories, not unknown vulnerabilities.
 - The committed-secrets check is pattern-based and should be treated as a guard,
   not a complete data-loss prevention system.

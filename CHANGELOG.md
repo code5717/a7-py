@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added a GitHub Actions CI workflow for Python, backend, package, docs, dependency audit, and artifact checks.
   - Added `scripts/check_no_secrets.py` and wired it into the local gate and CI as a committed-secret guard.
   - Added a tag-triggered draft GitHub release workflow for Python package artifacts, docs site archive, and release example artifacts.
+  - Added tag-triggered PyPI Trusted Publishing through a protected `pypi` GitHub environment and GitHub OIDC.
 
 - **Compiler handling and test coverage expansion**
   - Added semantic regression coverage for deferred statement payloads, return payload traversal, and non-iterable `for-in` diagnostics.
@@ -65,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documented integer type selection: `usize` for sizes and indices, `isize` for signed offsets, and fixed-width integers for explicit data-width semantics.
 
 - **Release documentation and verification gates**
-  - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, and debug/release artifact workflow.
+  - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, debug/release artifact workflow, and PyPI publishing setup.
   - Expanded `run_all_tests.sh` to include C backend tests, C example verification, debug/release artifact verification, error-stage verification, docs style checks, and full pytest.
   - Extended docs style checking to include `RELEASE.md`.
   - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.

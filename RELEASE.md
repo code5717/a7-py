@@ -99,7 +99,19 @@ git push origin master --tags
 Pushing a `v*` tag runs `.github/workflows/release.yml`. The workflow reruns
 the release gate, builds the Python package, builds the docs site, builds
 release example artifacts, and creates a draft GitHub release with those files
-attached. It does not publish to PyPI.
+attached.
+
+The same tag workflow publishes the Python package distributions to PyPI through
+Trusted Publishing/OIDC. Before the first real publish, configure the PyPI
+project trusted publisher with:
+
+- owner: `code5717`
+- repository: `a7-py`
+- workflow name: `release.yml`
+- environment name: `pypi`
+
+Keep the GitHub `pypi` environment protected so publishing requires the intended
+maintainer approval.
 
 ## Known Release Caveats
 

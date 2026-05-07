@@ -9,7 +9,7 @@ const done = [
   { name: 'Zig backend', desc: 'Full translation with type mapping, pointer handling, hoisting, annotations, labeled loops.' },
   { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, function pointers, range and identifier match patterns, and side-effectful match expressions are present; backend parity checks should keep expanding.' },
   { name: 'Generic constraints', desc: 'Predefined, aliased, and inline type-set constraints resolve for declared generic functions and are checked at inferred call sites.' },
-  { name: 'Release tooling', desc: 'Installed CLI entrypoint plus debug/release artifact verification for Zig and C example builds.' },
+  { name: 'Release tooling', desc: 'Installed CLI entrypoint, debug/release artifact verification, draft GitHub releases, and PyPI Trusted Publishing wiring.' },
 ]
 
 const missing = [
@@ -17,7 +17,7 @@ const missing = [
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal plus compile-time constant range overlaps are diagnosed. Non-constant symbolic intervals and true capture patterns remain open.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for every new language feature.' },
-  { name: 'Automated publishing', desc: 'Local package builds are available, but tag-based package publishing is not wired yet.' },
+  { name: 'Publishing activation', desc: 'PyPI publishing is wired; the PyPI trusted publisher and protected GitHub pypi environment still need live configuration before first publish.' },
 ]
 
 export default function Status() {
@@ -62,7 +62,7 @@ export default function Status() {
           <li>Add non-constant symbolic interval range-overlap match diagnostics.</li>
           <li>Improve type checker: control-flow narrowing, return consistency, dead code detection.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>
-          <li>Wire tag-based package publishing once release hosting is chosen.</li>
+          <li>Configure the PyPI trusted publisher and protected GitHub pypi environment.</li>
         </ol>
       </SectionPanel>
     </div>

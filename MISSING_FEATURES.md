@@ -65,10 +65,11 @@
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
 
-5. **Release publishing automation**
+5. **Release publishing activation**
    - Local package builds and artifact checks exist.
    - Tag-triggered draft GitHub releases are configured.
-   - PyPI/package-registry publishing is not configured yet.
+   - Tag-triggered PyPI publishing is wired through Trusted Publishing/OIDC.
+   - The PyPI project must still be configured to trust repository `code5717/a7-py`, workflow `release.yml`, and GitHub environment `pypi` before the first real publish.
 
 7. **Module-system parity**
    - Missing or broken local imports now fail closed.

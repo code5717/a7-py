@@ -2875,9 +2875,10 @@ Status snapshot (2026-05-07):
    - C lowers raw `fn(...)` parameter and variable declarations as function pointers.
    - Function-type aliases resolve in semantic analysis and lower as C typedefs.
 
-6. **Release packaging hardening**
+5. **Release packaging activation**
    - Python packaging and installed CLI are present.
-   - Automated publishing workflows are not yet configured.
+   - Tag-triggered PyPI publishing is wired through Trusted Publishing/OIDC.
+   - The PyPI project still needs the matching trusted-publisher configuration before the first real publish.
 
 ### E.2 Source Of Truth
 

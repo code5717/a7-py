@@ -13,6 +13,7 @@ The repository is substantially more release-ready than before this pass:
 - CI workflow for tests, backends, artifacts, package build, and docs build
 - tag-based draft GitHub release workflow for packages, docs, and release
   example artifacts
+- tag-based PyPI publishing workflow using Trusted Publishing/OIDC
 - release checklist, security policy, and updated status docs
 
 This is not a claim that the implementation is free of all bugs or
@@ -48,6 +49,8 @@ not factually provable from local tests alone.
   build.
 - GitHub release workflow now creates a draft release for `v*` tags with Python
   package artifacts, docs site archive, and release example artifacts.
+- Release tags now publish package distributions to PyPI through Trusted
+  Publishing/OIDC after the release gate passes.
 - C backend `for-in` lowering now caches iterable expressions before loop
   length and element access.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`
@@ -73,8 +76,9 @@ not factually provable from local tests alone.
 - Built-in stdlib imports are virtual and still need unification with file-based
   module semantics.
 - Backend parity is verified for examples, not all possible source programs.
-- Tag-based draft GitHub releases are wired. PyPI/package-registry publishing is
-  not configured.
+- Tag-based PyPI publishing is wired, but the PyPI project still needs the
+  matching trusted-publisher configuration and the GitHub `pypi` environment
+  should stay protected before the first real publish.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
 - Secret scanning is pattern-based and should be supplemented by repository host
@@ -85,5 +89,5 @@ not factually provable from local tests alone.
 1. Expand differential backend tests beyond examples.
 2. Unify virtual stdlib imports with file-based module semantics.
 3. Design and implement `fall` backend lowering.
-4. Add PyPI or package-registry publishing after choosing the target.
+4. Configure the PyPI trusted publisher and protected GitHub `pypi` environment.
 5. Add stronger hosted secret scanning if the repository host supports it.
