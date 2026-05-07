@@ -54,7 +54,8 @@
 
 6. **Release publishing automation**
    - Local package builds and artifact checks exist.
-   - Tag-triggered package publishing is not configured yet.
+   - Tag-triggered draft GitHub releases are configured.
+   - PyPI/package-registry publishing is not configured yet.
 
 7. **Module-system parity**
    - Missing or broken local imports now fail closed.

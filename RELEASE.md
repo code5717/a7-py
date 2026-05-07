@@ -89,12 +89,17 @@ cd site && npm audit --omit=dev --audit-level=moderate
 2. Confirm `pyproject.toml` has the intended version.
 3. Run the full release gate.
 4. Commit the release prep.
-5. Tag:
+5. Tag and push:
 
 ```bash
 git tag -a v0.1.0 -m "A7 v0.1.0"
 git push origin master --tags
 ```
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. The workflow reruns
+the release gate, builds the Python package, builds the docs site, builds
+release example artifacts, and creates a draft GitHub release with those files
+attached. It does not publish to PyPI.
 
 ## Known Release Caveats
 

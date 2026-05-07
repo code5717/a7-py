@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Install docs dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Run release gate
+        run: ./run_all_tests.sh
+
+      - name: Audit Python dependencies
+        run: uvx pip-audit --strict
+
+      - name: Audit docs runtime dependencies
+        working-directory: site
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Build Python package
+        run: uv build
+
+      - name: Build docs site
+        working-directory: site
+        run: npm run build
+
+      - name: Build release example artifacts
+        run: uv run python scripts/build_examples.py --profile release --backend both --clean
+
+      - name: Archive docs site
+        run: tar -czf dist/a7-docs-site.tar.gz -C site dist
+
+      - name: Archive release example artifacts
+        run: tar -czf dist/a7-example-artifacts-release.tar.gz -C build release
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            dist/a7_py-*.tar.gz
+            dist/a7_py-*.whl
+            dist/a7-docs-site.tar.gz
+            dist/a7-example-artifacts-release.tar.gz

@@ -11,6 +11,8 @@ The repository is substantially more release-ready than before this pass:
 - debug and release artifact builder for Zig and C
 - committed docs lockfile for deterministic docs builds
 - CI workflow for tests, backends, artifacts, package build, and docs build
+- tag-based draft GitHub release workflow for packages, docs, and release
+  example artifacts
 - release checklist, security policy, and updated status docs
 
 This is not a claim that the implementation is free of all bugs or
@@ -42,7 +44,10 @@ not factually provable from local tests alone.
 - `run_all_tests.sh` now covers C backend tests, C E2E, error-stage audit,
   debug/release artifact builds, docs style, and full pytest.
 - GitHub CI now runs Python tests, backend verifiers, artifact builds, package
-  build, docs style, docs lint, and docs build.
+  build, dependency audits, secret scanning, docs style, docs lint, and docs
+  build.
+- GitHub release workflow now creates a draft release for `v*` tags with Python
+  package artifacts, docs site archive, and release example artifacts.
 - GitHub Pages deploy now uses `npm ci` with `site/package-lock.json`.
 - README, SPEC, release docs, status docs, and agent docs describe the same
   release commands.
@@ -55,7 +60,8 @@ not factually provable from local tests alone.
 - Built-in stdlib imports are virtual and still need unification with file-based
   module semantics.
 - Backend parity is verified for examples, not all possible source programs.
-- Tag-based publishing is not wired.
+- Tag-based draft GitHub releases are wired. PyPI/package-registry publishing is
+  not configured.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
 - Secret scanning is pattern-based and should be supplemented by repository host
@@ -63,8 +69,8 @@ not factually provable from local tests alone.
 
 ## Recommended Next Pass
 
-1. Add tag-based release workflow after choosing the package publishing target.
-2. Expand differential backend tests beyond examples.
-3. Unify virtual stdlib imports with file-based module semantics.
-4. Implement `fall` semantic validation and backend lowering.
-5. Add tag-based release workflow after choosing the package publishing target.
+1. Expand differential backend tests beyond examples.
+2. Unify virtual stdlib imports with file-based module semantics.
+3. Implement `fall` semantic validation and backend lowering.
+4. Add PyPI or package-registry publishing after choosing the target.
+5. Add stronger hosted secret scanning if the repository host supports it.

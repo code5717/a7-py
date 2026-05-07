@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added release-tooling pytest coverage for the installed CLI and debug build script.
   - Added a GitHub Actions CI workflow for Python, backend, package, docs, dependency audit, and artifact checks.
   - Added `scripts/check_no_secrets.py` and wired it into the local gate and CI as a committed-secret guard.
+  - Added a tag-triggered draft GitHub release workflow for Python package artifacts, docs site archive, and release example artifacts.
 
 - **Compiler handling and test coverage expansion**
   - Added semantic regression coverage for deferred statement payloads, return payload traversal, and non-iterable `for-in` diagnostics.

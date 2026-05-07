@@ -211,9 +211,13 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `.github/workflows/`
   Notes: `scripts/check_no_secrets.py` provides a lightweight committed-secret pattern scan in local and CI gates.
 
-- [ ] Add tag-based publishing automation.
+- [x] Add tag-based release artifact automation.
   Files: `.github/workflows/`
-  Notes: local `uv build` packaging works; remote publishing target has not been chosen.
+  Notes: `release.yml` creates a draft GitHub release for `v*` tags with Python package artifacts, docs site archive, and release example artifacts. It does not publish to PyPI.
+
+- [ ] Add PyPI or package-registry publishing.
+  Files: `.github/workflows/`
+  Notes: GitHub release artifacts are automated; package registry target still needs a decision.
 
 ---
 
