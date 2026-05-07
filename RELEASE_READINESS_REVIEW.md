@@ -18,6 +18,7 @@ The repository is substantially more release-ready than before this pass:
 - Node 24-compatible GitHub workflow actions for CI, Pages deploy, artifact
   upload/download, and draft GitHub releases
 - checksum-verified Zig 0.15.2 install steps in CI and release workflows
+- protected GitHub `pypi` environment requiring `code5717` review
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -76,6 +77,8 @@ not factually provable from local tests alone.
   instead of a third-party JavaScript setup action.
 - First-party GitHub Actions, Pages, artifact, and draft-release actions are on
   Node 24-compatible majors.
+- GitHub `pypi` environment now exists and requires `code5717` review before
+  package publishing jobs can proceed.
 - Release/security checklist shell snippets now use subshells so they can be
   copied and run literally.
 - README now points to the current `code5717.github.io/a7-py` documentation URL.
@@ -90,8 +93,7 @@ not factually provable from local tests alone.
   module semantics.
 - Backend parity is verified for examples, not all possible source programs.
 - Tag-based PyPI publishing is wired, but the PyPI project still needs the
-  matching trusted-publisher configuration and the GitHub `pypi` environment
-  should stay protected before the first real publish.
+  matching trusted-publisher configuration before the first real publish.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
 - Secret scanning is pattern-based and should be supplemented by repository host
@@ -105,5 +107,6 @@ not factually provable from local tests alone.
 1. Expand differential backend tests beyond examples.
 2. Unify virtual stdlib imports with file-based module semantics.
 3. Design and implement `fall` backend lowering.
-4. Configure the PyPI trusted publisher and protected GitHub `pypi` environment.
+4. Configure the PyPI trusted publisher for repository `code5717/a7-py`,
+   workflow `release.yml`, and environment `pypi`.
 5. Add stronger hosted secret scanning if the repository host supports it.
