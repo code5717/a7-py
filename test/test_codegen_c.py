@@ -314,6 +314,43 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_supports_match_identifier_patterns(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    LOW :: 2
+    HIGH :: 6
+    value := 5
+    statement_result := 0
+    match value {
+        case LOW: {
+            statement_result = 10
+        }
+        case 3..HIGH: {
+            statement_result = 20
+        }
+        else: {
+            statement_result = 30
+        }
+    }
+    expr_result := match value {
+        case LOW: 100
+        case 3..HIGH: 200
+        else: 300
+    }
+    io.println("{} {}", statement_result, expr_result)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "20 200"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_c_backend_match_expression_side_effectful_scrutinee_var_init(tmp_path: Path) -> None:
     src = tmp_path / "match_expr_call.a7"
     out = tmp_path / "match_expr_call.c"

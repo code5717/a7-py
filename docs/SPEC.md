@@ -2503,7 +2503,7 @@ AST_STMT_ASSIGNMENT     // Assignment statements
 
 // Pattern nodes (for match statements)
 AST_PATTERN_LITERAL     // Literal patterns (42, "hello")
-AST_PATTERN_IDENTIFIER  // Variable binding patterns
+AST_PATTERN_IDENTIFIER  // Existing identifier patterns
 AST_PATTERN_ENUM        // Enum variant patterns
 AST_PATTERN_RANGE       // Range patterns (1..10)
 AST_PATTERN_WILDCARD    // Wildcard pattern (_)
@@ -2863,6 +2863,7 @@ Status snapshot (2026-05-07):
    - Wildcard-first and fully covered bool/enum cases make later cases and else branches unreachable.
    - Literal numeric/char range overlaps are diagnosed.
    - Symbolic/computed range overlap diagnostics are still incomplete.
+   - True variable-binding/capture patterns are not implemented; plain identifier patterns refer to existing symbols.
 
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.

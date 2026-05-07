@@ -62,6 +62,10 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [ ] Add symbolic/computed range match overlap diagnostics.
   Notes: range overlap checks currently only cover literal numeric/char endpoints.
 
+- [ ] Define and implement true variable-binding match patterns.
+  Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`
+  Notes: plain identifier patterns currently refer to existing symbols; binding/capture semantics are not implemented.
+
 ### C Backend Parity
 
 - [x] C backend: side-effect-free `match` expressions.
@@ -80,9 +84,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/backends/c.py`
   Notes: match statements with range patterns now lower to portable `if` chains with a cached scrutinee.
 
-- [ ] C backend: identifier-capture patterns.
+- [x] C backend: existing-identifier match patterns.
   Files: `src/backends/c.py`
-  Notes: identifier-capture patterns remain unsupported in C match statement and expression lowering.
+  Notes: existing identifiers in match patterns now lower as comparisons in C match statements and expressions.
 
 - [ ] C backend: function-typed declarations.
   Files: `src/backends/c.py`

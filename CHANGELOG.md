@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **C Backend Match Expressions**
   - Side-effect-free `match` expressions now lower to C conditional expressions for literal, enum, range, and wildcard patterns.
   - Match statements with literal range patterns now lower to portable C `if` chains with a cached scrutinee.
+  - Existing-identifier match patterns now lower to C comparisons in both match statements and match expressions.
   - Variable initializers using side-effectful `match` scrutinees now cache the scrutinee in a generated local before evaluating patterns.
   - Other side-effectful `match` expression contexts still fail closed until they have portable statement-level lowering.
 

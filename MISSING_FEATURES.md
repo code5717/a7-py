@@ -38,6 +38,8 @@
 24. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
 25. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in both Zig and C backends.
 26. C backend side-effect-free `match` expressions now lower for literal, enum, range, and wildcard patterns.
+27. C backend `match` statements with range patterns lower through portable `if` chains.
+28. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
 
 ---
 
@@ -52,6 +54,7 @@
    - Wildcard-first and fully covered bool/enum cases make later case patterns and else branches unreachable.
    - Literal numeric/char range overlaps are diagnosed.
    - Symbolic/computed range overlap remains incomplete.
+   - True variable-binding/capture patterns are not defined; plain identifier patterns currently refer to existing symbols.
 
 3. **Memory/lifetime model**
    - Current validation covers basic `del` reference checks.

@@ -944,7 +944,7 @@ class CCodeGenerator(CodeGenerator):
 
     def _match_stmt_needs_if_chain(self, node: ASTNode) -> bool:
         return any(
-            pattern.kind == NodeKind.PATTERN_RANGE
+            pattern.kind in {NodeKind.PATTERN_IDENTIFIER, NodeKind.PATTERN_RANGE}
             for case in (node.cases or [])
             for pattern in (case.patterns or [])
         )
@@ -2105,15 +2105,16 @@ class CCodeGenerator(CodeGenerator):
                 value = f"{self._sanitize_name(pattern.enum_type)}_{self._sanitize_name(pattern.variant)}"
                 return f"({scrutinee_expr}) == ({value})"
             raise CodegenError("C backend: malformed enum pattern in match expression", pattern.span)
+        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+            name = pattern.name or ""
+            if name == "_":
+                return None
+            value = self._sanitize_name(getattr(pattern, "emit_name", None) or name)
+            return f"({scrutinee_expr}) == ({value})"
         if pattern.kind == NodeKind.PATTERN_RANGE:
             start = self._emit_pattern(pattern.start) if pattern.start else "0"
             end = self._emit_pattern(pattern.end) if pattern.end else "0"
             return f"({scrutinee_expr}) >= ({start}) && ({scrutinee_expr}) <= ({end})"
-        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
-            raise CodegenError(
-                "C backend: identifier capture patterns are not supported in match expressions",
-                pattern.span,
-            )
         value = self._emit_expr(pattern)
         return f"({scrutinee_expr}) == ({value})"
 
@@ -2159,10 +2160,7 @@ class CCodeGenerator(CodeGenerator):
         if node.kind == NodeKind.PATTERN_WILDCARD:
             return "default"
         if node.kind == NodeKind.PATTERN_IDENTIFIER:
-            raise CodegenError(
-                "C backend: identifier capture patterns are not supported in match statements",
-                node.span,
-            )
+            return self._sanitize_name(getattr(node, "emit_name", None) or node.name or "value")
         if node.kind == NodeKind.PATTERN_RANGE:
             raise CodegenError(
                 "C backend: range patterns are not supported in C match lowering",
