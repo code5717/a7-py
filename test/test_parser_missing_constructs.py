@@ -1,11 +1,5 @@
-"""
-Tests for missing language constructs in the A7 parser.
+"""Regression tests for parser constructs that were once missing."""
 
-These tests are expected to FAIL and demonstrate what needs to be implemented.
-They serve as a specification for missing functionality.
-"""
-
-import pytest
 from src.parser import parse_a7
 from src.ast_nodes import NodeKind
 from src.errors import ParseError
@@ -28,7 +22,6 @@ class TestMissingStructs:
         assert struct_decl.name == "Person"
         assert len(struct_decl.fields) == 2
 
-    # @pytest.mark.skip(reason="Generic structs not yet implemented")
     def test_generic_struct_declaration(self):
         """Test parsing generic struct declarations."""
         code = """
@@ -99,7 +92,6 @@ class TestMissingEnums:
 class TestMissingUnions:
     """Test union declaration parsing behavior."""
 
-    # @pytest.mark.skip(reason="Union declarations not yet implemented")
     def test_simple_union_declaration(self):
         """Test parsing simple union declarations."""
         code = """
@@ -114,7 +106,6 @@ class TestMissingUnions:
         assert union_decl.name == "Number"
         assert len(union_decl.fields) == 2
 
-    # @pytest.mark.skip(reason="Tagged unions not yet implemented")
     def test_tagged_union_declaration(self):
         """Test parsing tagged union declarations."""
         code = """
@@ -198,7 +189,6 @@ class TestMissingMatchStatements:
 class TestMissingDeferStatements:
     """Test defer statement parsing behavior."""
 
-    # @pytest.mark.skip(reason="Defer statements not yet implemented")
     def test_defer_statement(self):
         """Test parsing defer statements."""
         code = """
@@ -271,9 +261,8 @@ class TestMissingForLoopVariants:
 
 
 class TestMissingExpressionConstructs:
-    """Test missing expression constructs."""
+    """Regression tests for expression constructs."""
 
-    # @pytest.mark.skip(reason="Array initialization not yet implemented")
     def test_array_initialization(self):
         """Test parsing array initialization expressions."""
         code = """
@@ -288,7 +277,6 @@ class TestMissingExpressionConstructs:
         assert array_init.kind == NodeKind.ARRAY_INIT
         assert len(array_init.elements) == 5
 
-    # @pytest.mark.skip(reason="Cast expressions not yet implemented")
     def test_cast_expressions(self):
         """Test parsing cast expressions."""
         code = """
@@ -302,7 +290,6 @@ class TestMissingExpressionConstructs:
         cast_expr = var_decl.value
         assert cast_expr.kind == NodeKind.CAST
 
-    # @pytest.mark.skip(reason="Field access chaining not fully tested")
     def test_nested_field_access(self):
         """Test parsing nested field access."""
         code = """
@@ -315,9 +302,8 @@ class TestMissingExpressionConstructs:
 
 
 class TestMissingTypeAnnotations:
-    """Test missing explicit type annotations."""
+    """Regression tests for explicit type annotations."""
 
-    # @pytest.mark.skip(reason="Explicit type annotations not yet implemented")
     def test_variable_with_explicit_type(self):
         """Test parsing variables with explicit type annotations."""
         code = """
@@ -334,9 +320,8 @@ class TestMissingTypeAnnotations:
 
 
 class TestMissingGenericFunctions:
-    """Test missing generic function constructs."""
+    """Regression tests for generic function constructs."""
 
-    # @pytest.mark.skip(reason="Generic function parameters not fully implemented")
     def test_generic_function_declaration(self):
         """Test parsing generic function declarations with new syntax."""
         code = """
@@ -355,7 +340,6 @@ class TestMissingGenericFunctions:
         assert func_decl.parameters[0].param_type.target_type.kind == NodeKind.TYPE_GENERIC
         assert func_decl.parameters[0].param_type.target_type.name == "T"
 
-    # @pytest.mark.skip(reason="Generic constraints not yet implemented")
     def test_generic_function_with_return_type(self):
         """Test parsing generic functions with return type."""
         code = """
@@ -373,9 +357,8 @@ class TestMissingGenericFunctions:
 
 
 class TestMissingNamedImports:
-    """Test missing named import constructs."""
+    """Regression tests for named import constructs."""
 
-    # @pytest.mark.skip(reason="Named imports not yet implemented")
     def test_named_import(self):
         """Test parsing named import statements."""
         code = 'io :: import "std/io"'

@@ -130,9 +130,7 @@ class TestParserArraySupport:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # Expected - parser may not fully support this yet
-            # pytest.skip("Parser does not yet support complex array types")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.
 
     def test_array_literal_parsing(self):
         """Test parsing of multidimensional array literals."""
@@ -144,8 +142,7 @@ class TestParserArraySupport:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser does not yet support multidimensional arrays")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.
 
     def test_array_function_parsing(self):
         """Test parsing of array function calls."""
@@ -157,8 +154,7 @@ class TestParserArraySupport:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser does not yet support complex function calls")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.
 
 
 class TestParserGeneralEdgeCases:
@@ -183,8 +179,7 @@ class TestParserGeneralEdgeCases:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser may not fully support complex generics")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.
 
     def test_nested_match_statements(self):
         """Test nested match statements."""
@@ -325,8 +320,7 @@ class TestParserGeneralEdgeCases:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser may not fully support complex memory management")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.
 
     def test_operator_precedence_edge_cases(self):
         """Test complex operator precedence scenarios."""
@@ -428,8 +422,7 @@ class TestArraySemanticValidation:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser does not yet support array operations")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.
 
     def test_array_type_inference(self):
         """Test array type inference scenarios."""
@@ -448,5 +441,4 @@ class TestArraySemanticValidation:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser does not yet support type inference")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this edge case.

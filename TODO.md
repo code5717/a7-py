@@ -235,8 +235,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `src/tokens.py`, `src/ast_nodes.py`, `src/backends/zig.py`
   Notes: string literals now reject unknown escapes and malformed `\xHH` escapes during tokenization, decode valid escapes into AST literal values, and re-emit escaped backend string literals.
 
-- [ ] Clean up stale "not yet implemented" comments in parser tests.
+- [x] Clean up stale "not yet implemented" comments in parser tests.
   Files: `test/test_parser_missing_constructs.py`, `test/test_parser_advanced_edge_cases.py`, `test/test_parser_stress_tests.py`
+  Notes: parser regression tests now describe current behavior instead of carrying stale skip comments for implemented constructs.
 
 - [ ] Lock down ambiguous parser behavior documented in problem tests.
   Files: `test/test_parser_comprehensive_problems.py`

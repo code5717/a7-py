@@ -163,7 +163,7 @@ class TestBraceMatchingProblems:
 
 
 class TestForLoopLimitationsAndRangeBasedLoops:
-    """Test for loop parsing behavior, including currently unsupported forms."""
+    """Test for loop parsing behavior and edge cases."""
 
     def test_range_based_for_loop_simple(self):
         """Test simple range-based for-in loop over iterables."""
@@ -447,7 +447,7 @@ class TestMemoryManagementSyntaxProblems:
         assert ast is not None
 
     def test_new_with_value(self):
-        """Test new with initial value (not yet implemented).
+        """Document current parsing for new with an initializer-like argument.
         
         Note: This currently parses as 'new i32' followed by a call '(42)',
         which is syntactically valid but semantically incorrect.
@@ -459,8 +459,8 @@ class TestMemoryManagementSyntaxProblems:
         }
         """
 
-        # Currently parses (incorrectly) as a call expression
-        # TODO: Should either fail in parser or be handled specially
+        # Currently parses as a call expression. This is intentionally locked
+        # down until the language decides whether this form is valid syntax.
         ast = parse_a7(source)
         assert ast is not None  # Accepting current behavior for now
 

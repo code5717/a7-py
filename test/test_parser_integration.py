@@ -23,7 +23,6 @@ class TestParserIntegration:
         """Read an example file."""
         example_path = EXAMPLES_DIR / filename
         if not example_path.exists():
-            # pytest.skip(f"Example file {filename} not found")
             raise FileNotFoundError(f"Example file {filename} not found")
         return example_path.read_text()
 

@@ -84,8 +84,7 @@ class TestParserStressTests:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser may not support complex generics yet")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this stress case.
 
     def test_very_large_array_literals(self):
         """Test parsing of large array literals."""
@@ -266,8 +265,7 @@ class TestParserBoundaryConditions:
             ast = parse_a7(source)
             assert ast is not None
         except ParseError:
-            # pytest.skip("Parser may not support all complex constructs yet")
-            pass  # Let test run to see actual behavior
+            pass  # Document current parser behavior for this stress case.
 
     def test_unicode_in_comments_and_strings(self):
         """Test handling of unicode characters in comments and strings."""
