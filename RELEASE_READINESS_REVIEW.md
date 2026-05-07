@@ -68,7 +68,7 @@ not factually provable from local tests alone.
   read-only repository contents access; only the tag-only draft release job gets
   `contents: write`.
 - Release tags now publish package distributions to PyPI through Trusted
-  Publishing/OIDC after the release gate passes.
+  Publishing/OIDC only after the release gate and draft GitHub release job pass.
 - C backend `for-in` lowering now caches iterable expressions before loop
   length and element access.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`

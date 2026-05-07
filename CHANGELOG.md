@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow permissions are split so the gate/artifact build job runs
   with read-only repository contents access; only the tag-only draft release job
   receives `contents: write`.
+- Tag-based PyPI publishing now waits for the draft GitHub release job to
+  succeed before requesting the protected `pypi` environment.
 
 ## [0.3.0] - 2026-05-07
 

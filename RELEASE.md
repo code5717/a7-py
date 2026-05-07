@@ -107,11 +107,12 @@ The workflow keeps release permissions split: the gate/artifact build job uses
 read-only repository contents access, and only the tag-only draft release job
 uses `contents: write`.
 
-The same tag workflow publishes the Python package distributions to PyPI through
-Trusted Publishing/OIDC. The GitHub `pypi` environment exists and requires
-review by `code5717`. As of the latest release-readiness audit, `a7-py` is not
-yet a public PyPI project. Before the first real publish, create or preconfigure
-the PyPI project trusted publisher with:
+After the draft GitHub release job succeeds, the same tag workflow publishes
+the Python package distributions to PyPI through Trusted Publishing/OIDC. The
+GitHub `pypi` environment exists and requires review by `code5717`. As of the
+latest release-readiness audit, `a7-py` is not yet a public PyPI project. Before
+the first real publish, create or preconfigure the PyPI project trusted
+publisher with:
 
 - owner: `code5717`
 - repository: `a7-py`
