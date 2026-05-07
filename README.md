@@ -138,7 +138,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 
 ## What Works
 
-- **Types**: Primitives, arrays, slices, pointers, generics, function types, inline structs
+- **Types**: Primitives, arrays, slices, pointers, generics, raw and aliased function types, inline structs
 - **Declarations**: Functions, structs, enums, unions, variables, constants, type aliases
 - **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
 - **Expressions**: All operators with proper precedence, casts, if-expressions, struct/array literals

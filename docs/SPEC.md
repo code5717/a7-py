@@ -2876,7 +2876,7 @@ Status snapshot (2026-05-07):
    - C lowers side-effectful `match` expression scrutinees in variable initializers by caching the scrutinee once.
    - C still rejects side-effectful `match` expression scrutinees in non-declaration expression contexts.
    - C lowers raw `fn(...)` parameter and variable declarations as function pointers.
-   - Function-type aliases still need semantic support.
+   - Function-type aliases resolve in semantic analysis and lower as C typedefs.
 
 6. **Release packaging hardening**
    - Python packaging and installed CLI are present.

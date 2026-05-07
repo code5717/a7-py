@@ -406,6 +406,88 @@ class TestFunctionPointers:
         """
         assert expect_success(source)
 
+    def test_function_type_alias(self):
+        """Test top-level function type aliases."""
+        source = """
+        BinaryOp :: fn(i32, i32) i32
+
+        add :: fn(a: i32, b: i32) i32 {
+            ret a + b
+        }
+
+        apply :: fn(op: BinaryOp, a: i32, b: i32) i32 {
+            ret op(a, b)
+        }
+
+        main :: fn() {
+            op: BinaryOp = add
+            result := apply(op, 10, 20)
+        }
+        """
+        assert expect_success(source)
+
+    def test_function_type_alias_forward_reference(self):
+        """Test function type aliases that reference later aliases."""
+        source = """
+        OperationUser :: fn(BinaryOp) i32
+        BinaryOp :: fn(i32, i32) i32
+
+        add :: fn(a: i32, b: i32) i32 {
+            ret a + b
+        }
+
+        run :: fn(user: OperationUser, op: BinaryOp) i32 {
+            ret user(op)
+        }
+
+        apply :: fn(op: BinaryOp) i32 {
+            ret op(10, 20)
+        }
+
+        main :: fn() {
+            op: BinaryOp = add
+            result := run(apply, op)
+        }
+        """
+        assert expect_success(source)
+
+    def test_type_alias_cycle_is_rejected(self):
+        """Test circular type aliases fail closed."""
+        source = """
+        A :: fn(A) void
+
+        main :: fn() {
+            value: A = nil
+        }
+        """
+        assert expect_error(source, "circular type alias")
+
+    def test_constants_are_not_usable_as_type_aliases(self):
+        """Test constants do not masquerade as type names."""
+        source = """
+        Size :: 1
+
+        main :: fn() {
+            value: Size = 1
+        }
+        """
+        assert expect_error(source, "type")
+
+    def test_local_function_type_alias(self):
+        """Test function type aliases declared inside blocks."""
+        source = """
+        add :: fn(a: i32, b: i32) i32 {
+            ret a + b
+        }
+
+        main :: fn() {
+            BinaryOp :: fn(i32, i32) i32
+            op: BinaryOp = add
+            result := op(10, 20)
+        }
+        """
+        assert expect_success(source)
+
     def test_function_returning_function(self):
         """Test function returning function pointer."""
         source = """

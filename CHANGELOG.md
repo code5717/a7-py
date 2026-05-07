@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **C Backend Function Pointers**
   - Raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.
+  - Function-type aliases such as `BinaryOp :: fn(i32, i32) i32` now resolve in semantic analysis and lower to C typedefs.
 
 - **Type Checker: Slice and Index Validation**
   - `visit_slice_expr`: validates source is array/slice/string, checks start/end are integral, returns `SliceType`.

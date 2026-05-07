@@ -92,9 +92,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/backends/c.py`
   Notes: raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.
 
-- [ ] Function-type aliases in semantic analysis and C lowering.
+- [x] Function-type aliases in semantic analysis and C lowering.
   Files: `src/passes/type_checker.py`, `src/backends/c.py`
-  Notes: aliases such as `BinaryOp :: fn(i32, i32) i32` still resolve as unknown in semantic analysis.
+  Notes: aliases such as `BinaryOp :: fn(i32, i32) i32` now resolve to `FunctionType` in semantic analysis and lower as C typedefs.
 
 ### Module System / Stdlib
 

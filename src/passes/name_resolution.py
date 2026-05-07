@@ -399,6 +399,8 @@ class NameResolutionPass:
                 self.visit_var_decl(nd)
             elif nd.kind == NodeKind.CONST:
                 self.visit_const_decl(nd)
+            elif nd.kind == NodeKind.TYPE_ALIAS:
+                self.visit_type_alias(nd)
 
             elif nd.kind == NodeKind.IF_STMT:
                 # Else branch

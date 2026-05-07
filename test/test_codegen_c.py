@@ -356,6 +356,9 @@ def test_generated_c_supports_function_pointer_declarations(tmp_path: Path) -> N
         """
 io :: import "std/io"
 
+BinaryOp :: fn(i32, i32) i32
+UnaryOp :: fn(i32) i32
+
 add :: fn(a: i32, b: i32) i32 {
     ret a + b
 }
@@ -364,18 +367,19 @@ double :: fn(value: i32) i32 {
     ret value * 2
 }
 
-apply_unary :: fn(f: fn(i32) i32, value: i32) i32 {
+apply_unary :: fn(f: UnaryOp, value: i32) i32 {
     ret f(value)
 }
 
-apply_binary :: fn(op: fn(i32, i32) i32, a: i32, b: i32) i32 {
+apply_binary :: fn(op: BinaryOp, a: i32, b: i32) i32 {
     ret op(a, b)
 }
 
 main :: fn() {
     raw: fn(i32, i32) i32 = add
+    aliased: BinaryOp = add
     a := raw(2, 3)
-    b := apply_binary(raw, 5, 8)
+    b := apply_binary(aliased, 5, 8)
     c := apply_unary(double, 11)
     io.println("{} {} {}", a, b, c)
 }

@@ -52,6 +52,8 @@ class TypeCheckingPass:
         self.node_types: Dict[int, Type] = {}
         # Tracks sequential reuse of child scopes by (parent_scope_id, scope_name)
         self._scope_reuse_positions: Dict[tuple[int, str], int] = {}
+        self._resolving_type_aliases: Set[str] = set()
+        self._resolved_type_aliases: Set[str] = set()
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
         """
@@ -71,6 +73,8 @@ class TypeCheckingPass:
         self.current_file = filename
         self.errors = []
         self._scope_reuse_positions = {}
+        self._resolving_type_aliases = set()
+        self._resolved_type_aliases = set()
 
         # Visit the program
         self.visit_program(program)
@@ -175,7 +179,44 @@ class TypeCheckingPass:
             self.register_enum_type(node)
         elif node.kind == NodeKind.UNION:
             self.register_union_type(node)
-        # TYPE_ALIAS will be resolved on-demand
+        elif node.kind == NodeKind.TYPE_ALIAS:
+            self.register_type_alias(node)
+
+    def register_type_alias(self, node: ASTNode) -> None:
+        """Resolve and register a type alias."""
+        alias_name = node.name or "<anonymous>"
+        if alias_name in self._resolved_type_aliases:
+            return
+        if alias_name in self._resolving_type_aliases:
+            self.errors.append(
+                SemanticError(
+                    f"Circular type alias dependency involving '{alias_name}'",
+                    node.span,
+                    self.current_file,
+                )
+            )
+            return
+
+        self._resolving_type_aliases.add(alias_name)
+        try:
+            alias_type = self.resolve_type_node(node.value) if node.value else UNKNOWN
+        finally:
+            self._resolving_type_aliases.remove(alias_name)
+
+        symbol = self.symbols.lookup(alias_name)
+        if symbol:
+            symbol.type = alias_type
+        else:
+            self.symbols.define(
+                Symbol(
+                    name=alias_name,
+                    kind=SymbolKind.TYPE,
+                    type=alias_type,
+                    node=node,
+                    is_mutable=False,
+                )
+            )
+        self._resolved_type_aliases.add(alias_name)
 
     def register_function_signature(self, node: ASTNode) -> None:
         """Register a function's signature (type) without processing its body.
@@ -354,6 +395,17 @@ class TypeCheckingPass:
                 return GenericInstanceType(base_name=type_name, type_args=tuple(type_args))
             symbol = self.symbols.lookup(type_name)
             if symbol:
+                if symbol.kind not in {
+                    SymbolKind.TYPE,
+                    SymbolKind.STRUCT,
+                    SymbolKind.ENUM,
+                    SymbolKind.UNION,
+                    SymbolKind.GENERIC_PARAM,
+                }:
+                    self.add_type_error(TypeErrorType.UNDEFINED_TYPE, node.span, context=f"Type '{type_name}'")
+                    return UNKNOWN
+                if symbol.kind == SymbolKind.TYPE and symbol.node is not None and symbol.node.kind == NodeKind.TYPE_ALIAS:
+                    self.register_type_alias(symbol.node)
                 return symbol.type
             else:
                 self.add_type_error(TypeErrorType.UNDEFINED_TYPE, node.span, context=f"Type '{type_name}'")
@@ -418,6 +470,8 @@ class TypeCheckingPass:
             self.visit_const_decl(node)
         elif node.kind == NodeKind.VAR:
             self.visit_var_decl(node)
+        elif node.kind == NodeKind.TYPE_ALIAS:
+            self.register_type_alias(node)
         # Struct/enum/union already registered
 
     def visit_function_decl(self, node: ASTNode) -> None:
@@ -627,6 +681,8 @@ class TypeCheckingPass:
                 self.visit_var_decl(nd)
             elif nd.kind == NodeKind.CONST:
                 self.visit_const_decl(nd)
+            elif nd.kind == NodeKind.TYPE_ALIAS:
+                self.register_type_alias(nd)
 
             elif nd.kind == NodeKind.EXPRESSION_STMT:
                 if nd.expression:
