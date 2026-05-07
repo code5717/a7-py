@@ -465,6 +465,76 @@ main :: fn() {
         assert 'a7_loop_outer_continue: while' in zig
         assert 'continue :a7_loop_outer_continue;' in zig
 
+    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+    def test_labeled_for_in_and_indexed_for_in_runtime(self, tmp_path: Path):
+        source = '''
+io :: import "std/io"
+
+main :: fn() {
+    arr: [3]i32 = [1, 2, 3]
+
+    break_total := 0
+    outer_break: for x in arr {
+        if x == 2 {
+            break outer_break
+        }
+        break_total += x
+    }
+
+    continue_total := 0
+    outer_continue: for x in arr {
+        if x == 2 {
+            continue outer_continue
+        }
+        continue_total += x
+    }
+
+    indexed_total: usize = 0
+    outer_indexed: for i, x in arr {
+        if i == 2 {
+            break outer_indexed
+        }
+        if x == 0 {
+            indexed_total += 100
+        }
+        indexed_total += i
+    }
+
+    io.println("{} {} {}", break_total, continue_total, indexed_total)
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "a7_loop_outer_break: for" in zig
+        assert "break :a7_loop_outer_break" in zig
+        assert "a7_loop_outer_continue: for" in zig
+        assert "continue :a7_loop_outer_continue" in zig
+        assert "a7_loop_outer_indexed: for" in zig
+        assert "for (arr, 0..) |x, i|" in zig
+        assert "@intCast(i)" not in zig
+        assert "break :a7_loop_outer_indexed" in zig
+
+        source_path = tmp_path / "labeled_for_in.zig"
+        binary_path = tmp_path / "labeled_for_in"
+        source_path.write_text(zig, encoding="utf-8")
+
+        build = subprocess.run(
+            ["zig", "build-exe", str(source_path), "-femit-bin=" + str(binary_path)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert build.returncode == 0, build.stderr
+
+        run = subprocess.run(
+            [str(binary_path)],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        combined = run.stdout + run.stderr
+        assert run.returncode == 0, combined
+        assert combined.strip() == "1 4 1"
+
     def test_new_and_del(self):
         source = '''
 main :: fn() {

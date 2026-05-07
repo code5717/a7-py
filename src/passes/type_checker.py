@@ -803,7 +803,7 @@ class TypeCheckingPass:
         if node.kind == NodeKind.FOR_IN_INDEXED and node.index_var:
             index_symbol = self.symbols.lookup(node.index_var)
             if index_symbol:
-                index_symbol.type = I32  # Index is always i32
+                index_symbol.type = USIZE
 
         # Enter loop context
         self.context.enter_loop()

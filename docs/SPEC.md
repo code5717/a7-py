@@ -579,6 +579,7 @@ for value in array {
 for i, value in array {
     printf("[{}] = {}\n", i, value)
 }
+// The index variable `i` has type `usize`.
 
 // Range over slice
 for char in string[2..5] {
@@ -1832,6 +1833,7 @@ for value in array {
 for i, value in array {
     printf("[{}] = {}\n", i, value)
 }
+// The index variable `i` has type `usize`.
 
 // Range over slice
 for char in string[2..5] {

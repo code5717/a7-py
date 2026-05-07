@@ -175,8 +175,9 @@ These are entire subsystems. Each needs a design decision before implementation 
 - [ ] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
   Files: `test/test_parser_combinatorial.py`, `test/test_parser_integration.py`
 
-- [ ] Add Zig regression coverage for labeled `for-in` and indexed `for-in`.
+- [x] Add Zig regression coverage for labeled `for-in` and indexed `for-in`.
   Files: `test/test_codegen_zig.py`
+  Notes: added a compile/run regression for labeled `for-in`, labeled `continue`, and labeled indexed `for-in`; indexed loop variables use `usize`, matching array/slice lengths and Zig's native indexed loop value.
 
 - [ ] Add example-level verification for labeled loops, sub-slicing, and match-case `defer` scope.
   Files: `examples/`, `test/fixtures/golden_outputs/`

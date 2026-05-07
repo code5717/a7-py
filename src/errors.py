@@ -369,8 +369,8 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
         TypeErrorType.IF_EXPR_TYPE_MISMATCH: "Both branches of if expression must have the same type",
 
         # Type requirement errors
-        TypeErrorType.REQUIRES_NUMERIC_TYPE: "Use i8, i16, i32, i64, u8, u16, u32, u64, f32, or f64",
-        TypeErrorType.REQUIRES_INTEGER_TYPE: "Use i8, i16, i32, i64, u8, u16, u32, or u64",
+        TypeErrorType.REQUIRES_NUMERIC_TYPE: "Use i8, i16, i32, i64, isize, u8, u16, u32, u64, usize, f32, or f64",
+        TypeErrorType.REQUIRES_INTEGER_TYPE: "Use i8, i16, i32, i64, isize, u8, u16, u32, u64, or usize",
         TypeErrorType.REQUIRES_BOOL_TYPE: "Use a bool value (true or false)",
         TypeErrorType.REQUIRES_ARRAY_OR_SLICE: "Use an array or slice type",
         TypeErrorType.REQUIRES_STRUCT_TYPE: "Use a struct type",
