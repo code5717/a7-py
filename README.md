@@ -1,6 +1,4 @@
-# A7 Programming Language Compiler (VIBE CODED)
-
-This whole application was vibecoded using Codex and Claude Code.
+# A7 Programming Language Compiler
 
 A Python-based compiler for A7, a statically-typed systems programming language. A7 combines the simplicity of C-style syntax with modern features like generics, type inference, and property-based pointer operations.
 
@@ -15,7 +13,7 @@ A7 draws inspiration from practical systems programming languages that prioritiz
 
 ## Quick Start
 
-**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager)
+**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager). Install [Zig](https://ziglang.org/) to build and run generated Zig/C outputs.
 
 ```bash
 # Install uv (if needed)
@@ -29,6 +27,8 @@ uv sync
 ```
 
 ## Usage
+
+Run from the repository checkout:
 
 Compile an A7 program to Zig (default backend):
 ```bash
@@ -55,6 +55,13 @@ uv run python main.py --mode doc examples/001_hello.a7                     # Doc
 uv run python main.py --verbose examples/009_struct.a7                     # Full pipeline details
 ```
 
+Use the installed console script after `uv sync`:
+
+```bash
+uv run a7 examples/001_hello.a7
+uv run a7 --backend c examples/001_hello.a7
+```
+
 Exit codes for automation:
 ```text
 0 success, 2 usage, 3 io, 4 tokenize, 5 parse, 6 semantic, 7 codegen, 8 internal
@@ -68,6 +75,43 @@ PYTHONPATH=. uv run pytest -k "generic" -v         # Targeted tests
 uv run python scripts/verify_examples_e2e.py       # Compile/build/run + output checks for all examples
 uv run python scripts/verify_examples_e2e_c.py     # Same flow via C backend + zig cc
 uv run python scripts/verify_error_stages.py       # Error-stage audit across modes and formats
+uv run python scripts/build_examples.py --profile debug --backend both --clean
+uv run python scripts/build_examples.py --profile release --backend both --clean
+./run_all_tests.sh                                 # Full release-oriented local gate
+```
+
+## Debug and Release Builds
+
+The compiler emits Zig or C source. `scripts/build_examples.py` is the native artifact builder used for release smoke checks:
+
+```bash
+uv run python scripts/build_examples.py --profile debug --backend both --clean
+uv run python scripts/build_examples.py --profile release --backend both --clean
+```
+
+Artifacts are written under `build/debug/` and `build/release/`, split by backend:
+
+```text
+build/<profile>/zig/src/*.zig
+build/<profile>/zig/bin/*
+build/<profile>/c/src/*.c
+build/<profile>/c/bin/*
+```
+
+Each built binary is executed and compared with `test/fixtures/golden_outputs/*.out`.
+
+## Packaging
+
+Build the Python package:
+
+```bash
+uv build
+```
+
+The installed CLI entrypoint is `a7`:
+
+```bash
+uv run a7 --help
 ```
 
 ## Compilation Pipeline
@@ -100,17 +144,21 @@ All AST traversals are iterative with no recursion. The pipeline works with Pyth
 ## Project Status
 
 - Test status depends on current branch state. Check with `PYTHONPATH=. uv run pytest --tb=no -q`.
-- Example end-to-end verification is available via `uv run python scripts/verify_examples_e2e.py`.
-- Parser is 100% complete for the A7 specification
-- Zig backend handles all AST node types
+- Example end-to-end verification is available for both backends:
+  - `uv run python scripts/verify_examples_e2e.py`
+  - `uv run python scripts/verify_examples_e2e_c.py`
+- Debug/release artifact verification is available through `scripts/build_examples.py`.
+- Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `MISSING_FEATURES.md`.
+- Zig backend handles the current example suite and most AST node types; unsupported source constructs should continue moving to compiler-side diagnostics.
 - C backend targets C11 and is validated with `zig cc`
+- This compiler is not a sandbox. Do not compile and execute untrusted A7 source.
 
 ## Learn More
 
 - Documentation website: `https://airbus5717.github.io/a7-py/`
 - `docs/SPEC.md` - Language specification
+- `RELEASE.md` - Release/debug build checklist
 - `examples/` - 36 sample programs
-- `CLAUDE.md` - Development guide
 - `MISSING_FEATURES.md` - Feature status and roadmap
 - `CHANGELOG.md` - Change history
 

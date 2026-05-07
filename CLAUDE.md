@@ -1,16 +1,16 @@
-# agents.md
+# CLAUDE.md
 
-Guidance for coding agents working in this repository. Keep changes consistent
-with `README.md` and `RELEASE.md`; those are the authoritative user-facing docs.
+Project-level guidance for Claude Code. Mirrors `AGENTS.md`; treat that file
+as the canonical agent guide and keep both in sync. `README.md` and
+`RELEASE.md` remain the authoritative user-facing docs.
 
 ## Running the Compiler
 
 - Installed CLI entrypoint (after `uv sync`): `uv run a7 <args>`
 - Repository compatibility wrapper: `uv run python main.py <args>`
 
-Both invoke the same `src.cli:main`. Prefer `uv run a7` for examples that
-mirror end-user usage; use the `main.py` wrapper when working from a fresh
-checkout without a synced environment.
+Both invoke `src.cli:main`. Prefer `uv run a7` to match end-user usage; use
+the `main.py` wrapper when working from a fresh checkout.
 
 ## Verification Commands
 
@@ -24,20 +24,17 @@ checkout without a synced environment.
 
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
 backend tests, example e2e, debug + release artifacts, error-stage matrix,
-docs style). Run it before tagging or before reporting a task as done when
-changes are non-trivial.
+docs style). Run it before reporting a non-trivial task as done.
 
 ## Post-Change Checklist
 
-After making major changes (new language features, bug fixes, backend
-additions, refactors), ensure the following docs are up to date before
-committing:
+When language features, backends, or user-facing behavior change, update:
 
-1. **CHANGELOG.md** — add an entry for the change
-2. **README.md** — update usage, feature lists, or examples if affected
-3. **docs/SPEC.md** — update if language semantics or syntax changed
-4. **MISSING_FEATURES.md** — mark completed gaps or document new ones
-5. **TODO.md** — check off completed items or add newly discovered work
+1. `CHANGELOG.md` — add an entry
+2. `README.md` — usage, feature lists, examples
+3. `docs/SPEC.md` — language semantics or syntax
+4. `MISSING_FEATURES.md` — close or open gaps
+5. `TODO.md` — check off or add follow-ups
 
 ## Security Caveat
 

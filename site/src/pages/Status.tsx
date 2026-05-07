@@ -8,6 +8,7 @@ const done = [
   { name: 'Preprocessing', desc: 'Nine sub-passes: lowering, resolution, mutation, usage, shadowing, hoisting, folding.' },
   { name: 'Zig backend', desc: 'Full translation with type mapping, pointer handling, hoisting, annotations, labeled loops.' },
   { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, and core match forms are present; backend parity checks should keep expanding.' },
+  { name: 'Release tooling', desc: 'Installed CLI entrypoint plus debug/release artifact verification for Zig and C example builds.' },
 ]
 
 const missing = [
@@ -16,6 +17,7 @@ const missing = [
   { name: 'Generic constraint internals', desc: 'Inline type-set constraint resolution in generics.py is still placeholder-level.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for new language features.' },
+  { name: 'Automated publishing', desc: 'Local package builds are available, but tag-based package publishing is not wired yet.' },
 ]
 
 export default function Status() {
@@ -29,7 +31,7 @@ export default function Status() {
       <section className="metric-grid">
         <MetricTile label="Pipeline" value="Working with open gaps" />
         <MetricTile label="Tests" value="Use live test run" note="PYTHONPATH=. uv run pytest --tb=no -q" />
-        <MetricTile label="Examples" value="36/36 verified in snapshot" note="scripts/verify_examples_e2e.py" />
+        <MetricTile label="Examples" value="Zig + C verifiers" note="run_all_tests.sh includes both" />
       </section>
 
       <SectionPanel title="Done">
@@ -60,6 +62,7 @@ export default function Status() {
           <li>Add match pattern overlap/redundancy and exhaustiveness diagnostics.</li>
           <li>Improve type checker: control-flow narrowing, return consistency, dead code detection.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>
+          <li>Wire tag-based package publishing once release hosting is chosen.</li>
         </ol>
       </SectionPanel>
     </div>

@@ -59,13 +59,26 @@ run_check "Compiler/CLI/Backend Tests:" \
     test/test_iterative_traversal.py \
     test/test_stdlib_registry.py \
     test/test_codegen_zig.py \
+    test/test_codegen_c.py \
     --tb=no -q
 
 run_check "Examples E2E Verification (compile/build/run/output):" \
     uv run python scripts/verify_examples_e2e.py
 
+run_check "Examples E2E Verification (C backend compile/build/run/output):" \
+    uv run python scripts/verify_examples_e2e_c.py
+
+run_check "Debug Artifact Build Verification (Zig and C):" \
+    uv run python scripts/build_examples.py --profile debug --backend both --clean
+
+run_check "Release Artifact Build Verification (Zig and C):" \
+    uv run python scripts/build_examples.py --profile release --backend both --clean
+
 run_check "Error Stage Verification (mode/format matrix):" \
     uv run python scripts/verify_error_stages.py --mode-set all --format both
+
+run_check "Docs Style Check:" \
+    uv run python scripts/check_docs_style.py
 
 run_check "TOTAL (All Pytest Tests):" \
     uv run pytest --tb=no -q

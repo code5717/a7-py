@@ -35,6 +35,14 @@ Repository-level docs style checks:
 uv run python scripts/check_docs_style.py
 ```
 
+Repository-level release gates:
+
+```bash
+./run_all_tests.sh
+uv run python scripts/build_examples.py --profile debug --backend both --clean
+uv run python scripts/build_examples.py --profile release --backend both --clean
+```
+
 ## Styling System
 
 Design tokens and shared interface styles live in:

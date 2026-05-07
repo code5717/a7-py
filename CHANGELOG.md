@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Release and debug build readiness**
+  - Added an installed `a7` CLI entrypoint via `pyproject.toml`.
+  - Added `scripts/build_examples.py` to build debug/release native artifacts for Zig and C example outputs and verify each binary against golden fixtures.
+  - Added `RELEASE.md` with local release gates, artifact layout, tagging steps, and security caveats.
+  - Added release-tooling pytest coverage for the installed CLI and debug build script.
+  - Added a GitHub Actions CI workflow for Python, backend, package, docs, and artifact checks.
+
 - **Compiler handling and test coverage expansion**
   - Added semantic regression coverage for deferred statement payloads, return payload traversal, and non-iterable `for-in` diagnostics.
   - Expanded AST preprocessor tests for constant folding of numeric comparisons, literal equality, and integer bitwise operators.
@@ -26,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `visit_index_expr`: now rejects non-integer index expressions.
 
 ### Changed
+- **Release documentation and verification gates**
+  - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, and debug/release artifact workflow.
+  - Expanded `run_all_tests.sh` to include C backend tests, C example verification, debug/release artifact verification, error-stage verification, docs style checks, and full pytest.
+  - Extended docs style checking to include `RELEASE.md`.
+  - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.
+
 - **Semantic and preprocessing correctness**
   - `defer` now traverses its parsed `statement` payload in both type checking and semantic validation.
   - `ret` semantic validation now traverses the parser's `value` payload.

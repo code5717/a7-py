@@ -26,10 +26,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: |
-            site/package-lock.json
-            site/npm-shrinkwrap.json
-            site/package.json
+          cache-dependency-path: site/package-lock.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -41,12 +38,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: site
-        run: |
-          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-            npm ci
-          else
-            npm install --no-audit --no-fund
-          fi
+        run: npm ci
 
       - name: Lint docs
         working-directory: site

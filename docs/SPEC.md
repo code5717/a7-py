@@ -1,15 +1,16 @@
 # A7 Programming Language Specification
 
-> **Implementation Status (2026-02-24)**: This specification describes the complete A7 language design. The current Python implementation (`a7-py`) provides:
+> **Implementation Status (2026-05-07)**: This specification describes the A7 language design. The current Python implementation (`a7-py`) provides:
 > - ✅ **Tokenizer/Lexer**: implemented
 > - ✅ **Parser**: implemented
 > - ✅ **AST generation**: implemented
 > - ✅ **Semantic pipeline**: implemented (name resolution, type checking, semantic validation), including match expressions, pattern type checks, and bool/enum exhaustiveness checks
 > - ✅ **Zig code generation**: implemented
 > - ✅ **C code generation**: implemented (C11, validated with `zig cc`)
+> - ✅ **Debug/release example artifact builds**: available through `scripts/build_examples.py`
 > - 📊 **Current tests**: check with `PYTHONPATH=. uv run pytest --tb=no -q`
 >
-> See `MISSING_FEATURES.md` for detailed feature status and `CLAUDE.md` for development guide.
+> See `MISSING_FEATURES.md`, `TODO.md`, and `RELEASE.md` for detailed feature, verification, and release status.
 
 ## Table of Contents
 
@@ -2832,11 +2833,13 @@ A7 supports the full ASCII character set (0-127) only. Characters outside this r
 
 ## Appendix E: Implementation Status (a7-py)
 
-Status snapshot (2026-02-24), based on running `PYTHONPATH=. uv run pytest -q`:
+Status snapshot (2026-05-07):
 
-- ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend).
-- ✅ Examples continue to pass end-to-end verification.
-- 📊 Test status: **1067 passed, 0 failed, 0 skipped**.
+- ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend, C backend).
+- ✅ Examples have end-to-end verification for both Zig and C backends.
+- ✅ Debug and release example artifact builds are available through `scripts/build_examples.py`.
+- 📊 Test status: run `PYTHONPATH=. uv run pytest --tb=no -q` for the current branch.
+- 🚫 Security status: `a7-py` is not a sandbox. Do not compile and execute untrusted A7 source.
 
 ### E.1 Current Open Gaps
 
@@ -2855,6 +2858,12 @@ Status snapshot (2026-02-24), based on running `PYTHONPATH=. uv run pytest -q`:
 5. **Backend semantic parity hardening**
    - Differential parity checks across backends should continue expanding for new language features.
 
+6. **Release packaging hardening**
+   - Python packaging and installed CLI are present.
+   - Automated publishing workflows are not yet configured.
+
 ### E.2 Source Of Truth
 
-- `MISSING_FEATURES.md` tracks these gaps with failing test references and required implementation work.
+- `MISSING_FEATURES.md` tracks language gaps with implementation notes.
+- `TODO.md` tracks engineering and verification backlog.
+- `RELEASE.md` tracks local release/debug build gates.

@@ -25,6 +25,9 @@
 11. `ret` payloads are traversed through the semantic validator's `value` field.
 12. `for-in` and indexed `for-in` reject scalar/non-iterable expressions during type checking.
 13. Constant folding covers arithmetic, boolean logic, literal comparisons, and integer bitwise expressions.
+14. Installed CLI entrypoint (`a7`) is wired through `pyproject.toml`.
+15. Debug/release example artifact verification is available through `scripts/build_examples.py`.
+16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
 
 ---
 
@@ -46,6 +49,10 @@
 
 5. **Backend semantic parity hardening**
    - Core conformance is green, but differential/backend-equivalence checks should be expanded and kept mandatory for new language features.
+
+6. **Release publishing automation**
+   - Local package builds and artifact checks exist.
+   - Tag-triggered package publishing is not configured yet.
 
 ---
 

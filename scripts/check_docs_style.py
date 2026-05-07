@@ -44,7 +44,7 @@ URL_RE = re.compile(r"https?://\S+")
 def iter_doc_paths(root: Path) -> list[Path]:
     paths: set[Path] = set()
 
-    for fixed in [root / "README.md", root / "site" / "README.md"]:
+    for fixed in [root / "README.md", root / "RELEASE.md", root / "site" / "README.md"]:
         if fixed.exists():
             paths.add(fixed)
 

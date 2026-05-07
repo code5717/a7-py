@@ -164,8 +164,9 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 ## Testing / Verification Gaps
 
-- [ ] Update `run_all_tests.sh` to include C backend tests, C example verifier, and error-stage matrix.
+- [x] Update `run_all_tests.sh` to include C backend tests, C example verifier, and error-stage matrix.
   Files: `run_all_tests.sh`, `test/test_codegen_c.py`, `test/test_examples_e2e_c.py`, `test/test_error_stage_matrix.py`
+  Notes: also includes debug/release artifact verification and docs style checks.
 
 - [x] Add semantic regression tests for front-end schema gaps.
   Files: `test/test_semantic_control_flow.py`, `test/test_semantic_comprehensive.py`
@@ -190,8 +191,21 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `scripts/verify_error_stages.py`, `test/test_error_stage_matrix.py`
   Notes: still duplicated, but both surfaces now include deferred semantic error coverage.
 
-- [ ] Run docs/style verification from `run_all_tests.sh`, not only in CI.
+- [x] Run docs/style verification from `run_all_tests.sh`, not only in CI.
   Files: `run_all_tests.sh`, `scripts/check_docs_style.py`
+  Notes: the docs style checker now includes `RELEASE.md`.
+
+- [x] Add release/debug artifact verification script.
+  Files: `scripts/build_examples.py`, `test/test_release_tooling.py`, `RELEASE.md`
+  Notes: builds debug/release artifacts for Zig and C, executes binaries, and checks golden output.
+
+- [x] Add CI coverage for release-oriented gates.
+  Files: `.github/workflows/ci.yml`, `.github/workflows/deploy-docs.yml`, `site/package-lock.json`
+  Notes: CI now installs Zig, runs pytest, error-stage checks, both backend E2E verifiers, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
+
+- [ ] Add tag-based publishing automation.
+  Files: `.github/workflows/`
+  Notes: local `uv build` packaging works; remote publishing target has not been chosen.
 
 ---
 
@@ -211,11 +225,13 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 ## Docs / Project State
 
-- [ ] Remove hard-coded status snapshots and brittle completeness numbers.
+- [x] Remove hard-coded status snapshots and brittle completeness numbers.
   Files: `README.md`, `MISSING_FEATURES.md`, `docs/SPEC.md`, `CHANGELOG.md`
+  Notes: README and SPEC now point to live verification commands instead of stale pass counts.
 
-- [ ] Align status docs with actual remaining feature gaps.
+- [x] Align status docs with actual remaining feature gaps.
   Files: `README.md`, `MISSING_FEATURES.md`, `docs/SPEC.md`, `plan.md`
+  Notes: README, SPEC, site status/testing pages, and release docs now describe current backend/build gates and open caveats.
 
 - [ ] Fix broken documentation links and mark historical docs as archived.
   Files: `README.md`, `docs/SPEC.md`, `docs/archive/README.md`, `docs/ERROR_ANALYSIS.md`

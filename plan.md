@@ -8,6 +8,8 @@ Ship a language-focused preview where syntax, semantics, typing, and backend beh
 - Type checker enforces generic + control-flow semantics for supported features.
 - Match semantics are type-safe and exhaustive where required.
 - C and Zig backend outputs are behaviorally aligned on language conformance tests.
+- Debug and release example artifacts can be built and verified locally.
+- Documentation and CI release gates describe the same commands users run.
 
 ## Milestones
 
@@ -36,12 +38,17 @@ Ship a language-focused preview where syntax, semantics, typing, and backend beh
 - Keep semantic behavior consistent across C and Zig backends.
 - Add differential checks for language features as they are added.
 
+### M7. Release Readiness
+- Keep `a7` installable as a Python console script.
+- Build debug and release artifacts for both backends.
+- Run package, docs, E2E, and error-stage checks before tagging.
+
 ## Implemented in This Iteration
-- Added wildcard pattern parsing (`case _:`).
-- Added match pattern type checking in semantic type checking.
-- Added bool/enum exhaustiveness checks for match statements and match expressions.
-- Added return-path support for exhaustive enum/bool matches without `else`.
-- Added tests for wildcard parsing, pattern type mismatch, exhaustiveness, and return-path behavior.
+- Added compiler handling fixes for deferred statement payloads, return payload traversal, non-iterable `for-in`, constant folding, and semantic diagnostics.
+- Added `a7` as an installed CLI entrypoint.
+- Added debug/release artifact verification through `scripts/build_examples.py`.
+- Expanded `run_all_tests.sh` and CI to cover Python tests, error stages, Zig/C examples, debug/release artifacts, package build, and docs build.
+- Updated README, SPEC, release docs, site docs, changelog, TODO, and missing-feature status.
 
 ## Next Implementation Slice
 - Add `fall` semantic rules and backend lowering.

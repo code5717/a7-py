@@ -32,7 +32,8 @@ export default function Cli() {
       />
 
       <SectionPanel title="Usage">
-        <CodeBlock lang="bash" code={`uv run python main.py [OPTIONS] <file.a7>`} />
+        <CodeBlock lang="bash" code={`uv run a7 [OPTIONS] <file.a7>
+uv run python main.py [OPTIONS] <file.a7>   # repository compatibility wrapper`} />
       </SectionPanel>
 
       <SectionPanel title="Modes">
@@ -57,6 +58,7 @@ uv run python main.py --verbose examples/009_struct.a7`}
             [<code className="doc-inline-code" key="verbose">--verbose</code>, 'Show intermediate results'],
             [<code className="doc-inline-code" key="mode">--mode MODE</code>, 'Set pipeline stage'],
             [<code className="doc-inline-code" key="format">--format json</code>, 'Structured JSON output'],
+            [<code className="doc-inline-code" key="backend">--backend zig|c</code>, 'Select target backend'],
             [<code className="doc-inline-code" key="docout">--doc-out PATH</code>, 'Write markdown report'],
           ]}
         />
