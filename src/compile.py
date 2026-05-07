@@ -24,7 +24,7 @@ from .backends import get_backend
 from .errors import CompilerError, ParseError, SemanticError, display_error, display_errors
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
-from .passes import NameResolutionPass, SemanticValidationPass, TypeCheckingPass
+from .passes import GenericLoweringPass, NameResolutionPass, SemanticValidationPass, TypeCheckingPass
 from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
@@ -323,6 +323,9 @@ class A7Compiler:
             codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
             needs_codegen = self.mode in codegen_modes
             if needs_codegen and ast is not None:
+                if self.backend == "c":
+                    ast = GenericLoweringPass().process(ast)
+
                 preprocessor = ASTPreprocessor(
                     symbol_table=symbol_table,
                     type_map=type_map,

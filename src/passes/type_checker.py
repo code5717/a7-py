@@ -1209,6 +1209,9 @@ class TypeCheckingPass:
         # Check for generic type inference
         generic_mapping = self._infer_generic_types(func_type, arg_types)
         if generic_mapping:
+            # Backend lowering can use this semantic annotation to monomorphize
+            # concrete generic calls without re-running type inference.
+            node.generic_mapping = generic_mapping
             self._check_generic_constraints(func_type, generic_mapping, node.span)
             # Substitute generic types in param_types for type checking
             resolved_param_types = [self._substitute_generic(pt, generic_mapping) for pt in func_type.param_types]

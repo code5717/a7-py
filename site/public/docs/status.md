@@ -7,13 +7,14 @@
 - Debug/release artifact verification is available for both backends.
 - Example end-to-end verification is available for both Zig and C.
 - Selected Zig/C backend parity verification is available.
+- Simple top-level generic function calls lower in the C backend through concrete specialization.
 
 ## Known Gaps
 
 - `fall` is parsed but rejected until fallthrough semantics are designed.
 - Advanced match diagnostics still have incomplete symbolic interval overlap handling.
 - Ownership/borrow-style lifetime guarantees are not implemented.
-- C backend generic function lowering is not implemented.
+- Full generic specialization is incomplete beyond simple top-level generic functions.
 - Runtime union construction/access remains incomplete as a source-language workflow.
 - Built-in stdlib imports are virtual and should later be unified with file-based module semantics.
 - PyPI publishing requires final trusted-publisher setup before the first real release.

@@ -8,6 +8,7 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 - Runnable examples were expanded and rewritten to avoid recursive A7 source.
 - Public curl.md-friendly docs and `llms.txt` are available for agents.
 - Zig/C backend parity checks were added and expanded.
+- C backend generic function calls now specialize simple top-level generic functions before emission.
 - Release artifact checksum generation and verification were added.
 - The docs site was simplified, dark mode was revised, and fake testimonial content was removed.
 

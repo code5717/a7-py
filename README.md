@@ -164,7 +164,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Expressions**: All operators with proper precedence, casts, if-expressions, struct/array literals
 - **Memory**: Property-based pointer syntax (`.adr`, `.val`), new/delete, defer cleanup
 - **Imports**: Module system with named imports, using imports, aliased imports
-- **Generics**: Type parameters (`$T`), constraints, type sets, generic structs
+- **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, and simple top-level generic function calls in both backends
 - **Code Generation**: A7 → Zig and A7 → C backends
 - **Standard Library**: Registry with io and math modules, backend-specific mappings
 - **Error Messages**: Rich formatting with source context and structured error types

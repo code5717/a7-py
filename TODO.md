@@ -125,8 +125,8 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [ ] Multiple return values / destructuring (`a, b, c := 1, 2, 3`).
   Notes: spec'd in §4.1, not parsed.
 
-- [ ] Generic specialization (spec §7.4).
-  Notes: spec'd but not implemented.
+- [ ] Complete generic specialization (spec §7.4).
+  Notes: simple top-level generic function calls now lower in the C backend; generic structs and deeper call-chain propagation still need full runtime coverage.
 
 ### Type Checking Improvements
 
@@ -136,9 +136,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [ ] Propagate generic type parameters through call chains.
   Notes: `Vec(i32).push(x)` should infer `x: i32` without annotation.
 
-- [ ] Lower generic functions in the C backend.
-  Files: `src/backends/c.py`, `src/generics.py`, `examples/014_generics.a7`
-  Notes: generic functions are covered by parser/semantic tests and Zig can emit some `anytype` forms, but release examples cannot use runtime generics until C has a concrete lowering strategy.
+- [ ] Complete C backend generic lowering.
+  Files: `src/passes/generic_lowering.py`, `src/backends/c.py`, `src/generics.py`, `examples/014_generics.a7`
+  Notes: simple top-level generic functions are monomorphized before C codegen; remaining work includes generic structs, nested/composite specializations, and propagation through call chains.
 
 - [ ] Complete runtime union construction and field access.
   Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`, `examples/016_unions.a7`

@@ -67,7 +67,7 @@
    - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, slices, string slices, labels, and function pointers.
    - Keep expanding mandatory parity cases for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
-   - C backend generic function lowering is not implemented; generic coverage remains semantic/test-level rather than runtime example-level.
+   - C backend now lowers simple top-level generic function calls, but generic structs, nested generic workflows, and propagation through method-style call chains still need parity coverage.
    - Union declarations lower, but runtime union field construction/access is not yet a completed source-language workflow.
 
 5. **Release publishing activation**

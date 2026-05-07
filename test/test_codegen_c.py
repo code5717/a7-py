@@ -104,6 +104,52 @@ main :: fn() {
     assert src.with_suffix(".c").exists()
 
 
+def test_c_backend_lowers_simple_generic_function(tmp_path: Path) -> None:
+    src = tmp_path / "generic_id.a7"
+    out = tmp_path / "generic_id.c"
+    src.write_text(
+        """
+identity($T) :: fn(x: $T) $T {
+    ret x
+}
+
+main :: fn() {
+    y := identity(42)
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = run_cli(["--backend", "c", "--output", str(out), str(src)])
+
+    assert result.returncode == ExitCode.SUCCESS, result.stdout + result.stderr
+    assert out.exists()
+    generated = out.read_text(encoding="utf-8")
+    assert "identity__i32" in generated
+    assert "identity(" not in generated
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_runs_multiple_generic_instantiations(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+identity($T) :: fn(x: $T) $T {
+    ret x
+}
+
+main :: fn() {
+    io.println("{} {}", identity(7), identity("ok"))
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "7 ok"
+
+
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_passes_zig_cc_syntax_check(tmp_path: Path) -> None:
     src = tmp_path / "math_io.a7"

@@ -927,16 +927,21 @@ min($T: Numeric) :: fn(a: $T, b: $T) $T {
 ### 7.4 Generic Specialization
 
 ```a7
-// General implementation
-print :: fn($T, value: T) {
-    printf("{}", value)
+identity($T) :: fn(value: $T) $T {
+    ret value
 }
 
-// Specialized for strings
-print :: fn(value: string) {
-    printf("\"{s}\"", value)
+main :: fn() {
+    a := identity(7)
+    b := identity("ok")
 }
 ```
+
+Generic functions are specialized from concrete call sites. Backends that do
+not have native generic functions, such as the C backend, lower simple top-level
+generic function calls into generated concrete functions such as
+`identity__i32` and `identity__string`. Generic structs and deeper propagation
+through method-style call chains remain implementation work.
 
 ---
 
@@ -2148,16 +2153,21 @@ min($T: Numeric) :: fn(a: $T, b: $T) $T {
 ### 7.4 Generic Specialization
 
 ```a7
-// General implementation
-print :: fn($T, value: T) {
-    printf("{}", value)
+identity($T) :: fn(value: $T) $T {
+    ret value
 }
 
-// Specialized for strings
-print :: fn(value: string) {
-    printf("\"{s}\"", value)
+main :: fn() {
+    a := identity(7)
+    b := identity("ok")
 }
 ```
+
+Generic functions are specialized from concrete call sites. Backends that do
+not have native generic functions, such as the C backend, lower simple top-level
+generic function calls into generated concrete functions such as
+`identity__i32` and `identity__string`. Generic structs and deeper propagation
+through method-style call chains remain implementation work.
 
 ---
 

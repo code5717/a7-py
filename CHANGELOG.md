@@ -50,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the public docs map around curl.md-friendly Introduction, Guide,
   Plugins, LLM Resources, and Contributing groups, including static Markdown
   pages for API/SDK, agent plugins, skills, deploy, and kitchen-sink coverage.
+- C backend codegen now monomorphizes simple top-level generic function calls
+  before emission, so concrete calls such as `identity(7)` lower to specialized
+  C functions instead of failing on unresolved `$T` type parameters.
 
 ## [0.3.0] - 2026-05-07
 
