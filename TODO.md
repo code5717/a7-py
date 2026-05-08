@@ -162,8 +162,10 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [x] Check exhaustiveness of match statements.
   Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Exact duplicate patterns and unreachable branches after wildcard or full bool/enum coverage are diagnosed separately.
 
-- [ ] Validate assignment compatibility beyond top-level type equality.
-  Notes: nested struct/array type mismatches (e.g. `[4]i32` vs `[4]f32`) are not caught.
+- [x] Validate assignment compatibility beyond top-level type equality.
+  Notes: array literal assignment now validates every element against the
+  declared array type, including nested array literals, and reports explicit
+  size mismatches.
 
 ### Optimization Passes (high-leverage, low-complexity)
 

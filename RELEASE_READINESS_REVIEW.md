@@ -128,6 +128,9 @@ not factually provable from local tests alone.
 - Untagged union literals now initialize exactly one named field, union field
   access type-checks declared fields, and the union example runs through both
   native backends.
+- Array literal assignment now checks declared lengths and nested element types,
+  and C nested fixed-array declarations emit true multidimensional arrays rather
+  than arrays of pointers.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`
   escapes, and valid escapes are decoded/re-emitted so generated binaries print
   the intended characters.
@@ -188,12 +191,12 @@ not factually provable from local tests alone.
 - `fall` is parsed and rejected during semantic validation; full fallthrough
   lowering is not implemented.
 - Full ownership/lifetime safety is not implemented.
-- Built-in stdlib imports are virtual and still need unification with file-based
-  module semantics.
+- Built-in `std/io` and `std/math` imports are virtual modules; `std/string`,
+  `std/mem`, and collections remain planned rather than current public modules.
 - Backend parity is verified for examples and selected differential smoke
   programs, including core control flow, match, slices, string slices, labels,
-  and function pointers. It is still not exhaustive for all possible source
-  programs.
+  function pointers, and contextual array literal assignment. It is still not
+  exhaustive for all possible source programs.
 - Tag-based PyPI publishing is wired, but `a7-py` is not yet a public PyPI
   project and still needs matching trusted-publisher configuration before the
   first real publish.

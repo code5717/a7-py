@@ -401,8 +401,9 @@ Current state:
 - Direct and mutual source recursion are semantic errors.
 - Debug/release artifact verification is available for both backends.
 - Example end-to-end verification is available for both Zig and C.
-- Selected Zig/C backend parity verification is available.
+- Selected Zig/C backend parity verification is available, including contextual array literal assignment.
 - Simple top-level generic function calls lower in the C backend through concrete specialization.
+- Array literal assignment validates declared lengths and nested element types.
 
 Known gaps:
 

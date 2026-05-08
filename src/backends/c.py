@@ -687,12 +687,11 @@ class CCodeGenerator(CodeGenerator):
         explicit_type = getattr(node, "explicit_type", None)
 
         if explicit_type and explicit_type.kind == NodeKind.TYPE_ARRAY:
-            elem_type = self._emit_type_node(explicit_type.element_type)
-            size = self._emit_expr(explicit_type.size) if explicit_type.size else "0"
+            declarator = self._emit_array_declarator(explicit_type, name)
             if node.value and node.value.kind == NodeKind.ARRAY_INIT:
                 init = self._emit_array_init(node.value)
                 self._write_indent()
-                self.output.write(f"{elem_type} {name}[{size}] = {init};\n")
+                self.output.write(f"{declarator} = {init};\n")
             elif node.value:
                 raise CodegenError(
                     "C backend: array variable must be initialized with array literal",
@@ -700,7 +699,7 @@ class CCodeGenerator(CodeGenerator):
                 )
             else:
                 self._write_indent()
-                self.output.write(f"{elem_type} {name}[{size}] = {{0}};\n")
+                self.output.write(f"{declarator} = {{0}};\n")
             return
 
         if explicit_type and explicit_type.kind == NodeKind.TYPE_FUNCTION:
@@ -1608,7 +1607,20 @@ class CCodeGenerator(CodeGenerator):
     def _emit_declarator(self, type_node: ASTNode, name: str) -> str:
         if type_node.kind == NodeKind.TYPE_FUNCTION:
             return self._emit_function_pointer_declarator(type_node, name)
+        if type_node.kind == NodeKind.TYPE_ARRAY:
+            return self._emit_array_declarator(type_node, name)
         return f"{self._emit_type_node(type_node)} {name}"
+
+    def _emit_array_declarator(self, type_node: ASTNode, name: str) -> str:
+        dimensions: list[str] = []
+        current = type_node
+        while current is not None and current.kind == NodeKind.TYPE_ARRAY:
+            dimensions.append(self._emit_expr(current.size) if current.size else "0")
+            current = current.element_type
+
+        base = self._emit_type_node(current) if current is not None else "uint8_t"
+        suffix = "".join(f"[{dim}]" for dim in dimensions)
+        return f"{base} {name}{suffix}"
 
     def _emit_function_pointer_declarator(self, type_node: ASTNode, name: str) -> str:
         return_type = self._emit_type_node(type_node.return_type) if type_node.return_type else "void"

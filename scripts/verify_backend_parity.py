@@ -106,6 +106,17 @@ main :: fn() {
     io.println("indexed = {} {}", index_sum, indexed_value_total)
 }
 ''',
+    "array_literal_assignment": r'''
+io :: import "std/io"
+
+main :: fn() {
+    widened: [3]i64 = [1, 2, 3]
+    matrix: [2][2]i64 = [[1, 2], [3, 4]]
+    total := widened[0] + widened[1] + widened[2]
+    total += matrix[0][0] + matrix[0][1] + matrix[1][0] + matrix[1][1]
+    io.println("array assignment = {}", total)
+}
+''',
     "match_statement_ranges": r'''
 io :: import "std/io"
 

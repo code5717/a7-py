@@ -649,7 +649,17 @@ class TypeCheckingPass:
                     got_type=str(explicit_type),
                     context=f"Variable '{var_name}'"
                 )
-            elif node.value and not is_nil_value and not value_type.is_assignable_to(explicit_type):
+            elif (
+                node.value
+                and not is_nil_value
+                and not self._is_initializer_assignable_to(
+                    node.value,
+                    value_type,
+                    explicit_type,
+                    node.span,
+                    context=f"Variable '{var_name}'",
+                )
+            ):
                 # Generic locals may be initialized from literals before call-site substitution.
                 is_generic_relaxed = (
                     isinstance(explicit_type, GenericParamType)
@@ -798,7 +808,13 @@ class TypeCheckingPass:
                     self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, node.span, got_type=str(lhs_type), context=f"Operator {op.name} requires integer type")
 
         # Check assignment compatibility
-        if not rhs_type.is_assignable_to(lhs_type):
+        if not self._is_initializer_assignable_to(
+            node.value,
+            rhs_type,
+            lhs_type,
+            node.span,
+            context="Assignment",
+        ):
             self.add_type_error(
                 TypeErrorType.ASSIGNMENT_TYPE_MISMATCH,
                 node.span,
@@ -2202,7 +2218,13 @@ class TypeCheckingPass:
                 # Type check the value
                 if field_init.value:
                     actual_type = self.visit_expression(field_init.value)
-                    if expected_type and not actual_type.is_assignable_to(expected_type):
+                    if expected_type and not self._is_initializer_assignable_to(
+                        field_init.value,
+                        actual_type,
+                        expected_type,
+                        field_init.span,
+                        context=f"Field '{field_name}'",
+                    ):
                         self.add_type_error(
                             TypeErrorType.TYPE_MISMATCH,
                             field_init.span,
@@ -2238,7 +2260,13 @@ class TypeCheckingPass:
 
         if field_init.value:
             actual_type = self.visit_expression(field_init.value)
-            if not actual_type.is_assignable_to(expected_field.field_type):
+            if not self._is_initializer_assignable_to(
+                field_init.value,
+                actual_type,
+                expected_field.field_type,
+                field_init.span,
+                context=f"Union field '{field_name}'",
+            ):
                 self.add_type_error(
                     TypeErrorType.TYPE_MISMATCH,
                     field_init.span,
@@ -2255,9 +2283,107 @@ class TypeCheckingPass:
         if node.elements and len(node.elements) > 0:
             elem_type = self.visit_expression(node.elements[0])
             size = len(node.elements)
+            for index, element in enumerate(node.elements[1:], start=1):
+                actual_type = self.visit_expression(element)
+                common_type = self._common_array_literal_element_type(elem_type, actual_type)
+                if common_type is None:
+                    self.add_type_error(
+                        TypeErrorType.TYPE_MISMATCH,
+                        element.span,
+                        expected_type=str(elem_type),
+                        got_type=str(actual_type),
+                        context=f"Array element {index}",
+                    )
+                else:
+                    elem_type = common_type
             return ArrayType(element_type=elem_type, size=size)
 
         return UNKNOWN
+
+    def _common_array_literal_element_type(self, left: Type, right: Type) -> Optional[Type]:
+        """Find a common literal element type without accepting unrelated shapes."""
+        if right.is_assignable_to(left):
+            return left
+        if left.is_assignable_to(right):
+            return right
+        if isinstance(left, ArrayType) and isinstance(right, ArrayType) and left.size == right.size:
+            element_type = self._common_array_literal_element_type(left.element_type, right.element_type)
+            if element_type is not None:
+                return ArrayType(element_type=element_type, size=left.size)
+        return None
+
+    def _is_initializer_assignable_to(
+        self,
+        value_node: Optional[ASTNode],
+        actual_type: Type,
+        expected_type: Type,
+        span: Optional[SourceSpan],
+        context: str = "Initializer",
+    ) -> bool:
+        """Check assignment with literal-specific validation for composite types."""
+        if (
+            value_node
+            and value_node.kind == NodeKind.ARRAY_INIT
+            and isinstance(expected_type, ArrayType)
+        ):
+            return self._check_array_initializer_assignable(
+                value_node,
+                expected_type,
+                span,
+                context,
+            )
+
+        return actual_type.is_assignable_to(expected_type)
+
+    def _check_array_initializer_assignable(
+        self,
+        node: ASTNode,
+        expected_type: ArrayType,
+        span: Optional[SourceSpan],
+        context: str,
+    ) -> bool:
+        elements = node.elements or []
+        ok = True
+
+        if len(elements) != expected_type.size:
+            self.add_type_error(
+                TypeErrorType.TYPE_MISMATCH,
+                span or node.span,
+                expected_type=f"[{expected_type.size}]{expected_type.element_type}",
+                got_type=f"[{len(elements)}]{expected_type.element_type}",
+                context=f"{context} array size mismatch",
+            )
+            ok = False
+
+        for index, element in enumerate(elements):
+            actual_element_type = self.get_type(element)
+            if actual_element_type is None:
+                actual_element_type = self.visit_expression(element)
+
+            if (
+                element.kind == NodeKind.ARRAY_INIT
+                and isinstance(expected_type.element_type, ArrayType)
+            ):
+                if not self._check_array_initializer_assignable(
+                    element,
+                    expected_type.element_type,
+                    element.span,
+                    f"{context} element {index}",
+                ):
+                    ok = False
+                continue
+
+            if not actual_element_type.is_assignable_to(expected_type.element_type):
+                self.add_type_error(
+                    TypeErrorType.TYPE_MISMATCH,
+                    element.span,
+                    expected_type=str(expected_type.element_type),
+                    got_type=str(actual_element_type),
+                    context=f"{context} element {index}",
+                )
+                ok = False
+
+        return ok
 
     def visit_new_expr(self, node: ASTNode) -> Type:
         """Visit a new expression."""

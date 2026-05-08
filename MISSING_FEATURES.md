@@ -64,7 +64,7 @@
    - Ownership/borrow-style lifetime guarantees are not implemented.
 
 4. **Backend semantic parity hardening**
-   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, slices, string slices, labels, and function pointers.
+   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, slices, string slices, labels, function pointers, and contextual array literal assignment.
    - Keep expanding mandatory parity cases for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
    - C backend now lowers simple top-level generic function calls, but generic structs, nested generic workflows, and propagation through method-style call chains still need parity coverage.

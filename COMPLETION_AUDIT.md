@@ -43,6 +43,7 @@ Deliverables implied by the active objective:
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs | Implemented for named call cycles |
 | No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |
 | Virtual stdlib module resolution | `src/module_resolver.py`, `src/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
+| Array literal assignment compatibility | `src/passes/type_checker.py`, `src/backends/c.py`, `test/test_semantic_types.py`, `test/test_codegen_c.py`, `scripts/verify_backend_parity.py`; local full gate | Covered for declared lengths, nested literals, and Zig/C runtime parity |
 
 ## Incomplete Or Weakly Covered Areas
 

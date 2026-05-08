@@ -222,6 +222,26 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_supports_nested_array_literal_declarations(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    widened: [3]i64 = [1, 2, 3]
+    matrix: [2][2]i64 = [[1, 2], [3, 4]]
+    total := widened[0] + widened[1] + widened[2]
+    total += matrix[0][0] + matrix[0][1] + matrix[1][0] + matrix[1][1]
+    io.println("{}", total)
+}
+""",
+        tmp_path,
+    )
+    assert result.returncode == 0
+    assert result.stdout.strip() == "16"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_supports_slice_expr_index_and_for_in(tmp_path: Path) -> None:
     result = build_and_run_c(
         """

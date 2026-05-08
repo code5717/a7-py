@@ -207,6 +207,10 @@ s: MyStruct = nil      // ERROR: value structs cannot be nil
 - Single value (all elements): `arr: [5]i32 = 0`
 - Array literal: `arr: [5]i32 = [1, 2, 3, 4, 5]`
 
+Array literals must match the declared array length when a target type is
+present. Each element is checked against the declared element type, including
+nested array literals.
+
 ---
 
 ## 3. Type System
@@ -1543,6 +1547,10 @@ s: MyStruct = nil      // ERROR: value structs cannot be nil
 - No initializer (zero-initialized): `arr: [5]i32`
 - Single value (all elements): `arr: [5]i32 = 0`
 - Array literal: `arr: [5]i32 = [1, 2, 3, 4, 5]`
+
+Array literals must match the declared array length when a target type is
+present. Each element is checked against the declared element type, including
+nested array literals.
 
 ---
 

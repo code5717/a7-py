@@ -67,6 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Markdown compilation reports now render virtual stdlib modules as `module`
   instead of `unknown type`, use an explicit in-memory output label in doc mode,
   and the examples catalog now describes the current union example accurately.
+- Array literal assignment checks now validate every element against the
+  declared array type, including nested arrays, and report explicit size
+  mismatches instead of relying on top-level array type equality.
+- C backend fixed nested fixed-array declarations such as `[2][2]i64`, and
+  backend parity now covers contextual array literal assignment.
 
 ## [0.3.0] - 2026-05-07
 

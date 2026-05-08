@@ -193,6 +193,42 @@ class TestArrayAndSliceTypes:
         """
         assert expect_success(source)
 
+    def test_array_literal_uses_declared_element_compatibility(self):
+        """Array literals are checked against the declared element type."""
+        source = """
+        main :: fn() {
+            arr: [3]i64 = [1, 2, 3]
+        }
+        """
+        assert expect_success(source)
+
+    def test_array_literal_allows_declared_float_widening(self):
+        """Contextual array checks allow integer literals in declared float arrays."""
+        source = """
+        main :: fn() {
+            arr: [3]f64 = [1, 2.5, 3]
+        }
+        """
+        assert expect_success(source)
+
+    def test_nested_array_literal_uses_declared_element_compatibility(self):
+        """Nested array literals are checked recursively against the declared type."""
+        source = """
+        main :: fn() {
+            matrix: [2][2]i64 = [[1, 2], [3, 4]]
+        }
+        """
+        assert expect_success(source)
+
+    def test_nested_array_literal_allows_declared_float_widening(self):
+        """Nested contextual array checks avoid first-element-only inference."""
+        source = """
+        main :: fn() {
+            matrix: [2][2]f64 = [[1, 2], [3.5, 4.0]]
+        }
+        """
+        assert expect_success(source)
+
     def test_array_type_inference(self):
         """Test array type inference from literal."""
         source = """
@@ -201,6 +237,42 @@ class TestArrayAndSliceTypes:
         }
         """
         assert expect_success(source)
+
+    def test_array_literal_rejects_incompatible_inferred_elements(self):
+        """Inferred array literals must still be homogeneous."""
+        source = """
+        main :: fn() {
+            arr := [1, "two"]
+        }
+        """
+        assert expect_error(source, "array element")
+
+    def test_array_literal_inference_promotes_numeric_elements(self):
+        """Inferred array literals keep the wider compatible element type."""
+        source = """
+        main :: fn() {
+            arr := [1, 2.5, 3]
+        }
+        """
+        assert expect_success(source)
+
+    def test_declared_array_literal_rejects_incompatible_elements(self):
+        """Declared array literals check every element, not only the top-level shape."""
+        source = """
+        main :: fn() {
+            arr: [2]i32 = [1, "two"]
+        }
+        """
+        assert expect_error(source, "element")
+
+    def test_nested_array_literal_rejects_incompatible_elements(self):
+        """Nested array literal element mismatches are semantic errors."""
+        source = """
+        main :: fn() {
+            matrix: [2][2]i32 = [[1, 2], [3, "four"]]
+        }
+        """
+        assert expect_error(source, "element")
 
     def test_slice_type_declaration(self):
         """Test slice type declarations."""
@@ -312,10 +384,7 @@ class TestArrayAndSliceTypes:
             arr: [3]i32 = [1, 2, 3, 4, 5]
         }
         """
-        # This should error - array literal size doesn't match declared size
-        result = expect_error(source, "size")
-        # Might not be implemented yet, so just check it runs
-        assert isinstance(result, bool)
+        assert expect_error(source, "size")
 
 
 class TestPointerAndReferenceTypes:
