@@ -235,7 +235,8 @@ class ASTPreprocessor:
             obj = getattr(func, 'object', None)
             field = getattr(func, 'field', '')
             if obj and obj.kind == NodeKind.IDENTIFIER and obj.name:
-                canonical = self.stdlib.resolve_call(obj.name, field)
+                module_name = self._resolve_module_import_path(obj.name) or obj.name
+                canonical = self.stdlib.resolve_call(module_name, field)
                 if canonical:
                     node.stdlib_canonical = canonical
                     self.changes_made += 1
@@ -246,6 +247,18 @@ class ASTPreprocessor:
             if canonical:
                 node.stdlib_canonical = canonical
                 self.changes_made += 1
+
+    def _resolve_module_import_path(self, alias: str) -> Optional[str]:
+        """Return the import path for a module alias in the semantic symbol table."""
+        if self.symbol_table is None:
+            return None
+
+        symbol = self.symbol_table.lookup(alias)
+        if symbol is None or getattr(getattr(symbol, "kind", None), "name", None) != "MODULE":
+            return None
+
+        node = getattr(symbol, "node", None)
+        return getattr(node, "module_path", None)
 
     # ================================================================
     # Pass 3: Normalize struct initialization

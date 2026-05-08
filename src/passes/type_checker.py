@@ -22,6 +22,7 @@ from src.types import (
     get_primitive_type, get_predefined_type_set
 )
 from src.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
+from src.stdlib import StdlibRegistry
 
 
 class TypeCheckingPass:
@@ -56,6 +57,7 @@ class TypeCheckingPass:
         self._resolving_type_aliases: Set[str] = set()
         self._resolved_type_aliases: Set[str] = set()
         self._generic_constraints: Dict[str, TypeSet] = {}
+        self.stdlib = StdlibRegistry()
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
         """
@@ -1441,7 +1443,15 @@ class TypeCheckingPass:
         if node.object and hasattr(node.object, 'name'):
             obj_symbol = self.symbols.lookup(node.object.name or "")
             if obj_symbol and obj_symbol.kind == SymbolKind.MODULE:
-                # Module field access — return UNKNOWN since module isn't loaded
+                module_path = getattr(getattr(obj_symbol, "node", None), "module_path", None)
+                canonical_module = self.stdlib.canonical_module_name(module_path or "")
+                if canonical_module and self.stdlib.resolve_call(module_path or "", field_name) is None:
+                    self.add_type_error(
+                        TypeErrorType.NO_SUCH_FIELD,
+                        node.span,
+                        context=f"Stdlib module '{module_path}' has no function '{field_name}'",
+                    )
+                # Module field access returns UNKNOWN; calls are lowered by the stdlib preprocessor.
                 return UNKNOWN
 
         if isinstance(obj_type, GenericInstanceType):

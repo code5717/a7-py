@@ -53,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C backend codegen now monomorphizes simple top-level generic function calls
   before emission, so concrete calls such as `identity(7)` lower to specialized
   C functions instead of failing on unresolved `$T` type parameters.
+- Built-in stdlib imports now register virtual module symbols through the
+  module resolver and resolve backend lowering from the imported module path,
+  so aliases such as `console :: import "std/io"` and
+  `mathlib :: import "std/math"` work consistently and unknown stdlib
+  functions fail during semantic analysis.
 
 ## [0.3.0] - 2026-05-07
 

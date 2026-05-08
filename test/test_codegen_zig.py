@@ -25,6 +25,7 @@ from src.ast_nodes import ASTNode, NodeKind
 from src.backends.zig import ZigCodeGenerator
 from src.errors import CodegenError
 from src.passes import NameResolutionPass, TypeCheckingPass, SemanticValidationPass
+from src.stdlib import StdlibRegistry
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
 
@@ -67,7 +68,11 @@ def compile_a7_to_zig(source: str, filename: str = "test.a7") -> str:
 
     # Preprocess AST
     from src.ast_preprocessor import ASTPreprocessor
-    preprocessor = ASTPreprocessor()
+    preprocessor = ASTPreprocessor(
+        symbol_table=symbol_table,
+        type_map=type_map,
+        stdlib=StdlibRegistry(),
+    )
     ast = preprocessor.process(ast)
 
     # Generate Zig
@@ -213,6 +218,22 @@ main :: fn() {
 '''
         zig = compile_a7_to_zig(source)
         assert 'std.debug.print("line\\nquote: \\"A\\"!", .{})' in zig
+
+    def test_stdlib_import_aliases_emit_zig_stdlib_calls(self):
+        """Arbitrary aliases for std/io and std/math should still lower as stdlib."""
+        source = """
+console :: import "std/io"
+mathlib :: import "std/math"
+
+main :: fn() {
+    console.println("{}", mathlib.sqrt(9.0))
+}
+"""
+        zig = compile_a7_to_zig(source)
+        assert 'const std = @import("std");' in zig
+        assert 'std.debug.print("{any}\\n", .{@sqrt(9.0)});' in zig
+        assert "console.println" not in zig
+        assert "mathlib.sqrt" not in zig
 
     def test_slice_ptr_and_len_fields_emit_zig_slice_fields(self):
         source = '''

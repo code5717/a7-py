@@ -24,6 +24,8 @@ The repository is substantially more release-ready than before this pass:
 - consolidated docs-site navigation with curl.md-friendly Markdown entry points
   under `site/public/llms.txt` and `site/public/docs/`
 - C backend specialization for simple top-level generic function calls
+- virtual `std/io`, `io`, `std/math`, and `math` imports registered through the
+  module resolver, with alias-safe backend lowering
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -37,6 +39,7 @@ not factually provable from local tests alone.
 - `uv run python scripts/build_examples.py --profile release --backend both --clean`
 - `uv run python scripts/verify_backend_parity.py`
 - `uv run pytest test/test_codegen_c.py::test_c_backend_lowers_simple_generic_function test/test_codegen_c.py::test_generated_c_runs_multiple_generic_instantiations -q`
+- `uv run pytest test/test_stdlib_registry.py test/test_module_resolver.py test/test_cli_failures.py::test_cli_unknown_virtual_stdlib_function_returns_semantic_error test/test_codegen_c.py::test_generated_c_resolves_stdlib_import_aliases test/test_codegen_zig.py::TestCodePatterns::test_stdlib_import_aliases_emit_zig_stdlib_calls -q`
 - `./run_all_tests.sh`
 - `uv build`
 - local `dist/` cleanup before package builds

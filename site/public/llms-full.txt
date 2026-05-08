@@ -114,7 +114,8 @@ A7 is not memory safe yet. The compiler has basic checks around `del` and refere
 
 Do not run untrusted A7 source. A7 emits native Zig or C programs.
 
-Current virtual stdlib support is limited to `std/io` and `std/math`.
+Current virtual stdlib support is limited to `std/io` and `std/math`. These
+modules may be imported with arbitrary local aliases.
 
 ## Features
 
@@ -283,6 +284,10 @@ Current virtual stdlib support:
 - `std/io`: `io.println`, `io.print`, `io.eprintln`
 - `std/math`: `sqrt`, `abs`, `floor`, `ceil`, `sin`, `cos`, `tan`, `log`, `exp`, `min`, `max` with `f32` and `f64` typed variants
 
+These modules are virtual built-ins registered through the module resolver, so
+local aliases such as `console :: import "std/io"` and
+`mathlib :: import "std/math"` lower the same way as `io` and `math`.
+
 Source stubs such as `mem` and `string` exist in the repository but are not registered public stdlib modules yet.
 
 ## CLI
@@ -402,7 +407,7 @@ Known gaps:
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Full generic specialization is incomplete beyond simple top-level generic functions.
 - Runtime union construction/access remains incomplete as a source-language workflow.
-- Built-in stdlib imports are virtual and should later be unified with file-based module semantics.
+- `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
 - PyPI publishing requires final trusted-publisher setup before the first real release.
 
 ## Contributing

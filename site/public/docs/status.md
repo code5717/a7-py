@@ -16,7 +16,7 @@
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Full generic specialization is incomplete beyond simple top-level generic functions.
 - Runtime union construction/access remains incomplete as a source-language workflow.
-- Built-in stdlib imports are virtual and should later be unified with file-based module semantics.
+- `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
 - PyPI publishing requires final trusted-publisher setup before the first real release.
 
 See [`MISSING_FEATURES.md`](https://github.com/code5717/a7-py/blob/master/MISSING_FEATURES.md) for the source-of-truth gap list.

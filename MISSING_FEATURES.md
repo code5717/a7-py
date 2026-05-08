@@ -80,7 +80,7 @@
 
 6. **Module-system parity**
    - Missing or broken local imports now fail closed.
-   - Built-in stdlib imports are still virtual and should be unified with file-based module semantics later.
+   - Built-in stdlib imports are virtual modules, but now participate in `ModuleResolver`/`ModuleTable` symbol registration like file-based modules.
    - `std/string`, `std/mem`, and `std/collections` are planned but not current public stdlib modules.
 
 ---

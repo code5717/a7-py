@@ -5,7 +5,15 @@ Maps A7 stdlib modules/functions to canonical names and backend-specific impleme
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict
+from typing import Optional, Dict, Set
+
+
+STDLIB_MODULE_ALIASES: Dict[str, str] = {
+    "io": "io",
+    "std/io": "io",
+    "math": "math",
+    "std/math": "math",
+}
 
 
 @dataclass
@@ -45,12 +53,21 @@ class StdlibRegistry:
         """Register a stdlib module."""
         self.modules[module.name] = module
 
+    def canonical_module_name(self, module_name: str) -> Optional[str]:
+        """Return the registry module name for a public stdlib import path."""
+        return STDLIB_MODULE_ALIASES.get(module_name)
+
+    def public_module_paths(self) -> Set[str]:
+        """Return all public import paths provided by the built-in stdlib."""
+        return set(STDLIB_MODULE_ALIASES)
+
     def register_builtin(self, bare_name: str, func: StdlibFunction):
         """Register a bare builtin name (e.g., sqrt_f32) that maps to a stdlib function."""
         self._builtin_map[bare_name] = func
 
     def resolve_call(self, module_name: str, method_name: str) -> Optional[str]:
         """Resolve a module.method call to its canonical name."""
+        module_name = self.canonical_module_name(module_name) or module_name
         module = self.modules.get(module_name)
         if module:
             func = module.functions.get(method_name)
@@ -83,4 +100,4 @@ class StdlibRegistry:
         return canonical is not None and canonical.startswith("std.io.")
 
 
-__all__ = ["StdlibRegistry", "StdlibFunction", "StdlibModule"]
+__all__ = ["StdlibRegistry", "StdlibFunction", "StdlibModule", "STDLIB_MODULE_ALIASES"]

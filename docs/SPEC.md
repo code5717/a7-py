@@ -2307,6 +2307,9 @@ Current implementation:
 
 - `std/io` and `io` are virtual modules backed by compiler/backend mappings.
 - `std/math` and `math` are virtual modules backed by compiler/backend mappings.
+- Virtual stdlib modules are registered through the module resolver and may be
+  imported with arbitrary local aliases, for example
+  `console :: import "std/io"`.
 - Local file imports such as `./vector` resolve from on-disk `.a7` files.
 
 Planned, not implemented as public stdlib modules yet:

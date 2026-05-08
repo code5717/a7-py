@@ -55,6 +55,11 @@ class TestStdlibRegistryInitialization:
         registry = StdlibRegistry()
         assert set(registry.modules.keys()) == {"io", "math"}
 
+    def test_public_module_paths_include_short_and_std_paths(self):
+        """Stdlib imports should accept both short and std-prefixed paths."""
+        registry = StdlibRegistry()
+        assert registry.public_module_paths() == {"io", "std/io", "math", "std/math"}
+
 
 class TestResolveCall:
     """Test resolve_call for module.method lookups."""
@@ -63,6 +68,12 @@ class TestResolveCall:
         """resolve_call('io', 'println') should return 'std.io.println'."""
         registry = StdlibRegistry()
         result = registry.resolve_call("io", "println")
+        assert result == "std.io.println"
+
+    def test_std_io_println_alias(self):
+        """resolve_call('std/io', 'println') should resolve through the io module."""
+        registry = StdlibRegistry()
+        result = registry.resolve_call("std/io", "println")
         assert result == "std.io.println"
 
     def test_io_print(self):
@@ -81,6 +92,12 @@ class TestResolveCall:
         """resolve_call('math', 'sqrt') should return 'std.math.sqrt'."""
         registry = StdlibRegistry()
         result = registry.resolve_call("math", "sqrt")
+        assert result == "std.math.sqrt"
+
+    def test_std_math_sqrt_alias(self):
+        """resolve_call('std/math', 'sqrt') should resolve through the math module."""
+        registry = StdlibRegistry()
+        result = registry.resolve_call("std/math", "sqrt")
         assert result == "std.math.sqrt"
 
     def test_math_abs(self):

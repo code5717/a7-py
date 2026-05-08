@@ -42,6 +42,7 @@ Deliverables implied by the active objective:
 | PyPI publishing | `.github/workflows/release.yml`, GitHub `pypi` environment documented | Blocked until PyPI project/trusted publisher exists |
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs | Implemented for named call cycles |
 | No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |
+| Virtual stdlib module resolution | `src/module_resolver.py`, `src/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
 
 ## Incomplete Or Weakly Covered Areas
 
@@ -54,16 +55,14 @@ These prevent a factual "100% confident" claim:
    lowering are not designed.
 4. Full ownership, borrowing, lifetime, use-after-free, and double-free
    guarantees are not implemented.
-5. Built-in stdlib imports are still virtual and not unified with file-based
-   module resolution.
-6. Full generic specialization is incomplete beyond simple top-level generic
+5. Full generic specialization is incomplete beyond simple top-level generic
    functions lowered for the C backend.
-7. Runtime union construction and field-access workflows remain incomplete.
-8. PyPI publishing is wired but cannot be proven until the public PyPI project
+6. Runtime union construction and field-access workflows remain incomplete.
+7. PyPI publishing is wired but cannot be proven until the public PyPI project
    and trusted publisher are created/configured outside this repository.
-9. Secret scanning is pattern-based and should be backed by repository-host
+8. Secret scanning is pattern-based and should be backed by repository-host
    protections for public release.
-10. Dependency audits cover known advisories, not unknown supply-chain
+9. Dependency audits cover known advisories, not unknown supply-chain
     compromise.
 
 ## Conclusion

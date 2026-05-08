@@ -109,9 +109,9 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/compile.py`, `src/module_resolver.py`
   Notes: fixed for local file-based imports; missing or broken dependencies now fail as semantic errors while virtual stdlib imports remain supported.
 
-- [ ] Unify built-in stdlib imports with file-based module resolution.
+- [x] Unify built-in stdlib imports with file-based module resolution.
   Files: `src/module_resolver.py`, `src/passes/name_resolution.py`, `src/stdlib/__init__.py`
-  Notes: decide whether `std/io` and `std/math` are virtual built-ins, on-disk modules, or both.
+  Notes: `std/io`, `io`, `std/math`, and `math` are virtual built-ins registered through `ModuleResolver`/`ModuleTable`; backend lowering now uses the import path rather than requiring aliases named `io` or `math`.
 
 - [ ] Reconcile examples and docs with the actual stdlib surface.
   Files: `README.md`, `examples/030_calculator.a7`, `examples/001_hello.md`

@@ -10,8 +10,10 @@ from pathlib import Path
 import os
 
 from src.ast_nodes import ASTNode, NodeKind
-from src.symbol_table import SymbolTable, ModuleTable
+from src.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
 from src.errors import SemanticError
+from src.stdlib import StdlibRegistry
+from src.types import UNKNOWN
 
 
 @dataclass
@@ -50,13 +52,14 @@ class ModuleResolver:
         self.search_paths = search_paths or ["."]
         self.loaded_modules: Dict[str, ModuleInfo] = {}
         self.module_table = ModuleTable()
+        self.stdlib = StdlibRegistry()
 
         # Track currently loading modules for circular dependency detection
         self.loading_stack: List[str] = []
 
-        # Built-in stdlib modules are resolved by StdlibRegistry and backend
-        # mappings, not by on-disk .a7 files.
-        self.virtual_modules: Set[str] = {"std/io", "std/math", "io", "math"}
+        # Built-in stdlib modules are virtual modules backed by StdlibRegistry
+        # symbols and backend mappings rather than on-disk .a7 files.
+        self.virtual_modules: Set[str] = self.stdlib.public_module_paths()
 
     def is_virtual_module(self, module_path: str) -> bool:
         """Return True when an import is provided by the built-in stdlib registry."""
@@ -103,7 +106,7 @@ class ModuleResolver:
             return self.loaded_modules[module_path]
 
         if self.is_virtual_module(module_path):
-            return None
+            return self._load_virtual_module(module_path)
 
         # Check for circular dependency
         if module_path in self.loading_stack:
@@ -227,8 +230,6 @@ class ModuleResolver:
         loaded = []
         for module_path in import_paths:
             try:
-                if self.is_virtual_module(module_path):
-                    continue
                 module_info = self.load_module(module_path)
                 if module_info:
                     loaded.append(module_info)
@@ -251,6 +252,41 @@ class ModuleResolver:
     def get_module_table(self) -> ModuleTable:
         """Get the module table."""
         return self.module_table
+
+    def _load_virtual_module(self, module_path: str) -> ModuleInfo:
+        """Load a built-in stdlib module into the same cache/table as file modules."""
+        if module_path in self.loaded_modules:
+            return self.loaded_modules[module_path]
+
+        canonical_name = self.stdlib.canonical_module_name(module_path)
+        if canonical_name is None:
+            raise SemanticError(f"Unknown virtual stdlib module '{module_path}'")
+
+        module = self.stdlib.modules.get(canonical_name)
+        if module is None:
+            raise SemanticError(f"Stdlib module '{module_path}' is not registered")
+
+        symbols = SymbolTable()
+        for func in module.functions.values():
+            symbols.define(Symbol(
+                name=func.name,
+                kind=SymbolKind.FUNCTION,
+                type=UNKNOWN,
+                is_mutable=False,
+            ))
+
+        module_info = ModuleInfo(
+            path=module_path,
+            file_path=f"<stdlib:{module_path}>",
+            ast=None,
+            symbols=symbols,
+            dependencies=[],
+        )
+        self.module_table.register_module(module_path, symbols)
+        if canonical_name != module_path:
+            self.module_table.register_module(canonical_name, symbols)
+        self.loaded_modules[module_path] = module_info
+        return module_info
 
     def topological_sort(self) -> List[str]:
         """

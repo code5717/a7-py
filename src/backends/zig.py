@@ -86,7 +86,10 @@ class ZigCodeGenerator(CodeGenerator):
                 self._needs_std = True
 
             if node.kind == NodeKind.CALL:
-                # Check for io.println / io.print calls
+                # Check for stdlib io print calls.
+                canonical = getattr(node, "stdlib_canonical", None)
+                if canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}:
+                    self._needs_std = True
                 if node.function and node.function.kind == NodeKind.FIELD_ACCESS:
                     obj = getattr(node.function, 'object', None)
                     if obj and obj.kind == NodeKind.IDENTIFIER and getattr(obj, 'name', '') == 'io':
@@ -1127,6 +1130,14 @@ class ZigCodeGenerator(CodeGenerator):
         if self._is_io_call(node):
             return self._emit_io_call_expr(node)
 
+        canonical = getattr(node, "stdlib_canonical", None)
+        if canonical and canonical.startswith("std.math."):
+            short = canonical.split(".")[-1]
+            if short in ('sqrt', 'abs', 'floor', 'ceil', 'sin', 'cos', 'tan',
+                         'log', 'exp', 'min', 'max'):
+                args = ", ".join(self._emit_expr(a) for a in (node.arguments or []))
+                return f"@{short}({args})"
+
         func = self._emit_expr(node.function)
 
         # Map A7 math builtins to Zig builtins
@@ -1409,21 +1420,25 @@ class ZigCodeGenerator(CodeGenerator):
     # === I/O special-casing ===
 
     def _is_io_call(self, node: ASTNode) -> bool:
-        """Check if this is an io.println or io.print call."""
+        """Check if this is an stdlib io print call."""
         if node.kind != NodeKind.CALL:
             return False
+        canonical = getattr(node, "stdlib_canonical", None)
+        if canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}:
+            return True
         func = node.function
         if func and func.kind == NodeKind.FIELD_ACCESS:
             obj = getattr(func, 'object', None)
             if obj and obj.kind == NodeKind.IDENTIFIER and getattr(obj, 'name', '') == 'io':
                 field = getattr(func, 'field', '')
-                return field in ('println', 'print')
+                return field in ('println', 'print', 'eprintln')
         return False
 
     def _emit_io_call(self, node: ASTNode) -> None:
         """Emit an io.println/io.print call as a statement."""
         func = node.function
-        field = getattr(func, 'field', 'println')
+        canonical = getattr(node, "stdlib_canonical", None)
+        field = canonical.split(".")[-1] if canonical else getattr(func, 'field', 'println')
         args = node.arguments or []
 
         self._write_indent()
@@ -1458,7 +1473,8 @@ class ZigCodeGenerator(CodeGenerator):
         """Emit io call as an expression (returns void)."""
         # This shouldn't normally be used as an expression but handle it
         func = node.function
-        field = getattr(func, 'field', 'println')
+        canonical = getattr(node, "stdlib_canonical", None)
+        field = canonical.split(".")[-1] if canonical else getattr(func, 'field', 'println')
         args = node.arguments or []
 
         if not args:

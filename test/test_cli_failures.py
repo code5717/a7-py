@@ -104,6 +104,29 @@ main :: fn() {
     assert out.exists()
 
 
+def test_cli_unknown_virtual_stdlib_function_returns_semantic_error(tmp_path):
+    src = tmp_path / "bad_stdlib_call.a7"
+    out = tmp_path / "bad_stdlib_call.zig"
+    src.write_text(
+        """
+console :: import "std/io"
+
+main :: fn() {
+    console.nope("ok")
+}
+""".strip()
+    )
+
+    result = run_cli(["--format", "json", str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SEMANTIC
+    payload = json.loads(result.stdout)
+    assert payload["error"]["category"] == "semantic"
+    assert "std/io" in payload["error"]["details"][0]["message"]
+    assert "nope" in payload["error"]["details"][0]["message"]
+    assert not out.exists()
+
+
 def test_cli_fallthrough_returns_semantic_error_and_skips_codegen(tmp_path):
     src = tmp_path / "fallthrough.a7"
     out = tmp_path / "fallthrough.zig"
