@@ -140,9 +140,13 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/passes/generic_lowering.py`, `src/backends/c.py`, `src/generics.py`, `examples/014_generics.a7`
   Notes: simple top-level generic functions are monomorphized before C codegen; remaining work includes generic structs, nested/composite specializations, and propagation through call chains.
 
-- [ ] Complete runtime union construction and field access.
+- [x] Complete untagged runtime union construction and field access.
   Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`, `examples/016_unions.a7`
-  Notes: union declarations lower in both backends; source-level field construction/access is still status-only in the runnable examples.
+  Notes: `Type{field: value}` literals now require exactly one named field and field access resolves declared union fields in both backends.
+
+- [ ] Design and implement tagged union tag workflows.
+  Files: `src/parser.py`, `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`, `docs/SPEC.md`
+  Notes: `union(tag)` is reserved in the specification, but tag inspection and discriminated-state-safe workflows are not implemented yet.
 
 - [x] Validate return-type consistency across all branches.
   Notes: type checking visits returns inside blocks, if/else branches, and match branches; explicit regression coverage locks this down.

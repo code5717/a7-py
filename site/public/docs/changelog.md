@@ -14,6 +14,8 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 - The docs app now exposes a first-class `/docs` curl.md directory with direct
   `curl -fsS` commands and canonical `/docs/install.md` plus `/docs/guide/*`
   Markdown paths.
+- Untagged union literals and field access now run in both Zig and C example
+  verifiers; tagged union tag workflows remain a known gap.
 
 ## Current Release
 

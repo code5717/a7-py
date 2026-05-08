@@ -15,7 +15,7 @@
 - Advanced match diagnostics still have incomplete symbolic interval overlap handling.
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Full generic specialization is incomplete beyond simple top-level generic functions.
-- Runtime union construction/access remains incomplete as a source-language workflow.
+- Untagged union construction/access works; tagged/discriminated union tag workflows are not implemented yet.
 - `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
 - PyPI publishing requires final trusted-publisher setup before the first real release.
 

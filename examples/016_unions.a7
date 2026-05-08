@@ -1,9 +1,3 @@
-// Union declaration status
-//
-// Union declarations lower in both backends. Runtime field construction and
-// field access are still tracked separately, so this example is intentionally
-// limited to declaration coverage.
-
 io :: import "std/io"
 
 Value :: union {
@@ -12,7 +6,10 @@ Value :: union {
 }
 
 main :: fn() {
-    io.println("=== Unions Status ===")
-    io.println("Union type declaration lowers in both backends.")
-    io.println("Runtime union field access is tracked separately.")
+    int_value := Value{int_val: 42}
+    float_value := Value{float_val: 3.5}
+
+    io.println("=== Unions ===")
+    io.println("int: {}", int_value.int_val)
+    io.println("float: {}", float_value.float_val)
 }

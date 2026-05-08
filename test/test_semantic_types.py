@@ -476,6 +476,49 @@ class TestStructEnumUnionTypes:
         """
         assert expect_success(source)
 
+    def test_union_field_initialization_and_access(self):
+        """Test union field initialization and field access type checking."""
+        source = """
+        Value :: union {
+            int_val: i32,
+            float_val: f64,
+        }
+
+        main :: fn() {
+            v := Value{int_val: 42}
+            x: i32 = v.int_val
+        }
+        """
+        assert expect_success(source)
+
+    def test_union_initializer_rejects_multiple_fields(self):
+        """Union values must initialize exactly one named field."""
+        source = """
+        Value :: union {
+            int_val: i32,
+            float_val: f64,
+        }
+
+        main :: fn() {
+            v := Value{int_val: 42, float_val: 1.5}
+        }
+        """
+        assert expect_error(source, "one named field")
+
+    def test_union_field_access_rejects_unknown_field(self):
+        """Unknown union fields should produce a semantic error."""
+        source = """
+        Value :: union {
+            int_val: i32,
+        }
+
+        main :: fn() {
+            v := Value{int_val: 42}
+            x := v.float_val
+        }
+        """
+        assert expect_error(source, "Union 'Value' has no field 'float_val'")
+
 
 class TestTypeCasting:
     """Test type casting operations."""

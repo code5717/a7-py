@@ -646,6 +646,27 @@ Value :: union {
         assert 'const Value = union' in zig
         assert 'int_val: i32' in zig
 
+    def test_union_field_initialization_and_access(self):
+        source = '''
+io :: import "std/io"
+
+Value :: union {
+    int_val: i32
+    float_val: f64
+}
+
+main :: fn() {
+    v := Value{int_val: 42}
+    io.println("{}", v.int_val)
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert 'const v = Value{ .int_val = 42 };' in zig
+        assert 'v.int_val' in zig
+        ok, err = zig_ast_check(zig)
+        assert ok, err
+
+
     def test_io_println_with_format(self):
         source = '''
 io :: import "std/io"

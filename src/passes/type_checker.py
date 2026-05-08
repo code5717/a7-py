@@ -1478,6 +1478,12 @@ class TypeCheckingPass:
             else:
                 self.add_type_error(TypeErrorType.NO_SUCH_FIELD, node.span, context=f"Struct '{obj_type}' has no field '{field_name}'")
                 return UNKNOWN
+        elif isinstance(obj_type, UnionType):
+            field = obj_type.get_field(field_name)
+            if field:
+                return field.field_type
+            self.add_type_error(TypeErrorType.NO_SUCH_FIELD, node.span, context=f"Union '{obj_type}' has no field '{field_name}'")
+            return UNKNOWN
         elif isinstance(obj_type, EnumType):
             # Enum variant access: EnumName.VariantName
             if obj_type.has_variant(field_name):
@@ -2170,6 +2176,9 @@ class TypeCheckingPass:
             else:
                 struct_type = self.resolve_type_node(node.struct_type)
 
+        if isinstance(struct_type, UnionType):
+            return self._visit_union_init(node, struct_type)
+
         if not isinstance(struct_type, StructType):
             return UNKNOWN
 
@@ -2203,6 +2212,42 @@ class TypeCheckingPass:
                         )
 
         return struct_type
+
+    def _visit_union_init(self, node: ASTNode, union_type: UnionType) -> Type:
+        """Visit a union initialization using the existing Type{field: value} literal."""
+        field_inits = node.field_inits or []
+        if len(field_inits) != 1 or not field_inits[0].name:
+            self.add_type_error(
+                TypeErrorType.TYPE_MISMATCH,
+                node.span,
+                expected_type=f"one named field for union '{union_type.name}'",
+                got_type=f"{len(field_inits)} initializer(s)",
+            )
+            return union_type
+
+        field_init = field_inits[0]
+        field_name = field_init.name or ""
+        expected_field = union_type.get_field(field_name)
+        if expected_field is None:
+            self.add_type_error(
+                TypeErrorType.NO_SUCH_FIELD,
+                field_init.span,
+                context=f"Union '{union_type}' has no field '{field_name}'",
+            )
+            return union_type
+
+        if field_init.value:
+            actual_type = self.visit_expression(field_init.value)
+            if not actual_type.is_assignable_to(expected_field.field_type):
+                self.add_type_error(
+                    TypeErrorType.TYPE_MISMATCH,
+                    field_init.span,
+                    expected_type=str(expected_field.field_type),
+                    got_type=str(actual_type),
+                    context=f"Union field '{field_name}'",
+                )
+
+        return union_type
 
     def visit_array_init(self, node: ASTNode) -> Type:
         """Visit an array initialization."""

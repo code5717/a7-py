@@ -148,6 +148,29 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_runs_union_field_initialization_and_access(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+Value :: union {
+    int_val: i32
+    float_val: f64
+}
+
+main :: fn() {
+    v := Value{int_val: 42}
+    io.println("{}", v.int_val)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "42"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_runs_multiple_generic_instantiations(tmp_path: Path) -> None:
     result = build_and_run_c(
         """

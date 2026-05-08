@@ -17,6 +17,14 @@ The compiler implementation also keeps AST traversals iterative and is validated
 - Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has a fixed width or range.
 - Small arithmetic examples can use `i32`; indexes and counters should usually use `usize`.
 
+## Unions
+
+Untagged union literals use `Type{field: value}` with exactly one named field.
+The field must exist on the union and the value must match the field type.
+Field access resolves declared union fields in both Zig and C backends.
+
+Tagged/discriminated union tag workflows are not implemented yet.
+
 ## Standard Library
 
 Current virtual stdlib support is intentionally small:

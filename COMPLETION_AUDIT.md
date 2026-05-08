@@ -57,7 +57,9 @@ These prevent a factual "100% confident" claim:
    guarantees are not implemented.
 5. Full generic specialization is incomplete beyond simple top-level generic
    functions lowered for the C backend.
-6. Runtime union construction and field-access workflows remain incomplete.
+6. Tagged/discriminated union tag workflows remain incomplete. Untagged
+   single-field union construction and field access now have focused semantic,
+   C backend, Zig backend, CLI JSON, and example verifier coverage.
 7. PyPI publishing is wired but cannot be proven until the public PyPI project
    and trusted publisher are created/configured outside this repository.
 8. Secret scanning is pattern-based and should be backed by repository-host

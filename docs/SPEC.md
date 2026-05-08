@@ -326,15 +326,20 @@ Number :: union {
     u: u32
 }
 
+value := Number{i: 42}
+same_value: i32 = value.i
+
 // Tagged union (discriminated)
 Result :: union(tag) {
     ok: i32
     err: string
 }
-
-x := Result(ok: 1)
-x.tag == Result.ok
 ```
+
+Untagged unions use `Type{field: value}` literals with exactly one named field.
+The named field must exist and its value must be assignable to that field type.
+Field access type-checks against the declared union fields. Tagged union tag
+inspection is reserved syntax and is not implemented yet.
 
 #### Enums
 ```a7
@@ -1658,15 +1663,20 @@ Number :: union {
     u: u32
 }
 
+value := Number{i: 42}
+same_value: i32 = value.i
+
 // Tagged union (discriminated)
 Result :: union(tag) {
     ok: i32
     err: string
 }
-
-x := Result(ok: 1)
-x.tag == Result.ok
 ```
+
+Untagged unions use `Type{field: value}` literals with exactly one named field.
+The named field must exist and its value must be assignable to that field type.
+Field access type-checks against the declared union fields. Tagged union tag
+inspection is reserved syntax and is not implemented yet.
 
 #### Enums
 ```a7

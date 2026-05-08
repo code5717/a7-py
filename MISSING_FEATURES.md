@@ -68,7 +68,8 @@
    - Keep expanding mandatory parity cases for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
    - C backend now lowers simple top-level generic function calls, but generic structs, nested generic workflows, and propagation through method-style call chains still need parity coverage.
-   - Union declarations lower, but runtime union field construction/access is not yet a completed source-language workflow.
+   - Untagged union field construction/access now type-checks and lowers in both backends.
+   - Tagged/discriminated union tag workflows are still reserved syntax and not implemented.
 
 5. **Release publishing activation**
    - Local package builds and artifact checks exist.

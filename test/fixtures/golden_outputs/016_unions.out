@@ -1,3 +1,3 @@
-=== Unions Status ===
-Union type declaration lowers in both backends.
-Runtime union field access is tracked separately.
+=== Unions ===
+int: 42
+float: 3.5

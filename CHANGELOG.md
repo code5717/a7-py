@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The docs app now has a first-class `/docs` curl.md directory and canonical
   Markdown paths for `/docs/install.md` and `/docs/guide/*`, while keeping the
   previous flat public docs files available as compatibility aliases.
+- Untagged union literals now require exactly one named field, union field
+  access type-checks declared fields, and `examples/016_unions.a7` now runs
+  through both Zig and C example verifiers.
 
 ## [0.3.0] - 2026-05-07
 

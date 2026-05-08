@@ -125,6 +125,9 @@ not factually provable from local tests alone.
   Publishing/OIDC only after the release gate and draft GitHub release job pass.
 - C backend `for-in` lowering now caches iterable expressions before loop
   length and element access.
+- Untagged union literals now initialize exactly one named field, union field
+  access type-checks declared fields, and the union example runs through both
+  native backends.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`
   escapes, and valid escapes are decoded/re-emitted so generated binaries print
   the intended characters.

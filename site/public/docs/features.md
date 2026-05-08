@@ -3,7 +3,7 @@
 ## Language
 
 - Static typing with inference in supported contexts.
-- Functions, structs, enums, unions, aliases, modules, and generics.
+- Functions, structs, enums, untagged union field literals/access, aliases, modules, and generics.
 - Simple top-level generic function calls lower in both Zig and C backends.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - Arrays, slices, string slices, pointers, references, and manual `new` / `del`.
@@ -28,4 +28,4 @@
 
 ## Current Limits
 
-The status page is canonical for remaining gaps. Key limits include `fall` lowering, complete memory/lifetime guarantees, full generic specialization beyond simple top-level functions, complete runtime union workflows, and final PyPI project activation.
+The status page is canonical for remaining gaps. Key limits include `fall` lowering, complete memory/lifetime guarantees, full generic specialization beyond simple top-level functions, tagged union workflows, and final PyPI project activation.

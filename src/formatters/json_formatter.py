@@ -111,6 +111,7 @@ class JSONFormatter:
             "enum_type",
             "variant",
             "raw_text",
+            "struct_type",
         ]
 
         for field in scalar_fields:
@@ -180,7 +181,6 @@ class JSONFormatter:
             "pointer",
             "then_expr",
             "else_expr",
-            "struct_type",
             "then_stmt",
             "else_stmt",
             "init",

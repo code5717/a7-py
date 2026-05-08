@@ -127,6 +127,32 @@ main :: fn() {
     assert not out.exists()
 
 
+def test_cli_json_union_initializer_error_does_not_crash(tmp_path):
+    src = tmp_path / "bad_union.a7"
+    out = tmp_path / "bad_union.zig"
+    src.write_text(
+        """
+Value :: union {
+    int_val: i32
+    float_val: f64
+}
+
+main :: fn() {
+    v := Value{int_val: 42, float_val: 1.5}
+}
+""".strip()
+    )
+
+    result = run_cli(["--format", "json", str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SEMANTIC
+    payload = json.loads(result.stdout)
+    assert payload["error"]["category"] == "semantic"
+    assert "one named field" in payload["error"]["details"][0]["message"]
+    assert payload["stages"]["parse"]["ast"]["declarations"][1]["body"]["statements"][0]["value"]["struct_type"] == "Value"
+    assert not out.exists()
+
+
 def test_cli_fallthrough_returns_semantic_error_and_skips_codegen(tmp_path):
     src = tmp_path / "fallthrough.a7"
     out = tmp_path / "fallthrough.zig"
