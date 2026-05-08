@@ -18,8 +18,8 @@ The repository is substantially more release-ready than before this pass:
   upload/download, and draft GitHub releases
 - checksum-verified Zig 0.15.2 install steps in CI and release workflows
 - semantic recursion rejection for direct, mutual, and local function-pointer
-  alias call cycles, with scope-aware handling for local function-pointer
-  shadowing
+  alias call cycles and higher-order callback trampolines, with scope-aware
+  handling for local function-pointer shadowing
 - consolidated docs-site navigation with curl.md-friendly Markdown entry points
   under `site/public/llms.txt` and `site/public/docs/`
 - C backend specialization for simple top-level generic function calls and used
@@ -320,9 +320,12 @@ not factually provable from local tests alone.
 - README now points to the current `code5717.github.io/a7-py` documentation URL.
 - Formatter symbol collection no longer hides broad exceptions during console
   or Markdown report generation.
-- Semantic validation now rejects direct and mutual recursion and avoids false
-  recursion reports when a local function-pointer variable shadows a top-level
-  function name.
+- Semantic validation now rejects direct, mutual, and indirect callback
+  recursion while avoiding false reports when a local function-pointer variable
+  shadows a top-level function name.
+- Semantic validation now treats top-level functions passed into invoked
+  callback parameters as call-graph edges, so higher-order trampolines cannot
+  hide direct or mutual recursion.
 - Selected non-example programs now run through both Zig and C backends and
   compare runtime output, including match statements/expressions, slices,
   string slices, labels, function pointers, defer unwinding, untagged unions,
@@ -390,6 +393,18 @@ not factually provable from local tests alone.
 - `fall` now lowers in both native backends for the documented narrow form:
   the final direct statement of a non-final match case. Invalid placements
   remain semantic errors.
+- Example verification now fails closed when a golden output fixture is missing
+  unless the verifier is run with explicit `--update-golden`.
+- Hosted CI run `25551465003` passed on commit `40b3a33`, including pytest,
+  Python dependency audit, Bandit static security scanning, error-stage
+  verification, Zig/C example verification, backend parity, debug artifacts,
+  release artifacts, package build, and wheel-install verification.
+- Hosted Deploy Docs run `25551465037` passed on commit `40b3a33`.
+- Local `./run_all_tests.sh` passed after higher-order recursion hardening:
+  parser/tokenizer 501 passed; semantic 340 passed; compiler/CLI/backend 335
+  passed; Zig examples 38/38; C examples 38/38; backend parity 24/24; debug
+  artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
+  style ok; secrets check ok; total pytest 1257 passed; summary 12/12.
 
 ## Residual Risks
 

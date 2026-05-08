@@ -3,7 +3,7 @@
 ## Current State
 
 - Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig/C code generation are implemented.
-- Direct, mutual, and local function-pointer alias source recursion are semantic errors.
+- Direct, mutual, local function-pointer alias, and higher-order callback trampoline source recursion are semantic errors.
 - Debug/release artifact verification is available for both backends.
 - Example end-to-end verification is available for both Zig and C.
 - Selected Zig/C backend parity verification is available, including contextual array literal assignment, defer unwinding, fallthrough, untagged unions, generic function specialization, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math calls, operator edge cases, enum match expressions, heap structs, and 2D/3D nested fixed arrays.

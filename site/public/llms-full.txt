@@ -30,7 +30,7 @@ Implemented:
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
 - Arrays, slices, string slices, references, property pointer operations, and manual `new` / `del`.
-- `defer`, unreachable-statement diagnostics, and direct/mutual/alias source-recursion diagnostics.
+- `defer`, unreachable-statement diagnostics, and direct/mutual/alias/callback-trampoline source-recursion diagnostics.
 - `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
 - 38 runnable examples verified through both Zig and C backends.
@@ -132,7 +132,7 @@ Exit codes:
 
 ## Language Reference
 
-Source recursion is banned. Direct and mutual recursion are semantic errors.
+Source recursion is banned. Direct, mutual, local alias, and callback-trampoline recursion are semantic errors.
 Use loops, explicit stacks, queues, or index-based worklists.
 
 Declaration forms:

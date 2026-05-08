@@ -719,7 +719,8 @@ where
 
 Recursion is not part of A7. A function may not call itself directly, and
 groups of functions may not call each other in a cycle. Semantic validation
-reports these call cycles before backend code generation.
+also rejects common indirect cycles through local function-pointer aliases and
+higher-order callback trampolines before backend code generation.
 
 Use loops, explicit stacks, or index-based worklists for repeated work.
 
@@ -730,6 +731,18 @@ factorial :: fn(n: i32) i32 {
         ret 1
     }
     ret n * factorial(n - 1)
+}
+
+// ERROR: callback trampolines cannot hide recursion
+call_it :: fn(f: fn(i32) i32, n: i32) i32 {
+    ret f(n)
+}
+
+countdown :: fn(n: i32) i32 {
+    if n <= 0 {
+        ret 0
+    }
+    ret call_it(countdown, n - 1)
 }
 
 // OK: iterative rewrite

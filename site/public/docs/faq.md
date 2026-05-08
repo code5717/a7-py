@@ -2,7 +2,7 @@
 
 ## Is recursion allowed
 
-No. A7 rejects direct and mutual source recursion during semantic validation. Use loops, explicit stacks, queues, or index-based worklists.
+No. A7 rejects direct, mutual, local alias, and callback-trampoline source recursion during semantic validation. Use loops, explicit stacks, queues, or index-based worklists.
 
 ## Which integer type should examples use
 

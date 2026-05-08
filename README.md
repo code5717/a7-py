@@ -147,7 +147,7 @@ Source (.a7) → Tokenizer → Parser → Semantic Analysis (3-pass) → AST Pre
 4. **AST Preprocessing**. Runs 9 sub-passes: sugar lowering, stdlib resolution, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
 5. **Backend Code Generation**. Translates AST to valid Zig or C source code.
 
-Semantic analysis, AST preprocessing, and formatter/reporting AST walks use explicit stacks. The parser is recursive descent, and backend code generation still uses visitor-style recursive emission in some paths. Current low-recursion coverage validates the supported pipeline at Python recursion limit 100 for representative programs. A7 source recursion, including common local function-pointer alias cycles, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead.
+Semantic analysis, AST preprocessing, and formatter/reporting AST walks use explicit stacks. The parser is recursive descent, and backend code generation still uses visitor-style recursive emission in some paths. Current low-recursion coverage validates the supported pipeline at Python recursion limit 100 for representative programs. A7 source recursion, including local function-pointer aliases and higher-order callback trampolines, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead.
 
 ## Integer Type Guidance
 
@@ -162,7 +162,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Types**: Primitives, arrays, slices, pointers, generics, raw and aliased function types, inline struct return values
 - **Declarations**: Functions, structs, enums, unions, variables, constants, type aliases
 - **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
-- **Function Rules**: Direct and mutual recursion are semantic errors
+- **Function Rules**: Direct, mutual, alias-mediated, and callback-trampoline recursion are semantic errors
 - **Expressions**: All operators with proper precedence, casts, if-expressions, struct/array literals, untagged union field literals/access
 - **Memory**: Property-based pointer syntax (`.adr`, `.val`), scalar/struct `new` and `del`, defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the language model is defined.
 - **Imports**: Virtual `std/io` and `std/math` modules with aliases; file-backed local imports resolve for validation but fail closed before backend codegen until module linking is implemented

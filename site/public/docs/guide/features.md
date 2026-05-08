@@ -8,7 +8,7 @@
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - Arrays, slices, string slices, pointers, references, and manual `new` / `del`.
 - `defer` and unreachable-statement diagnostics.
-- Direct and mutual source-recursion diagnostics.
+- Direct, mutual, local alias, and callback-trampoline source-recursion diagnostics.
 
 ## Compiler
 

@@ -46,6 +46,8 @@ class SemanticValidationPass:
         self.allocations: Set[str] = set()
         self._function_graph: dict[str, set[str]] = {}
         self._function_spans: dict[str, Optional[SourceSpan]] = {}
+        self._function_param_call_positions: dict[str, set[int]] = {}
+        self._function_param_invocations: dict[str, list[tuple[int, list[Optional[int]]]]] = {}
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> None:
         """
@@ -504,6 +506,12 @@ class SemanticValidationPass:
             if decl.kind == NodeKind.FUNCTION and decl.name
         }
         self._function_spans = {name: func.span for name, func in functions.items()}
+        self._function_param_call_positions = {}
+        self._function_param_invocations = {}
+        for name, func in functions.items():
+            positions, invocations = self._collect_called_parameter_usage(func)
+            self._function_param_call_positions[name] = positions
+            self._function_param_invocations[name] = invocations
         self._function_graph = {
             name: self._collect_function_calls(func, set(functions))
             for name, func in functions.items()
@@ -709,6 +717,15 @@ class SemanticValidationPass:
                 callee = self._direct_callee_name(node, function_aliases, shadowed)
                 if callee in function_names:
                     calls.add(callee)
+                    calls.update(
+                        self._collect_higher_order_argument_calls(
+                            callee,
+                            node.arguments or [],
+                            function_names,
+                            function_aliases,
+                            shadowed,
+                        )
+                    )
 
             if node.kind == NodeKind.FUNCTION:
                 continue
@@ -716,6 +733,72 @@ class SemanticValidationPass:
             for child in self._iter_child_nodes(node):
                 stack.append(child)
         return calls
+
+    def _collect_higher_order_argument_calls(
+        self,
+        callee: str,
+        arguments: list[ASTNode],
+        function_names: set[str],
+        function_aliases: dict[str, str],
+        shadowed: set[str],
+    ) -> set[str]:
+        """Conservatively model calls made through function-typed parameters.
+
+        If `callee` calls one of its parameters as a function, then passing a
+        top-level function into that parameter can create a recursion cycle even
+        though the immediate callee is only the trampoline. Add graph edges to
+        those top-level function arguments so cycle detection sees the path.
+        """
+        calls: set[str] = set()
+        for position in self._function_param_call_positions.get(callee, set()):
+            if position >= len(arguments):
+                continue
+            target = self._function_value_name(arguments[position], function_names, function_aliases, shadowed)
+            if target:
+                calls.add(target)
+        for callback_position, forwarded_positions in self._function_param_invocations.get(callee, []):
+            if callback_position >= len(arguments):
+                continue
+            callback_target = self._function_value_name(
+                arguments[callback_position],
+                function_names,
+                function_aliases,
+                shadowed,
+            )
+            if not callback_target:
+                continue
+            for called_position in self._function_param_call_positions.get(callback_target, set()):
+                if called_position >= len(forwarded_positions):
+                    continue
+                forwarded_position = forwarded_positions[called_position]
+                if forwarded_position is None or forwarded_position >= len(arguments):
+                    continue
+                target = self._function_value_name(
+                    arguments[forwarded_position],
+                    function_names,
+                    function_aliases,
+                    shadowed,
+                )
+                if target:
+                    calls.add(target)
+        return calls
+
+    def _function_value_name(
+        self,
+        node: Optional[ASTNode],
+        function_names: set[str],
+        function_aliases: dict[str, str],
+        shadowed: set[str],
+    ) -> Optional[str]:
+        if node is None or node.kind != NodeKind.IDENTIFIER or not node.name:
+            return None
+        if node.name in function_aliases:
+            return function_aliases[node.name]
+        if node.name in shadowed:
+            return None
+        if node.name in function_names:
+            return node.name
+        return None
 
     def _direct_callee_name(
         self,
@@ -733,6 +816,257 @@ class SemanticValidationPass:
         if function.name in shadowed:
             return None
         return function.name
+
+    def _collect_called_parameter_usage(
+        self,
+        function: ASTNode,
+    ) -> tuple[set[int], list[tuple[int, list[Optional[int]]]]]:
+        """Return callback parameter use and simple forwarding summaries."""
+        param_positions = {
+            param.name: index
+            for index, param in enumerate(function.parameters or [])
+            if getattr(param, "name", None)
+        }
+        if function.body is None or not param_positions:
+            return set(), []
+
+        called: set[int] = set()
+        invocations: list[tuple[int, list[Optional[int]]]] = []
+        stack: list[tuple[str, object, int, set[str], dict[str, int]]] = [
+            ("stmt", function.body, 0, set(), {})
+        ]
+
+        while stack:
+            action, payload, index, shadowed, aliases = stack.pop()
+
+            if action == "stmt_list":
+                statements = payload if isinstance(payload, list) else []
+                if index >= len(statements):
+                    continue
+                next_shadowed, next_aliases = self._schedule_parameter_call_positions(
+                    statements[index],
+                    param_positions,
+                    set(shadowed),
+                    dict(aliases),
+                    called,
+                    invocations,
+                    stack,
+                )
+                stack.append(("stmt_list", statements, index + 1, next_shadowed, next_aliases))
+                continue
+
+            if isinstance(payload, ASTNode):
+                self._schedule_parameter_call_positions(
+                    payload,
+                    param_positions,
+                    set(shadowed),
+                    dict(aliases),
+                    called,
+                    invocations,
+                    stack,
+                )
+
+        return called, invocations
+
+    def _schedule_parameter_call_positions(
+        self,
+        node: ASTNode,
+        param_positions: dict[str, int],
+        shadowed: set[str],
+        aliases: dict[str, int],
+        called: set[int],
+        invocations: list[tuple[int, list[Optional[int]]]],
+        stack: list[tuple[str, object, int, set[str], dict[str, int]]],
+    ) -> tuple[set[str], dict[str, int]]:
+        """Collect parameter-as-callee uses in one statement."""
+        if node.kind == NodeKind.BLOCK:
+            stack.append(("stmt_list", node.statements or [], 0, set(shadowed), dict(aliases)))
+
+        elif node.kind in (NodeKind.VAR, NodeKind.CONST):
+            if node.value:
+                called.update(
+                    self._collect_expression_parameter_calls(
+                        node.value,
+                        param_positions,
+                        shadowed,
+                        aliases,
+                        invocations,
+                    )
+                )
+                target = self._parameter_value_position(node.value, param_positions, shadowed, aliases)
+                if target is not None and node.name:
+                    aliases[node.name] = target
+            if node.name:
+                if node.name in param_positions:
+                    shadowed.add(node.name)
+                elif node.name in aliases and self._parameter_value_position(node.value, param_positions, shadowed, aliases) is None:
+                    aliases.pop(node.name, None)
+
+        elif node.kind == NodeKind.FUNCTION:
+            if node.name:
+                shadowed.add(node.name)
+                aliases.pop(node.name, None)
+
+        elif node.kind == NodeKind.EXPRESSION_STMT:
+            if node.expression:
+                called.update(self._collect_expression_parameter_calls(node.expression, param_positions, shadowed, aliases, invocations))
+
+        elif node.kind == NodeKind.RETURN:
+            if node.value:
+                called.update(self._collect_expression_parameter_calls(node.value, param_positions, shadowed, aliases, invocations))
+
+        elif node.kind == NodeKind.ASSIGNMENT:
+            if node.target:
+                called.update(self._collect_expression_parameter_calls(node.target, param_positions, shadowed, aliases, invocations))
+            if node.value:
+                called.update(self._collect_expression_parameter_calls(node.value, param_positions, shadowed, aliases, invocations))
+                if node.target and node.target.kind == NodeKind.IDENTIFIER and node.target.name:
+                    target = self._parameter_value_position(node.value, param_positions, shadowed, aliases)
+                    if target is not None:
+                        aliases[node.target.name] = target
+                    else:
+                        aliases.pop(node.target.name, None)
+
+        elif node.kind == NodeKind.DEFER:
+            if node.expression:
+                called.update(self._collect_expression_parameter_calls(node.expression, param_positions, shadowed, aliases, invocations))
+            if node.statement:
+                stack.append(("stmt", node.statement, 0, set(shadowed), dict(aliases)))
+
+        elif node.kind == NodeKind.DEL:
+            if node.expression:
+                called.update(self._collect_expression_parameter_calls(node.expression, param_positions, shadowed, aliases, invocations))
+
+        elif node.kind == NodeKind.IF_STMT:
+            if node.condition:
+                called.update(self._collect_expression_parameter_calls(node.condition, param_positions, shadowed, aliases, invocations))
+            if node.then_stmt:
+                stack.append(("stmt", node.then_stmt, 0, set(shadowed), dict(aliases)))
+            if node.else_stmt:
+                stack.append(("stmt", node.else_stmt, 0, set(shadowed), dict(aliases)))
+
+        elif node.kind == NodeKind.WHILE:
+            if node.condition:
+                called.update(self._collect_expression_parameter_calls(node.condition, param_positions, shadowed, aliases, invocations))
+            if node.body:
+                stack.append(("stmt", node.body, 0, set(shadowed), dict(aliases)))
+
+        elif node.kind == NodeKind.FOR:
+            loop_shadowed = set(shadowed)
+            loop_aliases = dict(aliases)
+            if node.init:
+                loop_shadowed, loop_aliases = self._schedule_parameter_call_positions(
+                    node.init,
+                    param_positions,
+                    loop_shadowed,
+                    loop_aliases,
+                    called,
+                    invocations,
+                    stack,
+                )
+            if node.condition:
+                called.update(self._collect_expression_parameter_calls(node.condition, param_positions, loop_shadowed, loop_aliases, invocations))
+            if node.update:
+                called.update(self._collect_expression_parameter_calls(node.update, param_positions, loop_shadowed, loop_aliases, invocations))
+            if node.body:
+                stack.append(("stmt", node.body, 0, loop_shadowed, loop_aliases))
+
+        elif node.kind in (NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED):
+            loop_shadowed = set(shadowed)
+            loop_aliases = dict(aliases)
+            if node.iterable:
+                called.update(self._collect_expression_parameter_calls(node.iterable, param_positions, loop_shadowed, loop_aliases, invocations))
+            for name in (node.iterator, node.index_var):
+                if name:
+                    if name in param_positions:
+                        loop_shadowed.add(name)
+                    loop_aliases.pop(name, None)
+            if node.body:
+                stack.append(("stmt", node.body, 0, loop_shadowed, loop_aliases))
+
+        elif node.kind == NodeKind.MATCH:
+            if node.expression:
+                called.update(self._collect_expression_parameter_calls(node.expression, param_positions, shadowed, aliases, invocations))
+            for case in node.cases or []:
+                case_stmt = getattr(case, "statement", None)
+                if case_stmt:
+                    stack.append(("stmt", case_stmt, 0, set(shadowed), dict(aliases)))
+                else:
+                    stack.append(("stmt_list", case.statements or [], 0, set(shadowed), dict(aliases)))
+            else_statements = self._as_statement_list(node.else_case)
+            if else_statements:
+                stack.append(("stmt_list", else_statements, 0, set(shadowed), dict(aliases)))
+
+        return shadowed, aliases
+
+    def _collect_expression_parameter_calls(
+        self,
+        root: Optional[ASTNode],
+        param_positions: dict[str, int],
+        shadowed: set[str],
+        aliases: dict[str, int],
+        invocations: list[tuple[int, list[Optional[int]]]],
+    ) -> set[int]:
+        if root is None:
+            return set()
+
+        called: set[int] = set()
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            if node is None:
+                continue
+            if node.kind == NodeKind.CALL:
+                position = self._parameter_callee_position(node, param_positions, shadowed, aliases)
+                if position is not None:
+                    called.add(position)
+                    invocations.append(
+                        (
+                            position,
+                            [
+                                self._parameter_value_position(arg, param_positions, shadowed, aliases)
+                                for arg in (node.arguments or [])
+                            ],
+                        )
+                    )
+            if node.kind == NodeKind.FUNCTION:
+                continue
+            for child in self._iter_child_nodes(node):
+                stack.append(child)
+        return called
+
+    def _parameter_callee_position(
+        self,
+        node: ASTNode,
+        param_positions: dict[str, int],
+        shadowed: set[str],
+        aliases: dict[str, int],
+    ) -> Optional[int]:
+        if node.kind != NodeKind.CALL or not node.function:
+            return None
+        function = node.function
+        if function.kind != NodeKind.IDENTIFIER or not function.name:
+            return None
+        if function.name in aliases:
+            return aliases[function.name]
+        if function.name in shadowed:
+            return None
+        return param_positions.get(function.name)
+
+    def _parameter_value_position(
+        self,
+        node: Optional[ASTNode],
+        param_positions: dict[str, int],
+        shadowed: set[str],
+        aliases: dict[str, int],
+    ) -> Optional[int]:
+        if node is None or node.kind != NodeKind.IDENTIFIER or not node.name:
+            return None
+        if node.name in aliases:
+            return aliases[node.name]
+        if node.name in shadowed:
+            return None
+        return param_positions.get(node.name)
 
     def _collect_function_aliases(self, function: ASTNode, function_names: set[str]) -> dict[str, str]:
         """Find local names that may hold top-level functions.

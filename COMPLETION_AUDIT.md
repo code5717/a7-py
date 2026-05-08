@@ -22,26 +22,27 @@ Deliverables implied by the active objective:
 | Requirement | Evidence | Status |
 | --- | --- | --- |
 | Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
-| Security dependency audit | Hosted CI run `25549416603`; manual release workflow `25546125531`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
-| Python static security scan | Hosted CI run `25549416603`; local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
-| Secret scanning | Hosted CI run `25549416603`; `scripts/check_no_secrets.py` | Passing pattern- and filename-based scan |
-| Python test suite | Hosted CI run `25549416603`; local `./run_all_tests.sh` after selected-import JSON diagnostics hardening | Passing: 1250 tests |
-| Error-stage behavior | Hosted CI run `25549416603`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
-| Zig example E2E | Hosted CI run `25549416603`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual golden-output inspection | Passing: 38/38 |
-| C example E2E | Hosted CI run `25549416603`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual golden-output inspection | Passing: 38/38 |
-| Zig/C backend parity | Hosted CI run `25549416603`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 24/24 locally, including fallthrough, nested fallthrough, capture patterns, generic functions, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math, and operator edge cases |
-| Debug artifacts | Hosted CI run `25549416603`; local `./run_all_tests.sh` after selected-import JSON diagnostics hardening | Passing: 76/76 |
-| Release artifacts | Hosted CI run `25549416603`; manual release workflow `25546125531`; local `./run_all_tests.sh` after selected-import JSON diagnostics hardening | Passing: 76/76 |
-| Python package build and install | Hosted CI run `25549416603`; manual release workflow `25546125531`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
+| Security dependency audit | Hosted CI run `25551465003`; manual release workflow `25546125531`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
+| Python static security scan | Hosted CI run `25551465003`; local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
+| Secret scanning | Hosted CI run `25551465003`; `scripts/check_no_secrets.py` | Passing pattern- and filename-based scan |
+| Python test suite | Hosted CI run `25551465003`; local `./run_all_tests.sh` after higher-order recursion hardening | Passing: 1257 tests |
+| Error-stage behavior | Hosted CI run `25551465003`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
+| Zig example E2E | Hosted CI run `25551465003`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual golden-output inspection | Passing: 38/38 |
+| C example E2E | Hosted CI run `25551465003`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual golden-output inspection | Passing: 38/38 |
+| Example golden fixture integrity | `scripts/verify_examples_common.py`; `test/test_examples_e2e.py::test_examples_verifier_fails_when_golden_fixture_is_missing`; local `uv run pytest test/test_examples_e2e.py -q`; hosted CI run `25551465003` | Normal verifier runs fail closed when a golden output fixture is missing; only explicit `--update-golden` writes fixture files |
+| Zig/C backend parity | Hosted CI run `25551465003`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 24/24 locally, including fallthrough, nested fallthrough, capture patterns, generic functions, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math, and operator edge cases |
+| Debug artifacts | Hosted CI run `25551465003`; local `./run_all_tests.sh` after fail-closed example-golden hardening | Passing: 76/76 |
+| Release artifacts | Hosted CI run `25551465003`; manual release workflow `25546125531`; local `./run_all_tests.sh` after fail-closed example-golden hardening | Passing: 76/76 |
+| Python package build and install | Hosted CI run `25551465003`; manual release workflow `25546125531`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
 | Release checksums, provenance, and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, re-checks hashes before upload, and emits GitHub artifact attestations for release assets; manual release dispatch `25546125531` | Covered for workflow-dispatch release path; manifest verifier now rejects traversal and unsafe absolute paths; tag-only draft release creation still requires a real tag run before release |
-| Docs style/build | Hosted CI run `25549416603`; local `scripts/check_docs_style.py`; local `cd site && npm run build` | Passing |
-| Docs deploy | Hosted Deploy Docs run `25549416591`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
+| Docs style/build | Hosted CI run `25551465003`; local `scripts/check_docs_style.py`; local `cd site && npm run build` | Passing |
+| Docs deploy | Hosted Deploy Docs run `25551465037`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |
 | Release workflow | `.github/workflows/release.yml`, manual dispatch run `25546125531` on commit `8c24063`; release gate, dependency audits, static scan, package build, wheel install, docs build, archive verification, checksums, attestations, and artifact upload passed | Passing for non-tag validation; tag-only draft release creation still requires a real tag run before release |
 | Workflow supply-chain hardening | All workflow actions are pinned to immutable commit SHAs; `.github/dependabot.yml` covers GitHub Actions, Python, and docs npm; automated Claude review prompt treats PR text as untrusted | Covered for current workflow action pinning |
-| No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs; alias-recursion regression tests | Implemented for named call cycles and local function-pointer alias cycles |
-| No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |
+| No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs; direct, mutual, alias-recursion, callback trampoline, and forwarded callback trampoline regression tests; local full gate | Implemented for named call cycles, local function-pointer alias cycles, top-level functions passed through callback parameters that are invoked by the callee, and one-level callback-parameter forwarding through another callback |
+| No-recursion compiler traversal confidence | `test/test_iterative_traversal.py`; `README.md`; `TODO.md`; local full gate | Partially covered: semantic analysis, preprocessing, generic lowering, JSON AST output, and formatter/reporting AST walks are stack-based or tested at low recursion limits; parser is recursive descent, and backend statement/expression emission still has recursive paths tracked in `TODO.md` |
 | Virtual stdlib module resolution | `a7/module_resolver.py`, `a7/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
 | File-backed module path containment | `a7/module_resolver.py`, `test/test_module_resolver.py` | Absolute imports and parent-directory traversal are rejected outside configured search paths |
 | Array literal assignment compatibility | `a7/passes/type_checker.py`, `a7/backends/c.py`, `test/test_semantic_types.py`, `test/test_codegen_c.py`, `scripts/verify_backend_parity.py`; local full gate | Covered for declared lengths, nested literals, and Zig/C runtime parity |
@@ -56,18 +57,21 @@ These prevent a factual "100% confident" claim:
 1. The compiler is not a sandbox; native output can execute host-level behavior.
 2. Backend parity is selected and expanding, not exhaustive over all valid A7
    programs. The current local selected suite covers 24 non-example programs.
-3. `fall` and branch-local match capture patterns now lower in both native
+3. Backend code generation still contains recursive statement/expression
+   emission paths; current low-recursion coverage covers representative
+   programs but not a full backend conversion.
+4. `fall` and branch-local match capture patterns now lower in both native
    backends, but backend parity is still selected rather than exhaustive.
-4. Full ownership, borrowing, lifetime, use-after-free, and double-free
+5. Full ownership, borrowing, lifetime, use-after-free, and double-free
    guarantees are not implemented.
-5. Full generic specialization is incomplete beyond simple top-level generic
+6. Full generic specialization is incomplete beyond simple top-level generic
    functions and used generic struct instances lowered for the C backend.
-6. Tagged/discriminated union tag workflows remain incomplete. Untagged
+7. Tagged/discriminated union tag workflows remain incomplete. Untagged
    single-field union construction and field access now have focused semantic,
    C backend, Zig backend, CLI JSON, and example verifier coverage.
-7. Secret scanning is pattern-based and should be backed by repository-host
+8. Secret scanning is pattern-based and should be backed by repository-host
    protections for public release.
-8. Dependency audits cover known advisories, not unknown supply-chain
+9. Dependency audits cover known advisories, not unknown supply-chain
     compromise.
 
 ## Conclusion

@@ -45,4 +45,4 @@ uv run python scripts/verify_backend_parity.py
 
 ## First Rule
 
-A7 source recursion is banned. Direct and mutual recursion are semantic errors. Use loops, explicit stacks, or index-based worklists.
+A7 source recursion is banned. Direct, mutual, alias-mediated, and callback-trampoline recursion are semantic errors. Use loops, explicit stacks, or index-based worklists.

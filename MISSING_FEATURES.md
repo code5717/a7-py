@@ -46,7 +46,7 @@
 29. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
 30. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
 31. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
-32. Semantic validation rejects direct, mutual, and local function-pointer alias recursion; repeated work must use loops, explicit stacks, or index-based worklists.
+32. Semantic validation rejects direct, mutual, local function-pointer alias, and higher-order callback trampoline recursion; repeated work must use loops, explicit stacks, or index-based worklists.
 33. Index and slice-bound variables must be `usize`; non-negative integer literals remain valid for simple indexing.
 34. `new [N]T` heap fixed arrays fail closed until the allocation model and both backends agree on representation.
 35. Ordering comparisons reject non-ordered types, and signed variables no longer implicitly assign to unsigned integer types.

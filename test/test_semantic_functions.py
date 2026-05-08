@@ -448,6 +448,100 @@ class TestRecursionBan:
         """
         assert expect_error(source, "recursion")
 
+    def test_higher_order_self_recursion_is_rejected(self):
+        """A callback trampoline cannot hide direct recursion."""
+        source = """
+        call_it :: fn(f: fn(i32) i32, n: i32) i32 {
+            ret f(n)
+        }
+
+        countdown :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            ret call_it(countdown, n - 1)
+        }
+
+        main :: fn() {
+            result := countdown(3)
+        }
+        """
+        assert expect_error(source, "recursion")
+
+    def test_higher_order_mutual_recursion_is_rejected(self):
+        """Mutual recursion through callback parameters is rejected."""
+        source = """
+        call_it :: fn(f: fn(i32) i32, n: i32) i32 {
+            ret f(n)
+        }
+
+        left :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            ret call_it(right, n - 1)
+        }
+
+        right :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            ret call_it(left, n - 1)
+        }
+
+        main :: fn() {
+            result := left(3)
+        }
+        """
+        assert expect_error(source, "recursion")
+
+    def test_higher_order_parameter_alias_recursion_is_rejected(self):
+        """A trampoline that aliases a callback parameter is still visible."""
+        source = """
+        call_it :: fn(f: fn(i32) i32, n: i32) i32 {
+            next := f
+            ret next(n)
+        }
+
+        countdown :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            ret call_it(countdown, n - 1)
+        }
+
+        main :: fn() {
+            result := countdown(3)
+        }
+        """
+        assert expect_error(source, "recursion")
+
+    def test_forwarded_higher_order_recursion_is_rejected(self):
+        """A callback passed through another callback cannot hide recursion."""
+        source = """
+        Runner :: fn(fn(i32) i32, i32) i32
+
+        run :: fn(user: Runner, op: fn(i32) i32, n: i32) i32 {
+            ret user(op, n)
+        }
+
+        apply :: fn(op: fn(i32) i32, n: i32) i32 {
+            ret op(n)
+        }
+
+        countdown :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            ret run(apply, countdown, n - 1)
+        }
+
+        main :: fn() {
+            result := countdown(3)
+        }
+        """
+        assert expect_error(source, "recursion")
+
 
 class TestFunctionPointers:
     """Test function pointer and higher-order function support."""

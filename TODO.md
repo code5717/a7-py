@@ -225,7 +225,7 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [x] Flag dead code after unconditional return/break/continue.
   Notes: semantic validation now rejects block-local statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
 
-- [x] Reject direct, mutual, and local function-pointer alias recursion during semantic validation.
+- [x] Reject direct, mutual, local function-pointer alias, and higher-order callback trampoline recursion during semantic validation.
   Notes: A7 source must use loops, explicit stacks, or index-based worklists for repeated work; local aliases like `again := current_fn` are treated conservatively.
 
 - [x] Require `usize` for index and slice-bound variables.

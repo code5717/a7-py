@@ -14,7 +14,7 @@ It is a single commented program verified through both native backends.
 
 ## Recursion Rule
 
-Source recursion is banned. Direct and mutual recursion are rejected during semantic validation. Repeated work should be expressed with loops, explicit stacks, queues, or index-based worklists.
+Source recursion is banned. Direct, mutual, local function-pointer alias, and higher-order callback trampoline recursion are rejected during semantic validation. Repeated work should be expressed with loops, explicit stacks, queues, or index-based worklists.
 
 The compiler uses explicit stacks for semantic analysis, AST preprocessing, and
 formatter/reporting walks. The parser remains recursive descent, and backend

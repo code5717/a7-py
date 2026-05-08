@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Semantic recursion validation now catches higher-order callback trampolines,
+  including direct, mutual, and callback-parameter-alias cycles.
 - Normal example verifier runs now fail closed when a golden output fixture is
   missing; only explicit `--update-golden` runs write fixture files.
 - Documentation now scopes the low-recursion implementation claim to the
@@ -98,9 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wheel in a clean virtual environment before upload.
 - Native example release archives are explicitly named for their current
   `linux-x86_64` / Zig 0.15.2 artifact contract.
-- Semantic validation now rejects direct, mutual, and local function-pointer
-  alias recursion; source programs should use loops, explicit stacks, or
-  index-based worklists instead.
+- Semantic validation now rejects direct, mutual, local function-pointer alias,
+  and higher-order callback trampoline recursion; source programs should use
+  loops, explicit stacks, or index-based worklists instead.
 - Index and slice-bound variables now require `usize`; non-negative integer
   literals remain valid for simple indexing, while signed index variables and
   negative literals are rejected.
