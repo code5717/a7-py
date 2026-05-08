@@ -21,6 +21,7 @@ Before release or broad testing, run:
 ./run_all_tests.sh
 uv build
 uvx pip-audit --strict
+uvx bandit -r a7 scripts main.py -q --skip B404,B603
 uv run python scripts/check_no_secrets.py
 (cd site && npm run build)
 (cd site && npm audit --omit=dev --audit-level=moderate)

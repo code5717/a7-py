@@ -30,6 +30,13 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `.github/workflows/claude-code-review.yml`
   Notes: the direct prompt now treats PR titles, bodies, comments, and diffs as untrusted content to review.
 
+- [x] Add Python source static security scanning to CI/release.
+  Files: `.github/workflows/ci.yml`, `.github/workflows/release.yml`
+  Notes: `uvx bandit -r a7 scripts main.py -q --skip B404,B603` now runs
+  alongside dependency audits; controlled subprocess use is still manually
+  reviewed because verifier/build scripts intentionally execute generated
+  artifacts.
+
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `a7/passes/type_checker.py`, `a7/passes/semantic_validator.py`
   Notes: fixed; deferred `statement` payloads are now traversed by type checking and semantic validation, with regression coverage.

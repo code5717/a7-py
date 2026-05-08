@@ -45,7 +45,7 @@ not factually provable from local tests alone.
 - `uv build`
 - local `dist/` cleanup before package builds
 - `uvx pip-audit --strict`
-- `uvx bandit -r src scripts -q --severity-level medium`
+- `uvx bandit -r a7 scripts main.py -q --skip B404,B603`
 - `uv run python scripts/check_no_secrets.py`
 - `cd site && npm audit --omit=dev --audit-level=moderate`
 - `cd site && npm run check`

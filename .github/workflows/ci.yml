@@ -52,6 +52,9 @@ jobs:
       - name: Audit Python dependencies
         run: uvx pip-audit --strict
 
+      - name: Static security scan
+        run: uvx bandit -r a7 scripts main.py -q --skip B404,B603
+
       - name: Verify error stages
         run: PYTHONPATH=. uv run python scripts/verify_error_stages.py --mode-set all --format both
 

@@ -23,6 +23,7 @@ Deliverables implied by the active objective:
 | --- | --- | --- |
 | Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
 | Security dependency audit | Hosted CI run `25538120095`; manual release workflow `25538260024`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
+| Python static security scan | Local `uvx bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive |
 | Secret scanning | Hosted CI run `25538120095`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
 | Python test suite | Hosted CI run `25538120095`; local `./run_all_tests.sh` after expanding backend parity | Passing: 1217 tests |
 | Error-stage behavior | Hosted CI run `25538120095`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |

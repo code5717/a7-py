@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -30,8 +31,11 @@ def sha256_file(path: Path) -> str:
 
 
 def git_commit() -> str:
+    git = shutil.which("git")
+    if git is None:
+        return "unknown"
     result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
+        [git, "rev-parse", "HEAD"],
         cwd=ROOT,
         text=True,
         capture_output=True,

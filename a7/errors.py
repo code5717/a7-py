@@ -35,7 +35,8 @@ class TokenizerErrorType(Enum):
     NOT_CLOSED_STRING = "not_closed_string"
     END_OF_FILE = "end_of_file"
     FILE_EMPTY = "file_empty"
-    BAD_TOKEN_AT_GLOBAL = "bad_token_at_global"
+    # Diagnostic code, not a credential.
+    BAD_TOKEN_AT_GLOBAL = "bad_token_at_global"  # nosec B105
     TABS_UNSUPPORTED = "tabs_unsupported"
     INVALID_ESCAPE_CHAR = "invalid_escape_char"
     NOT_CLOSED_COMMENT = "not_closed_comment"
