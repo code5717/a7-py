@@ -76,6 +76,8 @@ uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 - CLI error-stage matrix verification
 - docs style checks
 - committed secrets check
+- package build
+- clean-venv wheel install smoke test
 - full pytest suite
 
 The Python and docs dependency audits are separate release-gate commands above.

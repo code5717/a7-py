@@ -34,7 +34,8 @@ synced environment.
 
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
 parser/semantic/codegen tests, Zig example e2e, debug + release artifacts,
-error-stage matrix, docs style, secrets check).
+error-stage matrix, docs style, secrets check, package build, and clean-venv
+wheel install smoke test).
 Run it before tagging or before reporting a task as done when changes are
 non-trivial.
 

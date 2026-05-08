@@ -17,8 +17,8 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 
 - Run the compiler: `uv run a7 <args>` (or `uv run python main.py <args>`).
   The Python package lives at `a7/`; the entrypoint is `a7.cli:main`.
-- Full release gate: `./run_all_tests.sh` (covers Zig example E2E and
-  release artifact verification).
+- Full release gate: `./run_all_tests.sh` (covers Zig example E2E, release
+  artifact verification, package build, and clean-venv wheel smoke test).
 - Debug artifacts:
   `uv run python scripts/build_examples.py --profile debug --backend zig --clean`
 - Release artifacts:

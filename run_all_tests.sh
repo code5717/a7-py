@@ -79,6 +79,12 @@ run_check "Docs Style Check:" \
 run_check "Secrets Check:" \
     uv run python scripts/check_no_secrets.py
 
+run_check "Package Build:" \
+    bash -lc 'rm -rf dist && uv build'
+
+run_check "Wheel Install Smoke Test:" \
+    uv run python scripts/verify_wheel_install.py --skip-build
+
 run_check "TOTAL (All Pytest Tests):" \
     uv run pytest --tb=no -q
 

@@ -40,8 +40,8 @@ The Zig example E2E script must pass for any change to
 
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
 parser/semantic/codegen tests, Zig example E2E, debug + release artifacts,
-error-stage matrix, docs style, secrets check). Run it before reporting a
-non-trivial task as done.
+error-stage matrix, docs style, secrets check, package build, and clean-venv
+wheel install smoke test). Run it before reporting a non-trivial task as done.
 
 The public docs site also ships Markdown entry points for agent tooling under
 `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
