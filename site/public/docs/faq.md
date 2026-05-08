@@ -14,7 +14,7 @@ Not yet. The compiler has basic checks around `del` and references, but it does 
 
 ## Can I run untrusted A7 source
 
-No. A7 emits Zig or C and then builds native programs with the host toolchain. Treat compiled programs like any other native executable.
+No. A7 emits Zig and then builds native programs with the host toolchain. Treat compiled programs like any other native executable.
 
 ## Which stdlib modules are current
 

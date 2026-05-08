@@ -5,7 +5,7 @@
 > This report records an older compiler state and is kept only as debugging
 > history. It does not describe the current release status. For current example
 > verification, run `uv run python scripts/verify_examples_e2e.py`,
-> `uv run python scripts/verify_examples_e2e_c.py`, or `./run_all_tests.sh`.
+> `uv run python scripts/verify_examples_e2e.py`, or `./run_all_tests.sh`.
 > Current gaps are tracked in `MISSING_FEATURES.md` and `TODO.md`.
 
 Analysis of semantic/type errors across all 36 example files.

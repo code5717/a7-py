@@ -21,7 +21,7 @@ prep should not rely on stale artifacts being absent.
 The Python audit tools are pinned so release gates do not fetch arbitrary latest
 tool versions at runtime. The wheel install verifier installs the built wheel in
 a clean virtual environment and checks the installed `a7` command through both
-Zig and C code generation.
+Zig code generation.
 
 Generate checksums before uploading local artifacts:
 
@@ -50,8 +50,8 @@ gh attestation verify a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz
 ## Debug and Release Artifacts
 
 ```bash
-uv run python scripts/build_examples.py --profile debug --backend both --clean
-uv run python scripts/build_examples.py --profile release --backend both --clean
+uv run python scripts/build_examples.py --profile debug --backend zig --clean
+uv run python scripts/build_examples.py --profile release --backend zig --clean
 ```
 
 Artifacts are written under:
@@ -59,8 +59,6 @@ Artifacts are written under:
 ```text
 build/<profile>/zig/src/*.zig
 build/<profile>/zig/bin/*
-build/<profile>/c/src/*.c
-build/<profile>/c/bin/*
 ```
 
 ## Release Status

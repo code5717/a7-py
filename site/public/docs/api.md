@@ -18,7 +18,6 @@ Supported automation surfaces:
 
 ```bash
 uv run a7 examples/001_hello.a7
-uv run a7 --backend c examples/001_hello.a7
 uv run a7 --mode semantic --format json examples/001_hello.a7
 uv run a7 --mode doc --doc-out out.md examples/001_hello.a7
 ```

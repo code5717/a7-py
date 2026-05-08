@@ -25,7 +25,7 @@ from .backends import get_backend
 from .errors import CompilerError, ParseError, SemanticError, SemanticErrorType, display_error, display_errors
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
-from .passes import GenericLoweringPass, NameResolutionPass, SemanticValidationPass, TypeCheckingPass
+from .passes import NameResolutionPass, SemanticValidationPass, TypeCheckingPass
 from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
@@ -249,12 +249,11 @@ class A7Compiler:
                         source_lines=source_lines,
                     )
                 backend_feature_errors: list[Any] = []
-                if self.mode in codegen_modes:
-                    backend_feature_errors = self._backend_unsupported_feature_errors(
-                        ast=ast,
-                        filename=str(input_path),
-                        source_lines=source_lines,
-                    )
+                backend_feature_errors = self._backend_unsupported_feature_errors(
+                    ast=ast,
+                    filename=str(input_path),
+                    source_lines=source_lines,
+                )
 
                 name_resolver = NameResolutionPass()
                 name_resolver.source_lines = source_lines
@@ -360,9 +359,6 @@ class A7Compiler:
             codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
             needs_codegen = self.mode in codegen_modes
             if needs_codegen and ast is not None:
-                if self.backend == "c":
-                    ast = GenericLoweringPass().process(ast)
-
                 preprocessor = ASTPreprocessor(
                     symbol_table=symbol_table,
                     type_map=type_map,
@@ -482,6 +478,19 @@ class A7Compiler:
             print(json.dumps(self._to_json_payload(result), indent=2))
             return
 
+        if self.verbose:
+            self.console_formatter.display_full_pipeline(
+                result.input_path,
+                result.source_code,
+                result.tokens or [],
+                result.ast,
+                result.semantic_results or {},
+                result.codegen_result or {},
+            )
+            if result.doc_path:
+                console.print(f"[blue]Documentation written to {result.doc_path}[/blue]")
+            return
+
         if self.mode in {CompileMode.TOKENS, CompileMode.AST}:
             self.console_formatter.display_compilation(
                 result.tokens or [], result.ast, result.source_code, result.input_path
@@ -494,7 +503,7 @@ class A7Compiler:
                 result.ast,
                 result.semantic_results or {},
             )
-        elif self.mode in {CompileMode.PIPELINE, CompileMode.DOC, CompileMode.COMPILE}:
+        elif self.mode == CompileMode.PIPELINE:
             self.console_formatter.display_full_pipeline(
                 result.input_path,
                 result.source_code,
@@ -503,18 +512,18 @@ class A7Compiler:
                 result.semantic_results or {},
                 result.codegen_result or {},
             )
-        elif self.verbose:
-            self.console_formatter.display_full_pipeline(
-                result.input_path,
-                result.source_code,
-                result.tokens or [],
-                result.ast,
-                result.semantic_results,
-                result.codegen_result,
+        elif self.mode in {CompileMode.DOC, CompileMode.COMPILE}:
+            output = result.output_path or "(in-memory)"
+            size = 0
+            if result.codegen_result:
+                size = int(result.codegen_result.get("bytes", 0))
+            console.print(
+                f"[green]Compiled[/green] {result.input_path} -> {output} "
+                f"[dim]({size} bytes, {result.timing_ms} ms)[/dim]"
             )
 
         if result.doc_path:
-            console.print(f"[blue]📄[/blue] Documentation written to {result.doc_path}")
+            console.print(f"[blue]Documentation written to {result.doc_path}[/blue]")
 
     def _backend_unsupported_import_errors(
         self,

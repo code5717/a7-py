@@ -104,6 +104,49 @@ main :: fn() {
     assert out.exists()
 
 
+def test_cli_compile_success_is_concise_without_verbose(tmp_path):
+    src = tmp_path / "hello.a7"
+    out = tmp_path / "hello.zig"
+    src.write_text(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    io.println("ok")
+}
+""".strip()
+    )
+
+    result = run_cli([str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SUCCESS
+    assert "Compiled" in result.stdout
+    assert "TOKENIZATION RESULTS" not in result.stdout
+    assert "Generated Zig" not in result.stdout
+    assert out.exists()
+
+
+def test_cli_compile_verbose_keeps_full_pipeline_output(tmp_path):
+    src = tmp_path / "hello.a7"
+    out = tmp_path / "hello.zig"
+    src.write_text(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    io.println("ok")
+}
+""".strip()
+    )
+
+    result = run_cli(["--verbose", str(src), "-o", str(out)])
+
+    assert result.returncode == ExitCode.SUCCESS
+    assert "TOKENIZATION RESULTS" in result.stdout
+    assert "Generated Zig" in result.stdout
+    assert out.exists()
+
+
 def test_cli_local_file_import_fails_closed_before_codegen(tmp_path):
     helper = tmp_path / "helper.a7"
     src = tmp_path / "main.a7"
@@ -125,7 +168,7 @@ main :: fn() {
 """.strip()
     )
 
-    for backend, suffix in [("zig", ".zig"), ("c", ".c")]:
+    for backend, suffix in [("zig", ".zig")]:
         out = tmp_path / f"main{suffix}"
         result = run_cli(["--backend", backend, "--format", "json", str(src), "-o", str(out)])
 
@@ -182,7 +225,7 @@ main :: fn() {
 """.strip()
     )
 
-    for backend, suffix in [("zig", ".zig"), ("c", ".c")]:
+    for backend, suffix in [("zig", ".zig")]:
         out = tmp_path / f"variadic{suffix}"
         result = run_cli(["--backend", backend, "--format", "json", str(src), "-o", str(out)])
 
@@ -210,9 +253,11 @@ main :: fn() {
 
     result = run_cli(["--mode", "semantic", "--format", "json", str(src)])
 
-    assert result.returncode == ExitCode.SUCCESS
+    assert result.returncode == ExitCode.SEMANTIC
     payload = json.loads(result.stdout)
-    assert payload["status"] == "ok"
+    assert payload["error"]["category"] == "semantic"
+    message = payload["error"]["details"][0]["message"].lower()
+    assert "variadic parameters" in message
     pass_names = [item["name"] for item in payload["stages"]["semantic"]["passes"]]
     assert "Backend Feature Support" in pass_names
 

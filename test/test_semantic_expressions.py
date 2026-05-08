@@ -103,6 +103,40 @@ class TestArithmeticOperators:
         """
         assert expect_success(source)
 
+    def test_fixed_array_addition(self):
+        """Fixed arrays support element-wise addition when shapes match."""
+        source = """
+        main :: fn() {
+            a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
+            b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
+            c: [4]f64
+            c = a + b
+        }
+        """
+        assert expect_success(source)
+
+    def test_fixed_array_addition_rejects_shape_mismatch(self):
+        """Element-wise array addition requires the same fixed length."""
+        source = """
+        main :: fn() {
+            a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
+            b: [3]f64 = [5.0, 6.0, 7.0]
+            c := a + b
+        }
+        """
+        assert expect_error(source, "add between")
+
+    def test_fixed_array_addition_rejects_element_mismatch(self):
+        """Element-wise array addition requires the same numeric element type."""
+        source = """
+        main :: fn() {
+            a: [2]f64 = [1.0, 2.0]
+            b: [2]i32 = [3, 4]
+            c := a + b
+        }
+        """
+        assert expect_error(source, "add between")
+
     def test_mixed_type_arithmetic_error(self):
         """Test arithmetic with incompatible types."""
         source = """
@@ -306,6 +340,50 @@ class TestUnaryOperators:
         }
         """
         assert expect_success(source)
+
+    def test_address_of_temporary_is_rejected(self):
+        """Address-of requires a real storage location."""
+        source = """
+        main :: fn() {
+            p := (1 + 2).adr
+        }
+        """
+        assert expect_error(source, "temporary")
+
+
+class TestStdlibCallValidation:
+    """Stdlib calls should fail in semantic analysis before Zig codegen."""
+
+    def test_io_format_argument_count_mismatch_is_rejected(self):
+        source = """
+        io :: import "std/io"
+
+        main :: fn() {
+            io.println("{} {}", 1)
+        }
+        """
+        assert expect_error(source, "expects 2 values")
+
+    def test_io_format_string_must_be_literal(self):
+        source = """
+        io :: import "std/io"
+
+        main :: fn() {
+            fmt: string = "{}"
+            io.println(fmt, 1)
+        }
+        """
+        assert expect_error(source, "string literals")
+
+    def test_math_sqrt_requires_float_argument(self):
+        source = """
+        math :: import "std/math"
+
+        main :: fn() {
+            x := math.sqrt(9)
+        }
+        """
+        assert expect_error(source, "f32 or f64")
 
     def test_dereference_operator(self):
         """Test dereference operator (.val)."""

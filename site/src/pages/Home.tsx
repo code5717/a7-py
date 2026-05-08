@@ -29,8 +29,8 @@ const FEATURES = [
     copy: 'Static types, arrays, slices, refs, structs, enums, and unions.',
   },
   {
-    title: 'Two backends',
-    copy: 'Generate Zig or C and compare runtime output.',
+    title: 'Zig output',
+    copy: 'Generate inspectable Zig and run it through golden-output checks.',
   },
   {
     title: 'No recursion',
@@ -47,7 +47,7 @@ const PIPELINE = [
   { title: 'Parse', copy: 'Tokens to AST' },
   { title: 'Validate', copy: 'Semantic checks' },
   { title: 'Preprocess', copy: 'Lowering annotations' },
-  { title: 'Codegen', copy: 'Zig or C output' },
+  { title: 'Codegen', copy: 'Zig output' },
 ]
 
 const HIGHLIGHTS = [
@@ -119,7 +119,7 @@ export default function Home() {
           <span className="page-header-eyebrow">A7 language</span>
           <h1 className="page-header-title">Simple, fast systems code.</h1>
           <p className="page-header-summary">
-            Compile one file to Zig or C. No recursion, no magic runtime.
+            Compile one file to Zig. No recursion, no magic runtime.
           </p>
 
           <div className="home-hero-actions">

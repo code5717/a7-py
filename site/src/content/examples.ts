@@ -39,7 +39,7 @@ const EXAMPLE_META = {
   '032_prime_numbers.a7': { title: 'Primes', category: 'Algorithms', desc: 'Trial-division prime checks and GCD' },
   '033_fibonacci.a7': { title: 'Fibonacci', category: 'Algorithms', desc: 'Iterative sequence generation with usize indexes' },
   '034_string_utils.a7': { title: 'String Utils', category: 'Applications', desc: 'Length, slicing, iteration, and char search' },
-  '035_matrix.a7': { title: 'Matrix Ops', category: 'Applications', desc: 'Flat 2x2 matrix addition' },
+  '035_matrix.a7': { title: 'Matrix Ops', category: 'Applications', desc: '2x2 matrix addition with array +' },
   '036_control_flow_edges.a7': { title: 'Control Flow Edges', category: 'Control Flow', desc: 'Labeled loops, slices, and match-case defer scope' },
   '037_language_tour.a7': { title: 'Language Tour', category: 'Basics', desc: 'One-file tour of declarations, types, control flow, refs, heap values, and function pointers' },
 } as const

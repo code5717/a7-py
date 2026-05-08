@@ -22,7 +22,6 @@ import tempfile
 import pytest
 
 from a7.ast_nodes import ASTNode, BinaryOp, LiteralKind, NodeKind
-from a7.backends.c import CCodeGenerator
 from a7.backends.zig import ZigCodeGenerator
 from a7.compile import A7Compiler, OutputFormat
 from a7.formatters import JSONFormatter
@@ -418,21 +417,6 @@ class TestLowRecursionLimit:
         rendered = ZigCodeGenerator()._emit_expr(expr)
 
         assert rendered.count("+") == 160
-
-    def test_c_backend_deep_binary_expression_uses_iterative_stack(self):
-        """C expression emission should not recurse on deep binary chains."""
-        expr = make_deep_binary_ast(160)
-        rendered = CCodeGenerator()._emit_expr(expr)
-
-        assert rendered.count("+") == 160
-
-    def test_c_backend_prepared_deep_binary_expression_uses_iterative_stack(self):
-        """C prepared expression emission should not recurse on binary chains."""
-        expr = make_deep_binary_ast(160)
-        rendered = CCodeGenerator()._emit_expr_prepared(expr)
-
-        assert rendered.count("+") == 160
-
 
 # ===========================================================================
 # 2. Deep Nesting Stress Tests (normal recursion limit)

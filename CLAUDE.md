@@ -19,12 +19,11 @@ from a fresh checkout.
 ## Verification Commands
 
 - Debug artifact verification:
-  `uv run python scripts/build_examples.py --profile debug --backend both --clean`
+  `uv run python scripts/build_examples.py --profile debug --backend zig --clean`
 - Release artifact verification:
-  `uv run python scripts/build_examples.py --profile release --backend both --clean`
-- Backend parity (24 cases — generic constraints, generic structs/functions,
-  explicit enum discriminants, stdlib math, operator edge cases):
-  `uv run python scripts/verify_backend_parity.py`
+  `uv run python scripts/build_examples.py --profile release --backend zig --clean`
+- Example E2E:
+  `uv run python scripts/verify_examples_e2e.py`
 - Full local release gate: `./run_all_tests.sh`
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
@@ -35,14 +34,14 @@ from a fresh checkout.
   then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
   `/a7-py/docs/index.md`.
 
-Examples are verified end-to-end against **both** the Zig and C backends —
-the Zig and C example E2E scripts must both pass for any change to
+Examples are verified end-to-end against the Zig backend.
+The Zig example E2E script must pass for any change to
 `examples/`, codegen, or runtime behavior.
 
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
-parser/semantic/codegen tests, example E2E for Zig and C, 24-case backend
-parity, debug + release artifacts, error-stage matrix, docs style, secrets
-check). Run it before reporting a non-trivial task as done.
+parser/semantic/codegen tests, Zig example E2E, debug + release artifacts,
+error-stage matrix, docs style, secrets check). Run it before reporting a
+non-trivial task as done.
 
 The public docs site also ships Markdown entry points for agent tooling under
 `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
@@ -114,7 +113,7 @@ treated as a bug.
 
 ## Security Caveat
 
-`a7-py` is **not** a sandbox for untrusted source. The compiler emits Zig or C
+`a7-py` is **not** a sandbox for untrusted source. The compiler emits Zig
 that is then built and run with the host toolchain; compiled A7 programs can do
 anything the host environment permits. Only compile and execute A7 source you
 trust.

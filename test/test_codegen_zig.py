@@ -256,7 +256,8 @@ main :: fn() {
             text=True,
         )
         assert run.returncode == 0, run.stdout + run.stderr
-        assert (run.stdout + run.stderr).splitlines() == [
+        assert run.stderr == ""
+        assert run.stdout.splitlines() == [
             "one",
             "two",
             "else",
@@ -273,7 +274,8 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
         assert 'pub fn main() void' in zig
-        assert 'std.debug.print("Hello, World!\\n", .{})' in zig
+        assert 'std.fs.File.stdout().writer' in zig
+        assert 'interface.print("Hello, World!\\n", .{})' in zig
 
     def test_string_escapes_are_emitted_as_zig_escapes(self):
         source = r'''
@@ -283,7 +285,7 @@ main :: fn() {
 }
 '''
         zig = compile_a7_to_zig(source)
-        assert 'std.debug.print("line\\nquote: \\"A\\"!", .{})' in zig
+        assert 'interface.print("line\\nquote: \\"A\\"!", .{})' in zig
 
     def test_stdlib_import_aliases_emit_zig_stdlib_calls(self):
         """Arbitrary aliases for std/io and std/math should still lower as stdlib."""
@@ -297,9 +299,88 @@ main :: fn() {
 """
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
-        assert 'std.debug.print("{any}\\n", .{@sqrt(9.0)});' in zig
+        assert 'interface.print("{any}\\n", .{@sqrt(9.0)})' in zig
         assert "console.println" not in zig
         assert "mathlib.sqrt" not in zig
+
+    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+    def test_io_println_writes_stdout_and_eprintln_writes_stderr(self, tmp_path):
+        source = tmp_path / "streams.a7"
+        output = tmp_path / "streams.zig"
+        binary = tmp_path / "streams"
+        source.write_text(
+            '''
+io :: import "std/io"
+
+main :: fn() {
+    io.print("{}:", "out")
+    io.println("{} {}", 1, true)
+    io.eprintln("{}:", "err")
+}
+'''.strip(),
+            encoding="utf-8",
+        )
+
+        compiler = A7Compiler(verbose=False)
+        assert compiler.compile_file(str(source), str(output))
+        build = subprocess.run(
+            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert build.returncode == 0, build.stderr
+
+        run = subprocess.run(
+            [str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == 0, run.stdout + run.stderr
+        assert run.stdout == "out:1 true\n"
+        assert run.stderr == "err:\n"
+        generated = output.read_text(encoding="utf-8")
+        assert generated.count("std.fs.File.stdout().writerStreaming") == 1
+        assert generated.count("std.fs.File.stderr().writerStreaming") == 1
+
+    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+    def test_integer_remainder_matches_truncating_division(self, tmp_path):
+        source = tmp_path / "remainder.a7"
+        output = tmp_path / "remainder.zig"
+        binary = tmp_path / "remainder"
+        source.write_text(
+            '''
+io :: import "std/io"
+
+main :: fn() {
+    a: i32 = -17
+    b: i32 = 5
+    io.println("{} {}", a / b, a % b)
+}
+'''.strip(),
+            encoding="utf-8",
+        )
+
+        compiler = A7Compiler(verbose=False)
+        assert compiler.compile_file(str(source), str(output))
+        build = subprocess.run(
+            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert build.returncode == 0, build.stderr
+
+        run = subprocess.run(
+            [str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == 0, run.stdout + run.stderr
+        assert run.stdout.strip() == "-3 -2"
+        assert run.stderr == ""
 
     def test_slice_ptr_and_len_fields_emit_zig_slice_fields(self):
         source = '''
@@ -316,6 +397,20 @@ main :: fn() {
         assert "tail.len" in zig
         assert "ptr[0]" in zig
         ok, err = zig_ast_check(zig)
+        assert ok, err
+
+    def test_address_taken_local_uses_mutable_storage(self):
+        source = '''
+main :: fn() {
+    x: i32 = 7
+    p: ref i32 = x.adr
+    p.val = 8
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "var x: i32 = 7;" in zig
+        assert "const p: ?*i32 = &x;" in zig
+        ok, err = zig_build_check(zig)
         assert ok, err
 
     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
@@ -358,7 +453,8 @@ main :: fn() {
             text=True,
         )
         assert run.returncode == 0, run.stdout + run.stderr
-        assert (run.stdout + run.stderr).strip() == "bcdef"
+        assert run.stderr == ""
+        assert run.stdout.strip() == "bcdef"
 
     def test_constant_declaration(self):
         source = 'PI :: 3.14\n'
@@ -523,6 +619,88 @@ process :: fn(nums: [10]i32) i32 {
 '''
         zig = compile_a7_to_zig(source)
         assert '[10]i32' in zig
+
+    def test_fixed_array_addition_assignment(self):
+        source = '''
+main :: fn() {
+    a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
+    b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
+    c: [4]f64
+    c = a + b
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert 'c = (@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b));' in zig
+        assert 'c[0] = a[0] + b[0];' not in zig
+        assert 'c = (a + b);' not in zig
+
+    def test_fixed_array_addition_expression_contexts(self):
+        source = '''
+first :: fn(xs: [4]f64) f64 {
+    ret xs[0]
+}
+
+main :: fn() {
+    a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
+    b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
+    value := first(a + b)
+    item := (a + b)[2]
+    _ = value
+    _ = item
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert 'first((@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b)))' in zig
+        assert '(@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b))[2]' in zig
+        ok, err = zig_build_check(zig)
+        assert ok, err
+
+    def test_void_call_statement_does_not_emit_discard(self):
+        source = '''
+noop :: fn() {
+}
+
+main :: fn() {
+    noop()
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "noop();" in zig
+        assert "_ = noop();" not in zig
+        ok, err = zig_ast_check(zig)
+        assert ok, err
+
+    def test_generic_call_uses_declared_type_parameter_order(self):
+        source = '''
+choose($U, $T) :: fn(left: $U, right: $T) $T {
+    ret right
+}
+
+main :: fn() {
+    answer := choose("left", 42)
+    _ = answer
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "fn choose(comptime U: type, comptime T: type, _: U, right: T) T" in zig
+        assert 'choose([]const u8, i32, "left", 42)' in zig
+        ok, err = zig_build_check(zig)
+        assert ok, err
+
+    def test_usize_index_does_not_emit_intcast(self):
+        source = '''
+main :: fn() {
+    arr: [3]i32 = [10, 20, 30]
+    i: usize = 1
+    value := arr[i]
+    _ = value
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "arr[i]" in zig
+        assert "arr[@intCast(i)]" not in zig
+        ok, err = zig_ast_check(zig)
+        assert ok, err
 
     def test_type_alias(self):
         # Type aliases are emitted when using struct/enum patterns
@@ -742,7 +920,8 @@ main :: fn() {
 }
 '''
         zig = compile_a7_to_zig(source)
-        assert 'std.debug.print' in zig
+        assert 'std.fs.File.stdout().writerStreaming' in zig
+        assert zig.count('std.fs.File.stdout().writerStreaming') == 1
         assert '{any}' in zig  # {} converted to {any}
 
     def test_char_escape_newline(self):

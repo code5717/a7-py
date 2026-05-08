@@ -100,7 +100,7 @@ jobs:
         run: npm run build
 
       - name: Build release example artifacts
-        run: uv run python scripts/build_examples.py --profile release --backend both --clean
+        run: uv run python scripts/build_examples.py --profile release --backend zig --clean
 
       - name: Archive docs site
         run: tar -czf dist/a7-docs-site.tar.gz -C site dist
@@ -119,9 +119,7 @@ jobs:
             --require dist/docs/status.md
           uv run python scripts/verify_archive_contents.py dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz \
             --require release/zig/src/001_hello.zig \
-            --require release/zig/bin/001_hello \
-            --require release/c/src/001_hello.c \
-            --require release/c/bin/001_hello
+            --require release/zig/bin/001_hello
 
       - name: Generate release checksums
         run: |

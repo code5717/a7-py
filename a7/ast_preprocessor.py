@@ -351,12 +351,16 @@ class ASTPreprocessor:
         return None
 
     def _collect_mutations(self, node: ASTNode) -> Set[str]:
-        """Collect variable names that are targets of assignments. Iterative walk."""
+        """Collect variable names that need mutable Zig storage."""
         mutations: Set[str] = set()
 
         def visitor(n):
             if n.kind == NodeKind.ASSIGNMENT and n.target:
                 root = self._get_root_identifier(n.target)
+                if root:
+                    mutations.add(root)
+            elif n.kind == NodeKind.ADDRESS_OF and n.operand:
+                root = self._get_root_identifier(n.operand)
                 if root:
                     mutations.add(root)
 
@@ -636,9 +640,12 @@ class ASTPreprocessor:
                 elif op == BinaryOp.MUL:
                     result = lval * rval
                 elif op == BinaryOp.DIV and rval != 0:
-                    result = lval // rval if isinstance(lval, int) and isinstance(rval, int) else lval / rval
+                    result = int(lval / rval) if isinstance(lval, int) and isinstance(rval, int) else lval / rval
                 elif op == BinaryOp.MOD and rval != 0:
-                    result = lval % rval
+                    if isinstance(lval, int) and isinstance(rval, int):
+                        result = lval - (int(lval / rval) * rval)
+                    else:
+                        result = lval % rval
                 elif op == BinaryOp.BIT_AND and isinstance(lval, int) and isinstance(rval, int):
                     result = lval & rval
                 elif op == BinaryOp.BIT_OR and isinstance(lval, int) and isinstance(rval, int):

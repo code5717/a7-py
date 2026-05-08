@@ -17,15 +17,14 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 
 - Run the compiler: `uv run a7 <args>` (or `uv run python main.py <args>`).
   The Python package lives at `a7/`; the entrypoint is `a7.cli:main`.
-- Full release gate: `./run_all_tests.sh` (covers example E2E for **both**
-  Zig and C backends and the 24-case backend parity sweep).
+- Full release gate: `./run_all_tests.sh` (covers Zig example E2E and
+  release artifact verification).
 - Debug artifacts:
-  `uv run python scripts/build_examples.py --profile debug --backend both --clean`
+  `uv run python scripts/build_examples.py --profile debug --backend zig --clean`
 - Release artifacts:
-  `uv run python scripts/build_examples.py --profile release --backend both --clean`
-- Backend parity (24 cases — generic constraints, generic structs/functions,
-  explicit enum discriminants, stdlib math, operator edge cases):
-  `uv run python scripts/verify_backend_parity.py`
+  `uv run python scripts/build_examples.py --profile release --backend zig --clean`
+- Example E2E:
+  `uv run python scripts/verify_examples_e2e.py`
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release uses

@@ -5,7 +5,7 @@ Provides type representation, type checking, and type compatibility analysis.
 """
 
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from enum import Enum, auto
 
 
@@ -233,8 +233,9 @@ class FunctionType(Type):
     return_type: Optional[Type]
     is_variadic: bool = False
     variadic_type: Optional[Type] = None  # For typed variadic: ..i32
+    generic_param_order: Tuple[str, ...] = ()
 
-    def __init__(self, param_types, return_type=None, is_variadic=False, variadic_type=None):
+    def __init__(self, param_types, return_type=None, is_variadic=False, variadic_type=None, generic_param_order=()):
         object.__setattr__(self, 'kind', TypeKind.FUNCTION)
         # Convert list to tuple for immutability
         if isinstance(param_types, list):
@@ -243,6 +244,7 @@ class FunctionType(Type):
         object.__setattr__(self, 'return_type', return_type)
         object.__setattr__(self, 'is_variadic', is_variadic)
         object.__setattr__(self, 'variadic_type', variadic_type)
+        object.__setattr__(self, 'generic_param_order', tuple(generic_param_order or ()))
 
     def equals(self, other: Type) -> bool:
         if not isinstance(other, FunctionType):
@@ -273,7 +275,7 @@ class FunctionType(Type):
         return f"fn({params}){ret}"
 
     def __hash__(self) -> int:
-        return hash(('function', self.param_types, hash(self.return_type) if self.return_type else None))
+        return hash(('function', self.param_types, hash(self.return_type) if self.return_type else None, self.generic_param_order))
 
 
 @dataclass(frozen=True)

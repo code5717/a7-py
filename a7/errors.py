@@ -133,6 +133,7 @@ class TypeErrorType(Enum):
 
     # Dereference errors
     CANNOT_DEREFERENCE = "cannot_dereference"
+    ADDRESS_OF_RVALUE = "address_of_rvalue"
 
     # Nil errors
     NIL_NOT_ALLOWED = "nil_not_allowed"
@@ -345,6 +346,7 @@ def get_type_error_message(error_type: TypeErrorType) -> str:
 
         # Dereference errors
         TypeErrorType.CANNOT_DEREFERENCE: "Cannot dereference non-pointer type",
+        TypeErrorType.ADDRESS_OF_RVALUE: "Cannot take the address of a temporary value",
 
         # Nil errors
         TypeErrorType.NIL_NOT_ALLOWED: "Nil not allowed for this type",
@@ -403,6 +405,7 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
 
         # Dereference errors
         TypeErrorType.CANNOT_DEREFERENCE: "Only pointers can be dereferenced using .val",
+        TypeErrorType.ADDRESS_OF_RVALUE: "Use .adr only on variables, fields, indexes, or dereferenced references",
 
         # Nil errors
         TypeErrorType.NIL_NOT_ALLOWED: "This type cannot be nil",

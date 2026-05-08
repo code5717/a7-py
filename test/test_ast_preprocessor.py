@@ -226,6 +226,22 @@ class TestConstantFolding:
         assert val.kind == NodeKind.LITERAL
         assert val.literal_value == 1
 
+    def test_negative_integer_division_truncates_toward_zero(self):
+        """Integer constant folding must match backend truncating division."""
+        ast = preprocess("main :: fn() { x := -17 / 5 }")
+        stmts = get_function_stmts(ast)
+        val = stmts[0].value
+        assert val.kind == NodeKind.LITERAL
+        assert val.literal_value == -3
+
+    def test_negative_integer_modulo_uses_truncating_remainder(self):
+        """Integer constant folding must match C `%` and Zig `@rem`."""
+        ast = preprocess("main :: fn() { x := -17 % 5 }")
+        stmts = get_function_stmts(ast)
+        val = stmts[0].value
+        assert val.kind == NodeKind.LITERAL
+        assert val.literal_value == -2
+
     def test_and_booleans(self):
         """true and false should fold to literal false."""
         ast = preprocess("main :: fn() { x := true and false }")
@@ -534,6 +550,21 @@ class TestMutationAnalysis:
         var_p = stmts[0]
         assert var_p.name == "p"
         assert var_p.is_mutable is True
+
+    def test_address_taken_variable_is_mutable(self):
+        """Taking a local address should force mutable storage for Zig pointers."""
+        code = """
+        main :: fn() {
+            x: i32 = 7
+            p: ref i32 = x.adr
+        }
+        """
+        ast = preprocess(code)
+        stmts = get_function_stmts(ast)
+        var_x = stmts[0]
+        assert var_x.kind == NodeKind.VAR
+        assert var_x.name == "x"
+        assert var_x.is_mutable is True
 
 
 # ===========================================================================

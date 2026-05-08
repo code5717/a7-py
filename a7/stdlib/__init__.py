@@ -22,7 +22,7 @@ class StdlibFunction:
     module: str              # "io"
     name: str                # "println"
     canonical: str           # "std.io.println"
-    backend_map: Dict[str, str] = field(default_factory=dict)  # {"zig": "std.debug.print"}
+    backend_map: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

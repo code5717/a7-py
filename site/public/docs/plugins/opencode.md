@@ -13,7 +13,6 @@ https://code5717.github.io/a7-py/docs/index.md
 
 ```bash
 uv run a7 examples/001_hello.a7
-uv run python scripts/verify_backend_parity.py
 ```
 
 ## Notes

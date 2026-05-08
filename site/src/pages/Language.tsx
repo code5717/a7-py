@@ -420,7 +420,7 @@ abs_generic :: fn(x: $T) $T {
 }`}
         />
         <DocCallout tone="warning">
-          Simple generic functions, type-set constraints, and used generic struct instances lower in both backends. Broader composite generic propagation and method-style call chains remain current gaps.
+          Simple generic functions, type-set constraints, and used generic struct instances lower in Zig. Broader composite generic propagation and method-style call chains remain current gaps.
         </DocCallout>
       </SectionPanel>
 
@@ -443,7 +443,7 @@ pub length :: fn(v: Vec2) f32 {
 }`}
         />
         <p className="text-secondary mt-1">
-          Every <code className="doc-inline-code">.a7</code> file is a module. File-backed imports are resolver-validated, but Zig/C backend linking for multiple source files is not implemented yet, so compile modes reject them before codegen.
+          Every <code className="doc-inline-code">.a7</code> file is a module. File-backed imports are resolver-validated, but Zig backend linking for multiple source files is not implemented yet, so compile modes reject them before codegen.
         </p>
       </SectionPanel>
 
@@ -555,7 +555,7 @@ type_expr :=
 
       <SectionPanel title="Implementation Notes">
         <DocCallout tone="success">
-          Parsing coverage is complete for the language surface described here. The compiler runs tokenization, parsing, semantic passes, preprocessing, and code generation (Zig and C backends) end-to-end.
+          Parsing coverage is complete for the language surface described here. The compiler runs tokenization, parsing, semantic passes, preprocessing, and Zig code generation end-to-end.
         </DocCallout>
         <DocCallout tone="warning">
           A small set of semantic features are still open: arbitrary symbolic range reasoning, broader generic propagation, tagged union workflows, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.

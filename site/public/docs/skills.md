@@ -29,5 +29,4 @@ Update these files when behavior, commands, or public docs change:
 uv run python scripts/check_docs_style.py
 PYTHONPATH=. uv run pytest --tb=no -q
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
 ```

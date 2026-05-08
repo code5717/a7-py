@@ -2,16 +2,17 @@
 
 ## Current State
 
-- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig/C code generation are implemented.
+- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig code generation are implemented.
 - Direct, mutual, local function-pointer alias, and higher-order callback trampoline source recursion are semantic errors.
-- Debug/release artifact verification is available for both backends.
-- Example end-to-end verification is available for both Zig and C.
-- Selected Zig/C backend parity verification is available, including contextual array literal assignment, defer unwinding, fallthrough, untagged unions, generic function specialization, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math calls, operator edge cases, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
-- Simple top-level generic function calls, type-set constraints, and used generic struct instances lower in the C backend through concrete specialization.
+- Debug/release artifact verification is available for Zig.
+- Example end-to-end verification is available for Zig.
+- Selected Zig verification covers contextual array literal assignment, fixed-array `+`, defer unwinding, fallthrough, untagged unions, generic function specialization, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math calls, operator edge cases, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
+- Simple top-level generic function calls, type-set constraints, and used generic struct instances lower in Zig.
 - Array literal assignment validates declared lengths and nested element types.
+- Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
 - Index and slice-bound variables must be `usize`; non-negative integer literals are accepted for simple indexing.
 - Invalid ordering comparisons and unsafe signed-to-unsigned integer assignments are rejected during type checking.
-- `fall` lowers in both native backends when it is the final direct statement of a non-final match case.
+- `fall` lowers in Zig when it is the final direct statement of a non-final match case.
 
 ## Known Gaps
 

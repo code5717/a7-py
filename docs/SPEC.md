@@ -6,7 +6,6 @@
 > - ✅ **AST generation**: implemented
 > - ✅ **Semantic pipeline**: implemented (name resolution, type checking, semantic validation), including match expressions, pattern type checks, and bool/enum exhaustiveness checks
 > - ✅ **Zig code generation**: implemented
-> - ✅ **C code generation**: implemented (C11, validated with `zig cc`)
 > - ✅ **Debug/release example artifact builds**: available through `scripts/build_examples.py`
 > - 📊 **Current tests**: check with `PYTHONPATH=. uv run pytest --tb=no -q`
 >
@@ -34,7 +33,7 @@
 
 ### 1.1 Language Overview
 
-A7 is a statically-typed, procedural programming language that compiles to Zig and C, with plans for native machine code targets.
+A7 is a statically-typed, procedural programming language that compiles to Zig, with plans for native machine code targets.
 It features:
 - **Static typing** with type inference
 - **Compile-time generics** via monomorphization
@@ -245,7 +244,7 @@ A7's type system consists of:
 - On 32-bit platforms: 4 bytes (same as i32/u32)
 - On 64-bit platforms: 8 bytes (same as i64/u64)
 
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the memory-shape integer and maps to `usize` in Zig and `size_t` in C.
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the memory-shape integer and maps directly to Zig `usize`.
 
 Use `isize` only for signed pointer-sized offsets or differences between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
 
@@ -262,6 +261,12 @@ matrix: [3][3]f64
 // Array type properties
 T.len       // Number of elements (compile-time constant)
 T.element   // Element type
+
+// Element-wise addition for same-shape numeric fixed arrays
+a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
+b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
+c: [4]f64
+c = a + b
 ```
 
 #### Slices
@@ -980,13 +985,9 @@ main :: fn() {
 }
 ```
 
-Generic functions are specialized from concrete call sites. Backends that do
-not have native generic functions, such as the C backend, lower simple top-level
-generic function calls into generated concrete functions such as
-`identity__i32` and `identity__string`. Used generic struct instances also
-lower to concrete backend types such as `Box__i32`. Broader composite generic
-specialization and deeper propagation through method-style call chains remain
-implementation work.
+Generic functions are specialized from concrete call sites in Zig output.
+Broader composite generic specialization and deeper propagation through
+method-style call chains remain implementation work.
 
 ---
 
@@ -1440,7 +1441,7 @@ integrate_2d :: fn(f: fn(f64, f64) f64, bounds: [4]f64, steps: [2]usize) f64 {
 
 Every A7 source file is a module. There is no explicit `module` keyword.
 Current backend codegen does not link multiple `.a7` files yet; file-backed
-imports resolve during semantic validation but are rejected before Zig/C
+imports resolve during semantic validation but are rejected before Zig
 emission.
 
 ```a7
@@ -1504,7 +1505,7 @@ Current implementation:
 - Local file imports such as `./vector` can resolve from on-disk `.a7` files
   during semantic validation, but backend lowering/linking for file-backed
   modules is not implemented yet. Compile/pipeline/doc modes reject them before
-  codegen instead of emitting invalid Zig/C.
+  codegen instead of emitting invalid Zig.
 
 Planned, not implemented as public stdlib modules yet:
 
@@ -2160,8 +2161,8 @@ A7 supports the full ASCII character set (0-127) only. Characters outside this r
 
 Status snapshot (2026-05-08):
 
-- ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend, C backend).
-- ✅ Examples have end-to-end verification for both Zig and C backends.
+- ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend).
+- ✅ Examples have end-to-end verification through the Zig backend.
 - ✅ Debug and release example artifact builds are available through `scripts/build_examples.py`.
 - 📊 Test status: run `PYTHONPATH=. uv run pytest --tb=no -q` for the current branch.
 - 🚫 Security status: `a7-py` is not a sandbox. Do not compile and execute untrusted A7 source.
@@ -2169,7 +2170,7 @@ Status snapshot (2026-05-08):
 ### E.1 Current Open Gaps
 
 1. **`fall` scope restrictions**
-   - `fall` is supported in match statements and lowers in both Zig and C.
+   - `fall` is supported in match statements and lowers in Zig.
    - `fall` must be the final direct statement of a non-final match case.
    - `fall` is invalid outside match cases, in `else` branches, in final cases,
      or nested inside other control-flow statements.

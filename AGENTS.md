@@ -19,9 +19,9 @@ synced environment.
 ## Verification Commands
 
 - Debug artifact verification:
-  `uv run python scripts/build_examples.py --profile debug --backend both --clean`
+  `uv run python scripts/build_examples.py --profile debug --backend zig --clean`
 - Release artifact verification:
-  `uv run python scripts/build_examples.py --profile release --backend both --clean`
+  `uv run python scripts/build_examples.py --profile release --backend zig --clean`
 - Full local release gate: `./run_all_tests.sh`
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
@@ -33,8 +33,8 @@ synced environment.
   `/a7-py/docs/index.md`.
 
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
-parser/semantic/codegen tests, example e2e for Zig and C, backend parity,
-debug + release artifacts, error-stage matrix, docs style, secrets check).
+parser/semantic/codegen tests, Zig example e2e, debug + release artifacts,
+error-stage matrix, docs style, secrets check).
 Run it before tagging or before reporting a task as done when changes are
 non-trivial.
 
@@ -88,7 +88,7 @@ treated as a bug.
 
 ## Security Caveat
 
-`a7-py` is **not** a sandbox for untrusted source. The compiler emits Zig or C
+`a7-py` is **not** a sandbox for untrusted source. The compiler emits Zig
 that is then built and run with the host toolchain; compiled A7 programs can do
 anything the host environment permits. Only compile and execute A7 source you
 trust.

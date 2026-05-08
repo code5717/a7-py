@@ -4,16 +4,16 @@
 
 - Static typing with inference in supported contexts.
 - Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
-- Simple top-level generic function calls and used generic struct instances lower in both Zig and C backends.
+- Simple top-level generic function calls and used generic struct instances lower in the Zig backend.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
-- Arrays, slices, string slices, pointers, references, and manual `new` / `del`.
+- Arrays, same-shape numeric fixed-array `+`, slices, string slices, pointers, references, and manual `new` / `del`.
 - `defer` and unreachable-statement diagnostics.
 - Direct, mutual, local alias, and callback-trampoline source-recursion diagnostics.
 
 ## Compiler
 
 - Tokenizer, parser, semantic validation, AST preprocessing, and backend codegen.
-- Zig backend and C11 backend.
+- Zig backend.
 - Stable CLI modes and exit codes.
 - Human and JSON output formats.
 - Markdown pipeline report generation.
@@ -21,8 +21,8 @@
 ## Verification
 
 - Pytest coverage for tokenizer, parser, semantic, codegen, CLI, and release tooling.
-- Zig and C example end-to-end verification against golden output.
-- Selected backend parity checks that compile, build, run, and compare Zig/C outputs.
+- Zig example end-to-end verification against golden output.
+- Selected Zig end-to-end checks that compile, build, run, and compare golden outputs.
 - Debug and release artifact builds for examples.
 - Release checksum manifest generation and verification.
 

@@ -8,8 +8,8 @@
 
 ## Recently Completed (Language Core)
 
-1. **Labeled loops** — `@outer while`, `@outer for`, `@outer for-in` with `break outer` / `continue outer` in both Zig and C backends.
-2. **Slice expressions in C backend** — `arr[1..4]` on arrays and slices, including indexing and `for-in` over slices.
+1. **Labeled loops** — `@outer while`, `@outer for`, `@outer for-in` with `break outer` / `continue outer` in the Zig backend.
+2. **C backend retired** — Zig is the only supported code generation target.
 3. **Type checker: slice and index validation** — `visit_slice_expr` returns `SliceType`; `visit_index_expr` rejects non-integer indices.
 4. `match` expressions are type-checked and participate in expression typing.
 5. `@type_set(...)` parses in value context.
@@ -30,29 +30,28 @@
 14. Constant folding covers arithmetic, boolean logic, literal comparisons, and integer bitwise expressions.
 15. Installed CLI entrypoint (`a7`) is wired through `pyproject.toml`.
 16. Debug/release example artifact verification is available through `scripts/build_examples.py`.
-17. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, selected Zig/C parity smoke checks, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
+17. `run_all_tests.sh` includes Zig example E2E verification, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
 18. Local file-based imports now fail closed during codegen modes instead of emitting unresolved backend code. Semantic mode still validates resolver loading.
 19. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
-20. `fall` now lowers in both Zig and C when used as the final direct
+20. `fall` now lowers in Zig when used as the final direct
     statement of a non-final match case.
-21. C backend `for-in` lowering now caches array/slice iterable expressions so side-effectful iterables are evaluated once.
+21. Zig generation is the current optimization focus; C parity work has been removed from the active support matrix.
 22. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes; valid escapes are decoded into AST literals and re-escaped for backend output.
 23. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
 24. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
-25. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
-26. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in both Zig and C backends.
-27. C backend side-effect-free `match` expressions now lower for literal, enum, range, and wildcard patterns.
-28. C backend `match` statements with range patterns lower through portable `if` chains.
-29. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
-30. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
+25. `slice.ptr` and `slice.len` now type-check and lower in Zig.
+26. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in Zig.
+27. The removed C backend no longer defines project status or release readiness.
 31. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
 32. Semantic validation rejects direct, mutual, local function-pointer alias, and higher-order callback trampoline recursion; repeated work must use loops, explicit stacks, or index-based worklists.
 33. Index and slice-bound variables must be `usize`; non-negative integer literals remain valid for simple indexing.
-34. `new [N]T` heap fixed arrays fail closed until the allocation model and both backends agree on representation.
+34. `new [N]T` heap fixed arrays fail closed until the allocation model is defined.
 35. Ordering comparisons reject non-ordered types, and signed variables no longer implicitly assign to unsigned integer types.
 36. Match identifier capture patterns bind the scrutinee in branch-local scope
     when no existing symbol with that name is visible. Existing identifier
     patterns keep value-comparison semantics.
+37. Fixed-size numeric arrays with the same length and element type support
+    element-wise `+` assignment in Zig.
 
 ---
 
@@ -84,15 +83,12 @@
    - Current validation covers basic `del` reference checks.
    - Ownership/borrow-style lifetime guarantees are not implemented.
    - Heap fixed arrays (`new [N]T`) are rejected until the language defines
-     whether they are fixed-array references or heap slices and both backends
-     lower the same model.
+     whether they are fixed-array references or heap slices.
 
-3. **Backend semantic parity hardening**
-   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, capture patterns, slices, string slices, labels, function pointers, generic struct instances, and contextual array literal assignment.
-   - Keep expanding mandatory parity cases for new language features.
-   - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
-   - C backend now lowers simple top-level generic function calls and used generic struct instances, but broader nested generic workflows and propagation through method-style call chains still need parity coverage.
-   - Untagged union field construction/access now type-checks and lowers in both backends.
+3. **Zig generation hardening**
+   - Core conformance is green for the current example suite.
+   - Keep expanding mandatory Zig compile/run cases for new language features.
+   - Untagged union field construction/access now type-checks and lowers in Zig.
    - Tagged/discriminated union tag workflows are still reserved syntax and not implemented.
 
 4. **Release publishing activation**

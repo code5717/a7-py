@@ -1,7 +1,7 @@
 // A7 compact language tour
 //
 // Read this file top-to-bottom for a compact tour of the current stable
-// language surface. Every section is runnable and verified through Zig and C.
+// language surface. Every section is runnable and verified through Zig.
 //
 // Guard rails: source recursion is rejected, `fall` is restricted to final
 // non-final match-case statements, and tagged union tag workflows are not

@@ -11,7 +11,6 @@ function pointers, loops, and the no-recursion rule.
 
 ```bash
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
 ```
 
 Both verifiers compile, build, run, and compare output against `test/fixtures/golden_outputs/*.out`.

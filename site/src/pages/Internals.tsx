@@ -11,7 +11,7 @@ const stages = [
   { label: 'Codegen', file: 'backends/' },
 ]
 
-const dataLabels = ['tokens', 'AST', 'symbols + types', 'annotated AST', 'Zig / C']
+const dataLabels = ['tokens', 'AST', 'symbols + types', 'annotated AST', 'Zig']
 
 const subPasses = [
   { num: 1, name: '.adr/.val lowering' },
@@ -38,7 +38,7 @@ const testLayers = [
   ['Tokenizer', 'test/test_tokenizer.py', 'Token generation, literals, keywords, operators, error cases.'],
   ['Parser', 'test/test_parser_*.py', 'AST generation for language constructs.'],
   ['Semantic', 'test/test_semantic_*.py', 'Name resolution, type checking, validations.'],
-  ['Codegen', 'test/test_codegen_zig.py, test/test_codegen_c.py', 'Zig/C emission and build checks.'],
+  ['Codegen', 'test/test_codegen_zig.py', 'Zig emission and build checks.'],
   ['End-to-end', 'test/test_examples_e2e*.py', 'Compile, build, run, compare golden output.'],
   ['Release gate', 'run_all_tests.sh', 'Full local gate, artifact builds, docs style, error matrix.'],
 ]
@@ -86,7 +86,6 @@ export default function Internals() {
             [<code className="doc-inline-code" key="st">a7/symbol_table.py</code>, 'Symbol + Scope + ModuleTable (hierarchical lookup)'],
             [<code className="doc-inline-code" key="bb">a7/backends/base.py</code>, 'Abstract backend contract (generate + visit)'],
             [<code className="doc-inline-code" key="bz">a7/backends/zig.py</code>, 'Zig code generator, reads all annotations'],
-            [<code className="doc-inline-code" key="bc">a7/backends/c.py</code>, 'C11 code generator, labeled loops via goto, slice structs'],
           ]}
         />
       </SectionPanel>
@@ -213,9 +212,9 @@ export default function Internals() {
 # 4. walk     — visit() dispatches on NodeKind
 # 5. output   — return accumulated Zig source
 
-# Both backends read preprocessor annotations AND
-# re-analyze mutations/usage locally (dual analysis)
-# --backend c selects C11 output (validated with zig cc)`} />
+# Zig generation reads preprocessor annotations and
+# re-analyzes mutations/usage locally
+`} />
       </SectionPanel>
 
       <SectionPanel title="Testing" id="testing">
@@ -224,8 +223,7 @@ export default function Internals() {
           lang="bash"
           code={`PYTHONPATH=. uv run pytest --tb=no -q
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
-uv run python scripts/verify_backend_parity.py
+uv run python scripts/build_examples.py --profile debug --backend zig --clean
 ./run_all_tests.sh`}
         />
         <DataTable

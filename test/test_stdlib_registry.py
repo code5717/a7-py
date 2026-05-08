@@ -236,40 +236,28 @@ class TestGetBackendMapping:
     """Test get_backend_mapping for retrieving backend-specific code strings."""
 
     def test_io_println_zig(self):
-        """Zig mapping for std.io.println should be 'std.debug.print'."""
+        """Zig mapping for std.io.println should target stdout."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.io.println", "zig")
-        assert result == "std.debug.print"
-
-    def test_io_println_c(self):
-        """C mapping for std.io.println should be 'printf'."""
-        registry = StdlibRegistry()
-        result = registry.get_backend_mapping("std.io.println", "c")
-        assert result == "printf"
+        assert result == "stdout.writerStreaming.print"
 
     def test_io_print_zig(self):
-        """Zig mapping for std.io.print should be 'std.debug.print'."""
+        """Zig mapping for std.io.print should target stdout."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.io.print", "zig")
-        assert result == "std.debug.print"
+        assert result == "stdout.writerStreaming.print"
 
     def test_io_eprintln_zig(self):
-        """Zig mapping for std.io.eprintln should be 'std.debug.print'."""
+        """Zig mapping for std.io.eprintln should target stderr."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.io.eprintln", "zig")
-        assert result == "std.debug.print"
+        assert result == "stderr.writerStreaming.print"
 
     def test_math_sqrt_zig(self):
         """Zig mapping for std.math.sqrt should be '@sqrt'."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.math.sqrt", "zig")
         assert result == "@sqrt"
-
-    def test_math_sqrt_c(self):
-        """C mapping for std.math.sqrt should be 'sqrt'."""
-        registry = StdlibRegistry()
-        result = registry.get_backend_mapping("std.math.sqrt", "c")
-        assert result == "sqrt"
 
     def test_math_abs_zig(self):
         """Zig mapping for std.math.abs should be '@abs'."""
@@ -299,12 +287,6 @@ class TestGetBackendMapping:
                 f"get_backend_mapping('{canonical}', 'zig') returned {result}, "
                 f"expected '{zig_code}'"
             )
-
-    def test_c_backend_io_mapping(self):
-        """C backend mapping for std.io.println should resolve to printf."""
-        registry = StdlibRegistry()
-        result = registry.get_backend_mapping("std.io.println", "c")
-        assert result == "printf"
 
     def test_unknown_backend_returns_none(self):
         """An unregistered backend should return None."""

@@ -12,8 +12,6 @@
 ```bash
 PYTHONPATH=. uv run pytest --tb=no -q
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
-uv run python scripts/verify_backend_parity.py
 uv run python scripts/check_docs_style.py
 ./run_all_tests.sh
 ```

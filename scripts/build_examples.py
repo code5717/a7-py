@@ -20,11 +20,9 @@ MAIN_PY = ROOT / "main.py"
 PROFILE_FLAGS = {
     "debug": {
         "zig": ["-ODebug"],
-        "c": ["-O0", "-g"],
     },
     "release": {
         "zig": ["-OReleaseFast"],
-        "c": ["-O3", "-DNDEBUG"],
     },
 }
 
@@ -99,6 +97,10 @@ def build_zig(source_path: Path, binary_path: Path, profile: str) -> tuple[bool,
     if ast_check.returncode != 0:
         return False, f"zig ast-check failed:\n{first_error_text(ast_check)}"
 
+    fmt_check = run_cmd(["zig", "fmt", "--check", str(source_path)], cwd=ROOT)
+    if fmt_check.returncode != 0:
+        return False, f"zig fmt --check failed:\n{first_error_text(fmt_check)}"
+
     build = run_cmd(
         [
             "zig",
@@ -111,33 +113,6 @@ def build_zig(source_path: Path, binary_path: Path, profile: str) -> tuple[bool,
     )
     if build.returncode != 0:
         return False, f"zig build-exe failed:\n{first_error_text(build)}"
-    return True, ""
-
-
-def build_c(source_path: Path, binary_path: Path, profile: str) -> tuple[bool, str]:
-    object_path = binary_path.with_suffix(".o")
-    syntax = run_cmd(
-        ["zig", "cc", "-std=c11", "-c", str(source_path), "-o", str(object_path)],
-        cwd=ROOT,
-    )
-    if syntax.returncode != 0:
-        return False, f"zig cc syntax check failed:\n{first_error_text(syntax)}"
-
-    build = run_cmd(
-        [
-            "zig",
-            "cc",
-            "-std=c11",
-            str(source_path),
-            "-lm",
-            *PROFILE_FLAGS[profile]["c"],
-            "-o",
-            str(binary_path),
-        ],
-        cwd=ROOT,
-    )
-    if build.returncode != 0:
-        return False, f"zig cc build failed:\n{first_error_text(build)}"
     return True, ""
 
 
@@ -194,7 +169,7 @@ def build_example(
     fixtures_dir: Path,
     timeout: float,
 ) -> BuildResult:
-    source_ext = ".zig" if backend == "zig" else ".c"
+    source_ext = ".zig"
     source_path = out_dir / backend / "src" / f"{example.stem}{source_ext}"
     binary_path = out_dir / backend / "bin" / example.stem
     source_path.parent.mkdir(parents=True, exist_ok=True)
@@ -216,8 +191,6 @@ def build_example(
 
     if backend == "zig":
         built, error = build_zig(source_path, binary_path, profile)
-    elif backend == "c":
-        built, error = build_c(source_path, binary_path, profile)
     else:
         result.error = f"unknown backend: {backend}"
         return result
@@ -267,9 +240,9 @@ def main() -> int:
     )
     parser.add_argument(
         "--backend",
-        choices=["zig", "c", "both"],
-        default="both",
-        help="Backend to build (default: both)",
+        choices=["zig"],
+        default="zig",
+        help="Backend to build (default: zig)",
     )
     parser.add_argument(
         "--examples-dir",
@@ -307,7 +280,7 @@ def main() -> int:
     examples_dir = Path(args.examples_dir).resolve()
     fixtures_dir = Path(args.fixtures_dir).resolve()
     out_dir = Path(args.out_dir).resolve() if args.out_dir else ROOT / "build" / args.profile
-    backends = ["zig", "c"] if args.backend == "both" else [args.backend]
+    backends = [args.backend]
 
     if not shutil.which("zig"):
         print("zig is required for debug/release artifact builds", file=sys.stderr)

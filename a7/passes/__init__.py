@@ -10,11 +10,9 @@ Implements multi-pass semantic analysis:
 from .name_resolution import NameResolutionPass
 from .type_checker import TypeCheckingPass
 from .semantic_validator import SemanticValidationPass
-from .generic_lowering import GenericLoweringPass
 
 __all__ = [
     'NameResolutionPass',
     'TypeCheckingPass',
     'SemanticValidationPass',
-    'GenericLoweringPass',
 ]

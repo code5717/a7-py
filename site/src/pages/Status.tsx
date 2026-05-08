@@ -7,7 +7,7 @@ const done = [
   { name: 'Semantic analysis', desc: 'Name resolution, type checking with inference, control flow and memory checks, slice/index validation, and invalid fall placement diagnostics.' },
   { name: 'Preprocessing', desc: 'Nine sub-passes: lowering, resolution, mutation, usage, shadowing, hoisting, folding.' },
   { name: 'Zig backend', desc: 'Full translation with type mapping, pointer handling, hoisting, annotations, labeled loops, and fallthrough lowering.' },
-  { name: 'C backend', desc: 'C11 output validated with zig cc for current examples. Labeled loops, slices, defer, function pointers, range, identifier and capture match patterns, fallthrough, and side-effectful match expressions are present; backend parity checks should keep expanding.' },
+  { name: 'Zig-only generation', desc: 'C support has been retired from the active compiler. CI, release artifacts, and examples now focus on Zig output.' },
   { name: 'Generic constraints', desc: 'Predefined, aliased, and inline type-set constraints resolve for declared generic functions and are checked at inferred call sites.' },
   { name: 'Release tooling', desc: 'Installed CLI entrypoint, debug/release artifact verification, package artifact builds, checksums, and draft GitHub releases.' },
 ]
@@ -31,7 +31,7 @@ export default function Status() {
       <section className="metric-grid">
         <MetricTile label="Pipeline" value="Working with open gaps" />
         <MetricTile label="Tests" value="Use live test run" note="PYTHONPATH=. uv run pytest --tb=no -q" />
-        <MetricTile label="Examples" value="Zig + C verifiers" note="run_all_tests.sh includes both" />
+        <MetricTile label="Examples" value="Zig verifier" note="38/38 examples" />
       </section>
 
       <SectionPanel title="Done">

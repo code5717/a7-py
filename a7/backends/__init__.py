@@ -5,13 +5,11 @@ Provides pluggable code generation backends for different target languages.
 """
 
 from .base import CodeGenerator
-from .c import CCodeGenerator
 from .zig import ZigCodeGenerator
 
 # Registry of available backends
 BACKENDS = {
     "zig": ZigCodeGenerator,
-    "c": CCodeGenerator,
 }
 
 

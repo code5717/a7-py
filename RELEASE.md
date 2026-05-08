@@ -24,7 +24,7 @@ A release should contain:
 Debug builds keep compiler/runtime diagnostics friendly:
 
 ```bash
-uv run python scripts/build_examples.py --profile debug --backend both --clean
+uv run python scripts/build_examples.py --profile debug --backend zig --clean
 ```
 
 Output layout:
@@ -32,8 +32,6 @@ Output layout:
 ```text
 build/debug/zig/src/*.zig
 build/debug/zig/bin/*
-build/debug/c/src/*.c
-build/debug/c/bin/*
 ```
 
 ## Release Builds
@@ -42,7 +40,7 @@ Release builds use optimized target compiler flags and still run every binary
 against the golden output fixtures:
 
 ```bash
-uv run python scripts/build_examples.py --profile release --backend both --clean
+uv run python scripts/build_examples.py --profile release --backend zig --clean
 ```
 
 Output layout:
@@ -50,8 +48,6 @@ Output layout:
 ```text
 build/release/zig/src/*.zig
 build/release/zig/bin/*
-build/release/c/src/*.c
-build/release/c/bin/*
 ```
 
 ## Full Release Gate
@@ -73,12 +69,10 @@ uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 
 - parser and tokenizer tests
 - semantic tests
-- Zig and C backend tests
+- Zig backend tests
 - Zig example compile/build/run/output verification
-- C example compile/build/run/output verification
-- selected Zig/C backend parity verification beyond examples
-- debug artifact build verification for Zig and C
-- release artifact build verification for Zig and C
+- debug artifact build verification for Zig
+- release artifact build verification for Zig
 - CLI error-stage matrix verification
 - docs style checks
 - committed secrets check
@@ -88,7 +82,7 @@ The Python and docs dependency audits are separate release-gate commands above.
 The Python audit tools are pinned so release gates do not fetch arbitrary latest
 tool versions at runtime. The wheel install verifier installs the built wheel in
 a clean virtual environment and exercises the installed `a7` entrypoint through
-both Zig and C code generation before release.
+Zig code generation before release.
 
 To create a local checksum manifest for package files, docs archives, or native
 artifact archives, run:
@@ -152,7 +146,7 @@ an implicit side effect of the draft GitHub release job.
 ## Known Release Caveats
 
 The compiler is not a security sandbox. A7 programs compiled to native binaries
-can do whatever the generated Zig/C program and host runtime allow. Only compile
+can do whatever the generated Zig program and host runtime allow. Only compile
 and execute source you trust.
 
 Current language gaps remain tracked in `MISSING_FEATURES.md` and `TODO.md`.

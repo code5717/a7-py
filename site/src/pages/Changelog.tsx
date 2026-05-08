@@ -7,8 +7,8 @@ const releases = [
     date: '2026-05-07',
     groups: {
       Added: [
-        'Labeled loops for while, for, and for-in with labeled break/continue in Zig and C backends.',
-        'Slice expressions in the C backend plus slice/index validation in the type checker.',
+        'C backend support was retired; Zig is now the focused generation target.',
+        'Labeled loops for while, for, and for-in with labeled break/continue in Zig.',
         'Match expression type checking, bool/enum exhaustiveness, wildcard patterns, and return-path validation.',
         'Error stage verifier and matrix tests for mode/format contracts.',
         'Examples end-to-end verifier with golden output fixtures.',

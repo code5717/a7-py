@@ -24,7 +24,6 @@ npm run build
 uv run python scripts/check_docs_style.py
 PYTHONPATH=. uv run pytest --tb=no -q
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
 ```
 
 Run the full local gate for release-impacting changes:

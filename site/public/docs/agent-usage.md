@@ -28,8 +28,6 @@ uv sync
 uv run a7 examples/001_hello.a7
 PYTHONPATH=. uv run pytest --tb=no -q
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
-uv run python scripts/verify_backend_parity.py
 ./run_all_tests.sh
 ```
 

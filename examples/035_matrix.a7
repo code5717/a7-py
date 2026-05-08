@@ -7,14 +7,9 @@ main :: fn() {
 
     a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
     b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
-    c: [4]f64 = [0.0, 0.0, 0.0, 0.0]
+    c: [4]f64
 
-    for i := cast(usize, 0); i < 4; i += 1 {
-        c[i] = a[i] + b[i]
-    }
+    c = a + b
 
-    io.println("c00 = {}", c[0])
-    io.println("c01 = {}", c[1])
-    io.println("c10 = {}", c[2])
-    io.println("c11 = {}", c[3])
+    io.println("c = {}", c)
 }

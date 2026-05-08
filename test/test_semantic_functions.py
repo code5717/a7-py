@@ -289,7 +289,7 @@ class TestVariadicFunctions:
     """Test variadic function support."""
 
     def test_variadic_function_typed(self):
-        """Test typed variadic function."""
+        """Typed variadic functions are parsed but fail closed before codegen."""
         source = """
         sum :: fn(values: ..i32) i32 {
             total: i32 = 0
@@ -300,10 +300,10 @@ class TestVariadicFunctions:
             result := sum(1, 2, 3, 4, 5)
         }
         """
-        assert expect_success(source)
+        assert expect_error(source, "Variadic parameters")
 
     def test_variadic_function_untyped(self):
-        """Test untyped variadic function."""
+        """Untyped variadic functions are parsed but fail closed before codegen."""
         source = """
         print_args :: fn(args: ..) {
             x := 42
@@ -313,10 +313,10 @@ class TestVariadicFunctions:
             print_args(1, "hello", 3.14, true)
         }
         """
-        assert expect_success(source)
+        assert expect_error(source, "Variadic parameters")
 
     def test_variadic_with_regular_params(self):
-        """Test variadic function with regular parameters."""
+        """Variadic functions with regular params are parsed but unsupported."""
         source = """
         printf :: fn(format: string, args: ..) {
             x := 42
@@ -326,7 +326,7 @@ class TestVariadicFunctions:
             printf("Value: %d", 42)
         }
         """
-        assert expect_success(source)
+        assert expect_error(source, "Variadic parameters")
 
 
 class TestRecursionBan:

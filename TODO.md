@@ -10,9 +10,9 @@ Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 38/38 examples p
 These are bugs and schema mismatches in already-implemented features.
 
 - [ ] Convert backend codegen emission paths to fully iterative traversal.
-  Files: `a7/backends/zig.py`, `a7/backends/c.py`, `test/test_iterative_traversal.py`
-  Notes: semantic analysis, preprocessing, generic lowering, and formatter/reporting
-  AST walks use explicit stacks, and Zig/C binary-expression emission now uses
+  Files: `a7/backends/zig.py`, `test/test_iterative_traversal.py`
+  Notes: semantic analysis, preprocessing, and formatter/reporting
+  AST walks use explicit stacks, and Zig binary-expression emission now uses
   explicit postorder stacks. Backend statement emission and non-binary
   expression emission still use visitor-style recursive calls in some paths.
   Current low-recursion tests cover representative programs; full backend
@@ -71,7 +71,7 @@ These are bugs and schema mismatches in already-implemented features.
 
 - [x] Expand installed-wheel smoke coverage.
   Files: `scripts/verify_wheel_install.py`
-  Notes: clean-wheel verification now checks both installed Zig and C code generation.
+  Notes: clean-wheel verification now checks installed Zig code generation.
 
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `a7/passes/type_checker.py`, `a7/passes/semantic_validator.py`
@@ -82,7 +82,7 @@ These are bugs and schema mismatches in already-implemented features.
   Notes: fixed; semantic validation now traverses `value`, with a schema regression test.
 
 - [x] Fail closed for unsupported `fall` placements.
-  Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`
+  Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`
   Notes: valid `fall` lowering is implemented for non-final match cases; invalid
   placements still produce semantic errors and direct backend use outside a
   fall-capable match case raises `CodegenError`.
@@ -90,10 +90,6 @@ These are bugs and schema mismatches in already-implemented features.
 - [x] Replace Zig backend `@compileError("unsupported: ...")` fallbacks with compiler-side codegen errors.
   Files: `a7/backends/zig.py`
   Notes: unsupported expression nodes now raise `CodegenError` during A7 compilation.
-
-- [x] Stop C slice/iteration lowering from re-evaluating side-effectful expressions.
-  Files: `a7/backends/c.py`
-  Notes: `for-in` and indexed `for-in` now cache array/slice iterable expressions in a generated local before loop length and element access.
 
 - [x] Reject non-iterables in `for-in` and indexed `for-in` during type checking.
   Files: `a7/passes/type_checker.py`
@@ -108,12 +104,12 @@ Features that are spec'd and partially implemented, or missing from one backend.
 ### Type System / Semantics
 
 - [x] Add source-language support for `slice.ptr` / `slice.len`.
-  Files: `a7/passes/type_checker.py`, `a7/backends/c.py`, `a7/backends/zig.py`
-  Notes: slice field access now type-checks `ptr` as `ptr T` and `len` as `usize`; C lowers `ptr` to the slice data field and `len` to the slice length field, while Zig uses native slice fields.
+  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`
+  Notes: slice field access now type-checks `ptr` as `ptr T` and `len` as `usize`; Zig uses native slice fields.
 
 - [x] Implement string slicing (`string[2..5]`).
-  Files: `a7/passes/type_checker.py`, `a7/backends/c.py`, `a7/backends/zig.py`
-  Notes: string slicing now type-checks as `[]char`; Zig lowers to native byte slicing and C lowers to the existing slice struct representation, using `strlen` for open-ended slices.
+  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`
+  Notes: string slicing now type-checks as `[]char`; Zig lowers to native byte slicing.
 
 - [x] Implement generic constraint resolution beyond placeholder level.
   Files: `a7/generics.py`
@@ -135,40 +131,17 @@ Features that are spec'd and partially implemented, or missing from one backend.
   arbitrary runtime inequalities are still not guessed.
 
 - [x] Define and implement true variable-binding match patterns.
-  Files: `a7/passes/name_resolution.py`, `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `test/test_semantic_control_flow.py`, `scripts/verify_backend_parity.py`
+  Files: `a7/passes/name_resolution.py`, `a7/passes/type_checker.py`, `a7/backends/zig.py`, `test/test_semantic_control_flow.py`
   Notes: an identifier pattern captures the scrutinee when no existing symbol
   with that name is visible. Existing identifier patterns still compare against
   the existing symbol. Capture patterns must be the only pattern in their case.
 
-### C Backend Parity
+### Retired Backend Work
 
-- [x] C backend: side-effect-free `match` expressions.
-  Files: `a7/backends/c.py`
-  Notes: literal, enum, range, and wildcard patterns now lower to chained conditional expressions when the scrutinee is side-effect-free.
-
-- [x] C backend: side-effectful `match` expression scrutinees in variable initializers.
-  Files: `a7/backends/c.py`
-  Notes: variable initializers now cache the scrutinee in a generated local before assigning the lowered conditional result.
-
-- [x] C backend: side-effectful `match` expression scrutinees in non-declaration expression contexts.
-  Files: `a7/backends/c.py`
-  Notes: return values, assignments, variable initializer subexpressions, function arguments, and I/O arguments now lower through generated result temps and branch chains.
-
-- [x] C backend: range patterns in match statements.
-  Files: `a7/backends/c.py`
-  Notes: match statements with range patterns now lower to portable `if` chains with a cached scrutinee.
-
-- [x] C backend: existing-identifier match patterns.
-  Files: `a7/backends/c.py`
-  Notes: existing identifiers in match patterns now lower as comparisons in C match statements and expressions.
-
-- [x] C backend: raw function-typed parameter and variable declarations.
-  Files: `a7/backends/c.py`
-  Notes: raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.
-
-- [x] Function-type aliases in semantic analysis and C lowering.
-  Files: `a7/passes/type_checker.py`, `a7/backends/c.py`
-  Notes: aliases such as `BinaryOp :: fn(i32, i32) i32` now resolve to `FunctionType` in semantic analysis and lower as C typedefs.
+- [x] Retire the C backend from the active support matrix.
+  Files: `a7/backends/__init__.py`, `scripts/`, `test/`
+  Notes: Zig is the only supported code generation target. Historical C parity
+  work is no longer part of CI, release gates, or public docs.
 
 ### Module System / Stdlib
 
@@ -199,7 +172,7 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Notes: spec'd in §4.1, not parsed.
 
 - [ ] Complete generic specialization (spec §7.4).
-  Notes: simple top-level generic function calls and used generic struct instances now lower in both native backends; deeper call-chain propagation and broader composite generic workflows still need full runtime coverage.
+  Notes: simple top-level generic function calls and used generic struct instances lower in Zig; deeper call-chain propagation and broader composite generic workflows still need full runtime coverage.
 
 ### Type Checking Improvements
 
@@ -209,16 +182,12 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [ ] Propagate generic type parameters through call chains.
   Notes: `Vec(i32).push(x)` should infer `x: i32` without annotation.
 
-- [ ] Complete C backend generic lowering.
-  Files: `a7/passes/generic_lowering.py`, `a7/backends/c.py`, `a7/generics.py`, `examples/014_generics.a7`
-  Notes: simple top-level generic functions and used generic struct instances are monomorphized before C codegen; remaining work includes broader nested/composite specialization and propagation through call chains.
-
 - [x] Complete untagged runtime union construction and field access.
-  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `examples/016_unions.a7`
-  Notes: `Type{field: value}` literals now require exactly one named field and field access resolves declared union fields in both backends.
+  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`, `examples/016_unions.a7`
+  Notes: `Type{field: value}` literals now require exactly one named field and field access resolves declared union fields in Zig.
 
 - [ ] Design and implement tagged union tag workflows.
-  Files: `a7/parser.py`, `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `docs/SPEC.md`
+  Files: `a7/parser.py`, `a7/passes/type_checker.py`, `a7/backends/zig.py`, `docs/SPEC.md`
   Notes: `union(tag)` is reserved in the specification, but tag inspection and discriminated-state-safe workflows are not implemented yet.
 
 - [x] Validate return-type consistency across all branches.
@@ -236,7 +205,11 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 - [x] Fail closed for heap fixed arrays until the representation is designed.
   Files: `a7/passes/type_checker.py`, `docs/SPEC.md`
-  Notes: `new [N]T` is rejected instead of lowering inconsistently across Zig and C.
+  Notes: `new [N]T` is rejected until the source language defines the allocation model.
+
+- [x] Support same-shape fixed-array numeric addition.
+  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`
+  Notes: `c = a + b` lowers to explicit element stores in Zig; mismatched lengths or element types are semantic errors.
 
 - [x] Tighten comparison and integer-assignment type safety.
   Files: `a7/types.py`, `a7/passes/type_checker.py`
@@ -289,14 +262,14 @@ These are entire subsystems. Each needs a design decision before implementation 
   Notes: beyond basic `new`/`del` shape checks. Ownership, borrowing, lifetime analysis. Language-design research problem.
 
 - [ ] **Performance annotations** (`@vectorize`, `@parallel`, `@prefetch`).
-  Notes: requires SIMD/threading runtime support in both backends.
+  Notes: requires SIMD/threading runtime support in Zig.
 
 ---
 
 ## Testing / Verification Gaps
 
-- [x] Update `run_all_tests.sh` to include C backend tests, C example verifier, and error-stage matrix.
-  Files: `run_all_tests.sh`, `test/test_codegen_c.py`, `test/test_examples_e2e_c.py`, `test/test_error_stage_matrix.py`
+- [x] Update `run_all_tests.sh` to include Zig example verification and the error-stage matrix.
+  Files: `run_all_tests.sh`, `test/test_error_stage_matrix.py`
   Notes: also includes debug/release artifact verification and docs style checks.
 
 - [x] Add semantic regression tests for front-end schema gaps.
@@ -315,15 +288,15 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add example-level verification for labeled loops, sub-slicing, and match-case `defer` scope.
   Files: `examples/`, `test/fixtures/golden_outputs/`
-  Notes: `036_control_flow_edges.a7` now verifies labeled break/continue, array sub-slicing, and match-case defer scope through Zig and C golden-output checks.
+  Notes: `036_control_flow_edges.a7` now verifies labeled break/continue, array sub-slicing, and match-case defer scope through Zig golden-output checks.
 
 - [x] Add report-contract tests for verification scripts (not just exit status).
-  Files: `test/test_examples_e2e.py`, `test/test_examples_e2e_c.py`
-  Notes: Zig and C example verifier tests now request JSON reports and assert totals plus per-example compile/syntax/build/run/output flags.
+  Files: `test/test_examples_e2e.py`
+  Notes: Zig example verifier tests request JSON reports and assert totals plus per-example compile/build/run/output flags.
 
-- [x] Deduplicate Zig/C example verification scripts.
-  Files: `scripts/verify_examples_common.py`, `scripts/verify_examples_e2e.py`, `scripts/verify_examples_e2e_c.py`
-  Notes: shared compile/build/run/output-report logic now lives in `verify_examples_common.py`; the Zig and C entrypoints remain as compatible thin backend configurations.
+- [x] Keep example verification centralized.
+  Files: `scripts/verify_examples_common.py`, `scripts/verify_examples_e2e.py`
+  Notes: shared compile/build/run/output-report logic lives in `verify_examples_common.py`; the Zig entrypoint is the supported verifier.
 
 - [x] Deduplicate error-stage audit logic between script and pytest matrix.
   Files: `scripts/error_stage_common.py`, `scripts/verify_error_stages.py`, `test/test_error_stage_matrix.py`
@@ -335,11 +308,11 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add release/debug artifact verification script.
   Files: `scripts/build_examples.py`, `test/test_release_tooling.py`, `RELEASE.md`
-  Notes: builds debug/release artifacts for Zig and C, executes binaries, and checks golden output.
+  Notes: builds debug/release Zig artifacts, executes binaries, and checks golden output.
 
 - [x] Add CI coverage for release-oriented gates.
   Files: `.github/workflows/ci.yml`, `.github/workflows/deploy-docs.yml`, `site/package-lock.json`
-  Notes: CI now installs Zig, runs pytest, dependency audits, error-stage checks, both backend E2E verifiers, selected backend parity checks, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
+  Notes: CI now installs Zig, runs pytest, dependency audits, error-stage checks, Zig E2E verification, debug/release artifact builds, package build, docs style, docs lint, and docs build. Pages deploy now uses `npm ci`.
 
 - [x] Add dependency-audit checks for release readiness.
   Files: `.github/workflows/ci.yml`, `RELEASE.md`, `SECURITY.md`
@@ -363,8 +336,8 @@ These are entire subsystems. Each needs a design decision before implementation 
   Notes: package-registry publishing is intentionally out of scope for the current release workflow. The workflow builds Python distributions and attaches them to draft GitHub releases only.
 
 - [x] Design and implement `fall` lowering.
-  Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `docs/SPEC.md`
-  Notes: `fall` now lowers in both native backends when used as the final direct
+  Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `docs/SPEC.md`
+  Notes: `fall` now lowers in Zig when used as the final direct
   statement of a non-final match case; invalid placements remain semantic
   errors.
 

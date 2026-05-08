@@ -22,5 +22,5 @@ PYTHONPATH=. uv run pytest --tb=no -q
 ## Constraints
 
 - A7 source recursion is banned.
-- The compiler emits native Zig or C output.
+- The compiler emits native Zig output.
 - Do not run untrusted A7 source.

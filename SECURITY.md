@@ -9,7 +9,7 @@ is created later.
 
 `a7-py` is not a sandbox.
 
-The compiler reads A7 source, emits Zig or C, and the verification scripts build
+The compiler reads A7 source, emits Zig, and the verification scripts build
 and execute native binaries. Compiled A7 programs can do anything the generated
 program and host runtime allow. Only compile and run A7 source you trust.
 
@@ -27,10 +27,9 @@ uv run python scripts/check_no_secrets.py
 (cd site && npm audit --omit=dev --audit-level=moderate)
 ```
 
-The full gate includes parser/tokenizer tests, semantic tests, Zig and C backend
-tests, example runtime verification, selected Zig/C backend parity checks,
-debug/release artifact builds, error-stage checks, docs style checks, and full
-pytest.
+The full gate includes parser/tokenizer tests, semantic tests, Zig backend
+tests, example runtime verification, debug/release artifact builds,
+error-stage checks, docs style checks, and full pytest.
 
 ## Known Security-Relevant Limitations
 
@@ -41,8 +40,7 @@ pytest.
 - Built-in stdlib imports are virtual and not yet unified with file-based module semantics.
 - File-backed imports are restricted to configured module search paths; absolute
   paths and parent-directory traversal are rejected.
-- C and Zig backend parity checks exist for examples but are not a proof for all
-  possible programs.
+- Zig example checks are runtime smoke tests, not a proof for all possible programs.
 - The current release workflow builds package distributions and attaches them
   to draft GitHub releases; it does not publish to a package registry.
 - Tag-created release artifacts receive GitHub artifact attestations; verify

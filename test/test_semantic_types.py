@@ -438,7 +438,7 @@ class TestArrayAndSliceTypes:
         assert expect_error(source, "expected usize")
 
     def test_new_heap_array_is_rejected_until_backend_model_exists(self):
-        """Heap fixed arrays are fail-closed until both backends agree."""
+        """Heap fixed arrays are fail-closed until the language defines a model."""
         source = """
         main :: fn() {
             buffer := new [3]i32
@@ -521,6 +521,15 @@ class TestPointerAndReferenceTypes:
         }
         """
         assert expect_error(source, "nil")
+
+    def test_nil_inferred_variable_requires_explicit_ref_type(self):
+        """Untyped nil declarations must state the intended ref type."""
+        source = """
+        main :: fn() {
+            x := nil
+        }
+        """
+        assert expect_error(source, "explicit ref type")
 
 
 class TestStructEnumUnionTypes:

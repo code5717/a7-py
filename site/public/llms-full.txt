@@ -10,7 +10,7 @@ tree, use `/a7-py/docs/index.md`.
 ## Project
 
 A7 is a statically typed systems language compiler implemented in Python. It
-compiles A7 source to Zig or C, keeps compiler stages visible, and verifies
+compiles A7 source to Zig, keeps compiler stages visible, and verifies
 examples through compile/build/run/output gates.
 
 The public site is `https://code5717.github.io/a7-py/`.
@@ -22,19 +22,20 @@ A7 is not a sandbox. Do not compile or run untrusted A7 source.
 
 Implemented:
 
-- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig/C code generation.
+- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig code generation.
 - CLI entrypoints through `uv run a7` and `uv run python main.py`.
 - Static typing with inference in supported contexts.
 - Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
-- Simple top-level generic function calls, type-set constraints, and used generic struct instances in the C backend through concrete specialization.
+- Simple top-level generic function calls, type-set constraints, and used generic struct instances in Zig.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
 - Arrays, slices, string slices, references, property pointer operations, and manual `new` / `del`.
+- Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
 - `defer`, unreachable-statement diagnostics, and direct/mutual/alias/callback-trampoline source-recursion diagnostics.
 - `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
-- 38 runnable examples verified through both Zig and C backends.
-- Debug/release artifact verification for both native backends.
+- 38 runnable examples verified through the Zig backend.
+- Debug/release artifact verification for Zig.
 - Tag-based draft GitHub releases with package, docs, and native example artifacts.
 
 Known gaps:
@@ -63,7 +64,7 @@ Requirements:
 
 - Python 3.13+
 - `uv`
-- Zig 0.15.2 to build and run generated Zig/C output
+- Zig 0.15.2 to build and run generated Zig output
 
 Setup:
 
@@ -93,7 +94,6 @@ Common commands:
 
 ```bash
 uv run a7 examples/001_hello.a7
-uv run a7 --backend c examples/001_hello.a7
 uv run a7 --mode tokens examples/006_if.a7
 uv run a7 --mode ast examples/004_func.a7
 uv run a7 --mode semantic --format json examples/001_hello.a7
@@ -114,7 +114,7 @@ Flags:
 - `--verbose`: show intermediate results
 - `--mode MODE`: select compiler stage
 - `--format json`: emit structured JSON
-- `--backend zig|c`: select target backend
+- `--backend zig`: select target backend
 - `--doc-out PATH`: write Markdown report
 
 Exit codes:
@@ -232,7 +232,7 @@ such as `console :: import "std/io"` and `mathlib :: import "std/math"` lower
 the same way as `io` and `math`.
 
 File-backed local imports can be resolved during semantic validation, but
-Zig/C backend lowering and linking for multiple `.a7` files is not implemented
+Zig backend lowering and linking for multiple `.a7` files is not implemented
 yet. Compile, pipeline, and doc modes reject file-backed imports before codegen.
 
 Selected import metadata serializes in JSON diagnostics, but selected imports
@@ -248,13 +248,12 @@ Untagged unions:
 ## Learn The Language
 
 Use `examples/037_language_tour.a7` as the compact learn-by-reading file. It
-is a single commented program verified through both native backends.
+is a single commented program verified through Zig.
 
 Run it:
 
 ```bash
 uv run a7 examples/037_language_tour.a7
-uv run a7 --backend c examples/037_language_tour.a7
 ```
 
 The interactive Language page is the Zig-style one-page reference. It covers
@@ -271,7 +270,6 @@ Verifier commands:
 
 ```bash
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
 ```
 
 Both verifiers compile, build, run, and compare output against
@@ -300,7 +298,7 @@ Source (.a7)
   -> Semantic Analysis
   -> AST Preprocessing
   -> Backend Codegen
-  -> Zig or C output
+  -> Zig output
 ```
 
 Core source map:
@@ -313,7 +311,6 @@ Core source map:
 - `a7/passes/semantic_validator.py`: semantic validation
 - `a7/ast_preprocessor.py`: lowering annotations and preprocessing
 - `a7/backends/zig.py`: Zig backend
-- `a7/backends/c.py`: C backend
 - `a7/cli.py`: CLI entrypoint
 - `main.py`: compatibility wrapper
 - `scripts/`: verifiers, release tooling, docs checks
@@ -326,8 +323,6 @@ Fast focused checks:
 ```bash
 PYTHONPATH=. uv run pytest --tb=no -q
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
-uv run python scripts/verify_backend_parity.py
 uv run python scripts/verify_error_stages.py
 uv run python scripts/check_docs_style.py
 ```
@@ -339,7 +334,7 @@ Full local release-oriented gate:
 ```
 
 The full gate runs parser/tokenizer tests, semantic tests, compiler/CLI/backend
-tests, Zig and C example verifiers, selected backend parity checks, debug and
+tests, Zig example verifier, selected backend smoke checks, debug and
 release artifact builds, error-stage checks, docs style checks, secret scanning,
 and the total pytest suite.
 
@@ -358,8 +353,8 @@ uv build
 Build native example artifacts:
 
 ```bash
-uv run python scripts/build_examples.py --profile debug --backend both --clean
-uv run python scripts/build_examples.py --profile release --backend both --clean
+uv run python scripts/build_examples.py --profile debug --backend zig --clean
+uv run python scripts/build_examples.py --profile release --backend zig --clean
 ```
 
 Verify release manifest:

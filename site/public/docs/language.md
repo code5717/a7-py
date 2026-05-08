@@ -2,7 +2,7 @@
 
 ## Overview
 
-A7 is a statically typed systems language with type inference, manual memory operations, modules, generics, and Zig/C backends.
+A7 is a statically typed systems language with type inference, manual memory operations, modules, generics, and Zig backends.
 
 The interactive Language page is the Zig-style one-page reference: use browser
 find on the page for syntax, types, control flow, memory, modules, stdlib, and
@@ -10,7 +10,7 @@ current implementation notes.
 
 For a compact learn-by-reading path, open
 [`examples/037_language_tour.a7`](https://github.com/code5717/a7-py/blob/master/examples/037_language_tour.a7).
-It is a single commented program verified through both native backends.
+It is a single commented program verified through Zig.
 
 ## Recursion Rule
 
@@ -29,10 +29,22 @@ is regression-tested at Python recursion limit 100 for representative programs.
 - Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has a fixed width or range.
 - Small arithmetic examples can use `i32`; indexes and counters should usually use `usize`.
 
+## Fixed Arrays
+
+Fixed arrays use `[N]T`. Same-length numeric fixed arrays with the same element
+type support element-wise `+` assignment:
+
+```a7
+a: [4]f64 = [1.0, 2.0, 3.0, 4.0]
+b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
+c: [4]f64
+c = a + b
+```
+
 ## Match Fallthrough
 
 `fall` continues from one match case body into the next case body. It is
-supported in both Zig and C backends only when it is the final direct statement
+supported in the Zig backend only when it is the final direct statement
 of a non-final match case. `fall` is rejected outside match cases, inside
 `else`, inside nested control flow, or in the final case.
 
@@ -40,7 +52,7 @@ of a non-final match case. `fall` is rejected outside match cases, inside
 
 Untagged union literals use `Type{field: value}` with exactly one named field.
 The field must exist on the union and the value must match the field type.
-Field access resolves declared union fields in both Zig and C backends.
+Field access resolves declared union fields in the Zig backend.
 
 Tagged/discriminated union tag workflows are not implemented yet.
 
@@ -56,7 +68,7 @@ local aliases such as `console :: import "std/io"` and
 `mathlib :: import "std/math"` lower the same way as `io` and `math`.
 
 File-backed local imports can be resolved during semantic validation, but
-Zig/C backend lowering and linking for multiple `.a7` files is not implemented
+Zig backend lowering and linking for multiple `.a7` files is not implemented
 yet. Compile, pipeline, and doc modes reject file-backed imports before codegen
 instead of emitting unresolved target code.
 
@@ -78,7 +90,7 @@ Source stubs such as `mem` and `string` exist in the repository but are not regi
 - Multiple return values / destructuring declarations are planned syntax, not
   current parser support.
 - Simple generic functions, type-set constraints, and used generic struct
-  instances lower in both backends. Broader composite generic propagation is a
+  instances lower in Zig. Broader composite generic propagation is a
   known gap.
 
 ## Specification

@@ -153,6 +153,11 @@ class TypeCheckingPass:
         # Fallback for malformed/partial ASTs not seen by name resolution
         self.symbols.enter_scope(name)
 
+    def _is_variadic_function(self, node: ASTNode) -> bool:
+        if getattr(node, "is_variadic", False):
+            return True
+        return bool(node.parameters and getattr(node.parameters[-1], "is_variadic", False))
+
     # Visitor methods
 
     def visit_program(self, node: ASTNode) -> None:
@@ -246,10 +251,7 @@ class TypeCheckingPass:
                     param_types.append(param_type)
 
             # Check for variadic
-            is_variadic = node.is_variadic or False
-            if not is_variadic and node.parameters:
-                last_param = node.parameters[-1]
-                is_variadic = getattr(last_param, 'is_variadic', False) or False
+            is_variadic = self._is_variadic_function(node)
 
             variadic_type = None
             if is_variadic and node.parameters:
@@ -262,7 +264,8 @@ class TypeCheckingPass:
                 param_types=tuple(param_types),
                 return_type=return_type,
                 is_variadic=is_variadic,
-                variadic_type=variadic_type
+                variadic_type=variadic_type,
+                generic_param_order=tuple(param.name for param in (node.generic_params or []) if param.name),
             )
         finally:
             self._generic_constraints = previous_constraints
@@ -550,11 +553,20 @@ class TypeCheckingPass:
                         self.symbols.define(param_symbol)
 
             # Check for variadic (variadic flag may be on function node or last parameter)
-            is_variadic = node.is_variadic or False
-            if not is_variadic and node.parameters:
-                # Check if last parameter is variadic
-                last_param = node.parameters[-1]
-                is_variadic = getattr(last_param, 'is_variadic', False) or False
+            is_variadic = self._is_variadic_function(node)
+            if is_variadic:
+                self.errors.append(
+                    SemanticError.from_type(
+                        SemanticErrorType.UNSUPPORTED_FEATURE,
+                        span=node.span,
+                        filename=self.current_file,
+                        source_lines=self.source_lines,
+                        custom_message=(
+                            "Variadic parameters are parsed for future support, "
+                            "but Zig ABI/lowering is not implemented yet"
+                        ),
+                    )
+                )
 
             variadic_type = None
             if is_variadic and node.parameters:
@@ -567,7 +579,8 @@ class TypeCheckingPass:
                 param_types=tuple(param_types),
                 return_type=return_type,
                 is_variadic=is_variadic,
-                variadic_type=variadic_type
+                variadic_type=variadic_type,
+                generic_param_order=tuple(param.name for param in (node.generic_params or []) if param.name),
             )
 
             # Update function symbol (in outer scope)
@@ -693,6 +706,16 @@ class TypeCheckingPass:
         elif not node.value:
             # No value and no type - error
             error = SemanticError.from_type(SemanticErrorType.MISSING_TYPE_ANNOTATION, span=node.span, filename=self.current_file, source_lines=self.source_lines, context=f"Variable '{var_name}' requires either type annotation or initializer")
+            self.errors.append(error)
+            value_type = UNKNOWN
+        elif is_nil_value:
+            error = SemanticError.from_type(
+                SemanticErrorType.MISSING_TYPE_ANNOTATION,
+                span=node.span,
+                filename=self.current_file,
+                source_lines=self.source_lines,
+                context=f"Variable '{var_name}' initialized with nil requires an explicit ref type",
+            )
             self.errors.append(error)
             value_type = UNKNOWN
 
@@ -1011,6 +1034,18 @@ class TypeCheckingPass:
         return_type = None
         if node.value:
             return_type = self.visit_expression(node.value)
+            expected = self.context.get_function_return_type()
+            if (
+                self._is_nil_literal(node.value)
+                and expected is not None
+                and not isinstance(expected, ReferenceType)
+            ):
+                self.add_type_error(
+                    TypeErrorType.NIL_ONLY_FOR_REFERENCES,
+                    node.value.span,
+                    got_type=str(expected),
+                    context="Return value",
+                )
 
         # Validate against function return type
         if not self.context.validate_return(return_type):
@@ -1121,6 +1156,19 @@ class TypeCheckingPass:
 
         # Arithmetic operators: +, -, *, /, %
         if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD}:
+            if op == BinaryOp.ADD and isinstance(left_type, ArrayType) and isinstance(right_type, ArrayType):
+                if (
+                    left_type.size == right_type.size
+                    and left_type.element_type.equals(right_type.element_type)
+                    and self._is_numeric_compatible(left_type.element_type)
+                ):
+                    return left_type
+                self.add_type_error(
+                    TypeErrorType.OPERATOR_TYPE_MISMATCH,
+                    node.span,
+                    context=f"add between {left_type} and {right_type}",
+                )
+                return UNKNOWN
             if not self._is_numeric_compatible(left_type) or not self._is_numeric_compatible(right_type):
                 self.add_type_error(TypeErrorType.REQUIRES_NUMERIC_TYPE, node.span)
                 return UNKNOWN
@@ -1189,6 +1237,8 @@ class TypeCheckingPass:
         """Visit a function call expression."""
         # Get function type
         func_type = self.visit_expression(node.function) if node.function else UNKNOWN
+        if node.function:
+            self.set_type(node.function, func_type)
 
         if not isinstance(func_type, FunctionType):
             # Check if this is a module method call (e.g., io.println) — allow it
@@ -1198,11 +1248,7 @@ class TypeCheckingPass:
                         getattr(node.function.object, 'name', '') or ''
                     )
                     if obj_symbol and obj_symbol.kind == SymbolKind.MODULE:
-                        # Module method call — type check args but don't error
-                        if node.arguments:
-                            for arg in node.arguments:
-                                self.visit_expression(arg)
-                        return UNKNOWN
+                        return self._visit_stdlib_module_call(node, obj_symbol)
 
             # Use the span of the function being called, not the whole call expression
             error_span = node.function.span if node.function else node.span
@@ -1235,10 +1281,11 @@ class TypeCheckingPass:
 
         # Check for generic type inference
         generic_mapping = self._infer_generic_types(func_type, arg_types)
-        if generic_mapping:
+        if generic_mapping or func_type.generic_param_order:
             # Backend lowering can use this semantic annotation to monomorphize
             # concrete generic calls without re-running type inference.
-            node.generic_mapping = generic_mapping
+            if generic_mapping:
+                node.generic_mapping = generic_mapping
             self._check_generic_constraints(func_type, generic_mapping, node.span)
             # Substitute generic types in param_types for type checking
             resolved_param_types = [self._substitute_generic(pt, generic_mapping) for pt in func_type.param_types]
@@ -1262,6 +1309,14 @@ class TypeCheckingPass:
                 continue  # Skip type checking for untyped variadic parameters
             if isinstance(param_type, GenericParamType):
                 continue  # Skip generic params that weren't resolved
+            if self._is_nil_literal(node.arguments[i]) and not isinstance(param_type, ReferenceType):
+                self.add_type_error(
+                    TypeErrorType.NIL_ONLY_FOR_REFERENCES,
+                    node.arguments[i].span,
+                    got_type=str(param_type),
+                    context=f"Argument {i+1}",
+                )
+                continue
             if not arg_type.is_assignable_to(param_type):
                 self.add_type_error(
                     TypeErrorType.ARGUMENT_TYPE_MISMATCH,
@@ -1277,6 +1332,124 @@ class TypeCheckingPass:
             return_type = self._substitute_generic(return_type, generic_mapping)
 
         return return_type
+
+    def _visit_stdlib_module_call(self, node: ASTNode, module_symbol: Symbol) -> Type:
+        """Validate stdlib module calls that lower through backend-specific emitters."""
+        arg_types = [self.visit_expression(arg) for arg in (node.arguments or [])]
+        function = node.function
+        module_path = getattr(module_symbol.node, "module_path", None) or module_symbol.name
+        method_name = function.field if function and function.kind == NodeKind.FIELD_ACCESS else None
+        canonical = self.stdlib.resolve_call(module_path, method_name or "")
+        if canonical is None:
+            self.add_type_error(
+                TypeErrorType.NOT_CALLABLE,
+                function.span if function else node.span,
+                context=f"Unknown stdlib call '{module_path}.{method_name or '<unknown>'}'",
+            )
+            return UNKNOWN
+
+        node.stdlib_canonical = canonical
+        if canonical.startswith("std.io."):
+            self._validate_io_call(node, arg_types)
+            return VOID
+        if canonical.startswith("std.math."):
+            return self._validate_math_call(node, canonical, arg_types)
+        return UNKNOWN
+
+    def _validate_io_call(self, node: ASTNode, arg_types: List[Type]) -> None:
+        args = node.arguments or []
+        if not args:
+            return
+        format_type = arg_types[0] if arg_types else UNKNOWN
+        if not format_type.equals(STRING):
+            self.add_type_error(
+                TypeErrorType.ARGUMENT_TYPE_MISMATCH,
+                args[0].span,
+                expected_type="string",
+                got_type=str(format_type),
+                context="io format argument",
+            )
+            return
+        if args[0].kind != NodeKind.LITERAL or args[0].literal_kind != LiteralKind.STRING:
+            self.add_semantic_error(
+                SemanticErrorType.UNSUPPORTED_FEATURE,
+                args[0].span,
+                context="io format strings must be string literals",
+            )
+            return
+        placeholder_count = self._count_format_placeholders(str(args[0].literal_value or ""))
+        actual_count = max(0, len(args) - 1)
+        if placeholder_count != actual_count:
+            self.add_type_error(
+                TypeErrorType.WRONG_ARGUMENT_COUNT,
+                node.span,
+                context=f"io format string expects {placeholder_count} values, got {actual_count}",
+            )
+
+    def _validate_math_call(self, node: ASTNode, canonical: str, arg_types: List[Type]) -> Type:
+        name = canonical.rsplit(".", 1)[-1]
+        expected_count = 2 if name in {"min", "max"} else 1
+        if len(arg_types) != expected_count:
+            self.add_type_error(
+                TypeErrorType.WRONG_ARGUMENT_COUNT,
+                node.span,
+                context=f"math.{name} expects {expected_count} arguments, got {len(arg_types)}",
+            )
+            return UNKNOWN
+
+        for index, arg_type in enumerate(arg_types, start=1):
+            if not self._is_numeric_compatible(arg_type):
+                self.add_type_error(
+                    TypeErrorType.REQUIRES_NUMERIC_TYPE,
+                    (node.arguments or [node])[index - 1].span,
+                    got_type=str(arg_type),
+                    context=f"math.{name} argument {index}",
+                )
+                return UNKNOWN
+            if name in {"sqrt", "floor", "ceil", "sin", "cos", "tan", "log", "exp"} and not arg_type.is_floating():
+                self.add_type_error(
+                    TypeErrorType.ARGUMENT_TYPE_MISMATCH,
+                    (node.arguments or [node])[index - 1].span,
+                    expected_type="f32 or f64",
+                    got_type=str(arg_type),
+                    context=f"math.{name} argument {index}",
+                )
+                return UNKNOWN
+
+        if name in {"min", "max"} and len(arg_types) == 2:
+            if arg_types[0].is_assignable_to(arg_types[1]):
+                return arg_types[1]
+            if arg_types[1].is_assignable_to(arg_types[0]):
+                return arg_types[0]
+            self.add_type_error(
+                TypeErrorType.ARGUMENT_TYPE_MISMATCH,
+                node.span,
+                expected_type=str(arg_types[0]),
+                got_type=str(arg_types[1]),
+                context=f"math.{name} arguments",
+            )
+            return UNKNOWN
+        return arg_types[0] if arg_types else UNKNOWN
+
+    def _count_format_placeholders(self, fmt: str) -> int:
+        count = 0
+        index = 0
+        while index < len(fmt):
+            ch = fmt[index]
+            if ch == "{" and index + 1 < len(fmt):
+                if fmt[index + 1] == "{":
+                    index += 2
+                    continue
+                end = fmt.find("}", index + 1)
+                if end != -1:
+                    count += 1
+                    index = end + 1
+                    continue
+            if ch == "}" and index + 1 < len(fmt) and fmt[index + 1] == "}":
+                index += 2
+                continue
+            index += 1
+        return count
 
     def _check_generic_constraints(
         self,
@@ -1297,7 +1470,13 @@ class TypeCheckingPass:
                     continue
                 seen.add(current.name)
                 concrete = generic_mapping.get(current.name)
-                if concrete is not None and current.constraint and not current.constraint.contains(concrete):
+                if concrete is None:
+                    self.add_semantic_error(
+                        SemanticErrorType.GENERIC_PARAM_MISMATCH,
+                        span,
+                        context=f"Could not infer generic parameter '${current.name}'",
+                    )
+                elif current.constraint and not current.constraint.contains(concrete):
                     self.add_semantic_error(
                         SemanticErrorType.CONSTRAINT_VIOLATION,
                         span,
@@ -1329,43 +1508,37 @@ class TypeCheckingPass:
         """
         mapping: Dict[str, Type] = {}
 
-        for param_type, arg_type in zip(func_type.param_types, arg_types):
+        def bind(name: str, concrete: Type) -> None:
+            existing = mapping.get(name)
+            if existing is None or existing.equals(concrete):
+                mapping[name] = concrete
+
+        stack: List[Tuple[Type, Type]] = list(zip(func_type.param_types, arg_types))
+        while stack:
+            param_type, arg_type = stack.pop()
             if isinstance(param_type, GenericParamType):
-                # Direct generic parameter: $T
-                if param_type.name in mapping:
-                    # Already have a binding - verify consistency
-                    existing = mapping[param_type.name]
-                    if not arg_type.equals(existing):
-                        # Type mismatch for same generic parameter
-                        pass  # Will be caught by later checks
-                else:
-                    mapping[param_type.name] = arg_type
+                bind(param_type.name, arg_type)
             elif isinstance(param_type, ReferenceType):
-                # Reference to generic: ref $T
-                if isinstance(param_type.referent_type, GenericParamType):
-                    generic_name = param_type.referent_type.name
-                    # Extract the referent type from the argument
-                    if isinstance(arg_type, ReferenceType):
-                        mapping[generic_name] = arg_type.referent_type
-                    else:
-                        # Try to use the argument type directly
-                        mapping[generic_name] = arg_type
-            elif isinstance(param_type, ArrayType):
-                # Array of generic: []$T
-                if isinstance(param_type.element_type, GenericParamType):
-                    generic_name = param_type.element_type.name
-                    if isinstance(arg_type, ArrayType):
-                        mapping[generic_name] = arg_type.element_type
-                    elif isinstance(arg_type, SliceType):
-                        mapping[generic_name] = arg_type.element_type
-            elif isinstance(param_type, SliceType):
-                # Slice of generic: []$T
-                if isinstance(param_type.element_type, GenericParamType):
-                    generic_name = param_type.element_type.name
-                    if isinstance(arg_type, SliceType):
-                        mapping[generic_name] = arg_type.element_type
-                    elif isinstance(arg_type, ArrayType):
-                        mapping[generic_name] = arg_type.element_type
+                if isinstance(arg_type, ReferenceType):
+                    stack.append((param_type.referent_type, arg_type.referent_type))
+                else:
+                    stack.append((param_type.referent_type, arg_type))
+            elif isinstance(param_type, PointerType) and isinstance(arg_type, PointerType):
+                stack.append((param_type.pointee_type, arg_type.pointee_type))
+            elif isinstance(param_type, ArrayType) and isinstance(arg_type, ArrayType):
+                if param_type.size == arg_type.size:
+                    stack.append((param_type.element_type, arg_type.element_type))
+            elif isinstance(param_type, ArrayType) and isinstance(arg_type, SliceType):
+                stack.append((param_type.element_type, arg_type.element_type))
+            elif isinstance(param_type, SliceType) and isinstance(arg_type, (SliceType, ArrayType)):
+                stack.append((param_type.element_type, arg_type.element_type))
+            elif isinstance(param_type, FunctionType) and isinstance(arg_type, FunctionType):
+                stack.extend(zip(param_type.param_types, arg_type.param_types))
+                if param_type.return_type and arg_type.return_type:
+                    stack.append((param_type.return_type, arg_type.return_type))
+            elif isinstance(param_type, GenericInstanceType) and isinstance(arg_type, GenericInstanceType):
+                if param_type.base_name == arg_type.base_name:
+                    stack.extend(zip(param_type.type_args, arg_type.type_args))
 
         return mapping
 
@@ -1395,7 +1568,13 @@ class TypeCheckingPass:
                 # FunctionType has multiple children — substitute each param
                 new_params = tuple(self._substitute_generic(pt, mapping) for pt in current.param_types)
                 new_return = self._substitute_generic(current.return_type, mapping) if current.return_type else None
-                current = FunctionType(param_types=new_params, return_type=new_return, is_variadic=current.is_variadic, variadic_type=current.variadic_type)
+                current = FunctionType(
+                    param_types=new_params,
+                    return_type=new_return,
+                    is_variadic=current.is_variadic,
+                    variadic_type=current.variadic_type,
+                    generic_param_order=current.generic_param_order,
+                )
                 break
             elif isinstance(current, GenericInstanceType):
                 new_args = tuple(self._substitute_generic(arg, mapping) for arg in current.type_args)
@@ -1552,6 +1731,17 @@ class TypeCheckingPass:
     def visit_address_of(self, node: ASTNode) -> Type:
         """Visit an address-of expression (.adr)."""
         operand_type = self.visit_expression(node.operand) if node.operand else UNKNOWN
+        if node.operand and node.operand.kind not in {
+            NodeKind.IDENTIFIER,
+            NodeKind.FIELD_ACCESS,
+            NodeKind.INDEX,
+            NodeKind.DEREF,
+        }:
+            self.add_type_error(
+                TypeErrorType.ADDRESS_OF_RVALUE,
+                node.span,
+                got_type=str(operand_type),
+            )
         return ReferenceType(referent_type=operand_type)
 
     def visit_deref(self, node: ASTNode) -> Type:
@@ -2474,6 +2664,8 @@ class TypeCheckingPass:
         context: str = "Initializer",
     ) -> bool:
         """Check assignment with literal-specific validation for composite types."""
+        if self._is_nil_literal(value_node):
+            return isinstance(expected_type, ReferenceType)
         if (
             value_node
             and value_node.kind == NodeKind.ARRAY_INIT
@@ -2493,6 +2685,13 @@ class TypeCheckingPass:
                 return True
 
         return actual_type.is_assignable_to(expected_type)
+
+    def _is_nil_literal(self, value_node: Optional[ASTNode]) -> bool:
+        return (
+            value_node is not None
+            and value_node.kind == NodeKind.LITERAL
+            and value_node.literal_kind == LiteralKind.NIL
+        )
 
     def _integer_literal_value(self, value_node: Optional[ASTNode]) -> Optional[int]:
         if value_node is None:

@@ -4,7 +4,7 @@
 
 - Python 3.13+
 - `uv`
-- Zig 0.15.2 to build and run generated Zig/C outputs
+- Zig 0.15.2 to build and run generated Zig outputs
 
 ## Install
 
@@ -21,10 +21,9 @@ uv run python main.py examples/001_hello.a7
 uv run a7 examples/001_hello.a7
 ```
 
-The default backend emits Zig. Use `--backend c` for C output.
+The default backend emits Zig.
 
 ```bash
-uv run python main.py --backend c examples/001_hello.a7
 ```
 
 To learn the current language from one file, run the commented tour:
@@ -38,8 +37,6 @@ uv run python main.py examples/037_language_tour.a7
 ```bash
 PYTHONPATH=. uv run pytest
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
-uv run python scripts/verify_backend_parity.py
 ./run_all_tests.sh
 ```
 

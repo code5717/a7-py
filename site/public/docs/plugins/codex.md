@@ -16,7 +16,6 @@ https://code5717.github.io/a7-py/docs/index.md
 uv sync
 uv run a7 examples/001_hello.a7
 uv run python scripts/verify_examples_e2e.py
-uv run python scripts/verify_examples_e2e_c.py
 uv run python scripts/check_docs_style.py
 ```
 

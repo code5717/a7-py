@@ -32,6 +32,6 @@ main :: fn() {
 
 | Item | Value |
 | --- | --- |
-| Backend | Zig and C |
+| Backend | Zig |
 | Recursion | Rejected in A7 source |
 | Agent entry | `/a7-py/llms.txt` |

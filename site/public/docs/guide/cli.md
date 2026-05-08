@@ -21,7 +21,7 @@ uv run python main.py [OPTIONS] <file.a7>
 - `--verbose`: show intermediate results
 - `--mode MODE`: select compiler stage
 - `--format json`: emit structured JSON
-- `--backend zig|c`: select target backend
+- `--backend zig`: select target backend
 - `--doc-out PATH`: write Markdown report
 
 ## Exit Codes

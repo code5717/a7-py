@@ -8,10 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- C backend support has been retired from the public compiler. Zig is now the
+  only supported code generation target, and CI/release/example verification
+  gates focus on Zig output.
 - Semantic recursion validation now catches higher-order callback trampolines,
   including direct, mutual, and callback-parameter-alias cycles.
-- Zig and C backend binary-expression emission now uses explicit postorder
+- Zig backend binary-expression emission now uses explicit postorder
   stacks, avoiding Python recursion failures on deeply nested binary ASTs.
+- Same-shape numeric fixed arrays now support element-wise `+` assignment in
+  Zig; the matrix example now uses `c = a + b`.
 - Normal example verifier runs now fail closed when a golden output fixture is
   missing; only explicit `--update-golden` runs write fixture files.
 - Documentation now scopes the low-recursion implementation claim to the
@@ -31,19 +36,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Variadic parameters now fail closed before backend codegen instead of
   emitting invalid target-language function signatures.
 - Calculator example output now rounds display-only approximation values so
-  the golden output stays readable across Zig and C backends.
+  the golden output stays readable in Zig output.
 - Tightened runnable examples so conditionals, callbacks, and state-machine
-  demos exercise their documented branches in both native backends.
+  demos exercise their documented branches in the Zig backend.
 - `examples/014_generics.a7` now runs real generic functions and generic struct
-  instances in both backends; backend parity coverage now also includes type-set
-  generic constraints, explicit enum discriminants, stdlib math mappings, and
-  edge operator assignments/comparisons.
+  instances in the Zig backend; coverage now also includes type-set generic
+  constraints, explicit enum discriminants, stdlib math mappings, and edge
+  operator assignments/comparisons.
 - README, SPEC, site, and public Markdown docs now distinguish current features
   from parsed-only or reserved syntax such as variadics, non-`@type_set`
   intrinsics, and multiple declaration/destructuring syntax.
 - Generic struct literals now retain concrete instance types during semantic
   analysis, Zig emits generic struct instances with explicit type arguments,
-  and the C backend monomorphizes used generic struct instances before codegen.
+  and used generic struct instances compile through Zig codegen.
 - Formatter symbol collection now surfaces traversal failures instead of
   silently swallowing broad exceptions, reducing hidden documentation/reporting
   failures found during static security review.
@@ -76,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The committed-secret guard now flags sensitive `.env`/key filenames even when
   file contents are binary or unreadable, and deduplicates specific API-key
   findings against generic assignment matches.
-- `fall` now lowers in both Zig and C backends for its documented narrow form:
+- `fall` now lowers in Zig for its documented narrow form:
   the final direct statement of a non-final match case. Invalid placements are
   semantic errors.
 - Match range diagnostics now catch conservative runtime-symbolic interval
@@ -90,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File-backed module imports are now contained to configured search paths and
   reject absolute or parent-directory traversal module paths.
 - Example artifact compilation now has a timeout, and installed-wheel smoke
-  verification checks both Zig and C code generation.
+  verification checks Zig code generation.
 - Tag release runs now generate GitHub artifact attestations for the checksum
   manifest, Python package files, docs archive, and native example artifact
   archive before uploading release artifacts.
@@ -108,8 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Index and slice-bound variables now require `usize`; non-negative integer
   literals remain valid for simple indexing, while signed index variables and
   negative literals are rejected.
-- `new [N]T` heap fixed arrays now fail closed until the language and both
-  backends define one representation; use stack arrays or slices for now.
+- `new [N]T` heap fixed arrays now fail closed until the language defines one
+  representation; use stack arrays or slices for now.
 - Type checking now rejects invalid ordering comparisons on non-ordered types
   and blocks implicit signed-to-unsigned integer assignment except for fitting
   integer literals.
@@ -117,10 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns, linked-list traversal, iterative binary-tree traversal, and string
   utilities; tightened example catalog copy where language support is still
   status-only.
-- Added a selected Zig/C backend parity verifier that compiles, builds, runs,
-  and compares non-example smoke programs across both native backends.
-- Expanded the parity verifier to cover match statements, match expressions,
-  slice fields, indexed slice iteration, and string slice iteration.
+- Added selected Zig end-to-end smoke coverage for match statements, match
+  expressions, slice fields, indexed slice iteration, and string slice iteration.
 - Added curl.md-friendly public Markdown docs and an `llms.txt` entry point
   for agent and terminal documentation workflows.
 - Added `COMPLETION_AUDIT.md` to map the release-readiness objective to
@@ -140,9 +143,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the public docs map around curl.md-friendly Introduction, Guide,
   Plugins, LLM Resources, and Contributing groups, including static Markdown
   pages for API/SDK, agent plugins, skills, deploy, and kitchen-sink coverage.
-- C backend codegen now monomorphizes simple top-level generic function calls
-  before emission, so concrete calls such as `identity(7)` lower to specialized
-  C functions instead of failing on unresolved `$T` type parameters.
 - Built-in stdlib imports now register virtual module symbols through the
   module resolver and resolve backend lowering from the imported module path,
   so aliases such as `console :: import "std/io"` and
@@ -153,24 +153,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previous flat public docs files available as compatibility aliases.
 - Untagged union literals now require exactly one named field, union field
   access type-checks declared fields, and `examples/016_unions.a7` now runs
-  through both Zig and C example verifiers.
+  through the Zig example verifier.
 - Markdown compilation reports now render virtual stdlib modules as `module`
   instead of `unknown type`, use an explicit in-memory output label in doc mode,
   and the examples catalog now describes the current union example accurately.
 - Array literal assignment checks now validate every element against the
   declared array type, including nested arrays, and report explicit size
   mismatches instead of relying on top-level array type equality.
-- C backend fixed nested fixed-array declarations such as `[2][2]i64`, and
-  backend parity now covers contextual array literal assignment.
-- C backend for-in lowering now handles nested fixed-array iteration with
-  pointer-to-array cache declarations, and backend parity now covers defer
+- Zig example coverage now includes contextual array literal assignment, defer
   unwind order, untagged unions, generic function specialization, enum match
   expressions, heap struct allocation, and 2D/3D nested fixed arrays.
-- C backend return lowering now evaluates return values before running deferred
-  cleanup, preventing deferred `del` from freeing data before the returned value
-  is captured.
-- C backend regression tests and backend parity builds now treat incompatible
-  pointer-type warnings as errors.
 - Removed a duplicated block from `docs/SPEC.md`, fixed section numbering, and
   refreshed the specification snapshot date.
 - Parser now rejects initializer-like calls after `new` expressions, so
@@ -185,9 +177,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   language reference now shows current `@label` loop syntax.
 - Added `examples/037_language_tour.a7`, a commented compact one-file language
   tour, and updated docs/site example counts to 38 verified programs.
-- Zig and C example verification now share one verifier implementation while
-  keeping the existing `verify_examples_e2e.py` and
-  `verify_examples_e2e_c.py` command entry points and JSON report contracts.
+- Zig example verification now shares compile/build/run/report logic with the
+  release artifact builder while keeping the existing `verify_examples_e2e.py`
+  JSON report contract.
 - Error-stage auditing now shares its mode matrix, generated source fixtures,
   CLI runner, JSON helpers, and 61-check audit construction between the
   standalone verifier and pytest matrix.

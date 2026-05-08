@@ -10,7 +10,7 @@ main :: fn() {
     c: char = 'A'
     s: string = "hello"
     t := true
-    n := nil
+    n: ref i32 = nil
 
     io.println("int = {}", i)
     io.println("float = {}", f)

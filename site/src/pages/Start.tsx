@@ -34,7 +34,7 @@ const flagRows = [
   ['--verbose', 'Show intermediate results'],
   ['--mode MODE', 'Set pipeline stage'],
   ['--format json', 'Structured JSON output'],
-  ['--backend zig|c', 'Select target backend'],
+  ['--backend zig', 'Select the Zig backend'],
   ['--doc-out PATH', 'Write markdown report'],
 ]
 
