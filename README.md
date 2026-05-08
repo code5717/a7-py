@@ -42,6 +42,11 @@ uv run python main.py --backend c examples/001_hello.a7
 # Output: examples/001_hello.c
 ```
 
+Learn the current language from one commented file:
+```bash
+uv run python main.py examples/037_language_tour.a7
+```
+
 Modes and output formats:
 ```bash
 uv run python main.py --mode tokens examples/006_if.a7                     # Tokens only

@@ -4,6 +4,14 @@
 
 A7 is a statically typed systems language with type inference, manual memory operations, modules, generics, and Zig/C backends.
 
+The interactive Language page is the Zig-style one-page reference: use browser
+find on the page for syntax, types, control flow, memory, modules, stdlib, and
+current implementation notes.
+
+For a compact learn-by-reading path, open
+[`examples/037_language_tour.a7`](https://github.com/code5717/a7-py/blob/master/examples/037_language_tour.a7).
+It is a single commented program verified through both native backends.
+
 ## Recursion Rule
 
 Source recursion is banned. Direct and mutual recursion are rejected during semantic validation. Repeated work should be expressed with loops, explicit stacks, queues, or index-based worklists.

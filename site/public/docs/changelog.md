@@ -17,6 +17,8 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 - The public site navigation and homepage were rebalanced around A7 itself:
   Start, Language, Examples, Compiler, and Status are primary again, while
   curl.md and plugin resources remain available from the docs surfaces.
+- Added `examples/037_language_tour.a7`, a commented compact tour for learning
+  the current stable language surface by reading and running one verified file.
 - Untagged union literals and field access now run in both Zig and C example
   verifiers; tagged union tag workflows remain a known gap.
 

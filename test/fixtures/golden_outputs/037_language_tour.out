@@ -1,0 +1,14 @@
+=== A7 Language Tour ===
+A7 tour v1
+slice total = 26
+indexed totals = 10 50
+area = 42
+scale = large
+payload int = 26
+counter = 42
+heap = 99
+apply = 42
+countdown 3
+countdown 2
+countdown 1
+done

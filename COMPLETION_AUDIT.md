@@ -23,20 +23,20 @@ Deliverables implied by the active objective:
 | Requirement | Evidence | Status |
 | --- | --- | --- |
 | Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
-| Security dependency audit | Hosted CI run `25528605790`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
-| Secret scanning | Hosted CI run `25528605790`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
-| Python test suite | Hosted CI run `25528605790`; local full gate evidence in `RELEASE_READINESS_REVIEW.md` | Passing |
-| Error-stage behavior | Hosted CI run `25528605790`; `scripts/verify_error_stages.py` | Passing |
-| Zig example E2E | Hosted CI run `25528605790`; `scripts/verify_examples_e2e.py` | Passing |
-| C example E2E | Hosted CI run `25528605790`; `scripts/verify_examples_e2e_c.py` | Passing |
-| Zig/C backend parity | Hosted CI run `25528605790`; `scripts/verify_backend_parity.py` | Passing selected suite |
-| Debug artifacts | Hosted CI run `25528605790`; `scripts/build_examples.py --profile debug --backend both --clean` | Passing |
-| Release artifacts | Hosted CI run `25528605790`; `scripts/build_examples.py --profile release --backend both --clean` | Passing |
+| Security dependency audit | Hosted CI run `25532650949`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
+| Secret scanning | Hosted CI run `25532650949`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
+| Python test suite | Hosted CI run `25532650949`; local `./run_all_tests.sh` after adding `037_language_tour.a7` | Passing: 1202 tests |
+| Error-stage behavior | Hosted CI run `25532650949`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
+| Zig example E2E | Hosted CI run `25532650949`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
+| C example E2E | Hosted CI run `25532650949`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
+| Zig/C backend parity | Hosted CI run `25532650949`; `scripts/verify_backend_parity.py` | Passing selected suite |
+| Debug artifacts | Hosted CI run `25532650949`; local `./run_all_tests.sh` after adding `037_language_tour.a7` | Passing: 76/76 |
+| Release artifacts | Hosted CI run `25532650949`; local `./run_all_tests.sh` after adding `037_language_tour.a7` | Passing: 76/76 |
 | Python package build | Hosted CI run `25527971161`; local clean `rm -rf dist && uv build` | Passing |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
 | Release checksums and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, and re-checks hashes before upload | Covered |
-| Docs style/build | Hosted CI run `25528605790`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
-| Docs deploy | Hosted Deploy Docs run `25528605791`; hosted fetches for `/llms.txt`, `/docs/index.md`, `/docs/status.md`, and `/llms-full.txt` | Passing |
+| Docs style/build | Hosted CI run `25532650949`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
+| Docs deploy | Hosted Deploy Docs run `25532650954`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |
 | Release workflow | `.github/workflows/release.yml`, manual dispatch run `25527020391` on commit `67da15e`; downloaded artifacts verified with `scripts/verify_archive_contents.py` and `scripts/verify_release_manifest.py` | Passing for non-tag validation |
 | PyPI publishing | `.github/workflows/release.yml`, GitHub `pypi` environment documented | Blocked until PyPI project/trusted publisher exists |
@@ -45,6 +45,8 @@ Deliverables implied by the active objective:
 | Virtual stdlib module resolution | `src/module_resolver.py`, `src/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
 | Array literal assignment compatibility | `src/passes/type_checker.py`, `src/backends/c.py`, `test/test_semantic_types.py`, `test/test_codegen_c.py`, `scripts/verify_backend_parity.py`; local full gate | Covered for declared lengths, nested literals, and Zig/C runtime parity |
 | Parser ambiguity hardening | `src/parser.py`, `test/test_parser_comprehensive_problems.py`, `docs/SPEC.md`; local full gate | Covered for rejecting initializer-like `new` calls while preserving `new(T)` allocation syntax |
+| Public site positioning | Commit `05dff14`; `site/src/pages/Home.tsx`; `site/src/content/navigation.ts`; hosted Deploy Docs run `25532650954`; live browser-harness check | Covered for keeping the public homepage and primary nav centered on A7 rather than agent/plugin docs |
+| Learn-by-reading language artifact | `examples/037_language_tour.a7`; `test/fixtures/golden_outputs/037_language_tour.out`; local Zig/C verifiers; README and public docs links | Covered for current documented language surface |
 
 ## Incomplete Or Weakly Covered Areas
 

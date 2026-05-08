@@ -1,7 +1,7 @@
 # TODO
 
 Current backlog for the A7 compiler, organized by priority tier.
-Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 37/37 examples pass e2e.
+Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 38/38 examples pass e2e.
 
 ---
 

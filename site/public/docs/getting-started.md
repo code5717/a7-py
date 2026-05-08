@@ -27,6 +27,12 @@ The default backend emits Zig. Use `--backend c` for C output.
 uv run python main.py --backend c examples/001_hello.a7
 ```
 
+To learn the current language from one file, run the commented tour:
+
+```bash
+uv run python main.py examples/037_language_tour.a7
+```
+
 ## Run Verification
 
 ```bash

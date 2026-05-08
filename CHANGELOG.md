@@ -82,6 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   navigation now highlights Start, Language, Examples, Compiler, and Status;
   the homepage no longer frames curl.md/agent docs as the product; and the
   language reference now shows current `@label` loop syntax.
+- Added `examples/037_language_tour.a7`, a commented compact one-file language
+  tour, and updated docs/site example counts to 38 verified programs.
 - Zig and C example verification now share one verifier implementation while
   keeping the existing `verify_examples_e2e.py` and
   `verify_examples_e2e_c.py` command entry points and JSON report contracts.

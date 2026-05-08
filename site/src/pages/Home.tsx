@@ -52,7 +52,7 @@ const PIPELINE = [
 
 const HIGHLIGHTS = [
   { title: 'Language', copy: 'Syntax and type reference.' },
-  { title: 'Examples', copy: '37 verified programs.' },
+  { title: 'Examples', copy: '38 verified programs.' },
   { title: 'Compiler', copy: 'Pipeline and backend notes.' },
 ]
 

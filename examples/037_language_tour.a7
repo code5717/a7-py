@@ -1,0 +1,133 @@
+// A7 compact language tour
+//
+// Read this file top-to-bottom for a compact tour of the current stable
+// language surface. Every section is runnable and verified through Zig and C.
+//
+// Guard rails: source recursion is rejected, `fall` is rejected until
+// semantics are designed, and tagged union tag workflows are not implemented.
+
+io :: import "std/io"
+
+BinaryOp :: fn(i32, i32) i32
+
+Point :: struct {
+    x: i32
+    y: i32
+}
+
+Scale :: enum {
+    Small
+    Large
+}
+
+Value :: union {
+    int_val: i32
+    flag_val: bool
+}
+
+add :: fn(a: i32, b: i32) i32 {
+    ret a + b
+}
+
+area :: fn(point: Point) i32 {
+    ret point.x * point.y
+}
+
+bump :: fn(value: ref i32) {
+    value.val += 1
+}
+
+apply :: fn(op: BinaryOp, a: i32, b: i32) i32 {
+    ret op(a, b)
+}
+
+main :: fn() {
+    io.println("=== A7 Language Tour ===")
+
+    // --- Declarations ---
+    //
+    // Declarations use := for mutable inference and : Type = for explicit type.
+    // Top-level constants and functions use ::.
+    name: string = "A7"
+    version := 1
+    io.println("{} tour v{}", name, version)
+
+    // --- Arrays and slices ---
+    //
+    // Arrays are fixed-size. Slices are views over arrays or other slices.
+    numbers: [5]i32 = [3, 5, 8, 13, 21]
+    middle := numbers[1..4]
+
+    total := 0
+    for value in middle {
+        total += value
+    }
+    io.println("slice total = {}", total)
+
+    // Indexed iteration exposes a usize index. Keep indexes as usize unless
+    // there is a real fixed-width data reason to convert them.
+    index_total: usize = 0
+    indexed_value_total := 0
+    for index, value in numbers {
+        index_total += index
+        indexed_value_total += value
+    }
+    io.println("indexed totals = {} {}", index_total, indexed_value_total)
+
+    // --- Structs ---
+    //
+    // Struct literals use named fields.
+    point := Point{x: 6, y: 7}
+    io.println("area = {}", area(point))
+
+    // --- Enums and match ---
+    //
+    // Enums pair naturally with exhaustive match statements.
+    scale := Scale.Large
+    match scale {
+        case Scale.Small: {
+            io.println("scale = small")
+        }
+        case Scale.Large: {
+            io.println("scale = large")
+        }
+    }
+
+    // --- Unions ---
+    //
+    // Untagged unions currently support one named field at construction time.
+    payload := Value{int_val: 26}
+    io.println("payload int = {}", payload.int_val)
+
+    // --- References and heap values ---
+    //
+    // References use .adr and .val. Heap allocation uses new/del.
+    // Split declaration and assignment here so the generated native local is
+    // mutable before it is passed by reference.
+    counter: i32
+    counter = 41
+    bump(counter.adr)
+    io.println("counter = {}", counter)
+
+    heap_value := new i32
+    defer del heap_value
+    heap_value.val = 99
+    io.println("heap = {}", heap_value.val)
+
+    // --- Function values ---
+    //
+    // Function types can be named and passed around.
+    op: BinaryOp = add
+    io.println("apply = {}", apply(op, 10, 32))
+
+    // --- Loops instead of recursion ---
+    //
+    // Source recursion is rejected. Use loops, stacks, queues, or worklists.
+    countdown := 3
+    while countdown > 0 {
+        io.println("countdown {}", countdown)
+        countdown -= 1
+    }
+
+    io.println("done")
+}

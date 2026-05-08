@@ -26,6 +26,8 @@ The repository is substantially more release-ready than before this pass:
 - C backend specialization for simple top-level generic function calls
 - virtual `std/io`, `io`, `std/math`, and `math` imports registered through the
   module resolver, with alias-safe backend lowering
+- public docs-site primary navigation and homepage messaging centered on A7
+  itself, while curl.md/plugin resources remain available from docs surfaces
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -99,6 +101,28 @@ not factually provable from local tests alone.
 - hosted Deploy Docs run `25528605791` passed on commit `8407a97`; hosted
   fetches for `/a7-py/docs/status.md` and `/a7-py/llms-full.txt` confirmed the
   deployed generic-status wording.
+- hosted CI run `25532352797` passed on commit `ca00e0e` after error-stage
+  audit logic was deduplicated into `scripts/error_stage_common.py`, including
+  docs, pytest, Python dependency audit, error-stage verification, Zig/C
+  example verification, backend parity, debug artifacts, release artifacts, and
+  package build.
+- hosted Deploy Docs run `25532352789` passed on commit `ca00e0e`.
+- hosted CI run `25532650949` passed on commit `05dff14` after the public site
+  was re-centered around A7, including docs, pytest, Python dependency audit,
+  error-stage verification, Zig/C example verification, backend parity, debug
+  artifacts, release artifacts, and package build.
+- hosted Deploy Docs run `25532650954` passed on commit `05dff14`; a live
+  browser-harness check confirmed the deployed homepage title
+  `Simple, fast systems code.`, eyebrow `A7 language`, and primary navigation
+  `Start`, `Language`, `Examples`, `Compiler`, `Status`, `Docs`, `GitHub`.
+- local `./run_all_tests.sh` passed after adding `037_language_tour.a7`:
+  parser/tokenizer 501 passed; semantic 305 passed; compiler/CLI/backend 322
+  passed; Zig examples 38/38; C examples 38/38; backend parity 9/9; debug
+  artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
+  style ok; secrets check ok; total pytest 1202 passed; summary 12/12.
+- local manual report inspection confirmed `037_language_tour` has
+  `compile_ok`, backend validation (`ast_ok` for Zig, `syntax_ok` for C),
+  `build_ok`, `run_ok`, and `output_match` set to true in both JSON reports.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
@@ -186,6 +210,19 @@ not factually provable from local tests alone.
 - Release tooling now verifies required members inside the docs and native
   example archives before checksum generation, including `llms.txt`,
   `llms-full.txt`, public Markdown docs, and `001_hello` Zig/C outputs.
+- Zig/C example verifier entrypoints now share compile/build/run/report logic
+  through `scripts/verify_examples_common.py`, while preserving their JSON
+  report contracts.
+- The error-stage verifier and pytest matrix now share mode sets, source
+  fixtures, CLI runner, JSON helpers, and 61-check audit construction through
+  `scripts/error_stage_common.py`.
+- The public docs site now uses A7-first primary navigation and homepage copy;
+  curl.md, plugin, and LLM resources remain reachable from docs pages instead
+  of framing the entire site.
+- Added `examples/037_language_tour.a7`, a commented compact language tour
+  that introduces the current stable language surface from one verified file;
+  the Language page and `site/public/docs/language.md` remain the one-page
+  reference.
 
 ## Residual Risks
 
@@ -220,8 +257,8 @@ not factually provable from local tests alone.
 ## Recommended Next Pass
 
 1. Expand differential backend tests beyond examples.
-2. Unify virtual stdlib imports with file-based module semantics.
-3. Design and implement `fall` backend lowering.
+2. Design and implement `fall` backend lowering.
+3. Complete generic struct/nested generic specialization parity.
 4. Create or preconfigure the PyPI trusted publisher for project `a7-py`,
    repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi`.
 5. Add stronger hosted secret scanning if the repository host supports it.
