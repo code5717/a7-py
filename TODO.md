@@ -236,8 +236,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `test/test_examples_e2e.py`, `test/test_examples_e2e_c.py`
   Notes: Zig and C example verifier tests now request JSON reports and assert totals plus per-example compile/syntax/build/run/output flags.
 
-- [ ] Deduplicate Zig/C example verification scripts.
-  Files: `scripts/verify_examples_e2e.py`, `scripts/verify_examples_e2e_c.py`
+- [x] Deduplicate Zig/C example verification scripts.
+  Files: `scripts/verify_examples_common.py`, `scripts/verify_examples_e2e.py`, `scripts/verify_examples_e2e_c.py`
+  Notes: shared compile/build/run/output-report logic now lives in `verify_examples_common.py`; the Zig and C entrypoints remain as compatible thin backend configurations.
 
 - [ ] Deduplicate error-stage audit logic between script and pytest matrix.
   Files: `scripts/verify_error_stages.py`, `test/test_error_stage_matrix.py`
