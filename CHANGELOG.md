@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-`actions/*` workflow actions are pinned to immutable commits, and the
   automated Claude review prompt now treats PR text/diffs as untrusted review
   input rather than instructions.
+- First-party `actions/*` workflow actions are pinned to immutable commit SHAs
+  resolved from their current major tags.
 - Tag release runs now generate GitHub artifact attestations for the checksum
   manifest, Python package files, docs archive, and native example artifact
   archive before uploading release artifacts.

@@ -17,7 +17,14 @@ These are bugs and schema mismatches in already-implemented features.
 
 - [x] Pin non-`actions/*` workflow actions to immutable commits.
   Files: `.github/workflows/release.yml`, `.github/workflows/claude.yml`, `.github/workflows/claude-code-review.yml`
-  Notes: `softprops/action-gh-release` and `anthropics/claude-code-action` are pinned to commit SHAs; first-party actions remain on major tags.
+  Notes: `softprops/action-gh-release` and `anthropics/claude-code-action` are pinned to commit SHAs.
+
+- [x] Pin first-party GitHub Actions to immutable commits.
+  Files: `.github/workflows/*.yml`
+  Notes: `actions/checkout`, `setup-python`, `setup-node`,
+  `upload-artifact`, `download-artifact`, `attest`, Pages setup/upload/deploy
+  actions are pinned to commit SHAs resolved from their current major tags on
+  2026-05-08.
 
 - [x] Harden automated Claude PR review against prompt injection from PR content.
   Files: `.github/workflows/claude-code-review.yml`
