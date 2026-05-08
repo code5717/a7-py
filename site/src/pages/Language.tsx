@@ -430,9 +430,8 @@ abs_generic :: fn(x: $T) $T {
           code={`// Aliased import
 io :: import "std/io"
 
-// Direct module import forms
-import "vector" { Vec3, dot }
-using import "vector"
+// Current backend-lowered imports are virtual stdlib modules
+math :: import "std/math"
 
 pub Vec2 :: struct {
     x: f32
@@ -440,11 +439,11 @@ pub Vec2 :: struct {
 }
 
 pub length :: fn(v: Vec2) f32 {
-    ret sqrt_f32(v.x * v.x + v.y * v.y)
+    ret math.sqrt(v.x * v.x + v.y * v.y)
 }`}
         />
         <p className="text-secondary mt-1">
-          Every <code className="doc-inline-code">.a7</code> file is a module. Use <code className="doc-inline-code">pub</code> to export top-level declarations; struct fields are not marked public.
+          Every <code className="doc-inline-code">.a7</code> file is a module. File-backed imports are resolver-validated, but Zig/C backend linking for multiple source files is not implemented yet, so compile modes reject them before codegen.
         </p>
       </SectionPanel>
 

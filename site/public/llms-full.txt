@@ -25,7 +25,7 @@ Implemented:
 - Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig/C code generation.
 - CLI entrypoints through `uv run a7` and `uv run python main.py`.
 - Static typing with inference in supported contexts.
-- Functions, structs, enums, untagged union field literals/access, aliases, modules, and generics.
+- Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
 - Simple top-level generic function calls, type-set constraints, and used generic struct instances in the C backend through concrete specialization.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
@@ -221,6 +221,10 @@ Current virtual stdlib:
 Virtual stdlib modules are registered through the module resolver, so aliases
 such as `console :: import "std/io"` and `mathlib :: import "std/math"` lower
 the same way as `io` and `math`.
+
+File-backed local imports can be resolved during semantic validation, but
+Zig/C backend lowering and linking for multiple `.a7` files is not implemented
+yet. Compile, pipeline, and doc modes reject file-backed imports before codegen.
 
 Untagged unions:
 

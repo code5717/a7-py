@@ -104,6 +104,68 @@ main :: fn() {
     assert out.exists()
 
 
+def test_cli_local_file_import_fails_closed_before_codegen(tmp_path):
+    helper = tmp_path / "helper.a7"
+    src = tmp_path / "main.a7"
+    helper.write_text(
+        """
+pub double :: fn(x: i32) i32 {
+    ret x * 2
+}
+""".strip()
+    )
+    src.write_text(
+        """
+io :: import "std/io"
+helper :: import "helper"
+
+main :: fn() {
+    io.println("{}", helper.double(21))
+}
+""".strip()
+    )
+
+    for backend, suffix in [("zig", ".zig"), ("c", ".c")]:
+        out = tmp_path / f"main{suffix}"
+        result = run_cli(["--backend", backend, "--format", "json", str(src), "-o", str(out)])
+
+        assert result.returncode == ExitCode.SEMANTIC
+        payload = json.loads(result.stdout)
+        assert payload["error"]["category"] == "semantic"
+        message = payload["error"]["details"][0]["message"].lower()
+        assert "file-backed import 'helper'" in message
+        assert f"{backend} backend" in message
+        assert "not implemented yet" in message
+        assert not out.exists()
+
+
+def test_cli_local_file_import_semantic_mode_still_validates_resolution(tmp_path):
+    helper = tmp_path / "helper.a7"
+    src = tmp_path / "main.a7"
+    helper.write_text(
+        """
+pub double :: fn(x: i32) i32 {
+    ret x * 2
+}
+""".strip()
+    )
+    src.write_text(
+        """
+helper :: import "helper"
+
+main :: fn() {}
+""".strip()
+    )
+
+    result = run_cli(["--mode", "semantic", "--format", "json", str(src)])
+
+    assert result.returncode == ExitCode.SUCCESS
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "ok"
+    pass_names = [item["name"] for item in payload["stages"]["semantic"]["passes"]]
+    assert "Backend Import Support" in pass_names
+
+
 def test_cli_unknown_virtual_stdlib_function_returns_semantic_error(tmp_path):
     src = tmp_path / "bad_stdlib_call.a7"
     out = tmp_path / "bad_stdlib_call.zig"

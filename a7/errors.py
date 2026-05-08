@@ -87,6 +87,7 @@ class SemanticErrorType(Enum):
     CIRCULAR_IMPORT = "circular_import"
     MODULE_NOT_FOUND = "module_not_found"
     IMPORT_NAME_CONFLICT = "import_name_conflict"
+    UNSUPPORTED_IMPORT = "unsupported_import"
 
     # Generic errors
     GENERIC_PARAM_MISMATCH = "generic_param_mismatch"
@@ -244,6 +245,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CIRCULAR_IMPORT: "Circular import detected",
         SemanticErrorType.MODULE_NOT_FOUND: "Module not found",
         SemanticErrorType.IMPORT_NAME_CONFLICT: "Import name conflicts with existing definition",
+        SemanticErrorType.UNSUPPORTED_IMPORT: "Unsupported import",
 
         # Generic errors
         SemanticErrorType.GENERIC_PARAM_MISMATCH: "Generic parameter count mismatch",
@@ -293,6 +295,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CIRCULAR_IMPORT: "Reorganize modules to remove circular dependencies",
         SemanticErrorType.MODULE_NOT_FOUND: "Check the module path and ensure the file exists",
         SemanticErrorType.IMPORT_NAME_CONFLICT: "Use an alias for the import or rename the conflicting definition",
+        SemanticErrorType.UNSUPPORTED_IMPORT: "Use a current virtual stdlib import or keep file-backed modules in the same source file until backend linking is implemented",
 
         # Generic errors
         SemanticErrorType.GENERIC_PARAM_MISMATCH: "Provide the correct number of generic type arguments",

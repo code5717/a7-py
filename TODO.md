@@ -169,7 +169,7 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 - [x] Stop treating import/module loading as best-effort.
   Files: `a7/compile.py`, `a7/module_resolver.py`
-  Notes: fixed for local file-based imports; missing or broken dependencies now fail as semantic errors while virtual stdlib imports remain supported.
+  Notes: missing or broken dependencies now fail as semantic errors while virtual stdlib imports remain supported. Existing file-backed imports are resolver-validated in semantic mode and fail closed before backend codegen until module linking exists.
 
 - [x] Unify built-in stdlib imports with file-based module resolution.
   Files: `a7/module_resolver.py`, `a7/passes/name_resolution.py`, `a7/stdlib/__init__.py`

@@ -3,7 +3,7 @@
 ## Language
 
 - Static typing with inference in supported contexts.
-- Functions, structs, enums, untagged union field literals/access, aliases, modules, and generics.
+- Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
 - Simple top-level generic function calls, type-set constraints, and used generic struct instances lower in both Zig and C backends.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - Arrays, slices, string slices, pointers, references, and manual `new` / `del`.
@@ -28,4 +28,4 @@
 
 ## Current Limits
 
-The status page is canonical for remaining gaps. Key limits include complete memory/lifetime guarantees, broader generic propagation beyond current function and struct instance coverage, parsed-only variadic declarations, reserved-but-unimplemented intrinsics beyond `@type_set(...)`, tagged union workflows, and arbitrary symbolic inequality reasoning.
+The status page is canonical for remaining gaps. Key limits include complete memory/lifetime guarantees, backend lowering/linking for file-backed local modules, broader generic propagation beyond current function and struct instance coverage, parsed-only variadic declarations, reserved-but-unimplemented intrinsics beyond `@type_set(...)`, tagged union workflows, and arbitrary symbolic inequality reasoning.

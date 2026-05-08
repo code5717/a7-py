@@ -27,6 +27,8 @@
 - Multiple return values / destructuring are planned syntax, not current parser support.
 - Untagged union construction/access works; tagged/discriminated union tag workflows are not implemented yet.
 - `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
+- File-backed local imports are resolver-validated but rejected before backend
+  codegen until multi-file lowering/linking is implemented.
 - Package-registry publishing is not part of the current release workflow.
 
 See [`MISSING_FEATURES.md`](https://github.com/code5717/a7-py/blob/master/MISSING_FEATURES.md) for the source-of-truth gap list.

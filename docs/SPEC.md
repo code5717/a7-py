@@ -1420,9 +1420,12 @@ integrate_2d :: fn(f: fn(f64, f64) f64, bounds: [4]f64, steps: [2]usize) f64 {
 
 ## 10. Modules and Visibility
 
-### 10.1 File-Based Module System
+### 10.1 File-Based Module Model
 
 Every A7 source file is a module. There is no explicit `module` keyword.
+Current backend codegen does not link multiple `.a7` files yet; file-backed
+imports resolve during semantic validation but are rejected before Zig/C
+emission.
 
 ```a7
 // File: vector.a7
@@ -1452,26 +1455,21 @@ normalize :: fn(v: ref Vec3) {
 ### 10.2 Import Statements
 
 ```a7
-// Import by filename (without .a7 extension)
-math :: import "math"
-io :: import "io"
+// Current backend-lowered virtual stdlib imports
+math :: import "std/math"
+io :: import "std/io"
 
-// Import user library
-mylib :: import "mylib"
+// Aliases are supported for virtual stdlib imports
+console :: import "std/io"
 
-// Import with alias
-vec :: import "vector"
-
-// Import specific items
+// Parsed/resolver forms for file-backed modules
 import "vector" { Vec3, dot }
-
-// Import all public items
 using import "vector"
-
-// Relative imports
 sibling :: import "./sibling"
-parent :: import "../utils"
 subfolder :: import "subfolder/helper"
+
+// Parent traversal imports are rejected by the resolver
+parent :: import "../utils"  // error
 ```
 
 ### 10.3 Standard Library Status
@@ -1483,7 +1481,10 @@ Current implementation:
 - Virtual stdlib modules are registered through the module resolver and may be
   imported with arbitrary local aliases, for example
   `console :: import "std/io"`.
-- Local file imports such as `./vector` resolve from on-disk `.a7` files.
+- Local file imports such as `./vector` can resolve from on-disk `.a7` files
+  during semantic validation, but backend lowering/linking for file-backed
+  modules is not implemented yet. Compile/pipeline/doc modes reject them before
+  codegen instead of emitting invalid Zig/C.
 
 Planned, not implemented as public stdlib modules yet:
 

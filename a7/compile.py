@@ -19,9 +19,10 @@ from typing import Any, Optional
 
 from rich.console import Console
 
+from .ast_nodes import ASTNode, NodeKind
 from .ast_preprocessor import ASTPreprocessor
 from .backends import get_backend
-from .errors import CompilerError, ParseError, SemanticError, display_error, display_errors
+from .errors import CompilerError, ParseError, SemanticError, SemanticErrorType, display_error, display_errors
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
 from .passes import GenericLoweringPass, NameResolutionPass, SemanticValidationPass, TypeCheckingPass
@@ -238,12 +239,22 @@ class A7Compiler:
                     module_resolver.load_program_dependencies(ast, str(input_path))
                 except SemanticError as e:
                     import_errors.append(e)
+                backend_import_errors: list[Any] = []
+                codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
+                if not import_errors and self.mode in codegen_modes:
+                    backend_import_errors = self._backend_unsupported_import_errors(
+                        ast=ast,
+                        module_resolver=module_resolver,
+                        filename=str(input_path),
+                        source_lines=source_lines,
+                    )
 
                 name_resolver = NameResolutionPass()
                 name_resolver.source_lines = source_lines
                 symbol_table = name_resolver.analyze(ast, str(input_path))
                 nr_ok = len(name_resolver.errors) == 0
                 import_ok = len(import_errors) == 0
+                backend_import_ok = len(backend_import_errors) == 0
                 semantic_passes.append(
                     {
                         "name": "Import Resolution",
@@ -255,6 +266,15 @@ class A7Compiler:
                     all_errors.extend(import_errors)
                 semantic_passes.append(
                     {
+                        "name": "Backend Import Support",
+                        "ok": backend_import_ok,
+                        "errors": len(backend_import_errors),
+                    }
+                )
+                if backend_import_errors:
+                    all_errors.extend(backend_import_errors)
+                semantic_passes.append(
+                    {
                         "name": "Name Resolution",
                         "ok": nr_ok,
                         "errors": len(name_resolver.errors),
@@ -263,7 +283,7 @@ class A7Compiler:
                 if name_resolver.errors:
                     all_errors.extend(name_resolver.errors)
 
-                if import_ok and nr_ok:
+                if import_ok and backend_import_ok and nr_ok:
                     type_checker = TypeCheckingPass(symbol_table)
                     type_checker.source_lines = source_lines
                     type_checker.analyze(ast, str(input_path))
@@ -478,6 +498,39 @@ class A7Compiler:
 
         if result.doc_path:
             console.print(f"[blue]📄[/blue] Documentation written to {result.doc_path}")
+
+    def _backend_unsupported_import_errors(
+        self,
+        *,
+        ast: ASTNode,
+        module_resolver: Any,
+        filename: str,
+        source_lines: list[str],
+    ) -> list[SemanticError]:
+        """Reject file-backed modules until codegen can lower/link their symbols."""
+        if ast.kind != NodeKind.PROGRAM:
+            return []
+
+        errors: list[SemanticError] = []
+        for decl in ast.declarations or []:
+            if decl.kind != NodeKind.IMPORT:
+                continue
+            module_path = decl.module_path or ""
+            if module_resolver.is_virtual_module(module_path):
+                continue
+            errors.append(
+                SemanticError.from_type(
+                    SemanticErrorType.UNSUPPORTED_IMPORT,
+                    span=decl.span,
+                    filename=filename,
+                    source_lines=source_lines,
+                    custom_message=(
+                        f"File-backed import '{module_path}' resolves, but {self.backend} "
+                        "backend lowering/linking for local modules is not implemented yet"
+                    ),
+                )
+            )
+        return errors
 
     def _finish_with_failure(
         self,

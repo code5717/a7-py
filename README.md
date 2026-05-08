@@ -165,7 +165,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Function Rules**: Direct and mutual recursion are semantic errors
 - **Expressions**: All operators with proper precedence, casts, if-expressions, struct/array literals, untagged union field literals/access
 - **Memory**: Property-based pointer syntax (`.adr`, `.val`), scalar/struct `new` and `del`, defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the language model is defined.
-- **Imports**: Module system with named imports, using imports, aliased imports
+- **Imports**: Virtual `std/io` and `std/math` modules with aliases; file-backed local imports resolve for validation but fail closed before backend codegen until module linking is implemented
 - **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, generic struct literals, and simple top-level generic function calls in both backends
 - **Code Generation**: A7 → Zig and A7 → C backends
 - **Standard Library**: Registry with io and math modules, backend-specific mappings

@@ -51,6 +51,11 @@ These modules are virtual built-ins registered through the module resolver, so
 local aliases such as `console :: import "std/io"` and
 `mathlib :: import "std/math"` lower the same way as `io` and `math`.
 
+File-backed local imports can be resolved during semantic validation, but
+Zig/C backend lowering and linking for multiple `.a7` files is not implemented
+yet. Compile, pipeline, and doc modes reject file-backed imports before codegen
+instead of emitting unresolved target code.
+
 Source stubs such as `mem` and `string` exist in the repository but are not registered public stdlib modules yet.
 
 ## Current Syntax Limits
