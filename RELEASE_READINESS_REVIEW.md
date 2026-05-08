@@ -191,6 +191,12 @@ not factually provable from local tests alone.
   style ok; secrets check ok; total pytest 1227 passed; summary 12/12.
 - local `npm run check` in `site/` passed after updating the public status and
   language docs for the fallthrough behavior.
+- hosted CI run `25541793153` passed on commit `5baa7f7` after fallthrough
+  lowering was added, including docs, pytest, Python dependency audit, Bandit
+  static security scanning, error-stage verification, Zig/C example
+  verification, backend parity, debug artifacts, release artifacts, package
+  build, and clean wheel-install verification.
+- hosted Deploy Docs run `25541793145` passed on commit `5baa7f7`.
 
 ## Fixed In This Pass
 
