@@ -343,6 +343,8 @@ main :: fn() {
         generated = output.read_text(encoding="utf-8")
         assert generated.count("std.fs.File.stdout().writerStreaming") == 1
         assert generated.count("std.fs.File.stderr().writerStreaming") == 1
+        assert "var __a7_stdout_writer" not in generated[generated.index("pub fn main"):]
+        assert "var __a7_stderr_writer" not in generated[generated.index("pub fn main"):]
 
     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
     def test_integer_remainder_matches_truncating_division(self, tmp_path):
@@ -922,6 +924,7 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         assert 'std.fs.File.stdout().writerStreaming' in zig
         assert zig.count('std.fs.File.stdout().writerStreaming') == 1
+        assert "var __a7_stdout_writer" not in zig[zig.index("pub fn main"):]
         assert '{any}' in zig  # {} converted to {any}
 
     def test_char_escape_newline(self):

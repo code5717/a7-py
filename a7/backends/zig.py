@@ -38,7 +38,7 @@ class ZigCodeGenerator(CodeGenerator):
         self._loop_label_stack: list[tuple[Optional[str], Optional[str]]] = []
         self._fall_context_stack: list[tuple[str, str]] = []
         self._name_counter = 0
-        self._io_stream_names: Dict[str, tuple[str, str]] = {}
+        self._io_streams_needed: Set[str] = set()
 
     @property
     def file_extension(self) -> str:
@@ -67,7 +67,7 @@ class ZigCodeGenerator(CodeGenerator):
         self._loop_label_stack = []
         self._fall_context_stack = []
         self._name_counter = 0
-        self._io_stream_names = {}
+        self._io_streams_needed = set()
 
         # First pass: scan for features that need preamble items
         self._scan_features(ast)
@@ -135,10 +135,14 @@ class ZigCodeGenerator(CodeGenerator):
                 canonical = getattr(node, "stdlib_canonical", None)
                 if canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}:
                     self._needs_std = True
+                    field = canonical.split(".")[-1]
+                    self._io_streams_needed.add("stderr" if field == "eprintln" else "stdout")
                 if node.function and node.function.kind == NodeKind.FIELD_ACCESS:
                     obj = getattr(node.function, 'object', None)
                     if obj and obj.kind == NodeKind.IDENTIFIER and getattr(obj, 'name', '') == 'io':
                         self._needs_std = True
+                        field = getattr(node.function, "field", "println")
+                        self._io_streams_needed.add("stderr" if field == "eprintln" else "stdout")
 
         self._walk_ast(root, visitor)
 
@@ -149,6 +153,12 @@ class ZigCodeGenerator(CodeGenerator):
             lines.append("const std = @import(\"std\");")
         if self._needs_allocator:
             lines.append("const allocator = std.heap.page_allocator;")
+        for stream in sorted(self._io_streams_needed):
+            lines.append(f"var __a7_{stream}_buf: [1024]u8 = undefined;")
+            lines.append(
+                f"var __a7_{stream}_writer = "
+                f"std.fs.File.{stream}().writerStreaming(&__a7_{stream}_buf);"
+            )
         if lines:
             lines.append("")
         return "\n".join(lines) + ("\n" if lines else "")
@@ -184,36 +194,6 @@ class ZigCodeGenerator(CodeGenerator):
                         if isinstance(item, ASTNode):
                             children.append(item)
             stack.extend(reversed(children))
-
-    def _collect_io_streams(self, node: ASTNode) -> Set[str]:
-        """Collect stdout/stderr streams used directly by a function body."""
-        streams: Set[str] = set()
-        if node is None:
-            return streams
-
-        stack = [node]
-        while stack:
-            n = stack.pop()
-            if n is not node and n.kind == NodeKind.FUNCTION:
-                continue
-            if n.kind == NodeKind.CALL and self._is_io_call(n):
-                canonical = getattr(n, "stdlib_canonical", None)
-                func = n.function
-                field = canonical.split(".")[-1] if canonical else getattr(func, 'field', 'println')
-                streams.add("stderr" if field == "eprintln" else "stdout")
-
-            children = []
-            for attr_name in self._AST_CHILD_ATTRS:
-                val = getattr(n, attr_name, None)
-                if isinstance(val, ASTNode):
-                    children.append(val)
-                elif isinstance(val, list):
-                    for item in val:
-                        if isinstance(item, ASTNode):
-                            children.append(item)
-            stack.extend(reversed(children))
-
-        return streams
 
     def _collect_mutations(self, node: ASTNode) -> Set[str]:
         """Collect variable names that are targets of assignments in a subtree."""
@@ -485,26 +465,16 @@ class ZigCodeGenerator(CodeGenerator):
 
         # Body
         was_in_function = self._in_function
-        saved_io_stream_names = self._io_stream_names
         self._in_function = True
         self._push_scope()
         if node.body and not (node.body.statements or []):
             self.output.write("{}\n")
         elif node.body:
-            io_streams = self._collect_io_streams(node.body)
-            self._io_stream_names = {
-                stream: (
-                    self._unique_name(f"__a7_{stream}_buf"),
-                    self._unique_name(f"__a7_{stream}_writer"),
-                )
-                for stream in sorted(io_streams)
-            }
-            self._visit_block_inline(node.body, io_streams=io_streams)
+            self._visit_block_inline(node.body)
         else:
             self.output.write("{}\n")
         self._pop_scope()
         self._in_function = was_in_function
-        self._io_stream_names = saved_io_stream_names
 
         # Clean up hoisted function names
         self._skip_nested_fn_names -= hoisted_names
@@ -717,23 +687,10 @@ class ZigCodeGenerator(CodeGenerator):
         """Visit block statement (as a standalone statement)."""
         self._visit_block_inline(node)
 
-    def _visit_block_inline(self, node: ASTNode, io_streams: Optional[Set[str]] = None) -> None:
+    def _visit_block_inline(self, node: ASTNode) -> None:
         """Visit block and output braces + indented contents."""
         self.output.write("{\n")
         self.indent()
-
-        for stream in sorted(io_streams or set()):
-            buf_name, writer_name = self._io_stream_names.get(
-                stream,
-                (f"__a7_{stream}_buf", f"__a7_{stream}_writer"),
-            )
-            self._write_indent()
-            self.output.write(f"var {buf_name}: [1024]u8 = undefined;\n")
-            self._write_indent()
-            self.output.write(
-                f"var {writer_name} = "
-                f"std.fs.File.{stream}().writerStreaming(&{buf_name});\n"
-            )
 
         for stmt in (node.statements or []):
             # Skip nested functions that were hoisted to module level
@@ -2113,10 +2070,7 @@ class ZigCodeGenerator(CodeGenerator):
     def _write_io_print(self, field: str, fmt_str: str, zig_args: str) -> None:
         """Write std/io calls to the correct output stream."""
         stream = "stderr" if field == "eprintln" else "stdout"
-        _, writer_name = self._io_stream_names.get(
-            stream,
-            (f"__a7_{stream}_buf", f"__a7_{stream}_writer"),
-        )
+        writer_name = f"__a7_{stream}_writer"
         if not zig_args:
             args = ".{}"
         elif self._has_top_level_comma(zig_args):
