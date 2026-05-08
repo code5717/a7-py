@@ -7,10 +7,10 @@ scoping rules.
 
 from typing import Optional, List
 
-from src.ast_nodes import ASTNode, NodeKind
-from src.symbol_table import SymbolTable, Symbol, SymbolKind, ModuleTable
-from src.types import Type, UNKNOWN, get_primitive_type, GenericParamType
-from src.errors import SemanticError, SemanticErrorType, SourceSpan
+from a7.ast_nodes import ASTNode, NodeKind
+from a7.symbol_table import SymbolTable, Symbol, SymbolKind, ModuleTable
+from a7.types import Type, UNKNOWN, get_primitive_type, GenericParamType
+from a7.errors import SemanticError, SemanticErrorType, SourceSpan
 
 
 class NameResolutionPass:

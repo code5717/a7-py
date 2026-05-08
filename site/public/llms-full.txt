@@ -29,7 +29,8 @@ Implemented:
 - Simple top-level generic function calls in the C backend through concrete specialization.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - Arrays, slices, string slices, references, property pointer operations, and manual `new` / `del`.
-- `defer`, unreachable-statement diagnostics, and direct/mutual source-recursion diagnostics.
+- `defer`, unreachable-statement diagnostics, and direct/mutual/alias source-recursion diagnostics.
+- `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
 - 38 runnable examples verified through both Zig and C backends.
 - Debug/release artifact verification for both native backends.
@@ -41,6 +42,7 @@ Known gaps:
 - Advanced match diagnostics do not reason about non-constant symbolic intervals.
 - True identifier-binding/capture match patterns are not defined.
 - Ownership, borrowing, lifetime, use-after-free, and double-free guarantees are not implemented.
+- Heap fixed arrays (`new [N]T`) are rejected until representation is defined.
 - Full generic specialization is incomplete beyond simple top-level generic functions.
 - Tagged/discriminated union tag workflows are not implemented.
 - `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
@@ -280,15 +282,15 @@ Source (.a7)
 
 Core source map:
 
-- `src/tokens.py`: tokenizer and token definitions
-- `src/parser.py`: parser
-- `src/ast_nodes.py`: AST node kinds and fields
-- `src/passes/name_resolution.py`: names and modules
-- `src/passes/type_checker.py`: type checking
-- `src/passes/semantic_validator.py`: semantic validation
-- `src/ast_preprocessor.py`: lowering annotations and preprocessing
-- `src/backends/zig.py`: Zig backend
-- `src/backends/c.py`: C backend
+- `a7/tokens.py`: tokenizer and token definitions
+- `a7/parser.py`: parser
+- `a7/ast_nodes.py`: AST node kinds and fields
+- `a7/passes/name_resolution.py`: names and modules
+- `a7/passes/type_checker.py`: type checking
+- `a7/passes/semantic_validator.py`: semantic validation
+- `a7/ast_preprocessor.py`: lowering annotations and preprocessing
+- `a7/backends/zig.py`: Zig backend
+- `a7/backends/c.py`: C backend
 - `src/cli.py`: CLI entrypoint
 - `main.py`: compatibility wrapper
 - `scripts/`: verifiers, release tooling, docs checks

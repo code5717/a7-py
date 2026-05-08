@@ -6,9 +6,9 @@ and pathological cases.
 """
 
 import pytest
-from src.tokens import Tokenizer, TokenType
-from src.parser import parse_a7
-from src.errors import TokenizerError, ParseError
+from a7.tokens import Tokenizer, TokenType
+from a7.parser import parse_a7
+from a7.errors import TokenizerError, ParseError
 
 
 class TestParserStressTests:
@@ -354,7 +354,7 @@ class TestParserRecoveryAndErrors:
 
     def test_invalid_generic_syntax(self):
         """Test error handling for invalid generic syntax."""
-        from src.errors import TokenizerError
+        from a7.errors import TokenizerError
         
         invalid_cases = [
             "fn($) {}",  # Empty generic parameter

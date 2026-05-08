@@ -36,6 +36,24 @@ def test_installed_cli_entrypoint_works() -> None:
     assert '"status": "ok"' in result.stdout
 
 
+def test_wheel_install_smoke_uses_built_artifact(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_wheel_install.py",
+            "--dist-dir",
+            str(tmp_path / "dist"),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=180,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Wheel install verified: a7_py-" in result.stdout
+
+
 def test_debug_build_script_verifies_single_zig_example(tmp_path: Path) -> None:
     if shutil.which("zig") is None:
         return

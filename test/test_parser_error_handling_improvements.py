@@ -6,8 +6,8 @@ and edge cases that should be handled more robustly.
 """
 
 import pytest
-from src.parser import parse_a7
-from src.errors import ParseError
+from a7.parser import parse_a7
+from a7.errors import ParseError
 
 
 class TestBetterErrorMessages:
@@ -343,7 +343,7 @@ class TestStringAndCharLiteralEdgeCases:
 
     def test_unclosed_string_literals(self):
         """Test unclosed string literals in different contexts."""
-        from src.errors import TokenizerError
+        from a7.errors import TokenizerError
         
         unclosed_strings = [
             'x := "unclosed string',
@@ -358,7 +358,7 @@ class TestStringAndCharLiteralEdgeCases:
 
     def test_unclosed_char_literals(self):
         """Test unclosed character literals."""
-        from src.errors import TokenizerError
+        from a7.errors import TokenizerError
         
         unclosed_chars = [
             "x := 'a",
@@ -372,7 +372,7 @@ class TestStringAndCharLiteralEdgeCases:
 
     def test_invalid_escape_sequences(self):
         """Test invalid escape sequences in strings."""
-        from src.errors import TokenizerError
+        from a7.errors import TokenizerError
         
         # Test cases that should cause TokenizerError due to unclosed strings
         unclosed_escapes = [

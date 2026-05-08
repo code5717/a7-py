@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.scripts]
-a7 = "src.cli:main"
+a7 = "a7.cli:main"
 
 [build-system]
 requires = ["setuptools>=77", "wheel"]
@@ -23,4 +23,4 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
+include = ["a7*"]

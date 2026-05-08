@@ -11,12 +11,12 @@ Covers:
 """
 
 import pytest
-from src.tokens import Tokenizer
-from src.parser import Parser
-from src.passes.name_resolution import NameResolutionPass
-from src.passes.type_checker import TypeCheckingPass
-from src.passes.semantic_validator import SemanticValidationPass
-from src.errors import SemanticError, CompilerError
+from a7.tokens import Tokenizer
+from a7.parser import Parser
+from a7.passes.name_resolution import NameResolutionPass
+from a7.passes.type_checker import TypeCheckingPass
+from a7.passes.semantic_validator import SemanticValidationPass
+from a7.errors import SemanticError, CompilerError
 
 
 def parse_program(source: str):
@@ -175,6 +175,31 @@ class TestComparisonOperators:
         }
         """
         assert expect_success(source)
+
+    def test_struct_ordering_is_rejected(self):
+        """Ordering comparisons are only valid for ordered scalar types."""
+        source = """
+        Point :: struct {
+            x: i32,
+            y: i32,
+        }
+
+        main :: fn() {
+            a: Point
+            b: Point
+            bad := a < b
+        }
+        """
+        assert expect_error(source, "operator")
+
+    def test_string_ordering_is_rejected(self):
+        """Strings can be equality-compared but not ordered."""
+        source = """
+        main :: fn() {
+            bad := "a" < "b"
+        }
+        """
+        assert expect_error(source, "operator")
 
 
 class TestLogicalOperators:

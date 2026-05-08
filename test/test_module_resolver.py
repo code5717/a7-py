@@ -1,7 +1,7 @@
 """Regression tests for A7 module resolution."""
 
-from src.ast_nodes import ASTNode, NodeKind
-from src.module_resolver import ModuleResolver
+from a7.ast_nodes import ASTNode, NodeKind
+from a7.module_resolver import ModuleResolver
 
 
 def test_virtual_stdlib_module_registers_symbols() -> None:

@@ -6,8 +6,8 @@ and interesting edge cases not covered elsewhere.
 """
 
 import pytest
-from src.parser import parse_a7
-from src.ast_nodes import NodeKind
+from a7.parser import parse_a7
+from a7.ast_nodes import NodeKind
 
 
 class TestCreativePatterns:

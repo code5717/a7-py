@@ -12,9 +12,9 @@ Tests ensure parser robustness with extreme scenarios.
 """
 
 import pytest
-from src.tokens import Tokenizer
-from src.parser import Parser
-from src.errors import ParseError
+from a7.tokens import Tokenizer
+from a7.parser import Parser
+from a7.errors import ParseError
 
 
 class TestFunctionAndStructCombinations:

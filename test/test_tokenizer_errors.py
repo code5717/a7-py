@@ -12,8 +12,8 @@ from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
 from rich.console import Console
 
-from src.tokens import Tokenizer, TokenType
-from src.errors import TokenizerError, ErrorFormatter, display_error
+from a7.tokens import Tokenizer, TokenType
+from a7.errors import TokenizerError, ErrorFormatter, display_error
 
 
 class TestTokenizerErrors:

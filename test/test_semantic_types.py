@@ -11,14 +11,14 @@ Covers:
 """
 
 import pytest
-from src.tokens import Tokenizer
-from src.parser import Parser
-from src.ast_nodes import NodeKind
-from src.passes.name_resolution import NameResolutionPass
-from src.passes.type_checker import TypeCheckingPass
-from src.passes.semantic_validator import SemanticValidationPass
-from src.errors import SemanticError, CompilerError
-from src.types import PointerType, PrimitiveType, SliceType
+from a7.tokens import Tokenizer
+from a7.parser import Parser
+from a7.ast_nodes import NodeKind
+from a7.passes.name_resolution import NameResolutionPass
+from a7.passes.type_checker import TypeCheckingPass
+from a7.passes.semantic_validator import SemanticValidationPass
+from a7.errors import SemanticError, CompilerError
+from a7.types import PointerType, PrimitiveType, SliceType
 
 
 def parse_program(source: str):
@@ -137,6 +137,34 @@ class TestPrimitiveTypes:
         }
         """
         assert expect_success(source)
+
+    def test_unsigned_integer_rejects_negative_literal(self):
+        """Unsigned integers do not accept negative literals implicitly."""
+        source = """
+        main :: fn() {
+            bad: usize = -1
+        }
+        """
+        assert expect_error(source, "type")
+
+    def test_integer_literal_range_is_checked_for_explicit_type(self):
+        """Integer literals must fit the explicitly declared type."""
+        source = """
+        main :: fn() {
+            bad: i8 = 128
+        }
+        """
+        assert expect_error(source, "type")
+
+    def test_integer_variable_does_not_implicitly_convert_to_unsigned(self):
+        """Signed variables require an explicit cast before unsigned assignment."""
+        source = """
+        main :: fn() {
+            signed: i32 = 1
+            unsigned: usize = signed
+        }
+        """
+        assert expect_error(source, "type")
 
     def test_explicit_float_types(self):
         """Test explicit float type annotations."""
@@ -376,6 +404,48 @@ class TestArrayAndSliceTypes:
         }
         """
         assert expect_success(source)
+
+    def test_usize_variable_can_index_arrays(self):
+        """Indexes stored in variables must use usize."""
+        source = """
+        main :: fn() {
+            arr: [3]i32 = [1, 2, 3]
+            index: usize = 1
+            value := arr[index]
+        }
+        """
+        assert expect_success(source)
+
+    def test_signed_index_variable_is_rejected(self):
+        """Signed integer variables cannot index arrays implicitly."""
+        source = """
+        main :: fn() {
+            arr: [3]i32 = [1, 2, 3]
+            index: i32 = 1
+            value := arr[index]
+        }
+        """
+        assert expect_error(source, "expected usize")
+
+    def test_negative_index_literal_is_rejected(self):
+        """Negative literals cannot be accepted as array indexes."""
+        source = """
+        main :: fn() {
+            arr: [3]i32 = [1, 2, 3]
+            value := arr[-1]
+        }
+        """
+        assert expect_error(source, "expected usize")
+
+    def test_new_heap_array_is_rejected_until_backend_model_exists(self):
+        """Heap fixed arrays are fail-closed until both backends agree."""
+        source = """
+        main :: fn() {
+            buffer := new [3]i32
+            del buffer
+        }
+        """
+        assert expect_error(source, "heap arrays")
 
     def test_array_size_mismatch(self):
         """Test array size mismatch in initialization."""

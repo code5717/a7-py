@@ -18,14 +18,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.compile import A7Compiler
-from src.tokens import Tokenizer
-from src.parser import Parser
-from src.ast_nodes import ASTNode, NodeKind
-from src.backends.zig import ZigCodeGenerator
-from src.errors import CodegenError
-from src.passes import NameResolutionPass, TypeCheckingPass, SemanticValidationPass
-from src.stdlib import StdlibRegistry
+from a7.compile import A7Compiler
+from a7.tokens import Tokenizer
+from a7.parser import Parser
+from a7.ast_nodes import ASTNode, NodeKind
+from a7.backends.zig import ZigCodeGenerator
+from a7.errors import CodegenError
+from a7.passes import NameResolutionPass, TypeCheckingPass, SemanticValidationPass
+from a7.stdlib import StdlibRegistry
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
 
@@ -67,7 +67,7 @@ def compile_a7_to_zig(source: str, filename: str = "test.a7") -> str:
         type_map = type_checker.node_types
 
     # Preprocess AST
-    from src.ast_preprocessor import ASTPreprocessor
+    from a7.ast_preprocessor import ASTPreprocessor
     preprocessor = ASTPreprocessor(
         symbol_table=symbol_table,
         type_map=type_map,

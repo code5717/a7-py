@@ -13,13 +13,13 @@ Covers:
 """
 
 import pytest
-from src.tokens import Tokenizer
-from src.parser import Parser
-from src.ast_nodes import ASTNode, LiteralKind, NodeKind
-from src.passes.name_resolution import NameResolutionPass
-from src.passes.type_checker import TypeCheckingPass
-from src.passes.semantic_validator import SemanticValidationPass
-from src.errors import SemanticError, CompilerError
+from a7.tokens import Tokenizer
+from a7.parser import Parser
+from a7.ast_nodes import ASTNode, LiteralKind, NodeKind
+from a7.passes.name_resolution import NameResolutionPass
+from a7.passes.type_checker import TypeCheckingPass
+from a7.passes.semantic_validator import SemanticValidationPass
+from a7.errors import SemanticError, CompilerError
 
 
 def parse_program(source: str):

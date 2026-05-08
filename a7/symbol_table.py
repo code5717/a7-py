@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from typing import Optional, Dict, List, Any
 from enum import Enum, auto
 
-from src.types import Type
-from src.ast_nodes import ASTNode
+from a7.types import Type
+from a7.ast_nodes import ASTNode
 
 
 class SymbolKind(Enum):

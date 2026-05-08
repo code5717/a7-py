@@ -78,6 +78,9 @@ jobs:
       - name: Build Python package
         run: uv build
 
+      - name: Verify Python wheel install
+        run: uv run python scripts/verify_wheel_install.py --skip-build
+
       - name: Upload Python package distributions
         uses: actions/upload-artifact@v7
         with:
@@ -99,7 +102,7 @@ jobs:
         run: tar -czf dist/a7-docs-site.tar.gz -C site dist
 
       - name: Archive release example artifacts
-        run: tar -czf dist/a7-example-artifacts-release.tar.gz -C build release
+        run: tar -czf dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz -C build release
 
       - name: Verify release archive contents
         run: |
@@ -110,7 +113,7 @@ jobs:
             --require dist/docs/agent-usage.md \
             --require dist/docs/release.md \
             --require dist/docs/status.md
-          uv run python scripts/verify_archive_contents.py dist/a7-example-artifacts-release.tar.gz \
+          uv run python scripts/verify_archive_contents.py dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz \
             --require release/zig/src/001_hello.zig \
             --require release/zig/bin/001_hello \
             --require release/c/src/001_hello.c \
@@ -125,7 +128,7 @@ jobs:
             --require "$sdist" \
             --require "$wheel" \
             --require dist/a7-docs-site.tar.gz \
-            --require dist/a7-example-artifacts-release.tar.gz
+            --require dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz
           uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
 
       - name: Generate release artifact attestations
@@ -136,7 +139,7 @@ jobs:
             dist/a7_py-*.tar.gz
             dist/a7_py-*.whl
             dist/a7-docs-site.tar.gz
-            dist/a7-example-artifacts-release.tar.gz
+            dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz
 
       - name: Upload release bundles
         uses: actions/upload-artifact@v7
@@ -145,7 +148,7 @@ jobs:
           path: |
             dist/SHA256SUMS
             dist/a7-docs-site.tar.gz
-            dist/a7-example-artifacts-release.tar.gz
+            dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz
           if-no-files-found: error
           retention-days: 7
 
@@ -189,4 +192,4 @@ jobs:
             dist/a7_py-*.tar.gz
             dist/a7_py-*.whl
             dist/a7-docs-site.tar.gz
-            dist/a7-example-artifacts-release.tar.gz
+            dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz

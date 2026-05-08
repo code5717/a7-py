@@ -34,10 +34,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release manifest verification now supports the flat layout created by
   downloading release assets into one directory beside `SHA256SUMS`, matching
   the documented pre-publish verification flow.
-- Semantic validation now rejects direct and mutual recursion; source programs
-  should use loops, explicit stacks, or index-based worklists instead.
-  The recursion graph respects local function-pointer shadowing, so indirect
-  calls through local variables are not misreported as named recursion.
+- The Python distribution now installs a project-specific `a7` package instead
+  of a generic top-level `src` package, and CI/release jobs smoke-test the built
+  wheel in a clean virtual environment before upload.
+- Native example release archives are explicitly named for their current
+  `linux-x86_64` / Zig 0.15.2 artifact contract.
+- Semantic validation now rejects direct, mutual, and local function-pointer
+  alias recursion; source programs should use loops, explicit stacks, or
+  index-based worklists instead.
+- Index and slice-bound variables now require `usize`; non-negative integer
+  literals remain valid for simple indexing, while signed index variables and
+  negative literals are rejected.
+- `new [N]T` heap fixed arrays now fail closed until the language and both
+  backends define one representation; use stack arrays or slices for now.
+- Type checking now rejects invalid ordering comparisons on non-ordered types
+  and blocks implicit signed-to-unsigned integer assignment except for fitting
+  integer literals.
 - Expanded incomplete runnable examples for function pointers, inline struct
   returns, linked-list traversal, iterative binary-tree traversal, and string
   utilities; tightened example catalog copy where language support is still
@@ -270,13 +282,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `2` usage, `3` I/O, `4` tokenize, `5` parse, `6` semantic, `7` codegen, `8` internal.
   - Added `--doc-out PATH` for markdown reports (pass `auto` for `<file>.md`), including compile+doc in one run.
 
-- **STANDARD LIBRARY REGISTRY** (`src/stdlib/`)
+- **STANDARD LIBRARY REGISTRY** (`a7/stdlib/`)
   - `StdlibRegistry` with `resolve_call()`, `resolve_builtin()`, `get_backend_mapping()`
   - Module definitions: `io` (println, print, eprintln), `math` (sqrt, abs, floor, ceil, sin, cos, etc.)
   - Backend-specific mappings (e.g., `sqrt` → `@sqrt` for Zig)
   - Typed builtin variants: `sqrt_f32`, `abs_f64`, etc.
 
-- **AST NODE ANNOTATIONS** (`src/ast_nodes.py`)
+- **AST NODE ANNOTATIONS** (`a7/ast_nodes.py`)
   - `is_mutable`, `is_used`, `emit_name`, `resolved_type`, `hoisted`, `stdlib_canonical`
   - Populated by preprocessor, read by backends
 
@@ -290,7 +302,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Known gaps are documented in `MISSING_FEATURES.md` and mirrored in docs/site status pages.
 
 - **Error Reporting Contract Tightening**
-  - Removed duplicate human-side codegen failure printing in `src/compile.py`.
+  - Removed duplicate human-side codegen failure printing in `a7/compile.py`.
   - JSON payload now reports `artifacts.output_path` / `artifacts.doc_path` only when files actually exist.
 
 - **Examples Stabilized for E2E Verification**
@@ -302,7 +314,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Division codegen now emits `/` for floating-point operands and keeps `@divTrunc` for integer division.
   - Mutation analysis no longer marks dereference targets as pointer-binding mutations.
 
-- **ENHANCED AST PREPROCESSOR** (`src/ast_preprocessor.py`)
+- **ENHANCED AST PREPROCESSOR** (`a7/ast_preprocessor.py`)
   - Now accepts `symbol_table`, `type_map`, and `StdlibRegistry` from pipeline
   - 9 sub-passes: stdlib resolution, struct init normalization, mutation analysis, usage analysis, type inference, shadowing resolution, nested function hoisting, constant folding
   - All traversals are iterative (no recursion)
@@ -314,7 +326,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **ZIG BACKEND** now reads preprocessor annotations (`emit_name`, `hoisted`, `is_used`, `resolved_type`)
 
-- **ZIG CODE GENERATION BACKEND** (`src/backends/zig.py`, ~1200 LOC)
+- **ZIG CODE GENERATION BACKEND** (`a7/backends/zig.py`, ~1200 LOC)
   - Complete A7 → Zig translation for all AST node types
   - Type mapping: A7 primitives → Zig types, `string` → `[]const u8`, `ref T` → `?*T`
   - Statement mapping: `ret` → `return`, `match` → `switch`, C-style `for` → Zig `while` with continue expression
@@ -324,13 +336,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Smart preamble: only emits `std` import / allocator when needed
   - All 36 example programs compile successfully to Zig
 
-- **AST PREPROCESSING** (`src/ast_preprocessor.py`)
+- **AST PREPROCESSING** (`a7/ast_preprocessor.py`)
   - Runs between semantic analysis and code generation
   - Lowers `.adr`/`.val` sugar to ADDRESS_OF/DEREF nodes
   - Constant folding for literal arithmetic, boolean logic, unary negation
 
 - **MARKDOWN DOCUMENTATION OUTPUT** (`--doc-out` / doc-mode)
-  - `src/formatters/markdown_formatter.py` generates full compilation reports
+  - `a7/formatters/markdown_formatter.py` generates full compilation reports
   - Documents all stages: source code, token table, AST structure, semantic results, generated Zig, summary
   - Usage: `uv run python main.py examples/001_hello.a7 --mode compile --doc-out auto`
 
@@ -372,8 +384,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ♻️ **MAJOR REFACTORING: Modular Output Formatters**
   - Extracted ~600 lines of formatting code from `compile.py` into dedicated modules
-  - **`src/formatters/json_formatter.py`**: JSON output formatting (195 lines)
-  - **`src/formatters/console_formatter.py`**: Rich console display formatting (536 lines)
+  - **`a7/formatters/json_formatter.py`**: JSON output formatting (195 lines)
+  - **`a7/formatters/console_formatter.py`**: Rich console display formatting (536 lines)
   - **Result**: `compile.py` reduced from 964 lines to 310 lines (67% reduction!)
   - Clean separation of concerns: compilation logic vs. output formatting
   - Easier to maintain, test, and extend formatting independently
@@ -387,43 +399,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Semantic errors displayed with rich formatting and source context
 
 - 🎯 **SEMANTIC ANALYSIS INFRASTRUCTURE - Phase 2 Foundation Implemented!**
-  - **Type System** (`src/types.py`): Comprehensive type representation for A7
+  - **Type System** (`a7/types.py`): Comprehensive type representation for A7
     - All type kinds: Primitives, Arrays, Slices, Pointers, References, Functions, Structs, Enums, Unions
     - Generic types: GenericParamType, GenericInstanceType, TypeSet
     - Type compatibility and equality checking
     - Predefined type sets: Numeric, Integer, SignedInt, UnsignedInt, Float
     - Immutable frozen dataclasses for type safety
-  - **Symbol Tables** (`src/symbol_table.py`): Hierarchical scope management
+  - **Symbol Tables** (`a7/symbol_table.py`): Hierarchical scope management
     - Scope nesting with enter/exit operations
     - Symbol registration and lookup
     - Module table for import tracking
     - Support for aliased imports, using imports, and named imports
-  - **Semantic Context** (`src/semantic_context.py`): Analysis state tracking
+  - **Semantic Context** (`a7/semantic_context.py`): Analysis state tracking
     - Function context (current function, return type, generic parameters)
     - Loop context (depth, labels, break/continue tracking)
     - Defer context (deferred expressions and scoping)
     - Control flow validation helpers
-  - **Name Resolution Pass** (`src/passes/name_resolution.py`): First analysis pass
+  - **Name Resolution Pass** (`a7/passes/name_resolution.py`): First analysis pass
     - Builds symbol tables for all scopes
     - Registers all declarations (functions, structs, enums, unions, variables)
     - Detects name collisions and shadowing
     - Handles function parameters, struct fields, enum variants
-  - **Type Checking Pass** (`src/passes/type_checker.py`): Second analysis pass
+  - **Type Checking Pass** (`a7/passes/type_checker.py`): Second analysis pass
     - Type inference for `:=` declarations
     - Expression type checking (binary ops, unary ops, calls, field access)
     - Function signature validation
     - Assignment compatibility checking
     - Struct/enum/union type registration
-  - **Semantic Validation Pass** (`src/passes/semantic_validator.py`): Third analysis pass
+  - **Semantic Validation Pass** (`a7/passes/semantic_validator.py`): Third analysis pass
     - Control flow validation (break/continue in loops)
     - Return statement validation
     - Defer scoping checks
     - Memory management validation (new/del)
-  - **Generic System** (`src/generics.py`): Generic type handling
+  - **Generic System** (`a7/generics.py`): Generic type handling
     - Generic constraints and type sets
     - Type unification for inference
     - Monomorphization infrastructure (placeholder)
-  - **Module Resolver** (`src/module_resolver.py`): Import system
+  - **Module Resolver** (`a7/module_resolver.py`): Import system
     - Module path resolution
     - Circular dependency detection
     - Import statement processing

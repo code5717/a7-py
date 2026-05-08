@@ -58,7 +58,7 @@ export default function Internals() {
             <div key={s.label} className="flow-strip-item">
               <div className="flow-strip-node">
                 <span className="flow-strip-label">{s.label}</span>
-                <code className="flow-strip-file">src/{s.file}</code>
+                <code className="flow-strip-file">a7/{s.file}</code>
               </div>
               {i < dataLabels.length && (
                 <span className="flow-strip-edge">{dataLabels[i]}</span>
@@ -76,17 +76,17 @@ export default function Internals() {
         <DataTable
           headers={['File', 'Role']}
           rows={[
-            [<code className="doc-inline-code" key="t">src/tokens.py</code>, 'Tokenizer — generics ($T), nested comments, all number formats'],
-            [<code className="doc-inline-code" key="p">src/parser.py</code>, 'Recursive descent with precedence climbing'],
-            [<code className="doc-inline-code" key="a">src/ast_nodes.py</code>, 'ASTNode dataclass + NodeKind enum (44 kinds)'],
-            [<code className="doc-inline-code" key="c">src/compile.py</code>, 'Pipeline driver, stage sequencing, exit codes'],
-            [<code className="doc-inline-code" key="e">src/errors.py</code>, '77 error codes, SourceSpan, Rich formatting'],
-            [<code className="doc-inline-code" key="ty">src/types.py</code>, '13 type classes, all frozen/hashable'],
-            [<code className="doc-inline-code" key="pp">src/ast_preprocessor.py</code>, '9 iterative sub-passes annotating AST for backend'],
-            [<code className="doc-inline-code" key="st">src/symbol_table.py</code>, 'Symbol + Scope + ModuleTable (hierarchical lookup)'],
-            [<code className="doc-inline-code" key="bb">src/backends/base.py</code>, 'Abstract backend contract (generate + visit)'],
-            [<code className="doc-inline-code" key="bz">src/backends/zig.py</code>, 'Zig code generator, reads all annotations'],
-            [<code className="doc-inline-code" key="bc">src/backends/c.py</code>, 'C11 code generator, labeled loops via goto, slice structs'],
+            [<code className="doc-inline-code" key="t">a7/tokens.py</code>, 'Tokenizer — generics ($T), nested comments, all number formats'],
+            [<code className="doc-inline-code" key="p">a7/parser.py</code>, 'Recursive descent with precedence climbing'],
+            [<code className="doc-inline-code" key="a">a7/ast_nodes.py</code>, 'ASTNode dataclass + NodeKind enum (44 kinds)'],
+            [<code className="doc-inline-code" key="c">a7/compile.py</code>, 'Pipeline driver, stage sequencing, exit codes'],
+            [<code className="doc-inline-code" key="e">a7/errors.py</code>, '77 error codes, SourceSpan, Rich formatting'],
+            [<code className="doc-inline-code" key="ty">a7/types.py</code>, '13 type classes, all frozen/hashable'],
+            [<code className="doc-inline-code" key="pp">a7/ast_preprocessor.py</code>, '9 iterative sub-passes annotating AST for backend'],
+            [<code className="doc-inline-code" key="st">a7/symbol_table.py</code>, 'Symbol + Scope + ModuleTable (hierarchical lookup)'],
+            [<code className="doc-inline-code" key="bb">a7/backends/base.py</code>, 'Abstract backend contract (generate + visit)'],
+            [<code className="doc-inline-code" key="bz">a7/backends/zig.py</code>, 'Zig code generator, reads all annotations'],
+            [<code className="doc-inline-code" key="bc">a7/backends/c.py</code>, 'C11 code generator, labeled loops via goto, slice structs'],
           ]}
         />
       </SectionPanel>
@@ -103,7 +103,7 @@ export default function Internals() {
             <div>
               <strong>Name resolution</strong>
               <p className="text-tertiary pass-card-copy">Builds SymbolTable with hierarchical scopes</p>
-              <code className="flow-strip-file">src/passes/name_resolution.py</code>
+              <code className="flow-strip-file">a7/passes/name_resolution.py</code>
             </div>
           </div>
           <div className="pass-card">
@@ -111,7 +111,7 @@ export default function Internals() {
             <div>
               <strong>Type checking</strong>
               <p className="text-tertiary pass-card-copy">Inference, checking, produces node_types map</p>
-              <code className="flow-strip-file">src/passes/type_checker.py</code>
+              <code className="flow-strip-file">a7/passes/type_checker.py</code>
             </div>
           </div>
           <div className="pass-card">
@@ -119,7 +119,7 @@ export default function Internals() {
             <div>
               <strong>Semantic validation</strong>
               <p className="text-tertiary pass-card-copy">Control flow, memory, defer, match exhaustiveness</p>
-              <code className="flow-strip-file">src/passes/semantic_validator.py</code>
+              <code className="flow-strip-file">a7/passes/semantic_validator.py</code>
             </div>
           </div>
         </div>

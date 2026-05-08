@@ -60,9 +60,10 @@ Run this before tagging:
 
 ```bash
 ./run_all_tests.sh
-(cd site && npm run build)
+(cd site && npm ci && npm run build)
 rm -rf dist
 uv build
+uv run python scripts/verify_wheel_install.py --skip-build
 uvx pip-audit --strict
 (cd site && npm audit --omit=dev --audit-level=moderate)
 ```
@@ -83,6 +84,8 @@ uvx pip-audit --strict
 - full pytest suite
 
 The Python and docs dependency audits are separate release-gate commands above.
+The wheel install verifier installs the built wheel in a clean virtual
+environment and exercises the installed `a7` entrypoint before release.
 
 To create a local checksum manifest for package files, docs archives, or native
 artifact archives, run:
@@ -125,7 +128,7 @@ uv run python scripts/verify_release_manifest.py SHA256SUMS
 gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
 gh attestation verify a7_py-*.whl --repo code5717/a7-py
 gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
-gh attestation verify a7-example-artifacts-release.tar.gz --repo code5717/a7-py
+gh attestation verify a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz --repo code5717/a7-py
 ```
 
 When building locally, remove `dist/` before `uv build`. The release workflow

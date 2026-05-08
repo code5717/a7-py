@@ -6,9 +6,9 @@ import copy
 import re
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from src.ast_nodes import ASTNode, LiteralKind, NodeKind
-from src.errors import CodegenError
-from src.types import (
+from a7.ast_nodes import ASTNode, LiteralKind, NodeKind
+from a7.errors import CodegenError
+from a7.types import (
     ArrayType,
     FunctionType,
     GenericInstanceType,

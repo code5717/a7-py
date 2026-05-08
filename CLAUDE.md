@@ -12,8 +12,9 @@ agent-readable docs entry points derived from the authoritative docs.
 - Installed CLI entrypoint (after `uv sync`): `uv run a7 <args>`
 - Repository compatibility wrapper: `uv run python main.py <args>`
 
-Both invoke `src.cli:main`. Prefer `uv run a7` to match end-user usage; use
-the `main.py` wrapper when working from a fresh checkout.
+Both invoke `a7.cli:main` (the Python package is `a7/`, not `src/`). Prefer
+`uv run a7` to match end-user usage; use the `main.py` wrapper when working
+from a fresh checkout.
 
 ## Verification Commands
 
@@ -23,7 +24,10 @@ the `main.py` wrapper when working from a fresh checkout.
   `uv run python scripts/build_examples.py --profile release --backend both --clean`
 - Full local release gate: `./run_all_tests.sh`
 - Package build: `uv build`
-- Docs site build: `cd site && npm install && npm run build`
+- Wheel install smoke test (clean venv):
+  `uv run python scripts/verify_wheel_install.py` (CI/release jobs run this
+  with `--skip-build` after `uv build`)
+- Docs site build: `cd site && npm ci && npm run build`
 - Agent/curl.md docs preview: `cd site && npm run build && npm run preview`
   then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
   `/a7-py/docs/index.md`.
@@ -40,12 +44,24 @@ navigation when docs structure changes.
 
 ## A7 Source Rules
 
-- A7 source recursion is banned. Semantic validation rejects both direct and
-  mutual recursion as compile-time errors; do not introduce examples, tests,
-  or docs that rely on recursive A7 functions.
+- A7 source recursion is banned. Semantic validation rejects direct, mutual,
+  and local function-pointer alias-cycle recursion as compile-time errors;
+  do not introduce examples, tests, or docs that rely on recursive A7
+  functions.
 - Prefer loops, explicit stacks, or index-based worklists when porting
   recursive algorithms (see `examples/025_linked_list.a7`,
   `examples/026_binary_tree.a7`).
+- Use `usize` for sizes, lengths, capacities, and array/slice/string
+  indices. Index and slice-bound variables must be `usize`; non-negative
+  integer literals are still accepted for simple indexing. Reserve `isize`
+  for signed pointer-sized offsets and position differences only; it is
+  not the default signed integer type.
+- `new [N]T` (heap fixed arrays) is currently rejected by the compiler. Use
+  stack arrays (`buf: [N]T`) or slices in examples, tests, and docs until
+  the language model is defined.
+- Native release archives are named with platform/toolchain context
+  (`a7-example-artifacts-linux-x86_64-zig0.15.2-<profile>.tar.gz`); keep
+  any docs or scripts that reference these filenames in sync.
 - This rule applies to A7 source only. Compiler internals already use
   iterative AST traversals; keep them that way.
 

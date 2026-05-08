@@ -8,10 +8,10 @@ import random
 import string
 import itertools
 from typing import List, Optional
-from src.parser import Parser
-from src.tokens import Tokenizer, Token, TokenType
-from src.errors import ParseError, TokenizerError
-from src.ast_nodes import NodeKind
+from a7.parser import Parser
+from a7.tokens import Tokenizer, Token, TokenType
+from a7.errors import ParseError, TokenizerError
+from a7.ast_nodes import NodeKind
 
 
 class RandomCodeGenerator:

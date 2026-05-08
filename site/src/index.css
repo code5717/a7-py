@@ -2505,14 +2505,6 @@ img {
 }
 
 @media (max-width: 560px) {
-  .site-search {
-    display: none;
-  }
-
-  .theme-toggle {
-    display: none;
-  }
-
   .doc-chip-button {
     padding: 6px 9px;
     font-size: 0.7rem;

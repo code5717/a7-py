@@ -113,23 +113,28 @@ class PrimitiveType(Type):
         if self.name == target.name:
             return True
 
-        # Allow numeric type conversions
-        # Note: In a production compiler, narrowing conversions should generate warnings
         signed_ints = {'i8', 'i16', 'i32', 'i64', 'isize'}
         unsigned_ints = {'u8', 'u16', 'u32', 'u64', 'usize'}
         floats = {'f32', 'f64'}
-        all_integers = signed_ints | unsigned_ints
 
-        # Allow conversions within integer types (signed or unsigned)
-        if self.name in all_integers and target.name in all_integers:
-            return True
+        if self.name in signed_ints and target.name in signed_ints:
+            rank = {'i8': 1, 'i16': 2, 'i32': 3, 'isize': 4, 'i64': 5}
+            return rank[target.name] >= rank[self.name]
 
-        # Allow conversions within float types
+        if self.name in unsigned_ints and target.name in unsigned_ints:
+            rank = {'u8': 1, 'u16': 2, 'u32': 3, 'usize': 4, 'u64': 5}
+            return rank[target.name] >= rank[self.name]
+
+        if self.name in unsigned_ints and target.name in signed_ints:
+            unsigned_bits = {'u8': 8, 'u16': 16, 'u32': 32, 'usize': 64, 'u64': 64}
+            signed_bits = {'i8': 8, 'i16': 16, 'i32': 32, 'isize': 64, 'i64': 64}
+            return signed_bits[target.name] > unsigned_bits[self.name]
+
         if self.name in floats and target.name in floats:
-            return True
+            rank = {'f32': 1, 'f64': 2}
+            return rank[target.name] >= rank[self.name]
 
-        # Allow integer to float conversion
-        if self.name in all_integers and target.name in floats:
+        if (self.name in signed_ints or self.name in unsigned_ints) and target.name in floats:
             return True
 
         return False

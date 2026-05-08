@@ -20,7 +20,7 @@ import tempfile
 
 import pytest
 
-from src.compile import A7Compiler
+from a7.compile import A7Compiler
 
 
 # ---------------------------------------------------------------------------

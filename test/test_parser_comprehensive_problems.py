@@ -7,9 +7,9 @@ missing language constructs.
 """
 
 import pytest
-from src.parser import parse_a7
-from src.errors import ParseError
-from src.ast_nodes import NodeKind, LiteralKind
+from a7.parser import parse_a7
+from a7.errors import ParseError
+from a7.ast_nodes import NodeKind, LiteralKind
 
 
 class TestIncompleteExpressionHandling:

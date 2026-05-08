@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.compile import ExitCode
+from a7.compile import ExitCode
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

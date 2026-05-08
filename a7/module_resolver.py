@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 
-from src.ast_nodes import ASTNode, NodeKind
-from src.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
-from src.errors import SemanticError
-from src.stdlib import StdlibRegistry
-from src.types import UNKNOWN
+from a7.ast_nodes import ASTNode, NodeKind
+from a7.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
+from a7.errors import SemanticError
+from a7.stdlib import StdlibRegistry
+from a7.types import UNKNOWN
 
 
 @dataclass
@@ -131,8 +131,8 @@ class ModuleResolver:
                 source = f.read()
 
             # Tokenize and parse
-            from src.tokens import Tokenizer
-            from src.parser import Parser
+            from a7.tokens import Tokenizer
+            from a7.parser import Parser
 
             tokenizer = Tokenizer(source, file_path)
             tokens = tokenizer.tokenize()
@@ -141,7 +141,7 @@ class ModuleResolver:
             ast = parser.parse()
 
             # Run name resolution to build symbol table
-            from src.passes.name_resolution import NameResolutionPass
+            from a7.passes.name_resolution import NameResolutionPass
             name_pass = NameResolutionPass()
             name_pass.analyze(ast, file_path)
             symbols = name_pass.symbols

@@ -147,11 +147,11 @@ Source (.a7) → Tokenizer → Parser → Semantic Analysis (3-pass) → AST Pre
 4. **AST Preprocessing**. Runs 9 sub-passes: sugar lowering, stdlib resolution, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
 5. **Backend Code Generation**. Translates AST to valid Zig or C source code.
 
-All AST traversals are iterative with no recursion. A7 source recursion is also rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead. The pipeline works with Python's recursion limit set to 100.
+All AST traversals are iterative with no recursion. A7 source recursion, including common local function-pointer alias cycles, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead. The pipeline works with Python's recursion limit set to 100.
 
 ## Integer Type Guidance
 
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the only pointer-sized integer that should appear in memory shape APIs, and it maps to `usize` in Zig and `size_t` in C.
+Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. Index and slice-bound variables are required to be `usize`; non-negative integer literals are accepted for simple indexing. `usize` maps to `usize` in Zig and `size_t` in C.
 
 Use `isize` only when the value is a signed pointer-sized offset or a difference between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
 
@@ -164,7 +164,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
 - **Function Rules**: Direct and mutual recursion are semantic errors
 - **Expressions**: All operators with proper precedence, casts, if-expressions, struct/array literals, untagged union field literals/access
-- **Memory**: Property-based pointer syntax (`.adr`, `.val`), new/delete, defer cleanup
+- **Memory**: Property-based pointer syntax (`.adr`, `.val`), scalar/struct `new` and `del`, defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the language model is defined.
 - **Imports**: Module system with named imports, using imports, aliased imports
 - **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, and simple top-level generic function calls in both backends
 - **Code Generation**: A7 → Zig and A7 → C backends

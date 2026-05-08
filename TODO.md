@@ -24,27 +24,27 @@ These are bugs and schema mismatches in already-implemented features.
   Notes: the direct prompt now treats PR titles, bodies, comments, and diffs as untrusted content to review.
 
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
-  Files: `src/passes/type_checker.py`, `src/passes/semantic_validator.py`
+  Files: `a7/passes/type_checker.py`, `a7/passes/semantic_validator.py`
   Notes: fixed; deferred `statement` payloads are now traversed by type checking and semantic validation, with regression coverage.
 
 - [x] Fix the `return` AST schema mismatch in semantic validation.
-  Files: `src/passes/semantic_validator.py`
+  Files: `a7/passes/semantic_validator.py`
   Notes: fixed; semantic validation now traverses `value`, with a schema regression test.
 
 - [x] Fail closed for `fall` until fallthrough lowering is designed.
-  Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`
+  Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`
   Notes: `NodeKind.FALL` now produces a semantic error and both backends raise `CodegenError` if it reaches codegen. Full fallthrough lowering remains a future language-design item.
 
 - [x] Replace Zig backend `@compileError("unsupported: ...")` fallbacks with compiler-side codegen errors.
-  Files: `src/backends/zig.py`
+  Files: `a7/backends/zig.py`
   Notes: unsupported expression nodes now raise `CodegenError` during A7 compilation.
 
 - [x] Stop C slice/iteration lowering from re-evaluating side-effectful expressions.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: `for-in` and indexed `for-in` now cache array/slice iterable expressions in a generated local before loop length and element access.
 
 - [x] Reject non-iterables in `for-in` and indexed `for-in` during type checking.
-  Files: `src/passes/type_checker.py`
+  Files: `a7/passes/type_checker.py`
   Notes: fixed; array, slice, and string remain accepted iterables, while scalar iterables now produce a type diagnostic.
 
 ---
@@ -56,15 +56,15 @@ Features that are spec'd and partially implemented, or missing from one backend.
 ### Type System / Semantics
 
 - [x] Add source-language support for `slice.ptr` / `slice.len`.
-  Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`
+  Files: `a7/passes/type_checker.py`, `a7/backends/c.py`, `a7/backends/zig.py`
   Notes: slice field access now type-checks `ptr` as `ptr T` and `len` as `usize`; C lowers `ptr` to the slice data field and `len` to the slice length field, while Zig uses native slice fields.
 
 - [x] Implement string slicing (`string[2..5]`).
-  Files: `src/passes/type_checker.py`, `src/backends/c.py`, `src/backends/zig.py`
+  Files: `a7/passes/type_checker.py`, `a7/backends/c.py`, `a7/backends/zig.py`
   Notes: string slicing now type-checks as `[]char`; Zig lowers to native byte slicing and C lowers to the existing slice struct representation, using `strlen` for open-ended slices.
 
 - [x] Implement generic constraint resolution beyond placeholder level.
-  Files: `src/generics.py`
+  Files: `a7/generics.py`
   Notes: predefined constraints, local `@type_set(...)` aliases, and inline `@type_set(...)` constraints now resolve; generic function declarations remain callable from the outer scope and inferred call arguments are checked against declared constraints.
 
 - [x] Add exact match pattern redundancy diagnostics.
@@ -80,51 +80,51 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Notes: range overlap checks do not reason about runtime symbolic intervals.
 
 - [ ] Define and implement true variable-binding match patterns.
-  Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`
+  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`
   Notes: plain identifier patterns currently refer to existing symbols; binding/capture semantics are not implemented.
 
 ### C Backend Parity
 
 - [x] C backend: side-effect-free `match` expressions.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: literal, enum, range, and wildcard patterns now lower to chained conditional expressions when the scrutinee is side-effect-free.
 
 - [x] C backend: side-effectful `match` expression scrutinees in variable initializers.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: variable initializers now cache the scrutinee in a generated local before assigning the lowered conditional result.
 
 - [x] C backend: side-effectful `match` expression scrutinees in non-declaration expression contexts.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: return values, assignments, variable initializer subexpressions, function arguments, and I/O arguments now lower through generated result temps and branch chains.
 
 - [x] C backend: range patterns in match statements.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: match statements with range patterns now lower to portable `if` chains with a cached scrutinee.
 
 - [x] C backend: existing-identifier match patterns.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: existing identifiers in match patterns now lower as comparisons in C match statements and expressions.
 
 - [x] C backend: raw function-typed parameter and variable declarations.
-  Files: `src/backends/c.py`
+  Files: `a7/backends/c.py`
   Notes: raw `fn(...)` parameter and variable declarations now emit C function-pointer declarators.
 
 - [x] Function-type aliases in semantic analysis and C lowering.
-  Files: `src/passes/type_checker.py`, `src/backends/c.py`
+  Files: `a7/passes/type_checker.py`, `a7/backends/c.py`
   Notes: aliases such as `BinaryOp :: fn(i32, i32) i32` now resolve to `FunctionType` in semantic analysis and lower as C typedefs.
 
 ### Module System / Stdlib
 
 - [x] Implement or de-scope `string` and `mem` stdlib modules.
-  Files: `src/stdlib/string.py`, `src/stdlib/mem.py`, `src/stdlib/__init__.py`
+  Files: `a7/stdlib/string.py`, `a7/stdlib/mem.py`, `a7/stdlib/__init__.py`
   Notes: de-scoped from current release docs. SPEC now marks `std/string`, `std/mem`, and `std/collections` as planned, while current virtual stdlib support is limited to `io` and `math`.
 
 - [x] Stop treating import/module loading as best-effort.
-  Files: `src/compile.py`, `src/module_resolver.py`
+  Files: `a7/compile.py`, `a7/module_resolver.py`
   Notes: fixed for local file-based imports; missing or broken dependencies now fail as semantic errors while virtual stdlib imports remain supported.
 
 - [x] Unify built-in stdlib imports with file-based module resolution.
-  Files: `src/module_resolver.py`, `src/passes/name_resolution.py`, `src/stdlib/__init__.py`
+  Files: `a7/module_resolver.py`, `a7/passes/name_resolution.py`, `a7/stdlib/__init__.py`
   Notes: `std/io`, `io`, `std/math`, and `math` are virtual built-ins registered through `ModuleResolver`/`ModuleTable`; backend lowering now uses the import path rather than requiring aliases named `io` or `math`.
 
 - [x] Reconcile examples and docs with the actual stdlib surface.
@@ -153,15 +153,15 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Notes: `Vec(i32).push(x)` should infer `x: i32` without annotation.
 
 - [ ] Complete C backend generic lowering.
-  Files: `src/passes/generic_lowering.py`, `src/backends/c.py`, `src/generics.py`, `examples/014_generics.a7`
+  Files: `a7/passes/generic_lowering.py`, `a7/backends/c.py`, `a7/generics.py`, `examples/014_generics.a7`
   Notes: simple top-level generic functions are monomorphized before C codegen; remaining work includes generic structs, nested/composite specializations, and propagation through call chains.
 
 - [x] Complete untagged runtime union construction and field access.
-  Files: `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`, `examples/016_unions.a7`
+  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `examples/016_unions.a7`
   Notes: `Type{field: value}` literals now require exactly one named field and field access resolves declared union fields in both backends.
 
 - [ ] Design and implement tagged union tag workflows.
-  Files: `src/parser.py`, `src/passes/type_checker.py`, `src/backends/zig.py`, `src/backends/c.py`, `docs/SPEC.md`
+  Files: `a7/parser.py`, `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `docs/SPEC.md`
   Notes: `union(tag)` is reserved in the specification, but tag inspection and discriminated-state-safe workflows are not implemented yet.
 
 - [x] Validate return-type consistency across all branches.
@@ -170,8 +170,20 @@ Features that are spec'd and partially implemented, or missing from one backend.
 - [x] Flag dead code after unconditional return/break/continue.
   Notes: semantic validation now rejects block-local statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
 
-- [x] Reject direct and mutual recursion during semantic validation.
-  Notes: A7 source must use loops, explicit stacks, or index-based worklists for repeated work.
+- [x] Reject direct, mutual, and local function-pointer alias recursion during semantic validation.
+  Notes: A7 source must use loops, explicit stacks, or index-based worklists for repeated work; local aliases like `again := current_fn` are treated conservatively.
+
+- [x] Require `usize` for index and slice-bound variables.
+  Files: `a7/passes/type_checker.py`, examples using indexed array loops
+  Notes: non-negative integer literals remain accepted for simple indexing; signed variables and negative literals are rejected.
+
+- [x] Fail closed for heap fixed arrays until the representation is designed.
+  Files: `a7/passes/type_checker.py`, `docs/SPEC.md`
+  Notes: `new [N]T` is rejected instead of lowering inconsistently across Zig and C.
+
+- [x] Tighten comparison and integer-assignment type safety.
+  Files: `a7/types.py`, `a7/passes/type_checker.py`
+  Notes: invalid ordering comparisons are rejected and signed variables no longer implicitly assign to unsigned integer types.
 
 - [x] Check exhaustiveness of match statements.
   Notes: bool and enum match statements/expressions now require exhaustive coverage unless an else or wildcard branch is present. Exact duplicate patterns and unreachable branches after wildcard or full bool/enum coverage are diagnosed separately.
@@ -282,12 +294,16 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `.github/workflows/`
   Notes: `release.yml` creates a draft GitHub release for `v*` tags with Python package artifacts, docs site archive, and release example artifacts. Manual dispatch validates the release gate and artifact build without creating a release. Release permissions are split so only the tag-only draft release job gets `contents: write`.
 
+- [x] Smoke-test the built wheel as the shipped artifact.
+  Files: `scripts/verify_wheel_install.py`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `pyproject.toml`
+  Notes: the Python package now installs as top-level package `a7`, and CI/release install the built wheel into a clean virtual environment before upload.
+
 - [ ] Decide whether to add package-registry publishing.
   Files: `.github/workflows/`
   Notes: the current release workflow builds Python distributions and attaches them to draft GitHub releases, but does not publish to a package registry.
 
 - [ ] Design and implement `fall` lowering.
-  Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`, `docs/SPEC.md`
+  Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `docs/SPEC.md`
   Notes: current behavior is fail-closed; supporting fallthrough needs explicit semantics and backend lowering, especially for Zig.
 
 ---
@@ -295,7 +311,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 ## Parser / Tokenizer Debt
 
 - [x] Implement tokenizer validation for invalid escape sequences.
-  Files: `src/tokens.py`, `src/ast_nodes.py`, `src/backends/zig.py`
+  Files: `a7/tokens.py`, `a7/ast_nodes.py`, `a7/backends/zig.py`
   Notes: string literals now reject unknown escapes and malformed `\xHH` escapes during tokenization, decode valid escapes into AST literal values, and re-emit escaped backend string literals.
 
 - [x] Clean up stale "not yet implemented" comments in parser tests.

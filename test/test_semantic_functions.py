@@ -13,12 +13,12 @@ Covers:
 """
 
 import pytest
-from src.tokens import Tokenizer
-from src.parser import Parser
-from src.passes.name_resolution import NameResolutionPass
-from src.passes.type_checker import TypeCheckingPass
-from src.passes.semantic_validator import SemanticValidationPass
-from src.errors import SemanticError, CompilerError
+from a7.tokens import Tokenizer
+from a7.parser import Parser
+from a7.passes.name_resolution import NameResolutionPass
+from a7.passes.type_checker import TypeCheckingPass
+from a7.passes.semantic_validator import SemanticValidationPass
+from a7.errors import SemanticError, CompilerError
 
 
 def parse_program(source: str):
@@ -405,6 +405,48 @@ class TestRecursionBan:
         }
         """
         assert expect_success(source)
+
+    def test_function_pointer_alias_recursion_is_rejected(self):
+        """A function cannot recurse through a local function pointer alias."""
+        source = """
+        countdown :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            again := countdown
+            ret again(n - 1)
+        }
+
+        main :: fn() {
+            result := countdown(3)
+        }
+        """
+        assert expect_error(source, "recursion")
+
+    def test_mutual_function_pointer_alias_recursion_is_rejected(self):
+        """Mutual recursion through aliases is still a recursion cycle."""
+        source = """
+        left :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            next := right
+            ret next(n - 1)
+        }
+
+        right :: fn(n: i32) i32 {
+            if n <= 0 {
+                ret 0
+            }
+            next := left
+            ret next(n - 1)
+        }
+
+        main :: fn() {
+            result := left(3)
+        }
+        """
+        assert expect_error(source, "recursion")
 
 
 class TestFunctionPointers:

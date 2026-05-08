@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Set
 from enum import Enum, auto
 
-from src.types import Type, GenericParamType
-from src.ast_nodes import ASTNode
+from a7.types import Type, GenericParamType
+from a7.ast_nodes import ASTNode
 
 
 class ContextKind(Enum):

@@ -2,7 +2,7 @@
 import re
 
 # Read the file
-with open("src/types.py", "r") as f:
+with open("a7/types.py", "r") as f:
     content = f.read()
 
 # Remove all __post_init__ methods and replace with __init__

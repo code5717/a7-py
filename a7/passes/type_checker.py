@@ -6,11 +6,11 @@ Performs type inference, type checking, and type compatibility validation.
 
 from typing import Any, Optional, List, Dict, Set, Tuple
 
-from src.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, LiteralKind
-from src.symbol_table import SymbolTable, Symbol, SymbolKind
-from src.semantic_context import SemanticContext
-from src.generics import resolve_generic_constraint
-from src.types import (
+from a7.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, LiteralKind
+from a7.symbol_table import SymbolTable, Symbol, SymbolKind
+from a7.semantic_context import SemanticContext
+from a7.generics import resolve_generic_constraint
+from a7.types import (
     Type, TypeKind,
     PrimitiveType, ArrayType, SliceType, PointerType, ReferenceType,
     FunctionType, StructType, StructField, EnumType, EnumVariant,
@@ -21,8 +21,8 @@ from src.types import (
     VOID, UNKNOWN, NUMERIC, INTEGER,
     get_primitive_type, get_predefined_type_set
 )
-from src.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
-from src.stdlib import StdlibRegistry
+from a7.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
+from a7.stdlib import StdlibRegistry
 
 
 class TypeCheckingPass:
@@ -1136,6 +1136,13 @@ class TypeCheckingPass:
 
         # Comparison operators: ==, !=, <, <=, >, >=
         elif op in {BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE}:
+            if not self._types_are_comparable(left_type, right_type, ordering=op not in {BinaryOp.EQ, BinaryOp.NE}):
+                self.add_type_error(
+                    TypeErrorType.OPERATOR_TYPE_MISMATCH,
+                    node.span,
+                    context=f"{op.name.lower()} between {left_type} and {right_type}",
+                )
+                return UNKNOWN
             return BOOL
 
         # Logical operators: and, or
@@ -1413,8 +1420,8 @@ class TypeCheckingPass:
         obj_type = self.visit_expression(node.object) if node.object else UNKNOWN
         index_type = self.visit_expression(node.index) if node.index else UNKNOWN
 
-        if node.index and not index_type.is_integral():
-            self.add_type_error(TypeErrorType.INDEX_NOT_INTEGER, node.index.span, got_type=str(index_type))
+        if node.index:
+            self._validate_index_bound(node.index, index_type)
 
         if isinstance(obj_type, ArrayType):
             return obj_type.element_type
@@ -1432,13 +1439,11 @@ class TypeCheckingPass:
 
         if node.start:
             start_type = self.visit_expression(node.start)
-            if not start_type.is_integral():
-                self.add_type_error(TypeErrorType.INDEX_NOT_INTEGER, node.start.span, got_type=str(start_type))
+            self._validate_index_bound(node.start, start_type)
 
         if node.end:
             end_type = self.visit_expression(node.end)
-            if not end_type.is_integral():
-                self.add_type_error(TypeErrorType.INDEX_NOT_INTEGER, node.end.span, got_type=str(end_type))
+            self._validate_index_bound(node.end, end_type)
 
         if isinstance(obj_type, ArrayType):
             return SliceType(obj_type.element_type)
@@ -1449,6 +1454,26 @@ class TypeCheckingPass:
 
         self.add_type_error(TypeErrorType.REQUIRES_ARRAY_OR_SLICE, node.span, got_type=str(obj_type))
         return UNKNOWN
+
+    def _validate_index_bound(self, node: ASTNode, index_type: Type) -> None:
+        """Require indexes and slice bounds to be usize or non-negative literals."""
+        if isinstance(index_type, PrimitiveType) and index_type.name == "usize":
+            return
+        if self._is_non_negative_integer_literal(node):
+            return
+        self.add_type_error(
+            TypeErrorType.INDEX_NOT_INTEGER,
+            node.span,
+            got_type=f"{index_type}; expected usize",
+        )
+
+    def _is_non_negative_integer_literal(self, node: ASTNode) -> bool:
+        return (
+            node.kind == NodeKind.LITERAL
+            and node.literal_kind == LiteralKind.INTEGER
+            and isinstance(node.literal_value, int)
+            and node.literal_value >= 0
+        )
 
     def visit_field_access(self, node: ASTNode) -> Type:
         """Visit a field access expression."""
@@ -2049,7 +2074,13 @@ class TypeCheckingPass:
                 if (
                     endpoint_type.kind != TypeKind.UNKNOWN
                     and scrutinee_type.kind != TypeKind.UNKNOWN
-                    and not endpoint_type.is_assignable_to(scrutinee_type)
+                    and not self._is_initializer_assignable_to(
+                        endpoint,
+                        endpoint_type,
+                        scrutinee_type,
+                        endpoint.span,
+                        context="Range pattern endpoint type mismatch",
+                    )
                 ):
                     self.add_type_error(
                         TypeErrorType.TYPE_MISMATCH,
@@ -2064,7 +2095,13 @@ class TypeCheckingPass:
         if (
             pattern_type.kind != TypeKind.UNKNOWN
             and scrutinee_type.kind != TypeKind.UNKNOWN
-            and not pattern_type.is_assignable_to(scrutinee_type)
+            and not self._is_initializer_assignable_to(
+                self._pattern_value_node(pattern),
+                pattern_type,
+                scrutinee_type,
+                pattern.span,
+                context="Match pattern type mismatch",
+            )
         ):
             self.add_type_error(
                 TypeErrorType.TYPE_MISMATCH,
@@ -2086,6 +2123,11 @@ class TypeCheckingPass:
             return ("enum", pattern.variant)
 
         return (None, None)
+
+    def _pattern_value_node(self, pattern: ASTNode) -> ASTNode:
+        if pattern.kind == NodeKind.PATTERN_LITERAL and pattern.literal:
+            return pattern.literal
+        return pattern
 
     def _resolve_pattern_type(self, pattern: ASTNode, scrutinee_type: Type) -> Type:
         """Resolve the semantic type of a pattern node."""
@@ -2332,8 +2374,59 @@ class TypeCheckingPass:
                 span,
                 context,
             )
+        if isinstance(expected_type, PrimitiveType):
+            literal_value = self._integer_literal_value(value_node)
+            if literal_value is not None:
+                return self._integer_literal_fits_type(literal_value, expected_type)
+            if self._is_float_literal(value_node) and expected_type.name in {'f32', 'f64'}:
+                return True
 
         return actual_type.is_assignable_to(expected_type)
+
+    def _integer_literal_value(self, value_node: Optional[ASTNode]) -> Optional[int]:
+        if value_node is None:
+            return None
+        if (
+            value_node.kind == NodeKind.LITERAL
+            and value_node.literal_kind == LiteralKind.INTEGER
+            and isinstance(value_node.literal_value, int)
+        ):
+            return value_node.literal_value
+        if (
+            value_node.kind == NodeKind.UNARY
+            and value_node.operator == UnaryOp.NEG
+            and value_node.operand
+            and value_node.operand.kind == NodeKind.LITERAL
+            and value_node.operand.literal_kind == LiteralKind.INTEGER
+            and isinstance(value_node.operand.literal_value, int)
+        ):
+            return -value_node.operand.literal_value
+        return None
+
+    def _integer_literal_fits_type(self, value: int, target: PrimitiveType) -> bool:
+        ranges = {
+            'i8': (-(2**7), 2**7 - 1),
+            'i16': (-(2**15), 2**15 - 1),
+            'i32': (-(2**31), 2**31 - 1),
+            'i64': (-(2**63), 2**63 - 1),
+            'isize': (-(2**63), 2**63 - 1),
+            'u8': (0, 2**8 - 1),
+            'u16': (0, 2**16 - 1),
+            'u32': (0, 2**32 - 1),
+            'u64': (0, 2**64 - 1),
+            'usize': (0, 2**64 - 1),
+        }
+        if target.name in ranges:
+            lo, hi = ranges[target.name]
+            return lo <= value <= hi
+        return target.name in {'f32', 'f64'}
+
+    def _is_float_literal(self, value_node: Optional[ASTNode]) -> bool:
+        return (
+            value_node is not None
+            and value_node.kind == NodeKind.LITERAL
+            and value_node.literal_kind == LiteralKind.FLOAT
+        )
 
     def _check_array_initializer_assignable(
         self,
@@ -2373,7 +2466,13 @@ class TypeCheckingPass:
                     ok = False
                 continue
 
-            if not actual_element_type.is_assignable_to(expected_type.element_type):
+            if not self._is_initializer_assignable_to(
+                element,
+                actual_element_type,
+                expected_type.element_type,
+                element.span,
+                context=f"{context} element {index}",
+            ):
                 self.add_type_error(
                     TypeErrorType.TYPE_MISMATCH,
                     element.span,
@@ -2389,6 +2488,14 @@ class TypeCheckingPass:
         """Visit a new expression."""
         # new T returns ref T
         alloc_type = self.resolve_type_node(node.target_type) if node.target_type else UNKNOWN
+        if isinstance(alloc_type, ArrayType):
+            self.add_type_error(
+                TypeErrorType.TYPE_MISMATCH,
+                node.span,
+                expected_type="scalar or struct allocation",
+                got_type=str(alloc_type),
+                context="new [N]T heap arrays are not implemented; use a stack array or slice an existing array",
+            )
         return ReferenceType(referent_type=alloc_type)
 
     # Generic/type helpers
@@ -2398,6 +2505,15 @@ class TypeCheckingPass:
 
     def _is_integral_compatible(self, type_: Type) -> bool:
         return type_.is_integral() or isinstance(type_, (GenericParamType, UnknownType))
+
+    def _types_are_comparable(self, left: Type, right: Type, *, ordering: bool) -> bool:
+        if isinstance(left, (GenericParamType, UnknownType)) or isinstance(right, (GenericParamType, UnknownType)):
+            return True
+        if ordering:
+            return self._is_numeric_compatible(left) and self._is_numeric_compatible(right)
+        if left.equals(right):
+            return True
+        return self._is_numeric_compatible(left) and self._is_numeric_compatible(right)
 
     def _collect_generic_type_names(self, type_: Type, out: List[str]) -> None:
         """Collect GenericParamType names reachable from a semantic Type object."""

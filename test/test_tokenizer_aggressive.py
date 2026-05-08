@@ -7,8 +7,8 @@ and potential tokenizer vulnerabilities that could break or confuse the parser.
 
 import pytest
 from typing import List
-from src.tokens import Tokenizer, TokenType
-from src.errors import TokenizerError
+from a7.tokens import Tokenizer, TokenType
+from a7.errors import TokenizerError
 
 
 class TestTokenizerAggressive:

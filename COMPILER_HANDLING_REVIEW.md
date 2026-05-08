@@ -4,11 +4,11 @@ Date: 2026-05-07
 
 Scope reviewed:
 
-- `src/parser.py`
-- `src/ast_preprocessor.py`
-- `src/passes/type_checker.py`
-- `src/passes/semantic_validator.py`
-- `src/errors.py`
+- `a7/parser.py`
+- `a7/ast_preprocessor.py`
+- `a7/passes/type_checker.py`
+- `a7/passes/semantic_validator.py`
+- `a7/errors.py`
 - `scripts/verify_error_stages.py`
 - parser, semantic, preprocessor, and error-stage tests under `test/`
 
@@ -50,8 +50,8 @@ The semantic passes were still looking at `expression` in places. That let defer
 
 Changed:
 
-- `src/passes/type_checker.py`
-- `src/passes/semantic_validator.py`
+- `a7/passes/type_checker.py`
+- `a7/passes/semantic_validator.py`
 
 Added coverage:
 
@@ -65,7 +65,7 @@ Added coverage:
 
 Changed:
 
-- `src/passes/type_checker.py`
+- `a7/passes/type_checker.py`
 
 Added coverage:
 
@@ -88,7 +88,7 @@ It deliberately does not fold:
 
 Changed:
 
-- `src/ast_preprocessor.py`
+- `a7/ast_preprocessor.py`
 
 Added coverage:
 
@@ -103,7 +103,7 @@ Several `SemanticErrorType` values existed but had no concrete message/advice ma
 
 Changed:
 
-- `src/errors.py`
+- `a7/errors.py`
 
 Added coverage:
 

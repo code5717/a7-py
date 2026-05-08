@@ -9,7 +9,7 @@ Scope reviewed:
 - `README.md`
 - `MISSING_FEATURES.md`
 - `TODO.md`
-- compiler source under `src/`
+- compiler source under `a7/`
 - current local verification commands
 - official references for comparable language-design surfaces
 
@@ -122,8 +122,8 @@ Evidence:
 - Current local test run is `1024 passed, 50 skipped`.
 - `README.md:100-106` says parser is 100% complete for the A7 specification, Zig backend handles all AST node types, and C backend is validated with `zig cc`.
 - `TODO.md:20-34`, `TODO.md:44-63`, and `TODO.md:73-100` list major missing or partial features.
-- `src/backends/c.py:1007-1008` raises `CodegenError("C backend: match expressions are not implemented")`.
-- `src/backends/zig.py:1017-1018` can emit `@compileError("unsupported: ...")` instead of failing compiler-side.
+- `a7/backends/c.py:1007-1008` raises `CodegenError("C backend: match expressions are not implemented")`.
+- `a7/backends/zig.py:1017-1018` can emit `@compileError("unsupported: ...")` instead of failing compiler-side.
 
 Impact:
 
@@ -196,9 +196,9 @@ The parser stores deferred work in `statement`, but both semantic passes read `e
 
 Evidence:
 
-- `src/parser.py:2255-2264` creates `NodeKind.DEFER` with `statement=statement`.
-- `src/passes/semantic_validator.py:257-267` checks `node.expression`.
-- `src/passes/type_checker.py:658-660` checks `nd.expression`.
+- `a7/parser.py:2255-2264` creates `NodeKind.DEFER` with `statement=statement`.
+- `a7/passes/semantic_validator.py:257-267` checks `node.expression`.
+- `a7/passes/type_checker.py:658-660` checks `nd.expression`.
 - `TODO.md:12-14` already calls this out.
 
 Impact:
@@ -215,10 +215,10 @@ The parser stores return payloads in `value`, and the type checker correctly rea
 
 Evidence:
 
-- `src/parser.py:953-959` calls `create_return_stmt(value, ...)`.
-- `src/ast_nodes.py:389-391` stores `value=value`.
-- `src/passes/type_checker.py:854-859` correctly reads `node.value`.
-- `src/passes/semantic_validator.py:244-255` reads `node.expression`.
+- `a7/parser.py:953-959` calls `create_return_stmt(value, ...)`.
+- `a7/ast_nodes.py:389-391` stores `value=value`.
+- `a7/passes/type_checker.py:854-859` correctly reads `node.value`.
+- `a7/passes/semantic_validator.py:244-255` reads `node.expression`.
 - `TODO.md:16-18` lists this as open.
 
 Impact:
@@ -233,7 +233,7 @@ Change semantic validation to traverse `node.value` and add a regression test th
 
 Evidence:
 
-- `src/parser.py:981-986` parses `fall` into `NodeKind.FALL`.
+- `a7/parser.py:981-986` parses `fall` into `NodeKind.FALL`.
 - `TODO.md:20-22` says semantic validation and backend lowering are pending.
 - `MISSING_FEATURES.md:29-30` says the same.
 - `docs/SPEC.md:538` and `docs/SPEC.md:1791` mention that full behavior is still being finalized.
@@ -254,8 +254,8 @@ Evidence:
 
 - `docs/SPEC.md:254-266` documents array and slice properties.
 - `docs/SPEC.md:583` shows `for char in string[2..5]`.
-- `src/passes/type_checker.py:1230-1250` allows slice expressions only on arrays and slices, not strings.
-- `src/passes/type_checker.py:1252-1296` field access supports structs, enums, and module symbols, but not `slice.ptr` or `slice.len`.
+- `a7/passes/type_checker.py:1230-1250` allows slice expressions only on arrays and slices, not strings.
+- `a7/passes/type_checker.py:1252-1296` field access supports structs, enums, and module symbols, but not `slice.ptr` or `slice.len`.
 - `TODO.md:44-50` lists both as missing.
 
 Impact:
@@ -274,8 +274,8 @@ Evidence:
 
 - `docs/SPEC.md:856-871` defines `@type_set`.
 - `docs/SPEC.md:1246-1253` uses tensor signatures with generic constraints.
-- `src/generics.py:246-251` only substitutes bare generic parameters, not nested generic types.
-- `src/generics.py:285-311` returns `None` for inline type-set constraints.
+- `a7/generics.py:246-251` only substitutes bare generic parameters, not nested generic types.
+- `a7/generics.py:285-311` returns `None` for inline type-set constraints.
 - `TODO.md:52-54` says constraint resolution is still a stub.
 - `TODO.md:99-100` says generic specialization is spec'd but not implemented.
 
@@ -303,9 +303,9 @@ Then remove examples that require unsupported specialization or constraint solvi
 Evidence:
 
 - `docs/SPEC.md:754-763` documents typed and untyped variadics.
-- `src/parser.py:704-725` parses variadic parameters.
-- `src/types.py:222-223` models `is_variadic` and `variadic_type`.
-- `src/passes/type_checker.py:1083-1097` checks argument counts and then only zips actual args with declared param slots.
+- `a7/parser.py:704-725` parses variadic parameters.
+- `a7/types.py:222-223` models `is_variadic` and `variadic_type`.
+- `a7/passes/type_checker.py:1083-1097` checks argument counts and then only zips actual args with declared param slots.
 - `TODO.md:93-95` still says variadics are spec'd but not parsed or implemented.
 
 Impact:
@@ -330,10 +330,10 @@ Evidence:
 
 - `docs/SPEC.md:2172-2195` documents several import forms.
 - `docs/SPEC.md:2197-2204` says stdlib files include `math.a7`, `io.a7`, `string.a7`, `memory.a7`, and `collections.a7`.
-- `src/module_resolver.py:57-81` resolves imports to `.a7` files or `mod.a7`.
-- `src/stdlib/__init__.py:37-42` registers only `io` and `math`.
-- `src/stdlib/string.py:8-15` and `src/stdlib/mem.py:8-13` are stubs and are not auto-registered.
-- `src/compile.py:236-239` swallows module resolution failures.
+- `a7/module_resolver.py:57-81` resolves imports to `.a7` files or `mod.a7`.
+- `a7/stdlib/__init__.py:37-42` registers only `io` and `math`.
+- `a7/stdlib/string.py:8-15` and `a7/stdlib/mem.py:8-13` are stubs and are not auto-registered.
+- `a7/compile.py:236-239` swallows module resolution failures.
 - `TODO.md:73-89` lists the import/stdlib reconciliation as open.
 
 External comparison:
@@ -362,7 +362,7 @@ Evidence:
 
 - `docs/SPEC.md:2151-2156` shows `pub Vec3 :: struct { pub x: f32 ... }`.
 - `docs/SPEC.md:2208-2216` says `public` only applies to top-level declarations and struct fields cannot be public.
-- `src/parser.py:1998-2012` parses `pub` on struct fields.
+- `a7/parser.py:1998-2012` parses `pub` on struct fields.
 
 Impact:
 
@@ -378,7 +378,7 @@ The C backend is useful, but the docs overstate parity.
 
 Evidence:
 
-- `src/backends/c.py:1007-1008` rejects match expressions.
+- `a7/backends/c.py:1007-1008` rejects match expressions.
 - `TODO.md:59-71` lists missing C backend match expressions, range patterns, identifier-capture patterns, and function-typed declarations.
 - `README.md:105-106` says Zig handles all AST node types and C is validated with `zig cc`.
 - Current C example verifier passes `36/36`, but that does not cover the documented missing C backend surfaces.
@@ -444,9 +444,9 @@ A 9-step AST rewrite stage runs after semantic analysis and before code generati
 
 Evidence:
 
-- `src/ast_preprocessor.py:1-18` documents the nine sub-passes: lower `.adr`/`.val` sugar to `ADDRESS_OF`/`DEREF`, resolve stdlib calls, normalize struct inits, mutation analysis, usage analysis, type-annotation inference, variable-shadowing resolution, nested-function hoisting, and constant folding.
-- `src/compile.py:22` imports `ASTPreprocessor`.
-- `src/compile.py:315-320` runs `preprocessor.process(ast)` between semantic passes and codegen.
+- `a7/ast_preprocessor.py:1-18` documents the nine sub-passes: lower `.adr`/`.val` sugar to `ADDRESS_OF`/`DEREF`, resolve stdlib calls, normalize struct inits, mutation analysis, usage analysis, type-annotation inference, variable-shadowing resolution, nested-function hoisting, and constant folding.
+- `a7/compile.py:22` imports `ASTPreprocessor`.
+- `a7/compile.py:315-320` runs `preprocessor.process(ast)` between semantic passes and codegen.
 - `README.md:7` calls out "AST preprocessing" as a pipeline stage.
 - `docs/SPEC.md:2837` mentions "AST preprocessing" once in passing.
 - The body of `docs/SPEC.md` (sections 1-13 and Appendices A-E) never defines what the preprocessor does, what it is allowed to rewrite, or what guarantees survive it.
@@ -468,7 +468,7 @@ Evidence:
 - `docs/SPEC.md:400-405` shows `a, b, c: i32 = 1, 2, 3` and `x, y := 10, 20` under `### 4.1` "Variable Declarations".
 - `docs/SPEC.md:1681` repeats the same example in the duplicated §4 block (see Critical Finding 1).
 - `TODO.md:96-97` lists "Multiple return values / destructuring (`a, b, c := 1, 2, 3`). Notes: spec'd in §4.1, not parsed."
-- A grep across `src/parser.py`, `src/ast_nodes.py`, and `src/types.py` for `destructur`, `multiple return`, or `tuple_assign` returns no hits.
+- A grep across `a7/parser.py`, `a7/ast_nodes.py`, and `a7/types.py` for `destructur`, `multiple return`, or `tuple_assign` returns no hits.
 
 Impact:
 
@@ -485,7 +485,7 @@ Either implement parser support and lower it (most likely as an anonymous tuple 
 Evidence:
 
 - `AGENTS.md` "Post-Change Checklist" lists CHANGELOG.md, README.md, docs/SPEC.md, MISSING_FEATURES.md, TODO.md as required updates.
-- `TODO.md:93-94` says variadics are "spec'd but not parsed or implemented", but `src/parser.py:704-727`, `src/types.py:222-223`, and `src/passes/type_checker.py:1083-1097` all already implement them — confirmed by live compilation of `sum :: fn(values: ..i32) i32 { ret 0 }` through Zig codegen.
+- `TODO.md:93-94` says variadics are "spec'd but not parsed or implemented", but `a7/parser.py:704-727`, `a7/types.py:222-223`, and `a7/passes/type_checker.py:1083-1097` all already implement them — confirmed by live compilation of `sum :: fn(values: ..i32) i32 { ret 0 }` through Zig codegen.
 - `docs/SPEC.md:2839` reports `1067 passed, 0 failed, 0 skipped`; current count is `1074 passed`.
 - The duplication described in Critical Finding 1 has survived multiple rounds of changes that should have triggered the spec update step.
 

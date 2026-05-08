@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from src.backends import get_backend, list_backends
-from src.ast_nodes import ASTNode, NodeKind
-from src.errors import CodegenError
-from src.compile import ExitCode
+from a7.backends import get_backend, list_backends
+from a7.ast_nodes import ASTNode, NodeKind
+from a7.errors import CodegenError
+from a7.compile import ExitCode
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -263,7 +263,7 @@ main :: fn() {
     for x in tail {
         total += x
     }
-    indexed_total := 0
+    indexed_total: usize = 0
     for i, x in tail {
         indexed_total += i + x
     }

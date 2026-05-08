@@ -8,11 +8,11 @@ import copy
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass
 
-from src.types import (
+from a7.types import (
     Type, TypeKind, GenericParamType, GenericInstanceType, TypeSet,
     StructType, StructField, FunctionType, get_primitive_type, get_predefined_type_set
 )
-from src.ast_nodes import ASTNode, NodeKind
+from a7.ast_nodes import ASTNode, NodeKind
 
 
 @dataclass
@@ -253,7 +253,7 @@ def _substitute_type(type_: Type, bindings: Dict[str, Type]) -> Type:
 
 def _substitute_types_in_ast(node: ASTNode, bindings: Dict[str, Type]) -> None:
     """Walk an AST tree and substitute generic type references with concrete types (iterative)."""
-    from src.ast_nodes import NodeKind
+    from a7.ast_nodes import NodeKind
     if node is None:
         return
 

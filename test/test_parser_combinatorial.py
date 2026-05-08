@@ -6,9 +6,9 @@ all valid combinations parse correctly.
 """
 
 import pytest
-from src.parser import parse_a7
-from src.ast_nodes import NodeKind
-from src.errors import ParseError
+from a7.parser import parse_a7
+from a7.ast_nodes import NodeKind
+from a7.errors import ParseError
 
 
 class TestTypeCombinations:

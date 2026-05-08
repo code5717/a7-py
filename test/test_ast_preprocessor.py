@@ -1,5 +1,5 @@
 """
-Tests for the AST preprocessor (src/ast_preprocessor.py).
+Tests for the AST preprocessor (a7/ast_preprocessor.py).
 
 The AST preprocessor runs after parsing and semantic analysis, before code
 generation. It performs several transformations and annotations:
@@ -14,13 +14,13 @@ Tests are organized into categories matching these passes.
 """
 
 import pytest
-from src.parser import parse_a7
-from src.ast_nodes import (
+from a7.parser import parse_a7
+from a7.ast_nodes import (
     ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp,
     create_program, create_function_decl, create_block,
     create_literal, create_identifier, create_var_decl,
 )
-from src.ast_preprocessor import ASTPreprocessor
+from a7.ast_preprocessor import ASTPreprocessor
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ class TestFieldSugarLowering:
 
     def test_adr_preserves_span(self):
         """The ADDRESS_OF node should carry the span from the original FIELD_ACCESS."""
-        from src.errors import SourceSpan
+        from a7.errors import SourceSpan
 
         span = SourceSpan(start_line=5, start_column=10, end_line=5, end_column=15)
         ident = ASTNode(kind=NodeKind.IDENTIFIER, name="x")

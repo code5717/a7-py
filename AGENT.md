@@ -15,7 +15,8 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 
 ## Key Commands (short form)
 
-- Run the compiler: `uv run a7 <args>` (or `uv run python main.py <args>`)
+- Run the compiler: `uv run a7 <args>` (or `uv run python main.py <args>`).
+  The Python package lives at `a7/`; the entrypoint is `a7.cli:main`.
 - Full release gate: `./run_all_tests.sh`
 - Debug artifacts:
   `uv run python scripts/build_examples.py --profile debug --backend both --clean`
@@ -23,15 +24,25 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
   `uv run python scripts/build_examples.py --profile release --backend both --clean`
 - Backend parity: `uv run python scripts/verify_backend_parity.py`
 - Package build: `uv build`
-- Docs site build: `cd site && npm install && npm run build`
+- Wheel install smoke test (clean venv):
+  `uv run python scripts/verify_wheel_install.py` (CI/release uses
+  `--skip-build` after `uv build`)
+- Docs site build: `cd site && npm ci && npm run build`
 - Agent/curl.md docs: `site/public/llms.txt`, `site/public/llms-full.txt`,
   and `site/public/docs/`
 
 ## Key Rules (short form)
 
-- A7 source recursion is banned; the compiler reports direct and mutual
-  recursion as semantic errors. Use loops, explicit stacks, or index-based
-  worklists in examples and tests.
+- A7 source recursion is banned; the compiler reports direct, mutual, and
+  local function-pointer alias-cycle recursion as semantic errors. Use
+  loops, explicit stacks, or index-based worklists in examples and tests.
+- Use `usize` for sizes, lengths, capacities, and array/slice/string
+  indices (index and slice-bound variables must be `usize`); reserve
+  `isize` for signed pointer-sized offsets, not as the default signed type.
+- `new [N]T` (heap fixed arrays) is currently rejected; use stack arrays
+  or slices in examples, tests, and docs.
+- Native release archives are named with platform/toolchain context
+  (`a7-example-artifacts-linux-x86_64-zig0.15.2-<profile>.tar.gz`).
 - Keep `README.md`, `docs/SPEC.md`, `CHANGELOG.md`, `MISSING_FEATURES.md`,
   and `TODO.md` aligned with any user-visible change.
 - Keep `site/public/llms.txt`, `site/public/llms-full.txt`, and

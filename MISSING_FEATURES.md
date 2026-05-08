@@ -42,7 +42,10 @@
 28. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
 29. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
 30. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
-31. Semantic validation rejects direct and mutual recursion; repeated work must use loops, explicit stacks, or index-based worklists.
+31. Semantic validation rejects direct, mutual, and local function-pointer alias recursion; repeated work must use loops, explicit stacks, or index-based worklists.
+32. Index and slice-bound variables must be `usize`; non-negative integer literals remain valid for simple indexing.
+33. `new [N]T` heap fixed arrays fail closed until the allocation model and both backends agree on representation.
+34. Ordering comparisons reject non-ordered types, and signed variables no longer implicitly assign to unsigned integer types.
 
 ---
 
@@ -62,6 +65,9 @@
 3. **Memory/lifetime model**
    - Current validation covers basic `del` reference checks.
    - Ownership/borrow-style lifetime guarantees are not implemented.
+   - Heap fixed arrays (`new [N]T`) are rejected until the language defines
+     whether they are fixed-array references or heap slices and both backends
+     lower the same model.
 
 4. **Backend semantic parity hardening**
    - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, slices, string slices, labels, function pointers, and contextual array literal assignment.

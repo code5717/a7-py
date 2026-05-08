@@ -6,10 +6,10 @@ to ensure the parser is robust.
 """
 
 import pytest
-from src.parser import parse_a7, Parser
-from src.tokens import Tokenizer
-from src.ast_nodes import NodeKind, BinaryOp
-from src.errors import ParseError
+from a7.parser import parse_a7, Parser
+from a7.tokens import Tokenizer
+from a7.ast_nodes import NodeKind, BinaryOp
+from a7.errors import ParseError
 
 
 class TestParserEdgeCases:

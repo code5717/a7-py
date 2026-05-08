@@ -6,7 +6,7 @@ builtin resolution, backend mapping, and I/O call detection.
 """
 
 import pytest
-from src.stdlib import StdlibRegistry, StdlibFunction, StdlibModule
+from a7.stdlib import StdlibRegistry, StdlibFunction, StdlibModule
 
 
 class TestStdlibRegistryInitialization:

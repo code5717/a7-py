@@ -389,8 +389,8 @@ heap_value.val = 99
 del heap_value
 
 main :: fn() {
-    buf := new [256]u8
-    defer del buf
+    buf: [256]u8
+    slice := buf[0..256]
 
     maybe: ref i32 = nil
     if maybe == nil {

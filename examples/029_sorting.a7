@@ -7,8 +7,9 @@ main :: fn() {
 
     arr: [5]i32 = [5, 1, 4, 2, 3]
 
-    for i := 0; i < 5; i += 1 {
-        for j := 0; j < 4 - i; j += 1 {
+    for i := cast(usize, 0); i < 5; i += 1 {
+        limit: usize = cast(usize, 4) - i
+        for j := cast(usize, 0); j < limit; j += 1 {
             if arr[j] > arr[j + 1] {
                 temp := arr[j]
                 arr[j] = arr[j + 1]

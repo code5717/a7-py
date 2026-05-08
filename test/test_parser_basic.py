@@ -5,10 +5,10 @@ This file tests the core parsing functionality that should work.
 """
 
 import pytest
-from src.parser import parse_a7, Parser
-from src.tokens import Tokenizer
-from src.ast_nodes import NodeKind, LiteralKind, BinaryOp, UnaryOp
-from src.errors import ParseError
+from a7.parser import parse_a7, Parser
+from a7.tokens import Tokenizer
+from a7.ast_nodes import NodeKind, LiteralKind, BinaryOp, UnaryOp
+from a7.errors import ParseError
 
 
 class TestBasicParsing:

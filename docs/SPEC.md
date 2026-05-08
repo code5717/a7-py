@@ -410,7 +410,7 @@ PI :: 3.14159
 
 // Mutable binding (variable)
 count := 0
-buffer := new [1024]u8
+buffer: [1024]u8
 
 // Type can be explicit or inferred
 age: i32 = 25    // Explicit type
@@ -438,7 +438,7 @@ DOUBLE_PI :: PI * 2
 // Variables (mutable) - use :=
 count := 0
 name := "John"
-buffer := new [1024]u8
+buffer: [1024]u8
 
 // Explicit typing works with both
 MAX_SIZE: i32 = 1000    // Immutable with explicit type
@@ -975,9 +975,9 @@ ptr := new i32
 ptr.val = 42
 del ptr
 
-// Allocate array
-buffer := new [1024]u8
-del buffer
+// Heap fixed arrays are not current syntax. Use stack arrays or slices.
+buffer: [1024]u8
+slice := buffer[0..1024]
 
 // Initialize through the returned reference
 point := new Point
@@ -987,7 +987,7 @@ del point
 // `new T(args...)` and `new T{...}` initializer forms are not current syntax.
 
 // Check allocation
-large := new [1000000]f64
+large := new Point
 if large == nil {
     // Handle allocation failure
 }
@@ -1001,8 +1001,8 @@ if large == nil {
     file := open("data.txt")
     defer close(file)
     
-    buffer := new [1024]u8
-    defer del buffer
+    point := new Point
+    defer del point
     
     // Use file and buffer
     // Both cleaned up automatically

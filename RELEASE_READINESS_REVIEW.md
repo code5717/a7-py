@@ -17,8 +17,9 @@ The repository is substantially more release-ready than before this pass:
 - Node 24-compatible GitHub workflow actions for CI, Pages deploy, artifact
   upload/download, and draft GitHub releases
 - checksum-verified Zig 0.15.2 install steps in CI and release workflows
-- semantic recursion rejection for direct and mutual named call cycles, with
-  scope-aware handling for local function-pointer shadowing
+- semantic recursion rejection for direct, mutual, and local function-pointer
+  alias call cycles, with scope-aware handling for local function-pointer
+  shadowing
 - consolidated docs-site navigation with curl.md-friendly Markdown entry points
   under `site/public/llms.txt` and `site/public/docs/`
 - C backend specialization for simple top-level generic function calls
@@ -54,6 +55,8 @@ not factually provable from local tests alone.
 - preview HTTP checks for `/a7-py/llms.txt`, `/a7-py/docs/index.md`,
   `/a7-py/docs/status.md`, `/a7-py/sitemap.xml`, and `/a7-py/robots.txt`
 - built wheel installed into a temporary virtualenv and invoked as `a7`
+- built wheel now installs a project-specific top-level `a7` package instead of
+  a generic `src` package
 - `git diff --check`
 - hosted CI and Deploy Docs must be checked after each release-candidate push;
   the current workflows cover docs, pytest, dependency audits, error-stage
@@ -67,7 +70,7 @@ not factually provable from local tests alone.
   manifest wiring; run `25524734727` completed release gate, package build,
   docs archive, release example artifact archive, checksum generation, and
   release-bundle upload. Downloaded `release-bundles` contained `SHA256SUMS`,
-  `a7-docs-site.tar.gz`, and `a7-example-artifacts-release.tar.gz`.
+  `a7-docs-site.tar.gz`, and `a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz`.
 - manual release workflow dispatch `25525956855` passed after manifest
   verification was added; downloaded release bundles and Python distributions
   were reconstructed under `dist/` and verified with
@@ -169,7 +172,7 @@ not factually provable from local tests alone.
 
 - Package metadata now has a real description and a console script.
 - Runtime-only test dependency moved into the dev dependency group.
-- `main.py` now delegates to `src.cli:main`.
+- `main.py` now delegates to `a7.cli:main`.
 - `scripts/build_examples.py` builds and verifies debug/release artifacts for
   both backends.
 - `run_all_tests.sh` now covers C backend tests, C E2E, error-stage audit,

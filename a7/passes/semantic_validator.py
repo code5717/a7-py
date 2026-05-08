@@ -9,11 +9,11 @@ Validates semantic rules beyond type checking:
 
 from typing import List, Optional, Set
 
-from src.ast_nodes import ASTNode, NodeKind, LiteralKind
-from src.symbol_table import SymbolTable
-from src.semantic_context import SemanticContext
-from src.types import Type, TypeKind, ReferenceType, EnumType
-from src.errors import SemanticError, SemanticErrorType, SourceSpan
+from a7.ast_nodes import ASTNode, NodeKind, LiteralKind
+from a7.symbol_table import SymbolTable
+from a7.semantic_context import SemanticContext
+from a7.types import Type, TypeKind, ReferenceType, EnumType
+from a7.errors import SemanticError, SemanticErrorType, SourceSpan
 
 
 class SemanticValidationPass:
@@ -445,6 +445,7 @@ class SemanticValidationPass:
             return set()
 
         calls: set[str] = set()
+        function_aliases = self._collect_function_aliases(function, function_names)
         shadowed = {
             param.name
             for param in function.parameters or []
@@ -464,6 +465,7 @@ class SemanticValidationPass:
                 next_shadowed = self._schedule_statement_calls(
                     statements[index],
                     function_names,
+                    function_aliases,
                     set(active_shadowed),
                     calls,
                     stack,
@@ -475,6 +477,7 @@ class SemanticValidationPass:
                 self._schedule_statement_calls(
                     payload,
                     function_names,
+                    function_aliases,
                     set(active_shadowed),
                     calls,
                     stack,
@@ -486,6 +489,7 @@ class SemanticValidationPass:
         self,
         node: ASTNode,
         function_names: set[str],
+        function_aliases: dict[str, str],
         shadowed: set[str],
         calls: set[str],
         stack: list[tuple[str, object, int, set[str]]],
@@ -496,7 +500,7 @@ class SemanticValidationPass:
 
         elif node.kind in (NodeKind.VAR, NodeKind.CONST):
             if node.value:
-                calls.update(self._collect_expression_calls(node.value, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.value, function_names, function_aliases, shadowed))
             if node.name in function_names:
                 shadowed.add(node.name)
 
@@ -509,31 +513,31 @@ class SemanticValidationPass:
 
         elif node.kind == NodeKind.EXPRESSION_STMT:
             if node.expression:
-                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.expression, function_names, function_aliases, shadowed))
 
         elif node.kind == NodeKind.RETURN:
             if node.value:
-                calls.update(self._collect_expression_calls(node.value, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.value, function_names, function_aliases, shadowed))
 
         elif node.kind == NodeKind.ASSIGNMENT:
             if node.target:
-                calls.update(self._collect_expression_calls(node.target, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.target, function_names, function_aliases, shadowed))
             if node.value:
-                calls.update(self._collect_expression_calls(node.value, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.value, function_names, function_aliases, shadowed))
 
         elif node.kind == NodeKind.DEL:
             if node.expression:
-                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.expression, function_names, function_aliases, shadowed))
 
         elif node.kind == NodeKind.DEFER:
             if node.expression:
-                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.expression, function_names, function_aliases, shadowed))
             if node.statement:
                 stack.append(("stmt", node.statement, 0, set(shadowed)))
 
         elif node.kind == NodeKind.IF_STMT:
             if node.condition:
-                calls.update(self._collect_expression_calls(node.condition, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.condition, function_names, function_aliases, shadowed))
             if node.then_stmt:
                 stack.append(("stmt", node.then_stmt, 0, set(shadowed)))
             if node.else_stmt:
@@ -541,25 +545,32 @@ class SemanticValidationPass:
 
         elif node.kind == NodeKind.WHILE:
             if node.condition:
-                calls.update(self._collect_expression_calls(node.condition, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.condition, function_names, function_aliases, shadowed))
             if node.body:
                 stack.append(("stmt", node.body, 0, set(shadowed)))
 
         elif node.kind == NodeKind.FOR:
             loop_shadowed = set(shadowed)
             if node.init:
-                loop_shadowed = self._schedule_statement_calls(node.init, function_names, loop_shadowed, calls, stack)
+                loop_shadowed = self._schedule_statement_calls(
+                    node.init,
+                    function_names,
+                    function_aliases,
+                    loop_shadowed,
+                    calls,
+                    stack,
+                )
             if node.condition:
-                calls.update(self._collect_expression_calls(node.condition, function_names, loop_shadowed))
+                calls.update(self._collect_expression_calls(node.condition, function_names, function_aliases, loop_shadowed))
             if node.update:
-                calls.update(self._collect_expression_calls(node.update, function_names, loop_shadowed))
+                calls.update(self._collect_expression_calls(node.update, function_names, function_aliases, loop_shadowed))
             if node.body:
                 stack.append(("stmt", node.body, 0, loop_shadowed))
 
         elif node.kind in (NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED):
             loop_shadowed = set(shadowed)
             if node.iterable:
-                calls.update(self._collect_expression_calls(node.iterable, function_names, loop_shadowed))
+                calls.update(self._collect_expression_calls(node.iterable, function_names, function_aliases, loop_shadowed))
             if node.iterator in function_names:
                 loop_shadowed.add(node.iterator)
             if node.index_var in function_names:
@@ -569,7 +580,7 @@ class SemanticValidationPass:
 
         elif node.kind == NodeKind.MATCH:
             if node.expression:
-                calls.update(self._collect_expression_calls(node.expression, function_names, shadowed))
+                calls.update(self._collect_expression_calls(node.expression, function_names, function_aliases, shadowed))
             for case in node.cases or []:
                 case_stmt = getattr(case, "statement", None)
                 if case_stmt:
@@ -586,6 +597,7 @@ class SemanticValidationPass:
         self,
         root: Optional[ASTNode],
         function_names: set[str],
+        function_aliases: dict[str, str],
         shadowed: set[str],
     ) -> set[str]:
         if root is None:
@@ -599,7 +611,7 @@ class SemanticValidationPass:
                 continue
 
             if node.kind == NodeKind.CALL:
-                callee = self._direct_callee_name(node, shadowed)
+                callee = self._direct_callee_name(node, function_aliases, shadowed)
                 if callee in function_names:
                     calls.add(callee)
 
@@ -610,15 +622,61 @@ class SemanticValidationPass:
                 stack.append(child)
         return calls
 
-    def _direct_callee_name(self, node: ASTNode, shadowed: set[str]) -> Optional[str]:
+    def _direct_callee_name(
+        self,
+        node: ASTNode,
+        function_aliases: dict[str, str],
+        shadowed: set[str],
+    ) -> Optional[str]:
         if node.kind != NodeKind.CALL or not node.function:
             return None
         function = node.function
         if function.kind != NodeKind.IDENTIFIER or not function.name:
             return None
+        if function.name in function_aliases:
+            return function_aliases[function.name]
         if function.name in shadowed:
             return None
         return function.name
+
+    def _collect_function_aliases(self, function: ASTNode, function_names: set[str]) -> dict[str, str]:
+        """Find local names that may hold top-level functions.
+
+        A7 forbids source recursion. Calls through function-typed local aliases
+        are therefore treated conservatively as calls to the aliased top-level
+        function. This intentionally prefers rejecting ambiguous cycles over
+        allowing recursion through an indirection.
+        """
+        aliases: dict[str, str] = {}
+        if function.body is None:
+            return aliases
+
+        stack = [function.body]
+        while stack:
+            node = stack.pop()
+            if not isinstance(node, ASTNode) or node.kind == NodeKind.FUNCTION:
+                continue
+
+            target_name: Optional[str] = None
+            value: Optional[ASTNode] = None
+            if node.kind in (NodeKind.VAR, NodeKind.CONST):
+                target_name = node.name
+                value = node.value
+            elif node.kind == NodeKind.ASSIGNMENT and node.target and node.target.kind == NodeKind.IDENTIFIER:
+                target_name = node.target.name
+                value = node.value
+
+            if (
+                target_name
+                and value
+                and value.kind == NodeKind.IDENTIFIER
+                and value.name in function_names
+            ):
+                aliases[target_name] = value.name
+
+            stack.extend(self._iter_child_nodes(node))
+
+        return aliases
 
     def _as_statement_list(self, value: object) -> List[ASTNode]:
         if isinstance(value, ASTNode):

@@ -7,7 +7,7 @@ and verifies the tokenizer produces the correct tokens.
 
 import pytest
 from typing import List
-from src.tokens import Tokenizer, TokenType
+from a7.tokens import Tokenizer, TokenType
 
 
 class TestTokenizer:
