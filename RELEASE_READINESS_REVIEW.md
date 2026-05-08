@@ -222,6 +222,24 @@ not factually provable from local tests alone.
   verification, backend parity, debug artifacts, release artifacts, package
   build, and clean wheel-install verification.
 - hosted Deploy Docs run `25545566352` passed on commit `cdcf7e3`.
+- local focused import regression passed after file-backed imports were made to
+  fail closed before backend codegen: `test/test_cli_failures.py` and
+  `test/test_module_resolver.py` reported 18 passed. Manual CLI probes
+  confirmed existing `helper :: import "helper"` fails with exit code 6 for
+  codegen modes and does not write target code, while semantic mode still
+  validates resolver loading.
+- local `./run_all_tests.sh` passed after file-backed import fail-closed
+  behavior and docs updates: parser/tokenizer 501 passed; semantic 336 passed;
+  compiler/CLI/backend 330 passed; Zig examples 38/38; C examples 38/38;
+  backend parity 24/24; debug artifacts 76/76; release artifacts 76/76;
+  error-stage checks 61/61; docs style ok; secrets check ok; total pytest
+  1247 passed; summary 12/12.
+- hosted CI run `25547403153` passed on commit `1234a44` after file-backed
+  imports were made to fail closed before codegen, including docs, pytest,
+  Python dependency audit, Bandit static security scanning, error-stage
+  verification, Zig/C example verification, backend parity, debug artifacts,
+  release artifacts, package build, and clean wheel-install verification.
+- hosted Deploy Docs run `25547403136` passed on commit `1234a44`.
 - local `npm run check` in `site/` passed after updating the public status and
   language docs for the generic struct behavior.
 - hosted CI run `25541793153` passed on commit `5baa7f7` after fallthrough
