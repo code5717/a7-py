@@ -55,6 +55,18 @@
 
 ## Remaining Language-First Gaps
 
+0. **Spec-only syntax and parsed-only features**
+   - Variadic parameters are parsed and partially type-checked, but runtime
+     iteration and backend ABI lowering are not implemented.
+   - Multiple return values / destructuring (`a, b, c := 1, 2, 3`) are planned
+     syntax, not current parser support.
+   - `@type_set(...)` is implemented for generic constraints. Other `@...`
+     intrinsic names such as `@size_of`, `@align_of`, `@type_id`,
+     `@type_name`, `@unreachable`, `@likely`, and `@unlikely` are reserved or
+     tokenized but not semantically resolved/lowered yet.
+   - Array/tensor programming syntax, performance annotations, and control-flow
+     narrowing remain tracked backlog items in `TODO.md`.
+
 1. **Advanced match diagnostics**
    - Exact duplicate bool, enum, and scalar literal case patterns are diagnosed.
    - Wildcard-first and fully covered bool/enum cases make later case patterns and else branches unreachable.

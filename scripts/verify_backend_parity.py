@@ -328,6 +328,17 @@ main :: fn() {
     io.println("generic = {} {}", identity(7), identity("ok"))
 }
 ''',
+    "generic_constraint_calls": r'''
+io :: import "std/io"
+
+smaller($T: Numeric) :: fn(a: $T, b: $T) $T {
+    ret if a < b { a } else { b }
+}
+
+main :: fn() {
+    io.println("generic constraint = {} {}", smaller(7, 3), smaller(2.5, 4.5))
+}
+''',
     "enum_match_expression": r'''
 io :: import "std/io"
 
@@ -349,6 +360,25 @@ main :: fn() {
     io.println("enum ready = {}", score(State.Ready))
     io.println("enum busy = {}", score(State.Busy))
     io.println("enum done = {}", score(State.Done))
+}
+''',
+    "enum_explicit_discriminants": r'''
+io :: import "std/io"
+
+Status :: enum {
+    Ok = 200
+    NotFound = 404
+    Error = 500
+}
+
+main :: fn() {
+    code: Status = Status.NotFound
+    label := match code {
+        case Status.Ok: "ok"
+        case Status.NotFound: "missing"
+        case Status.Error: "error"
+    }
+    io.println("enum explicit = {}", label)
 }
 ''',
     "heap_struct_roundtrip": r'''
@@ -394,6 +424,29 @@ main :: fn() {
         }
     }
     io.println("cube = {}", total)
+}
+''',
+    "operator_edge_surface": r'''
+io :: import "std/io"
+
+main :: fn() {
+    x := 12
+    x &= 10
+    x |= 1
+    x ^= 3
+    x <<= 2
+    x >>= 1
+    y := ~x
+    ok := (x != 0) and (x <= 20) and (x >= 1)
+    io.println("ops edge = {} {} {}", x, y, ok)
+}
+''',
+    "stdlib_math_runtime": r'''
+io :: import "std/io"
+math :: import "std/math"
+
+main :: fn() {
+    io.println("math = {} {} {} {}", math.floor(3.8), math.ceil(3.2), math.min(7.0, 3.0), math.max(7.0, 3.0))
 }
 ''',
 }

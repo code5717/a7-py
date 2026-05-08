@@ -22,6 +22,9 @@ from a fresh checkout.
   `uv run python scripts/build_examples.py --profile debug --backend both --clean`
 - Release artifact verification:
   `uv run python scripts/build_examples.py --profile release --backend both --clean`
+- Backend parity (24 cases — generic constraints, generic structs/functions,
+  explicit enum discriminants, stdlib math, operator edge cases):
+  `uv run python scripts/verify_backend_parity.py`
 - Full local release gate: `./run_all_tests.sh`
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
@@ -32,10 +35,14 @@ from a fresh checkout.
   then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
   `/a7-py/docs/index.md`.
 
+Examples are verified end-to-end against **both** the Zig and C backends —
+the Zig and C example E2E scripts must both pass for any change to
+`examples/`, codegen, or runtime behavior.
+
 `run_all_tests.sh` is the single source of truth for the full gate (pytest,
-parser/semantic/codegen tests, example e2e for Zig and C, backend parity,
-debug + release artifacts, error-stage matrix, docs style, secrets check).
-Run it before reporting a non-trivial task as done.
+parser/semantic/codegen tests, example E2E for Zig and C, 24-case backend
+parity, debug + release artifacts, error-stage matrix, docs style, secrets
+check). Run it before reporting a non-trivial task as done.
 
 The public docs site also ships Markdown entry points for agent tooling under
 `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
@@ -64,6 +71,28 @@ navigation when docs structure changes.
   any docs or scripts that reference these filenames in sync.
 - This rule applies to A7 source only. Compiler internals already use
   iterative AST traversals; keep them that way.
+
+## Docs Accuracy
+
+User-facing docs (`README.md`, `docs/SPEC.md`, `MISSING_FEATURES.md`,
+`site/public/llms*.txt`, `site/public/docs/`) must clearly distinguish
+**currently supported** features from syntax that is only **parsed or
+reserved** but not yet implemented. In particular, mark these as
+parsed-only/reserved rather than working features:
+
+- variadic parameters
+- intrinsics other than `@type_set`
+- multiple-declaration and destructuring binding syntax
+
+Adding examples, snippets, or claims that imply the parsed-only forms work
+end-to-end is treated the same as a doc/code drift bug.
+
+## Out of Scope
+
+- Package-registry publishing (a7 package index, registry client, lockfile
+  resolution, etc.) is **out of scope** for this repository. Do not add
+  features, examples, docs, or TODO/MISSING entries that assume a registry;
+  treat related requests as out-of-scope and flag them.
 
 ## Post-Change Checklist
 

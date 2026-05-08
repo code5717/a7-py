@@ -18,7 +18,7 @@ const EXAMPLE_META = {
   '011_memory.a7': { title: 'Memory', category: 'Memory', desc: 'Heap allocation with new/del' },
   '012_arrays.a7': { title: 'Arrays', category: 'Types', desc: 'Fixed-size arrays and slices' },
   '013_pointers.a7': { title: 'Pointers', category: 'Memory', desc: 'Pointer operations with .adr/.val' },
-  '014_generics.a7': { title: 'Generics Status', category: 'Types', desc: 'Runnable status note; full generic checks live in semantic tests' },
+  '014_generics.a7': { title: 'Generics', category: 'Types', desc: 'Generic functions and generic struct instances' },
   '015_types.a7': { title: 'Type System', category: 'Types', desc: 'Type aliases and composite types' },
   '016_unions.a7': { title: 'Unions', category: 'Types', desc: 'Untagged union field literals and access' },
   '017_methods.a7': { title: 'Receiver Functions', category: 'Types', desc: 'Method-style mutation through explicit ref receivers' },

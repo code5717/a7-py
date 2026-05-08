@@ -78,10 +78,10 @@ export default function Internals() {
           rows={[
             [<code className="doc-inline-code" key="t">a7/tokens.py</code>, 'Tokenizer — generics ($T), nested comments, all number formats'],
             [<code className="doc-inline-code" key="p">a7/parser.py</code>, 'Recursive descent with precedence climbing'],
-            [<code className="doc-inline-code" key="a">a7/ast_nodes.py</code>, 'ASTNode dataclass + NodeKind enum (44 kinds)'],
+            [<code className="doc-inline-code" key="a">a7/ast_nodes.py</code>, 'ASTNode dataclass + NodeKind enum (60 kinds)'],
             [<code className="doc-inline-code" key="c">a7/compile.py</code>, 'Pipeline driver, stage sequencing, exit codes'],
-            [<code className="doc-inline-code" key="e">a7/errors.py</code>, '77 error codes, SourceSpan, Rich formatting'],
-            [<code className="doc-inline-code" key="ty">a7/types.py</code>, '13 type classes, all frozen/hashable'],
+            [<code className="doc-inline-code" key="e">a7/errors.py</code>, '82 error codes, SourceSpan, Rich formatting'],
+            [<code className="doc-inline-code" key="ty">a7/types.py</code>, '14 type kinds, all frozen/hashable'],
             [<code className="doc-inline-code" key="pp">a7/ast_preprocessor.py</code>, '9 iterative sub-passes annotating AST for backend'],
             [<code className="doc-inline-code" key="st">a7/symbol_table.py</code>, 'Symbol + Scope + ModuleTable (hierarchical lookup)'],
             [<code className="doc-inline-code" key="bb">a7/backends/base.py</code>, 'Abstract backend contract (generate + visit)'],
@@ -159,8 +159,8 @@ export default function Internals() {
       {/* ── AST design ── */}
       <SectionPanel title="AST design">
         <p className="text-secondary mb-2">
-          Flat union pattern: one <code className="doc-inline-code">ASTNode</code> dataclass, ~40 optional fields,
-          discriminated by <code className="doc-inline-code">NodeKind</code> enum (44 kinds).
+          Flat union pattern: one <code className="doc-inline-code">ASTNode</code> dataclass, optional fields,
+          discriminated by <code className="doc-inline-code">NodeKind</code> enum (60 kinds).
         </p>
         <DataTable
           headers={['Group', 'Kinds']}
@@ -244,9 +244,9 @@ uv run python scripts/verify_backend_parity.py
           <div>
             <h3 className="section-subtitle">Error system</h3>
             <p className="text-secondary">
-              77 error codes across 3 enums: <code className="doc-inline-code">TokenizerErrorType</code> (18),{' '}
-              <code className="doc-inline-code">SemanticErrorType</code> (26),{' '}
-              <code className="doc-inline-code">TypeErrorType</code> (33).
+              82 error codes across 3 enums: <code className="doc-inline-code">TokenizerErrorType</code> (20),{' '}
+              <code className="doc-inline-code">SemanticErrorType</code> (32),{' '}
+              <code className="doc-inline-code">TypeErrorType</code> (30).
               Every error carries a <code className="doc-inline-code">SourceSpan</code> with line/column for precise underlines.
             </p>
           </div>

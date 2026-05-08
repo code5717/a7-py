@@ -78,7 +78,7 @@ PYTHONPATH=. uv run pytest test/test_tokenizer.py  # one file`}
         <CodeBlock
           code={`a7-py/
   main.py
-  src/
+  a7/
     tokens.py            # tokenizer
     parser.py            # parser
     ast_nodes.py         # AST types

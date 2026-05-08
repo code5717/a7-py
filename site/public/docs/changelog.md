@@ -24,6 +24,9 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
   the current stable language surface by reading and running one verified file.
 - Untagged union literals and field access now run in both Zig and C example
   verifiers; tagged union tag workflows remain a known gap.
+- The generics example now runs real generic functions and generic struct
+  instances, and backend parity coverage includes type-set constraints, explicit
+  enum discriminants, stdlib math calls, and edge operators.
 
 ## Current Release
 

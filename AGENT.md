@@ -17,12 +17,15 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 
 - Run the compiler: `uv run a7 <args>` (or `uv run python main.py <args>`).
   The Python package lives at `a7/`; the entrypoint is `a7.cli:main`.
-- Full release gate: `./run_all_tests.sh`
+- Full release gate: `./run_all_tests.sh` (covers example E2E for **both**
+  Zig and C backends and the 24-case backend parity sweep).
 - Debug artifacts:
   `uv run python scripts/build_examples.py --profile debug --backend both --clean`
 - Release artifacts:
   `uv run python scripts/build_examples.py --profile release --backend both --clean`
-- Backend parity: `uv run python scripts/verify_backend_parity.py`
+- Backend parity (24 cases — generic constraints, generic structs/functions,
+  explicit enum discriminants, stdlib math, operator edge cases):
+  `uv run python scripts/verify_backend_parity.py`
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release uses
@@ -48,6 +51,13 @@ Compatibility pointer for tools that look for a singular `AGENT.md`.
 - Keep `site/public/llms.txt`, `site/public/llms-full.txt`, and
   `site/public/docs/` aligned when site navigation, release commands, CLI
   behavior, or public docs structure changes.
+- Docs must distinguish currently supported features from parsed-only or
+  reserved syntax — notably variadics, intrinsics other than `@type_set`,
+  and multiple-declaration/destructuring binding syntax. Do not present
+  parsed-only forms as working.
+- Package-registry publishing (a7 package index, registry client, lockfile
+  resolution) is **out of scope**; reject related additions to code, docs,
+  TODO, or MISSING.
 
 See `AGENTS.md` for the full workflow, post-change checklist, and security
 caveats.

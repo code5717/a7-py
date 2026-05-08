@@ -416,9 +416,9 @@ buffer: [1024]u8
 age: i32 = 25    // Explicit type
 name := "John"   // Inferred as string
 
-// Multiple declarations
-a, b, c: i32 = 1, 2, 3
-x, y := 10, 20
+// Multiple declaration/destructuring syntax is planned, not current:
+// a, b, c: i32 = 1, 2, 3
+// x, y := 10, 20
 ```
 
 ### 4.2 Declaration Rules
@@ -814,8 +814,12 @@ v.normalize()         // Modifies v through pointer
 
 ### 6.6 Variadic Functions
 
+> **Implementation Status**: Variadic parameter syntax is parsed and partially
+> type-checked for declarations, but runtime iteration and ABI lowering are not
+> implemented. Do not treat variadic functions as runnable current syntax.
+
 ```a7
-// Variadic parameters must be last
+// Planned shape: variadic parameters must be last
 sum :: fn(values: ..i32) i32 {
     total := 0
     for val in values {
@@ -840,7 +844,7 @@ A7 uses a simple generic system where type parameters are compile-time constants
 - `$T` is used **inline** within type expressions to declare and reference generic types
 - The same `$T` syntax is used everywhere - no separate declaration vs reference syntax
 - Generic types are inferred from usage context at compile time
-- Constraints are a semantic analysis feature (future)
+- Constraints are a semantic analysis feature for declared generic functions
 
 **Generic Type Parameter Syntax Rules:**
 - Must start with `$` followed immediately by a letter (a-z, A-Z)
@@ -874,7 +878,7 @@ pair :: fn(first: $T, second: $U) {
     y := second
 }
 
-// Generic with array parameter
+// Planned broader composite propagation; not backend-complete yet.
 first :: fn(arr: []$T) $T {
     ret arr[0]
 }
@@ -1489,15 +1493,15 @@ Planned, not implemented as public stdlib modules yet:
 
 ### 10.4 Visibility Rules
 
-- `public` modifier only applies to **global/top-level declarations**:
+- `pub` modifier only applies to **global/top-level declarations**:
   - Global functions
   - Global variables and constants
   - Type declarations (struct, enum, union)
-- `public` items are exported from the file/module
-- Non-public items are file-private
+- `pub` items are exported from the file/module
+- Non-`pub` items are file-private
 - No protected/internal visibility
-- **Struct fields are always file-private** (cannot be marked `public`)
-- Function parameters and local variables cannot be marked `public`
+- **Struct fields are always file-private** (cannot be marked `pub`)
+- Function parameters and local variables cannot be marked `pub`
 
 ---
 
@@ -1510,7 +1514,12 @@ These functions are handled specially by the compiler and use the `@` prefix:
 ```a7
 // Type sets
 @type_set :: fn(types: ..type) TypeSet     // Create type set
+```
 
+The tokenizer/parser reserve additional intrinsic spellings, but they are not
+semantically resolved or backend-lowered yet:
+
+```a7
 // Memory intrinsics
 @size_of :: fn($T: type) usize             // Size in bytes
 @align_of :: fn($T: type) usize            // Alignment requirement

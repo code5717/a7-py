@@ -183,8 +183,8 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 ### Unimplemented Spec Features
 
-- [ ] Variadic functions (spec §6.5).
-  Notes: spec'd but not parsed or implemented.
+- [ ] Variadic functions (spec §6.6).
+  Notes: parsed and partially type-checked, but runtime iteration and backend ABI lowering are not implemented.
 
 - [ ] Multiple return values / destructuring (`a, b, c := 1, 2, 3`).
   Notes: spec'd in §4.1, not parsed.

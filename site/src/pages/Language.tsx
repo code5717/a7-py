@@ -63,13 +63,10 @@ const OP_PRECEDENCE: Array<[string, string]> = [
 ]
 
 const INTRINSICS: Array<[string, string]> = [
-  ['@size_of(T)', 'Size of type in bytes'],
-  ['@align_of(T)', 'Alignment requirement of a type'],
-  ['@type_id(T)', 'Compiler type identifier'],
-  ['@type_name(T)', 'Type name string'],
   ['@type_set(...)', 'Build type sets for generic constraints'],
-  ['@unreachable()', 'Mark unreachable code path'],
-  ['@likely(cond), @unlikely(cond)', 'Branch prediction hint'],
+  ['@size_of(T), @align_of(T)', 'Reserved spelling; not semantically resolved yet'],
+  ['@type_id(T), @type_name(T)', 'Reserved spelling; not semantically resolved yet'],
+  ['@unreachable(), @likely(cond), @unlikely(cond)', 'Reserved spelling; not semantically resolved yet'],
 ]
 
 const IO_FUNCTIONS: Array<[string, string]> = [
@@ -135,7 +132,7 @@ export default function Language() {
             [<code className="doc-inline-code">Source encoding</code>, 'ASCII-focused; identifiers are ASCII alphanumeric + underscore'],
             [<code className="doc-inline-code">Whitespace</code>, 'Spaces and carriage returns are ignored; tabs are rejected'],
             [<code className="doc-inline-code">Terminators</code>, 'Every newline is a statement terminator token (deduplicated)'],
-            [<code className="doc-inline-code">Builtin IDs</code>, 'Names that start with @ are tokenized as builtins (example: @size_of)'],
+            [<code className="doc-inline-code">Builtin IDs</code>, 'Names that start with @ are tokenized as builtins (example: @type_set)'],
             [<code className="doc-inline-code">Generic IDs</code>, 'Names that start with $ are generic type tokens (example: $T)'],
           ]}
         />
@@ -276,7 +273,7 @@ main :: fn() {
             ['Index and slice', <code className="doc-inline-code">arr[i], arr[start..end], arr[..end]</code>],
             ['Field and pointer ops', <code className="doc-inline-code">obj.field, value.adr, ptr.val</code>],
             ['Constructors', <code className="doc-inline-code">Type{'{...}'}, new Type, new(Type)</code>],
-            ['Casts and intrinsics', <code className="doc-inline-code">cast(i32, x), @size_of(i64)</code>],
+            ['Casts and intrinsics', <code className="doc-inline-code">cast(i32, x), @type_set(i32, f64)</code>],
             ['Expression control flow', <code className="doc-inline-code">if cond {'{'}a{'}'} else {'{'}b{'}'}, match x {'{'} ... {'}'}</code>],
           ]}
         />
@@ -284,7 +281,7 @@ main :: fn() {
         <CodeBlock
           lang="a7"
           code={`result := cast(i32, 4.8)
-size := @size_of(i32)
+Numeric :: @type_set(i32, f64)
 
 arr: [5]i32 = [10, 20, 30, 40, 50]
 mid := arr[1..4]
@@ -362,12 +359,8 @@ greet :: fn(name: string) {
 // Function type alias
 Reducer :: fn(i32, i32) i32
 
-// Variadic parameter
-sum :: fn(values: ..i32) i32 {
-    total := 0
-    for value in values { total += value }
-    ret total
-}
+// Variadic declarations are parsed, but runtime lowering is not complete.
+printf :: fn(format: string, args: ..)
 
 // Method style is normal function + ref receiver
 Counter :: struct { value: i32 }
@@ -427,7 +420,7 @@ abs_generic :: fn(x: $T) $T {
 }`}
         />
         <DocCallout tone="warning">
-          Some generic semantic paths are still in progress (constraint-aware arithmetic, full substitution in some struct-literal and field-access paths). See <Link to="/status">Status</Link> for current gaps.
+          Simple generic functions, type-set constraints, and used generic struct instances lower in both backends. Broader composite generic propagation and method-style call chains remain current gaps.
         </DocCallout>
       </SectionPanel>
 
@@ -442,8 +435,8 @@ import "vector" { Vec3, dot }
 using import "vector"
 
 pub Vec2 :: struct {
-    pub x: f32
-    pub y: f32
+    x: f32
+    y: f32
 }
 
 pub length :: fn(v: Vec2) f32 {
@@ -451,7 +444,7 @@ pub length :: fn(v: Vec2) f32 {
 }`}
         />
         <p className="text-secondary mt-1">
-          Every <code className="doc-inline-code">.a7</code> file is a module. Use <code className="doc-inline-code">pub</code> to export top-level declarations and struct fields.
+          Every <code className="doc-inline-code">.a7</code> file is a module. Use <code className="doc-inline-code">pub</code> to export top-level declarations; struct fields are not marked public.
         </p>
       </SectionPanel>
 

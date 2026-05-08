@@ -6,8 +6,8 @@
 - Direct, mutual, and local function-pointer alias source recursion are semantic errors.
 - Debug/release artifact verification is available for both backends.
 - Example end-to-end verification is available for both Zig and C.
-- Selected Zig/C backend parity verification is available, including contextual array literal assignment, defer unwinding, fallthrough, untagged unions, generic function specialization, generic struct instances, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
-- Simple top-level generic function calls and used generic struct instances lower in the C backend through concrete specialization.
+- Selected Zig/C backend parity verification is available, including contextual array literal assignment, defer unwinding, fallthrough, untagged unions, generic function specialization, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math calls, operator edge cases, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
+- Simple top-level generic function calls, type-set constraints, and used generic struct instances lower in the C backend through concrete specialization.
 - Array literal assignment validates declared lengths and nested element types.
 - Index and slice-bound variables must be `usize`; non-negative integer literals are accepted for simple indexing.
 - Invalid ordering comparisons and unsafe signed-to-unsigned integer assignments are rejected during type checking.
@@ -20,6 +20,11 @@
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until their language and backend representation is defined.
 - Full generic specialization is incomplete beyond simple top-level generic functions and used generic struct instances.
+- Variadic declarations are parsed and partially type-checked, but runtime
+  iteration and backend ABI lowering are not implemented.
+- Intrinsics beyond `@type_set(...)` are reserved/tokenized but not current
+  semantic or backend features.
+- Multiple return values / destructuring are planned syntax, not current parser support.
 - Untagged union construction/access works; tagged/discriminated union tag workflows are not implemented yet.
 - `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
 - Package-registry publishing is not part of the current release workflow.

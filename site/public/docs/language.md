@@ -53,6 +53,20 @@ local aliases such as `console :: import "std/io"` and
 
 Source stubs such as `mem` and `string` exist in the repository but are not registered public stdlib modules yet.
 
+## Current Syntax Limits
+
+- `@type_set(...)` is implemented for generic constraints. Other `@...`
+  intrinsic spellings such as `@size_of`, `@align_of`, `@type_id`,
+  `@type_name`, `@unreachable`, `@likely`, and `@unlikely` are reserved or
+  tokenized but not semantically resolved/lowered yet.
+- Variadic parameter declarations are parsed and partially type-checked, but
+  runtime iteration and backend ABI lowering are not implemented.
+- Multiple return values / destructuring declarations are planned syntax, not
+  current parser support.
+- Simple generic functions, type-set constraints, and used generic struct
+  instances lower in both backends. Broader composite generic propagation is a
+  known gap.
+
 ## Specification
 
 The full language specification lives in [`docs/SPEC.md`](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md).

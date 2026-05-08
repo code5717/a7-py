@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `examples/014_generics.a7` now runs real generic functions and generic struct
+  instances in both backends; backend parity coverage now also includes type-set
+  generic constraints, explicit enum discriminants, stdlib math mappings, and
+  edge operator assignments/comparisons.
+- README, SPEC, site, and public Markdown docs now distinguish current features
+  from parsed-only or reserved syntax such as variadics, non-`@type_set`
+  intrinsics, and multiple declaration/destructuring syntax.
 - Generic struct literals now retain concrete instance types during semantic
   analysis, Zig emits generic struct instances with explicit type arguments,
   and the C backend monomorphizes used generic struct instances before codegen.

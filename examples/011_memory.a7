@@ -10,6 +10,7 @@ main :: fn() {
         io.println("allocation failed")
         ret
     }
+    defer del value_ptr
 
     value_ptr.val = 42
     io.println("heap value = {}", value_ptr.val)

@@ -1,3 +1,6 @@
-=== Generics Status ===
-Generic functions are validated in semantic tests.
-C backend generic lowering is tracked before runtime examples.
+=== Generics ===
+identity number = 7
+identity string = ok
+boxed = 7
+nested boxed = 5
+pair = 7 ok

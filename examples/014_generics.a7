@@ -1,13 +1,32 @@
-// Generics status note
-//
-// Parser and semantic tests cover generic functions, type parameters, and
-// constraints. The runnable example stays explicit because release artifacts
-// must pass both Zig and C backends, and C generic lowering is still tracked.
+// Generic functions and structs
 
 io :: import "std/io"
 
+identity($T) :: fn(value: $T) $T {
+    ret value
+}
+
+Box :: struct {
+    value: $T
+}
+
+Pair($A, $B) :: struct {
+    first: $A
+    second: $B
+}
+
 main :: fn() {
-    io.println("=== Generics Status ===")
-    io.println("Generic functions are validated in semantic tests.")
-    io.println("C backend generic lowering is tracked before runtime examples.")
+    io.println("=== Generics ===")
+
+    number := identity(7)
+    word := identity("ok")
+    boxed: Box(i32) = Box(i32){value: number}
+    nested: Box(Box(i32)) = Box(Box(i32)){value: Box(i32){value: 5}}
+    pair: Pair(i32, string) = Pair(i32, string){first: boxed.value, second: word}
+
+    io.println("identity number = {}", number)
+    io.println("identity string = {}", word)
+    io.println("boxed = {}", boxed.value)
+    io.println("nested boxed = {}", nested.value.value)
+    io.println("pair = {} {}", pair.first, pair.second)
 }
