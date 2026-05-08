@@ -33,7 +33,7 @@ PYTHONPATH=. uv run pytest --tb=no -q`}
 
       <SectionPanel title="Rules">
         <ul className="doc-list">
-          <li>No recursion in AST traversal. Use explicit stacks. Pipeline must work at recursion limit 100.</li>
+          <li>Use explicit stacks for new AST-wide analysis or reporting walks. Keep recursion-limit tests passing.</li>
           <li>Use exact attribute names: <code className="doc-inline-code">node.operator</code>, <code className="doc-inline-code">node.literal_value</code>, <code className="doc-inline-code">node.parameter_types</code>.</li>
           <li>Semantic errors are collected, not thrown. The pipeline keeps going.</li>
           <li>Preprocessor annotations bridge stages. Set once, consumed by backend.</li>

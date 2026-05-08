@@ -16,7 +16,11 @@ It is a single commented program verified through both native backends.
 
 Source recursion is banned. Direct and mutual recursion are rejected during semantic validation. Repeated work should be expressed with loops, explicit stacks, queues, or index-based worklists.
 
-The compiler implementation also keeps AST traversals iterative and is validated with Python recursion limit 100.
+The compiler uses explicit stacks for semantic analysis, AST preprocessing, and
+formatter/reporting walks. The parser remains recursive descent, and backend
+codegen still has visitor-style recursive emission in some paths. The current
+pipeline is regression-tested at Python recursion limit 100 for representative
+programs.
 
 ## Integer Type Guidance
 

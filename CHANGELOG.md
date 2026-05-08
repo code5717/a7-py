@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Documentation now scopes the low-recursion implementation claim to the
+  compiler stages that are actually stack-based today and tracks fully
+  iterative backend emission as follow-up work.
 - JSON AST serialization now uses an explicit traversal stack so machine-readable
   AST output follows the same low-recursion implementation contract as the rest
   of the compiler pipeline.
@@ -371,12 +374,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ENHANCED AST PREPROCESSOR** (`a7/ast_preprocessor.py`)
   - Now accepts `symbol_table`, `type_map`, and `StdlibRegistry` from pipeline
   - 9 sub-passes: stdlib resolution, struct init normalization, mutation analysis, usage analysis, type inference, shadowing resolution, nested function hoisting, constant folding
-  - All traversals are iterative (no recursion)
+  - Preprocessor traversals are iterative (no recursion)
 
-- **ELIMINATED RECURSION** across entire codebase
-  - Converted all recursive AST walkers to iterative (explicit stack) implementations
+- **REDUCED AST WALK RECURSION** across core compiler stages
+  - Converted major AST walkers to iterative (explicit stack) implementations
   - Files: `ast_preprocessor.py`, `backends/zig.py`, `passes/semantic_validator.py`, `passes/name_resolution.py`, `passes/type_checker.py`, `generics.py`, `formatters/console_formatter.py`, `formatters/markdown_formatter.py`
-  - Full compilation pipeline works with Python recursion limit of 100
+  - Representative compilation paths work with Python recursion limit of 100
 
 - **ZIG BACKEND** now reads preprocessor annotations (`emit_name`, `hoisted`, `is_used`, `resolved_type`)
 

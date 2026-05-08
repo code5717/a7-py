@@ -67,7 +67,7 @@ export default function Internals() {
           ))}
         </div>
         <p className="text-tertiary text-tiny mt-2">
-          All traversals are iterative. The full pipeline works at <code className="doc-inline-code">sys.setrecursionlimit(100)</code>.
+          Analysis, preprocessing, and formatter walks use explicit stacks. The current pipeline is covered at <code className="doc-inline-code">sys.setrecursionlimit(100)</code>; backend emission still has visitor-style recursive paths.
         </p>
       </SectionPanel>
 

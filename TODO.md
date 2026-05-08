@@ -9,6 +9,13 @@ Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 38/38 examples p
 
 These are bugs and schema mismatches in already-implemented features.
 
+- [ ] Convert backend codegen emission paths to fully iterative traversal.
+  Files: `a7/backends/zig.py`, `a7/backends/c.py`, `test/test_iterative_traversal.py`
+  Notes: semantic analysis, preprocessing, generic lowering, and formatter/reporting
+  AST walks use explicit stacks, but backend statement/expression emission still
+  uses visitor-style recursive calls in some paths. Current low-recursion tests
+  cover representative programs; full backend conversion remains a hardening task.
+
 ### Release / Workflow Hardening
 
 - [x] Add Dependabot coverage for GitHub Actions, Python, and docs npm dependencies.
