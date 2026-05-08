@@ -422,22 +422,22 @@ export default function Layout() {
             </div>
 
             <div className="site-footer-column">
-              <h3>Guide</h3>
+              <h3>Language</h3>
               <div className="site-footer-links">
                 <Link to="/start">Getting Started</Link>
-                <Link to="/features">Features</Link>
-                <Link to="/agent-usage">Agent Usage</Link>
+                <Link to="/language">Language Reference</Link>
+                <Link to="/examples">Examples</Link>
                 <Link to="/cli">CLI</Link>
               </div>
             </div>
 
             <div className="site-footer-column">
-              <h3>Plugins</h3>
+              <h3>Project</h3>
               <div className="site-footer-links">
-                <Link to="/plugins/codex">Codex</Link>
-                <Link to="/plugins/claude">Claude Code</Link>
-                <Link to="/plugins/cursor">Cursor</Link>
-                <Link to="/plugins/opencode">OpenCode</Link>
+                <Link to="/internals">Compiler</Link>
+                <Link to="/status">Status</Link>
+                <Link to="/release">Release</Link>
+                <Link to="/contributing">Contributing</Link>
               </div>
             </div>
 

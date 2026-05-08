@@ -18,12 +18,12 @@ export type SectionSearchItem = {
 }
 
 export const PRIMARY_NAV: PrimaryNavItem[] = [
-  { kind: 'route', to: '/docs', label: 'Docs' },
   { kind: 'route', to: '/start', label: 'Start' },
-  { kind: 'route', to: '/features', label: 'Guide' },
-  { kind: 'route', to: '/plugins', label: 'Plugins' },
-  { kind: 'route', to: '/skills', label: 'LLM' },
-  { kind: 'route', to: '/develop', label: 'Contribute' },
+  { kind: 'route', to: '/language', label: 'Language' },
+  { kind: 'route', to: '/examples', label: 'Examples' },
+  { kind: 'route', to: '/internals', label: 'Compiler' },
+  { kind: 'route', to: '/status', label: 'Status' },
+  { kind: 'route', to: '/docs', label: 'Docs' },
   { kind: 'link', href: 'https://github.com/code5717/a7-py', label: 'GitHub ↗' },
 ]
 
@@ -55,7 +55,7 @@ export const PAGE_META: Record<string, { title: string; description: string; mar
   },
   '/docs': {
     title: 'Markdown Docs',
-    description: 'curl.md-friendly Markdown documentation index for agents, terminals, and editor tools.',
+    description: 'Static Markdown documentation index for terminals, curl.md, and editor tools.',
     markdownPath: '/docs/index.md',
   },
   '/start': {

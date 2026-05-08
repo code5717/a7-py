@@ -324,8 +324,8 @@ for i, value in values {
     io.println("idx={} value={}", i, value)
 }
 
-loop_label: while true {
-    continue loop_label
+@outer while true {
+    continue outer
 }
 
 match code {

@@ -78,6 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reference pages in the `/docs` directory, advertises `llms.txt` and
   `llms-full.txt` as alternate resources, and tightens docs and examples card
   layout to prevent long file names or labels from colliding.
+- Rebalanced the public docs site back toward A7 language content: the primary
+  navigation now highlights Start, Language, Examples, Compiler, and Status;
+  the homepage no longer frames curl.md/agent docs as the product; and the
+  language reference now shows current `@label` loop syntax.
 - Zig and C example verification now share one verifier implementation while
   keeping the existing `verify_examples_e2e.py` and
   `verify_examples_e2e_c.py` command entry points and JSON report contracts.

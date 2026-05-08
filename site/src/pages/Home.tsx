@@ -3,33 +3,17 @@ import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
 import SectionPanel from '../components/SectionPanel'
 
-const FIBONACCI = `io :: import "std/io"
-
-fib :: fn(n: usize) u64 {
-    if n < 2 {
-        ret cast(u64, n)
-    }
-
-    prev: u64 = 0
-    acc: u64 = 1
-    i: usize = 2
-
-    while i <= n {
-        next := prev + acc
-        prev = acc
-        acc = next
-        i += 1
-    }
-
-    ret acc
-}
+const FRONT_PAGE_CODE = `io :: import "std/io"
 
 main :: fn() {
-    i: usize = 0
-    while i < 10 {
-        io.println("fib({}) = {}", i, fib(i))
-        i += 1
+    values: [5]i32 = [3, 5, 8, 13, 21]
+    total: i32 = 0
+
+    for value in values {
+        total += value
     }
+
+    io.println("sum = {}", total)
 }`
 
 const QUICKSTART = [
@@ -41,20 +25,20 @@ const QUICKSTART = [
 
 const FEATURES = [
   {
-    title: 'Agent-ready markdown',
-    copy: 'llms.txt, full context, and route-level docs.',
+    title: 'Small language',
+    copy: 'Static types, arrays, slices, refs, structs, enums, and unions.',
   },
   {
-    title: 'CLI first',
-    copy: 'Commands, exit codes, and JSON output are documented.',
+    title: 'Two backends',
+    copy: 'Generate Zig or C and compare runtime output.',
   },
   {
-    title: 'Verified examples',
-    copy: 'Zig and C outputs are checked against golden output.',
+    title: 'No recursion',
+    copy: 'Use loops, stacks, queues, and worklists.',
   },
   {
-    title: 'Honest status',
-    copy: 'Known gaps stay visible for agents and maintainers.',
+    title: 'Plain docs',
+    copy: 'Fetchable Markdown exists, but the site stays human-first.',
   },
 ]
 
@@ -67,17 +51,10 @@ const PIPELINE = [
 ]
 
 const HIGHLIGHTS = [
-  { title: 'Introduction', copy: 'Start, install, why, FAQ.' },
-  { title: 'Guide', copy: 'Features, agent usage, CLI, API.' },
-  { title: 'Plugins', copy: 'Codex, Claude, Cursor, OpenCode.' },
-  { title: 'LLM resources', copy: 'Skills, llms.txt, full context.' },
-  { title: 'Contributing', copy: 'Develop, deploy, kitchen sink.' },
-  { title: 'A7 reference', copy: 'Language, examples, compiler, status.' },
+  { title: 'Language', copy: 'Syntax and type reference.' },
+  { title: 'Examples', copy: '37 verified programs.' },
+  { title: 'Compiler', copy: 'Pipeline and backend notes.' },
 ]
-
-function publicDocsPath(path: string) {
-  return `${import.meta.env.BASE_URL.replace(/\/$/, '')}${path}`
-}
 
 function QuickstartCommand({ step, label, command }: { step: string; label: string; command: string }) {
   const [copied, setCopied] = useState(false)
@@ -139,25 +116,25 @@ export default function Home() {
     <div className="page home-page">
       <section className="home-hero" data-reveal>
         <div className="home-hero-copy">
-          <span className="page-header-eyebrow">A7 docs · curl.md ready</span>
-          <h1 className="page-header-title">A7, simple, fast.</h1>
+          <span className="page-header-eyebrow">A7 language</span>
+          <h1 className="page-header-title">Simple, fast systems code.</h1>
           <p className="page-header-summary">
-            A small systems language with fetchable docs, direct compiler output, and verified examples.
+            Compile one file to Zig or C. No recursion, no magic runtime.
           </p>
 
           <div className="home-hero-actions">
             <Link to="/start" className="primary-action">
               Getting Started <span aria-hidden="true">→</span>
             </Link>
-            <a href={publicDocsPath('/llms.txt')} className="secondary-action">
-              llms.txt <span aria-hidden="true">→</span>
-            </a>
+            <Link to="/language" className="secondary-action">
+              Language <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </div>
 
         <div className="home-hero-media">
           <div className="home-hero-code">
-            <CodeBlock code={FIBONACCI} lang="a7" title="033_fibonacci.a7" />
+            <CodeBlock code={FRONT_PAGE_CODE} lang="a7" title="sum.a7" />
           </div>
         </div>
       </section>
@@ -167,7 +144,7 @@ export default function Home() {
           <p className="quickstart-label">Quick start</p>
           <h2 className="quickstart-title">From zero to running.</h2>
           <p className="text-tertiary text-small">
-            Python 3.13+, uv, and Zig for generated output.
+            Python 3.13+, uv, and Zig.
           </p>
         </div>
 
@@ -189,7 +166,7 @@ export default function Home() {
 
       <SectionPanel className="home-pipeline pipeline-showcase">
         <div className="pipeline-intro">
-          <p className="section-label">Under the hood</p>
+          <p className="section-label">Compiler</p>
           <h2 className="home-section-title">Transparent pipeline.</h2>
           <p className="pipeline-intro-copy">
             Five visible stages from source to generated code.
@@ -216,10 +193,10 @@ export default function Home() {
 
       <SectionPanel className="home-highlights highlights-section">
         <div className="highlights-intro">
-          <p className="section-label">Docs map</p>
-          <h2 className="home-section-title">Built for curl.md fetches.</h2>
-          <Link to="/features" className="pipeline-intro-link">
-            Browse guide <span aria-hidden="true">→</span>
+          <p className="section-label">Reference</p>
+          <h2 className="home-section-title">Everything important stays close.</h2>
+          <Link to="/docs" className="pipeline-intro-link">
+            Open docs <span aria-hidden="true">→</span>
           </Link>
         </div>
 
@@ -236,7 +213,7 @@ export default function Home() {
       <SectionPanel className="home-cta-panel home-cta">
         <div className="home-cta-copy">
           <h2 className="home-cta-title">A7, simple, fast.</h2>
-          <p>Start with one file.</p>
+          <p>Start with one file. Keep the output inspectable.</p>
           <div className="home-cta-actions">
             <Link to="/start" className="primary-action">
               Get started <span aria-hidden="true">→</span>
