@@ -67,7 +67,7 @@ export default function Internals() {
           ))}
         </div>
         <p className="text-tertiary text-tiny mt-2">
-          Analysis, preprocessing, and formatter walks use explicit stacks. The current pipeline is covered at <code className="doc-inline-code">sys.setrecursionlimit(100)</code>; backend emission still has visitor-style recursive paths.
+          Analysis, preprocessing, formatter walks, and backend binary-expression emission use explicit stacks. The current pipeline is covered at <code className="doc-inline-code">sys.setrecursionlimit(100)</code>; backend statement and non-binary expression emission still have visitor-style recursive paths.
         </p>
       </SectionPanel>
 

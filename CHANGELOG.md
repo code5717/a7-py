@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Semantic recursion validation now catches higher-order callback trampolines,
   including direct, mutual, and callback-parameter-alias cycles.
+- Zig and C backend binary-expression emission now uses explicit postorder
+  stacks, avoiding Python recursion failures on deeply nested binary ASTs.
 - Normal example verifier runs now fail closed when a golden output fixture is
   missing; only explicit `--update-golden` runs write fixture files.
 - Documentation now scopes the low-recursion implementation claim to the

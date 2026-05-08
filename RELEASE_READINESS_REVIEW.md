@@ -405,6 +405,14 @@ not factually provable from local tests alone.
   passed; Zig examples 38/38; C examples 38/38; backend parity 24/24; debug
   artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
   style ok; secrets check ok; total pytest 1257 passed; summary 12/12.
+- Zig and C backend binary-expression emission now uses explicit stacks, with
+  synthetic backend-only stress tests covering 160-deep binary ASTs at low
+  recursion limits.
+- Local `./run_all_tests.sh` passed after backend binary-expression hardening:
+  parser/tokenizer 501 passed; semantic 340 passed; compiler/CLI/backend 337
+  passed; Zig examples 38/38; C examples 38/38; backend parity 24/24; debug
+  artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
+  style ok; secrets check ok; total pytest 1259 passed; summary 12/12.
 
 ## Residual Risks
 
@@ -439,6 +447,8 @@ not factually provable from local tests alone.
 
 1. Expand nested/composite generic specialization and method-style propagation
    parity beyond the currently covered generic struct instances.
-2. Add stronger hosted secret scanning if the repository host supports it.
-3. Expand backend parity for every new language feature, including additional
+2. Continue converting backend statement and non-binary expression emission to
+   explicit stacks.
+3. Add stronger hosted secret scanning if the repository host supports it.
+4. Expand backend parity for every new language feature, including additional
    fallthrough and capture-pattern edge cases.

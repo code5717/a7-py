@@ -36,8 +36,9 @@ Run the full local gate for release-impacting changes:
 ## Development Rules
 
 - Prefer explicit stacks for new AST-wide analysis or reporting walks. Backend
-  codegen still has visitor-style recursive emission in some paths; keep
-  low-recursion tests passing and track full conversion in `TODO.md`.
+  binary-expression emission is stack-based, but statement and non-binary
+  expression emission still have recursive paths; keep low-recursion tests
+  passing and track full conversion in `TODO.md`.
 - No recursive A7 source examples.
 - Keep docs and examples aligned.
 - Document remaining gaps instead of hiding them.

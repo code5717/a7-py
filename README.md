@@ -147,7 +147,7 @@ Source (.a7) → Tokenizer → Parser → Semantic Analysis (3-pass) → AST Pre
 4. **AST Preprocessing**. Runs 9 sub-passes: sugar lowering, stdlib resolution, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
 5. **Backend Code Generation**. Translates AST to valid Zig or C source code.
 
-Semantic analysis, AST preprocessing, and formatter/reporting AST walks use explicit stacks. The parser is recursive descent, and backend code generation still uses visitor-style recursive emission in some paths. Current low-recursion coverage validates the supported pipeline at Python recursion limit 100 for representative programs. A7 source recursion, including local function-pointer aliases and higher-order callback trampolines, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead.
+Semantic analysis, AST preprocessing, formatter/reporting AST walks, and backend binary-expression emission use explicit stacks. The parser is recursive descent, and backend statement/non-binary expression generation still uses visitor-style recursive emission in some paths. Current low-recursion coverage validates the supported pipeline at Python recursion limit 100 for representative programs. A7 source recursion, including local function-pointer aliases and higher-order callback trampolines, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead.
 
 ## Integer Type Guidance
 

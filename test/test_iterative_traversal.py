@@ -21,7 +21,9 @@ import tempfile
 
 import pytest
 
-from a7.ast_nodes import ASTNode, NodeKind
+from a7.ast_nodes import ASTNode, BinaryOp, LiteralKind, NodeKind
+from a7.backends.c import CCodeGenerator
+from a7.backends.zig import ZigCodeGenerator
 from a7.compile import A7Compiler, OutputFormat
 from a7.formatters import JSONFormatter
 
@@ -146,6 +148,19 @@ def make_nested_expressions(depth: int) -> str:
         "    io.println(\"{}\", x)\n"
         "}\n"
     )
+
+
+def make_deep_binary_ast(depth: int) -> ASTNode:
+    """Build a synthetic binary-expression AST without going through parser."""
+    node = ASTNode(NodeKind.LITERAL, literal_kind=LiteralKind.INTEGER, literal_value=1)
+    for i in range(2, depth + 2):
+        node = ASTNode(
+            NodeKind.BINARY,
+            left=node,
+            operator=BinaryOp.ADD,
+            right=ASTNode(NodeKind.LITERAL, literal_kind=LiteralKind.INTEGER, literal_value=i),
+        )
+    return node
 
 
 def make_many_statements(count: int) -> str:
@@ -396,6 +411,20 @@ class TestLowRecursionLimit:
             depth += 1
 
         assert depth == 160
+
+    def test_zig_backend_deep_binary_expression_uses_iterative_stack(self):
+        """Zig expression emission should not recurse on deep binary chains."""
+        expr = make_deep_binary_ast(160)
+        rendered = ZigCodeGenerator()._emit_expr(expr)
+
+        assert rendered.count("+") == 160
+
+    def test_c_backend_deep_binary_expression_uses_iterative_stack(self):
+        """C expression emission should not recurse on deep binary chains."""
+        expr = make_deep_binary_ast(160)
+        rendered = CCodeGenerator()._emit_expr(expr)
+
+        assert rendered.count("+") == 160
 
 
 # ===========================================================================

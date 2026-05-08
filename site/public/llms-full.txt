@@ -135,6 +135,11 @@ Exit codes:
 Source recursion is banned. Direct, mutual, local alias, and callback-trampoline recursion are semantic errors.
 Use loops, explicit stacks, queues, or index-based worklists.
 
+Compiler traversal note: semantic analysis, preprocessing, generic lowering,
+JSON AST output, formatter/reporting walks, and backend binary-expression
+emission use explicit stacks. Parser and remaining backend statement/non-binary
+expression emission still have recursive paths.
+
 Declaration forms:
 
 ```a7

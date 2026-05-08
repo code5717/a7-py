@@ -25,7 +25,7 @@ Deliverables implied by the active objective:
 | Security dependency audit | Hosted CI run `25551465003`; manual release workflow `25546125531`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
 | Python static security scan | Hosted CI run `25551465003`; local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
 | Secret scanning | Hosted CI run `25551465003`; `scripts/check_no_secrets.py` | Passing pattern- and filename-based scan |
-| Python test suite | Hosted CI run `25551465003`; local `./run_all_tests.sh` after higher-order recursion hardening | Passing: 1257 tests |
+| Python test suite | Hosted CI run `25551465003`; local `./run_all_tests.sh` after backend binary-expression hardening | Passing: 1259 tests |
 | Error-stage behavior | Hosted CI run `25551465003`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
 | Zig example E2E | Hosted CI run `25551465003`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual golden-output inspection | Passing: 38/38 |
 | C example E2E | Hosted CI run `25551465003`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual golden-output inspection | Passing: 38/38 |
@@ -42,7 +42,7 @@ Deliverables implied by the active objective:
 | Release workflow | `.github/workflows/release.yml`, manual dispatch run `25546125531` on commit `8c24063`; release gate, dependency audits, static scan, package build, wheel install, docs build, archive verification, checksums, attestations, and artifact upload passed | Passing for non-tag validation; tag-only draft release creation still requires a real tag run before release |
 | Workflow supply-chain hardening | All workflow actions are pinned to immutable commit SHAs; `.github/dependabot.yml` covers GitHub Actions, Python, and docs npm; automated Claude review prompt treats PR text as untrusted | Covered for current workflow action pinning |
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs; direct, mutual, alias-recursion, callback trampoline, and forwarded callback trampoline regression tests; local full gate | Implemented for named call cycles, local function-pointer alias cycles, top-level functions passed through callback parameters that are invoked by the callee, and one-level callback-parameter forwarding through another callback |
-| No-recursion compiler traversal confidence | `test/test_iterative_traversal.py`; `README.md`; `TODO.md`; local full gate | Partially covered: semantic analysis, preprocessing, generic lowering, JSON AST output, and formatter/reporting AST walks are stack-based or tested at low recursion limits; parser is recursive descent, and backend statement/expression emission still has recursive paths tracked in `TODO.md` |
+| No-recursion compiler traversal confidence | `test/test_iterative_traversal.py`; `README.md`; `TODO.md`; local full gate after backend binary-expression hardening | Partially covered: semantic analysis, preprocessing, generic lowering, JSON AST output, formatter/reporting AST walks, and backend binary-expression emission are stack-based or tested at low recursion limits; parser is recursive descent, and backend statement/non-binary expression emission still has recursive paths tracked in `TODO.md` |
 | Virtual stdlib module resolution | `a7/module_resolver.py`, `a7/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
 | File-backed module path containment | `a7/module_resolver.py`, `test/test_module_resolver.py` | Absolute imports and parent-directory traversal are rejected outside configured search paths |
 | Array literal assignment compatibility | `a7/passes/type_checker.py`, `a7/backends/c.py`, `test/test_semantic_types.py`, `test/test_codegen_c.py`, `scripts/verify_backend_parity.py`; local full gate | Covered for declared lengths, nested literals, and Zig/C runtime parity |
@@ -57,9 +57,10 @@ These prevent a factual "100% confident" claim:
 1. The compiler is not a sandbox; native output can execute host-level behavior.
 2. Backend parity is selected and expanding, not exhaustive over all valid A7
    programs. The current local selected suite covers 24 non-example programs.
-3. Backend code generation still contains recursive statement/expression
-   emission paths; current low-recursion coverage covers representative
-   programs but not a full backend conversion.
+3. Backend code generation still contains recursive statement and non-binary
+   expression emission paths; current low-recursion coverage covers
+   representative programs and synthetic deep binary-expression ASTs, but not a
+   full backend conversion.
 4. `fall` and branch-local match capture patterns now lower in both native
    backends, but backend parity is still selected rather than exhaustive.
 5. Full ownership, borrowing, lifetime, use-after-free, and double-free

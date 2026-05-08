@@ -1214,7 +1214,7 @@ class ZigCodeGenerator(CodeGenerator):
         elif kind == NodeKind.IDENTIFIER:
             return self._emit_identifier(node)
         elif kind == NodeKind.BINARY:
-            return self._emit_binary(node)
+            return self._emit_binary_iterative(node)
         elif kind == NodeKind.UNARY:
             return self._emit_unary(node)
         elif kind == NodeKind.CALL:
@@ -1301,6 +1301,31 @@ class ZigCodeGenerator(CodeGenerator):
         """Emit a binary expression."""
         left = self._emit_expr(node.left)
         right = self._emit_expr(node.right)
+        return self._emit_binary_from_parts(node, left, right)
+
+    def _emit_binary_iterative(self, root: ASTNode) -> str:
+        """Emit nested binary expressions without using the Python call stack."""
+        rendered: dict[int, str] = {}
+        stack: list[tuple[ASTNode, bool]] = [(root, False)]
+        while stack:
+            node, ready = stack.pop()
+            if node.kind != NodeKind.BINARY:
+                rendered[id(node)] = self._emit_expr(node)
+                continue
+            if ready:
+                left = rendered.pop(id(node.left))
+                right = rendered.pop(id(node.right))
+                rendered[id(node)] = self._emit_binary_from_parts(node, left, right)
+                continue
+            stack.append((node, True))
+            if node.right is not None:
+                stack.append((node.right, False))
+            if node.left is not None:
+                stack.append((node.left, False))
+        return rendered[id(root)]
+
+    def _emit_binary_from_parts(self, node: ASTNode, left: str, right: str) -> str:
+        """Render a binary node from already-rendered child expressions."""
         op = node.operator
 
         zig_op = self._binary_op_to_zig(op)
