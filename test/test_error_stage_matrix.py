@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
-import sys
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -14,32 +12,20 @@ from src.compile import ExitCode
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MAIN_PY = PROJECT_ROOT / "main.py"
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
-ALL_MODES = ["compile", "tokens", "ast", "semantic", "pipeline", "doc"]
-PARSE_MODES = ["compile", "ast", "semantic", "pipeline", "doc"]
-SEMANTIC_MODES = ["compile", "semantic", "pipeline", "doc"]
-CODEGEN_MODES = ["compile", "pipeline", "doc"]
-FORMATS = ["human", "json"]
-
-
-def run_cli(args: list[str]) -> subprocess.CompletedProcess[str]:
-    """Run the compiler CLI and capture output."""
-    env = os.environ.copy()
-    existing_pythonpath = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = (
-        f"{PROJECT_ROOT}:{existing_pythonpath}" if existing_pythonpath else str(PROJECT_ROOT)
-    )
-    return subprocess.run(
-        [sys.executable, str(MAIN_PY), *args],
-        cwd=PROJECT_ROOT,
-        capture_output=True,
-        text=True,
-        env=env,
-    )
+from error_stage_common import (  # noqa: E402
+    ALL_MODES,
+    CODEGEN_MODES,
+    FORMATS,
+    PARSE_MODES,
+    SEMANTIC_MODES,
+    build_stage_sources,
+    run_cli,
+)
 
 
-def parse_json_output(result: subprocess.CompletedProcess[str]) -> dict:
+def parse_json_output(result) -> dict:
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError as exc:
@@ -48,40 +34,22 @@ def parse_json_output(result: subprocess.CompletedProcess[str]) -> dict:
 
 @pytest.fixture
 def stage_sources(tmp_path: Path) -> dict[str, Path]:
-    tokenize_error = tmp_path / "tokenize_error.a7"
-    tokenize_error.write_text(
-        'io :: import "std/io"\nmain :: fn() {\n    io.println("Hello, World!)\n}\n',
-        encoding="utf-8",
+    return build_stage_sources(tmp_path)
+
+
+def test_shared_audit_matrix_matches_pytest_matrix(stage_sources: dict[str, Path], tmp_path: Path) -> None:
+    from error_stage_common import audit_payload, run_audit_with_sources
+
+    results = run_audit_with_sources(
+        sources=stage_sources,
+        tmp_dir=tmp_path,
+        selected_modes=ALL_MODES,
+        selected_formats=FORMATS,
     )
+    payload = audit_payload(results)
 
-    parse_error = tmp_path / "parse_error.a7"
-    parse_error.write_text(
-        "main :: fn() {\n    x := (\n}\n",
-        encoding="utf-8",
-    )
-
-    semantic_error = tmp_path / "semantic_error.a7"
-    semantic_error.write_text(
-        'main :: fn() {\n    x: i32 = "hello"\n}\n',
-        encoding="utf-8",
-    )
-
-    deferred_semantic_error = tmp_path / "deferred_semantic_error.a7"
-    deferred_semantic_error.write_text(
-        "main :: fn() {\n    x: i32 = 1\n    defer del x\n}\n",
-        encoding="utf-8",
-    )
-
-    ok_program = tmp_path / "ok.a7"
-    ok_program.write_text("main :: fn() {}\n", encoding="utf-8")
-
-    return {
-        "tokenize": tokenize_error,
-        "parse": parse_error,
-        "semantic": semantic_error,
-        "deferred_semantic": deferred_semantic_error,
-        "ok": ok_program,
-    }
+    assert payload["ok"] is True
+    assert payload["passed"] == payload["total"] == 61
 
 
 @pytest.mark.parametrize("mode", ALL_MODES)

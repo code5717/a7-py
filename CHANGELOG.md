@@ -81,6 +81,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zig and C example verification now share one verifier implementation while
   keeping the existing `verify_examples_e2e.py` and
   `verify_examples_e2e_c.py` command entry points and JSON report contracts.
+- Error-stage auditing now shares its mode matrix, generated source fixtures,
+  CLI runner, JSON helpers, and 61-check audit construction between the
+  standalone verifier and pytest matrix.
 
 ## [0.3.0] - 2026-05-07
 
