@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tag release runs now generate GitHub artifact attestations for the checksum
   manifest, Python package files, docs archive, and native example artifact
   archive before uploading release artifacts.
+- Release manifest verification now supports the flat layout created by
+  downloading release assets into one directory beside `SHA256SUMS`, matching
+  the documented pre-publish verification flow.
 - Semantic validation now rejects direct and mutual recursion; source programs
   should use loops, explicit stacks, or index-based worklists instead.
   The recursion graph respects local function-pointer shadowing, so indirect

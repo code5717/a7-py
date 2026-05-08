@@ -158,6 +158,12 @@ not factually provable from local tests alone.
   updates.
 - Tag release runs now generate GitHub artifact attestations for `SHA256SUMS`,
   Python package files, docs archive, and native example archive.
+- Manual release workflow dispatch `25536114185` passed on commit `582f47e`,
+  including release gates, package/docs/native artifacts, checksum generation,
+  GitHub artifact attestations, and release bundle upload. Downloaded release
+  assets verified locally with `scripts/verify_release_manifest.py`, and
+  `gh attestation verify` passed for the package, wheel, docs archive, and
+  native example archive.
 
 ## Fixed In This Pass
 
@@ -264,6 +270,9 @@ not factually provable from local tests alone.
 - Release workflow now emits GitHub artifact attestations for the checksum
   manifest and release assets, giving consumers a provenance check in addition
   to `SHA256SUMS`.
+- Release manifest verification now accepts both the workflow `dist/...` layout
+  and the flat downloaded-release-assets layout used before publishing a draft
+  release.
 - Release tooling now verifies required members inside the docs and native
   example archives before checksum generation, including `llms.txt`,
   `llms-full.txt`, public Markdown docs, and `001_hello` Zig/C outputs.

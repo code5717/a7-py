@@ -51,6 +51,8 @@ def resolve_artifact(base_dir: Path, artifact_path: str) -> Path:
         return candidate
     if (base_dir / candidate).exists():
         return base_dir / candidate
+    if (base_dir / candidate.name).exists():
+        return base_dir / candidate.name
     return ROOT / candidate
 
 

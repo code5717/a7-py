@@ -224,6 +224,52 @@ def test_verify_release_manifest_detects_tampering(tmp_path: Path) -> None:
     assert "release manifest verification failed" in tampered.stderr
 
 
+def test_verify_release_manifest_accepts_flat_downloaded_release_assets(tmp_path: Path) -> None:
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    artifact = dist / "artifact.tar.gz"
+    manifest = dist / "SHA256SUMS"
+    artifact.write_text("artifact\n", encoding="utf-8")
+
+    generate = subprocess.run(
+        [
+            sys.executable,
+            "scripts/generate_release_manifest.py",
+            str(dist),
+            "--output",
+            str(manifest),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert generate.returncode == 0, generate.stderr or generate.stdout
+
+    download_dir = tmp_path / "download"
+    download_dir.mkdir()
+    flat_manifest = download_dir / "SHA256SUMS"
+    flat_artifact = download_dir / "artifact.tar.gz"
+    flat_manifest.write_text(manifest.read_text(encoding="utf-8"), encoding="utf-8")
+    flat_artifact.write_text(artifact.read_text(encoding="utf-8"), encoding="utf-8")
+
+    verify = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_release_manifest.py",
+            str(flat_manifest),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert verify.returncode == 0, verify.stderr or verify.stdout
+    assert "release manifest verified: 1 artifacts" in verify.stdout
+
+
 def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> None:
     archive_path = tmp_path / "docs.tar.gz"
     docs_dir = tmp_path / "dist"
