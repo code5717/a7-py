@@ -2133,7 +2133,8 @@ Status snapshot (2026-05-08):
    - Exact duplicate bool, enum, and scalar literal patterns are diagnosed.
    - Wildcard-first and fully covered bool/enum cases make later cases and else branches unreachable.
    - Literal and compile-time constant numeric/char range overlaps are diagnosed.
-   - Non-constant symbolic interval range overlap diagnostics are still incomplete.
+   - Conservative non-constant symbolic interval overlaps are diagnosed when
+     inclusive ranges share an endpoint symbol.
    - True variable-binding/capture patterns are not implemented; plain identifier patterns refer to existing symbols.
 
 3. **Memory/lifetime model depth**

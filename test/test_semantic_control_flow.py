@@ -933,6 +933,59 @@ class TestMatchStatements:
         """
         assert expect_error(source, "overlaps previous literal pattern")
 
+    def test_overlapping_symbolic_range_patterns_are_rejected(self):
+        """Inclusive ranges sharing a runtime endpoint symbol should overlap."""
+        source = """
+        main :: fn() {
+            low: i32 = 1
+            high: i32 = 5
+            top: i32 = 10
+            n: i32 = 12
+            match n {
+                case low..high: x := 1
+                case high..top: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "overlaps previous range pattern")
+
+    def test_non_overlapping_symbolic_range_patterns_are_allowed(self):
+        """Symbolic ranges without shared endpoint symbols are not guessed."""
+        source = """
+        main :: fn() {
+            low: i32 = 1
+            mid: i32 = 3
+            next: i32 = 4
+            top: i32 = 10
+            n: i32 = 12
+            match n {
+                case low..mid: x := 1
+                case next..top: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_success(source)
+
+    def test_symbolic_range_patterns_with_different_bases_are_not_guessed(self):
+        """Do not report overlap when runtime bases differ and ordering is unknown."""
+        source = """
+        main :: fn() {
+            low: i32 = 1
+            high: i32 = 5
+            other: i32 = 6
+            top: i32 = 10
+            n: i32 = 12
+            match n {
+                case low..high: x := 1
+                case other..top: x := 2
+                else: x := 0
+            }
+        }
+        """
+        assert expect_success(source)
+
 
 class TestReturnTypeBranchValidation:
     """Return type checks should apply inside every reachable branch."""

@@ -1771,10 +1771,16 @@ class TypeCheckingPass:
         start = self._range_pattern_value(pattern.start, set()) if pattern.start else None
         end = self._range_pattern_value(pattern.end, set()) if pattern.end else None
         if start is None or end is None:
-            return None
+            start = self._range_symbolic_value(pattern.start) if pattern.start else None
+            end = self._range_symbolic_value(pattern.end) if pattern.end else None
+            if start is None or end is None:
+                return None
 
         start_kind, start_value = start
         end_kind, end_value = end
+        if start_kind.startswith("symbol:") and end_kind.startswith("symbol:"):
+            symbols = sorted({start_kind.removeprefix("symbol:"), end_kind.removeprefix("symbol:")})
+            return (f"symbolic:{'|'.join(symbols)}", 0, 0)
         if start_kind != end_kind:
             return None
 
@@ -1855,6 +1861,25 @@ class TypeCheckingPass:
 
         return None
 
+    def _range_symbolic_value(self, node: Optional[ASTNode]) -> Optional[Tuple[str, int | float]]:
+        """Resolve runtime-symbolic range endpoints backed by local variables."""
+        if node is None:
+            return None
+
+        if node.kind in {NodeKind.IDENTIFIER, NodeKind.PATTERN_IDENTIFIER}:
+            name = node.name or ""
+            if not name:
+                return None
+            symbol = self.symbols.lookup(name)
+            if symbol is None or symbol.kind != SymbolKind.VARIABLE:
+                return None
+            symbol_type = symbol.type
+            if symbol_type.kind != TypeKind.UNKNOWN and not self._is_numeric_compatible(symbol_type):
+                return None
+            return (f"symbol:{name}", 0)
+
+        return None
+
     def _range_literal_value(self, literal: ASTNode) -> Optional[Tuple[str, int | float]]:
         """Normalize literal values that can participate in range overlap checks."""
         if literal.literal_kind == LiteralKind.INTEGER:
@@ -1914,6 +1939,12 @@ class TypeCheckingPass:
         """Return a previous range pattern that overlaps this range, if any."""
         current_kind, current_low, current_high = range_key
         for seen_kind, seen_low, seen_high, seen_pattern in seen_ranges:
+            if current_kind.startswith("symbolic:") and seen_kind.startswith("symbolic:"):
+                current_symbols = set(current_kind.removeprefix("symbolic:").split("|"))
+                seen_symbols = set(seen_kind.removeprefix("symbolic:").split("|"))
+                if current_symbols & seen_symbols:
+                    return seen_pattern
+                continue
             if current_kind != seen_kind:
                 continue
             if current_low <= seen_high and seen_low <= current_high:

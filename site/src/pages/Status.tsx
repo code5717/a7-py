@@ -13,7 +13,7 @@ const done = [
 ]
 
 const missing = [
-  { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, and literal plus compile-time constant range overlaps are diagnosed. Non-constant symbolic intervals and true capture patterns remain open.' },
+  { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, literal plus compile-time constant ranges, and shared-endpoint symbolic ranges are diagnosed. True capture patterns and arbitrary symbolic inequalities remain open.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for every new language feature.' },
   { name: 'Package-registry publishing', desc: 'The current release workflow deliberately stops at package artifacts attached to draft GitHub releases. Registry publishing should be a separate reviewed change if it is added later.' },
@@ -57,8 +57,8 @@ export default function Status() {
 
       <SectionPanel title="Next priorities">
         <ol className="doc-list">
-          <li>Add non-constant symbolic interval range-overlap match diagnostics.</li>
-          <li>Improve type checker: control-flow narrowing and deeper assignment compatibility.</li>
+          <li>Define and implement true variable-binding match patterns.</li>
+          <li>Improve type checker: control-flow narrowing, arbitrary symbolic range reasoning, and deeper assignment compatibility.</li>
           <li>Expand differential/backend-equivalence checks for new language features.</li>
           <li>Decide whether package-registry publishing belongs in the release workflow; keep it out until that design is explicit.</li>
         </ol>

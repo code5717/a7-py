@@ -15,7 +15,9 @@
 
 ## Known Gaps
 
-- Advanced match diagnostics still have incomplete symbolic interval overlap handling.
+- Advanced match diagnostics still lack true capture patterns and arbitrary
+  symbolic inequality reasoning; shared-endpoint symbolic range overlaps are
+  diagnosed.
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until their language and backend representation is defined.
 - Full generic specialization is incomplete beyond simple top-level generic functions.

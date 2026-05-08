@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `fall` now lowers in both Zig and C backends for its documented narrow form:
   the final direct statement of a non-final match case. Invalid placements are
   semantic errors.
+- Match range diagnostics now catch conservative runtime-symbolic interval
+  overlaps when two inclusive ranges share an endpoint symbol, such as
+  `low..high` followed by `high..top`.
 - Release-manifest verification rejects parent-directory traversal and unsafe
   absolute paths, while preserving the documented flat downloaded-assets flow.
 - File-backed module imports are now contained to configured search paths and
