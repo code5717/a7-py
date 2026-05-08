@@ -342,7 +342,7 @@ match code {
           <code className="doc-inline-code">fall</code> continues into the next match case body. It must be the final direct statement of a non-final case.
         </p>
         <DocCallout tone="warning">
-          Backend note: C match expressions support literal, enum, range, wildcard, existing-identifier patterns, and single-evaluation lowering for side-effectful scrutinees. True identifier-capture patterns remain open.
+          Backend note: C match expressions support literal, enum, range, wildcard, existing-identifier patterns, branch-local capture patterns, and single-evaluation lowering for side-effectful scrutinees.
         </DocCallout>
       </SectionPanel>
 
@@ -564,7 +564,7 @@ type_expr :=
           Parsing coverage is complete for the language surface described here. The compiler runs tokenization, parsing, semantic passes, preprocessing, and code generation (Zig and C backends) end-to-end.
         </DocCallout>
         <DocCallout tone="warning">
-          A small set of semantic features are still open: advanced match diagnostics, true match capture patterns, full generic specialization, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
+          A small set of semantic features are still open: arbitrary symbolic range reasoning, full generic specialization, tagged union workflows, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
         </DocCallout>
       </SectionPanel>
     </div>

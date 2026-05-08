@@ -46,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Match range diagnostics now catch conservative runtime-symbolic interval
   overlaps when two inclusive ranges share an endpoint symbol, such as
   `low..high` followed by `high..top`.
+- Match identifier capture patterns now bind the scrutinee in branch-local
+  scope when no existing symbol with that name is visible. Existing identifier
+  patterns still compare against the existing symbol.
 - Release-manifest verification rejects parent-directory traversal and unsafe
   absolute paths, while preserving the documented flat downloaded-assets flow.
 - File-backed module imports are now contained to configured search paths and

@@ -125,9 +125,11 @@ Features that are spec'd and partially implemented, or missing from one backend.
   that share an endpoint symbol, such as `low..high` followed by `high..top`;
   arbitrary runtime inequalities are still not guessed.
 
-- [ ] Define and implement true variable-binding match patterns.
-  Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`
-  Notes: plain identifier patterns currently refer to existing symbols; binding/capture semantics are not implemented.
+- [x] Define and implement true variable-binding match patterns.
+  Files: `a7/passes/name_resolution.py`, `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `test/test_semantic_control_flow.py`, `scripts/verify_backend_parity.py`
+  Notes: an identifier pattern captures the scrutinee when no existing symbol
+  with that name is visible. Existing identifier patterns still compare against
+  the existing symbol. Capture patterns must be the only pattern in their case.
 
 ### C Backend Parity
 

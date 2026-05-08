@@ -28,4 +28,4 @@
 
 ## Current Limits
 
-The status page is canonical for remaining gaps. Key limits include complete memory/lifetime guarantees, full generic specialization beyond simple top-level functions, tagged union workflows, true match capture patterns, and arbitrary symbolic inequality reasoning.
+The status page is canonical for remaining gaps. Key limits include complete memory/lifetime guarantees, full generic specialization beyond simple top-level functions, tagged union workflows, and arbitrary symbolic inequality reasoning.

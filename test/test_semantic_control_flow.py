@@ -986,6 +986,121 @@ class TestMatchStatements:
         """
         assert expect_success(source)
 
+    def test_identifier_capture_pattern_binds_scrutinee(self):
+        """An unresolved identifier pattern should bind the scrutinee in its branch."""
+        source = """
+        main :: fn() i32 {
+            n: i32 = 7
+            ret match n {
+                case value: value + 1
+            }
+        }
+        """
+        assert expect_success(source)
+
+    def test_existing_identifier_pattern_stays_value_pattern(self):
+        """Existing identifiers should keep their comparison-pattern behavior."""
+        source = """
+        main :: fn() i32 {
+            limit :: 7
+            n: i32 = 7
+            ret match n {
+                case limit: 1
+                else: 0
+            }
+        }
+        """
+        assert expect_success(source)
+
+    def test_capture_pattern_must_be_only_case_pattern(self):
+        """Capture patterns are catch-all bindings and cannot be mixed in a case."""
+        source = """
+        main :: fn() {
+            n: i32 = 7
+            match n {
+                case value, 7: x := value
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "must be the only pattern")
+
+    def test_capture_pattern_does_not_leak_after_match(self):
+        """Capture bindings are scoped to their branch."""
+        source = """
+        main :: fn() {
+            n: i32 = 7
+            match n {
+                case value: x := value
+            }
+            y := value
+        }
+        """
+        assert expect_error(source, "identifier 'value'")
+
+    def test_capture_pattern_makes_later_case_unreachable(self):
+        """A capture pattern covers all remaining values."""
+        source = """
+        main :: fn() {
+            n: i32 = 7
+            match n {
+                case value: x := value
+                case 7: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "unreachable")
+
+    def test_capture_pattern_makes_else_unreachable(self):
+        """Else after a capture pattern is unreachable."""
+        source = """
+        main :: fn() {
+            n: i32 = 7
+            match n {
+                case value: x := value
+                else: x := 0
+            }
+        }
+        """
+        assert expect_error(source, "else branch is unreachable")
+
+    def test_wildcard_does_not_bind_identifier(self):
+        """The wildcard pattern must not create a branch-local '_' binding."""
+        source = """
+        main :: fn() {
+            n: i32 = 7
+            match n {
+                case _: x := _
+            }
+        }
+        """
+        assert expect_error(source, "identifier '_'")
+
+    def test_capture_pattern_assignment_is_rejected(self):
+        """Capture bindings are immutable branch-local values."""
+        source = """
+        main :: fn() {
+            n: i32 = 7
+            match n {
+                case value: {
+                    value = 1
+                }
+            }
+        }
+        """
+        assert expect_error(source, "immutable")
+
+    def test_capture_pattern_covers_bool_exhaustiveness(self):
+        """Capture patterns are exhaustive for bool matches too."""
+        source = """
+        main :: fn(flag: bool) i32 {
+            ret match flag {
+                case value: 1
+            }
+        }
+        """
+        assert expect_success(source)
+
 
 class TestReturnTypeBranchValidation:
     """Return type checks should apply inside every reachable branch."""

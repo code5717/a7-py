@@ -565,7 +565,21 @@ match x {
     case 4..10: print("medium")
     else: print("large")
 }
+
+// Identifier capture patterns
+score :: fn(x: i32) i32 {
+    ret match x {
+        case value: value + 1  // value is branch-local and has type i32
+    }
+}
 ```
+
+An identifier pattern refers to an existing visible symbol when one exists,
+which preserves constant/value-pattern matching. If no visible symbol with that
+name exists, the identifier is a capture pattern: it matches the scrutinee,
+binds an immutable branch-local value with the scrutinee type, and covers all
+remaining values like `_`. A capture pattern must be the only pattern in its
+case.
 
 ### 5.3 Loops
 
@@ -1767,7 +1781,7 @@ AST_STMT_ASSIGNMENT     // Assignment statements
 
 // Pattern nodes (for match statements)
 AST_PATTERN_LITERAL     // Literal patterns (42, "hello")
-AST_PATTERN_IDENTIFIER  // Existing identifier patterns
+AST_PATTERN_IDENTIFIER  // Existing identifier patterns or branch-local captures
 AST_PATTERN_ENUM        // Enum variant patterns
 AST_PATTERN_RANGE       // Range patterns (1..10)
 AST_PATTERN_WILDCARD    // Wildcard pattern (_)
@@ -2135,7 +2149,8 @@ Status snapshot (2026-05-08):
    - Literal and compile-time constant numeric/char range overlaps are diagnosed.
    - Conservative non-constant symbolic interval overlaps are diagnosed when
      inclusive ranges share an endpoint symbol.
-   - True variable-binding/capture patterns are not implemented; plain identifier patterns refer to existing symbols.
+   - Identifier capture patterns bind the scrutinee in branch-local scope when
+     no existing symbol with that name is visible.
 
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.

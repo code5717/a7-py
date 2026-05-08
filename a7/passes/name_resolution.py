@@ -371,6 +371,33 @@ class NameResolutionPass:
         if not self.symbols.define(var_symbol):
             self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Variable '{var_name}'")
 
+    def _enter_match_case_scope(self, case: ASTNode) -> None:
+        """Enter a match-case scope and predeclare capture-pattern names."""
+        self.symbols.enter_scope("match_case")
+
+        for pattern in case.patterns or []:
+            if pattern.kind != NodeKind.PATTERN_IDENTIFIER:
+                continue
+            name = pattern.name or ""
+            if not name or name == "_":
+                continue
+            if self.symbols.lookup(name) is not None:
+                continue
+            setattr(pattern, "is_capture_pattern", True)
+            capture_symbol = Symbol(
+                name=name,
+                kind=SymbolKind.VARIABLE,
+                type=UNKNOWN,
+                node=pattern,
+                is_mutable=False,
+            )
+            if not self.symbols.define(capture_symbol):
+                self.add_error(
+                    SemanticErrorType.ALREADY_DEFINED,
+                    pattern.span,
+                    f"Match capture '{name}'",
+                )
+
     def visit_statement(self, node: ASTNode) -> None:
         """Visit a statement (iterative)."""
         # Stack items: ('visit', node) or ('action', callable)
@@ -484,7 +511,7 @@ class NameResolutionPass:
                             elif case.statements:
                                 for stmt in reversed(case.statements):
                                     stack.append(('visit', stmt))
-                            stack.append(('action', lambda: self.symbols.enter_scope("match_case")))
+                            stack.append(('action', lambda case=case: self._enter_match_case_scope(case)))
 
             # RETURN, BREAK, CONTINUE, DEFER, DEL, ASSIGNMENT, EXPRESSION_STMT
             # don't introduce names — nothing to do

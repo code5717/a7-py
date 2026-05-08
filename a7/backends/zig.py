@@ -848,6 +848,9 @@ class ZigCodeGenerator(CodeGenerator):
         if self._match_has_fall(node):
             self._visit_match_with_fall(node)
             return
+        if self._match_has_capture(node):
+            self._visit_match_as_if_chain(node)
+            return
 
         self._write_indent()
         expr = self._emit_expr(node.expression) if node.expression else "undefined"
@@ -909,6 +912,62 @@ class ZigCodeGenerator(CodeGenerator):
         self._write_indent()
         self.output.write("}\n")
 
+    def _visit_match_as_if_chain(self, node: ASTNode) -> None:
+        """Visit capture-bearing match statements as an if/else chain."""
+        scrutinee = self._unique_name("__a7_match")
+        expr = self._emit_expr(node.expression) if node.expression else "undefined"
+
+        self._write_indent()
+        self.output.write("{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"const {scrutinee} = {expr};\n")
+
+        emitted_branch = False
+        emitted_unconditional = False
+        for case in node.cases or []:
+            if emitted_unconditional:
+                continue
+            condition = self._emit_match_condition_zig(scrutinee, case.patterns or [])
+            self._write_indent()
+            self.output.write("else " if emitted_branch else "")
+            if condition == "true":
+                self.output.write("{\n")
+                emitted_unconditional = True
+            else:
+                self.output.write(f"if ({condition}) {{\n")
+            self.indent()
+            self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
+            stmt = getattr(case, "statement", None)
+            if stmt:
+                if stmt.kind == NodeKind.BLOCK:
+                    for inner in stmt.statements or []:
+                        self.visit(inner)
+                else:
+                    self.visit(stmt)
+            else:
+                for inner in case.statements or []:
+                    self.visit(inner)
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            emitted_branch = True
+
+        if node.else_case and not emitted_unconditional:
+            self._write_indent()
+            self.output.write("else " if emitted_branch else "")
+            self.output.write("{\n")
+            self.indent()
+            for stmt in self._else_case_statements(node.else_case):
+                self.visit(stmt)
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
     def _visit_match_with_fall(self, node: ASTNode) -> None:
         """Visit a fall-capable match statement as a sequential state machine."""
         scrutinee = self._unique_name("__a7_match")
@@ -931,7 +990,7 @@ class ZigCodeGenerator(CodeGenerator):
             condition = self._emit_match_condition_zig(scrutinee, case.patterns or [])
             self._write_indent()
             self.output.write(f"if (!{done_flag} and !{fall_flag} and ({condition})) {fall_flag} = true;\n")
-            self._emit_fall_case_body(case, fall_flag, done_flag, case_index)
+            self._emit_fall_case_body(case, scrutinee, fall_flag, done_flag, case_index)
             case_index += 1
 
         if node.else_case:
@@ -946,6 +1005,7 @@ class ZigCodeGenerator(CodeGenerator):
     def _emit_fall_case_body(
         self,
         case: ASTNode,
+        scrutinee: str,
         fall_flag: str,
         done_flag: str,
         case_index: int,
@@ -961,6 +1021,7 @@ class ZigCodeGenerator(CodeGenerator):
         self.indent()
         self._write_indent()
         self.output.write(f"{fall_flag} = false;\n")
+        self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
 
         if end_label:
             self._fall_context_stack.append((fall_flag, end_label))
@@ -1016,6 +1077,31 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _match_has_fall(self, node: ASTNode) -> bool:
         return any(self._case_has_direct_fall(case) for case in (node.cases or []))
+
+    def _match_has_capture(self, node: ASTNode) -> bool:
+        return any(
+            self._is_capture_pattern(pattern)
+            for case in (node.cases or [])
+            for pattern in (case.patterns or [])
+        )
+
+    def _is_capture_pattern(self, pattern: ASTNode) -> bool:
+        return (
+            pattern.kind == NodeKind.PATTERN_IDENTIFIER
+            and bool(getattr(pattern, "is_capture_pattern", False))
+            and (pattern.name or "") != "_"
+        )
+
+    def _emit_match_capture_bindings_zig(self, patterns: list[ASTNode], scrutinee: str) -> None:
+        for pattern in patterns:
+            if not self._is_capture_pattern(pattern):
+                continue
+            name = pattern.name or "value"
+            self._write_indent()
+            self.output.write(f"const {name} = {scrutinee};\n")
+            if name not in self._used_identifiers:
+                self._write_indent()
+                self.output.write(f"_ = {name};\n")
 
     def _case_has_direct_fall(self, case: ASTNode) -> bool:
         stmt = getattr(case, "statement", None)
@@ -1337,6 +1423,9 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_match_expr(self, node: ASTNode) -> str:
         """Emit match expression → Zig switch expression."""
+        if self._match_has_capture(node):
+            return self._emit_match_expr_with_captures(node)
+
         expr = self._emit_expr(node.expression) if node.expression else "undefined"
         parts = [f"switch ({expr}) {{"]
 
@@ -1353,6 +1442,45 @@ class ZigCodeGenerator(CodeGenerator):
             else:
                 val = "undefined"
             parts.append(f" else => {val},")
+
+        parts.append(" }")
+        return "".join(parts)
+
+    def _emit_match_expr_with_captures(self, node: ASTNode) -> str:
+        """Emit a capture-bearing match expression as a Zig block expression."""
+        label = self._unique_name("__a7_match_expr")
+        scrutinee = self._unique_name("__a7_match")
+        expr = self._emit_expr(node.expression) if node.expression else "undefined"
+        parts = [f"{label}: {{ const {scrutinee} = {expr};"]
+
+        emitted_branch = False
+        emitted_unconditional = False
+        for case in node.cases or []:
+            if emitted_unconditional:
+                continue
+            case_expr = getattr(case, "expression", None)
+            if case_expr is None:
+                continue
+            condition = self._emit_match_condition_zig(scrutinee, case.patterns or [])
+            prefix = " else " if emitted_branch else " "
+            if condition == "true":
+                parts.append(f"{prefix}{{")
+                emitted_unconditional = True
+            else:
+                parts.append(f"{prefix}if ({condition}) {{")
+            for pattern in case.patterns or []:
+                if self._is_capture_pattern(pattern):
+                    name = pattern.name or "value"
+                    parts.append(f" const {name} = {scrutinee};")
+                    if name not in self._used_identifiers:
+                        parts.append(f" _ = {name};")
+            parts.append(f" break :{label} {self._emit_expr(case_expr)}; }}")
+            emitted_branch = True
+
+        if not emitted_unconditional:
+            else_expr = self._emit_expr(node.else_case) if isinstance(node.else_case, ASTNode) else "undefined"
+            prefix = " else " if emitted_branch else " "
+            parts.append(f"{prefix}{{ break :{label} {else_expr}; }}")
 
         parts.append(" }")
         return "".join(parts)
@@ -1448,6 +1576,8 @@ class ZigCodeGenerator(CodeGenerator):
         if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
             name = pattern.name or ""
             if name == "_":
+                return None
+            if self._is_capture_pattern(pattern):
                 return None
             return f"{scrutinee_expr} == {name}"
         if pattern.kind == NodeKind.PATTERN_RANGE:

@@ -718,7 +718,10 @@ class CCodeGenerator(CodeGenerator):
         if node.value:
             if (
                 node.value.kind == NodeKind.MATCH_EXPR
-                and not self._is_side_effect_free_match_scrutinee(node.value.expression)
+                and (
+                    not self._is_side_effect_free_match_scrutinee(node.value.expression)
+                    or self._match_has_capture(node.value)
+                )
             ):
                 self._emit_side_effectful_match_var_init(name, c_type, node.value)
                 return
@@ -995,7 +998,7 @@ class CCodeGenerator(CodeGenerator):
             self.output.write(
                 f"if (!{done_flag} && !{fall_flag} && ({condition})) {fall_flag} = true;\n"
             )
-            self._emit_fall_case_body(case, fall_flag, done_flag, case_index)
+            self._emit_fall_case_body(case, scrutinee, expr_type, fall_flag, done_flag, case_index)
             case_index += 1
 
         if node.else_case:
@@ -1010,6 +1013,8 @@ class CCodeGenerator(CodeGenerator):
     def _emit_fall_case_body(
         self,
         case: ASTNode,
+        scrutinee: str,
+        scrutinee_type: str,
         fall_flag: str,
         done_flag: str,
         case_index: int,
@@ -1022,6 +1027,7 @@ class CCodeGenerator(CodeGenerator):
         self.indent()
         self._write_indent()
         self.output.write(f"{fall_flag} = false;\n")
+        self._emit_match_capture_bindings(case.patterns or [], scrutinee, scrutinee_type)
 
         if end_label:
             self._fall_frames.append(
@@ -1078,6 +1084,35 @@ class CCodeGenerator(CodeGenerator):
 
     def _match_has_fall(self, node: ASTNode) -> bool:
         return any(self._case_has_direct_fall(case) for case in (node.cases or []))
+
+    def _match_has_capture(self, node: ASTNode) -> bool:
+        return any(
+            self._is_capture_pattern(pattern)
+            for case in (node.cases or [])
+            for pattern in (case.patterns or [])
+        )
+
+    def _is_capture_pattern(self, pattern: ASTNode) -> bool:
+        return (
+            pattern.kind == NodeKind.PATTERN_IDENTIFIER
+            and bool(getattr(pattern, "is_capture_pattern", False))
+            and (pattern.name or "") != "_"
+        )
+
+    def _emit_match_capture_bindings(
+        self,
+        patterns: list[ASTNode],
+        scrutinee: str,
+        scrutinee_type: str,
+    ) -> None:
+        for pattern in patterns:
+            if not self._is_capture_pattern(pattern):
+                continue
+            name = self._sanitize_name(pattern.name or "value")
+            self._write_indent()
+            self.output.write(f"{scrutinee_type} {name} = {scrutinee};\n")
+            self._write_indent()
+            self.output.write(f"(void){name};\n")
 
     def _case_has_direct_fall(self, case: ASTNode) -> bool:
         stmt = getattr(case, "statement", None)
@@ -1141,16 +1176,36 @@ class CCodeGenerator(CodeGenerator):
             if condition is None:
                 prefix = "else " if emitted_branch else ""
                 self._write_indent()
-                self.output.write(f"{prefix}")
-                self._emit_stmt_or_block(getattr(case, "statement", None))
+                self.output.write(f"{prefix}{{\n")
+                self.indent()
+                self._emit_match_capture_bindings(patterns, temp_name, expr_type)
+                stmt = getattr(case, "statement", None)
+                if stmt is not None:
+                    self.visit(stmt)
+                else:
+                    for inner in case.statements or []:
+                        self.visit(inner)
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
                 emitted_branch = True
                 emitted_unconditional = True
                 continue
 
             self._write_indent()
             self.output.write("else " if emitted_branch else "")
-            self.output.write(f"if ({condition}) ")
-            self._emit_stmt_or_block(getattr(case, "statement", None))
+            self.output.write(f"if ({condition}) {{\n")
+            self.indent()
+            self._emit_match_capture_bindings(patterns, temp_name, expr_type)
+            stmt = getattr(case, "statement", None)
+            if stmt is not None:
+                self.visit(stmt)
+            else:
+                for inner in case.statements or []:
+                    self.visit(inner)
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
             emitted_branch = True
 
         if node.else_case and not emitted_unconditional:
@@ -1327,7 +1382,10 @@ class CCodeGenerator(CodeGenerator):
         if node is None:
             return "0"
 
-        if node.kind == NodeKind.MATCH_EXPR and not self._is_side_effect_free_match_scrutinee(node.expression):
+        if node.kind == NodeKind.MATCH_EXPR and (
+            not self._is_side_effect_free_match_scrutinee(node.expression)
+            or self._match_has_capture(node)
+        ):
             return self._emit_side_effectful_match_expr_temp(node)
 
         kind = node.kind
@@ -2397,6 +2455,11 @@ class CCodeGenerator(CodeGenerator):
         return f"(({slice_c_type}){{ .data = {data_expr}, .len = {len_expr} }})"
 
     def _emit_match_expr(self, node: ASTNode) -> str:
+        if self._match_has_capture(node):
+            raise CodegenError(
+                "C backend: capture-bearing match expressions require statement lowering",
+                node.span,
+            )
         scrutinee = node.expression
         if not self._is_side_effect_free_match_scrutinee(scrutinee):
             raise CodegenError(
@@ -2421,9 +2484,7 @@ class CCodeGenerator(CodeGenerator):
         self.indent()
         self._write_indent()
         self.output.write(f"{scrutinee_type} {temp_name} = {self._emit_expr(scrutinee)};\n")
-        result = self._emit_match_expr_with_scrutinee(node, temp_name)
-        self._write_indent()
-        self.output.write(f"{name} = {result};\n")
+        self._emit_match_expr_assignment_branches(name, node, temp_name, scrutinee_type)
         self.dedent()
         self._write_indent()
         self.output.write("}\n")
@@ -2447,6 +2508,20 @@ class CCodeGenerator(CodeGenerator):
         self._write_indent()
         self.output.write(f"{scrutinee_type} {scrutinee_name} = {scrutinee_expr};\n")
 
+        self._emit_match_expr_assignment_branches(result_name, node, scrutinee_name, scrutinee_type)
+
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+        return result_name
+
+    def _emit_match_expr_assignment_branches(
+        self,
+        result_name: str,
+        node: ASTNode,
+        scrutinee_name: str,
+        scrutinee_type: str,
+    ) -> None:
         emitted_branch = False
         emitted_unconditional = False
         for case in node.cases or []:
@@ -2460,6 +2535,7 @@ class CCodeGenerator(CodeGenerator):
                 self._write_indent()
                 self.output.write(f"{prefix}{{\n")
                 self.indent()
+                self._emit_match_capture_bindings(case.patterns or [], scrutinee_name, scrutinee_type)
                 case_expr = self._emit_expr_prepared(case_expr_node)
                 self._write_indent()
                 self.output.write(f"{result_name} = {case_expr};\n")
@@ -2473,6 +2549,7 @@ class CCodeGenerator(CodeGenerator):
             self._write_indent()
             self.output.write(f"{prefix}if ({condition}) {{\n")
             self.indent()
+            self._emit_match_capture_bindings(case.patterns or [], scrutinee_name, scrutinee_type)
             case_expr = self._emit_expr_prepared(case_expr_node)
             self._write_indent()
             self.output.write(f"{result_name} = {case_expr};\n")
@@ -2497,11 +2574,6 @@ class CCodeGenerator(CodeGenerator):
             self.dedent()
             self._write_indent()
             self.output.write("}\n")
-
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
-        return result_name
 
     def _emit_match_expr_with_scrutinee(self, node: ASTNode, scrutinee_expr: str) -> str:
         default_expr = self._emit_expr(node.else_case) if isinstance(node.else_case, ASTNode) else "0"
@@ -2547,6 +2619,8 @@ class CCodeGenerator(CodeGenerator):
         if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
             name = pattern.name or ""
             if name == "_":
+                return None
+            if self._is_capture_pattern(pattern):
                 return None
             value = self._sanitize_name(getattr(pattern, "emit_name", None) or name)
             return f"{scrutinee_expr} == {value}"

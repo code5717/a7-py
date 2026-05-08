@@ -189,6 +189,12 @@ not factually provable from local tests alone.
   passed; Zig examples 38/38; C examples 38/38; backend parity 18/18; debug
   artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
   style ok; secrets check ok; total pytest 1227 passed; summary 12/12.
+- local `./run_all_tests.sh` passed after implementing branch-local match
+  capture patterns: parser/tokenizer 501 passed; semantic 332 passed;
+  compiler/CLI/backend 326 passed; Zig examples 38/38; C examples 38/38;
+  backend parity 19/19; debug artifacts 76/76; release artifacts 76/76;
+  error-stage checks 61/61; docs style ok; secrets check ok; total pytest
+  1239 passed; summary 12/12.
 - local `npm run check` in `site/` passed after updating the public status and
   language docs for the fallthrough behavior.
 - hosted CI run `25541793153` passed on commit `5baa7f7` after fallthrough
@@ -373,4 +379,4 @@ not factually provable from local tests alone.
 1. Complete generic struct/nested generic specialization parity.
 2. Add stronger hosted secret scanning if the repository host supports it.
 3. Expand backend parity for every new language feature, including additional
-   fallthrough edge cases.
+   fallthrough and capture-pattern edge cases.

@@ -944,6 +944,7 @@ class TypeCheckingPass:
 
         # Visit all case branches
         for case in (node.cases or []):
+            self._validate_match_case_capture_shape(case.patterns or [])
             for pattern in (case.patterns or []):
                 pattern_kind, pattern_value = self._validate_match_pattern(pattern, scrutinee_type)
                 wildcard_pattern = self._check_match_pattern_redundancy(
@@ -963,6 +964,7 @@ class TypeCheckingPass:
                     enum_coverage.add(pattern_value)
 
             self._enter_matching_scope("match_case")
+            self._define_match_capture_symbols(case.patterns or [], scrutinee_type)
             try:
                 case_stmt = getattr(case, "statement", None)
                 if case_stmt:
@@ -1603,6 +1605,7 @@ class TypeCheckingPass:
 
         branch_types: List[Type] = []
         for case in (node.cases or []):
+            self._validate_match_case_capture_shape(case.patterns or [])
             for pattern in (case.patterns or []):
                 pattern_kind, pattern_value = self._validate_match_pattern(pattern, scrutinee_type)
                 wildcard_pattern = self._check_match_pattern_redundancy(
@@ -1623,7 +1626,12 @@ class TypeCheckingPass:
 
             case_expr = getattr(case, "expression", None)
             if case_expr:
-                branch_types.append(self.visit_expression(case_expr))
+                self._enter_matching_scope("match_case")
+                self._define_match_capture_symbols(case.patterns or [], scrutinee_type)
+                try:
+                    branch_types.append(self.visit_expression(case_expr))
+                finally:
+                    self.symbols.exit_scope()
 
         if isinstance(node.else_case, ASTNode):
             if wildcard_pattern is not None:
@@ -1787,6 +1795,62 @@ class TypeCheckingPass:
         low = min(start_value, end_value)
         high = max(start_value, end_value)
         return (start_kind, low, high)
+
+    def _is_match_capture_pattern(self, pattern: ASTNode) -> bool:
+        """Return true when an identifier pattern introduces a case-local binding."""
+        if pattern.kind != NodeKind.PATTERN_IDENTIFIER:
+            return False
+        name = pattern.name or ""
+        if not name or name == "_":
+            return False
+        if getattr(pattern, "is_capture_pattern", False):
+            return True
+        if self.symbols.lookup(name) is None:
+            pattern.is_capture_pattern = True
+            return True
+        return False
+
+    def _match_capture_patterns(self, patterns: List[ASTNode]) -> List[ASTNode]:
+        return [pattern for pattern in patterns if self._is_match_capture_pattern(pattern)]
+
+    def _validate_match_case_capture_shape(self, patterns: List[ASTNode]) -> None:
+        captures = self._match_capture_patterns(patterns)
+        if not captures:
+            return
+        if len(patterns) > 1:
+            capture = captures[0]
+            self.add_semantic_error(
+                SemanticErrorType.INVALID_PATTERN,
+                capture.span,
+                context=(
+                    f"Match capture pattern '{capture.name}' must be the only "
+                    "pattern in its case"
+                ),
+            )
+
+    def _define_match_capture_symbols(self, patterns: List[ASTNode], capture_type: Type) -> None:
+        for pattern in self._match_capture_patterns(patterns):
+            name = pattern.name or ""
+            existing = self.symbols.current_scope.lookup_local(name)
+            if existing:
+                existing.type = capture_type
+                existing.node = pattern
+                existing.is_mutable = False
+                continue
+
+            capture_symbol = Symbol(
+                name=name,
+                kind=SymbolKind.VARIABLE,
+                type=capture_type,
+                node=pattern,
+                is_mutable=False,
+            )
+            if not self.symbols.define(capture_symbol):
+                self.add_semantic_error(
+                    SemanticErrorType.ALREADY_DEFINED,
+                    pattern.span,
+                    context=f"Match capture '{name}'",
+                )
 
     def _range_pattern_value(self, pattern: Optional[ASTNode], resolving: Set[str]) -> Optional[Tuple[str, int | float]]:
         """Resolve literals and constant identifiers to comparable range values."""
@@ -2084,6 +2148,9 @@ class TypeCheckingPass:
             return ("wildcard", None)
 
         if pattern.kind == NodeKind.PATTERN_IDENTIFIER and (pattern.name or "") == "_":
+            return ("wildcard", None)
+
+        if self._is_match_capture_pattern(pattern):
             return ("wildcard", None)
 
         if pattern.kind == NodeKind.PATTERN_RANGE:

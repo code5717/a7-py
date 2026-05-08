@@ -239,6 +239,7 @@ class ASTNode:
     literal: Optional["ASTNode"] = None
     enum_type: Optional[str] = None
     variant: Optional[str] = None
+    is_capture_pattern: bool = False
 
     # Utility node data
     param_type: Optional["ASTNode"] = None

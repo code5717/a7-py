@@ -79,6 +79,7 @@ class SemanticErrorType(Enum):
     NIL_NOT_REFERENCE_TYPE = "nil_not_reference_type"
     MISSING_TYPE_ANNOTATION = "missing_type_annotation"
     NON_EXHAUSTIVE_MATCH = "non_exhaustive_match"
+    INVALID_PATTERN = "invalid_pattern"
     UNSUPPORTED_FALLTHROUGH = "unsupported_fallthrough"
     RECURSION_NOT_ALLOWED = "recursion_not_allowed"
 

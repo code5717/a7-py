@@ -222,6 +222,32 @@ main :: fn() {
     io.println("match = {} {} {} {}", x, y, z, calls)
 }
 ''',
+    "match_capture_patterns": r'''
+io :: import "std/io"
+
+calls: i32 = 0
+
+next :: fn() i32 {
+    calls += 1
+    ret 7
+}
+
+score :: fn(n: i32) i32 {
+    ret match n {
+        case value: value + 1
+    }
+}
+
+main :: fn() {
+    n := next()
+    match n {
+        case value: {
+            io.println("capture stmt = {}", value)
+        }
+    }
+    io.println("capture expr = {} calls {}", score(next()), calls)
+}
+''',
     "string_slice_iteration": r'''
 io :: import "std/io"
 

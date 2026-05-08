@@ -47,6 +47,9 @@
 32. Index and slice-bound variables must be `usize`; non-negative integer literals remain valid for simple indexing.
 33. `new [N]T` heap fixed arrays fail closed until the allocation model and both backends agree on representation.
 34. Ordering comparisons reject non-ordered types, and signed variables no longer implicitly assign to unsigned integer types.
+35. Match identifier capture patterns bind the scrutinee in branch-local scope
+    when no existing symbol with that name is visible. Existing identifier
+    patterns keep value-comparison semantics.
 
 ---
 
@@ -58,7 +61,8 @@
    - Literal and compile-time constant numeric/char range overlaps are diagnosed.
    - Conservative non-constant symbolic interval overlaps are diagnosed when
      inclusive ranges share an endpoint symbol.
-   - True variable-binding/capture patterns are not defined; plain identifier patterns currently refer to existing symbols.
+   - Identifier capture patterns are implemented for branch-local bindings;
+     arbitrary symbolic inequality reasoning remains open.
 
 2. **Memory/lifetime model**
    - Current validation covers basic `del` reference checks.
@@ -68,7 +72,7 @@
      lower the same model.
 
 3. **Backend semantic parity hardening**
-   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, slices, string slices, labels, function pointers, and contextual array literal assignment.
+   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, capture patterns, slices, string slices, labels, function pointers, and contextual array literal assignment.
    - Keep expanding mandatory parity cases for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
    - C backend now lowers simple top-level generic function calls, but generic structs, nested generic workflows, and propagation through method-style call chains still need parity coverage.

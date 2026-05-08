@@ -41,7 +41,6 @@ Known gaps:
 
 - Advanced match diagnostics catch shared-endpoint symbolic range overlaps, but
   do not infer arbitrary symbolic inequalities.
-- True identifier-binding/capture match patterns are not defined.
 - Ownership, borrowing, lifetime, use-after-free, and double-free guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until representation is defined.
 - Full generic specialization is incomplete beyond simple top-level generic functions.
