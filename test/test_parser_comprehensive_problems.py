@@ -447,22 +447,26 @@ class TestMemoryManagementSyntaxProblems:
         assert ast is not None
 
     def test_new_with_value(self):
-        """Document current parsing for new with an initializer-like argument.
-        
-        Note: This currently parses as 'new i32' followed by a call '(42)',
-        which is syntactically valid but semantically incorrect.
-        This will need semantic analysis to catch.
-        """
+        """Reject initializer-like arguments after new expressions."""
         source = """
         test_func :: fn() {
             ptr := new i32(42)
         }
         """
 
-        # Currently parses as a call expression. This is intentionally locked
-        # down until the language decides whether this form is valid syntax.
+        with pytest.raises(ParseError, match="new expressions do not take initializer"):
+            parse_a7(source)
+
+    def test_parenthesized_new_type(self):
+        """Parenthesized type spelling remains valid for allocation."""
+        source = """
+        test_func :: fn() {
+            ptr := new(i32)
+        }
+        """
+
         ast = parse_a7(source)
-        assert ast is not None  # Accepting current behavior for now
+        assert ast is not None
 
     def test_del_statement(self):
         """Test del statements for deallocation (now implemented)."""
@@ -492,7 +496,7 @@ class TestMemoryManagementSyntaxProblems:
 
 
 class TestStructLiteralComplexPatterns:
-    """Test complex struct literal patterns that currently fail."""
+    """Test complex struct literal patterns."""
 
     def test_anonymous_struct_initialization(self):
         """Test anonymous struct initialization (now supported)."""
@@ -561,7 +565,7 @@ class TestExplicitTypeAnnotationProblems:
     """Test explicit type annotation problems."""
 
     def test_explicit_type_variable_declaration(self):
-        """Test explicit type in variable declarations (not fully supported)."""
+        """Explicit type annotations use `=`, not `:=`."""
         source = """
         test_func :: fn() {
             x: i32 := 42
@@ -569,12 +573,11 @@ class TestExplicitTypeAnnotationProblems:
         }
         """
 
-        # Explicit type annotations might not be fully implemented
         with pytest.raises(ParseError):
             parse_a7(source)
 
     def test_array_literal_with_explicit_type(self):
-        """Test array literals with explicit types (not yet supported)."""
+        """Reject typed array-constructor syntax that is not current A7 syntax."""
         source = """
         test_func :: fn() {
             arr := [3]i32{10, 20, 30}
@@ -674,8 +677,8 @@ class TestErrorRecoveryProblems:
             parse_a7(source)
 
 
-class TestParserStateLimitationProblems:
-    """Test parser state and limitation problems."""
+class TestParserStateStressCases:
+    """Test parser state stress cases."""
 
     def test_very_deep_nesting(self):
         """Test very deep nesting to check parser limits."""
@@ -689,14 +692,8 @@ class TestParserStateLimitationProblems:
             + "\n}"
         )
 
-        try:
-            ast = parse_a7(source)
-            assert ast is not None
-        except RecursionError:
-            pytest.fail("Parser should handle reasonable nesting depth")
-        except ParseError:
-            # ParseError is acceptable for very deep nesting
-            pass
+        ast = parse_a7(source)
+        assert ast is not None
 
     def test_very_long_expression(self):
         """Test very long expressions."""
@@ -705,9 +702,5 @@ class TestParserStateLimitationProblems:
         expression = " + ".join(terms)
         source = f"test_func :: fn() {{\n    result := {expression}\n}}"
 
-        try:
-            ast = parse_a7(source)
-            assert ast is not None
-        except ParseError:
-            # Some limitation might be acceptable
-            pass
+        ast = parse_a7(source)
+        assert ast is not None

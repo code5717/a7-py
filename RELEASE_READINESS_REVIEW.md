@@ -131,6 +131,8 @@ not factually provable from local tests alone.
 - Array literal assignment now checks declared lengths and nested element types,
   and C nested fixed-array declarations emit true multidimensional arrays rather
   than arrays of pointers.
+- Parser ambiguity around `new i32(42)` is locked down as a syntax error while
+  `new(i32)` remains valid allocation syntax.
 - String literal tokenization now rejects unknown escapes and malformed `\xHH`
   escapes, and valid escapes are decoded/re-emitted so generated binaries print
   the intended characters.

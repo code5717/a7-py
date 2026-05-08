@@ -287,9 +287,10 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `test/test_parser_missing_constructs.py`, `test/test_parser_advanced_edge_cases.py`, `test/test_parser_stress_tests.py`
   Notes: parser regression tests now describe current behavior instead of carrying stale skip comments for implemented constructs.
 
-- [ ] Lock down ambiguous parser behavior documented in problem tests.
+- [x] Lock down ambiguous parser behavior documented in problem tests.
   Files: `test/test_parser_comprehensive_problems.py`
-  Notes: comments like "should either fail in parser or be handled specially" need decisions.
+  Notes: `new i32(42)` now fails in the parser instead of being accepted as a
+  call on a `new` expression; `new(i32)` remains valid allocation syntax.
 
 ---
 

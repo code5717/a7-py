@@ -72,6 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mismatches instead of relying on top-level array type equality.
 - C backend fixed nested fixed-array declarations such as `[2][2]i64`, and
   backend parity now covers contextual array literal assignment.
+- Parser now rejects initializer-like calls after `new` expressions, so
+  `new i32(42)` fails as syntax instead of parsing as a nonsensical call.
 
 ## [0.3.0] - 2026-05-07
 

@@ -979,9 +979,12 @@ del ptr
 buffer := new [1024]u8
 del buffer
 
-// Allocate with initialization
-point := new Point{x: 10, y: 20}
+// Initialize through the returned reference
+point := new Point
+point.val = Point{x: 10, y: 20}
 del point
+
+// `new T(args...)` and `new T{...}` initializer forms are not current syntax.
 
 // Check allocation
 large := new [1000000]f64
@@ -2214,9 +2217,12 @@ del ptr
 buffer := new [1024]u8
 del buffer
 
-// Allocate with initialization
-point := new Point{x: 10, y: 20}
+// Initialize through the returned reference
+point := new Point
+point.val = Point{x: 10, y: 20}
 del point
+
+// `new T(args...)` and `new T{...}` initializer forms are not current syntax.
 
 // Check allocation
 large := new [1000000]f64

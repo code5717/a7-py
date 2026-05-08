@@ -1454,6 +1454,13 @@ class Parser:
 
         while True:
             if self.match(TokenType.LEFT_PAREN):
+                if expr.kind == NodeKind.NEW_EXPR:
+                    raise ParseError.from_token(
+                        "new expressions do not take initializer arguments; use 'new T' or 'new(T)'",
+                        self.current(),
+                        self.filename,
+                        self.source_lines,
+                    )
                 # Function call
                 expr = self.parse_call_expression(expr)
             elif self.match(TokenType.LEFT_BRACKET):
