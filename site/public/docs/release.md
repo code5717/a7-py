@@ -27,7 +27,19 @@ uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --requ
 
 The tag workflow also verifies that `SHA256SUMS` contains the expected package,
 docs, and native artifact archives before upload. It also checks required
-archive members, then re-checks the hashes and sizes on disk.
+archive members, then re-checks the hashes and sizes on disk. Tag runs also
+generate GitHub artifact attestations for the package, docs, native examples,
+and checksum manifest.
+
+Before publishing a draft release, verify the downloaded release assets:
+
+```bash
+uv run python scripts/verify_release_manifest.py SHA256SUMS
+gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
+gh attestation verify a7_py-*.whl --repo code5717/a7-py
+gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
+gh attestation verify a7-example-artifacts-release.tar.gz --repo code5717/a7-py
+```
 
 ## Debug and Release Artifacts
 

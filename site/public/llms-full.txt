@@ -348,7 +348,7 @@ Release workflows:
 
 - `.github/workflows/ci.yml`: tests, audits, docs build, examples, parity, artifacts, package build
 - `.github/workflows/deploy-docs.yml`: GitHub Pages docs deploy
-- `.github/workflows/release.yml`: release gate, package artifact build, docs/native archives, checksums, and tag-based draft GitHub releases
+- `.github/workflows/release.yml`: release gate, package artifact build, docs/native archives, checksums, GitHub artifact attestations, and tag-based draft GitHub releases
 
 Package-registry status: the current workflow does not publish to a package
 registry.

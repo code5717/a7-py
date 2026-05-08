@@ -42,6 +42,9 @@ pytest.
   possible programs.
 - The current release workflow builds package distributions and attaches them
   to draft GitHub releases; it does not publish to a package registry.
+- Tag-created release artifacts receive GitHub artifact attestations; verify
+  them with `gh attestation verify <file> --repo code5717/a7-py` before
+  publishing or consuming a release.
 - Non-`actions/*` release and Claude workflow actions are pinned to immutable
   commits. Most first-party GitHub Actions remain pinned by major version tag.
 - Dependency audits check known advisories, not unknown vulnerabilities.

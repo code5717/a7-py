@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-`actions/*` workflow actions are pinned to immutable commits, and the
   automated Claude review prompt now treats PR text/diffs as untrusted review
   input rather than instructions.
+- Tag release runs now generate GitHub artifact attestations for the checksum
+  manifest, Python package files, docs archive, and native example artifact
+  archive before uploading release artifacts.
 - Semantic validation now rejects direct and mutual recursion; source programs
   should use loops, explicit stacks, or index-based worklists instead.
   The recursion graph respects local function-pointer shadowing, so indirect

@@ -96,7 +96,8 @@ uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --requ
 The tag release workflow generates `dist/SHA256SUMS` after all release archives
 are built, verifies that the manifest contains the package, docs, and native
 artifact archives, verifies required archive members, re-checks the hashes and
-sizes on disk, then attaches it to the draft GitHub release.
+sizes on disk, generates GitHub artifact attestations for each release artifact,
+then attaches the artifacts to the draft GitHub release.
 
 ## Tagging
 
@@ -115,6 +116,17 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`. The workflow reruns
 the release gate, builds the Python package, builds the docs site, builds
 release example artifacts, and creates a draft GitHub release with those files
 attached.
+
+Before publishing the draft, download each attached file and verify both the
+checksum manifest and GitHub artifact attestation:
+
+```bash
+uv run python scripts/verify_release_manifest.py SHA256SUMS
+gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
+gh attestation verify a7_py-*.whl --repo code5717/a7-py
+gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
+gh attestation verify a7-example-artifacts-release.tar.gz --repo code5717/a7-py
+```
 
 When building locally, remove `dist/` before `uv build`. The release workflow
 runs on a clean GitHub runner, but local `dist/` can otherwise retain older

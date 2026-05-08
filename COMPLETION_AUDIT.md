@@ -33,7 +33,7 @@ Deliverables implied by the active objective:
 | Release artifacts | Hosted CI run `25533359030`; local `./run_all_tests.sh` after expanding backend parity | Passing: 76/76 |
 | Python package build | Hosted CI run `25527971161`; local clean `rm -rf dist && uv build` | Passing |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
-| Release checksums and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, and re-checks hashes before upload | Covered |
+| Release checksums, provenance, and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, re-checks hashes before upload, and emits GitHub artifact attestations for release assets | Covered for workflow definition; tag-only attestation path still needs a real tag run before release |
 | Docs style/build | Hosted CI run `25533359030`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
 | Docs deploy | Hosted Deploy Docs run `25533359054`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |

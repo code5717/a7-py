@@ -156,6 +156,8 @@ not factually provable from local tests alone.
 - Non-`actions/*` workflow actions are pinned to immutable commits, and
   Dependabot is configured for GitHub Actions, Python, and docs npm dependency
   updates.
+- Tag release runs now generate GitHub artifact attestations for `SHA256SUMS`,
+  Python package files, docs archive, and native example archive.
 
 ## Fixed In This Pass
 
@@ -181,6 +183,8 @@ not factually provable from local tests alone.
   racing runs.
 - Release builds clean `dist/` before `uv build`, and the tag-only draft release
   job re-verifies downloaded `SHA256SUMS` before attaching artifacts.
+- Release builds generate GitHub artifact attestations for all release assets
+  before the artifacts are uploaded or attached to draft releases.
 - Secret-backed Claude workflows now require repository owner/member/collaborator
   author association for comment-triggered runs, and automated Claude PR review
   skips fork pull requests.
@@ -257,6 +261,9 @@ not factually provable from local tests alone.
   draft GitHub release artifacts and verifies that expected package, docs, and
   native artifact archive paths are present before upload, then re-checks the
   recorded hashes and sizes on disk.
+- Release workflow now emits GitHub artifact attestations for the checksum
+  manifest and release assets, giving consumers a provenance check in addition
+  to `SHA256SUMS`.
 - Release tooling now verifies required members inside the docs and native
   example archives before checksum generation, including `llms.txt`,
   `llms-full.txt`, public Markdown docs, and `001_hello` Zig/C outputs.
