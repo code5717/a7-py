@@ -1,4 +1,7 @@
 === Callbacks ===
+event: click
 click handler
+event: submit
 submit handler
+event: cancel
 cancel handler

@@ -1,5 +1,7 @@
 // Comments in A7
 
+io :: import "std/io"
+
 // Single-line comments start with //
 // They extend to the end of the line
 
@@ -13,6 +15,8 @@
 
 main :: fn() {
     x := 42  // Inline comment after code
+    io.println("=== Comments ===")
+    io.println("x = {}", x)
 
     /*
      * Comments can be used to temporarily disable code:

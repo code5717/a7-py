@@ -1,30 +1,29 @@
-// Callback-style event handling (match-based)
+// Callback-style event handling with function pointers
 
 io :: import "std/io"
 
-EventType :: enum {
-    Click
-    Submit
-    Cancel
+Handler :: fn()
+
+on_click :: fn() {
+    io.println("click handler")
 }
 
-handle_event :: fn(event_type: EventType) {
-    match event_type {
-        case EventType.Click: {
-            io.println("click handler")
-        }
-        case EventType.Submit: {
-            io.println("submit handler")
-        }
-        case EventType.Cancel: {
-            io.println("cancel handler")
-        }
-    }
+on_submit :: fn() {
+    io.println("submit handler")
+}
+
+on_cancel :: fn() {
+    io.println("cancel handler")
+}
+
+dispatch :: fn(name: string, handler: Handler) {
+    io.println("event: {}", name)
+    handler()
 }
 
 main :: fn() {
     io.println("=== Callbacks ===")
-    handle_event(EventType.Click)
-    handle_event(EventType.Submit)
-    handle_event(EventType.Cancel)
+    dispatch("click", on_click)
+    dispatch("submit", on_submit)
+    dispatch("cancel", on_cancel)
 }

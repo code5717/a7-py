@@ -1,16 +1,23 @@
-// Sorting example with fixed array
+// Sorting example with a fixed array and comparator callback
 
 io :: import "std/io"
+
+Comparator :: fn(i32, i32) bool
+
+ascending :: fn(left: i32, right: i32) bool {
+    ret left > right
+}
 
 main :: fn() {
     io.println("=== Sorting ===")
 
     arr: [5]i32 = [5, 1, 4, 2, 3]
+    compare: Comparator = ascending
 
     for i := cast(usize, 0); i < 5; i += 1 {
         limit: usize = cast(usize, 4) - i
         for j := cast(usize, 0); j < limit; j += 1 {
-            if arr[j] > arr[j + 1] {
+            if compare(arr[j], arr[j + 1]) {
                 temp := arr[j]
                 arr[j] = arr[j + 1]
                 arr[j + 1] = temp

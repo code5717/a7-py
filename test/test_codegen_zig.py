@@ -150,8 +150,8 @@ ZIG_AST_CHECK_PASS = {
     "015_types", "016_unions",
 }
 
-# Examples with known issues (skip ast-check for these)
-# All 36 examples now pass zig ast-check
+# Examples with known issues (skip ast-check for these).
+# All examples now pass zig ast-check.
 ZIG_AST_CHECK_KNOWN_FAIL: set = set()
 
 
