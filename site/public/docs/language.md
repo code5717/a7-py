@@ -56,6 +56,10 @@ Zig/C backend lowering and linking for multiple `.a7` files is not implemented
 yet. Compile, pipeline, and doc modes reject file-backed imports before codegen
 instead of emitting unresolved target code.
 
+Selected import metadata parses and serializes, but selected imports do not
+currently introduce direct unqualified names for backend-runnable code.
+`using import` remains planned syntax, not a current parser form.
+
 Source stubs such as `mem` and `string` exist in the repository but are not registered public stdlib modules yet.
 
 ## Current Syntax Limits
@@ -65,7 +69,8 @@ Source stubs such as `mem` and `string` exist in the repository but are not regi
   `@type_name`, `@unreachable`, `@likely`, and `@unlikely` are reserved or
   tokenized but not semantically resolved/lowered yet.
 - Variadic parameter declarations are parsed and partially type-checked, but
-  runtime iteration and backend ABI lowering are not implemented.
+  runtime iteration and backend ABI lowering are not implemented. Codegen modes
+  reject them before target emission.
 - Multiple return values / destructuring declarations are planned syntax, not
   current parser support.
 - Simple generic functions, type-set constraints, and used generic struct

@@ -359,7 +359,7 @@ greet :: fn(name: string) {
 // Function type alias
 Reducer :: fn(i32, i32) i32
 
-// Variadic declarations are parsed, but runtime lowering is not complete.
+// Variadic declarations are parsed, but codegen rejects them for now.
 printf :: fn(format: string, args: ..)
 
 // Method style is normal function + ref receiver
@@ -520,7 +520,6 @@ main :: fn() {
 | identifier ":=" expression
 | identifier ":" type_expr ("=" expression)?
 | "import" string_literal ("{" identifier ("," identifier)* "}")?
-| "using" "import" string_literal
 
 statement :=
   "ret" expression?
@@ -549,6 +548,9 @@ type_expr :=
 | "struct" "{" field_list "}"
 | "@type_set" "(" type_expr ("," type_expr)* ")"`}
         />
+        <p className="text-secondary mt-1">
+          Top-level selected imports are parsed for resolver validation, but direct named imports and <code className="doc-inline-code">using import</code> are not backend-lowered current syntax.
+        </p>
       </SectionPanel>
 
       <SectionPanel title="Implementation Notes">

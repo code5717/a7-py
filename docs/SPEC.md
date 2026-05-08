@@ -467,8 +467,10 @@ can_exit := !running and cleanup_done
 - Field access: `point.x`
 - Address access: `variable.adr`
 - Pointer dereference: `ptr.val`
-- Method call: `vec.length()`
 - Function call: `max(a, b)`
+
+Method-call sugar such as `vec.length()` is planned syntax, not current
+semantic support. Use explicit functions such as `length(vec.adr)`.
 
 #### Unary Expressions
 - Negation: `-x`
@@ -806,10 +808,10 @@ normalize :: fn(self: ref Vec2) {
     self.y /= len
 }
 
-// Method call
+// Explicit receiver call
 v := Vec2{3.0, 4.0}
-len := v.length()     // Syntactic sugar for length(v.adr)
-v.normalize()         // Modifies v through pointer
+len := length(v.adr)
+normalize(v.adr)      // Modifies v through pointer
 ```
 
 ### 6.6 Variadic Functions
@@ -1463,9 +1465,13 @@ io :: import "std/io"
 // Aliases are supported for virtual stdlib imports
 console :: import "std/io"
 
-// Parsed/resolver forms for file-backed modules
+// Resolver-only selected import metadata; not backend-runnable yet
 import "vector" { Vec3, dot }
-using import "vector"
+
+// Planned syntax; not a current parser form
+// using import "vector"
+
+// Resolver-validated local aliases; codegen modes reject before backend output
 sibling :: import "./sibling"
 subfolder :: import "subfolder/helper"
 

@@ -15,6 +15,7 @@ const done = [
 const missing = [
   { name: 'Advanced match diagnostics', desc: 'Exact duplicate, wildcard-first, full bool/enum coverage, literal plus compile-time constant ranges, shared-endpoint symbolic ranges, and identifier captures are diagnosed. Arbitrary symbolic inequalities remain open.' },
   { name: 'Memory/lifetime model', desc: 'Only basic del reference checks. No ownership/borrow-style lifetime analysis.' },
+  { name: 'Module lowering', desc: 'File-backed modules and selected imports are resolver-validated, but multi-file backend linking, direct selected-import names, and using imports are not runnable current syntax.' },
   { name: 'Backend semantic parity hardening', desc: 'Core conformance is green, but differential backend checks should expand for every new language feature.' },
   { name: 'Package-registry publishing', desc: 'The current release workflow deliberately stops at package artifacts attached to draft GitHub releases. Registry publishing should be a separate reviewed change if it is added later.' },
 ]

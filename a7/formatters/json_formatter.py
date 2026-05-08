@@ -157,7 +157,10 @@ class JSONFormatter:
         for field in list_fields:
             field_value = getattr(node, field, None)
             if field_value is not None:
-                result[field] = [self._ast_to_dict(child) for child in field_value]
+                result[field] = [
+                    self._ast_to_dict(child) if hasattr(child, "kind") else child
+                    for child in field_value
+                ]
 
         # Add single node fields
         node_fields = [

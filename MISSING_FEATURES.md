@@ -103,6 +103,9 @@
 6. **Module-system parity**
    - Missing or broken local imports now fail closed.
    - Existing file-backed local imports resolve for semantic validation but are rejected before backend codegen until multi-file lowering/linking exists.
+   - Selected import metadata parses and serializes, but selected imports do not
+     currently introduce direct unqualified names for backend-runnable code.
+     `using import` remains planned syntax, not a current parser form.
    - Built-in stdlib imports are virtual modules, but now participate in `ModuleResolver`/`ModuleTable` symbol registration like file-based modules.
    - `std/string`, `std/mem`, and `std/collections` are planned but not current public stdlib modules.
 

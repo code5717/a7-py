@@ -28,4 +28,4 @@
 
 ## Current Limits
 
-The status page is canonical for remaining gaps. Key limits include complete memory/lifetime guarantees, backend lowering/linking for file-backed local modules, broader generic propagation beyond current function and struct instance coverage, parsed-only variadic declarations, reserved-but-unimplemented intrinsics beyond `@type_set(...)`, tagged union workflows, and arbitrary symbolic inequality reasoning.
+The status page is canonical for remaining gaps. Key limits include complete memory/lifetime guarantees, backend lowering/linking for file-backed local modules, selected/using import lowering, broader generic propagation beyond current function and struct instance coverage, parsed-only variadic declarations, reserved-but-unimplemented intrinsics beyond `@type_set(...)`, tagged union workflows, and arbitrary symbolic inequality reasoning.

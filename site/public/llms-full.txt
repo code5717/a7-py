@@ -43,6 +43,9 @@ Known gaps:
   do not infer arbitrary symbolic inequalities.
 - Ownership, borrowing, lifetime, use-after-free, and double-free guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until representation is defined.
+- File-backed selected imports parse as metadata but do not introduce direct
+  unqualified names for runnable backend code; `using import` is planned syntax,
+  not a current parser form.
 - Full generic specialization is incomplete beyond simple top-level generic functions and used generic struct instances.
 - Variadic declarations are parsed and partially type-checked in semantic mode,
   but runtime iteration and backend ABI lowering are not implemented. Codegen
@@ -226,6 +229,10 @@ the same way as `io` and `math`.
 File-backed local imports can be resolved during semantic validation, but
 Zig/C backend lowering and linking for multiple `.a7` files is not implemented
 yet. Compile, pipeline, and doc modes reject file-backed imports before codegen.
+
+Selected import metadata serializes in JSON diagnostics, but selected imports
+do not currently introduce direct unqualified names for backend-runnable code.
+`using import` remains planned syntax.
 
 Untagged unions:
 

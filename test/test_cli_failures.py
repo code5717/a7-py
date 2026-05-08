@@ -217,6 +217,29 @@ main :: fn() {
     assert "Backend Feature Support" in pass_names
 
 
+def test_cli_json_format_handles_named_import_items_without_traceback(tmp_path):
+    src = tmp_path / "named_import.a7"
+    src.write_text(
+        """
+import "std/io" { println }
+
+main :: fn() {
+    println("hi")
+}
+""".strip()
+    )
+
+    result = run_cli(["--mode", "semantic", "--format", "json", str(src)])
+
+    assert result.returncode == ExitCode.SEMANTIC
+    assert "Traceback" not in result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "error"
+    import_node = payload["stages"]["parse"]["ast"]["declarations"][0]
+    assert import_node["imported_items"] == ["println"]
+    assert payload["error"]["category"] == "semantic"
+
+
 def test_cli_unknown_virtual_stdlib_function_returns_semantic_error(tmp_path):
     src = tmp_path / "bad_stdlib_call.a7"
     out = tmp_path / "bad_stdlib_call.zig"

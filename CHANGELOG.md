@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - File-backed local imports now fail closed before backend codegen, and docs
   now distinguish resolver validation from unsupported multi-file linking.
+- JSON diagnostics now serialize selected import item lists without tracebacking,
+  and language docs now mark selected/using imports and method-call sugar as
+  non-runnable current syntax where appropriate.
 - Variadic parameters now fail closed before backend codegen instead of
   emitting invalid target-language function signatures.
 - Calculator example output now rounds display-only approximation values so

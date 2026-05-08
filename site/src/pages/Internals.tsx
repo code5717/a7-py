@@ -254,7 +254,7 @@ uv run python scripts/verify_backend_parity.py
             <h3 className="section-subtitle">Symbol table</h3>
             <p className="text-secondary">
               Hierarchical scopes with parent lookup. 10 symbol kinds.{' '}
-              <code className="doc-inline-code">ModuleTable</code> tracks imports — qualified names, using imports, named imports.
+              <code className="doc-inline-code">ModuleTable</code> tracks aliases, file-backed modules, and selected import metadata.
             </p>
           </div>
         </div>
