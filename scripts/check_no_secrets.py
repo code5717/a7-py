@@ -32,10 +32,27 @@ SKIP_SUFFIXES = {
     ".gz",
 }
 
+SENSITIVE_EXACT_FILENAMES = {
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.development",
+    ".env.test",
+    "id_rsa",
+    "id_ed25519",
+}
+
+SENSITIVE_SUFFIXES = {
+    ".key",
+    ".p12",
+    ".pfx",
+    ".pem",
+}
+
 SECRET_PATTERNS = {
     "private key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA |)?PRIVATE KEY-----"),
     "github token": re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b"),
-    "openai api key": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+    "openai api key": re.compile(r"\bsk-(?!ant-)[A-Za-z0-9_-]{20,}\b"),
     "anthropic api key": re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}\b"),
     "aws access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     "slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"),
@@ -68,17 +85,34 @@ def iter_files() -> list[Path]:
     )
 
 
+def sensitive_filename_kind(path: Path) -> str | None:
+    name = path.name
+    if name in SENSITIVE_EXACT_FILENAMES or path.suffix in SENSITIVE_SUFFIXES:
+        return "sensitive secret filename"
+    return None
+
+
 def scan_file(path: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    filename_kind = sensitive_filename_kind(path)
+    if filename_kind is not None:
+        findings.append(Finding(path, 0, filename_kind))
+
     try:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        return []
+        return findings
 
-    findings: list[Finding] = []
     for line_no, line in enumerate(text.splitlines(), start=1):
+        line_findings: list[Finding] = []
         for kind, pattern in SECRET_PATTERNS.items():
             if pattern.search(line):
-                findings.append(Finding(path, line_no, kind))
+                line_findings.append(Finding(path, line_no, kind))
+        if any(item.kind != "generic secret assignment" for item in line_findings):
+            line_findings = [
+                item for item in line_findings if item.kind != "generic secret assignment"
+            ]
+        findings.extend(line_findings)
     return findings
 
 
@@ -93,7 +127,10 @@ def main() -> int:
 
     print("secrets-check: possible committed secrets found")
     for item in findings:
-        print(f"{item.path.relative_to(ROOT)}:{item.line_no}: {item.kind}")
+        location = str(item.path.relative_to(ROOT))
+        if item.line_no:
+            location = f"{location}:{item.line_no}"
+        print(f"{location}: {item.kind}")
     return 1
 
 

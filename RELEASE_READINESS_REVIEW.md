@@ -213,6 +213,8 @@ not factually provable from local tests alone.
 - Secret-backed Claude workflows now require repository owner/member/collaborator
   author association for comment-triggered runs, and automated Claude PR review
   skips fork pull requests.
+- Claude-triggered workflows now use per-issue/PR concurrency groups so newer
+  runs cancel stale automation for the same target.
 - All workflow actions are pinned to immutable commits, and Dependabot now
   covers GitHub Actions, Python, and docs npm dependencies.
 - Automated Claude PR review now treats PR titles, bodies, comments, and diffs
@@ -310,6 +312,9 @@ not factually provable from local tests alone.
   reference.
 - CI/release Python audit tools are pinned to exact versions instead of fetching
   arbitrary latest tool releases during release gates.
+- The committed-secret guard now flags sensitive `.env`/private-key-style
+  filenames even when content is binary or unreadable, and avoids duplicate
+  generic/specific findings on the same line.
 - The release-manifest verifier rejects parent-directory traversal and unsafe
   absolute paths while preserving the documented flat downloaded-assets flow.
 - File-backed module imports are contained to configured search paths and reject
@@ -335,8 +340,8 @@ not factually provable from local tests alone.
   compromise.
 - All workflow actions are pinned to full commit SHAs resolved from current
   upstream release tags on 2026-05-08.
-- Secret scanning is pattern-based and should be supplemented by repository host
-  protections when publishing publicly.
+- Secret scanning is pattern- and filename-based and should be supplemented by
+  repository host protections when publishing publicly.
 - GitHub Pages deploy currently emits an upstream `punycode` deprecation warning
   from `actions/deploy-pages@v5`; the workflow succeeds and no repo-side
   replacement is currently available.

@@ -51,8 +51,8 @@ pytest.
 - Workflow actions are pinned to immutable commits resolved from current
   upstream release tags on 2026-05-08.
 - Dependency audits check known advisories, not unknown vulnerabilities.
-- The committed-secrets check is pattern-based and should be treated as a guard,
-  not a complete data-loss prevention system.
+- The committed-secrets check is pattern- and filename-based and should be
+  treated as a guard, not a complete data-loss prevention system.
 
 These limitations are tracked in `MISSING_FEATURES.md`, `TODO.md`, and
 `RELEASE.md`.

@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scanning were added.
 - CI/release Python audit tools are pinned to exact `uvx --from package==version`
   invocations so release gates do not fetch arbitrary latest tool releases.
+- Claude-triggered workflows now use per-issue/PR concurrency groups so newer
+  prompts cancel stale in-progress automation runs.
+- The committed-secret guard now flags sensitive `.env`/key filenames even when
+  file contents are binary or unreadable, and deduplicates specific API-key
+  findings against generic assignment matches.
 - Release-manifest verification rejects parent-directory traversal and unsafe
   absolute paths, while preserving the documented flat downloaded-assets flow.
 - File-backed module imports are now contained to configured search paths and

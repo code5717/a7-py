@@ -41,6 +41,17 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `RELEASE.md`, `SECURITY.md`
   Notes: `pip-audit` and `bandit` are invoked through exact `uvx --from package==version` specs.
 
+- [x] Add concurrency to Claude automation workflows.
+  Files: `.github/workflows/claude.yml`, `.github/workflows/claude-code-review.yml`
+  Notes: newer Claude issue/PR runs cancel stale in-progress runs for the same
+  target instead of racing duplicate automation.
+
+- [x] Harden committed-secret filename detection and deduplicate noisy matches.
+  Files: `scripts/check_no_secrets.py`, `test/test_release_tooling.py`
+  Notes: `.env`/private-key-style filenames are flagged even when unreadable,
+  and specific API-key matches suppress duplicate generic assignment findings
+  on the same line.
+
 - [x] Harden release manifest verification against unsafe paths.
   Files: `scripts/verify_release_manifest.py`, `test/test_release_tooling.py`
   Notes: downloaded manifest verification rejects parent-directory traversal and unsafe absolute paths while preserving flat asset downloads.
@@ -318,7 +329,8 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add secret scanning to CI.
   Files: `.github/workflows/`
-  Notes: `scripts/check_no_secrets.py` provides a lightweight committed-secret pattern scan in local and CI gates.
+  Notes: `scripts/check_no_secrets.py` provides a lightweight committed-secret
+  pattern and sensitive-filename scan in local and CI gates.
 
 - [x] Add tag-based release artifact automation.
   Files: `.github/workflows/`

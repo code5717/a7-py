@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,18 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def load_check_no_secrets_module():
+    spec = importlib.util.spec_from_file_location(
+        "check_no_secrets", ROOT / "scripts" / "check_no_secrets.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_installed_cli_entrypoint_works() -> None:
@@ -360,3 +373,40 @@ def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> No
     assert missing_result.returncode == 1
     assert "archive content verification failed" in missing_result.stderr
     assert "dist/llms-full.txt" in missing_result.stderr
+
+
+def test_secret_scan_flags_sensitive_filenames(tmp_path: Path) -> None:
+    scanner = load_check_no_secrets_module()
+    original_root = scanner.ROOT
+    try:
+        scanner.ROOT = tmp_path
+        secret_file = tmp_path / ".env.local"
+        secret_file.write_bytes(b"\x00\x01\x02")
+
+        findings = scanner.scan_file(secret_file)
+    finally:
+        scanner.ROOT = original_root
+
+    assert [(item.line_no, item.kind) for item in findings] == [
+        (0, "sensitive secret filename")
+    ]
+
+
+def test_secret_scan_deduplicates_specific_secret_lines(tmp_path: Path) -> None:
+    scanner = load_check_no_secrets_module()
+    original_root = scanner.ROOT
+    try:
+        scanner.ROOT = tmp_path
+        config = tmp_path / "config.txt"
+        config.write_text(
+            'ANTHROPIC_API_KEY="sk-ant-' + ("a" * 32) + '"\n',
+            encoding="utf-8",
+        )
+
+        findings = scanner.scan_file(config)
+    finally:
+        scanner.ROOT = original_root
+
+    assert [(item.line_no, item.kind) for item in findings] == [
+        (1, "anthropic api key")
+    ]
