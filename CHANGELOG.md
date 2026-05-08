@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so aliases such as `console :: import "std/io"` and
   `mathlib :: import "std/math"` work consistently and unknown stdlib
   functions fail during semantic analysis.
+- The docs app now has a first-class `/docs` curl.md directory and canonical
+  Markdown paths for `/docs/install.md` and `/docs/guide/*`, while keeping the
+  previous flat public docs files available as compatibility aliases.
 
 ## [0.3.0] - 2026-05-07
 

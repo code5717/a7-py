@@ -18,7 +18,7 @@ export type SectionSearchItem = {
 }
 
 export const PRIMARY_NAV: PrimaryNavItem[] = [
-  { kind: 'route', to: '/', label: 'Docs', end: true },
+  { kind: 'route', to: '/docs', label: 'Docs' },
   { kind: 'route', to: '/start', label: 'Start' },
   { kind: 'route', to: '/features', label: 'Guide' },
   { kind: 'route', to: '/plugins', label: 'Plugins' },
@@ -62,10 +62,20 @@ export const PAGE_META: Record<string, { title: string; description: string; mar
     description: 'Documentation for the A7 compiler, runnable examples, CLI, language reference, and current status.',
     markdownPath: '/docs/index.md',
   },
+  '/docs': {
+    title: 'Markdown Docs',
+    description: 'curl.md-friendly Markdown documentation index for agents, terminals, and editor tools.',
+    markdownPath: '/docs/index.md',
+  },
   '/start': {
     title: 'Getting Started',
     description: 'Install the A7 compiler repository and run the first example with uv.',
     markdownPath: '/docs/getting-started.md',
+  },
+  '/installation': {
+    title: 'Installation',
+    description: 'Install Python, uv, Zig, and local docs dependencies.',
+    markdownPath: '/docs/install.md',
   },
   '/language': {
     title: 'Language Reference',

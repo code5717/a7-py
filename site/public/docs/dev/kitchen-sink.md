@@ -5,7 +5,7 @@ Use this page to verify markdown shapes supported by the public docs.
 ## Links
 
 - [Getting Started](/a7-py/docs/getting-started.md)
-- [CLI](/a7-py/docs/cli.md)
+- [CLI](/a7-py/docs/guide/cli.md)
 - [Status](/a7-py/docs/status.md)
 
 ## Lists

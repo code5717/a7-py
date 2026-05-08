@@ -1,23 +1,23 @@
-# A7 Documentation
+# A7 Docs
 
 > curl.md-friendly Markdown documentation for agents and terminal workflows.
 
-Use these pages when you need stable, text-first A7 documentation without scraping the React docs app. The links below follow the docs navigation order used by `llms.txt` and `llms-full.txt`.
+Use these pages when you need current published docs without scraping the React docs app. The links below follow the docs navigation order used by `llms.txt`, `llms-full.txt`, and the site sidebar.
 
 ## Introduction
 
 - [Getting Started](/a7-py/docs/getting-started.md): Fast path from checkout to running examples.
-- [Installation](/a7-py/docs/installation.md): Install Python, uv, Zig, and repository dependencies.
+- [Installation](/a7-py/docs/install.md): Install Python, uv, Zig, and repository dependencies.
 - [Why A7](/a7-py/docs/why.md): Project goals, constraints, and current fit.
 - [FAQ](/a7-py/docs/faq.md): Short answers for agents and maintainers.
 
 ## Guide
 
-- [Features](/a7-py/docs/features.md): Implemented language and compiler capabilities.
-- [Agent Usage](/a7-py/docs/agent-usage.md): Fetch order, verification commands, and trust boundaries for coding agents.
-- [CLI](/a7-py/docs/cli.md): Modes, flags, exit codes, and JSON output.
-- [API and SDK](/a7-py/docs/api.md): Automation entry points and current limits.
-- [Plugins](/a7-py/docs/plugins.md): Agent and editor integration map.
+- [Features](/a7-py/docs/guide/features.md): Implemented language and compiler capabilities.
+- [Agent Usage](/a7-py/docs/guide/agent-usage.md): Fetch order, verification commands, and trust boundaries for coding agents.
+- [CLI](/a7-py/docs/guide/cli.md): Modes, flags, exit codes, and JSON output.
+- [API and SDK](/a7-py/docs/guide/api.md): Automation entry points and current limits.
+- [Plugins](/a7-py/docs/guide/plugins.md): Agent and editor integration map.
 
 ## Plugins
 

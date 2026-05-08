@@ -9,17 +9,17 @@ A7 is a statically typed systems language compiler implemented in Python. It com
 - [Docs Index](/a7-py/docs/index.md): Navigation for curl.md and coding agents.
 - [Full Context](/a7-py/llms-full.txt): Single-file aggregate of the public Markdown docs.
 - [Getting Started](/a7-py/docs/getting-started.md): Install, compile, run, and test A7.
-- [Installation](/a7-py/docs/installation.md): Toolchain and local docs setup.
+- [Installation](/a7-py/docs/install.md): Toolchain and local docs setup.
 - [Why A7](/a7-py/docs/why.md): Project goals, non-goals, and fit.
 - [FAQ](/a7-py/docs/faq.md): Short answers for agent workflows.
 
 ## Guide
 
-- [Features](/a7-py/docs/features.md): Implemented language, compiler, and verification capabilities.
-- [Agent Usage](/a7-py/docs/agent-usage.md): Fetch order, verification commands, and trust boundaries.
-- [CLI](/a7-py/docs/cli.md): Compiler modes, flags, exit codes, and automation commands.
-- [API and SDK](/a7-py/docs/api.md): Automation entry points and current limits.
-- [Plugins](/a7-py/docs/plugins.md): Agent and editor integration map.
+- [Features](/a7-py/docs/guide/features.md): Implemented language, compiler, and verification capabilities.
+- [Agent Usage](/a7-py/docs/guide/agent-usage.md): Fetch order, verification commands, and trust boundaries.
+- [CLI](/a7-py/docs/guide/cli.md): Compiler modes, flags, exit codes, and automation commands.
+- [API and SDK](/a7-py/docs/guide/api.md): Automation entry points and current limits.
+- [Plugins](/a7-py/docs/guide/plugins.md): Agent and editor integration map.
 
 ## Plugins
 

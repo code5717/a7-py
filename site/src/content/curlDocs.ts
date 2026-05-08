@@ -15,7 +15,7 @@ export const CURL_DOC_GROUPS: CurlDocGroup[] = [
     label: 'Introduction',
     items: [
       { route: '/start', markdownPath: '/docs/getting-started.md', label: 'Getting Started', note: 'Fast path from checkout to first run' },
-      { route: '/installation', markdownPath: '/docs/installation.md', label: 'Installation', note: 'Python, uv, Zig, and site setup' },
+      { route: '/install', markdownPath: '/docs/install.md', label: 'Installation', note: 'Python, uv, Zig, and site setup' },
       { route: '/why', markdownPath: '/docs/why.md', label: 'Why A7', note: 'Project goals, fit, and non-goals' },
       { route: '/faq', markdownPath: '/docs/faq.md', label: 'FAQ', note: 'Short answers for agent workflows' },
     ],
@@ -23,11 +23,11 @@ export const CURL_DOC_GROUPS: CurlDocGroup[] = [
   {
     label: 'Guide',
     items: [
-      { route: '/features', markdownPath: '/docs/features.md', label: 'Features', note: 'Implemented language and compiler surface' },
-      { route: '/agent-usage', markdownPath: '/docs/agent-usage.md', label: 'Agent Usage', note: 'Fetch order, checks, and trust boundaries' },
-      { route: '/cli', markdownPath: '/docs/cli.md', label: 'CLI', note: 'Commands, modes, flags, and exit codes' },
-      { route: '/api', markdownPath: '/docs/api.md', label: 'API and SDK', note: 'Automation entry points and current limits' },
-      { route: '/plugins', markdownPath: '/docs/plugins.md', label: 'Plugins', note: 'Agent and editor integration map' },
+      { route: '/features', markdownPath: '/docs/guide/features.md', label: 'Features', note: 'Implemented language and compiler surface' },
+      { route: '/agent-usage', markdownPath: '/docs/guide/agent-usage.md', label: 'Agent Usage', note: 'Fetch order, checks, and trust boundaries' },
+      { route: '/cli', markdownPath: '/docs/guide/cli.md', label: 'CLI', note: 'Commands, modes, flags, and exit codes' },
+      { route: '/api', markdownPath: '/docs/guide/api.md', label: 'API & SDK', note: 'Automation entry points and current limits' },
+      { route: '/plugins', markdownPath: '/docs/guide/plugins.md', label: 'Plugins', note: 'Agent and editor integration map' },
     ],
   },
   {
@@ -65,3 +65,8 @@ export const CURL_DOC_ITEMS = CURL_DOC_GROUPS.flatMap((group) =>
 )
 
 export const CURL_DOC_BY_ROUTE = new Map(CURL_DOC_ITEMS.map((item) => [item.route, item]))
+
+const installationDoc = CURL_DOC_BY_ROUTE.get('/install')
+if (installationDoc) {
+  CURL_DOC_BY_ROUTE.set('/installation', installationDoc)
+}

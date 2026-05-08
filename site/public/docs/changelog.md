@@ -11,6 +11,9 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 - C backend generic function calls now specialize simple top-level generic functions before emission.
 - Release artifact checksum generation and verification were added.
 - The docs site was simplified, dark mode was revised, and fake testimonial content was removed.
+- The docs app now exposes a first-class `/docs` curl.md directory with direct
+  `curl -fsS` commands and canonical `/docs/install.md` plus `/docs/guide/*`
+  Markdown paths.
 
 ## Current Release
 

@@ -60,7 +60,9 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
+        <Route path="docs" element={<CurlDocsPage />} />
         <Route path="start" element={<Start />} />
+        <Route path="install" element={<CurlDocsPage />} />
         <Route path="installation" element={<CurlDocsPage />} />
         <Route path="why" element={<CurlDocsPage />} />
         <Route path="faq" element={<CurlDocsPage />} />

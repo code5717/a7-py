@@ -5,14 +5,14 @@
   <url><loc>https://code5717.github.io/a7-py/llms-full.txt</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/index.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/getting-started.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/installation.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/install.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/why.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/faq.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/features.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/agent-usage.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/cli.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/api.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/guide/features.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/guide/agent-usage.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/guide/cli.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/guide/api.md</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/guide/plugins.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/plugins/amp.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/plugins/claude.md</loc></url>
   <url><loc>https://code5717.github.io/a7-py/docs/plugins/codex.md</loc></url>
