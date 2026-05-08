@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Normal example verifier runs now fail closed when a golden output fixture is
+  missing; only explicit `--update-golden` runs write fixture files.
 - Documentation now scopes the low-recursion implementation claim to the
   compiler stages that are actually stack-based today and tracks fully
   iterative backend emission as follow-up work.

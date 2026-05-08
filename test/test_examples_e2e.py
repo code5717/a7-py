@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -52,3 +53,32 @@ def test_examples_end_to_end_outputs_match_goldens(tmp_path: Path) -> None:
         assert item["run_ok"] is True
         assert item["output_match"] is True
         assert item["error"] == ""
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_examples_verifier_fails_when_golden_fixture_is_missing(tmp_path: Path) -> None:
+    examples_dir = tmp_path / "examples"
+    fixtures_dir = tmp_path / "fixtures"
+    examples_dir.mkdir()
+    fixtures_dir.mkdir()
+    shutil.copy(PROJECT_ROOT / "examples" / "001_hello.a7", examples_dir / "001_hello.a7")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(VERIFY_SCRIPT),
+            "--examples-dir",
+            str(examples_dir),
+            "--fixtures-dir",
+            str(fixtures_dir),
+        ],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+
+    combined = (result.stdout or "") + (result.stderr or "")
+    assert result.returncode == 1, combined
+    assert "missing golden fixture" in combined
+    assert not (fixtures_dir / "001_hello.out").exists()

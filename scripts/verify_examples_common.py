@@ -148,10 +148,14 @@ def verify_example(
     fixture_path = fixtures_dir / f"{example.stem}.out"
     result.output_path = str(fixture_path)
 
-    if update_golden or not fixture_path.exists():
+    if update_golden:
         fixture_path.parent.mkdir(parents=True, exist_ok=True)
         fixture_path.write_text(actual, encoding="utf-8")
         result.output_match = True
+        return result
+
+    if not fixture_path.exists():
+        result.error = f"missing golden fixture: {fixture_path}"
         return result
 
     expected = fixture_path.read_text(encoding="utf-8")
