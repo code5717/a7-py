@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   input rather than instructions.
 - First-party `actions/*` workflow actions are pinned to immutable commit SHAs
   resolved from their current major tags.
+- Release-readiness and security docs now cite the latest CI, Deploy Docs, and
+  manual release workflow evidence after workflow action pinning and Bandit
+  scanning were added.
 - Tag release runs now generate GitHub artifact attestations for the checksum
   manifest, Python package files, docs archive, and native example artifact
   archive before uploading release artifacts.

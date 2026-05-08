@@ -156,9 +156,8 @@ not factually provable from local tests alone.
 - Online check of GitHub's current action release pages confirmed
   `actions/upload-artifact@v7` and `actions/download-artifact@v8` exist, so the
   release workflow's artifact actions are not using nonexistent major tags.
-- Non-`actions/*` workflow actions are pinned to immutable commits, and
-  Dependabot is configured for GitHub Actions, Python, and docs npm dependency
-  updates.
+- All workflow actions are pinned to immutable commits, and Dependabot is
+  configured for GitHub Actions, Python, and docs npm dependency updates.
 - Tag release runs now generate GitHub artifact attestations for `SHA256SUMS`,
   Python package files, docs archive, and native example archive.
 - Manual release workflow dispatch `25536114185` passed on commit `582f47e`,
@@ -167,6 +166,18 @@ not factually provable from local tests alone.
   assets verified locally with `scripts/verify_release_manifest.py`, and
   `gh attestation verify` passed for the package, wheel, docs archive, and
   native example archive.
+- Hosted CI run `25539118297` passed on commit `d678c80`, including pytest,
+  Python dependency audit, Bandit static security scanning, error-stage
+  verification, Zig/C example verification, backend parity, debug artifacts,
+  release artifacts, package build, and clean wheel-install verification.
+- Hosted Deploy Docs run `25539118290` passed on commit `d678c80`.
+- Manual release workflow dispatch `25539300989` passed on commit `d678c80`,
+  including release gate, Python dependency audit, Bandit static security
+  scanning, docs runtime dependency audit, package build, wheel install, docs
+  build, release example artifacts, archive verification, checksum generation,
+  GitHub artifact attestations, and release-bundle upload. The
+  `create-github-release` job was skipped because draft GitHub release creation
+  is intentionally gated to `refs/tags/v*` runs.
 
 ## Fixed In This Pass
 
@@ -197,8 +208,8 @@ not factually provable from local tests alone.
 - Secret-backed Claude workflows now require repository owner/member/collaborator
   author association for comment-triggered runs, and automated Claude PR review
   skips fork pull requests.
-- Non-`actions/*` workflow actions are pinned to immutable commits, and
-  Dependabot now covers GitHub Actions, Python, and docs npm dependencies.
+- All workflow actions are pinned to immutable commits, and Dependabot now
+  covers GitHub Actions, Python, and docs npm dependencies.
 - Automated Claude PR review now treats PR titles, bodies, comments, and diffs
   as untrusted content to review rather than instructions to follow.
 - `docs/SPEC.md` no longer contains the duplicated type/control-flow/function/
@@ -230,7 +241,7 @@ not factually provable from local tests alone.
 - CI and release workflows pin Zig 0.15.2 through a checksum-verified install
   instead of a third-party JavaScript setup action.
 - First-party GitHub Actions, Pages, artifact, and draft-release actions are on
-  Node 24-compatible majors.
+  Node 24-compatible immutable SHAs.
 - Release/security checklist shell snippets now use subshells so they can be
   copied and run literally.
 - README now points to the current `code5717.github.io/a7-py` documentation URL.
@@ -309,9 +320,8 @@ not factually provable from local tests alone.
   for all possible source programs.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
-- Most first-party GitHub Actions remain pinned by major version tag rather than
-  full commit SHA; the non-`actions/*` actions with higher supply-chain blast
-  radius are pinned to immutable commits.
+- All workflow actions are pinned to full commit SHAs resolved from current
+  upstream release tags on 2026-05-08.
 - Secret scanning is pattern-based and should be supplemented by repository host
   protections when publishing publicly.
 - GitHub Pages deploy currently emits an upstream `punycode` deprecation warning

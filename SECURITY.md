@@ -46,8 +46,8 @@ pytest.
 - Tag-created release artifacts receive GitHub artifact attestations; verify
   them with `gh attestation verify <file> --repo code5717/a7-py` before
   publishing or consuming a release.
-- Non-`actions/*` release and Claude workflow actions are pinned to immutable
-  commits. Most first-party GitHub Actions remain pinned by major version tag.
+- Workflow actions are pinned to immutable commits resolved from current
+  upstream release tags on 2026-05-08.
 - Dependency audits check known advisories, not unknown vulnerabilities.
 - The committed-secrets check is pattern-based and should be treated as a guard,
   not a complete data-loss prevention system.
