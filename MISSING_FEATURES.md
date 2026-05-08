@@ -16,38 +16,41 @@
 6. Generic arithmetic and generic local literal initialization are relaxed where valid.
 7. Generic struct literal field checks substitute concrete type arguments.
 8. Field access resolves concrete struct layout for generic instances.
-9. Match semantics now enforce:
+9. Variadic parameter syntax is parsed and partially type-checked in semantic
+   mode, and codegen modes now fail closed until runtime iteration/ABI lowering
+   is implemented.
+10. Match semantics now enforce:
    - pattern type compatibility with the scrutinee,
    - bool/enum exhaustiveness (or explicit `else` / wildcard),
    - wildcard pattern parsing (`case _:`),
    - return-path correctness for exhaustive enum/bool `match` without `else`.
-10. Deferred statement payloads are traversed by type checking and semantic validation.
-11. `ret` payloads are traversed through the semantic validator's `value` field.
-12. `for-in` and indexed `for-in` reject scalar/non-iterable expressions during type checking.
-13. Constant folding covers arithmetic, boolean logic, literal comparisons, and integer bitwise expressions.
-14. Installed CLI entrypoint (`a7`) is wired through `pyproject.toml`.
-15. Debug/release example artifact verification is available through `scripts/build_examples.py`.
-16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, selected Zig/C parity smoke checks, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
-17. Local file-based imports now fail closed during codegen modes instead of emitting unresolved backend code. Semantic mode still validates resolver loading.
-18. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
-19. `fall` now lowers in both Zig and C when used as the final direct
+11. Deferred statement payloads are traversed by type checking and semantic validation.
+12. `ret` payloads are traversed through the semantic validator's `value` field.
+13. `for-in` and indexed `for-in` reject scalar/non-iterable expressions during type checking.
+14. Constant folding covers arithmetic, boolean logic, literal comparisons, and integer bitwise expressions.
+15. Installed CLI entrypoint (`a7`) is wired through `pyproject.toml`.
+16. Debug/release example artifact verification is available through `scripts/build_examples.py`.
+17. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, selected Zig/C parity smoke checks, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
+18. Local file-based imports now fail closed during codegen modes instead of emitting unresolved backend code. Semantic mode still validates resolver loading.
+19. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
+20. `fall` now lowers in both Zig and C when used as the final direct
     statement of a non-final match case.
-20. C backend `for-in` lowering now caches array/slice iterable expressions so side-effectful iterables are evaluated once.
-21. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes; valid escapes are decoded into AST literals and re-escaped for backend output.
-22. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
-23. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
-24. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
-25. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in both Zig and C backends.
-26. C backend side-effect-free `match` expressions now lower for literal, enum, range, and wildcard patterns.
-27. C backend `match` statements with range patterns lower through portable `if` chains.
-28. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
-29. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
-30. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
-31. Semantic validation rejects direct, mutual, and local function-pointer alias recursion; repeated work must use loops, explicit stacks, or index-based worklists.
-32. Index and slice-bound variables must be `usize`; non-negative integer literals remain valid for simple indexing.
-33. `new [N]T` heap fixed arrays fail closed until the allocation model and both backends agree on representation.
-34. Ordering comparisons reject non-ordered types, and signed variables no longer implicitly assign to unsigned integer types.
-35. Match identifier capture patterns bind the scrutinee in branch-local scope
+21. C backend `for-in` lowering now caches array/slice iterable expressions so side-effectful iterables are evaluated once.
+22. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes; valid escapes are decoded into AST literals and re-escaped for backend output.
+23. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
+24. Bool and enum match statements/expressions now report non-exhaustive coverage unless an else or wildcard branch is present.
+25. `slice.ptr` and `slice.len` now type-check and lower in both Zig and C backends.
+26. `string[start..end]` and `string[start..]` now type-check as `[]char` and lower in both Zig and C backends.
+27. C backend side-effect-free `match` expressions now lower for literal, enum, range, and wildcard patterns.
+28. C backend `match` statements with range patterns lower through portable `if` chains.
+29. C backend existing-identifier match patterns lower as comparisons in statements and expressions.
+30. C backend raw `fn(...)` parameter and variable declarations lower as C function pointers.
+31. Semantic validation reports block-local unreachable statements after `ret`, valid `break`/`continue`, `fall`, and fully-terminating `if`/`match` statements.
+32. Semantic validation rejects direct, mutual, and local function-pointer alias recursion; repeated work must use loops, explicit stacks, or index-based worklists.
+33. Index and slice-bound variables must be `usize`; non-negative integer literals remain valid for simple indexing.
+34. `new [N]T` heap fixed arrays fail closed until the allocation model and both backends agree on representation.
+35. Ordering comparisons reject non-ordered types, and signed variables no longer implicitly assign to unsigned integer types.
+36. Match identifier capture patterns bind the scrutinee in branch-local scope
     when no existing symbol with that name is visible. Existing identifier
     patterns keep value-comparison semantics.
 
@@ -56,8 +59,9 @@
 ## Remaining Language-First Gaps
 
 0. **Spec-only syntax and parsed-only features**
-   - Variadic parameters are parsed and partially type-checked, but runtime
-     iteration and backend ABI lowering are not implemented.
+   - Variadic parameters are parsed and partially type-checked in semantic mode,
+     but runtime iteration and backend ABI lowering are not implemented.
+     Codegen modes reject them before target emission.
    - Multiple return values / destructuring (`a, b, c := 1, 2, 3`) are planned
      syntax, not current parser support.
    - `@type_set(...)` is implemented for generic constraints. Other `@...`

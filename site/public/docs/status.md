@@ -20,8 +20,9 @@
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until their language and backend representation is defined.
 - Full generic specialization is incomplete beyond simple top-level generic functions and used generic struct instances.
-- Variadic declarations are parsed and partially type-checked, but runtime
-  iteration and backend ABI lowering are not implemented.
+- Variadic declarations are parsed and partially type-checked in semantic mode,
+  but runtime iteration and backend ABI lowering are not implemented; codegen
+  modes reject them before target emission.
 - Intrinsics beyond `@type_set(...)` are reserved/tokenized but not current
   semantic or backend features.
 - Multiple return values / destructuring are planned syntax, not current parser support.

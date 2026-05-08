@@ -248,6 +248,13 @@ class A7Compiler:
                         filename=str(input_path),
                         source_lines=source_lines,
                     )
+                backend_feature_errors: list[Any] = []
+                if self.mode in codegen_modes:
+                    backend_feature_errors = self._backend_unsupported_feature_errors(
+                        ast=ast,
+                        filename=str(input_path),
+                        source_lines=source_lines,
+                    )
 
                 name_resolver = NameResolutionPass()
                 name_resolver.source_lines = source_lines
@@ -255,6 +262,7 @@ class A7Compiler:
                 nr_ok = len(name_resolver.errors) == 0
                 import_ok = len(import_errors) == 0
                 backend_import_ok = len(backend_import_errors) == 0
+                backend_feature_ok = len(backend_feature_errors) == 0
                 semantic_passes.append(
                     {
                         "name": "Import Resolution",
@@ -275,6 +283,15 @@ class A7Compiler:
                     all_errors.extend(backend_import_errors)
                 semantic_passes.append(
                     {
+                        "name": "Backend Feature Support",
+                        "ok": backend_feature_ok,
+                        "errors": len(backend_feature_errors),
+                    }
+                )
+                if backend_feature_errors:
+                    all_errors.extend(backend_feature_errors)
+                semantic_passes.append(
+                    {
                         "name": "Name Resolution",
                         "ok": nr_ok,
                         "errors": len(name_resolver.errors),
@@ -283,7 +300,7 @@ class A7Compiler:
                 if name_resolver.errors:
                     all_errors.extend(name_resolver.errors)
 
-                if import_ok and backend_import_ok and nr_ok:
+                if import_ok and backend_import_ok and backend_feature_ok and nr_ok:
                     type_checker = TypeCheckingPass(symbol_table)
                     type_checker.source_lines = source_lines
                     type_checker.analyze(ast, str(input_path))
@@ -530,6 +547,46 @@ class A7Compiler:
                     ),
                 )
             )
+        return errors
+
+    def _backend_unsupported_feature_errors(
+        self,
+        *,
+        ast: ASTNode,
+        filename: str,
+        source_lines: list[str],
+    ) -> list[SemanticError]:
+        """Reject parsed syntax that currently has no backend ABI/lowering."""
+        errors: list[SemanticError] = []
+        stack: list[Any] = [ast]
+        seen: set[int] = set()
+
+        while stack:
+            value = stack.pop()
+            if isinstance(value, ASTNode):
+                node_id = id(value)
+                if node_id in seen:
+                    continue
+                seen.add(node_id)
+
+                if getattr(value, "is_variadic", False):
+                    errors.append(
+                        SemanticError.from_type(
+                            SemanticErrorType.UNSUPPORTED_FEATURE,
+                            span=value.span,
+                            filename=filename,
+                            source_lines=source_lines,
+                            custom_message=(
+                                "Variadic parameters are parsed for future support, "
+                                f"but {self.backend} backend ABI/lowering is not implemented yet"
+                            ),
+                        )
+                    )
+
+                stack.extend(value.__dict__.values())
+            elif isinstance(value, (list, tuple)):
+                stack.extend(value)
+
         return errors
 
     def _finish_with_failure(

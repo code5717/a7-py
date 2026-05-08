@@ -166,6 +166,57 @@ main :: fn() {}
     assert "Backend Import Support" in pass_names
 
 
+def test_cli_variadic_function_fails_closed_before_codegen(tmp_path):
+    src = tmp_path / "variadic.a7"
+    src.write_text(
+        """
+io :: import "std/io"
+
+print_all :: fn(values: ..i32) {
+    io.println("variadic")
+}
+
+main :: fn() {
+    print_all(1, 2, 3)
+}
+""".strip()
+    )
+
+    for backend, suffix in [("zig", ".zig"), ("c", ".c")]:
+        out = tmp_path / f"variadic{suffix}"
+        result = run_cli(["--backend", backend, "--format", "json", str(src), "-o", str(out)])
+
+        assert result.returncode == ExitCode.SEMANTIC
+        payload = json.loads(result.stdout)
+        assert payload["error"]["category"] == "semantic"
+        message = payload["error"]["details"][0]["message"].lower()
+        assert "variadic parameters" in message
+        assert f"{backend} backend" in message
+        assert "not implemented yet" in message
+        assert not out.exists()
+
+
+def test_cli_variadic_function_semantic_mode_still_validates_types(tmp_path):
+    src = tmp_path / "variadic_semantic.a7"
+    src.write_text(
+        """
+print_all :: fn(values: ..i32) {}
+
+main :: fn() {
+    print_all(1, 2, 3)
+}
+""".strip()
+    )
+
+    result = run_cli(["--mode", "semantic", "--format", "json", str(src)])
+
+    assert result.returncode == ExitCode.SUCCESS
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "ok"
+    pass_names = [item["name"] for item in payload["stages"]["semantic"]["passes"]]
+    assert "Backend Feature Support" in pass_names
+
+
 def test_cli_unknown_virtual_stdlib_function_returns_semantic_error(tmp_path):
     src = tmp_path / "bad_stdlib_call.a7"
     out = tmp_path / "bad_stdlib_call.zig"

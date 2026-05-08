@@ -94,6 +94,7 @@ class SemanticErrorType(Enum):
     CONSTRAINT_VIOLATION = "constraint_violation"
 
     # General
+    UNSUPPORTED_FEATURE = "unsupported_feature"
     UNEXPECTED_NODE_KIND = "unexpected_node_kind"
     UNKNOWN = "unknown"
 
@@ -252,6 +253,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CONSTRAINT_VIOLATION: "Generic constraint violation",
 
         # General
+        SemanticErrorType.UNSUPPORTED_FEATURE: "Unsupported feature",
         SemanticErrorType.UNEXPECTED_NODE_KIND: "Unexpected AST node kind",
         SemanticErrorType.UNKNOWN: "Unknown semantic error",
     }
@@ -302,6 +304,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CONSTRAINT_VIOLATION: "Ensure the type satisfies the generic constraint",
 
         # General
+        SemanticErrorType.UNSUPPORTED_FEATURE: "This syntax is parsed for future support but is not runnable in the current backends",
         SemanticErrorType.UNEXPECTED_NODE_KIND: "This is likely a compiler bug, please report it",
         SemanticErrorType.UNKNOWN: "Please report this error",
     }

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - File-backed local imports now fail closed before backend codegen, and docs
   now distinguish resolver validation from unsupported multi-file linking.
+- Variadic parameters now fail closed before backend codegen instead of
+  emitting invalid target-language function signatures.
+- Calculator example output now rounds display-only approximation values so
+  the golden output stays readable across Zig and C backends.
 - Tightened runnable examples so conditionals, callbacks, and state-machine
   demos exercise their documented branches in both native backends.
 - `examples/014_generics.a7` now runs real generic functions and generic struct

@@ -1,6 +1,7 @@
 // Simple calculator with multiple operations
 
 io :: import "std/io"
+math :: import "std/math"
 
 // Calculator operations
 add :: fn(a: f64, b: f64) f64 {
@@ -79,6 +80,15 @@ abs :: fn(x: f64) f64 {
     ret if x < 0.0 { -x } else { x }
 }
 
+// Round positive values for cleaner example output
+round_nearest :: fn(x: f64) f64 {
+    ret math.floor(x + 0.5)
+}
+
+round3 :: fn(x: f64) f64 {
+    ret math.floor((x * 1000.0) + 0.5) / 1000.0
+}
+
 main :: fn() {
     io.println("=== Calculator ===")
 
@@ -93,7 +103,7 @@ main :: fn() {
     io.println("  {} + {} = {}", a, b, add(a, b))
     io.println("  {} - {} = {}", a, b, subtract(a, b))
     io.println("  {} * {} = {}", a, b, multiply(a, b))
-    io.println("  {} / {} = {}", a, b, divide(a, b))
+    io.println("  {} / {} = {}", a, b, round3(divide(a, b)))
     io.println("")
 
     // Power
@@ -105,9 +115,9 @@ main :: fn() {
 
     // Square root
     io.println("Square Root:")
-    io.println("  sqrt(16) = {}", sqrt(16.0))
-    io.println("  sqrt(2) = {}", sqrt(2.0))
-    io.println("  sqrt(100) = {}", sqrt(100.0))
+    io.println("  sqrt(16) = {}", round_nearest(sqrt(16.0)))
+    io.println("  sqrt(2) = {}", round3(sqrt(2.0)))
+    io.println("  sqrt(100) = {}", round_nearest(sqrt(100.0)))
     io.println("")
 
     // Percentage
@@ -125,5 +135,5 @@ main :: fn() {
     io.println("")
     io.println("Complex Calculation:")
     result := add(multiply(a, b), sqrt(16.0))
-    io.println("  (a * b) + sqrt(16) = {}", result)
+    io.println("  (a * b) + sqrt(16) = {}", round_nearest(result))
 }

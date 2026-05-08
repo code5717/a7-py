@@ -816,7 +816,8 @@ v.normalize()         // Modifies v through pointer
 
 > **Implementation Status**: Variadic parameter syntax is parsed and partially
 > type-checked for declarations, but runtime iteration and ABI lowering are not
-> implemented. Do not treat variadic functions as runnable current syntax.
+> implemented. Codegen modes reject variadic parameters before backend emission;
+> do not treat variadic functions as runnable current syntax.
 
 ```a7
 // Planned shape: variadic parameters must be last
