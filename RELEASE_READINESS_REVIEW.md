@@ -206,8 +206,14 @@ not factually provable from local tests alone.
   passed; Zig examples 38/38; C examples 38/38; backend parity 20/20; debug
   artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
   style ok; secrets check ok; total pytest 1245 passed; summary 12/12.
+- hosted CI run `25544528796` passed on commit `ff944ad` after generic struct
+  instance lowering, including docs, pytest, Python dependency audit, Bandit
+  static security scanning, error-stage verification, Zig/C example
+  verification, backend parity, debug artifacts, release artifacts, package
+  build, and clean wheel-install verification.
+- hosted Deploy Docs run `25544528779` passed on commit `ff944ad`.
 - local `npm run check` in `site/` passed after updating the public status and
-  language docs for the fallthrough behavior.
+  language docs for the generic struct behavior.
 - hosted CI run `25541793153` passed on commit `5baa7f7` after fallthrough
   lowering was added, including docs, pytest, Python dependency audit, Bandit
   static security scanning, error-stage verification, Zig/C example

@@ -349,9 +349,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `scripts/verify_wheel_install.py`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `pyproject.toml`
   Notes: the Python package now installs as top-level package `a7`, and CI/release install the built wheel into a clean virtual environment before upload.
 
-- [ ] Decide whether to add package-registry publishing.
+- [x] Decide whether to add package-registry publishing.
   Files: `.github/workflows/`
-  Notes: the current release workflow builds Python distributions and attaches them to draft GitHub releases, but does not publish to a package registry.
+  Notes: package-registry publishing is intentionally out of scope for the current release workflow. The workflow builds Python distributions and attaches them to draft GitHub releases only.
 
 - [x] Design and implement `fall` lowering.
   Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `docs/SPEC.md`
