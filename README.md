@@ -156,7 +156,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Memory**: Property-based pointer syntax (`.adr`, `.val`), scalar/struct `new` and `del`, defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the language model is defined.
 - **Imports**: Virtual `std/io` and `std/math` modules with aliases; file-backed local imports resolve for validation but fail closed before backend codegen until module linking is implemented
 - **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, generic struct literals, and simple top-level generic function calls
-- **Code Generation**: A7 → Zig
+- **Code Generation**: A7 → Zig, with buffered `std/io` lowering through shared `writerStreaming` stdout/stderr writers and generated print helpers
 - **Standard Library**: Registry with io and math modules, backend-specific mappings
 - **Error Messages**: Rich formatting with source context and structured error types
 

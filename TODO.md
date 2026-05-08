@@ -73,6 +73,12 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `scripts/verify_wheel_install.py`
   Notes: clean-wheel verification now checks installed Zig code generation.
 
+- [x] Hoist and buffer Zig stdio writers.
+  Files: `a7/backends/zig.py`
+  Notes: stdout/stderr writers are module-scope `writerStreaming` values and
+  generated print helpers; `main` now defers stream flushes instead of emitting
+  a flush after every print statement.
+
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `a7/passes/type_checker.py`, `a7/passes/semantic_validator.py`
   Notes: fixed; deferred `statement` payloads are now traversed by type checking and semantic validation, with regression coverage.

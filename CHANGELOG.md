@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C backend support has been retired from the public compiler. Zig is now the
   only supported code generation target, and CI/release/example verification
   gates focus on Zig output.
+- Zig stdio lowering now keeps shared buffered stdout/stderr writers plus small
+  print helpers at module scope, and flushes used streams once from `main`
+  instead of flushing after every `io.print*` statement.
 - Semantic recursion validation now catches higher-order callback trampolines,
   including direct, mutual, and callback-parameter-alias cycles.
 - Zig backend binary-expression emission now uses explicit postorder
@@ -63,6 +66,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI and release workflows now use concurrency groups; release tags re-verify
   downloaded checksums before draft release creation, and local package output
   is cleaned before workflow package builds.
+- Release archive verification now supports exact glob-count assertions, and
+  tag releases assert the example archive contains all 38 Zig sources and all
+  38 native binaries.
 - Claude-triggered workflows now restrict secret-backed runs to repository
   owners, members, or collaborators; automated Claude PR review skips fork PRs.
 - Dependabot now covers GitHub Actions, Python, and docs npm dependencies;

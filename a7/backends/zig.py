@@ -159,6 +159,9 @@ class ZigCodeGenerator(CodeGenerator):
                 f"var __a7_{stream}_writer = "
                 f"std.fs.File.{stream}().writerStreaming(&__a7_{stream}_buf);"
             )
+            lines.append(f"fn __a7_{stream}_print(comptime fmt: []const u8, args: anytype) void {{")
+            lines.append(f"    __a7_{stream}_writer.interface.print(fmt, args) catch {{}};")
+            lines.append("}")
         if lines:
             lines.append("")
         return "\n".join(lines) + ("\n" if lines else "")
@@ -470,7 +473,13 @@ class ZigCodeGenerator(CodeGenerator):
         if node.body and not (node.body.statements or []):
             self.output.write("{}\n")
         elif node.body:
-            self._visit_block_inline(node.body)
+            prelude_lines = [
+                f"defer __a7_{stream}_writer.interface.flush() catch {{}};"
+                for stream in sorted(self._io_streams_needed)
+            ]
+            if not is_main:
+                prelude_lines = []
+            self._visit_block_inline(node.body, prelude_lines=prelude_lines)
         else:
             self.output.write("{}\n")
         self._pop_scope()
@@ -687,10 +696,15 @@ class ZigCodeGenerator(CodeGenerator):
         """Visit block statement (as a standalone statement)."""
         self._visit_block_inline(node)
 
-    def _visit_block_inline(self, node: ASTNode) -> None:
+    def _visit_block_inline(self, node: ASTNode, prelude_lines: Optional[list[str]] = None) -> None:
         """Visit block and output braces + indented contents."""
         self.output.write("{\n")
         self.indent()
+
+        for line in prelude_lines or []:
+            self._write_indent()
+            self.output.write(line)
+            self.output.write("\n")
 
         for stmt in (node.statements or []):
             # Skip nested functions that were hoisted to module level
@@ -2070,16 +2084,13 @@ class ZigCodeGenerator(CodeGenerator):
     def _write_io_print(self, field: str, fmt_str: str, zig_args: str) -> None:
         """Write std/io calls to the correct output stream."""
         stream = "stderr" if field == "eprintln" else "stdout"
-        writer_name = f"__a7_{stream}_writer"
         if not zig_args:
             args = ".{}"
         elif self._has_top_level_comma(zig_args):
             args = f".{{ {zig_args} }}"
         else:
             args = f".{{{zig_args}}}"
-        self.output.write(f"{writer_name}.interface.print({fmt_str}, {args}) catch {{}};\n")
-        self._write_indent()
-        self.output.write(f"{writer_name}.interface.flush() catch {{}};\n")
+        self.output.write(f"__a7_{stream}_print({fmt_str}, {args});\n")
 
     def _emit_io_call_expr(self, node: ASTNode) -> str:
         """Emit io call as an expression (returns void)."""

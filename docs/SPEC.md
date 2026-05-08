@@ -1562,6 +1562,15 @@ math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
 `math.max`. Some typed math builtin spellings such as `sqrt_f32` and `sqrt_f64`
 also map through the stdlib registry.
 
+The Zig backend lowers current `std/io` calls to buffered
+`std.fs.File.writerStreaming` stdout/stderr writers plus generated print
+helpers. Writers are hoisted at module scope and flushed from `main` with
+`defer` statements so helper calls preserve per-stream output order without
+forcing a flush after every print statement. Because stdout and stderr use
+separate buffers, mixed-stream display order is not guaranteed. Buffered output
+is guaranteed for normal `main` return paths; output still in the buffer can be
+lost on panic or abnormal process termination.
+
 The broader string, ASCII, memory, assertion, and allocation function list below
 is planned API shape, not current implementation:
 

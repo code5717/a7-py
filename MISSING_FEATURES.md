@@ -52,6 +52,9 @@
     patterns keep value-comparison semantics.
 37. Fixed-size numeric arrays with the same length and element type support
     element-wise `+` assignment in Zig.
+38. Zig stdio lowering uses shared buffered stdout/stderr writers, generated
+    print helpers, and `main`-scoped deferred flushes instead of per-print
+    flush calls.
 
 ---
 
