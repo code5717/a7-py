@@ -23,6 +23,7 @@ The repository is substantially more release-ready than before this pass:
   scope-aware handling for local function-pointer shadowing
 - consolidated docs-site navigation with curl.md-friendly Markdown entry points
   under `site/public/llms.txt` and `site/public/docs/`
+- C backend specialization for simple top-level generic function calls
 
 This is not a claim that the implementation is free of all bugs or
 vulnerabilities. For a compiler and native-code build pipeline, that standard is
@@ -35,6 +36,7 @@ not factually provable from local tests alone.
 - `uv run python scripts/build_examples.py --profile debug --backend both --clean`
 - `uv run python scripts/build_examples.py --profile release --backend both --clean`
 - `uv run python scripts/verify_backend_parity.py`
+- `uv run pytest test/test_codegen_c.py::test_c_backend_lowers_simple_generic_function test/test_codegen_c.py::test_generated_c_runs_multiple_generic_instantiations -q`
 - `./run_all_tests.sh`
 - `uv build`
 - local `dist/` cleanup before package builds
@@ -86,6 +88,14 @@ not factually provable from local tests alone.
   fetches for `/a7-py/llms.txt`, `/a7-py/docs/index.md`, and
   `/a7-py/docs/plugins/codex.md` confirmed the deployed curl.md navigation and
   plugin docs.
+- hosted CI run `25528605790` passed on commit `8407a97` after simple C generic
+  function lowering was added, including pytest, Python dependency audit,
+  error-stage verification, Zig/C example verification, backend parity, debug
+  artifacts, release artifacts, package build, docs style, secret scanning,
+  docs dependency audit, docs lint, and docs build.
+- hosted Deploy Docs run `25528605791` passed on commit `8407a97`; hosted
+  fetches for `/a7-py/docs/status.md` and `/a7-py/llms-full.txt` confirmed the
+  deployed generic-status wording.
 - PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
 
 ## Fixed In This Pass
