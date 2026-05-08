@@ -30,7 +30,8 @@
 16. `run_all_tests.sh` includes C backend verification, both example E2E verifiers, selected Zig/C parity smoke checks, debug/release artifact builds, the error-stage matrix, docs style checks, and full pytest.
 17. Local file-based imports now fail closed during semantic analysis instead of swallowing module loading failures.
 18. Zig unsupported expression fallbacks now fail as compiler-side codegen errors instead of generated `@compileError` expressions.
-19. `fall` now fails closed with a semantic error instead of being ignored or reaching backend output.
+19. `fall` now lowers in both Zig and C when used as the final direct
+    statement of a non-final match case.
 20. C backend `for-in` lowering now caches array/slice iterable expressions so side-effectful iterables are evaluated once.
 21. String literal tokenization now rejects unknown escapes and malformed `\xHH` escapes; valid escapes are decoded into AST literals and re-escaped for backend output.
 22. Return type mismatches inside if branches, match branches, and nested blocks are covered by semantic regression tests.
@@ -51,25 +52,21 @@
 
 ## Remaining Language-First Gaps
 
-1. **`fall` statement lowering**
-   - `fall` is parsed (`NodeKind.FALL`) and rejected during semantic validation.
-   - Full fallthrough semantics and backend lowering are not implemented yet.
-
-2. **Advanced match diagnostics**
+1. **Advanced match diagnostics**
    - Exact duplicate bool, enum, and scalar literal case patterns are diagnosed.
    - Wildcard-first and fully covered bool/enum cases make later case patterns and else branches unreachable.
    - Literal and compile-time constant numeric/char range overlaps are diagnosed.
    - Non-constant symbolic interval range overlap remains incomplete.
    - True variable-binding/capture patterns are not defined; plain identifier patterns currently refer to existing symbols.
 
-3. **Memory/lifetime model**
+2. **Memory/lifetime model**
    - Current validation covers basic `del` reference checks.
    - Ownership/borrow-style lifetime guarantees are not implemented.
    - Heap fixed arrays (`new [N]T`) are rejected until the language defines
      whether they are fixed-array references or heap slices and both backends
      lower the same model.
 
-4. **Backend semantic parity hardening**
+3. **Backend semantic parity hardening**
    - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, slices, string slices, labels, function pointers, and contextual array literal assignment.
    - Keep expanding mandatory parity cases for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
@@ -77,7 +74,7 @@
    - Untagged union field construction/access now type-checks and lowers in both backends.
    - Tagged/discriminated union tag workflows are still reserved syntax and not implemented.
 
-5. **Release publishing activation**
+4. **Release publishing activation**
    - Local package builds and artifact checks exist.
    - Tag-triggered draft GitHub releases are configured.
    - Package-registry publishing is not part of the current release workflow.

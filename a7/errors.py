@@ -236,7 +236,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Nil requires a reference type",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Missing type annotation",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Non-exhaustive match",
-        SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Fallthrough is not implemented",
+        SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Invalid fallthrough",
         SemanticErrorType.RECURSION_NOT_ALLOWED: "Recursion is not allowed",
 
         # Import errors
@@ -285,7 +285,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Use nil only where a reference type is expected",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Add a type annotation or an initializer for this declaration",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Add missing cases or an else/wildcard branch to cover remaining values",
-        SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Remove fall or rewrite the match case explicitly until fallthrough lowering is implemented",
+        SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Use fall only as the final statement of a non-final match case",
         SemanticErrorType.RECURSION_NOT_ALLOWED: "Rewrite the function using loops, explicit stacks, or another iterative structure",
 
         # Import errors

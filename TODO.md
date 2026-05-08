@@ -72,9 +72,11 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `a7/passes/semantic_validator.py`
   Notes: fixed; semantic validation now traverses `value`, with a schema regression test.
 
-- [x] Fail closed for `fall` until fallthrough lowering is designed.
+- [x] Fail closed for unsupported `fall` placements.
   Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`
-  Notes: `NodeKind.FALL` now produces a semantic error and both backends raise `CodegenError` if it reaches codegen. Full fallthrough lowering remains a future language-design item.
+  Notes: valid `fall` lowering is implemented for non-final match cases; invalid
+  placements still produce semantic errors and direct backend use outside a
+  fall-capable match case raises `CodegenError`.
 
 - [x] Replace Zig backend `@compileError("unsupported: ...")` fallbacks with compiler-side codegen errors.
   Files: `a7/backends/zig.py`
@@ -285,7 +287,9 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add semantic regression tests for front-end schema gaps.
   Files: `test/test_semantic_control_flow.py`, `test/test_semantic_comprehensive.py`
-  Notes: added cases for deferred statement checking, return-payload traversal, non-iterable `for-in`, slice fields, and string slicing. `fall` still needs implementation-specific coverage once lowering is designed.
+  Notes: added cases for deferred statement checking, return-payload traversal,
+  non-iterable `for-in`, slice fields, string slicing, and invalid `fall`
+  placement.
 
 - [x] Add parser coverage for labeled `continue`, nested labeled loops, and malformed labels.
   Files: `test/test_parser_combinatorial.py`, `test/test_parser_integration.py`
@@ -344,9 +348,11 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `.github/workflows/`
   Notes: the current release workflow builds Python distributions and attaches them to draft GitHub releases, but does not publish to a package registry.
 
-- [ ] Design and implement `fall` lowering.
+- [x] Design and implement `fall` lowering.
   Files: `a7/passes/semantic_validator.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `docs/SPEC.md`
-  Notes: current behavior is fail-closed; supporting fallthrough needs explicit semantics and backend lowering, especially for Zig.
+  Notes: `fall` now lowers in both native backends when used as the final direct
+  statement of a non-final match case; invalid placements remain semantic
+  errors.
 
 ---
 

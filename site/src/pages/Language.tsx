@@ -330,13 +330,16 @@ for i, value in values {
 
 match code {
     case 0: { io.println("ok") }
-    case 1, 2: { io.println("retry") }
+    case 1, 2: {
+        io.println("retry")
+        fall
+    }
     case 3..10: { io.println("wait") }
     else: { io.println("unknown") }
 }`}
         />
         <p className="text-secondary mt-1">
-          <code className="doc-inline-code">fall</code> is parsed as a statement and currently rejected with a semantic diagnostic until fallthrough semantics are designed.
+          <code className="doc-inline-code">fall</code> continues into the next match case body. It must be the final direct statement of a non-final case.
         </p>
         <DocCallout tone="warning">
           Backend note: C match expressions support literal, enum, range, wildcard, existing-identifier patterns, and single-evaluation lowering for side-effectful scrutinees. True identifier-capture patterns remain open.
@@ -561,7 +564,7 @@ type_expr :=
           Parsing coverage is complete for the language surface described here. The compiler runs tokenization, parsing, semantic passes, preprocessing, and code generation (Zig and C backends) end-to-end.
         </DocCallout>
         <DocCallout tone="warning">
-          A small set of semantic features are still open: fall lowering, advanced match diagnostics, true match capture patterns, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
+          A small set of semantic features are still open: advanced match diagnostics, true match capture patterns, full generic specialization, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
         </DocCallout>
       </SectionPanel>
     </div>

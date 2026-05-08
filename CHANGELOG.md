@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The committed-secret guard now flags sensitive `.env`/key filenames even when
   file contents are binary or unreadable, and deduplicates specific API-key
   findings against generic assignment matches.
+- `fall` now lowers in both Zig and C backends for its documented narrow form:
+  the final direct statement of a non-final match case. Invalid placements are
+  semantic errors.
 - Release-manifest verification rejects parent-directory traversal and unsafe
   absolute paths, while preserving the documented flat downloaded-assets flow.
 - File-backed module imports are now contained to configured search paths and
@@ -238,8 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Unsupported expression nodes now raise compiler-side `CodegenError` instead of emitting Zig `@compileError` fallback expressions.
 
 - **Fallthrough handling**
-  - `fall` now fails closed with a semantic diagnostic, and both backends raise codegen errors if a `FALL` node reaches them.
-  - Clarified docs and site copy to describe `fall` as parsed and deliberately rejected until fallthrough semantics are designed.
+  - `fall` initially failed closed with a semantic diagnostic, and both backends raised codegen errors if a `FALL` node reached them.
+  - Later release-readiness work added the documented narrow lowering path for final direct `fall` statements in non-final match cases.
 
 - **C backend iteration**
   - `for-in` and indexed `for-in` now cache array/slice iterable expressions before loop lowering so side-effectful iterables are evaluated once.

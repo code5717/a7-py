@@ -25,6 +25,13 @@ The compiler implementation also keeps AST traversals iterative and is validated
 - Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has a fixed width or range.
 - Small arithmetic examples can use `i32`; indexes and counters should usually use `usize`.
 
+## Match Fallthrough
+
+`fall` continues from one match case body into the next case body. It is
+supported in both Zig and C backends only when it is the final direct statement
+of a non-final match case. `fall` is rejected outside match cases, inside
+`else`, inside nested control flow, or in the final case.
+
 ## Unions
 
 Untagged union literals use `Type{field: value}` with exactly one named field.

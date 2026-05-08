@@ -130,6 +130,63 @@ main :: fn() {
     }
 }
 ''',
+    "match_fallthrough": r'''
+io :: import "std/io"
+
+main :: fn() {
+    value := 1
+    match value {
+        case 1: {
+            defer io.println("cleanup one")
+            io.println("one")
+            fall
+        }
+        case 2: {
+            io.println("two")
+        }
+        else: {
+            io.println("else")
+        }
+    }
+
+    other := 3
+    match other {
+        case 1: {
+            fall
+        }
+        case 2: {
+            io.println("bad")
+        }
+        else: {
+            defer io.println("cleanup else")
+            io.println("else")
+        }
+    }
+}
+''',
+    "nested_match_fallthrough": r'''
+io :: import "std/io"
+
+main :: fn() {
+    outer := 1
+    inner := 1
+    match outer {
+        case 1: {
+            match inner {
+                case 1: {
+                    io.println("inner one")
+                    fall
+                }
+                case 2: {
+                    io.println("inner two")
+                }
+                else: {}
+            }
+        }
+        else: {}
+    }
+}
+''',
     "match_expression_side_effects": r'''
 io :: import "std/io"
 

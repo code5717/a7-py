@@ -1042,6 +1042,62 @@ class TestUnreachableCodeValidation:
         assert expect_error(source, "unreachable")
 
 
+class TestFallValidation:
+    """Fallthrough is intentionally restricted to simple match-case tails."""
+
+    def test_fall_as_final_non_final_match_case_statement_is_allowed(self):
+        source = """
+        main :: fn() {
+            x := 1
+            match x {
+                case 1: {
+                    fall
+                }
+                case 2: {}
+            }
+        }
+        """
+        assert expect_success(source)
+
+    def test_fall_outside_match_case_is_rejected(self):
+        source = """
+        main :: fn() {
+            fall
+        }
+        """
+        assert expect_error(source, "fall")
+
+    def test_fall_in_final_match_case_is_rejected(self):
+        source = """
+        main :: fn() {
+            x := 1
+            match x {
+                case 1: {}
+                case 2: {
+                    fall
+                }
+            }
+        }
+        """
+        assert expect_error(source, "final")
+
+    def test_nested_fall_in_match_case_is_rejected(self):
+        source = """
+        main :: fn() {
+            x := 1
+            match x {
+                case 1: {
+                    if true {
+                        fall
+                    }
+                }
+                case 2: {}
+            }
+        }
+        """
+        assert expect_error(source, "final direct")
+
+
 class TestDeferStatements:
     """Test defer statement validation."""
 

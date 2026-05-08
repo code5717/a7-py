@@ -551,7 +551,7 @@ match color {
     }
     case Color.Green: {
         print("Green")
-        fall  // Parsed, but currently rejected until fallthrough semantics are finalized
+        fall  // Continue into the next case body; must be final in a non-final case
     }
     case Color.Blue: {
         print("Green or Blue")
@@ -2122,9 +2122,11 @@ Status snapshot (2026-05-08):
 
 ### E.1 Current Open Gaps
 
-1. **`fall` semantic/codegen behavior**
-   - `fall` parses and fails closed with a semantic diagnostic.
-   - Full fallthrough semantics and backend lowering are still pending.
+1. **`fall` scope restrictions**
+   - `fall` is supported in match statements and lowers in both Zig and C.
+   - `fall` must be the final direct statement of a non-final match case.
+   - `fall` is invalid outside match cases, in `else` branches, in final cases,
+     or nested inside other control-flow statements.
 
 2. **Advanced match diagnostics**
    - Exhaustiveness for bool/enum is implemented.

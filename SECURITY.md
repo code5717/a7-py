@@ -36,8 +36,8 @@ pytest.
 
 - No sandboxing for compiled programs.
 - No ownership or borrow-style lifetime model yet.
-- `fall` is rejected until fallthrough semantics and backend lowering are
-  designed.
+- `fall` is supported only as the final direct statement of a non-final match
+  case; other placements are rejected during semantic validation.
 - Built-in stdlib imports are virtual and not yet unified with file-based module semantics.
 - File-backed imports are restricted to configured module search paths; absolute
   paths and parent-directory traversal are rejected.

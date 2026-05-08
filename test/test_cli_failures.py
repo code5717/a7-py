@@ -161,10 +161,10 @@ def test_cli_fallthrough_returns_semantic_error_and_skips_codegen(tmp_path):
 main :: fn() {
     x := 1
     match x {
-        case 1: {
+        case 1: {}
+        case 2: {
             fall
         }
-        case 2: {}
     }
 }
 """.strip()
@@ -175,7 +175,7 @@ main :: fn() {
     assert result.returncode == ExitCode.SEMANTIC
     payload = json.loads(result.stdout)
     assert payload["error"]["category"] == "semantic"
-    assert "fallthrough" in payload["error"]["details"][0]["message"].lower()
+    assert "fall" in payload["error"]["details"][0]["message"].lower()
     assert not out.exists()
 
 

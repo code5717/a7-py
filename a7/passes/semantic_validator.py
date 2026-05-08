@@ -62,6 +62,8 @@ class SemanticValidationPass:
         self.current_file = filename
         self.errors = []
 
+        self._validate_fall_usage(program)
+
         # Visit the program
         self.visit_program(program)
 
@@ -265,8 +267,101 @@ class SemanticValidationPass:
             self.visit_expression(node.value)
 
     def visit_fall_stmt(self, node: ASTNode) -> None:
-        """Reject fallthrough until source-language semantics are implemented."""
-        self.add_error(SemanticErrorType.UNSUPPORTED_FALLTHROUGH, node.span)
+        """Validate a fallthrough statement.
+
+        Exact placement rules are checked in a separate structural pass because
+        the main visitor intentionally visits match branches without parent
+        context.
+        """
+        return
+
+    def _validate_fall_usage(self, program: ASTNode) -> None:
+        """Validate the intentionally narrow source-language `fall` contract."""
+        stack: list[tuple[ASTNode, bool]] = [(program, False)]
+
+        while stack:
+            node, inside_allowed_fall_site = stack.pop()
+            if node is None:
+                continue
+
+            if node.kind == NodeKind.MATCH:
+                cases = node.cases or []
+                for index, case in enumerate(cases):
+                    statements = self._case_direct_statements(case)
+                    fall_positions = [
+                        pos for pos, stmt in enumerate(statements)
+                        if stmt.kind == NodeKind.FALL
+                    ]
+
+                    for pos in fall_positions:
+                        if index == len(cases) - 1:
+                            self.add_error(
+                                SemanticErrorType.UNSUPPORTED_FALLTHROUGH,
+                                statements[pos].span,
+                                "fall cannot appear in the final match case",
+                            )
+                        elif pos != len(statements) - 1:
+                            self.add_error(
+                                SemanticErrorType.UNSUPPORTED_FALLTHROUGH,
+                                statements[pos].span,
+                                "fall must be the final statement in its match case",
+                            )
+
+                    for stmt in statements:
+                        stack.append((stmt, stmt.kind == NodeKind.FALL))
+
+                for stmt in self._as_statement_list(node.else_case):
+                    stack.append((stmt, False))
+
+                self._push_non_match_children(node, stack, skip_case_bodies=True)
+                continue
+
+            if node.kind == NodeKind.FALL:
+                if not inside_allowed_fall_site:
+                    self.add_error(
+                        SemanticErrorType.UNSUPPORTED_FALLTHROUGH,
+                        node.span,
+                        "fall can only be the final direct statement of a non-final match case",
+                    )
+                continue
+
+            self._push_non_match_children(node, stack)
+
+    def _case_direct_statements(self, case: ASTNode) -> List[ASTNode]:
+        case_stmt = getattr(case, "statement", None)
+        if case_stmt is None:
+            return list(getattr(case, "statements", None) or [])
+        if case_stmt.kind == NodeKind.BLOCK:
+            return list(case_stmt.statements or [])
+        return [case_stmt]
+
+    def _push_non_match_children(
+        self,
+        node: ASTNode,
+        stack: list[tuple[ASTNode, bool]],
+        *,
+        skip_case_bodies: bool = False,
+    ) -> None:
+        child_attrs = (
+            "declarations", "statements", "body", "then_stmt", "else_stmt",
+            "init", "update", "expression", "condition", "value", "target",
+            "function", "arguments", "field_inits", "elements", "operand",
+            "left", "right", "pointer", "then_expr", "else_expr", "iterable",
+            "statement", "patterns", "object", "index", "literal", "start",
+            "end", "explicit_type", "param_type", "return_type", "target_type",
+            "element_type", "parameter_types", "type_args", "type_arguments",
+            "fields", "parameters", "variants",
+        )
+        if not skip_case_bodies:
+            child_attrs = child_attrs + ("cases", "else_case")
+        for attr_name in child_attrs:
+            val = getattr(node, attr_name, None)
+            if isinstance(val, ASTNode):
+                stack.append((val, False))
+            elif isinstance(val, list):
+                for item in reversed(val):
+                    if isinstance(item, ASTNode):
+                        stack.append((item, False))
 
     def visit_defer_stmt(self, node: ASTNode) -> None:
         """Validate a defer statement."""

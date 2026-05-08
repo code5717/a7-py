@@ -36,6 +36,8 @@ class ZigCodeGenerator(CodeGenerator):
         # Track if we're inside a function body
         self._in_function = False
         self._loop_label_stack: list[tuple[Optional[str], Optional[str]]] = []
+        self._fall_context_stack: list[tuple[str, str]] = []
+        self._name_counter = 0
 
     @property
     def file_extension(self) -> str:
@@ -62,6 +64,8 @@ class ZigCodeGenerator(CodeGenerator):
         self._rename_map = {}
         self._in_function = False
         self._loop_label_stack = []
+        self._fall_context_stack = []
+        self._name_counter = 0
 
         # First pass: scan for features that need preamble items
         self._scan_features(ast)
@@ -284,7 +288,7 @@ class ZigCodeGenerator(CodeGenerator):
         elif kind == NodeKind.CONTINUE:
             self._visit_continue(node)
         elif kind == NodeKind.FALL:
-            raise CodegenError("Zig backend: fallthrough is not implemented", node.span)
+            self._visit_fall(node)
         elif kind == NodeKind.DEFER:
             self._visit_defer(node)
         elif kind == NodeKind.DEL:
@@ -841,6 +845,10 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _visit_match(self, node: ASTNode) -> None:
         """Visit match statement → Zig switch."""
+        if self._match_has_fall(node):
+            self._visit_match_with_fall(node)
+            return
+
         self._write_indent()
         expr = self._emit_expr(node.expression) if node.expression else "undefined"
         self.output.write(f"switch ({expr}) {{\n")
@@ -900,6 +908,133 @@ class ZigCodeGenerator(CodeGenerator):
         self.dedent()
         self._write_indent()
         self.output.write("}\n")
+
+    def _visit_match_with_fall(self, node: ASTNode) -> None:
+        """Visit a fall-capable match statement as a sequential state machine."""
+        scrutinee = self._unique_name("__a7_match")
+        done_flag = self._unique_name("__a7_match_done")
+        fall_flag = self._unique_name("__a7_match_fall")
+        expr = self._emit_expr(node.expression) if node.expression else "undefined"
+
+        self._write_indent()
+        self.output.write("{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"const {scrutinee} = {expr};\n")
+        self._write_indent()
+        self.output.write(f"var {done_flag}: bool = false;\n")
+        self._write_indent()
+        self.output.write(f"var {fall_flag}: bool = false;\n")
+
+        case_index = 0
+        for case in (node.cases or []):
+            condition = self._emit_match_condition_zig(scrutinee, case.patterns or [])
+            self._write_indent()
+            self.output.write(f"if (!{done_flag} and !{fall_flag} and ({condition})) {fall_flag} = true;\n")
+            self._emit_fall_case_body(case, fall_flag, done_flag, case_index)
+            case_index += 1
+
+        if node.else_case:
+            self._write_indent()
+            self.output.write(f"if (!{done_flag} and !{fall_flag}) {fall_flag} = true;\n")
+            self._emit_fall_else_body(node.else_case, fall_flag, done_flag, case_index)
+
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _emit_fall_case_body(
+        self,
+        case: ASTNode,
+        fall_flag: str,
+        done_flag: str,
+        case_index: int,
+    ) -> None:
+        stmt = getattr(case, "statement", None)
+        body_has_fall = self._case_has_direct_fall(case)
+        end_label = self._unique_name(f"__a7_match_case_{case_index}") if body_has_fall else ""
+        self._write_indent()
+        if end_label:
+            self.output.write(f"if ({fall_flag}) {end_label}: {{\n")
+        else:
+            self.output.write(f"if ({fall_flag}) {{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{fall_flag} = false;\n")
+
+        if end_label:
+            self._fall_context_stack.append((fall_flag, end_label))
+        try:
+            if stmt:
+                if stmt.kind == NodeKind.BLOCK:
+                    self._visit_block_inline(stmt)
+                else:
+                    self.visit(stmt)
+            else:
+                for stmt in case.statements or []:
+                    self.visit(stmt)
+        finally:
+            if end_label:
+                self._fall_context_stack.pop()
+
+        self._write_indent()
+        self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _emit_fall_else_body(
+        self,
+        else_case: object,
+        fall_flag: str,
+        done_flag: str,
+        case_index: int,
+    ) -> None:
+        self._write_indent()
+        self.output.write(f"if ({fall_flag}) {{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{fall_flag} = false;\n")
+
+        for stmt in self._else_case_statements(else_case):
+            self.visit(stmt)
+
+        self._write_indent()
+        self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _visit_fall(self, node: ASTNode) -> None:
+        if not self._fall_context_stack:
+            raise CodegenError("Zig backend: fall used outside a fall-capable match case", node.span)
+        fall_flag, end_label = self._fall_context_stack[-1]
+        self._write_indent()
+        self.output.write(f"{fall_flag} = true;\n")
+        self._write_indent()
+        self.output.write(f"break :{end_label};\n")
+
+    def _match_has_fall(self, node: ASTNode) -> bool:
+        return any(self._case_has_direct_fall(case) for case in (node.cases or []))
+
+    def _case_has_direct_fall(self, case: ASTNode) -> bool:
+        stmt = getattr(case, "statement", None)
+        if stmt is None:
+            statements = list(case.statements or [])
+        elif stmt.kind == NodeKind.BLOCK:
+            statements = list(stmt.statements or [])
+        else:
+            statements = [stmt]
+        return any(stmt.kind == NodeKind.FALL for stmt in statements)
+
+    def _else_case_statements(self, else_case: object) -> list[ASTNode]:
+        if isinstance(else_case, list):
+            return [stmt for stmt in else_case if isinstance(stmt, ASTNode)]
+        if isinstance(else_case, ASTNode):
+            if else_case.kind == NodeKind.BLOCK:
+                return list(else_case.statements or [])
+            return [else_case]
+        return []
 
     def _visit_return(self, node: ASTNode) -> None:
         """Visit return statement."""
@@ -1283,6 +1418,48 @@ class ZigCodeGenerator(CodeGenerator):
             return "_"
         else:
             return self._emit_expr(node)
+
+    def _emit_match_condition_zig(self, scrutinee_expr: str, patterns: list[ASTNode]) -> str:
+        conditions: list[str] = []
+        for pattern in patterns:
+            condition = self._emit_match_pattern_condition_zig(scrutinee_expr, pattern)
+            if condition is None:
+                return "true"
+            conditions.append(condition)
+        if not conditions:
+            return "false"
+        if len(conditions) == 1:
+            return conditions[0]
+        return " or ".join(f"({condition})" for condition in conditions)
+
+    def _emit_match_pattern_condition_zig(
+        self,
+        scrutinee_expr: str,
+        pattern: ASTNode,
+    ) -> Optional[str]:
+        if pattern.kind == NodeKind.PATTERN_WILDCARD:
+            return None
+        if pattern.kind == NodeKind.PATTERN_LITERAL:
+            value = self._emit_expr(pattern.literal) if pattern.literal else "0"
+            return f"{scrutinee_expr} == {value}"
+        if pattern.kind == NodeKind.PATTERN_ENUM:
+            value = f".{pattern.variant}" if pattern.variant else "_"
+            return f"{scrutinee_expr} == {value}"
+        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+            name = pattern.name or ""
+            if name == "_":
+                return None
+            return f"{scrutinee_expr} == {name}"
+        if pattern.kind == NodeKind.PATTERN_RANGE:
+            start = self._emit_pattern(pattern.start) if pattern.start else "0"
+            end = self._emit_pattern(pattern.end) if pattern.end else "0"
+            return f"{scrutinee_expr} >= {start} and {scrutinee_expr} <= {end}"
+        value = self._emit_expr(pattern)
+        return f"{scrutinee_expr} == {value}"
+
+    def _unique_name(self, prefix: str) -> str:
+        self._name_counter += 1
+        return f"{prefix}_{self._name_counter}"
 
     # === Type emission ===
 

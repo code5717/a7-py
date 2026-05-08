@@ -51,6 +51,5 @@ Ship a language-focused preview where syntax, semantics, typing, and backend beh
 - Updated README, SPEC, release docs, site docs, changelog, TODO, and missing-feature status.
 
 ## Next Implementation Slice
-- Add `fall` semantic rules and backend lowering.
 - Add unreachable/overlap diagnostics for match patterns.
 - Start explicit lifetime rule design and validation tests.

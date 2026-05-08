@@ -91,7 +91,7 @@ def test_backend_registry_exposes_c_backend() -> None:
 def test_c_backend_fall_statement_raises_codegen_error() -> None:
     backend = get_backend("c")
 
-    with pytest.raises(CodegenError, match="fallthrough is not implemented"):
+    with pytest.raises(CodegenError, match="fall used outside"):
         backend.visit(ASTNode(NodeKind.FALL))
 
 
@@ -786,3 +786,52 @@ main :: fn() {
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.splitlines() == ["body 10", "case 10", "after"]
+
+
+def test_generated_c_supports_match_fallthrough_and_case_defers(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    x := 1
+    match x {
+        case 1: {
+            defer io.println("cleanup one")
+            io.println("one")
+            fall
+        }
+        case 2: {
+            io.println("two")
+        }
+        else: {
+            io.println("else")
+        }
+    }
+
+    y := 3
+    match y {
+        case 1: {
+            fall
+        }
+        case 2: {
+            io.println("bad")
+        }
+        else: {
+            defer io.println("cleanup else")
+            io.println("else")
+        }
+    }
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.splitlines() == [
+        "one",
+        "cleanup one",
+        "two",
+        "else",
+        "cleanup else",
+    ]

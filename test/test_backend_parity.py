@@ -20,4 +20,4 @@ def test_backend_parity_smoke_cases() -> None:
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "Backend parity verified: 16/16" in result.stdout
+    assert "Backend parity verified: 18/18" in result.stdout

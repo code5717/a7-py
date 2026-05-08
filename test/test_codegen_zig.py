@@ -194,8 +194,74 @@ class TestCodePatterns:
     def test_fall_statement_raises_codegen_error(self):
         codegen = ZigCodeGenerator()
 
-        with pytest.raises(CodegenError, match="fallthrough is not implemented"):
+        with pytest.raises(CodegenError, match="fall used outside"):
             codegen.visit(ASTNode(NodeKind.FALL))
+
+    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+    def test_match_fallthrough_compiles_and_runs(self, tmp_path):
+        source = tmp_path / "fallthrough.a7"
+        output = tmp_path / "fallthrough.zig"
+        binary = tmp_path / "fallthrough"
+        source.write_text(
+            '''
+io :: import "std/io"
+
+main :: fn() {
+    x := 1
+    match x {
+        case 1: {
+            io.println("one")
+            fall
+        }
+        case 2: {
+            io.println("two")
+        }
+        else: {
+            io.println("else")
+        }
+    }
+
+    y := 3
+    match y {
+        case 1: {
+            fall
+        }
+        case 2: {
+            io.println("bad")
+        }
+        else: {
+            defer io.println("cleanup else")
+            io.println("else")
+        }
+    }
+}
+'''.strip(),
+            encoding="utf-8",
+        )
+
+        compiler = A7Compiler(verbose=False)
+        assert compiler.compile_file(str(source), str(output))
+        build = subprocess.run(
+            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert build.returncode == 0, build.stderr
+
+        run = subprocess.run(
+            [str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == 0, run.stdout + run.stderr
+        assert (run.stdout + run.stderr).splitlines() == [
+            "one",
+            "two",
+            "else",
+            "cleanup else",
+        ]
 
     def test_hello_world(self):
         source = '''

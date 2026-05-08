@@ -25,11 +25,11 @@ Deliverables implied by the active objective:
 | Security dependency audit | Hosted CI run `25539118297`; manual release workflow `25539300989`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
 | Python static security scan | Local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
 | Secret scanning | Hosted CI run `25539118297`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
-| Python test suite | Hosted CI run `25539118297`; local `./run_all_tests.sh` after expanding backend parity | Passing: 1217 tests |
+| Python test suite | Hosted CI run `25539118297`; local `./run_all_tests.sh` after adding fallthrough lowering | Passing: 1227 tests |
 | Error-stage behavior | Hosted CI run `25539118297`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
 | Zig example E2E | Hosted CI run `25539118297`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
 | C example E2E | Hosted CI run `25539118297`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
-| Zig/C backend parity | Hosted CI run `25539118297`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 16/16 locally |
+| Zig/C backend parity | Hosted CI run `25539118297`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 18/18 locally, including fallthrough and nested fallthrough |
 | Debug artifacts | Hosted CI run `25539118297`; local `./run_all_tests.sh` after expanding backend parity | Passing: 76/76 |
 | Release artifacts | Hosted CI run `25539118297`; manual release workflow `25539300989`; local `./run_all_tests.sh` after expanding backend parity | Passing: 76/76 |
 | Python package build and install | Hosted CI run `25539118297`; manual release workflow `25539300989`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
@@ -56,8 +56,8 @@ These prevent a factual "100% confident" claim:
 1. The compiler is not a sandbox; native output can execute host-level behavior.
 2. Backend parity is selected and expanding, not exhaustive over all valid A7
    programs. The current local selected suite covers 16 non-example programs.
-3. `fall` parses and fails closed, but final fallthrough semantics and backend
-   lowering are not designed.
+3. `fall` now lowers in both native backends for the documented narrow match
+   case form, but backend parity is still selected rather than exhaustive.
 4. Full ownership, borrowing, lifetime, use-after-free, and double-free
    guarantees are not implemented.
 5. Full generic specialization is incomplete beyond simple top-level generic

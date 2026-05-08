@@ -6,15 +6,15 @@
 - Direct, mutual, and local function-pointer alias source recursion are semantic errors.
 - Debug/release artifact verification is available for both backends.
 - Example end-to-end verification is available for both Zig and C.
-- Selected Zig/C backend parity verification is available, including contextual array literal assignment, defer unwinding, untagged unions, generic function specialization, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
+- Selected Zig/C backend parity verification is available, including contextual array literal assignment, defer unwinding, fallthrough, untagged unions, generic function specialization, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
 - Simple top-level generic function calls lower in the C backend through concrete specialization.
 - Array literal assignment validates declared lengths and nested element types.
 - Index and slice-bound variables must be `usize`; non-negative integer literals are accepted for simple indexing.
 - Invalid ordering comparisons and unsafe signed-to-unsigned integer assignments are rejected during type checking.
+- `fall` lowers in both native backends when it is the final direct statement of a non-final match case.
 
 ## Known Gaps
 
-- `fall` is parsed but rejected until fallthrough semantics are designed.
 - Advanced match diagnostics still have incomplete symbolic interval overlap handling.
 - Ownership/borrow-style lifetime guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until their language and backend representation is defined.

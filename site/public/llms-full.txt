@@ -28,6 +28,7 @@ Implemented:
 - Functions, structs, enums, untagged union field literals/access, aliases, modules, and generics.
 - Simple top-level generic function calls in the C backend through concrete specialization.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
+- `fall` in match statements, restricted to the final direct statement of a non-final case.
 - Arrays, slices, string slices, references, property pointer operations, and manual `new` / `del`.
 - `defer`, unreachable-statement diagnostics, and direct/mutual/alias source-recursion diagnostics.
 - `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
@@ -38,7 +39,6 @@ Implemented:
 
 Known gaps:
 
-- `fall` is parsed but rejected until fallthrough semantics are designed.
 - Advanced match diagnostics do not reason about non-constant symbolic intervals.
 - True identifier-binding/capture match patterns are not defined.
 - Ownership, borrowing, lifetime, use-after-free, and double-free guarantees are not implemented.

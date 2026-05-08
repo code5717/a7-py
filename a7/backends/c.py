@@ -188,6 +188,7 @@ class CCodeGenerator(CodeGenerator):
 
         self._defer_scopes: list[list[str]] = []
         self._loop_frames: list[dict[str, object]] = []
+        self._fall_frames: list[dict[str, object]] = []
 
     @property
     def file_extension(self) -> str:
@@ -233,6 +234,7 @@ class CCodeGenerator(CodeGenerator):
 
         self._defer_scopes = []
         self._loop_frames = []
+        self._fall_frames = []
 
         self._scan_features(ast)
         self.output.write(self._emit_preamble())
@@ -281,7 +283,7 @@ class CCodeGenerator(CodeGenerator):
         elif kind == NodeKind.CONTINUE:
             self._visit_continue(node)
         elif kind == NodeKind.FALL:
-            raise CodegenError("C backend: fallthrough is not implemented", node.span)
+            self._visit_fall(node)
         elif kind == NodeKind.DEFER:
             self._visit_defer(node)
         elif kind == NodeKind.DEL:
@@ -917,6 +919,10 @@ class CCodeGenerator(CodeGenerator):
         self.output.write("}\n")
 
     def _visit_match(self, node: ASTNode) -> None:
+        if self._match_has_fall(node):
+            self._visit_match_with_fall(node)
+            return
+
         if self._match_stmt_needs_if_chain(node):
             self._visit_match_as_if_chain(node)
             return
@@ -955,6 +961,151 @@ class CCodeGenerator(CodeGenerator):
             self._write_indent()
             self.output.write("break;\n")
 
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _visit_match_with_fall(self, node: ASTNode) -> None:
+        expr = self._emit_expr(node.expression) if node.expression else "0"
+        expr_type = self._semantic_type_to_c(self._type_map.get(id(node.expression))) or "int32_t"
+        if expr_type == "int32_t":
+            self._needs_stdint = True
+        self._needs_stdbool = True
+
+        scrutinee = self._unique_name("__a7_match")
+        done_flag = self._unique_name("__a7_match_done")
+        fall_flag = self._unique_name("__a7_match_fall")
+
+        self._write_indent()
+        self.output.write("{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{expr_type} {scrutinee} = {expr};\n")
+        self._write_indent()
+        self.output.write(f"bool {done_flag} = false;\n")
+        self._write_indent()
+        self.output.write(f"bool {fall_flag} = false;\n")
+
+        case_index = 0
+        for case in (node.cases or []):
+            condition = self._emit_match_expr_condition(scrutinee, case.patterns or [])
+            if condition is None:
+                condition = "true"
+            self._write_indent()
+            self.output.write(
+                f"if (!{done_flag} && !{fall_flag} && ({condition})) {fall_flag} = true;\n"
+            )
+            self._emit_fall_case_body(case, fall_flag, done_flag, case_index)
+            case_index += 1
+
+        if node.else_case:
+            self._write_indent()
+            self.output.write(f"if (!{done_flag} && !{fall_flag}) {fall_flag} = true;\n")
+            self._emit_fall_else_body(node.else_case, fall_flag, done_flag, case_index)
+
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _emit_fall_case_body(
+        self,
+        case: ASTNode,
+        fall_flag: str,
+        done_flag: str,
+        case_index: int,
+    ) -> None:
+        body_has_fall = self._case_has_direct_fall(case)
+        end_label = self._unique_name(f"__a7_match_case_{case_index}") if body_has_fall else ""
+        keep_depth = len(self._defer_scopes)
+        self._write_indent()
+        self.output.write(f"if ({fall_flag}) {{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{fall_flag} = false;\n")
+
+        if end_label:
+            self._fall_frames.append(
+                {"flag": fall_flag, "end_label": end_label, "keep_depth": keep_depth}
+            )
+        try:
+            stmt = getattr(case, "statement", None)
+            if stmt is not None:
+                self._emit_stmt_or_block(stmt)
+            else:
+                self._emit_statement_list_as_block(case.statements or [])
+        finally:
+            if end_label:
+                self._fall_frames.pop()
+
+        if end_label:
+            self._write_indent()
+            self.output.write(f"{end_label}:;\n")
+        self._write_indent()
+        self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _emit_fall_else_body(
+        self,
+        else_case: object,
+        fall_flag: str,
+        done_flag: str,
+        case_index: int,
+    ) -> None:
+        self._write_indent()
+        self.output.write(f"if ({fall_flag}) {{\n")
+        self.indent()
+        self._write_indent()
+        self.output.write(f"{fall_flag} = false;\n")
+
+        self._emit_statement_list_as_block(self._else_case_statements(else_case))
+        self._write_indent()
+        self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+        self.dedent()
+        self._write_indent()
+        self.output.write("}\n")
+
+    def _visit_fall(self, node: ASTNode) -> None:
+        if not self._fall_frames:
+            raise CodegenError("C backend: fall used outside a fall-capable match case", node.span)
+        frame = self._fall_frames[-1]
+        self._emit_deferred_unwind(int(frame["keep_depth"]))
+        self._write_indent()
+        self.output.write(f"{frame['flag']} = true;\n")
+        self._write_indent()
+        self.output.write(f"goto {frame['end_label']};\n")
+
+    def _match_has_fall(self, node: ASTNode) -> bool:
+        return any(self._case_has_direct_fall(case) for case in (node.cases or []))
+
+    def _case_has_direct_fall(self, case: ASTNode) -> bool:
+        stmt = getattr(case, "statement", None)
+        if stmt is None:
+            statements = list(case.statements or [])
+        elif stmt.kind == NodeKind.BLOCK:
+            statements = list(stmt.statements or [])
+        else:
+            statements = [stmt]
+        return any(stmt.kind == NodeKind.FALL for stmt in statements)
+
+    def _else_case_statements(self, else_case: object) -> list[ASTNode]:
+        if isinstance(else_case, list):
+            return [stmt for stmt in else_case if isinstance(stmt, ASTNode)]
+        if isinstance(else_case, ASTNode):
+            if else_case.kind == NodeKind.BLOCK:
+                return list(else_case.statements or [])
+            return [else_case]
+        return []
+
+    def _emit_statement_list_as_block(self, statements: list[ASTNode]) -> None:
+        self.output.write("{\n")
+        self.indent()
+        self._defer_scopes.append([])
+        for stmt in statements:
+            self.visit(stmt)
+        self._emit_current_scope_defers()
+        self._defer_scopes.pop()
         self.dedent()
         self._write_indent()
         self.output.write("}\n")

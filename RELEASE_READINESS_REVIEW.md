@@ -138,10 +138,11 @@ not factually provable from local tests alone.
   recommendations to make `llms-full.txt` more self-contained and avoid
   overselling the compact tour as exhaustive.
 - local `uv run python scripts/verify_backend_parity.py` passed after expanding
-  the differential suite: backend parity 16/16. Manual report inspection
+  the differential suite: backend parity 18/18. Manual report inspection
   confirmed matching Zig and C output for the new defer, union, generic,
-  enum-match, heap-struct, and nested-array cases, including a 3D fixed-array
-  case. The C parity build uses `-Werror=incompatible-pointer-types`.
+  enum-match, heap-struct, fallthrough, nested fallthrough, and nested-array
+  cases, including a 3D fixed-array case. The C parity build uses
+  `-Werror=incompatible-pointer-types`.
 - focused C backend audit found that return values were emitted after deferred
   cleanup in C; local focused regression now confirms return values are captured
   before deferred `del` runs.
@@ -183,6 +184,13 @@ not factually provable from local tests alone.
   file-backed module imports to configured search paths, added a compiler-step
   timeout to example artifact builds, and expanded wheel smoke verification to
   both Zig and C codegen.
+- local `./run_all_tests.sh` passed after implementing fallthrough lowering:
+  parser/tokenizer 501 passed; semantic 320 passed; compiler/CLI/backend 326
+  passed; Zig examples 38/38; C examples 38/38; backend parity 18/18; debug
+  artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
+  style ok; secrets check ok; total pytest 1227 passed; summary 12/12.
+- local `npm run check` in `site/` passed after updating the public status and
+  language docs for the fallthrough behavior.
 
 ## Fixed In This Pass
 
@@ -321,12 +329,13 @@ not factually provable from local tests alone.
   absolute or parent-directory traversal module paths.
 - Example artifact compilation has a timeout, and wheel-install verification now
   checks both installed Zig and C code generation paths.
+- `fall` now lowers in both native backends for the documented narrow form:
+  the final direct statement of a non-final match case. Invalid placements
+  remain semantic errors.
 
 ## Residual Risks
 
 - `a7-py` is not a sandbox. Do not compile or run untrusted A7 source.
-- `fall` is parsed and rejected during semantic validation; full fallthrough
-  lowering is not implemented.
 - Full ownership/lifetime safety is not implemented.
 - Built-in `std/io` and `std/math` imports are virtual modules; `std/string`,
   `std/mem`, and collections remain planned rather than current public modules.
@@ -355,6 +364,7 @@ not factually provable from local tests alone.
 
 ## Recommended Next Pass
 
-1. Design and implement `fall` backend lowering.
-2. Complete generic struct/nested generic specialization parity.
-3. Add stronger hosted secret scanning if the repository host supports it.
+1. Complete generic struct/nested generic specialization parity.
+2. Add stronger hosted secret scanning if the repository host supports it.
+3. Expand backend parity for every new language feature, including additional
+   fallthrough edge cases.
