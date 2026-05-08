@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- JSON AST serialization now uses an explicit traversal stack so machine-readable
+  AST output follows the same low-recursion implementation contract as the rest
+  of the compiler pipeline.
 - Examples now align more tightly with their catalog descriptions: callbacks
   use function-pointer dispatch, sorting uses a comparator callback, and the
   comments example emits visible golden output.

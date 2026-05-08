@@ -15,12 +15,15 @@ Two categories of tests:
 """
 
 import os
+import json
 import sys
 import tempfile
 
 import pytest
 
-from a7.compile import A7Compiler
+from a7.ast_nodes import ASTNode, NodeKind
+from a7.compile import A7Compiler, OutputFormat
+from a7.formatters import JSONFormatter
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +359,43 @@ class TestLowRecursionLimit:
             "}\n"
         )
         assert compile_source(source) is True
+
+    def test_json_ast_output_compiles_at_low_limit(self, tmp_path, capsys):
+        """JSON AST output should not add recursive traversal pressure."""
+        source = make_nested_blocks(10)
+        path = tmp_path / "deep_json.a7"
+        path.write_text(source, encoding="utf-8")
+
+        compiler = A7Compiler(mode="ast", output_format=OutputFormat.JSON)
+        result = compiler.compile_file_detailed(str(path))
+        captured = capsys.readouterr()
+
+        assert result.ok is True
+        payload = json.loads(captured.out)
+        assert payload["status"] == "ok"
+        assert payload["stages"]["parse"]["ast"]["kind"] == "PROGRAM"
+
+    def test_json_formatter_deep_ast_uses_iterative_stack(self):
+        """Direct JSON AST formatting should handle deep AST chains."""
+        root = ASTNode(NodeKind.PROGRAM, declarations=[])
+        current = root
+
+        for _ in range(160):
+            child = ASTNode(NodeKind.BLOCK, statements=[])
+            if current.kind == NodeKind.PROGRAM:
+                current.declarations = [child]
+            else:
+                current.statements = [child]
+            current = child
+
+        payload = JSONFormatter().format_compilation([], root, "", "deep.a7")
+        node = payload["ast"]["declarations"][0]
+        depth = 1
+        while node.get("statements"):
+            node = node["statements"][0]
+            depth += 1
+
+        assert depth == 160
 
 
 # ===========================================================================

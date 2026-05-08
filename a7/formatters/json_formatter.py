@@ -5,7 +5,7 @@ Converts compilation results (tokens, AST, metadata) to JSON format.
 """
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 
 class JSONFormatter:
@@ -67,19 +67,16 @@ class JSONFormatter:
 
         return result
 
-    def _ast_to_dict(self, node) -> Optional[dict]:
+    def _ast_node_shallow_dict(self, node) -> dict:
         """
-        Convert AST node to dictionary (recursive).
+        Convert one AST node to a dictionary without traversing child nodes.
 
         Args:
             node: AST node
 
         Returns:
-            Dictionary representation of AST
+            Shallow dictionary representation of AST
         """
-        if node is None:
-            return None
-
         result = {
             "kind": node.kind.name,
             "span": {
@@ -133,6 +130,21 @@ class JSONFormatter:
                 else str(node.operator)
             )
 
+        return result
+
+    def _ast_to_dict(self, node) -> Optional[dict]:
+        """
+        Convert AST node to dictionary using an explicit traversal stack.
+
+        Args:
+            node: AST node
+
+        Returns:
+            Dictionary representation of AST
+        """
+        if node is None:
+            return None
+
         # Add list fields (child nodes)
         list_fields = [
             "declarations",
@@ -153,14 +165,6 @@ class JSONFormatter:
             "patterns",
             "imported_items",
         ]
-
-        for field in list_fields:
-            field_value = getattr(node, field, None)
-            if field_value is not None:
-                result[field] = [
-                    self._ast_to_dict(child) if hasattr(child, "kind") else child
-                    for child in field_value
-                ]
 
         # Add single node fields
         node_fields = [
@@ -198,9 +202,33 @@ class JSONFormatter:
             "constraint",
         ]
 
-        for field in node_fields:
-            field_value = getattr(node, field, None)
-            if field_value:
-                result[field] = self._ast_to_dict(field_value)
+        result = self._ast_node_shallow_dict(node)
+        stack = [(node, result)]
+
+        while stack:
+            current, current_result = stack.pop()
+
+            for field in list_fields:
+                field_value = getattr(current, field, None)
+                if field_value is not None:
+                    children = []
+                    for child in field_value:
+                        if hasattr(child, "kind"):
+                            child_result = self._ast_node_shallow_dict(child)
+                            children.append(child_result)
+                            stack.append((child, child_result))
+                        else:
+                            children.append(child)
+                    current_result[field] = children
+
+            for field in node_fields:
+                field_value = getattr(current, field, None)
+                if field_value is not None:
+                    if hasattr(field_value, "kind"):
+                        child_result = self._ast_node_shallow_dict(field_value)
+                        current_result[field] = child_result
+                        stack.append((field_value, child_result))
+                    else:
+                        current_result[field] = field_value
 
         return result
