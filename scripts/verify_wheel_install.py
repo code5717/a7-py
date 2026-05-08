@@ -67,7 +67,8 @@ def verify_wheel(wheel: Path) -> None:
         tmp = Path(tmp_name)
         venv_dir = tmp / "venv"
         program = tmp / "hello.a7"
-        output = tmp / "hello.zig"
+        zig_output = tmp / "hello.zig"
+        c_output = tmp / "hello.c"
         env = clean_python_env()
 
         venv.EnvBuilder(with_pip=True).create(venv_dir)
@@ -105,13 +106,26 @@ main :: fn() {
         if payload.get("schema_version") != "2.0" or payload.get("status") != "ok":
             raise RuntimeError(f"installed CLI JSON payload is not an ok v2 response: {payload!r}")
 
-        compile_result = run_cmd([str(a7_cli), str(program), "-o", str(output)], cwd=tmp, timeout=30, env=env)
-        if compile_result.returncode != 0:
-            raise RuntimeError(f"installed CLI compile failed:\n{first_error_text(compile_result)}")
+        zig_compile = run_cmd([str(a7_cli), str(program), "-o", str(zig_output)], cwd=tmp, timeout=30, env=env)
+        if zig_compile.returncode != 0:
+            raise RuntimeError(f"installed CLI Zig compile failed:\n{first_error_text(zig_compile)}")
 
-        generated = output.read_text(encoding="utf-8")
-        if "wheel smoke" not in generated:
-            raise RuntimeError("installed CLI compile output did not contain the expected program text")
+        generated_zig = zig_output.read_text(encoding="utf-8")
+        if "wheel smoke" not in generated_zig:
+            raise RuntimeError("installed CLI Zig output did not contain the expected program text")
+
+        c_compile = run_cmd(
+            [str(a7_cli), str(program), "--backend", "c", "-o", str(c_output)],
+            cwd=tmp,
+            timeout=30,
+            env=env,
+        )
+        if c_compile.returncode != 0:
+            raise RuntimeError(f"installed CLI C compile failed:\n{first_error_text(c_compile)}")
+
+        generated_c = c_output.read_text(encoding="utf-8")
+        if "wheel smoke" not in generated_c:
+            raise RuntimeError("installed CLI C output did not contain the expected program text")
 
 
 def main() -> int:

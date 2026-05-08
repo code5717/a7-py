@@ -32,10 +32,26 @@ These are bugs and schema mismatches in already-implemented features.
 
 - [x] Add Python source static security scanning to CI/release.
   Files: `.github/workflows/ci.yml`, `.github/workflows/release.yml`
-  Notes: `uvx bandit -r a7 scripts main.py -q --skip B404,B603` now runs
+  Notes: `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603` now runs
   alongside dependency audits; controlled subprocess use is still manually
   reviewed because verifier/build scripts intentionally execute generated
   artifacts.
+
+- [x] Pin CI/release Python audit tool versions.
+  Files: `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `RELEASE.md`, `SECURITY.md`
+  Notes: `pip-audit` and `bandit` are invoked through exact `uvx --from package==version` specs.
+
+- [x] Harden release manifest verification against unsafe paths.
+  Files: `scripts/verify_release_manifest.py`, `test/test_release_tooling.py`
+  Notes: downloaded manifest verification rejects parent-directory traversal and unsafe absolute paths while preserving flat asset downloads.
+
+- [x] Contain file-backed module imports to configured search paths.
+  Files: `a7/module_resolver.py`, `test/test_module_resolver.py`
+  Notes: absolute and parent-directory traversal module paths now fail closed.
+
+- [x] Expand installed-wheel smoke coverage.
+  Files: `scripts/verify_wheel_install.py`
+  Notes: clean-wheel verification now checks both installed Zig and C code generation.
 
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `a7/passes/type_checker.py`, `a7/passes/semantic_validator.py`
@@ -298,7 +314,7 @@ These are entire subsystems. Each needs a design decision before implementation 
 
 - [x] Add dependency-audit checks for release readiness.
   Files: `.github/workflows/ci.yml`, `RELEASE.md`, `SECURITY.md`
-  Notes: Python dependencies use `uvx pip-audit --strict`; docs runtime dependencies use `npm audit --omit=dev --audit-level=moderate`.
+  Notes: Python dependencies use `uvx --from pip-audit==2.10.0 pip-audit --strict`; docs runtime dependencies use `npm audit --omit=dev --audit-level=moderate`.
 
 - [x] Add secret scanning to CI.
   Files: `.github/workflows/`

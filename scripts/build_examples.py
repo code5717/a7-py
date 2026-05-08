@@ -91,7 +91,7 @@ def find_examples(examples_dir: Path) -> list[Path]:
 
 def compile_source(example: Path, backend: str, source_path: Path) -> subprocess.CompletedProcess[str]:
     cmd = [sys.executable, str(MAIN_PY), str(example), "--backend", backend, "-o", str(source_path)]
-    return run_cmd(cmd, cwd=ROOT)
+    return run_cmd(cmd, cwd=ROOT, timeout=60.0)
 
 
 def build_zig(source_path: Path, binary_path: Path, profile: str) -> tuple[bool, str]:

@@ -47,19 +47,29 @@ def parse_manifest(path: Path) -> list[ManifestEntry]:
 
 def resolve_artifact(base_dir: Path, artifact_path: str) -> Path:
     candidate = Path(artifact_path)
-    if candidate.is_absolute():
-        return candidate
+    if ".." in candidate.parts:
+        raise ValueError(f"unsafe artifact path in manifest: {artifact_path}")
+
     if (base_dir / candidate).exists():
         return base_dir / candidate
     if (base_dir / candidate.name).exists():
         return base_dir / candidate.name
+    if candidate.is_absolute():
+        resolved_candidate = candidate.resolve()
+        if resolved_candidate.is_relative_to(base_dir) or resolved_candidate.is_relative_to(ROOT):
+            return resolved_candidate
+        raise ValueError(f"unsafe artifact path in manifest: {artifact_path}")
     return ROOT / candidate
 
 
 def verify_entries(entries: list[ManifestEntry], base_dir: Path) -> list[str]:
     errors: list[str] = []
     for entry in entries:
-        path = resolve_artifact(base_dir, entry.path)
+        try:
+            path = resolve_artifact(base_dir, entry.path)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
         if not path.is_file():
             errors.append(f"missing artifact: {entry.path}")
             continue

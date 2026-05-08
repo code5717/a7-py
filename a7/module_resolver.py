@@ -7,7 +7,6 @@ Handles import statements, module loading, and dependency management.
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass
 from pathlib import Path
-import os
 
 from a7.ast_nodes import ASTNode, NodeKind
 from a7.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
@@ -50,6 +49,7 @@ class ModuleResolver:
             search_paths: Directories to search for modules
         """
         self.search_paths = search_paths or ["."]
+        self.resolved_search_paths = [Path(path).resolve() for path in self.search_paths]
         self.loaded_modules: Dict[str, ModuleInfo] = {}
         self.module_table = ModuleTable()
         self.stdlib = StdlibRegistry()
@@ -60,6 +60,14 @@ class ModuleResolver:
         # Built-in stdlib modules are virtual modules backed by StdlibRegistry
         # symbols and backend mappings rather than on-disk .a7 files.
         self.virtual_modules: Set[str] = self.stdlib.public_module_paths()
+
+    def _is_safe_module_path(self, module_path: str) -> bool:
+        path = Path(module_path)
+        return not path.is_absolute() and ".." not in path.parts
+
+    def _is_within_search_path(self, candidate: Path) -> bool:
+        resolved = candidate.resolve()
+        return any(resolved.is_relative_to(search_path) for search_path in self.resolved_search_paths)
 
     def is_virtual_module(self, module_path: str) -> bool:
         """Return True when an import is provided by the built-in stdlib registry."""
@@ -75,6 +83,9 @@ class ModuleResolver:
         Returns:
             Absolute file path, or None if not found
         """
+        if not self._is_safe_module_path(module_path):
+            return None
+
         # Try each search path
         for search_path in self.search_paths:
             # Convert module path to file path
@@ -86,7 +97,7 @@ class ModuleResolver:
             ]
 
             for candidate in candidates:
-                if candidate.exists() and candidate.is_file():
+                if candidate.exists() and candidate.is_file() and self._is_within_search_path(candidate):
                     return str(candidate.resolve())
 
         return None

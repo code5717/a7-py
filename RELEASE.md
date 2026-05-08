@@ -64,7 +64,8 @@ Run this before tagging:
 rm -rf dist
 uv build
 uv run python scripts/verify_wheel_install.py --skip-build
-uvx pip-audit --strict
+uvx --from pip-audit==2.10.0 pip-audit --strict
+uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 (cd site && npm audit --omit=dev --audit-level=moderate)
 ```
 
@@ -84,8 +85,10 @@ uvx pip-audit --strict
 - full pytest suite
 
 The Python and docs dependency audits are separate release-gate commands above.
-The wheel install verifier installs the built wheel in a clean virtual
-environment and exercises the installed `a7` entrypoint before release.
+The Python audit tools are pinned so release gates do not fetch arbitrary latest
+tool versions at runtime. The wheel install verifier installs the built wheel in
+a clean virtual environment and exercises the installed `a7` entrypoint through
+both Zig and C code generation before release.
 
 To create a local checksum manifest for package files, docs archives, or native
 artifact archives, run:

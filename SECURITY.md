@@ -20,8 +20,8 @@ Before release or broad testing, run:
 ```bash
 ./run_all_tests.sh
 uv build
-uvx pip-audit --strict
-uvx bandit -r a7 scripts main.py -q --skip B404,B603
+uvx --from pip-audit==2.10.0 pip-audit --strict
+uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 uv run python scripts/check_no_secrets.py
 (cd site && npm run build)
 (cd site && npm audit --omit=dev --audit-level=moderate)
@@ -39,6 +39,8 @@ pytest.
 - `fall` is rejected until fallthrough semantics and backend lowering are
   designed.
 - Built-in stdlib imports are virtual and not yet unified with file-based module semantics.
+- File-backed imports are restricted to configured module search paths; absolute
+  paths and parent-directory traversal are rejected.
 - C and Zig backend parity checks exist for examples but are not a proof for all
   possible programs.
 - The current release workflow builds package distributions and attaches them

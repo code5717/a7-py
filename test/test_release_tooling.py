@@ -288,6 +288,29 @@ def test_verify_release_manifest_accepts_flat_downloaded_release_assets(tmp_path
     assert "release manifest verified: 1 artifacts" in verify.stdout
 
 
+def test_verify_release_manifest_rejects_unsafe_paths(tmp_path: Path) -> None:
+    manifest = tmp_path / "SHA256SUMS"
+    manifest.write_text(
+        f"{sha256(b'owned\n').hexdigest()}  6  ../owned.txt\n",
+        encoding="utf-8",
+    )
+
+    verify = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_release_manifest.py",
+            str(manifest),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert verify.returncode == 1
+    assert "unsafe artifact path in manifest" in verify.stderr
+
+
 def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> None:
     archive_path = tmp_path / "docs.tar.gz"
     docs_dir = tmp_path / "dist"

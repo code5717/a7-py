@@ -50,10 +50,11 @@ jobs:
         run: PYTHONPATH=. uv run pytest --tb=no -q
 
       - name: Audit Python dependencies
-        run: uvx pip-audit --strict
+        run: uvx --from pip-audit==2.10.0 pip-audit --strict
 
       - name: Static security scan
-        run: uvx bandit -r a7 scripts main.py -q --skip B404,B603
+        # B404/B603 are expected for trusted verifier scripts that run generated artifacts.
+        run: uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 
       - name: Verify error stages
         run: PYTHONPATH=. uv run python scripts/verify_error_stages.py --mode-set all --format both

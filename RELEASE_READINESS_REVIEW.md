@@ -44,8 +44,8 @@ not factually provable from local tests alone.
 - `./run_all_tests.sh`
 - `uv build`
 - local `dist/` cleanup before package builds
-- `uvx pip-audit --strict`
-- `uvx bandit -r a7 scripts main.py -q --skip B404,B603`
+- `uvx --from pip-audit==2.10.0 pip-audit --strict`
+- `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`
 - `uv run python scripts/check_no_secrets.py`
 - `cd site && npm audit --omit=dev --audit-level=moderate`
 - `cd site && npm run check`
@@ -178,6 +178,11 @@ not factually provable from local tests alone.
   GitHub artifact attestations, and release-bundle upload. The
   `create-github-release` job was skipped because draft GitHub release creation
   is intentionally gated to `refs/tags/v*` runs.
+- A follow-up hardening pass pinned the CI/release Python audit tools, removed
+  unsafe paths in the downloaded release-manifest verifier, restricted
+  file-backed module imports to configured search paths, added a compiler-step
+  timeout to example artifact builds, and expanded wheel smoke verification to
+  both Zig and C codegen.
 
 ## Fixed In This Pass
 
@@ -303,6 +308,14 @@ not factually provable from local tests alone.
   that introduces the current stable language surface from one verified file;
   the Language page and `site/public/docs/language.md` remain the one-page
   reference.
+- CI/release Python audit tools are pinned to exact versions instead of fetching
+  arbitrary latest tool releases during release gates.
+- The release-manifest verifier rejects parent-directory traversal and unsafe
+  absolute paths while preserving the documented flat downloaded-assets flow.
+- File-backed module imports are contained to configured search paths and reject
+  absolute or parent-directory traversal module paths.
+- Example artifact compilation has a timeout, and wheel-install verification now
+  checks both installed Zig and C code generation paths.
 
 ## Residual Risks
 

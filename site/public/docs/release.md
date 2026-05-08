@@ -10,15 +10,18 @@ Run before tagging:
 rm -rf dist
 uv build
 uv run python scripts/verify_wheel_install.py --skip-build
-uvx pip-audit --strict
+uvx --from pip-audit==2.10.0 pip-audit --strict
+uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 (cd site && npm audit --omit=dev --audit-level=moderate)
 ```
 
 Clean `dist/` before `uv build` so local package output contains only the
 current version. GitHub release jobs run in a clean runner, but local release
 prep should not rely on stale artifacts being absent.
-The wheel install verifier installs the built wheel in a clean virtual
-environment and checks the installed `a7` command.
+The Python audit tools are pinned so release gates do not fetch arbitrary latest
+tool versions at runtime. The wheel install verifier installs the built wheel in
+a clean virtual environment and checks the installed `a7` command through both
+Zig and C code generation.
 
 Generate checksums before uploading local artifacts:
 

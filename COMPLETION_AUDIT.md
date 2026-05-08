@@ -22,8 +22,8 @@ Deliverables implied by the active objective:
 | Requirement | Evidence | Status |
 | --- | --- | --- |
 | Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
-| Security dependency audit | Hosted CI run `25539118297`; manual release workflow `25539300989`; local `uvx pip-audit --strict`; local site runtime audit | Passing for known advisories |
-| Python static security scan | Local `uvx bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive |
+| Security dependency audit | Hosted CI run `25539118297`; manual release workflow `25539300989`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
+| Python static security scan | Local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
 | Secret scanning | Hosted CI run `25539118297`; `scripts/check_no_secrets.py` | Passing pattern-based scan |
 | Python test suite | Hosted CI run `25539118297`; local `./run_all_tests.sh` after expanding backend parity | Passing: 1217 tests |
 | Error-stage behavior | Hosted CI run `25539118297`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
@@ -34,7 +34,7 @@ Deliverables implied by the active objective:
 | Release artifacts | Hosted CI run `25539118297`; manual release workflow `25539300989`; local `./run_all_tests.sh` after expanding backend parity | Passing: 76/76 |
 | Python package build and install | Hosted CI run `25539118297`; manual release workflow `25539300989`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
-| Release checksums, provenance, and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, re-checks hashes before upload, and emits GitHub artifact attestations for release assets; manual release dispatch `25539300989` | Covered for workflow-dispatch release path; tag-only draft release creation still requires a real tag run before release |
+| Release checksums, provenance, and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, re-checks hashes before upload, and emits GitHub artifact attestations for release assets; manual release dispatch `25539300989` | Covered for workflow-dispatch release path; manifest verifier now rejects traversal and unsafe absolute paths; tag-only draft release creation still requires a real tag run before release |
 | Docs style/build | Hosted CI run `25539118297`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
 | Docs deploy | Hosted Deploy Docs run `25539118290`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |
@@ -43,6 +43,7 @@ Deliverables implied by the active objective:
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs; alias-recursion regression tests | Implemented for named call cycles and local function-pointer alias cycles |
 | No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |
 | Virtual stdlib module resolution | `a7/module_resolver.py`, `a7/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
+| File-backed module path containment | `a7/module_resolver.py`, `test/test_module_resolver.py` | Absolute imports and parent-directory traversal are rejected outside configured search paths |
 | Array literal assignment compatibility | `a7/passes/type_checker.py`, `a7/backends/c.py`, `test/test_semantic_types.py`, `test/test_codegen_c.py`, `scripts/verify_backend_parity.py`; local full gate | Covered for declared lengths, nested literals, and Zig/C runtime parity |
 | Parser ambiguity hardening | `a7/parser.py`, `test/test_parser_comprehensive_problems.py`, `docs/SPEC.md`; local full gate | Covered for rejecting initializer-like `new` calls while preserving `new(T)` allocation syntax |
 | Public site positioning | Commit `05dff14`; `site/src/pages/Home.tsx`; `site/src/content/navigation.ts`; hosted Deploy Docs run `25533359054`; live browser-harness check | Covered for keeping the public homepage and primary nav centered on A7 rather than agent/plugin docs |

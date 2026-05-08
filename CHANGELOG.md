@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release-readiness and security docs now cite the latest CI, Deploy Docs, and
   manual release workflow evidence after workflow action pinning and Bandit
   scanning were added.
+- CI/release Python audit tools are pinned to exact `uvx --from package==version`
+  invocations so release gates do not fetch arbitrary latest tool releases.
+- Release-manifest verification rejects parent-directory traversal and unsafe
+  absolute paths, while preserving the documented flat downloaded-assets flow.
+- File-backed module imports are now contained to configured search paths and
+  reject absolute or parent-directory traversal module paths.
+- Example artifact compilation now has a timeout, and installed-wheel smoke
+  verification checks both Zig and C code generation.
 - Tag release runs now generate GitHub artifact attestations for the checksum
   manifest, Python package files, docs archive, and native example artifact
   archive before uploading release artifacts.
