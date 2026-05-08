@@ -20,7 +20,7 @@ const EXAMPLE_META = {
   '013_pointers.a7': { title: 'Pointers', category: 'Memory', desc: 'Pointer operations with .adr/.val' },
   '014_generics.a7': { title: 'Generics Status', category: 'Types', desc: 'Runnable status note; full generic checks live in semantic tests' },
   '015_types.a7': { title: 'Type System', category: 'Types', desc: 'Type aliases and composite types' },
-  '016_unions.a7': { title: 'Unions Status', category: 'Types', desc: 'Union declaration status; field access is still tracked separately' },
+  '016_unions.a7': { title: 'Unions', category: 'Types', desc: 'Untagged union field literals and access' },
   '017_methods.a7': { title: 'Receiver Functions', category: 'Types', desc: 'Method-style mutation through explicit ref receivers' },
   '018_modules.a7': { title: 'Modules', category: 'Basics', desc: 'Import system and visibility' },
   '019_literals.a7': { title: 'Literals', category: 'Basics', desc: 'All literal formats: hex, octal, binary, escapes' },

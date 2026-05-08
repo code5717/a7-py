@@ -64,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Untagged union literals now require exactly one named field, union field
   access type-checks declared fields, and `examples/016_unions.a7` now runs
   through both Zig and C example verifiers.
+- Markdown compilation reports now render virtual stdlib modules as `module`
+  instead of `unknown type`, use an explicit in-memory output label in doc mode,
+  and the examples catalog now describes the current union example accurately.
 
 ## [0.3.0] - 2026-05-07
 

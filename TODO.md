@@ -113,9 +113,11 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Files: `src/module_resolver.py`, `src/passes/name_resolution.py`, `src/stdlib/__init__.py`
   Notes: `std/io`, `io`, `std/math`, and `math` are virtual built-ins registered through `ModuleResolver`/`ModuleTable`; backend lowering now uses the import path rather than requiring aliases named `io` or `math`.
 
-- [ ] Reconcile examples and docs with the actual stdlib surface.
+- [x] Reconcile examples and docs with the actual stdlib surface.
   Files: `README.md`, `examples/030_calculator.a7`, `examples/001_hello.md`
-  Notes: some examples use bare builtins, docs describe module-qualified usage.
+  Notes: runnable examples now use the current module-qualified stdlib surface;
+  regenerated reports render virtual modules as `module` and doc-mode output as
+  in-memory rather than `unknown type` / `None`.
 
 ### Unimplemented Spec Features
 

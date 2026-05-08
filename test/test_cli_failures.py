@@ -248,6 +248,9 @@ main :: fn() {
     assert result.returncode == ExitCode.SUCCESS
     assert out.exists()
     assert doc.exists()
+    doc_text = doc.read_text()
+    assert "`io` | MODULE | `module`" in doc_text
+    assert f"**Output:** `{out}`" in doc_text
 
 
 def test_cli_doc_mode_writes_default_markdown_path(tmp_path):
@@ -263,6 +266,9 @@ main :: fn() {}
 
     assert result.returncode == ExitCode.SUCCESS
     assert default_doc.exists()
+    doc_text = default_doc.read_text()
+    assert "**Output:** `(not written; in-memory)`" in doc_text
+    assert "unknown type" not in doc_text
 
 
 def test_cli_compile_mode_supports_doc_out_auto_keyword(tmp_path):

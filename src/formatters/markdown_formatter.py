@@ -48,8 +48,10 @@ class MarkdownFormatter:
         # 1. Source Code
         lines.append("## 1. Source Code")
         lines.append("")
-        lines.append(f"**File:** `{input_path}`  ")
-        lines.append(f"**Lines:** {len(source_code.splitlines())}  ")
+        lines.append(f"**File:** `{input_path}`")
+        lines.append("")
+        lines.append(f"**Lines:** {len(source_code.splitlines())}")
+        lines.append("")
         lines.append(f"**Size:** {len(source_code)} bytes")
         lines.append("")
         lines.append("```")
@@ -145,12 +147,15 @@ class MarkdownFormatter:
         if codegen_result:
             output_code = codegen_result.get("output_code", "")
             output_path = codegen_result.get("output_path", "")
+            output_label = output_path or "(not written; in-memory)"
             byte_count = codegen_result.get("bytes", 0)
             backend_name = codegen_result.get("language", "Unknown")
             syntax_name = codegen_result.get("syntax", "text")
 
-            lines.append(f"**Backend:** {backend_name}  ")
-            lines.append(f"**Output:** `{output_path}`  ")
+            lines.append(f"**Backend:** {backend_name}")
+            lines.append("")
+            lines.append(f"**Output:** `{output_label}`")
+            lines.append("")
             lines.append(f"**Size:** {byte_count} bytes")
             lines.append("")
             lines.append(f"```{syntax_name}")
@@ -256,10 +261,55 @@ class MarkdownFormatter:
             sym_dict = getattr(current, 'symbols', {})
             for name, sym in sym_dict.items():
                 kind_str = sym.kind.name if hasattr(sym, 'kind') and hasattr(sym.kind, 'name') else "?"
-                type_str = str(sym.type) if hasattr(sym, 'type') and sym.type else "?"
+                type_str = self._format_symbol_type(sym, scope_name)
                 symbols.append({"name": name, "kind": kind_str, "type": type_str, "scope": cur_name})
 
             children = getattr(current, 'children', [])
             for i, child in enumerate(reversed(children)):
                 child_name = getattr(child, 'name', f"scope_{len(children) - 1 - i}")
                 stack.append((child, child_name))
+
+    def _is_unknown_symbol_type(self, sym) -> bool:
+        sym_type = getattr(sym, "type", None)
+        if sym_type is None:
+            return True
+
+        kind = getattr(sym_type, "kind", None)
+        if getattr(kind, "name", None) == "UNKNOWN":
+            return True
+
+        try:
+            return str(sym_type) == "unknown type"
+        except Exception:
+            return True
+
+    def _format_symbol_type(self, sym, scope_name: str) -> str:
+        kind_name = getattr(getattr(sym, "kind", None), "name", "?")
+        raw_name = getattr(sym, "name", "") or ""
+
+        if not self._is_unknown_symbol_type(sym):
+            try:
+                return str(sym.type)
+            except Exception:
+                return "unresolved"
+
+        if kind_name == "MODULE":
+            return "module"
+        if kind_name == "FUNCTION":
+            return "fn(...)"
+        if kind_name == "STRUCT":
+            return f"struct {raw_name}" if raw_name else "struct"
+        if kind_name == "ENUM":
+            return f"enum {raw_name}" if raw_name else "enum"
+        if kind_name == "UNION":
+            return f"union {raw_name}" if raw_name else "union"
+        if kind_name == "TYPE":
+            return f"type {raw_name}" if raw_name else "type"
+        if kind_name == "GENERIC_PARAM":
+            return "generic parameter"
+        if kind_name == "ENUM_VARIANT":
+            return "enum variant"
+        if kind_name == "VARIABLE" and (scope_name.startswith("struct_") or scope_name.startswith("union_")):
+            return "unresolved field"
+
+        return "unresolved"
