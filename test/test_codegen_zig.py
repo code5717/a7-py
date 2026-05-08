@@ -830,6 +830,24 @@ Point :: struct {
         ok, err = zig_ast_check(zig)
         assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
 
+    def test_generic_struct_build_check(self):
+        source = '''
+io :: import "std/io"
+
+Box :: struct {
+    value: $T
+}
+
+main :: fn() {
+    b: Box(i32) = Box(i32){value: 42}
+    io.println("{}", b.value)
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert "Box(i32)" in zig
+        ok, err = zig_build_check(zig)
+        assert ok, f"build failed:\n{err}\n\nGenerated:\n{zig}"
+
     def test_while_loop_ast_check(self):
         source = '''
 main :: fn() {

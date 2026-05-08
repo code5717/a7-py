@@ -11,7 +11,7 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 - C backend nested fixed-array iteration now lowers with valid pointer-to-array
   cache declarations, and parity coverage now includes defer unwinding, unions,
   generics, enum match expressions, heap structs, and 2D/3D nested arrays.
-- C backend generic function calls now specialize simple top-level generic functions before emission.
+- C backend generic lowering now specializes simple top-level generic functions and used generic struct instances before emission.
 - Release artifact checksum generation and verification were added.
 - The docs site was simplified, dark mode was revised, and fake testimonial content was removed.
 - The docs app now exposes a first-class `/docs` curl.md directory with direct

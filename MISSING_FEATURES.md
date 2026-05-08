@@ -72,10 +72,10 @@
      lower the same model.
 
 3. **Backend semantic parity hardening**
-   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, capture patterns, slices, string slices, labels, function pointers, and contextual array literal assignment.
+   - Core conformance is green, and the selected differential/backend-equivalence suite now covers control flow, match statements/expressions, capture patterns, slices, string slices, labels, function pointers, generic struct instances, and contextual array literal assignment.
    - Keep expanding mandatory parity cases for new language features.
    - C `match` expressions with side-effectful scrutinees lower through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
-   - C backend now lowers simple top-level generic function calls, but generic structs, nested generic workflows, and propagation through method-style call chains still need parity coverage.
+   - C backend now lowers simple top-level generic function calls and used generic struct instances, but broader nested generic workflows and propagation through method-style call chains still need parity coverage.
    - Untagged union field construction/access now type-checks and lowers in both backends.
    - Tagged/discriminated union tag workflows are still reserved syntax and not implemented.
 

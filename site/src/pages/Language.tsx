@@ -564,7 +564,7 @@ type_expr :=
           Parsing coverage is complete for the language surface described here. The compiler runs tokenization, parsing, semantic passes, preprocessing, and code generation (Zig and C backends) end-to-end.
         </DocCallout>
         <DocCallout tone="warning">
-          A small set of semantic features are still open: arbitrary symbolic range reasoning, full generic specialization, tagged union workflows, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
+          A small set of semantic features are still open: arbitrary symbolic range reasoning, broader generic propagation, tagged union workflows, and lifetime-style memory checks. For exact pass/fail status, see <Link to="/status">Status</Link> and <code className="doc-inline-code">MISSING_FEATURES.md</code>.
         </DocCallout>
       </SectionPanel>
     </div>

@@ -2338,11 +2338,24 @@ class TypeCheckingPass:
         if not isinstance(struct_type, StructType):
             return UNKNOWN
 
+        result_type: Type = struct_type
+
         # Generic struct instantiation: Pair(i32, string){...}
         type_arg_nodes = getattr(node, "type_arguments", None) or []
         if type_arg_nodes:
+            original_struct_type = struct_type
             type_args = [self.resolve_type_node(arg) for arg in type_arg_nodes]
             struct_type = self._instantiate_struct_type(struct_type, type_args)
+            if (
+                original_struct_type.name
+                and len(original_struct_type.generic_params or ()) == len(type_args)
+            ):
+                result_type = GenericInstanceType(
+                    base_name=original_struct_type.name,
+                    type_args=tuple(type_args),
+                )
+            else:
+                result_type = struct_type
 
         # Type check field initializers
         if node.field_inits:
@@ -2373,7 +2386,7 @@ class TypeCheckingPass:
                             context=f"Field '{field_name}'"
                         )
 
-        return struct_type
+        return result_type
 
     def _visit_union_init(self, node: ASTNode, union_type: UnionType) -> Type:
         """Visit a union initialization using the existing Type{field: value} literal."""

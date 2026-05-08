@@ -26,7 +26,7 @@ Implemented:
 - CLI entrypoints through `uv run a7` and `uv run python main.py`.
 - Static typing with inference in supported contexts.
 - Functions, structs, enums, untagged union field literals/access, aliases, modules, and generics.
-- Simple top-level generic function calls in the C backend through concrete specialization.
+- Simple top-level generic function calls and used generic struct instances in the C backend through concrete specialization.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
 - Arrays, slices, string slices, references, property pointer operations, and manual `new` / `del`.
@@ -43,7 +43,7 @@ Known gaps:
   do not infer arbitrary symbolic inequalities.
 - Ownership, borrowing, lifetime, use-after-free, and double-free guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until representation is defined.
-- Full generic specialization is incomplete beyond simple top-level generic functions.
+- Full generic specialization is incomplete beyond simple top-level generic functions and used generic struct instances.
 - Tagged/discriminated union tag workflows are not implemented.
 - `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
 - Package-registry publishing is not part of the current release workflow.

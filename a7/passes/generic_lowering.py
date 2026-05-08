@@ -29,11 +29,14 @@ class GenericLoweringPass:
 
     def __init__(self) -> None:
         self._generic_functions: Dict[str, ASTNode] = {}
+        self._generic_structs: Dict[str, ASTNode] = {}
         self._instances: Dict[Tuple[str, Tuple[Tuple[str, Type], ...]], str] = {}
+        self._struct_instances: Dict[Tuple[str, Tuple[Type, ...]], str] = {}
         self._specialized_functions: List[ASTNode] = []
+        self._specialized_structs: List[ASTNode] = []
 
     def process(self, program: ASTNode) -> ASTNode:
-        """Return ``program`` with called generic functions specialized."""
+        """Return ``program`` with generic functions and structs specialized."""
         if program.kind != NodeKind.PROGRAM:
             return program
 
@@ -43,26 +46,39 @@ class GenericLoweringPass:
             for decl in declarations
             if decl.kind == NodeKind.FUNCTION and decl.name and decl.generic_params
         }
-        if not self._generic_functions:
+        self._generic_structs = {
+            decl.name: decl
+            for decl in declarations
+            if decl.kind == NodeKind.STRUCT and decl.name and self._struct_generic_param_names(decl)
+        }
+        if not self._generic_functions and not self._generic_structs:
             return program
 
         for decl in declarations:
-            if decl.kind == NodeKind.FUNCTION and decl.generic_params:
+            if (
+                decl.kind == NodeKind.FUNCTION and decl.generic_params
+            ) or (
+                decl.kind == NodeKind.STRUCT and decl.name in self._generic_structs
+            ):
                 continue
-            self._rewrite_generic_calls(decl)
+            self._rewrite_generic_uses(decl)
 
         lowered_decls: List[ASTNode] = []
         for decl in declarations:
             if decl.kind == NodeKind.FUNCTION and decl.generic_params:
                 continue
+            if decl.kind == NodeKind.STRUCT and decl.name in self._generic_structs:
+                continue
             lowered_decls.append(decl)
 
         insertion_index = self._first_function_index(lowered_decls)
+        lowered_decls[insertion_index:insertion_index] = self._specialized_structs
+        insertion_index += len(self._specialized_structs)
         lowered_decls[insertion_index:insertion_index] = self._specialized_functions
         program.declarations = lowered_decls
         return program
 
-    def _rewrite_generic_calls(self, root: Optional[ASTNode]) -> None:
+    def _rewrite_generic_uses(self, root: Optional[ASTNode]) -> None:
         if root is None:
             return
 
@@ -74,6 +90,10 @@ class GenericLoweringPass:
 
             if node.kind == NodeKind.CALL:
                 self._rewrite_call(node)
+            elif node.kind == NodeKind.STRUCT_INIT:
+                self._rewrite_struct_init(node)
+            elif node.kind == NodeKind.TYPE_IDENTIFIER:
+                self._rewrite_type_identifier(node)
 
             for child in self._iter_child_nodes(node):
                 stack.append(child)
@@ -123,7 +143,66 @@ class GenericLoweringPass:
 
         self._instances[cache_key] = specialized_name
         self._specialized_functions.append(specialized)
-        self._rewrite_generic_calls(specialized.body)
+        self._rewrite_generic_uses(specialized)
+        return specialized_name
+
+    def _rewrite_struct_init(self, node: ASTNode) -> None:
+        if not isinstance(node.struct_type, str) or node.struct_type not in self._generic_structs:
+            return
+        type_args = [self._type_from_ast(arg) for arg in (node.type_arguments or [])]
+        if not type_args:
+            return
+        specialized_name = self._ensure_specialized_struct(
+            self._generic_structs[node.struct_type],
+            type_args,
+            node.span,
+        )
+        node.struct_type = specialized_name
+        node.type_arguments = []
+
+    def _rewrite_type_identifier(self, node: ASTNode) -> None:
+        if not node.name or node.name not in self._generic_structs or not node.generic_params:
+            return
+        type_args = [self._type_from_ast(arg) for arg in node.generic_params]
+        specialized_name = self._ensure_specialized_struct(
+            self._generic_structs[node.name],
+            type_args,
+            node.span,
+        )
+        node.name = specialized_name
+        node.generic_params = []
+
+    def _ensure_specialized_struct(
+        self,
+        struct: ASTNode,
+        type_args: List[Type],
+        span=None,
+    ) -> str:
+        struct_name = struct.name or "anonymous"
+        params = self._struct_generic_param_names(struct)
+        if len(params) != len(type_args):
+            expected = ", ".join(f"${name}" for name in params)
+            raise CodegenError(
+                f"C backend: generic struct '{struct_name}' expects type arguments: {expected}",
+                span or struct.span,
+            )
+
+        cache_key = (struct_name, tuple(type_args))
+        cached = self._struct_instances.get(cache_key)
+        if cached:
+            return cached
+
+        suffix = "__".join(self._mangle_type(type_) for type_ in type_args)
+        specialized_name = f"{struct_name}__{suffix}"
+        mapping = {name: type_ for name, type_ in zip(params, type_args)}
+        specialized = copy.deepcopy(struct)
+        specialized.name = specialized_name
+        specialized.generic_params = []
+        self._substitute_type_nodes(specialized, mapping)
+
+        self._struct_instances[cache_key] = specialized_name
+        self._rewrite_generic_uses(specialized)
+        self._specialized_structs.append(specialized)
         return specialized_name
 
     def _substitute_type_nodes(self, node: Optional[ASTNode], mapping: Dict[str, Type]) -> None:
@@ -200,6 +279,58 @@ class GenericLoweringPass:
             return ASTNode(kind=NodeKind.TYPE_GENERIC, name=type_.name, span=span)
 
         raise CodegenError(f"C backend: unsupported generic specialization type '{type_}'", span)
+
+    def _type_from_ast(self, node: ASTNode) -> Type:
+        if node.kind == NodeKind.TYPE_PRIMITIVE:
+            return PrimitiveType(node.type_name or "i32")
+        if node.kind == NodeKind.TYPE_IDENTIFIER:
+            if node.generic_params:
+                return GenericInstanceType(
+                    base_name=node.name or "",
+                    type_args=tuple(self._type_from_ast(arg) for arg in node.generic_params),
+                )
+            return StructType(name=node.name or "", fields=())
+        if node.kind == NodeKind.TYPE_GENERIC:
+            return GenericParamType(node.name or "T")
+        if node.kind == NodeKind.TYPE_ARRAY:
+            size = 0
+            if node.size and node.size.kind == NodeKind.LITERAL and isinstance(node.size.literal_value, int):
+                size = node.size.literal_value
+            return ArrayType(element_type=self._type_from_ast(node.element_type), size=size)
+        if node.kind == NodeKind.TYPE_SLICE:
+            return SliceType(element_type=self._type_from_ast(node.element_type))
+        if node.kind == NodeKind.TYPE_POINTER:
+            return ReferenceType(referent_type=self._type_from_ast(node.target_type))
+        if node.kind == NodeKind.TYPE_FUNCTION:
+            return FunctionType(
+                param_types=tuple(self._type_from_ast(t) for t in (node.parameter_types or [])),
+                return_type=self._type_from_ast(node.return_type) if node.return_type else None,
+                is_variadic=node.is_variadic,
+            )
+        raise CodegenError(f"C backend: unsupported generic type argument AST '{node.kind.name}'", node.span)
+
+    def _struct_generic_param_names(self, node: ASTNode) -> List[str]:
+        explicit = [param.name for param in (node.generic_params or []) if param.name]
+        if explicit:
+            return explicit
+
+        names: List[str] = []
+        for field in (node.fields or []):
+            self._collect_generic_param_names(field.field_type, names)
+        return list(dict.fromkeys(names))
+
+    def _collect_generic_param_names(self, node: Optional[ASTNode], out: List[str]) -> None:
+        if node is None:
+            return
+        stack = [node]
+        while stack:
+            current = stack.pop()
+            if current is None:
+                continue
+            if current.kind == NodeKind.TYPE_GENERIC and current.name:
+                out.append(current.name)
+            for child in self._iter_child_nodes(current):
+                stack.append(child)
 
     def _mangle_type(self, type_: Type) -> str:
         text = str(type_)

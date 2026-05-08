@@ -963,8 +963,10 @@ main :: fn() {
 Generic functions are specialized from concrete call sites. Backends that do
 not have native generic functions, such as the C backend, lower simple top-level
 generic function calls into generated concrete functions such as
-`identity__i32` and `identity__string`. Generic structs and deeper propagation
-through method-style call chains remain implementation work.
+`identity__i32` and `identity__string`. Used generic struct instances also
+lower to concrete backend types such as `Box__i32`. Broader composite generic
+specialization and deeper propagation through method-style call chains remain
+implementation work.
 
 ---
 

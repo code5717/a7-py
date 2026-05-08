@@ -29,7 +29,7 @@ Deliverables implied by the active objective:
 | Error-stage behavior | Hosted CI run `25541793153`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
 | Zig example E2E | Hosted CI run `25541793153`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
 | C example E2E | Hosted CI run `25541793153`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
-| Zig/C backend parity | Hosted CI run `25541793153`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 19/19 locally, including fallthrough, nested fallthrough, and capture patterns |
+| Zig/C backend parity | Hosted CI run `25541793153`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 20/20 locally, including fallthrough, nested fallthrough, capture patterns, and generic struct instances |
 | Debug artifacts | Hosted CI run `25541793153`; local `./run_all_tests.sh` after expanding backend parity | Passing: 76/76 |
 | Release artifacts | Hosted CI run `25541793153`; manual release workflow `25539300989`; local `./run_all_tests.sh` after expanding backend parity | Passing: 76/76 |
 | Python package build and install | Hosted CI run `25539118297`; manual release workflow `25539300989`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
@@ -55,13 +55,13 @@ These prevent a factual "100% confident" claim:
 
 1. The compiler is not a sandbox; native output can execute host-level behavior.
 2. Backend parity is selected and expanding, not exhaustive over all valid A7
-   programs. The current local selected suite covers 19 non-example programs.
+   programs. The current local selected suite covers 20 non-example programs.
 3. `fall` and branch-local match capture patterns now lower in both native
    backends, but backend parity is still selected rather than exhaustive.
 4. Full ownership, borrowing, lifetime, use-after-free, and double-free
    guarantees are not implemented.
 5. Full generic specialization is incomplete beyond simple top-level generic
-   functions lowered for the C backend.
+   functions and used generic struct instances lowered for the C backend.
 6. Tagged/discriminated union tag workflows remain incomplete. Untagged
    single-field union construction and field access now have focused semantic,
    C backend, Zig backend, CLI JSON, and example verifier coverage.

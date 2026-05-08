@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Generic struct literals now retain concrete instance types during semantic
+  analysis, Zig emits generic struct instances with explicit type arguments,
+  and the C backend monomorphizes used generic struct instances before codegen.
 - Formatter symbol collection now surfaces traversal failures instead of
   silently swallowing broad exceptions, reducing hidden documentation/reporting
   failures found during static security review.

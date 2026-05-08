@@ -190,7 +190,7 @@ Features that are spec'd and partially implemented, or missing from one backend.
   Notes: spec'd in §4.1, not parsed.
 
 - [ ] Complete generic specialization (spec §7.4).
-  Notes: simple top-level generic function calls now lower in the C backend; generic structs and deeper call-chain propagation still need full runtime coverage.
+  Notes: simple top-level generic function calls and used generic struct instances now lower in both native backends; deeper call-chain propagation and broader composite generic workflows still need full runtime coverage.
 
 ### Type Checking Improvements
 
@@ -202,7 +202,7 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 - [ ] Complete C backend generic lowering.
   Files: `a7/passes/generic_lowering.py`, `a7/backends/c.py`, `a7/generics.py`, `examples/014_generics.a7`
-  Notes: simple top-level generic functions are monomorphized before C codegen; remaining work includes generic structs, nested/composite specializations, and propagation through call chains.
+  Notes: simple top-level generic functions and used generic struct instances are monomorphized before C codegen; remaining work includes broader nested/composite specialization and propagation through call chains.
 
 - [x] Complete untagged runtime union construction and field access.
   Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`, `a7/backends/c.py`, `examples/016_unions.a7`

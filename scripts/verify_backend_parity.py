@@ -248,6 +248,25 @@ main :: fn() {
     io.println("capture expr = {} calls {}", score(next()), calls)
 }
 ''',
+    "generic_struct_instances": r'''
+io :: import "std/io"
+
+Box :: struct {
+    value: $T
+}
+
+Pair($A, $B) :: struct {
+    second: $B
+    first: $A
+}
+
+main :: fn() {
+    b: Box(i32) = Box(i32){value: 42}
+    nested: Box(Box(i32)) = Box(Box(i32)){value: Box(i32){value: 5}}
+    pair: Pair(i32, string) = Pair(i32, string){second: "ok", first: 9}
+    io.println("generic struct = {} {} {} {}", b.value, nested.value.value, pair.first, pair.second)
+}
+''',
     "string_slice_iteration": r'''
 io :: import "std/io"
 

@@ -139,6 +139,35 @@ main :: fn() {
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_runs_generic_struct_instances(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+Box :: struct {
+    value: $T
+}
+
+Pair($A, $B) :: struct {
+    second: $B
+    first: $A
+}
+
+main :: fn() {
+    b: Box(i32) = Box(i32){value: 42}
+    nested: Box(Box(i32)) = Box(Box(i32)){value: Box(i32){value: 5}}
+    pair: Pair(i32, string) = Pair(i32, string){second: "ok", first: 9}
+    io.println("{} {} {} {}", b.value, nested.value.value, pair.first, pair.second)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "42 5 9 ok"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
 def test_generated_c_resolves_stdlib_import_aliases(tmp_path: Path) -> None:
     result = build_and_run_c(
         """

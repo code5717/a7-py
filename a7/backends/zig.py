@@ -420,15 +420,18 @@ class ZigCodeGenerator(CodeGenerator):
         name = node.name or "anon"
         self._declared_structs.add(name)
 
-        # Check if struct has generic type fields
-        generic_params = set()
-        for field in (node.fields or []):
-            self._collect_generic_type_names(field.field_type, generic_params)
+        # Check if struct has generic type fields. Keep encounter order because
+        # Zig type-function arguments must match A7's instance argument order.
+        generic_params = [param.name for param in (node.generic_params or []) if param.name]
+        if not generic_params:
+            for field in (node.fields or []):
+                self._collect_generic_type_names(field.field_type, generic_params)
+            generic_params = list(dict.fromkeys(generic_params))
 
         self._write_indent()
         if generic_params:
             # Emit as comptime generic function: fn Name(comptime T: type) type { return struct { ... }; }
-            param_list = ", ".join(f"comptime {p}: type" for p in sorted(generic_params))
+            param_list = ", ".join(f"comptime {p}: type" for p in generic_params)
             self.output.write(f"fn {name}({param_list}) type {{\n")
             self.indent()
             self._write_indent()
@@ -453,7 +456,7 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             self.output.write("};\n")
 
-    def _collect_generic_type_names(self, type_node, result: set):
+    def _collect_generic_type_names(self, type_node, result):
         """Collect all generic type parameter names from a type expression. Iterative."""
         stack = [type_node]
         while stack:
@@ -461,7 +464,9 @@ class ZigCodeGenerator(CodeGenerator):
             if n is None:
                 continue
             if n.kind == NodeKind.TYPE_GENERIC:
-                result.add(n.name or "T")
+                name = n.name or "T"
+                if name not in result:
+                    result.append(name)
             if n.kind == NodeKind.TYPE_POINTER and n.target_type:
                 stack.append(n.target_type)
             if n.kind == NodeKind.TYPE_ARRAY and n.element_type:
@@ -1489,9 +1494,14 @@ class ZigCodeGenerator(CodeGenerator):
         """Emit struct initialization."""
         struct_name = node.struct_type or ""
         field_inits = node.field_inits or []
+        type_args = getattr(node, "type_arguments", None) or []
 
         if struct_name and struct_name != "__inline__":
-            parts = [f"{struct_name}{{ "]
+            if type_args:
+                rendered_args = ", ".join(self._emit_type_node(arg) for arg in type_args)
+                parts = [f"{struct_name}({rendered_args}){{ "]
+            else:
+                parts = [f"{struct_name}{{ "]
         else:
             parts = [".{ "]
 
@@ -1654,6 +1664,9 @@ class ZigCodeGenerator(CodeGenerator):
         if kind == NodeKind.TYPE_PRIMITIVE:
             return self._map_primitive_type(node.type_name or "i32")
         elif kind == NodeKind.TYPE_IDENTIFIER:
+            if node.generic_params:
+                args = ", ".join(self._emit_type_node(p) for p in node.generic_params)
+                return f"{node.name or 'anytype'}({args})"
             return node.name or "anytype"
         elif kind == NodeKind.TYPE_GENERIC:
             return "anytype"

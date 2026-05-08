@@ -22,7 +22,8 @@ The repository is substantially more release-ready than before this pass:
   shadowing
 - consolidated docs-site navigation with curl.md-friendly Markdown entry points
   under `site/public/llms.txt` and `site/public/docs/`
-- C backend specialization for simple top-level generic function calls
+- C backend specialization for simple top-level generic function calls and used
+  generic struct instances
 - virtual `std/io`, `io`, `std/math`, and `math` imports registered through the
   module resolver, with alias-safe backend lowering
 - public docs-site primary navigation and homepage messaging centered on A7
@@ -195,6 +196,16 @@ not factually provable from local tests alone.
   backend parity 19/19; debug artifacts 76/76; release artifacts 76/76;
   error-stage checks 61/61; docs style ok; secrets check ok; total pytest
   1239 passed; summary 12/12.
+- local focused generic struct verification passed after retaining concrete
+  generic struct literal instance types and adding C monomorphization for used
+  generic struct instances: backend parity 20/20, focused semantic/codegen
+  tests 10 passed, and generic/codegen/parity pytest 183 passed after updating
+  the parity assertion.
+- local `./run_all_tests.sh` passed after generic struct instance lowering:
+  parser/tokenizer 501 passed; semantic 336 passed; compiler/CLI/backend 328
+  passed; Zig examples 38/38; C examples 38/38; backend parity 20/20; debug
+  artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
+  style ok; secrets check ok; total pytest 1245 passed; summary 12/12.
 - local `npm run check` in `site/` passed after updating the public status and
   language docs for the fallthrough behavior.
 - hosted CI run `25541793153` passed on commit `5baa7f7` after fallthrough
@@ -376,7 +387,8 @@ not factually provable from local tests alone.
 
 ## Recommended Next Pass
 
-1. Complete generic struct/nested generic specialization parity.
+1. Expand nested/composite generic specialization and method-style propagation
+   parity beyond the currently covered generic struct instances.
 2. Add stronger hosted secret scanning if the repository host supports it.
 3. Expand backend parity for every new language feature, including additional
    fallthrough and capture-pattern edge cases.

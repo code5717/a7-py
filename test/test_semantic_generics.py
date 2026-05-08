@@ -327,6 +327,58 @@ class TestGenericStructs:
         """
         assert expect_success(source)
 
+    def test_generic_struct_initialization_with_explicit_target_type(self):
+        """Generic struct literals should retain their concrete instance type."""
+        source = """
+        Box :: struct {
+            value: $T,
+        }
+
+        main :: fn() {
+            b: Box(i32) = Box(i32){value: 42}
+        }
+        """
+        assert expect_success(source)
+
+    def test_generic_struct_initialization_rejects_target_type_arg_mismatch(self):
+        """Different generic struct instances should not assign to each other."""
+        source = """
+        Box :: struct {
+            value: $T,
+        }
+
+        main :: fn() {
+            b: Box(string) = Box(i32){value: 42}
+        }
+        """
+        assert expect_error(source, "Type mismatch")
+
+    def test_generic_struct_initialization_rejects_field_type_mismatch(self):
+        """Generic struct literal fields are checked after type substitution."""
+        source = """
+        Box :: struct {
+            value: $T,
+        }
+
+        main :: fn() {
+            b: Box(i32) = Box(i32){value: "x"}
+        }
+        """
+        assert expect_error(source, "Field 'value'")
+
+    def test_nested_generic_struct_initialization_with_explicit_target_type(self):
+        """Nested generic struct literals should preserve their full instance type."""
+        source = """
+        Box :: struct {
+            value: $T,
+        }
+
+        main :: fn() {
+            b: Box(Box(i32)) = Box(Box(i32)){value: Box(i32){value: 42}}
+        }
+        """
+        assert expect_success(source)
+
     def test_generic_struct_field_access(self):
         """Test generic struct field access."""
         source = """
