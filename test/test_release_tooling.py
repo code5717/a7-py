@@ -346,6 +346,8 @@ def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> No
             "dist/llms.txt",
             "--require",
             "./dist/docs/index.md",
+            "--require-glob-count",
+            "dist/docs/*.md=1",
         ],
         cwd=ROOT,
         text=True,
@@ -373,6 +375,23 @@ def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> No
     assert missing_result.returncode == 1
     assert "archive content verification failed" in missing_result.stderr
     assert "dist/llms-full.txt" in missing_result.stderr
+
+    bad_count_result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/verify_archive_contents.py",
+            str(archive_path),
+            "--require-glob-count",
+            "dist/docs/*.md=2",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    assert bad_count_result.returncode == 1
+    assert "glob count mismatch" in bad_count_result.stderr
 
 
 def test_secret_scan_flags_sensitive_filenames(tmp_path: Path) -> None:

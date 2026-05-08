@@ -119,7 +119,9 @@ jobs:
             --require dist/docs/status.md
           uv run python scripts/verify_archive_contents.py dist/a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz \
             --require release/zig/src/001_hello.zig \
-            --require release/zig/bin/001_hello
+            --require release/zig/bin/001_hello \
+            --require-glob-count 'release/zig/src/*.zig=38' \
+            --require-glob-count 'release/zig/bin/*=38'
 
       - name: Generate release checksums
         run: |

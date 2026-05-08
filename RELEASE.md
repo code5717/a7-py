@@ -97,9 +97,11 @@ uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --requ
 
 The tag release workflow generates `dist/SHA256SUMS` after all release archives
 are built, verifies that the manifest contains the package, docs, and native
-artifact archives, verifies required archive members, re-checks the hashes and
-sizes on disk, generates GitHub artifact attestations for each release artifact,
-then attaches the artifacts to the draft GitHub release.
+artifact archives, verifies required archive members, asserts the example
+archive contains all 38 generated Zig sources and all 38 native binaries,
+re-checks the hashes and sizes on disk, generates GitHub artifact attestations
+for each release artifact, then attaches the artifacts to the draft GitHub
+release.
 
 ## Tagging
 
