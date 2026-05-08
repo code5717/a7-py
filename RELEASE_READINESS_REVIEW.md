@@ -206,12 +206,22 @@ not factually provable from local tests alone.
   passed; Zig examples 38/38; C examples 38/38; backend parity 20/20; debug
   artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
   style ok; secrets check ok; total pytest 1245 passed; summary 12/12.
-- hosted CI run `25544528796` passed on commit `ff944ad` after generic struct
-  instance lowering, including docs, pytest, Python dependency audit, Bandit
-  static security scanning, error-stage verification, Zig/C example
+- local `./run_all_tests.sh` passed after example and parity coverage
+  expansion: parser/tokenizer 501 passed; semantic 336 passed;
+  compiler/CLI/backend 328 passed; Zig examples 38/38; C examples 38/38;
+  backend parity 24/24; debug artifacts 76/76; release artifacts 76/76;
+  error-stage checks 61/61; docs style ok; secrets check ok; total pytest
+  1245 passed; summary 12/12.
+- local manual report inspection confirmed matching Zig and C output for the
+  four new parity cases: type-set generic constraints, explicit enum
+  discriminants through match, stdlib math mappings, and edge operator
+  assignments/comparisons.
+- hosted CI run `25545566335` passed on commit `cdcf7e3` after example and
+  parity coverage expansion, including docs, pytest, Python dependency audit,
+  Bandit static security scanning, error-stage verification, Zig/C example
   verification, backend parity, debug artifacts, release artifacts, package
   build, and clean wheel-install verification.
-- hosted Deploy Docs run `25544528779` passed on commit `ff944ad`.
+- hosted Deploy Docs run `25545566352` passed on commit `cdcf7e3`.
 - local `npm run check` in `site/` passed after updating the public status and
   language docs for the generic struct behavior.
 - hosted CI run `25541793153` passed on commit `5baa7f7` after fallthrough

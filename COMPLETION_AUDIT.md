@@ -22,21 +22,21 @@ Deliverables implied by the active objective:
 | Requirement | Evidence | Status |
 | --- | --- | --- |
 | Vulnerability/problem review | `RELEASE_READINESS_REVIEW.md`, `SECURITY.md`, `MISSING_FEATURES.md`, `TODO.md` | Covered for current known risks |
-| Security dependency audit | Hosted CI run `25544528796`; manual release workflow `25539300989`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
-| Python static security scan | Hosted CI run `25544528796`; local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
-| Secret scanning | Hosted CI run `25544528796`; `scripts/check_no_secrets.py` | Passing pattern- and filename-based scan |
-| Python test suite | Hosted CI run `25544528796`; local `./run_all_tests.sh` after generic struct instance lowering | Passing: 1245 tests |
-| Error-stage behavior | Hosted CI run `25544528796`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
-| Zig example E2E | Hosted CI run `25544528796`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
-| C example E2E | Hosted CI run `25544528796`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
-| Zig/C backend parity | Hosted CI run `25544528796`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 20/20 locally, including fallthrough, nested fallthrough, capture patterns, and generic struct instances |
-| Debug artifacts | Hosted CI run `25544528796`; local `./run_all_tests.sh` after generic struct instance lowering | Passing: 76/76 |
-| Release artifacts | Hosted CI run `25544528796`; manual release workflow `25539300989`; local `./run_all_tests.sh` after generic struct instance lowering | Passing: 76/76 |
-| Python package build and install | Hosted CI run `25544528796`; manual release workflow `25539300989`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
+| Security dependency audit | Hosted CI run `25545566335`; manual release workflow `25539300989`; local `uvx --from pip-audit==2.10.0 pip-audit --strict`; local site runtime audit | Passing for known advisories; CI/release tool version is pinned |
+| Python static security scan | Hosted CI run `25545566335`; local `uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603`; CI/release workflow step | Passing after resolving the release-manifest partial `git` path and marking the diagnostic-code false positive; CI/release tool version is pinned |
+| Secret scanning | Hosted CI run `25545566335`; `scripts/check_no_secrets.py` | Passing pattern- and filename-based scan |
+| Python test suite | Hosted CI run `25545566335`; local `./run_all_tests.sh` after example and parity coverage expansion | Passing: 1245 tests |
+| Error-stage behavior | Hosted CI run `25545566335`; `scripts/verify_error_stages.py`; refactored shared logic in `scripts/error_stage_common.py` | Passing |
+| Zig example E2E | Hosted CI run `25545566335`; local `scripts/verify_examples_e2e.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
+| C example E2E | Hosted CI run `25545566335`; local `scripts/verify_examples_e2e_c.py`; shared verifier logic in `scripts/verify_examples_common.py`; manual JSON inspection for `037_language_tour` | Passing: 38/38 |
+| Zig/C backend parity | Hosted CI run `25545566335`; local expanded `scripts/verify_backend_parity.py`; manual report inspection; local full gate | Passing selected suite: 24/24 locally, including fallthrough, nested fallthrough, capture patterns, generic functions, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math, and operator edge cases |
+| Debug artifacts | Hosted CI run `25545566335`; local `./run_all_tests.sh` after example and parity coverage expansion | Passing: 76/76 |
+| Release artifacts | Hosted CI run `25545566335`; manual release workflow `25539300989`; local `./run_all_tests.sh` after example and parity coverage expansion | Passing: 76/76 |
+| Python package build and install | Hosted CI run `25545566335`; manual release workflow `25539300989`; local clean `rm -rf dist && uv build`; `scripts/verify_wheel_install.py`; focused release tooling tests | Passing; built wheel installs as package `a7` and exposes `a7` CLI |
 | Local package hygiene | `README.md`, `RELEASE.md`, `site/public/docs/release.md` now require `rm -rf dist` before `uv build` | Covered |
 | Release checksums, provenance, and archive contents | `scripts/generate_release_manifest.py`; `scripts/verify_release_manifest.py`; `scripts/verify_archive_contents.py`; `test/test_release_tooling.py`; release workflow validates required paths, required archive members, re-checks hashes before upload, and emits GitHub artifact attestations for release assets; manual release dispatch `25539300989` | Covered for workflow-dispatch release path; manifest verifier now rejects traversal and unsafe absolute paths; tag-only draft release creation still requires a real tag run before release |
-| Docs style/build | Hosted CI run `25544528796`; local `scripts/check_docs_style.py`; local `cd site && npm run check` | Passing |
-| Docs deploy | Hosted Deploy Docs run `25544528779`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
+| Docs style/build | Hosted CI run `25545566335`; local `scripts/check_docs_style.py`; local `cd site && npm run check` | Passing |
+| Docs deploy | Hosted Deploy Docs run `25545566352`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |
 | Release workflow | `.github/workflows/release.yml`, manual dispatch run `25539300989` on commit `d678c80`; release gate, package build, wheel install, archive verification, checksums, attestations, and artifact upload passed | Passing for non-tag validation; tag-only draft release creation still requires a real tag run before release |
 | Workflow supply-chain hardening | All workflow actions are pinned to immutable commit SHAs; `.github/dependabot.yml` covers GitHub Actions, Python, and docs npm; automated Claude review prompt treats PR text as untrusted | Covered for current workflow action pinning |
@@ -55,7 +55,7 @@ These prevent a factual "100% confident" claim:
 
 1. The compiler is not a sandbox; native output can execute host-level behavior.
 2. Backend parity is selected and expanding, not exhaustive over all valid A7
-   programs. The current local selected suite covers 20 non-example programs.
+   programs. The current local selected suite covers 24 non-example programs.
 3. `fall` and branch-local match capture patterns now lower in both native
    backends, but backend parity is still selected rather than exhaustive.
 4. Full ownership, borrowing, lifetime, use-after-free, and double-free
