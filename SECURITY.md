@@ -42,6 +42,8 @@ pytest.
   possible programs.
 - The current release workflow builds package distributions and attaches them
   to draft GitHub releases; it does not publish to a package registry.
+- Non-`actions/*` release and Claude workflow actions are pinned to immutable
+  commits. Most first-party GitHub Actions remain pinned by major version tag.
 - Dependency audits check known advisories, not unknown vulnerabilities.
 - The committed-secrets check is pattern-based and should be treated as a guard,
   not a complete data-loss prevention system.

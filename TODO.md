@@ -9,6 +9,20 @@ Check test status with `PYTHONPATH=. uv run pytest --tb=no -q`. 38/38 examples p
 
 These are bugs and schema mismatches in already-implemented features.
 
+### Release / Workflow Hardening
+
+- [x] Add Dependabot coverage for GitHub Actions, Python, and docs npm dependencies.
+  Files: `.github/dependabot.yml`
+  Notes: weekly update checks now cover workflow actions, root Python dependencies, and `site/` npm dependencies.
+
+- [x] Pin non-`actions/*` workflow actions to immutable commits.
+  Files: `.github/workflows/release.yml`, `.github/workflows/claude.yml`, `.github/workflows/claude-code-review.yml`
+  Notes: `softprops/action-gh-release` and `anthropics/claude-code-action` are pinned to commit SHAs; first-party actions remain on major tags.
+
+- [x] Harden automated Claude PR review against prompt injection from PR content.
+  Files: `.github/workflows/claude-code-review.yml`
+  Notes: the direct prompt now treats PR titles, bodies, comments, and diffs as untrusted content to review.
+
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `src/passes/type_checker.py`, `src/passes/semantic_validator.py`
   Notes: fixed; deferred `statement` payloads are now traversed by type checking and semantic validation, with regression coverage.

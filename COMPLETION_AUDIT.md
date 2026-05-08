@@ -37,7 +37,8 @@ Deliverables implied by the active objective:
 | Docs style/build | Hosted CI run `25533359030`; local `scripts/check_docs_style.py`; local `site npm run check` | Passing |
 | Docs deploy | Hosted Deploy Docs run `25533359054`; hosted browser-harness check for `/a7-py/` confirmed the A7-first homepage title and primary navigation; hosted fetch confirmed the new `llms-full.txt` format | Passing |
 | curl.md/agent documentation | `site/public/llms.txt`, `site/public/llms-full.txt`, `site/public/docs/*.md`, plugin/dev subtrees, sitemap and robots entries | Implemented |
-| Release workflow | `.github/workflows/release.yml`, manual dispatch run `25527020391` on commit `67da15e`; downloaded artifacts verified with `scripts/verify_archive_contents.py` and `scripts/verify_release_manifest.py`; local workflow YAML parse after concurrency/checksum hardening | Passing for non-tag validation; latest workflow hardening pending hosted run after push |
+| Release workflow | `.github/workflows/release.yml`, hosted CI run `25535705154`, hosted Deploy Docs run `25535705155`; manual dispatch run `25527020391` on commit `67da15e`; downloaded artifacts verified with `scripts/verify_archive_contents.py` and `scripts/verify_release_manifest.py`; local workflow YAML parse after concurrency/checksum hardening | Passing for non-tag validation; tag-only draft release path still requires a real tag run before release |
+| Workflow supply-chain hardening | Non-`actions/*` actions pinned to immutable commits; `.github/dependabot.yml` covers GitHub Actions, Python, and docs npm; automated Claude review prompt treats PR text as untrusted | Improved; first-party actions still pinned by major version tags |
 | No-recursion language rule | Semantic recursion rejection, docs in `README.md`, `docs/SPEC.md`, and site docs | Implemented for named call cycles |
 | No-recursion compiler traversal confidence | Iterative traversal tests and full gate | Covered for tested traversal paths |
 | Virtual stdlib module resolution | `src/module_resolver.py`, `src/stdlib/__init__.py`, `test/test_module_resolver.py`, focused alias codegen tests | Implemented for `std/io`, `io`, `std/math`, and `math` |
@@ -66,6 +67,8 @@ These prevent a factual "100% confident" claim:
    protections for public release.
 8. Dependency audits cover known advisories, not unknown supply-chain
     compromise.
+9. Most first-party GitHub Actions remain pinned by major version tag instead of
+   full commit SHA.
 
 ## Conclusion
 

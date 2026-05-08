@@ -167,7 +167,8 @@ jobs:
         run: python scripts/verify_release_manifest.py dist/SHA256SUMS
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
+        # softprops/action-gh-release@v3 resolved on 2026-05-08.
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
           draft: true
           files: |

@@ -153,6 +153,9 @@ not factually provable from local tests alone.
 - Online check of GitHub's current action release pages confirmed
   `actions/upload-artifact@v7` and `actions/download-artifact@v8` exist, so the
   release workflow's artifact actions are not using nonexistent major tags.
+- Non-`actions/*` workflow actions are pinned to immutable commits, and
+  Dependabot is configured for GitHub Actions, Python, and docs npm dependency
+  updates.
 
 ## Fixed In This Pass
 
@@ -181,6 +184,10 @@ not factually provable from local tests alone.
 - Secret-backed Claude workflows now require repository owner/member/collaborator
   author association for comment-triggered runs, and automated Claude PR review
   skips fork pull requests.
+- Non-`actions/*` workflow actions are pinned to immutable commits, and
+  Dependabot now covers GitHub Actions, Python, and docs npm dependencies.
+- Automated Claude PR review now treats PR titles, bodies, comments, and diffs
+  as untrusted content to review rather than instructions to follow.
 - `docs/SPEC.md` no longer contains the duplicated type/control-flow/function/
   memory sections inside the modules section, and later section numbering now
   matches the table of contents.
@@ -283,6 +290,9 @@ not factually provable from local tests alone.
   for all possible source programs.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
+- Most first-party GitHub Actions remain pinned by major version tag rather than
+  full commit SHA; the non-`actions/*` actions with higher supply-chain blast
+  radius are pinned to immutable commits.
 - Secret scanning is pattern-based and should be supplemented by repository host
   protections when publishing publicly.
 - GitHub Pages deploy currently emits an upstream `punycode` deprecation warning

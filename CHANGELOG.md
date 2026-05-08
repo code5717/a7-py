@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is cleaned before workflow package builds.
 - Claude-triggered workflows now restrict secret-backed runs to repository
   owners, members, or collaborators; automated Claude PR review skips fork PRs.
+- Dependabot now covers GitHub Actions, Python, and docs npm dependencies;
+  non-`actions/*` workflow actions are pinned to immutable commits, and the
+  automated Claude review prompt now treats PR text/diffs as untrusted review
+  input rather than instructions.
 - Semantic validation now rejects direct and mutual recursion; source programs
   should use loops, explicit stacks, or index-based worklists instead.
   The recursion graph respects local function-pointer shadowing, so indirect
