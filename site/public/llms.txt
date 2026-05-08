@@ -6,8 +6,8 @@ A7 is a statically typed systems language compiler implemented in Python. It com
 
 ## Introduction
 
-- [Docs Index](/a7-py/docs/index.md): Navigation for curl.md and coding agents.
-- [Full Context](/a7-py/llms-full.txt): Single-file aggregate of the public Markdown docs.
+- [Docs Index](/a7-py/docs/index.md): Full curl.md navigation tree and fetch order.
+- [Full Context](/a7-py/llms-full.txt): Single-file aggregate for large-context ingestion.
 - [Getting Started](/a7-py/docs/getting-started.md): Install, compile, run, and test A7.
 - [Installation](/a7-py/docs/install.md): Toolchain and local docs setup.
 - [Why A7](/a7-py/docs/why.md): Project goals, non-goals, and fit.

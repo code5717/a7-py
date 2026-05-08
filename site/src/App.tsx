@@ -13,7 +13,6 @@ import Changelog from './pages/Changelog'
 import NotFound from './pages/NotFound'
 import CurlDocsPage from './pages/CurlDocsPage'
 
-const CLI_ANCHORS = { modes: 'modes', flags: 'flags' }
 const PIPELINE_ANCHORS = { 'pipeline-stages': 'pipeline', 'backend-notes': 'backend-notes' }
 const STDLIB_ANCHORS = { io: 'io', math: 'math', 'stub-modules': 'stub-modules' }
 const TESTING_ANCHORS = { scripts: 'scripts' }
@@ -69,10 +68,7 @@ export default function App() {
         <Route path="language" element={<Language />} />
         <Route path="features" element={<CurlDocsPage />} />
         <Route path="agent-usage" element={<CurlDocsPage />} />
-        <Route
-          path="cli"
-          element={<LegacySectionAlias anchor="cli" anchorMap={CLI_ANCHORS}><Start /></LegacySectionAlias>}
-        />
+        <Route path="cli" element={<CurlDocsPage />} />
         <Route path="api" element={<CurlDocsPage />} />
         <Route path="plugins" element={<CurlDocsPage />} />
         <Route path="plugins/:plugin" element={<CurlDocsPage />} />
@@ -84,6 +80,7 @@ export default function App() {
           element={<LegacySectionAlias anchor="pipeline" anchorMap={PIPELINE_ANCHORS}><Internals /></LegacySectionAlias>}
         />
         <Route path="examples" element={<Examples />} />
+        <Route path="release" element={<CurlDocsPage />} />
         <Route
           path="stdlib"
           element={<LegacySectionAlias anchor="standard-library" anchorMap={STDLIB_ANCHORS}><Language /></LegacySectionAlias>}

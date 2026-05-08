@@ -74,6 +74,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   backend parity now covers contextual array literal assignment.
 - Parser now rejects initializer-like calls after `new` expressions, so
   `new i32(42)` fails as syntax instead of parsing as a nonsensical call.
+- The docs app now exposes copyable curl.md fetch commands, includes A7
+  reference pages in the `/docs` directory, advertises `llms.txt` and
+  `llms-full.txt` as alternate resources, and tightens docs and examples card
+  layout to prevent long file names or labels from colliding.
 
 ## [0.3.0] - 2026-05-07
 

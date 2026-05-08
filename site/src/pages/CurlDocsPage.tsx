@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SectionPanel from '../components/SectionPanel'
@@ -15,6 +16,64 @@ function publicDocsUrl(path: string) {
   return new URL(publicDocsPath(path), window.location.origin).toString()
 }
 
+function FetchCommandRow({
+  href,
+  label,
+  command,
+  className = '',
+}: {
+  href: string
+  label: string
+  command: string
+  className?: string
+}) {
+  const [copied, setCopied] = useState(false)
+  const resetTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current)
+      }
+    }
+  }, [])
+
+  const copyCommand = async () => {
+    if (!navigator.clipboard) {
+      return
+    }
+
+    await navigator.clipboard.writeText(command)
+    setCopied(true)
+
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current)
+    }
+
+    resetTimerRef.current = window.setTimeout(() => {
+      setCopied(false)
+      resetTimerRef.current = null
+    }, 1400)
+  }
+
+  return (
+    <div className={`doc-fetch-row ${className}`.trim()}>
+      <a className="doc-fetch-target" href={href}>
+        <span className="doc-fetch-label">{label}</span>
+        <code>{command}</code>
+      </a>
+      <button
+        type="button"
+        className={`doc-copy-button${copied ? ' copied' : ''}`}
+        onClick={copyCommand}
+        aria-label={`Copy ${label.toLowerCase()} fetch command`}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  )
+}
+
 function DocDirectory() {
   const docsIndexHref = publicDocsPath('/docs/index.md')
   const llmsHref = publicDocsPath('/llms.txt')
@@ -22,36 +81,31 @@ function DocDirectory() {
   const docsIndexUrl = publicDocsUrl('/docs/index.md')
   const llmsUrl = publicDocsUrl('/llms.txt')
   const llmsFullUrl = publicDocsUrl('/llms-full.txt')
+  const llmsCommand = `curl -fsS ${llmsUrl}`
+  const docsIndexCommand = `curl -fsS ${docsIndexUrl}`
+  const llmsFullCommand = `curl -fsS ${llmsFullUrl}`
 
   return (
     <>
       <PageHeader
         eyebrow="curl.md"
         title="Fetchable docs"
-        summary="Stable Markdown entry points for agents, terminals, and editor tools."
+        summary="Stable Markdown files for curl.md, agents, terminals, and editor tools."
       />
 
       <SectionPanel className="curl-docs-start">
         <div className="curl-docs-start-copy">
           <p className="section-label">Start here</p>
-          <h2 className="section-title">One index, one full context file.</h2>
+          <h2 className="section-title">A small index, then exact files.</h2>
           <p className="text-secondary">
-            Use the index for routing. Use the full context file when a single fetch is easier.
+            Fetch `llms.txt` to route. Fetch `docs/index.md` for the full navigation tree.
+            Use `llms-full.txt` only when one combined context file is easier.
           </p>
         </div>
         <div className="curl-docs-commands">
-          <a className="doc-fetch-row" href={llmsHref}>
-            <span className="doc-fetch-label">Compact index</span>
-            <code>curl -fsS {llmsUrl}</code>
-          </a>
-          <a className="doc-fetch-row" href={docsIndexHref}>
-            <span className="doc-fetch-label">Docs index</span>
-            <code>curl -fsS {docsIndexUrl}</code>
-          </a>
-          <a className="doc-fetch-row" href={llmsFullHref}>
-            <span className="doc-fetch-label">Full context</span>
-            <code>curl -fsS {llmsFullUrl}</code>
-          </a>
+          <FetchCommandRow href={llmsHref} label="Compact index" command={llmsCommand} />
+          <FetchCommandRow href={docsIndexHref} label="Docs index" command={docsIndexCommand} />
+          <FetchCommandRow href={llmsFullHref} label="Full context" command={llmsFullCommand} />
         </div>
       </SectionPanel>
 
@@ -84,6 +138,7 @@ export default function CurlDocsPage() {
 
   const markdownHref = publicDocsPath(doc.markdownPath)
   const markdownFetchUrl = publicDocsUrl(doc.markdownPath)
+  const markdownCommand = `curl -fsS ${markdownFetchUrl}`
 
   return (
     <div className="page">
@@ -101,10 +156,7 @@ export default function CurlDocsPage() {
             full context <span aria-hidden="true">→</span>
           </a>
         </div>
-        <a className="doc-fetch-row single" href={markdownHref}>
-          <span className="doc-fetch-label">Direct fetch</span>
-          <code>curl -fsS {markdownFetchUrl}</code>
-        </a>
+        <FetchCommandRow href={markdownHref} label="Direct fetch" command={markdownCommand} className="single" />
       </SectionPanel>
 
       <SectionPanel title="Browse" className="curl-docs-group">

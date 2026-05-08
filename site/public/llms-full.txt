@@ -2,6 +2,14 @@
 
 This file aggregates the public curl.md-friendly Markdown docs for A7. Use it when a single fetch is easier than following `llms.txt`.
 
+## Fetch Order
+
+```bash
+curl -fsS https://code5717.github.io/a7-py/llms.txt
+curl -fsS https://code5717.github.io/a7-py/docs/index.md
+curl -fsS https://code5717.github.io/a7-py/llms-full.txt
+```
+
 ## Navigation
 
 - `/a7-py/llms.txt`

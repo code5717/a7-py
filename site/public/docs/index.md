@@ -4,6 +4,16 @@
 
 Use these pages when you need current published docs without scraping the React docs app. The links below follow the docs navigation order used by `llms.txt`, `llms-full.txt`, and the site sidebar.
 
+## Fetch Order
+
+```bash
+curl -fsS https://code5717.github.io/a7-py/llms.txt
+curl -fsS https://code5717.github.io/a7-py/docs/index.md
+curl -fsS https://code5717.github.io/a7-py/llms-full.txt
+```
+
+Fetch `llms.txt` first for routing. Fetch this index when you need the full document tree. Fetch `llms-full.txt` when a single combined context file is better than many small files.
+
 ## Introduction
 
 - [Getting Started](/a7-py/docs/getting-started.md): Fast path from checkout to running examples.

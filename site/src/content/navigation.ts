@@ -36,15 +36,6 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       note: item.note,
     })),
   })),
-  {
-    label: 'A7 Reference',
-    items: [
-      { to: '/language', label: 'Language', note: 'Syntax, types, modules, and stdlib' },
-      { to: '/examples', label: 'Examples', note: 'Runnable A7 programs' },
-      { to: '/internals', label: 'Compiler', note: 'Pipeline, architecture, and tests' },
-      { to: '/status', label: 'Status', note: 'Current completeness and gaps' },
-    ],
-  },
 ]
 
 const CURL_PAGE_META = Object.fromEntries(CURL_DOC_ITEMS.map((item) => [
