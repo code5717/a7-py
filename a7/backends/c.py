@@ -1390,9 +1390,7 @@ class CCodeGenerator(CodeGenerator):
 
         kind = node.kind
         if kind == NodeKind.BINARY:
-            left = self._emit_expr_prepared(node.left)
-            right = self._emit_expr_prepared(node.right)
-            return f"({left} {self._binary_op_to_c(node.operator)} {right})"
+            return self._emit_binary_prepared_iterative(node)
         if kind == NodeKind.UNARY:
             operand = self._emit_expr_prepared(node.operand)
             if node.operator == UnaryOp.NEG:
@@ -1486,6 +1484,27 @@ class CCodeGenerator(CodeGenerator):
         op = node.operator
         cop = self._binary_op_to_c(op)
         return f"({left} {cop} {right})"
+
+    def _emit_binary_prepared_iterative(self, root: ASTNode) -> str:
+        """Emit prepared nested binary expressions without Python recursion."""
+        rendered: dict[int, str] = {}
+        stack: list[tuple[ASTNode, bool]] = [(root, False)]
+        while stack:
+            node, ready = stack.pop()
+            if node.kind != NodeKind.BINARY:
+                rendered[id(node)] = self._emit_expr_prepared(node)
+                continue
+            if ready:
+                left = rendered.pop(id(node.left))
+                right = rendered.pop(id(node.right))
+                rendered[id(node)] = self._emit_binary_from_parts(node, left, right)
+                continue
+            stack.append((node, True))
+            if node.right is not None:
+                stack.append((node.right, False))
+            if node.left is not None:
+                stack.append((node.left, False))
+        return rendered[id(root)]
 
     def _emit_unary(self, node: ASTNode) -> str:
         operand = self._emit_expr(node.operand)

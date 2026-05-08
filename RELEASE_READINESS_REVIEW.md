@@ -413,6 +413,12 @@ not factually provable from local tests alone.
   passed; Zig examples 38/38; C examples 38/38; backend parity 24/24; debug
   artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
   style ok; secrets check ok; total pytest 1259 passed; summary 12/12.
+- Local `./run_all_tests.sh` passed after C prepared binary-expression
+  hardening: parser/tokenizer 501 passed; semantic 340 passed;
+  compiler/CLI/backend 338 passed; Zig examples 38/38; C examples 38/38;
+  backend parity 24/24; debug artifacts 76/76; release artifacts 76/76;
+  error-stage checks 61/61; docs style ok; secrets check ok; total pytest
+  1260 passed; summary 12/12.
 
 ## Residual Risks
 

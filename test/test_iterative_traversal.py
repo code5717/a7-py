@@ -426,6 +426,13 @@ class TestLowRecursionLimit:
 
         assert rendered.count("+") == 160
 
+    def test_c_backend_prepared_deep_binary_expression_uses_iterative_stack(self):
+        """C prepared expression emission should not recurse on binary chains."""
+        expr = make_deep_binary_ast(160)
+        rendered = CCodeGenerator()._emit_expr_prepared(expr)
+
+        assert rendered.count("+") == 160
+
 
 # ===========================================================================
 # 2. Deep Nesting Stress Tests (normal recursion limit)
