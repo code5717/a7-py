@@ -26,4 +26,5 @@ main :: fn() {
     io.println("=== Callbacks ===")
     handle_event(EventType.Click)
     handle_event(EventType.Submit)
+    handle_event(EventType.Cancel)
 }

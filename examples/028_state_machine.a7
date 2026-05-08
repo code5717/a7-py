@@ -10,19 +10,32 @@ State :: enum {
 }
 
 transition :: fn(current: State, next: State) State {
-    io.println("transition")
-    match next {
+    match current {
         case State.Idle: {
-            io.println("state: Idle")
+            io.println("from: Idle")
         }
         case State.Running: {
-            io.println("state: Running")
+            io.println("from: Running")
         }
         case State.Paused: {
-            io.println("state: Paused")
+            io.println("from: Paused")
         }
         case State.Stopped: {
-            io.println("state: Stopped")
+            io.println("from: Stopped")
+        }
+    }
+    match next {
+        case State.Idle: {
+            io.println("to: Idle")
+        }
+        case State.Running: {
+            io.println("to: Running")
+        }
+        case State.Paused: {
+            io.println("to: Paused")
+        }
+        case State.Stopped: {
+            io.println("to: Stopped")
         }
     }
     ret next

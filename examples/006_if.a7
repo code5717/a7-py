@@ -55,9 +55,14 @@ main :: fn() {
     is_weekend := true
     is_holiday := false
 
-    // Note: Complex parenthesized expressions with 'and' and '!' need work
     no_license := !has_license
     if (is_weekend or is_holiday) and no_license {
         io.println("Day off but can't drive")
+    } else {
+        io.println("Weekend driver is cleared")
+    }
+
+    if (is_weekend or is_holiday) and has_license {
+        io.println("Day off and can drive")
     }
 }
