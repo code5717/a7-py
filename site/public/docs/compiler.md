@@ -29,4 +29,4 @@ uv run python scripts/build_examples.py --profile release --backend both --clean
 
 `scripts/verify_backend_parity.py` compiles selected non-example programs through Zig and C, builds them, runs them, and compares runtime output.
 
-Current selected coverage includes control flow, strings, labeled loops, function pointers, slice fields, indexed slice iteration, match statements, match expressions, and string slice iteration.
+Current selected coverage includes control flow, strings, labeled loops, function pointers, slice fields, indexed slice iteration, match statements and expressions, string slice iteration, defer unwind order, untagged unions, generic function specialization, enum match expressions, heap struct allocation, and 2D/3D nested fixed arrays.

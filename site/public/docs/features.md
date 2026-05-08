@@ -28,4 +28,4 @@
 
 ## Current Limits
 
-The status page is canonical for remaining gaps. Key limits include `fall` lowering, complete memory/lifetime guarantees, full generic specialization beyond simple top-level functions, tagged union workflows, and final PyPI project activation.
+The status page is canonical for remaining gaps. Key limits include `fall` lowering, complete memory/lifetime guarantees, full generic specialization beyond simple top-level functions, and tagged union workflows.

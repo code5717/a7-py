@@ -121,26 +121,15 @@ runs on a clean GitHub runner, but local `dist/` can otherwise retain older
 versioned wheels or source distributions that should not be uploaded.
 
 Manual `workflow_dispatch` runs validate the release gate and artifact build
-steps without creating a GitHub release or publishing to PyPI.
+steps without creating a GitHub release.
 
 The workflow keeps release permissions split: the gate/artifact build job uses
 read-only repository contents access, and only the tag-only draft release job
 uses `contents: write`.
 
-After the draft GitHub release job succeeds, the same tag workflow publishes
-the Python package distributions to PyPI through Trusted Publishing/OIDC. The
-GitHub `pypi` environment exists and requires review by `code5717`. As of the
-latest release-readiness audit, `a7-py` is not yet a public PyPI project. Before
-the first real publish, create or preconfigure the PyPI project trusted
-publisher with:
-
-- owner: `code5717`
-- repository: `a7-py`
-- workflow name: `release.yml`
-- environment name: `pypi`
-
-Keep the GitHub `pypi` environment protected so publishing continues to require
-the intended maintainer approval.
+The current workflow does not publish to a package registry. If registry
+publishing is added later, wire it as a separate reviewed change rather than as
+an implicit side effect of the draft GitHub release job.
 
 ## Known Release Caveats
 

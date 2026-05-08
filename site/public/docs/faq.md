@@ -20,6 +20,7 @@ No. A7 emits Zig or C and then builds native programs with the host toolchain. T
 
 Current virtual stdlib support is limited to `std/io` and `std/math`. `std/string`, `std/mem`, and collections are planned or stubbed but not public current modules.
 
-## Is PyPI publishing complete
+## Is package-registry publishing configured
 
-The GitHub workflow is wired for Trusted Publishing, but the public `a7-py` PyPI project still needs trusted-publisher setup before the first real publish.
+No. The current release workflow builds package artifacts and attaches them to
+draft GitHub releases, but does not publish to a package registry.

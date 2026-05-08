@@ -8,6 +8,9 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 - Runnable examples were expanded and rewritten to avoid recursive A7 source.
 - Public curl.md-friendly docs and `llms.txt` are available for agents.
 - Zig/C backend parity checks were added and expanded.
+- C backend nested fixed-array iteration now lowers with valid pointer-to-array
+  cache declarations, and parity coverage now includes defer unwinding, unions,
+  generics, enum match expressions, heap structs, and 2D/3D nested arrays.
 - C backend generic function calls now specialize simple top-level generic functions before emission.
 - Release artifact checksum generation and verification were added.
 - The docs site was simplified, dark mode was revised, and fake testimonial content was removed.
@@ -28,4 +31,5 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
 
 ## Release Status
 
-Tag-created draft GitHub releases are configured. PyPI Trusted Publishing wiring exists, but final PyPI project trust setup is still required before first publish.
+Tag-created draft GitHub releases are configured. Package-registry publishing is
+not part of the current release workflow.

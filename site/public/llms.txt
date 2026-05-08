@@ -46,7 +46,7 @@ A7 is a statically typed systems language compiler implemented in Python. It com
 - [Language and Library](/a7-py/docs/language.md): Syntax, type guidance, stdlib, and recursion rule.
 - [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, parity verifier, and release gate.
 - [Examples](/a7-py/docs/examples.md): Example catalog, including `037_language_tour.a7`, and verification commands.
-- [Release](/a7-py/docs/release.md): Debug/release artifacts, package build, audits, and publishing status.
+- [Release](/a7-py/docs/release.md): Debug/release artifacts, package build, audits, and draft GitHub release artifacts.
 - [Status](/a7-py/docs/status.md): Current implementation status and known gaps.
 - [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
 - [Testing](/a7-py/docs/testing.md): Alias for verification commands.

@@ -1,6 +1,6 @@
 # A7 Programming Language Specification
 
-> **Implementation Status (2026-05-07)**: This specification describes the A7 language design. The current Python implementation (`a7-py`) provides:
+> **Implementation Status (2026-05-08)**: This specification describes the A7 language design. The current Python implementation (`a7-py`) provides:
 > - ✅ **Tokenizer/Lexer**: implemented
 > - ✅ **Parser**: implemented
 > - ✅ **AST generation**: implemented
@@ -172,7 +172,7 @@ $    // Generic type parameter prefix
 "Hello, World!" // single line string
 "Line 1\nLine 2"
 "Quote: \"Hello\"" 
-```Multi-line string```
+"Plain string"
 ```
 
 #### Boolean Literals
@@ -798,7 +798,7 @@ len := v.length()     // Syntactic sugar for length(v.adr)
 v.normalize()         // Modifies v through pointer
 ```
 
-### 6.5 Variadic Functions
+### 6.6 Variadic Functions
 
 ```a7
 // Variadic parameters must be last
@@ -1400,877 +1400,6 @@ integrate_2d :: fn(f: fn(f64, f64) f64, bounds: [4]f64, steps: [2]usize) f64 {
 
 ## 10. Modules and Visibility
 
-### 2.1 Source Encoding
-
-A7 source files must be ASCII encoded. The standard file extension is `.a7`.
-
-**Whitespace Rules:**
-- Spaces (U+0020) and carriage returns (U+000D) are allowed
-- Tab characters (U+0009) are **not supported** and will cause a compilation error
-- Newlines (U+000A) serve as statement terminators
-
-### 2.2 Comments
-
-```a7
-// Single-line comment extends to end of line
-
-/* 
-   Multi-line comment
-   /* Can be nested */
-*/
-```
-
-### 2.3 Identifiers
-
-```ebnf
-identifier = letter (letter | digit | "_")*
-letter     = "a"..."z" | "A"..."Z"  ; ASCII letters only
-digit      = "0"..."9"              ; ASCII digits only
-```
-
-**Identifier Rules:**
-- Identifiers are case-sensitive
-- Must start with an ASCII letter (a-z, A-Z) or underscore
-- Can contain ASCII letters, digits (0-9), and underscores
-- **Unicode characters are not supported** in identifiers
-- Leading underscores are reserved for compiler-generated names
-- Maximum length: 100 characters
-
-### 2.4 Keywords
-
-```
-and        as         bool       break      case       cast       char
-const      continue   defer      del        else       enum       f32
-f64        fall       false      fn         for        i8         i16
-i32        i64        if         import     in         isize      match
-new        nil        or         pub        struct     ref        ret
-self       size_of    string     true       type       u8         u16
-u32        u64        union      using      usize      var        where
-while
-```
-
-### 2.5 Operators and Punctuation
-
-```
-// Arithmetic
-+    -    *    /    %    
-
-// Comparison
-==   !=   <    >    <=   >=
-
-// Logical
-and  or   !    
-
-// Bitwise
-&    |    ^    ~    <<   >>
-
-// Assignment
-=    +=   -=   *=   /=   %=   &=   |=   ^=   <<=  >>=
-
-// Memory
-.adr .val .    
-
-// Generics  
-$    // Generic type parameter prefix
-
-// Other
-::   :    ;    ,    ()   []   {}   ..   ...   @
-```
-
-### 2.6 Literals
-
-#### Integer Literals
-```a7
-42        // Decimal
-0x2A      // Hexadecimal
-0o52      // Octal
-0b101010  // Binary
-1_000_000 // With separators
-```
-
-**Numeric Literal Limits:**
-- Maximum numeric literal length: 100 characters (including separators)
-- Underscores can be used as separators for readability
-- Hex literals use `0x` prefix, octal use `0o`, binary use `0b`
-
-#### Floating-Point Literals
-```a7
-3.14159
-2.71e10
-.5
-1.
-```
-
-#### Character Literals
-```a7
-'a'
-'\n'      // Newline
-'\t'      // Tab
-'\\'      // Backslash
-'\''      // Single quote
-'\x41'    // Hex escape (A) - ASCII only
-```
-
-#### String Literals
-```a7
-"Hello, World!" // single line string
-"Line 1\nLine 2"
-"Quote: \"Hello\"" 
-```Multi-line string```
-```
-
-#### Boolean Literals
-```a7
-true
-false
-```
-
-#### Nil Literal
-```a7
-nil
-```
-
-**Usage**: `nil` can **only** be used with reference/pointer types (`ref T`). It represents a null pointer.
-
-**Invalid**: Arrays, structs, primitives, and other value types cannot be assigned `nil`.
-
-```a7
-// ✅ Valid - nil with reference types
-ptr: ref i32 = nil
-fn_ptr: ref fn() void = nil
-if ptr == nil { }
-
-// ❌ Invalid - nil with value types
-arr: [5]i32 = nil      // ERROR: arrays cannot be nil
-x: i32 = nil           // ERROR: primitives cannot be nil
-s: MyStruct = nil      // ERROR: value structs cannot be nil
-```
-
-**Array Initialization**: Arrays must be initialized with:
-- No initializer (zero-initialized): `arr: [5]i32`
-- Single value (all elements): `arr: [5]i32 = 0`
-- Array literal: `arr: [5]i32 = [1, 2, 3, 4, 5]`
-
-Array literals must match the declared array length when a target type is
-present. Each element is checked against the declared element type, including
-nested array literals.
-
----
-
-## 3. Type System
-
-### 3.1 Type Categories
-
-A7's type system consists of:
-1. **Value types**: Copied by value
-2. **Reference types**: Point to memory locations
-3. **Generic types**: Parameterized types
-
-### 3.2 Primitive Types
-
-| Type     | Size (bytes) | Range/Description |
-|----------|--------------|-------------------|
-| `bool`   | 1           | `true` or `false` |
-| `i8`     | 1           | -128 to 127 |
-| `i16`    | 2           | -32,768 to 32,767 |
-| `i32`    | 4           | -2^31 to 2^31-1 |
-| `i64`    | 8           | -2^63 to 2^63-1 |
-| `isize`  | platform    | Signed pointer-sized integer |
-| `u8`     | 1           | 0 to 255 |
-| `u16`    | 2           | 0 to 65,535 |
-| `u32`    | 4           | 0 to 2^32-1 |
-| `u64`    | 8           | 0 to 2^64-1 |
-| `usize`  | platform    | Unsigned pointer-sized integer |
-| `f32`    | 4           | IEEE 754 single |
-| `f64`    | 8           | IEEE 754 double |
-| `char`   | 1           | ASCII character (0-127) |
-
-**Note**: `isize` and `usize` are platform-dependent types:
-- On 32-bit platforms: 4 bytes (same as i32/u32)
-- On 64-bit platforms: 8 bytes (same as i64/u64)
-
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. It is the memory-shape integer and maps to `usize` in Zig and `size_t` in C.
-
-Use `isize` only for signed pointer-sized offsets or differences between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
-
-Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range. Small arithmetic examples may use `i32`; counters and indexes should usually use `usize`.
-
-### 3.3 Composite Types
-
-#### Arrays
-```a7
-// Fixed-size array
-arr: [10]i32
-matrix: [3][3]f64
-
-// Array type properties
-T.len       // Number of elements (compile-time constant)
-T.element   // Element type
-```
-
-#### Slices
-```a7
-// Dynamic view into array
-slice: []i32
-
-// Slice properties
-slice.ptr      // Pointer to first element
-slice.len      // Number of elements (usize)
-```
-
-#### Strings
-```a7
-// ASCII encoded string
-name: string = "Hello"
-
-// String slicing produces a []char byte slice
-part := name[1..4]
-
-// String is equivalent to
-string :: struct {
-    ptr: ref u8
-    len: usize
-}
-```
-
-#### References (Pointers)
-```a7
-// Single indirection
-ptr: ref i32
-
-// Multiple indirection
-ptr_ptr: ref ref i32
-
-// Function pointer
-fn_ptr: ref fn(i32, i32) i32
-
-// All pointers can be modified through dereferencing
-x := 42
-ptr := x.adr
-ptr.val = 100  // Modifies the value x points to (using . syntax)
-```
-
-#### Structs
-```a7
-Person :: struct {
-    name: string
-    age: u32
-    height: f32
-}
-
-// Nested structs
-Employee :: struct {
-    person: Person
-    id: u64
-    salary: f64
-}
-```
-
-#### Unions
-```a7
-Number :: union {
-    i: i32
-    f: f32
-    u: u32
-}
-
-value := Number{i: 42}
-same_value: i32 = value.i
-
-// Tagged union (discriminated)
-Result :: union(tag) {
-    ok: i32
-    err: string
-}
-```
-
-Untagged unions use `Type{field: value}` literals with exactly one named field.
-The named field must exist and its value must be assignable to that field type.
-Field access type-checks against the declared union fields. Tagged union tag
-inspection is reserved syntax and is not implemented yet.
-
-#### Enums
-```a7
-// Simple enumeration
-Color :: enum {
-    Red,    // 0
-    Green,  // 1
-    Blue    // 2
-}
-
-// With explicit values
-StatusCode :: enum {
-    Ok = 200,
-    NotFound = 404,
-    Error = 500
-}
-```
-
-### 3.4 Type Aliases
-
-```a7
-// Simple alias
-Handle :: u64
-
-// Generic alias
-Vector :: [3]f32
-Matrix :: [4][4]f32
-```
-
-### 3.5 Pointer Semantics
-
-```a7
-// All pointers allow modification through dereferencing
-x := 42
-ptr := x.adr
-ptr.val = 100  // OK: modifies the value x points to
-
-// Pointer reassignment
-y := 50
-ptr = y.adr    // OK: pointer now points to y
-
-// Function parameters are immutable (including pointers)
-modify_value :: fn(p: ref i32) {
-    p.val = 200    // OK: modifying through dereference
-    // p = other_var.adr  // ERROR: cannot reassign parameter
-}
-
-// To reassign a pointer in a function, use ref ref
-reassign_pointer :: fn(p: ref ref i32, new_target: ref i32) {
-    p.val = new_target  // OK: changes what the original pointer points to
-}
-```
-
----
-
-## 4. Declarations and Expressions
-
-### 4.1 Variable Declarations
-
-```a7
-// Immutable binding (constant)
-x: i32 = 42
-PI :: 3.14159
-
-// Mutable binding (variable)
-count := 0
-buffer := new [1024]u8
-
-// Type can be explicit or inferred
-age: i32 = 25    // Explicit type
-name := "John"   // Inferred as string
-
-// Multiple declarations
-a, b, c: i32 = 1, 2, 3
-x, y := 10, 20
-```
-
-### 4.2 Declaration Rules
-
-**A7 uses two declaration operators:**
-
-- `::` - Creates immutable bindings (constants)
-- `:=` - Creates mutable bindings (variables)
-
-```a7
-// Constants (immutable) - use ::
-PI :: 3.14159
-MAX_BUFFER :: 1024
-VERSION :: "1.0.0"
-DOUBLE_PI :: PI * 2
-
-// Variables (mutable) - use :=
-count := 0
-name := "John"
-buffer := new [1024]u8
-
-// Explicit typing works with both
-MAX_SIZE: i32 = 1000    // Immutable with explicit type
-counter: i32 = 0        // Mutable with explicit type (uses = not :=)
-
-// Variables can be reassigned
-counter = counter + 1   // OK
-// PI = 3.0             // ERROR: cannot reassign constant
-```
-
-### 4.3 Expression Categories
-
-#### Primary Expressions
-- Identifiers: `x`, `foo`
-- Literals: `42`, `"hello"`, `true`
-- Parenthesized: `(x + y)`
-
-#### Postfix Expressions
-- Array subscript: `arr[i]`
-- Slice: `arr[1..5]`, `arr[..3]`, `arr[2..]`
-- Field access: `point.x`
-- Address access: `variable.adr`
-- Pointer dereference: `ptr.val`
-- Method call: `vec.length()`
-- Function call: `max(a, b)`
-
-#### Unary Expressions
-- Negation: `-x`
-- Logical NOT: `!flag`
-- Bitwise NOT: `~bits`
-
-#### Binary Expressions
-Precedence (highest to lowest):
-1. `*`, `/`, `%`
-2. `+`, `-`
-3. `<<`, `>>`
-4. `<`, `>`, `<=`, `>=`
-5. `==`, `!=`
-6. `&`
-7. `^`
-8. `|`
-9. `and`
-10. `or`
-
-#### Cast Expressions
-```a7
-// Explicit cast
-x := cast(f64, 42)
-
-// Generic cast
-y := cast(T, value)
-```
-
----
-
-## 5. Control Flow
-
-### 5.1 Conditional Statements
-
-```a7
-// Simple if
-if condition {
-    // code
-}
-
-// If-else chain
-if x < 0 {
-    print("negative")
-} else if x > 0 {
-    print("positive")
-} else {
-    print("zero")
-}
-
-// Conditional expression
-result := if x > 0 { x } else { -x }
-```
-
-### 5.2 Pattern Matching
-
-```a7
-// Match on enum values
-match color {
-    case Color.Red: {
-        print("Red")
-    }
-    case Color.Green: {
-        print("Green")
-        fall  // Parsed, but currently rejected until fallthrough semantics are finalized
-    }
-    case Color.Blue: {
-        print("Green or Blue")
-    }
-}
-
-// Match on literal values
-match x {
-    case 0: print("zero")
-    case 1, 2, 3: print("small")
-    case 4..10: print("medium")
-    else: print("large")
-}
-```
-
-### 5.3 Loops
-
-```a7
-// Infinite loop
-for {
-    if should_stop() { break }
-}
-
-// While loop
-while condition {
-    // code
-}
-
-// C-style for loop
-for i := 0; i < 10; i += 1 {
-    print(i)
-}
-
-// Range loop
-for value in array {
-    print(value)
-}
-
-// Range with index
-for i, value in array {
-    printf("[{}] = {}\n", i, value)
-}
-// The index variable `i` has type `usize`.
-
-// Range over slice
-for char in string[2..5] {
-    print(char)
-}
-// string[2..5] has type []char.
-```
-
-### 5.4 Jump Statements
-
-```a7
-// Return from function
-ret value
-
-// Break from loop
-break
-
-// Continue to next iteration
-continue
-
-// Break/continue with loop label
-@outer for i := 0; i < 10; i += 1 {
-    for j := 0; j < 10; j += 1 {
-        if condition {
-            break outer
-        }
-    }
-}
-```
-
-Loop labels use `@name` directly before a loop statement. The old
-`name: for ...` spelling is rejected because `name:` is reserved for typed
-bindings, fields, and case-like syntax.
-
-Semantic validation reports unreachable statements that appear later in the same block after `ret`, a valid `break` or `continue`, `fall`, or an `if`/`match` statement whose branches all terminate.
-
----
-
-## 6. Functions
-
-### 6.1 Function Declarations
-
-```a7
-// Basic function
-add :: fn(x: i32, y: i32) i32 {
-    ret x + y
-}
-
-// Void function
-print_number :: fn(n: i32) {
-    printf("{}\n", n)
-}
-
-// Return struct for multiple values
-DivModResult :: struct {
-    quotient: i32
-    remainder: i32
-}
-
-divmod :: fn(a: i32, b: i32) DivModResult {
-    ret DivModResult{a / b, a % b}
-}
-
-// Named fields in return struct
-sincos :: fn(angle: f64) struct { sin: f64, cos: f64 } {
-    ret struct { sin: f64, cos: f64 }{
-        sin: math.sin(angle),
-        cos: math.cos(angle)
-    }
-}
-```
-
-### 6.2 Recursion
-
-Recursion is not part of A7. A function may not call itself directly, and
-groups of functions may not call each other in a cycle. Semantic validation
-reports these call cycles before backend code generation.
-
-Use loops, explicit stacks, or index-based worklists for repeated work.
-
-```a7
-// ERROR: direct recursion is rejected
-factorial :: fn(n: i32) i32 {
-    if n <= 1 {
-        ret 1
-    }
-    ret n * factorial(n - 1)
-}
-
-// OK: iterative rewrite
-factorial_iter :: fn(n: i32) i32 {
-    result := 1
-    for i := 2; i <= n; i += 1 {
-        result *= i
-    }
-    ret result
-}
-```
-
-### 6.3 Function Parameter Immutability
-
-**All function parameters in A7 are immutable by design.** This includes both value parameters and pointer parameters - the parameters themselves cannot be reassigned, though data can be modified through pointer dereferencing.
-
-```a7
-// Parameters cannot be reassigned
-bad_function :: fn(x: i32) i32 {
-    x += 1  // ERROR: cannot modify parameter
-    ret x
-}
-
-// Pointers can be dereferenced to modify data
-increment :: fn(x: ref i32) {
-    x.val += 1  // OK: modifying through pointer dereference
-}
-
-// To work with a mutable copy, create a local variable
-good_function :: fn(x: i32) i32 {
-    local_x := x      // Create mutable local copy using :=
-    local_x += 1      // OK: modifying local variable
-    ret local_x
-}
-
-// Usage example
-main :: fn() {
-    value := 10
-    increment(value.adr)  // Pass pointer to modify original
-    printf("Value: {}\n", value)  // Prints: Value: 11
-}
-```
-
-### 6.4 Function Types
-
-```a7
-// Function pointer type
-BinaryOp :: fn(i32, i32) i32
-
-// Using function pointers
-apply :: fn(op: BinaryOp, x: i32, y: i32) i32 {
-    ret op(x, y)
-}
-
-result := apply(add, 10, 20)
-```
-
-### 6.5 Methods
-
-```a7
-// Methods are functions with receiver
-Vec2 :: struct {
-    x: f32
-    y: f32
-}
-
-// Method declaration - receiver is immutable parameter
-length :: fn(self: ref Vec2) f32 {
-    ret sqrt(self.x * self.x + self.y * self.y)
-}
-
-// Method that modifies the receiver
-normalize :: fn(self: ref Vec2) {
-    len := sqrt(self.x * self.x + self.y * self.y)
-    self.x /= len  // OK: modifying through pointer dereference
-    self.y /= len
-}
-
-// Method call
-v := Vec2{3.0, 4.0}
-len := v.length()     // Syntactic sugar for length(v.adr)
-v.normalize()         // Modifies v through pointer
-```
-
-### 6.5 Variadic Functions
-
-```a7
-// Variadic parameters must be last
-sum :: fn(values: ..i32) i32 {
-    total := 0
-    for val in values {
-        total += val
-    }
-    ret total
-}
-
-// Type-safe printf
-printf :: fn(format: string, args: ..)
-```
-
----
-
-## 7. Generics
-
- and built-in type sets defined using `@type_set()`.
-
-```a7
-// Simple type parameter
-swap :: fn($T, a: ref T, b: ref T) {
-    temp := a.val
-    a.val = b.val
-    b.val = temp
-}
-
-// Multiple type parameters
-map :: fn($T, $U, arr: []T, f: fn(T) U) []U {
-    result := new [arr.len]U
-    for i, val in arr {
-        result[i] = f(val)
-    }
-    ret result[..]
-}
-```
-
-### 7.2 Generic Types
-
-```a7
-// Generic struct
-Pair :: struct($T, $U) {
-    first: T
-    second: U
-}
-
-// Usage
-p := Pair(i32, string){42, "answer"}
-```
-
-### 7.3 Type Sets and Constraints
-
-> **Implementation Status**: Type-set syntax is implemented for predefined sets,
-> local `@type_set(...)` aliases, and inline constraints on declared generic
-> functions. Inferred call arguments are checked against declared type sets.
-
-Type sets are defined using the `@type_set()` builtin function:
-
-```a7
-// Built-in type sets (will be defined in standard library)
-Numeric :: @type_set(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize, f32, f64)
-Integer :: @type_set(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize)
-Float :: @type_set(f32, f64)
-Signed :: @type_set(i8, i16, i32, i64, isize, f32, f64)
-Unsigned :: @type_set(u8, u16, u32, u64, usize)
-
-// Custom type sets
-SmallInts :: @type_set(i8, u8, i16, u16)
-BigInts :: @type_set(i64, u64)
-```
-
-**Current Constraint Syntax**:
-```a7
-abs($T: Numeric) :: fn(x: $T) $T {
-    ret if x < 0 { -x } else { x }
-}
-
-min($T: Numeric) :: fn(a: $T, b: $T) $T {
-    ret if a < b { a } else { b }
-}
-```
-
-### 7.4 Generic Specialization
-
-```a7
-identity($T) :: fn(value: $T) $T {
-    ret value
-}
-
-main :: fn() {
-    a := identity(7)
-    b := identity("ok")
-}
-```
-
-Generic functions are specialized from concrete call sites. Backends that do
-not have native generic functions, such as the C backend, lower simple top-level
-generic function calls into generated concrete functions such as
-`identity__i32` and `identity__string`. Generic structs and deeper propagation
-through method-style call chains remain implementation work.
-
----
-
-## 8. Memory Management
-
-### 8.1 Stack Allocation
-
-All local variables are stack-allocated by default:
-```a7
-fn example() {
-    x := 42            // Stack
-    arr: [100]f32      // Stack  
-    person: Person     // Stack
-}  // All automatically freed
-```
-
-### 8.2 Heap Allocation
-
-```a7
-// Allocate single value
-ptr := new i32
-ptr.val = 42
-del ptr
-
-// Allocate array
-buffer := new [1024]u8
-del buffer
-
-// Initialize through the returned reference
-point := new Point
-point.val = Point{x: 10, y: 20}
-del point
-
-// `new T(args...)` and `new T{...}` initializer forms are not current syntax.
-
-// Check allocation
-large := new [1000000]f64
-if large == nil {
-    // Handle allocation failure
-}
-```
-
-### 8.3 Defer Statement
-
-```a7
-// Defer executes at scope exit
-{
-    file := open("data.txt")
-    defer close(file)
-    
-    buffer := new [1024]u8
-    defer del buffer
-    
-    // Use file and buffer
-    // Both cleaned up automatically
-}
-
-// Defer order is LIFO
-{
-    defer print("3")
-    defer print("2")
-    defer print("1")
-    // Prints: 1 2 3
-}
-```
-
-### 8.4 Memory Safety Status
-
-Current implementation:
-
-1. `new` and `del` parse, type-check, and lower for the implemented backends.
-2. `del` is validated for reference-like values.
-3. `defer del value` can express manual cleanup at scope exit.
-
-Not yet implemented:
-
-1. Ownership, borrowing, or lifetime analysis that proves absence of dangling pointers.
-2. Static double-free or use-after-free prevention beyond the current basic shape checks.
-3. General array/slice bounds-check insertion by the A7 compiler.
-
----
-
 ### 10.1 File-Based Module System
 
 Every A7 source file is a module. There is no explicit `module` keyword.
@@ -2281,9 +1410,9 @@ Every A7 source file is a module. There is no explicit `module` keyword.
 
 // Public export
 pub Vec3 :: struct {
-    pub x: f32
-    pub y: f32
-    pub z: f32
+    x: f32
+    y: f32
+    z: f32
 }
 
 // Public function
@@ -2356,9 +1485,9 @@ Planned, not implemented as public stdlib modules yet:
 
 ---
 
-## 10. Built-in Functions and Operators
+## 11. Built-in Functions and Operators
 
-### 10.1 Builtin Functions
+### 11.1 Builtin Functions
 
 These functions are handled specially by the compiler and use the `@` prefix:
 
@@ -2378,7 +1507,7 @@ These functions are handled specially by the compiler and use the `@` prefix:
 @unlikely :: fn(cond: bool) bool           // Branch prediction hint
 ```
 
-### 10.2 Standard Library Functions
+### 11.2 Standard Library Functions
 
 Current virtual modules provide `io.print`, `io.println`, `io.eprintln`, and
 math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
@@ -2458,9 +1587,9 @@ mem_realloc :: fn(ptr: ref u8, old_size: usize, new_size: usize) ref u8
 
 ---
 
-## 11. Tokens and AST Components
+## 12. Tokens and AST Components
 
-### 11.1 Token Types
+### 12.1 Token Types
 
 ```a7
 // Literals
@@ -2582,7 +1711,7 @@ TOKEN_COMMENT           // Comments (usually discarded)
 TOKEN_ERROR             // Lexer error token
 ```
 
-### 11.2 AST Node Types
+### 12.2 AST Node Types
 
 ```a7
 // Top-level nodes
@@ -2659,7 +1788,7 @@ AST_EXPRESSION_LIST     // List of expressions
 AST_TYPE_LIST           // List of types
 ```
 
-### 11.3 AST Node Structure
+### 12.3 AST Node Structure
 
 Each AST node contains:
 
@@ -2720,7 +1849,7 @@ TypeSetData :: struct {
 }
 ```
 
-### 11.4 Parsing Precedence
+### 12.4 Parsing Precedence
 
 Operator precedence (highest to lowest):
 1. Primary expressions (literals, identifiers, parentheses)
@@ -2740,9 +1869,9 @@ Operator precedence (highest to lowest):
 
 ---
 
-## 12. Grammar Summary
+## 13. Grammar Summary
 
-### 12.1 Top-Level Grammar
+### 13.1 Top-Level Grammar
 
 ```ebnf
 program = (import_decl | declaration)*
@@ -2772,7 +1901,7 @@ generic_param =
     | "$" identifier ":" "@type_set" "(" type_list ")"
 ```
 
-### 12.2 Type Grammar
+### 13.2 Type Grammar
 
 ```ebnf
 type = 
@@ -2798,7 +1927,7 @@ variant_list = variant ("," variant)*
 variant = identifier ":" type
 ```
 
-### 12.3 Expression Grammar
+### 13.3 Expression Grammar
 
 ```ebnf
 expr = assignment_expr
@@ -2838,7 +1967,7 @@ primary_expr =
     | "if" expr block "else" block_or_if
 ```
 
-### 12.4 Statement Grammar
+### 13.4 Statement Grammar
 
 ```ebnf
 statement = 
@@ -2983,7 +2112,7 @@ A7 supports the full ASCII character set (0-127) only. Characters outside this r
 
 ## Appendix E: Implementation Status (a7-py)
 
-Status snapshot (2026-05-07):
+Status snapshot (2026-05-08):
 
 - ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend, C backend).
 - ✅ Examples have end-to-end verification for both Zig and C backends.
@@ -3016,8 +2145,9 @@ Status snapshot (2026-05-07):
 
 5. **Release packaging activation**
    - Python packaging and installed CLI are present.
-   - Tag-triggered PyPI publishing is wired through Trusted Publishing/OIDC.
-   - The PyPI project still needs the matching trusted-publisher configuration before the first real publish.
+   - Tag-triggered draft GitHub releases attach package, docs, and native
+     example artifacts.
+   - Package-registry publishing is not part of the current release workflow.
 
 ### E.2 Source Of Truth
 

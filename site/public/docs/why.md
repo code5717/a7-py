@@ -12,7 +12,7 @@ A7 is a small systems-language compiler project focused on readable source, expl
 
 ## Current Fit
 
-A7 is useful as a compiler and language-design project, a testbed for backend parity, and a compact examples corpus. It is not a sandbox for untrusted code and is not yet a published PyPI package.
+A7 is useful as a compiler and language-design project, a testbed for backend parity, and a compact examples corpus. It is not a sandbox for untrusted code.
 
 ## Non-Goals
 

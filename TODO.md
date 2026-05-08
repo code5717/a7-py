@@ -268,9 +268,9 @@ These are entire subsystems. Each needs a design decision before implementation 
   Files: `.github/workflows/`
   Notes: `release.yml` creates a draft GitHub release for `v*` tags with Python package artifacts, docs site archive, and release example artifacts. Manual dispatch validates the release gate and artifact build without creating a release. Release permissions are split so only the tag-only draft release job gets `contents: write`.
 
-- [x] Add PyPI or package-registry publishing.
+- [ ] Decide whether to add package-registry publishing.
   Files: `.github/workflows/`
-  Notes: release tags now publish built distributions to PyPI through Trusted Publishing/OIDC after the draft GitHub release job succeeds. The GitHub `pypi` environment exists and requires maintainer review; `a7-py` is not yet a public PyPI project, so create or configure the PyPI trusted publisher for repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi` before the first real publish.
+  Notes: the current release workflow builds Python distributions and attaches them to draft GitHub releases, but does not publish to a package registry.
 
 - [ ] Design and implement `fall` lowering.
   Files: `src/passes/semantic_validator.py`, `src/backends/zig.py`, `src/backends/c.py`, `docs/SPEC.md`

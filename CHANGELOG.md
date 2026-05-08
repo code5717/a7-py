@@ -17,8 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow permissions are split so the gate/artifact build job runs
   with read-only repository contents access; only the tag-only draft release job
   receives `contents: write`.
-- Tag-based PyPI publishing now waits for the draft GitHub release job to
-  succeed before requesting the protected `pypi` environment.
+- Removed package-registry publishing from the release workflow; tag releases
+  now build package artifacts and attach them to draft GitHub releases only.
+- CI and release workflows now use concurrency groups; release tags re-verify
+  downloaded checksums before draft release creation, and local package output
+  is cleaned before workflow package builds.
+- Claude-triggered workflows now restrict secret-backed runs to repository
+  owners, members, or collaborators; automated Claude PR review skips fork PRs.
 - Semantic validation now rejects direct and mutual recursion; source programs
   should use loops, explicit stacks, or index-based worklists instead.
   The recursion graph respects local function-pointer shadowing, so indirect
@@ -72,6 +77,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mismatches instead of relying on top-level array type equality.
 - C backend fixed nested fixed-array declarations such as `[2][2]i64`, and
   backend parity now covers contextual array literal assignment.
+- C backend for-in lowering now handles nested fixed-array iteration with
+  pointer-to-array cache declarations, and backend parity now covers defer
+  unwind order, untagged unions, generic function specialization, enum match
+  expressions, heap struct allocation, and 2D/3D nested fixed arrays.
+- C backend return lowering now evaluates return values before running deferred
+  cleanup, preventing deferred `del` from freeing data before the returned value
+  is captured.
+- C backend regression tests and backend parity builds now treat incompatible
+  pointer-type warnings as errors.
+- Removed a duplicated block from `docs/SPEC.md`, fixed section numbering, and
+  refreshed the specification snapshot date.
 - Parser now rejects initializer-like calls after `new` expressions, so
   `new i32(42)` fails as syntax instead of parsing as a nonsensical call.
 - The docs app now exposes copyable curl.md fetch commands, includes A7
@@ -103,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added a GitHub Actions CI workflow for Python, backend, package, docs, dependency audit, and artifact checks.
   - Added `scripts/check_no_secrets.py` and wired it into the local gate and CI as a committed-secret guard.
   - Added a tag-triggered draft GitHub release workflow for Python package artifacts, docs site archive, and release example artifacts.
-  - Added tag-triggered PyPI Trusted Publishing through a protected `pypi` GitHub environment and GitHub OIDC.
+  - Added tag-triggered draft GitHub releases with Python package artifacts,
+    docs archives, and native example artifacts.
 
 - **Compiler handling and test coverage expansion**
   - Added semantic regression coverage for deferred statement payloads, return payload traversal, and non-iterable `for-in` diagnostics.
@@ -157,7 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documented integer type selection: `usize` for memory sizes and indices, `isize` only for signed pointer-adjacent offsets, and fixed-width integers for explicit data-width semantics.
 
 - **Release documentation and verification gates**
-  - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, debug/release artifact workflow, and PyPI publishing setup.
+  - Updated README, SPEC, site testing/status/CLI docs, and site README to describe the installed CLI, package build, C verifier, and debug/release artifact workflow.
   - Expanded `run_all_tests.sh` to include C backend tests, C example verification, debug/release artifact verification, error-stage verification, docs style checks, and full pytest.
   - Extended docs style checking to include `RELEASE.md`.
   - Made the docs deploy workflow use the committed `site/package-lock.json` with `npm ci`.
@@ -167,8 +184,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced the third-party Zig setup action with a checksum-verified Zig 0.15.2 install step in CI and release workflows.
   - Corrected release/security checklist shell snippets and the README documentation-site URL.
   - Updated the release-readiness review with hosted CI/Pages evidence, a repeatable latest-run check, and the remaining upstream Pages action warning.
-  - Created the protected GitHub `pypi` environment and updated release docs to distinguish it from the remaining PyPI trusted-publisher setup.
-  - Documented that `a7-py` is not yet public on PyPI and still needs first-publish trusted-publisher setup.
+  - Release docs now describe draft GitHub release artifacts without package-registry publishing.
   - Corrected memory-safety documentation so the spec no longer claims unimplemented lifetime, double-free, use-after-free, or bounds-check guarantees.
   - Marked the tensor/AI/GPU section as planned design work instead of current language support.
   - De-scoped `std/string`, `std/mem`, and `std/collections` from current stdlib documentation; only virtual `io` and `math` modules are documented as implemented.

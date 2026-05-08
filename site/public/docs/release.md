@@ -45,6 +45,9 @@ build/<profile>/c/src/*.c
 build/<profile>/c/bin/*
 ```
 
-## Publishing Status
+## Release Status
 
-Tag-triggered draft GitHub releases are configured. PyPI publishing is wired through Trusted Publishing/OIDC, but the public `a7-py` PyPI project must still be created or configured to trust repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi`.
+Tag-triggered draft GitHub releases are configured. The current workflow builds
+Python package distributions, docs archives, native example artifacts, and
+checksums, then attaches them to the draft GitHub release. It does not publish
+to a package registry.

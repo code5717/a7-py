@@ -74,10 +74,7 @@
 5. **Release publishing activation**
    - Local package builds and artifact checks exist.
    - Tag-triggered draft GitHub releases are configured.
-   - Tag-triggered PyPI publishing is wired through Trusted Publishing/OIDC.
-   - The GitHub `pypi` environment exists and requires maintainer review.
-   - `a7-py` is not yet a public PyPI project.
-   - The PyPI project must still be created or configured to trust repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi` before the first real publish.
+   - Package-registry publishing is not part of the current release workflow.
 
 6. **Module-system parity**
    - Missing or broken local imports now fail closed.

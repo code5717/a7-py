@@ -180,6 +180,120 @@ main :: fn() {
     io.println("")
 }
 ''',
+    "defer_unwind_order": r'''
+io :: import "std/io"
+
+normal :: fn() {
+    defer io.println("normal cleanup 1")
+    defer io.println("normal cleanup 2")
+    io.println("normal body")
+}
+
+early :: fn() i32 {
+    defer io.println("early cleanup 1")
+    defer io.println("early cleanup 2")
+    ret 7
+}
+
+main :: fn() {
+    normal()
+    value := early()
+    io.println("early value = {}", value)
+}
+''',
+    "union_field_access": r'''
+io :: import "std/io"
+
+Value :: union {
+    int_val: i32
+    flag_val: bool
+}
+
+main :: fn() {
+    integer := Value{int_val: 42}
+    flag := Value{flag_val: true}
+    io.println("union = {} {}", integer.int_val, flag.flag_val)
+}
+''',
+    "generic_function_specialization": r'''
+io :: import "std/io"
+
+identity($T) :: fn(value: $T) $T {
+    ret value
+}
+
+main :: fn() {
+    io.println("generic = {} {}", identity(7), identity("ok"))
+}
+''',
+    "enum_match_expression": r'''
+io :: import "std/io"
+
+State :: enum {
+    Ready
+    Busy
+    Done
+}
+
+score :: fn(state: State) i32 {
+    ret match state {
+        case State.Ready: 1
+        case State.Busy: 2
+        case State.Done: 3
+    }
+}
+
+main :: fn() {
+    io.println("enum ready = {}", score(State.Ready))
+    io.println("enum busy = {}", score(State.Busy))
+    io.println("enum done = {}", score(State.Done))
+}
+''',
+    "heap_struct_roundtrip": r'''
+io :: import "std/io"
+
+Point :: struct {
+    x: i32
+    y: i32
+}
+
+main :: fn() {
+    point := new Point
+    defer del point
+    point.val = Point{x: 6, y: 7}
+    io.println("heap point = {} {}", point.val.x, point.val.y)
+}
+''',
+    "nested_fixed_arrays": r'''
+io :: import "std/io"
+
+main :: fn() {
+    matrix: [2][3]i32 = [[1, 2, 3], [4, 5, 6]]
+    total := 0
+    for row in matrix {
+        for value in row {
+            total += value
+        }
+    }
+    io.println("matrix = {}", total)
+}
+''',
+    "nested_3d_arrays": r'''
+io :: import "std/io"
+
+main :: fn() {
+    cube: [2][2][2]i32 = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+    total := 0
+    for plane in cube {
+        for row in plane {
+            for value in row {
+                total += value
+            }
+        }
+    }
+    io.println("cube = {}", total)
+}
+''',
 }
 
 
@@ -282,7 +396,16 @@ def compile_build_run(
     if backend == "zig":
         build_cmd = ["zig", "build-exe", str(generated), f"-femit-bin={binary}"]
     else:
-        build_cmd = ["zig", "cc", "-std=c11", str(generated), "-lm", "-o", str(binary)]
+        build_cmd = [
+            "zig",
+            "cc",
+            "-std=c11",
+            "-Werror=incompatible-pointer-types",
+            str(generated),
+            "-lm",
+            "-o",
+            str(binary),
+        ]
 
     build_proc = run_cmd(build_cmd, cwd=ROOT, timeout=timeout)
     if build_proc.returncode != 0:

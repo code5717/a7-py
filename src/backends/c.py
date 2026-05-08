@@ -817,8 +817,6 @@ class CCodeGenerator(CodeGenerator):
         iterable_expr = self._emit_expr(node.iterable)
         iterable_type = self._type_map.get(id(node.iterable)) if node.iterable else None
         cache_name = self._unique_name("__a7_iter")
-        cache_type = self._iterable_cache_type(iterable_type)
-        elem_type = self._iterable_element_type(iterable_type)
         length_expr = self._iterable_length_expr(node.iterable, cache_name, iterable_type)
 
         idx_name = self._unique_name("__a7_i")
@@ -828,7 +826,7 @@ class CCodeGenerator(CodeGenerator):
         self.output.write("{\n")
         self.indent()
         self._write_indent()
-        self.output.write(f"{cache_type} {cache_name} = {iterable_expr};\n")
+        self.output.write(self._iterable_cache_declaration(iterable_type, cache_name, iterable_expr))
         self._write_indent()
         self.output.write(
             f"for (size_t {idx_name} = 0; {idx_name} < {length_expr}; ++{idx_name}) "
@@ -837,9 +835,13 @@ class CCodeGenerator(CodeGenerator):
         self.indent()
         self._defer_scopes.append([])
         self._write_indent()
-        self.output.write(
-            f"{elem_type} {iter_name} = {self._emit_iterable_element_expr(node.iterable, cache_name, iterable_type, idx_name)};\n"
+        element_expr = self._emit_iterable_element_expr(
+            node.iterable,
+            cache_name,
+            iterable_type,
+            idx_name,
         )
+        self.output.write(self._iterable_element_declaration(iterable_type, iter_name, element_expr))
 
         marker = len(self._defer_scopes) - 1
         self._push_loop_frame(label=None, unwind_depth=marker)
@@ -867,8 +869,6 @@ class CCodeGenerator(CodeGenerator):
         iterable_expr = self._emit_expr(node.iterable)
         iterable_type = self._type_map.get(id(node.iterable)) if node.iterable else None
         cache_name = self._unique_name("__a7_iter")
-        cache_type = self._iterable_cache_type(iterable_type)
-        elem_type = self._iterable_element_type(iterable_type)
         length_expr = self._iterable_length_expr(node.iterable, cache_name, iterable_type)
 
         idx_name = self._unique_name("__a7_i")
@@ -879,7 +879,7 @@ class CCodeGenerator(CodeGenerator):
         self.output.write("{\n")
         self.indent()
         self._write_indent()
-        self.output.write(f"{cache_type} {cache_name} = {iterable_expr};\n")
+        self.output.write(self._iterable_cache_declaration(iterable_type, cache_name, iterable_expr))
         self._write_indent()
         self.output.write(
             f"for (size_t {idx_name} = 0; {idx_name} < {length_expr}; ++{idx_name}) "
@@ -890,9 +890,13 @@ class CCodeGenerator(CodeGenerator):
         self._write_indent()
         self.output.write(f"size_t {index_var} = {idx_name};\n")
         self._write_indent()
-        self.output.write(
-            f"{elem_type} {iter_name} = {self._emit_iterable_element_expr(node.iterable, cache_name, iterable_type, idx_name)};\n"
+        element_expr = self._emit_iterable_element_expr(
+            node.iterable,
+            cache_name,
+            iterable_type,
+            idx_name,
         )
+        self.output.write(self._iterable_element_declaration(iterable_type, iter_name, element_expr))
 
         marker = len(self._defer_scopes) - 1
         self._push_loop_frame(label=None, unwind_depth=marker)
@@ -1018,21 +1022,35 @@ class CCodeGenerator(CodeGenerator):
         if self._inside_main:
             self._main_has_return = True
 
-        self._emit_deferred_unwind(0)
-
         if self._inside_main and node.value is None:
+            self._emit_deferred_unwind(0)
             self._write_indent()
             self.output.write("return 0;\n")
             return
 
         if node.value is None:
+            self._emit_deferred_unwind(0)
             self._write_indent()
             self.output.write("return;\n")
             return
 
         value_expr = self._emit_expr_prepared(node.value)
+        value_type = self._semantic_type_to_c(self._type_map.get(id(node.value)))
+        if (
+            not value_type
+            or (
+                value_type == "void*"
+                and self._current_function_return_type
+                and self._current_function_return_type != "void"
+            )
+        ):
+            value_type = self._current_function_return_type or "int32_t"
+        temp_name = self._unique_name("__a7_ret")
         self._write_indent()
-        self.output.write(f"return {value_expr};\n")
+        self.output.write(f"{value_type} {temp_name} = {value_expr};\n")
+        self._emit_deferred_unwind(0)
+        self._write_indent()
+        self.output.write(f"return {temp_name};\n")
 
     def _visit_break(self, node: ASTNode) -> None:
         frame = self._resolve_loop_frame(node.label)
@@ -1986,8 +2004,6 @@ class CCodeGenerator(CodeGenerator):
         iterable_expr = self._emit_expr(node.iterable)
         iterable_type = self._type_map.get(id(node.iterable)) if node.iterable else None
         cache_name = self._unique_name("__a7_iter")
-        cache_type = self._iterable_cache_type(iterable_type)
-        elem_type = self._iterable_element_type(iterable_type)
         length_expr = self._iterable_length_expr(node.iterable, cache_name, iterable_type)
         iter_name = self._sanitize_name(node.iterator or "item")
 
@@ -1995,7 +2011,7 @@ class CCodeGenerator(CodeGenerator):
         self.output.write("{\n")
         self.indent()
         self._write_indent()
-        self.output.write(f"{cache_type} {cache_name} = {iterable_expr};\n")
+        self.output.write(self._iterable_cache_declaration(iterable_type, cache_name, iterable_expr))
         self._write_indent()
         self.output.write(f"size_t {idx_name} = 0;\n")
         self._write_indent()
@@ -2011,9 +2027,13 @@ class CCodeGenerator(CodeGenerator):
             self._write_indent()
             self.output.write(f"size_t {index_var} = {idx_name};\n")
         self._write_indent()
-        self.output.write(
-            f"{elem_type} {iter_name} = {self._emit_iterable_element_expr(node.iterable, cache_name, iterable_type, idx_name)};\n"
+        element_expr = self._emit_iterable_element_expr(
+            node.iterable,
+            cache_name,
+            iterable_type,
+            idx_name,
         )
+        self.output.write(self._iterable_element_declaration(iterable_type, iter_name, element_expr))
         marker = len(self._defer_scopes) - 1
         self._push_loop_frame(
             label=node.label,
@@ -2104,6 +2124,57 @@ class CCodeGenerator(CodeGenerator):
         if isinstance(iterable_type, SliceType):
             return f"({iterable_expr}).data[{idx_name}]"
         return f"{iterable_expr}[{idx_name}]"
+
+    def _iterable_cache_declaration(
+        self,
+        iterable_type,
+        cache_name: str,
+        iterable_expr: str,
+    ) -> str:
+        if isinstance(iterable_type, ArrayType) and isinstance(
+            iterable_type.element_type, ArrayType
+        ):
+            declarator = self._array_pointer_declarator(
+                iterable_type.element_type,
+                cache_name,
+            )
+            return f"{declarator} = {iterable_expr};\n"
+        cache_type = self._iterable_cache_type(iterable_type)
+        return f"{cache_type} {cache_name} = {iterable_expr};\n"
+
+    def _iterable_element_declaration(
+        self,
+        iterable_type,
+        iter_name: str,
+        element_expr: str,
+    ) -> str:
+        if isinstance(iterable_type, ArrayType) and isinstance(
+            iterable_type.element_type, ArrayType
+        ):
+            element_array = iterable_type.element_type
+            if isinstance(element_array.element_type, ArrayType):
+                declarator = self._array_pointer_declarator(
+                    element_array.element_type,
+                    iter_name,
+                )
+            else:
+                base = self._semantic_type_to_c(element_array.element_type) or "int32_t"
+                declarator = f"{base}* {iter_name}"
+            return f"{declarator} = {element_expr};\n"
+
+        elem_type = self._iterable_element_type(iterable_type)
+        return f"{elem_type} {iter_name} = {element_expr};\n"
+
+    def _array_pointer_declarator(self, type_obj: ArrayType, name: str) -> str:
+        dimensions: list[str] = []
+        current = type_obj
+        while isinstance(current, ArrayType):
+            dimensions.append(str(current.size))
+            current = current.element_type
+
+        base = self._semantic_type_to_c(current) or "uint8_t"
+        suffix = "".join(f"[{dim}]" for dim in dimensions)
+        return f"{base} (*{name}){suffix}"
 
     def _iterable_cache_type(self, iterable_type) -> str:
         if iterable_type is not None and iterable_type.equals(STRING):

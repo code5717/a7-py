@@ -13,12 +13,10 @@ The repository is substantially more release-ready than before this pass:
 - CI workflow for tests, backends, artifacts, package build, and docs build
 - tag-based draft GitHub release workflow for packages, docs, and release
   example artifacts
-- tag-based PyPI publishing workflow using Trusted Publishing/OIDC
 - release checklist, security policy, and updated status docs
 - Node 24-compatible GitHub workflow actions for CI, Pages deploy, artifact
   upload/download, and draft GitHub releases
 - checksum-verified Zig 0.15.2 install steps in CI and release workflows
-- protected GitHub `pypi` environment requiring `code5717` review
 - semantic recursion rejection for direct and mutual named call cycles, with
   scope-aware handling for local function-pointer shadowing
 - consolidated docs-site navigation with curl.md-friendly Markdown entry points
@@ -61,11 +59,10 @@ not factually provable from local tests alone.
   the current workflows cover docs, pytest, dependency audits, error-stage
   verification, Zig and C example verification, backend parity checks, debug
   artifacts, release artifacts, and package build.
-- manual release workflow dispatch passed on `master` after the PyPI publish
-  dependency update; run `25517785179` uploaded
+- manual release workflow dispatch passed on `master`; run `25517785179` uploaded
   `python-package-distributions` artifact `6864726540` and `release-bundles`
-  artifact `6864741365`, while tag-only GitHub release and PyPI publish jobs
-  were skipped as intended.
+  artifact `6864741365`, while the tag-only GitHub release job was skipped as
+  intended.
 - manual release workflow dispatch passed again on `master` after checksum
   manifest wiring; run `25524734727` completed release gate, package build,
   docs archive, release example artifact archive, checksum generation, and
@@ -115,15 +112,47 @@ not factually provable from local tests alone.
   browser-harness check confirmed the deployed homepage title
   `Simple, fast systems code.`, eyebrow `A7 language`, and primary navigation
   `Start`, `Language`, `Examples`, `Compiler`, `Status`, `Docs`, `GitHub`.
-- local `./run_all_tests.sh` passed after adding `037_language_tour.a7`:
+- local `./run_all_tests.sh` passed after expanding backend parity to 16
+  selected cases:
   parser/tokenizer 501 passed; semantic 305 passed; compiler/CLI/backend 322
-  passed; Zig examples 38/38; C examples 38/38; backend parity 9/9; debug
+  passed; Zig examples 38/38; C examples 38/38; backend parity 16/16; debug
   artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
-  style ok; secrets check ok; total pytest 1202 passed; summary 12/12.
+  style ok; secrets check ok; the then-current pytest suite passed; summary
+  12/12.
 - local manual report inspection confirmed `037_language_tour` has
   `compile_ok`, backend validation (`ast_ok` for Zig, `syntax_ok` for C),
   `build_ok`, `run_ok`, and `output_match` set to true in both JSON reports.
-- PyPI currently returns 404 for `https://pypi.org/pypi/a7-py/json`
+- hosted CI run `25533359030` passed on commit `68f1429` after adding
+  `037_language_tour.a7` and the full-context docs file, including docs,
+  pytest, Python dependency audit, error-stage verification, Zig/C example
+  verification, backend parity, debug artifacts, release artifacts, and
+  package build.
+- hosted Deploy Docs run `25533359054` passed on commit `68f1429`; a hosted
+  fetch of `/a7-py/llms-full.txt` confirmed the deployed `# A7 Full Context`
+  aggregate format.
+- Claude CLI reviewed the language-tour and `llms-full.txt` direction as a
+  second opinion before commit `68f1429`; the final patch applied its concrete
+  recommendations to make `llms-full.txt` more self-contained and avoid
+  overselling the compact tour as exhaustive.
+- local `uv run python scripts/verify_backend_parity.py` passed after expanding
+  the differential suite: backend parity 16/16. Manual report inspection
+  confirmed matching Zig and C output for the new defer, union, generic,
+  enum-match, heap-struct, and nested-array cases, including a 3D fixed-array
+  case. The C parity build uses `-Werror=incompatible-pointer-types`.
+- focused C backend audit found that return values were emitted after deferred
+  cleanup in C; local focused regression now confirms return values are captured
+  before deferred `del` runs.
+- local Ruby stdlib YAML parse passed for every workflow after release/CI
+  concurrency, package-output cleanup, post-download release checksum
+  verification, and Claude workflow trigger hardening were added.
+- local `./run_all_tests.sh` passed after the C return-temp type fix:
+  parser/tokenizer 501 passed; semantic 305 passed; compiler/CLI/backend 324
+  passed; Zig examples 38/38; C examples 38/38; backend parity 16/16; debug
+  artifacts 76/76; release artifacts 76/76; error-stage checks 61/61; docs
+  style ok; secrets check ok; total pytest 1204 passed; summary 12/12.
+- Online check of GitHub's current action release pages confirmed
+  `actions/upload-artifact@v7` and `actions/download-artifact@v8` exist, so the
+  release workflow's artifact actions are not using nonexistent major tags.
 
 ## Fixed In This Pass
 
@@ -141,12 +170,20 @@ not factually provable from local tests alone.
 - GitHub release workflow now creates a draft release for `v*` tags with Python
   package artifacts, docs site archive, and release example artifacts.
 - Manual release workflow dispatch validates gates and artifacts without
-  creating a GitHub release or publishing to PyPI.
+  creating a GitHub release.
 - Release workflow permissions are split so the gate/artifact build job keeps
   read-only repository contents access; only the tag-only draft release job gets
   `contents: write`.
-- Release tags now publish package distributions to PyPI through Trusted
-  Publishing/OIDC only after the release gate and draft GitHub release job pass.
+- CI and release workflows now use concurrency groups to prevent redundant or
+  racing runs.
+- Release builds clean `dist/` before `uv build`, and the tag-only draft release
+  job re-verifies downloaded `SHA256SUMS` before attaching artifacts.
+- Secret-backed Claude workflows now require repository owner/member/collaborator
+  author association for comment-triggered runs, and automated Claude PR review
+  skips fork pull requests.
+- `docs/SPEC.md` no longer contains the duplicated type/control-flow/function/
+  memory sections inside the modules section, and later section numbering now
+  matches the table of contents.
 - C backend `for-in` lowering now caches iterable expressions before loop
   length and element access.
 - Untagged union literals now initialize exactly one named field, union field
@@ -174,8 +211,6 @@ not factually provable from local tests alone.
   instead of a third-party JavaScript setup action.
 - First-party GitHub Actions, Pages, artifact, and draft-release actions are on
   Node 24-compatible majors.
-- GitHub `pypi` environment now exists and requires `code5717` review before
-  package publishing jobs can proceed.
 - Release/security checklist shell snippets now use subshells so they can be
   copied and run literally.
 - README now points to the current `code5717.github.io/a7-py` documentation URL.
@@ -186,7 +221,15 @@ not factually provable from local tests alone.
   function name.
 - Selected non-example programs now run through both Zig and C backends and
   compare runtime output, including match statements/expressions, slices,
-  string slices, labels, and function pointers.
+  string slices, labels, function pointers, defer unwinding, untagged unions,
+  generic function specialization, enum match expressions, heap struct
+  allocation, and nested fixed arrays.
+- C backend `for-in` lowering now emits pointer-to-array cache declarations for
+  nested fixed arrays instead of decaying them to invalid pointer-to-pointer
+  types.
+- C backend return lowering now captures non-void return values before emitting
+  deferred cleanup, avoiding use-after-free when a return expression reads a
+  value owned by a deferred `del`.
 - Public docs-site top navigation is reduced and old CLI, stdlib, pipeline, and
   testing pages are consolidated into Start, Language, and Compiler sections
   with compatibility aliases and verified hash scrolling.
@@ -234,11 +277,10 @@ not factually provable from local tests alone.
   `std/mem`, and collections remain planned rather than current public modules.
 - Backend parity is verified for examples and selected differential smoke
   programs, including core control flow, match, slices, string slices, labels,
-  function pointers, and contextual array literal assignment. It is still not
-  exhaustive for all possible source programs.
-- Tag-based PyPI publishing is wired, but `a7-py` is not yet a public PyPI
-  project and still needs matching trusted-publisher configuration before the
-  first real publish.
+  function pointers, contextual array literal assignment, defer unwinding,
+  untagged unions, generic function specialization, enum match expressions,
+  heap struct allocation, and nested fixed arrays. It is still not exhaustive
+  for all possible source programs.
 - Dependency audits are configured for known advisories, not unknown supply-chain
   compromise.
 - Secret scanning is pattern-based and should be supplemented by repository host
@@ -256,9 +298,6 @@ not factually provable from local tests alone.
 
 ## Recommended Next Pass
 
-1. Expand differential backend tests beyond examples.
-2. Design and implement `fall` backend lowering.
-3. Complete generic struct/nested generic specialization parity.
-4. Create or preconfigure the PyPI trusted publisher for project `a7-py`,
-   repository `code5717/a7-py`, workflow `release.yml`, and environment `pypi`.
-5. Add stronger hosted secret scanning if the repository host supports it.
+1. Design and implement `fall` backend lowering.
+2. Complete generic struct/nested generic specialization parity.
+3. Add stronger hosted secret scanning if the repository host supports it.

@@ -33,7 +33,7 @@ Implemented:
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
 - 38 runnable examples verified through both Zig and C backends.
 - Debug/release artifact verification for both native backends.
-- Tag-based draft GitHub releases and PyPI Trusted Publishing workflow wiring.
+- Tag-based draft GitHub releases with package, docs, and native example artifacts.
 
 Known gaps:
 
@@ -44,7 +44,7 @@ Known gaps:
 - Full generic specialization is incomplete beyond simple top-level generic functions.
 - Tagged/discriminated union tag workflows are not implemented.
 - `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
-- PyPI publishing requires final trusted-publisher setup before the first real release.
+- Package-registry publishing is not part of the current release workflow.
 
 ## Install
 
@@ -348,11 +348,10 @@ Release workflows:
 
 - `.github/workflows/ci.yml`: tests, audits, docs build, examples, parity, artifacts, package build
 - `.github/workflows/deploy-docs.yml`: GitHub Pages docs deploy
-- `.github/workflows/release.yml`: tag-based draft GitHub release plus PyPI Trusted Publishing wiring
+- `.github/workflows/release.yml`: release gate, package artifact build, docs/native archives, checksums, and tag-based draft GitHub releases
 
-PyPI status: workflow wiring exists, but the public `a7-py` PyPI project and
-trusted-publisher configuration still need to be created/configured before the
-first real publish.
+Package-registry status: the current workflow does not publish to a package
+registry.
 
 ## Documentation
 
@@ -371,7 +370,7 @@ Markdown:
 - `/a7-py/docs/examples.md`: examples and verifier commands
 - `/a7-py/docs/compiler.md`: pipeline and tests
 - `/a7-py/docs/status.md`: current status and known gaps
-- `/a7-py/docs/release.md`: release commands and publishing status
+- `/a7-py/docs/release.md`: release commands and artifact status
 
 Repo docs that should stay aligned after major changes:
 

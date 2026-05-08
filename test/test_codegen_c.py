@@ -57,7 +57,16 @@ def build_and_run_c(source: str, tmp_path: Path) -> subprocess.CompletedProcess[
     assert result.returncode == ExitCode.SUCCESS, result.stdout + result.stderr
 
     build = subprocess.run(
-        ["zig", "cc", "-std=c11", str(out), "-lm", "-o", str(bin_path)],
+        [
+            "zig",
+            "cc",
+            "-std=c11",
+            "-Werror=incompatible-pointer-types",
+            str(out),
+            "-lm",
+            "-o",
+            str(bin_path),
+        ],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True,
@@ -694,6 +703,56 @@ main :: fn() {
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.strip() == "1 2"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_evaluates_return_value_before_defer_unwind(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+read_after_defer :: fn() i32 {
+    p := new i32
+    defer del p
+    p.val = 99
+    ret p.val
+}
+
+main :: fn() {
+    io.println("{}", read_after_defer())
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "99"
+
+
+@pytest.mark.skipif(not has_zig(), reason="zig not installed")
+def test_generated_c_iterates_three_dimensional_arrays(tmp_path: Path) -> None:
+    result = build_and_run_c(
+        """
+io :: import "std/io"
+
+main :: fn() {
+    cube: [2][2][2]i32 = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+    total := 0
+    for plane in cube {
+        for row in plane {
+            for value in row {
+                total += value
+            }
+        }
+    }
+    io.println("{}", total)
+}
+""",
+        tmp_path,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "36"
 
 
 @pytest.mark.skipif(not has_zig(), reason="zig not installed")

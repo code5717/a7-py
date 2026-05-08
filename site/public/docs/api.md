@@ -4,7 +4,7 @@ Use this page for automation entry points around A7.
 
 ## Current Surface
 
-A7 currently ships as a local compiler and repository toolchain. There is no hosted API service and no published SDK package yet.
+A7 currently ships as a local compiler and repository toolchain. There is no hosted API service or SDK package.
 
 Supported automation surfaces:
 

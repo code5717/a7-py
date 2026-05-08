@@ -132,11 +132,8 @@ The installed CLI entrypoint is `a7`:
 uv run a7 --help
 ```
 
-Release tags build distributions, attach them to the draft GitHub release, and
-publish to PyPI through Trusted Publishing/OIDC. The GitHub `pypi` environment
-exists and requires maintainer review. Before the first publish, the PyPI
-project must trust repository `code5717/a7-py`, workflow `release.yml`, and
-environment `pypi`.
+Release tags build distributions and attach them to the draft GitHub release.
+There is no package-registry publishing job in the current workflow.
 
 ## Compilation Pipeline
 
@@ -183,7 +180,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - Selected Zig/C differential smoke checks are available through
   `scripts/verify_backend_parity.py`.
 - Debug/release artifact verification is available through `scripts/build_examples.py`.
-- Tag releases publish package artifacts through PyPI Trusted Publishing once the PyPI project trusted publisher is configured.
+- Tag releases attach package artifacts to a draft GitHub release.
 - Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `MISSING_FEATURES.md`.
 - Zig backend handles the current example suite and most AST node types; unsupported source constructs should continue moving to compiler-side diagnostics.
 - C backend targets C11 and is validated with `zig cc`
@@ -200,7 +197,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - `SECURITY.md` - Security policy and trust boundary
 - `RELEASE_READINESS_REVIEW.md` - Current release-readiness audit
 - `COMPLETION_AUDIT.md` - Strict objective-to-evidence release audit
-- `examples/` - 37 sample programs
+- `examples/` - 38 sample programs
 - `MISSING_FEATURES.md` - Feature status and roadmap
 - `CHANGELOG.md` - Change history
 - `docs/ERROR_ANALYSIS.md` - Historical error-analysis snapshot, not current status
