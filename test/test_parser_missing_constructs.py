@@ -192,17 +192,51 @@ class TestMissingDeferStatements:
     def test_defer_statement(self):
         """Test parsing defer statements."""
         code = """
+        Box :: struct { value: i32 }
+
         main :: fn() {
-            ptr := new i32
+            ptr := new Box
             defer del ptr
-            ptr.val = 42
+            ptr.value = 42
         }
         """
         ast = parse_a7(code)
-        func_decl = ast.declarations[0]
+        func_decl = ast.declarations[1]
         defer_stmt = func_decl.body.statements[1]
         assert defer_stmt.kind == NodeKind.DEFER
         assert defer_stmt.statement is not None
+
+
+class TestPointerSyntax:
+    """Test reference syntax stays out of the expression grammar."""
+
+    def test_ref_call_uses_plain_lvalue_argument(self):
+        code = """
+        inc :: fn(x: ref i32) {
+            x += 1
+        }
+        main :: fn() {
+            x: i32 = 1
+            inc(x)
+        }
+        """
+        ast = parse_a7(code)
+        stmts = ast.declarations[1].body.statements
+        assert stmts[1].expression.kind == NodeKind.CALL
+        assert stmts[1].expression.arguments[0].kind == NodeKind.IDENTIFIER
+
+    def test_ref_field_access_is_plain_field_access(self):
+        code = """
+        Point :: struct { value: i32 }
+        main :: fn() {
+            p: ref Point
+            x := p.value
+        }
+        """
+        ast = parse_a7(code)
+        value = ast.declarations[1].body.statements[1].value
+        assert value.kind == NodeKind.FIELD_ACCESS
+        assert value.object.kind == NodeKind.IDENTIFIER
 
 
 class TestMissingForLoopVariants:
@@ -326,9 +360,9 @@ class TestMissingGenericFunctions:
         """Test parsing generic function declarations with new syntax."""
         code = """
         swap :: fn(a: ref $T, b: ref $T) {
-            temp := a.val
-            a.val = b.val
-            b.val = temp
+            temp := a
+            a = b
+            b = temp
         }
         """
         ast = parse_a7(code)

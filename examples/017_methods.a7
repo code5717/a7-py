@@ -7,7 +7,7 @@ Counter :: struct {
 }
 
 increment :: fn(counter: ref Counter) {
-    counter.val.value += 1
+    counter.value += 1
 }
 
 main :: fn() {
@@ -15,8 +15,8 @@ main :: fn() {
 
     c := Counter{value: 0}
     c.value = 0
-    increment(c.adr)
-    increment(c.adr)
+    increment(c)
+    increment(c)
 
     io.println("counter = {}", c.value)
 }

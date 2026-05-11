@@ -9,6 +9,7 @@ from typing import Any, Optional, List, Dict, Set, Tuple
 from a7.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, LiteralKind
 from a7.symbol_table import SymbolTable, Symbol, SymbolKind
 from a7.semantic_context import SemanticContext
+from a7.cast_classifier import classify_cast
 from a7.generics import resolve_generic_constraint
 from a7.types import (
     Type, TypeKind,
@@ -57,6 +58,7 @@ class TypeCheckingPass:
         self._resolving_type_aliases: Set[str] = set()
         self._resolved_type_aliases: Set[str] = set()
         self._generic_constraints: Dict[str, TypeSet] = {}
+        self._nonnegative_vars: Set[str] = set()
         self.stdlib = StdlibRegistry()
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
@@ -80,6 +82,7 @@ class TypeCheckingPass:
         self._resolving_type_aliases = set()
         self._resolved_type_aliases = set()
         self._generic_constraints = {}
+        self._nonnegative_vars = set()
 
         # Visit the program
         self.visit_program(program)
@@ -462,6 +465,22 @@ class TypeCheckingPass:
                     param_types.append(self.resolve_type_node(pt))
             return_type = self.resolve_type_node(node.return_type) if node.return_type else None
             is_variadic = node.is_variadic or False
+            if is_variadic:
+                # Variadic function-pointer types are parsed but not lowered;
+                # match the diagnostic from visit_function_decl so the error
+                # surfaces uniformly across declarations and aliases.
+                self.errors.append(
+                    SemanticError.from_type(
+                        SemanticErrorType.UNSUPPORTED_FEATURE,
+                        span=node.span,
+                        filename=self.current_file,
+                        source_lines=self.source_lines,
+                        custom_message=(
+                            "Variadic function pointers are parsed for future support, "
+                            "but Zig ABI/lowering is not implemented yet"
+                        ),
+                    )
+                )
             variadic_type = self.resolve_type_node(node.param_type) if node.param_type and is_variadic else None
             return FunctionType(
                 param_types=tuple(param_types), return_type=return_type,
@@ -750,9 +769,14 @@ class TypeCheckingPass:
 
             if nd.kind == NodeKind.BLOCK:
                 self._enter_matching_scope("block")
-                stack.append(('action', lambda: self.symbols.exit_scope()))
-                for stmt in reversed(nd.statements or []):
-                    stack.append(('visit', stmt))
+                saved_facts = set(self._nonnegative_vars)
+                try:
+                    for stmt in nd.statements or []:
+                        self.visit_statement(stmt)
+                        self._learn_fact_after_statement(stmt)
+                finally:
+                    self._nonnegative_vars = saved_facts
+                    self.symbols.exit_scope()
 
             elif nd.kind == NodeKind.VAR:
                 self.visit_var_decl(nd)
@@ -805,12 +829,29 @@ class TypeCheckingPass:
         # Type check both sides
         lhs_type = self.visit_expression(node.target) if node.target else UNKNOWN
         rhs_type = self.visit_expression(node.value) if node.value else UNKNOWN
+        effective_lhs_type = lhs_type
+
+        if (
+            isinstance(lhs_type, ReferenceType)
+            and not isinstance(rhs_type, ReferenceType)
+            and rhs_type.is_assignable_to(lhs_type.referent_type)
+        ):
+            if node.target and self._is_lvalue_expression(node.target):
+                setattr(node, "implicit_deref_target", True)
+                effective_lhs_type = lhs_type.referent_type
+            else:
+                self.add_type_error(
+                    TypeErrorType.CANNOT_DEREFERENCE,
+                    node.span,
+                    got_type=str(lhs_type),
+                    context="Assignment through a reference requires a named lvalue",
+                )
 
         # Mutability check: look up the target symbol
         if node.target and node.target.kind == NodeKind.IDENTIFIER:
             target_name = node.target.name
             sym = self.symbols.lookup(target_name)
-            if sym and not sym.is_mutable and node.target.kind != NodeKind.DEREF:
+            if sym and not sym.is_mutable and node.target.kind != NodeKind.DEREF and not getattr(node, "implicit_deref_target", False):
                 self.add_semantic_error(
                     SemanticErrorType.CANNOT_ASSIGN_TO_IMMUTABLE,
                     node.span,
@@ -824,24 +865,24 @@ class TypeCheckingPass:
             bitwise_ops = {AssignOp.AND_ASSIGN, AssignOp.OR_ASSIGN, AssignOp.XOR_ASSIGN, AssignOp.SHL_ASSIGN, AssignOp.SHR_ASSIGN}
 
             if op in arithmetic_ops:
-                if not self._is_numeric_compatible(lhs_type):
-                    self.add_type_error(TypeErrorType.REQUIRES_NUMERIC_TYPE, node.span, got_type=str(lhs_type), context=f"Operator {op.name} requires numeric type")
+                if not self._is_numeric_compatible(effective_lhs_type):
+                    self.add_type_error(TypeErrorType.REQUIRES_NUMERIC_TYPE, node.span, got_type=str(effective_lhs_type), context=f"Operator {op.name} requires numeric type")
             elif op in bitwise_ops:
-                if not self._is_integral_compatible(lhs_type):
-                    self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, node.span, got_type=str(lhs_type), context=f"Operator {op.name} requires integer type")
+                if not self._is_integral_compatible(effective_lhs_type):
+                    self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, node.span, got_type=str(effective_lhs_type), context=f"Operator {op.name} requires integer type")
 
         # Check assignment compatibility
         if not self._is_initializer_assignable_to(
             node.value,
             rhs_type,
-            lhs_type,
+            effective_lhs_type,
             node.span,
             context="Assignment",
         ):
             self.add_type_error(
                 TypeErrorType.ASSIGNMENT_TYPE_MISMATCH,
                 node.span,
-                expected_type=str(lhs_type),
+                expected_type=str(effective_lhs_type),
                 got_type=str(rhs_type)
             )
 
@@ -855,7 +896,8 @@ class TypeCheckingPass:
 
         # Visit branches
         if node.then_stmt:
-            self.visit_statement(node.then_stmt)
+            with self._temporary_nonnegative_facts(self._facts_from_positive_condition(node.condition)):
+                self.visit_statement(node.then_stmt)
         if node.else_stmt:
             self.visit_statement(node.else_stmt)
 
@@ -1235,6 +1277,31 @@ class TypeCheckingPass:
 
     def visit_call_expr(self, node: ASTNode) -> Type:
         """Visit a function call expression."""
+        # Reject `@`-prefixed intrinsics (other than @type_set, which the
+        # parser routes to a TYPE_SET node, not a CALL). These names parse
+        # but are not implemented yet; surface a clear "unsupported"
+        # diagnostic instead of the generic "undefined identifier".
+        callee = node.function
+        if (
+            callee is not None
+            and callee.kind == NodeKind.IDENTIFIER
+            and isinstance(callee.name, str)
+            and callee.name.startswith("@")
+        ):
+            self.errors.append(
+                SemanticError.from_type(
+                    SemanticErrorType.UNSUPPORTED_FEATURE,
+                    span=callee.span or node.span,
+                    filename=self.current_file,
+                    source_lines=self.source_lines,
+                    custom_message=(
+                        f"Intrinsic '{callee.name}' is parsed for future support "
+                        "but is not implemented in the Zig backend yet"
+                    ),
+                )
+            )
+            return UNKNOWN
+
         # Get function type
         func_type = self.visit_expression(node.function) if node.function else UNKNOWN
         if node.function:
@@ -1304,6 +1371,7 @@ class TypeCheckingPass:
             )
 
         # Check argument types (skip check if param type is unknown, e.g., untyped variadic)
+        implicit_ref_args: Set[int] = set()
         for i, (arg_type, param_type) in enumerate(zip(arg_types, resolved_param_types)):
             if isinstance(param_type, UnknownType):
                 continue  # Skip type checking for untyped variadic parameters
@@ -1317,6 +1385,10 @@ class TypeCheckingPass:
                     context=f"Argument {i+1}",
                 )
                 continue
+            if isinstance(param_type, ReferenceType) and not isinstance(arg_type, ReferenceType):
+                if arg_type.is_assignable_to(param_type.referent_type) and self._is_lvalue_expression(node.arguments[i]):
+                    implicit_ref_args.add(i)
+                    continue
             if not arg_type.is_assignable_to(param_type):
                 self.add_type_error(
                     TypeErrorType.ARGUMENT_TYPE_MISMATCH,
@@ -1325,6 +1397,8 @@ class TypeCheckingPass:
                     got_type=str(arg_type),
                     context=f"Argument {i+1}"
                 )
+        if implicit_ref_args:
+            setattr(node, "implicit_ref_args", implicit_ref_args)
 
         # Resolve return type with generic substitution
         return_type = func_type.return_type if func_type.return_type else VOID
@@ -1681,6 +1755,37 @@ class TypeCheckingPass:
             if concrete_struct is not None:
                 obj_type = concrete_struct
 
+        if isinstance(obj_type, ReferenceType):
+            referent = obj_type.referent_type
+            if isinstance(referent, GenericInstanceType):
+                concrete_struct = self._resolve_generic_instance_struct(referent)
+                if concrete_struct is not None:
+                    referent = concrete_struct
+
+            if isinstance(referent, StructType):
+                field = referent.get_field(field_name)
+                if field:
+                    setattr(node, "implicit_deref_object", True)
+                    return field.field_type
+                self.add_type_error(TypeErrorType.NO_SUCH_FIELD, node.span, context=f"Struct '{referent}' has no field '{field_name}'")
+                return UNKNOWN
+            if isinstance(referent, UnionType):
+                field = referent.get_field(field_name)
+                if field:
+                    setattr(node, "implicit_deref_object", True)
+                    return field.field_type
+                self.add_type_error(TypeErrorType.NO_SUCH_FIELD, node.span, context=f"Union '{referent}' has no field '{field_name}'")
+                return UNKNOWN
+
+            if field_name in {"adr", "val"}:
+                self.add_type_error(
+                    TypeErrorType.FIELD_ACCESS_ON_NON_STRUCT,
+                    node.span,
+                    got_type=str(obj_type),
+                    context=f"'.{field_name}' is not reference syntax; pass lvalues directly to ref parameters and access ref struct fields directly",
+                )
+                return UNKNOWN
+
         if isinstance(obj_type, SliceType):
             if field_name == "ptr":
                 return PointerType(obj_type.element_type)
@@ -1729,7 +1834,7 @@ class TypeCheckingPass:
             return UNKNOWN
 
     def visit_address_of(self, node: ASTNode) -> Type:
-        """Visit an address-of expression (.adr)."""
+        """Visit an internal address-of expression."""
         operand_type = self.visit_expression(node.operand) if node.operand else UNKNOWN
         if node.operand and node.operand.kind not in {
             NodeKind.IDENTIFIER,
@@ -1745,7 +1850,7 @@ class TypeCheckingPass:
         return ReferenceType(referent_type=operand_type)
 
     def visit_deref(self, node: ASTNode) -> Type:
-        """Visit a dereference expression (.val)."""
+        """Visit an internal dereference expression."""
         ptr_type = self.visit_expression(node.pointer) if node.pointer else UNKNOWN
 
         if isinstance(ptr_type, PointerType):
@@ -1756,10 +1861,109 @@ class TypeCheckingPass:
             self.add_type_error(TypeErrorType.REQUIRES_POINTER_TYPE, node.span, got_type=str(ptr_type))
             return UNKNOWN
 
+    def _is_lvalue_expression(self, node: Optional[ASTNode]) -> bool:
+        return node is not None and node.kind in {
+            NodeKind.IDENTIFIER,
+            NodeKind.FIELD_ACCESS,
+            NodeKind.INDEX,
+            NodeKind.DEREF,
+        }
+
     def visit_cast(self, node: ASTNode) -> Type:
-        """Visit a cast expression."""
-        # Just return target type (actual cast validation would be more complex)
-        return self.resolve_type_node(node.target_type)
+        """Visit a cast expression and record only base type information.
+
+        Range, non-negative, finite-float, and lowering approval checks belong
+        to the safety proof pass.
+        """
+        source_type = self.visit_expression(node.expression) if node.expression is not None else UNKNOWN
+        target_type = self.resolve_type_node(node.target_type)
+        setattr(node, "cast_source_type", source_type)
+        setattr(node, "cast_target_type", target_type)
+
+        return target_type
+
+    def _temporary_nonnegative_facts(self, facts: Set[str]):
+        checker = self
+
+        class _FactScope:
+            def __enter__(self) -> None:
+                self.previous = set(checker._nonnegative_vars)
+                checker._nonnegative_vars.update(facts)
+
+            def __exit__(self, exc_type, exc, tb) -> None:
+                checker._nonnegative_vars = self.previous
+
+        return _FactScope()
+
+    def _facts_from_positive_condition(self, condition: Optional[ASTNode]) -> Set[str]:
+        if condition is None or condition.kind != NodeKind.BINARY:
+            return set()
+        name = self._identifier_name(condition.left)
+        literal = self._integer_literal_value(condition.right)
+        if name is None or literal is None:
+            return set()
+        if condition.operator in {BinaryOp.GE, BinaryOp.GT} and literal >= 0:
+            return {name}
+        return set()
+
+    def _learn_fact_after_statement(self, node: ASTNode) -> None:
+        if node.kind != NodeKind.IF_STMT or node.condition is None or node.then_stmt is None:
+            return
+        if not self._statement_always_returns(node.then_stmt):
+            return
+        condition = node.condition
+        if condition.kind != NodeKind.BINARY:
+            return
+        name = self._identifier_name(condition.left)
+        literal = self._integer_literal_value(condition.right)
+        if name is None or literal is None:
+            return
+        if condition.operator == BinaryOp.LT and literal >= 0:
+            self._nonnegative_vars.add(name)
+        elif condition.operator == BinaryOp.LE and literal < 0:
+            self._nonnegative_vars.add(name)
+
+    def _statement_always_returns(self, node: ASTNode) -> bool:
+        if node.kind == NodeKind.RETURN:
+            return True
+        if node.kind == NodeKind.BLOCK:
+            statements = node.statements or []
+            return bool(statements) and self._statement_always_returns(statements[-1])
+        return False
+
+    def _expression_is_known_nonnegative(self, node: Optional[ASTNode]) -> bool:
+        if node is None:
+            return False
+        literal = self._integer_literal_value(node)
+        if literal is not None:
+            return literal >= 0
+        name = self._identifier_name(node)
+        return bool(name and name in self._nonnegative_vars)
+
+    def _identifier_name(self, node: Optional[ASTNode]) -> Optional[str]:
+        if node is not None and node.kind == NodeKind.IDENTIFIER:
+            return node.name
+        return None
+
+    def _integer_literal_value(self, node: Optional[ASTNode]) -> Optional[int]:
+        if node is None:
+            return None
+        if (
+            node.kind == NodeKind.LITERAL
+            and node.literal_kind == LiteralKind.INTEGER
+            and isinstance(node.literal_value, int)
+        ):
+            return node.literal_value
+        if (
+            node.kind == NodeKind.UNARY
+            and node.operator == UnaryOp.NEG
+            and node.operand
+            and node.operand.kind == NodeKind.LITERAL
+            and node.operand.literal_kind == LiteralKind.INTEGER
+            and isinstance(node.operand.literal_value, int)
+        ):
+            return -node.operand.literal_value
+        return None
 
     def visit_if_expr(self, node: ASTNode) -> Type:
         """Visit an if expression."""

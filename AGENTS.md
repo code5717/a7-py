@@ -60,6 +60,10 @@ navigation when docs structure changes.
 - `new [N]T` (heap fixed arrays) is currently rejected by the compiler.
   Use stack arrays (`buf: [N]T`) or slices in examples, tests, and docs
   until the language model is defined.
+- Public A7 reference syntax does not expose address-of or dereference
+  operators. Do not author examples or docs with `.adr`, `.val`, prefix `&`,
+  or prefix `*` as reference operations; pass lvalues directly to `ref`
+  parameters and use ordinary field access after nil checks.
 - Native release archives are named with platform/toolchain context
   (`a7-example-artifacts-linux-x86_64-zig0.15.2-<profile>.tar.gz`); keep
   any docs or scripts that reference these filenames in sync.

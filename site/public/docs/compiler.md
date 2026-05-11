@@ -3,7 +3,7 @@
 ## Pipeline
 
 ```text
-Source (.a7) -> Tokenizer -> Parser -> Semantic Analysis -> AST Preprocessing -> Backend Codegen -> Zig output
+Source (.a7) -> Tokenizer -> Parser -> Semantic Analysis -> Safety Proof Plan -> AST Preprocessing -> Backend Codegen -> Zig output
 ```
 
 ## Backends

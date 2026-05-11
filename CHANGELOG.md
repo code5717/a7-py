@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Semantic analysis now has an internal safety-proof phase after base type
+  checking and semantic validation. Risky casts, division/modulo, indexing,
+  slicing, and reference dereferences must be approved through a `BackendPlan`
+  before Zig codegen lowers them.
+- Removed public address/dereference syntax (`.adr`, `.val`, prefix `&`, and
+  prefix `*`). Ref arguments are now passed as ordinary lvalues, and checked
+  ref-struct field access lowers through the internal safety plan.
+- Type checking now records base cast/source/target types only; range,
+  non-zero, bounds, and non-nil facts live in the safety analysis layer.
+- Examples using heap `new` now check against `nil` before field access, and the
+  function example guards division by zero.
 - C backend support has been retired from the public compiler. Zig is now the
   only supported code generation target, and CI/release/example verification
   gates focus on Zig output.
@@ -33,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comments example emits visible golden output.
 - File-backed local imports now fail closed before backend codegen, and docs
   now distinguish resolver validation from unsupported multi-file linking.
+- Cast checking now fails closed for the first safety-audit vertical slice:
+  only primitive numeric casts are accepted, signed-to-unsigned casts require a
+  non-negative proof, and reference/structural casts are rejected before Zig
+  emission.
+- Added a large cast-safety matrix covering classifier behavior, semantic
+  acceptance/rejection, proof-gated signed-to-unsigned casts, and codegen
+  guardrails.
 - JSON diagnostics now serialize selected import item lists without tracebacking,
   and language docs now mark selected/using imports and method-call sugar as
   non-runnable current syntax where appropriate.

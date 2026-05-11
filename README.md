@@ -1,8 +1,8 @@
 # A7 Programming Language Compiler
 
-A Python-based compiler for A7, a statically-typed systems programming language. A7 combines the simplicity of C-style syntax with modern features like generics, type inference, and property-based pointer operations.
+A Python-based compiler for A7, a statically-typed systems programming language. A7 combines the simplicity of C-style syntax with modern features like generics, type inference, and compiler-managed reference operations.
 
-The compiler features a complete pipeline: tokenizer, parser, 3-pass semantic analysis, AST preprocessing, and Zig code generation.
+The compiler features a complete pipeline: tokenizer, parser, semantic analysis, internal safety proof planning, AST preprocessing, and Zig code generation.
 
 ## Inspired By
 
@@ -127,14 +127,15 @@ There is no package-registry publishing job in the current workflow.
 ## Compilation Pipeline
 
 ```
-Source (.a7) → Tokenizer → Parser → Semantic Analysis (3-pass) → AST Preprocessing → Zig Codegen → Output (.zig)
+Source (.a7) → Tokenizer → Parser → Semantic Analysis → Safety Proof Planning → AST Preprocessing → Zig Codegen → Output (.zig)
 ```
 
 1. **Tokenizer**. Lexes source into tokens. Handles single-token generics (`$T`), nested comments, and number formats.
 2. **Parser**. Uses recursive descent with precedence climbing. Parses all A7 constructs.
-3. **Semantic Analysis**. Runs name resolution, type checking with inference, control flow validation, and recursion rejection.
-4. **AST Preprocessing**. Runs 9 sub-passes: sugar lowering, stdlib resolution, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
-5. **Backend Code Generation**. Translates AST to valid Zig source code.
+3. **Semantic Analysis**. Runs name resolution, base type checking with inference, control flow validation, and recursion rejection.
+4. **Safety Proof Planning**. Proves or rejects risky operations such as casts, division/modulo, indexing/slicing, and reference dereferences before backend lowering.
+5. **AST Preprocessing**. Runs stdlib resolution, struct init normalization, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
+6. **Backend Code Generation**. Translates approved AST operations to valid Zig source code.
 
 Semantic analysis, AST preprocessing, formatter/reporting AST walks, and backend binary-expression emission use explicit stacks. The parser is recursive descent, and backend statement/non-binary expression generation still uses visitor-style recursive emission in some paths. Current low-recursion coverage validates the supported pipeline at Python recursion limit 100 for representative programs. A7 source recursion, including local function-pointer aliases and higher-order callback trampolines, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead.
 
@@ -153,7 +154,12 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
 - **Function Rules**: Direct, mutual, alias-mediated, and callback-trampoline recursion are semantic errors
 - **Expressions**: All operators with proper precedence, fixed-array `+` for same-shape numeric arrays, casts, if-expressions, struct/array literals, untagged union field literals/access
-- **Memory**: Property-based pointer syntax (`.adr`, `.val`), scalar/struct `new` and `del`, defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the language model is defined.
+- **Memory**: `ref` parameters use ordinary lvalue arguments, ref struct fields
+  are accessed directly after nil-proofing, and scalar/struct `new` plus `del`
+  support defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the
+  language model is defined.
+- **Safety proofing**: casts, division/modulo, bounds-sensitive indexing/slicing,
+  and reference dereferences are checked by internal facts before Zig emission.
 - **Imports**: Virtual `std/io` and `std/math` modules with aliases; file-backed local imports resolve for validation but fail closed before backend codegen until module linking is implemented
 - **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, generic struct literals, and simple top-level generic function calls
 - **Code Generation**: A7 → Zig, with buffered `std/io` lowering through shared `writerStreaming` stdout/stderr writers and generated print helpers

@@ -12,7 +12,7 @@
 
 ## Compiler
 
-- Tokenizer, parser, semantic validation, AST preprocessing, and backend codegen.
+- Tokenizer, parser, semantic validation, internal safety proof planning, AST preprocessing, and backend codegen.
 - Zig backend.
 - Stable CLI modes and exit codes.
 - Human and JSON output formats.

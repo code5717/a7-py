@@ -1588,37 +1588,17 @@ class Parser:
         )
 
     def parse_field_or_deref_expression(self, object_expr: ASTNode) -> ASTNode:
-        """Parse field access, address-of (.adr), or pointer dereference (.val)."""
+        """Parse field access."""
         self.consume(TokenType.DOT)
 
-        # Field access (including special .adr and .val)
         if self.match(TokenType.IDENTIFIER):
             field_name = self.advance().value
-            
-            # Check for special address-of operation
-            if field_name == "adr":
-                return ASTNode(
-                    kind=NodeKind.ADDRESS_OF, 
-                    operand=object_expr, 
-                    span=object_expr.span
-                )
-            
-            # Check for special dereference operation
-            elif field_name == "val":
-                return ASTNode(
-                    kind=NodeKind.DEREF, 
-                    pointer=object_expr, 
-                    span=object_expr.span
-                )
-            
-            # Regular field access
-            else:
-                return ASTNode(
-                    kind=NodeKind.FIELD_ACCESS,
-                    object=object_expr,
-                    field=field_name,
-                    span=object_expr.span,
-                )
+            return ASTNode(
+                kind=NodeKind.FIELD_ACCESS,
+                object=object_expr,
+                field=field_name,
+                span=object_expr.span,
+            )
 
         raise ParseError.from_token(
             "Expected field name after '.'", self.current(), self.filename

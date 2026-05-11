@@ -2,18 +2,22 @@
 
 io :: import "std/io"
 
+Box :: struct {
+    value: i32
+}
+
 main :: fn() {
     io.println("=== Memory ===")
 
-    value_ptr := new i32
-    if value_ptr == nil {
+    value_box := new Box
+    if value_box == nil {
         io.println("allocation failed")
         ret
     }
-    defer del value_ptr
+    defer del value_box
 
-    value_ptr.val = 42
-    io.println("heap value = {}", value_ptr.val)
+    value_box.value = 42
+    io.println("heap value = {}", value_box.value)
 
     // Keep this example conservative and deterministic.
     io.println("memory example complete")

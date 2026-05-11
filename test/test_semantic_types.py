@@ -15,6 +15,7 @@ from a7.tokens import Tokenizer
 from a7.parser import Parser
 from a7.ast_nodes import NodeKind
 from a7.passes.name_resolution import NameResolutionPass
+from a7.passes import SafetyProofPass
 from a7.passes.type_checker import TypeCheckingPass
 from a7.passes.semantic_validator import SemanticValidationPass
 from a7.errors import SemanticError, CompilerError
@@ -53,6 +54,11 @@ def run_semantic_analysis(source: str):
     validator.analyze(program, "<test>")
     if validator.errors:
         raise validator.errors[0]
+
+    safety = SafetyProofPass(symbols, node_types)
+    safety.analyze(program, "<test>")
+    if safety.errors:
+        raise safety.errors[0]
 
     return symbols, node_types
 
@@ -483,23 +489,29 @@ class TestPointerAndReferenceTypes:
         """
         assert expect_success(source)
 
-    def test_address_of_operator(self):
-        """Test address-of operator (.adr) type checking."""
+    def test_ref_parameter_accepts_lvalue_argument(self):
+        """Test implicit reference passing for lvalue arguments."""
         source = """
+        inc :: fn(x: ref i32) {
+            x += 1
+        }
         main :: fn() {
             x: i32 = 42
-            p := x.adr
+            inc(x)
         }
         """
         assert expect_success(source)
 
-    def test_dereference_operator(self):
-        """Test dereference operator (.val) type checking."""
+    def test_ref_struct_field_access(self):
+        """Test checked implicit dereference for ref struct fields."""
         source = """
+        Box :: struct { value: i32 }
+        set :: fn(box: ref Box) {
+            box.value = 42
+        }
         main :: fn() {
-            x: i32 = 42
-            p := x.adr
-            y := p.val
+            b := Box{value: 0}
+            set(b)
         }
         """
         assert expect_success(source)
@@ -691,19 +703,47 @@ class TestTypeCasting:
         """
         assert expect_success(source)
 
-    def test_cast_pointer_types(self):
-        """Test casting between pointer types.
-
-        NOTE: A7 uses 'ref' for pointer types, not 'ptr'.
-        """
+    def test_cast_pointer_types_rejected(self):
+        """Reference casts are rejected before codegen."""
         source = """
         main :: fn() {
-            x: i32 = 42
-            p := x.adr
+            p: ref i32 = nil
             vp := cast(ref i64, p)
         }
         """
+        assert expect_error(source, "cast")
+
+    def test_signed_to_unsigned_literal_initializer_proves_nonnegative(self):
+        """Literal initializer facts can prove signed-to-unsigned casts."""
+        source = """
+        main :: fn() {
+            x: i32 = 42
+            y := cast(usize, x)
+        }
+        """
         assert expect_success(source)
+
+    def test_signed_to_unsigned_after_early_return_guard(self):
+        """An early-return negative guard proves the value is non-negative."""
+        source = """
+        main :: fn() {
+            x: i32 = 42
+            if x < 0 { ret }
+            y := cast(usize, x)
+        }
+        """
+        assert expect_success(source)
+
+    def test_structural_cast_rejected(self):
+        """Structural conversions are outside the Phase 1 cast boundary."""
+        source = """
+        main :: fn() {
+            arr: [3]i32 = [1, 2, 3]
+            s := arr[0..3]
+            out := cast([3]i32, s)
+        }
+        """
+        assert expect_error(source, "primitive numeric")
 
 
 class TestTypeInference:

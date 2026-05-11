@@ -2,7 +2,7 @@
 
 ## Current State
 
-- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig code generation are implemented.
+- Tokenizer, parser, semantic pipeline, internal safety proof planning, AST preprocessing, and Zig code generation are implemented.
 - Direct, mutual, local function-pointer alias, and higher-order callback trampoline source recursion are semantic errors.
 - Debug/release artifact verification is available for Zig.
 - Example end-to-end verification is available for Zig.
@@ -11,6 +11,8 @@
 - Array literal assignment validates declared lengths and nested element types.
 - Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
 - Index and slice-bound variables must be `usize`; non-negative integer literals are accepted for simple indexing.
+- Risky casts, division/modulo, indexing/slicing, and reference dereferences are
+  approved through internal facts before Zig emission.
 - Invalid ordering comparisons and unsafe signed-to-unsigned integer assignments are rejected during type checking.
 - `fall` lowers in Zig when it is the final direct statement of a non-final match case.
 

@@ -22,17 +22,19 @@ A7 is not a sandbox. Do not compile or run untrusted A7 source.
 
 Implemented:
 
-- Tokenizer, parser, semantic pipeline, AST preprocessing, and Zig code generation.
+- Tokenizer, parser, semantic pipeline, internal safety proof planning, AST preprocessing, and Zig code generation.
 - CLI entrypoints through `uv run a7` and `uv run python main.py`.
 - Static typing with inference in supported contexts.
 - Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
 - Simple top-level generic function calls, type-set constraints, and used generic struct instances in Zig.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
-- Arrays, slices, string slices, references, property pointer operations, and manual `new` / `del`.
+- Arrays, slices, string slices, references, implicit ref-argument passing, and manual `new` / `del`.
 - Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
 - `defer`, unreachable-statement diagnostics, and direct/mutual/alias/callback-trampoline source-recursion diagnostics.
 - `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
+- Internal facts and backend-plan approval for casts, division/modulo,
+  indexing/slicing, and reference dereferences before Zig emission.
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
 - 38 runnable examples verified through the Zig backend.
 - Debug/release artifact verification for Zig.
@@ -207,12 +209,21 @@ Memory and pointer forms:
 
 ```a7
 x: i32 = 42
-x_ptr: ref i32 = x.adr
-x_ptr.val += 1
+bump :: fn(value: ref i32) {
+    value += 1
+}
+bump(x)
 
-heap_value := new i32
+HeapBox :: struct {
+    value: i32
+}
+
+heap_value := new HeapBox
+if heap_value == nil {
+    ret
+}
 defer del heap_value
-heap_value.val = 99
+heap_value.value = 99
 ```
 
 Integer guidance:

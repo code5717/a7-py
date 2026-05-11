@@ -340,36 +340,40 @@ class TestSliceTypes:
 
 
 class TestPointerTypes:
-    """Test pointer operations."""
+    """Test reference operations."""
 
     def test_pointer_declaration(self):
-        """Test pointer type declarations."""
-        # A7 uses 'ref T' for reference types (not 'ptr T')
+        """Test reference type declarations."""
         source = """
         main :: fn() {
-            x: i32 = 42
-            p := x.adr
+            p: ref i32 = nil
         }
         """
         assert run_analysis_expect_success(source)
 
     def test_address_of_operator(self):
-        """Test .adr operator."""
+        """Test implicit reference passing."""
         source = """
+        touch :: fn(p: ref i32) {
+            p += 1
+        }
         main :: fn() {
             x := 42
-            p := x.adr
+            touch(x)
         }
         """
         assert run_analysis_expect_success(source)
 
     def test_dereference_operator(self):
-        """Test .val operator."""
+        """Test implicit ref struct field access."""
         source = """
+        Box :: struct { value: i32 }
+        touch :: fn(p: ref Box) {
+            p.value = 42
+        }
         main :: fn() {
-            x := 42
-            p := x.adr
-            y := p.val
+            box := Box{value: 0}
+            touch(box)
         }
         """
         assert run_analysis_expect_success(source)
@@ -856,8 +860,10 @@ class TestComplexPrograms:
 
         create_node :: fn(val: i32) ref Node {
             node := new Node
-            node.val.value = val
-            node.val.next = nil
+            if node == nil {
+                ret nil
+            }
+            node.value = val
             ret node
         }
 

@@ -46,8 +46,8 @@ class NodeKind(Enum):
     INDEX = auto()
     SLICE = auto()
     FIELD_ACCESS = auto()
-    ADDRESS_OF = auto()  # variable.adr
-    DEREF = auto()       # ptr.val
+    ADDRESS_OF = auto()  # Internal address-of node inserted by typed lowering
+    DEREF = auto()       # Internal dereference node inserted by typed lowering
     CAST = auto()
     IF_EXPR = auto()
     MATCH_EXPR = auto()

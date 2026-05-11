@@ -17,7 +17,7 @@ const EXAMPLE_META = {
   '010_enum.a7': { title: 'Enums', category: 'Types', desc: 'Enumeration declarations and matching' },
   '011_memory.a7': { title: 'Memory', category: 'Memory', desc: 'Heap allocation with new/del' },
   '012_arrays.a7': { title: 'Arrays', category: 'Types', desc: 'Fixed-size arrays and slices' },
-  '013_pointers.a7': { title: 'Pointers', category: 'Memory', desc: 'Pointer operations with .adr/.val' },
+  '013_pointers.a7': { title: 'References', category: 'Memory', desc: 'Implicit ref-argument passing' },
   '014_generics.a7': { title: 'Generics', category: 'Types', desc: 'Generic functions and generic struct instances' },
   '015_types.a7': { title: 'Type System', category: 'Types', desc: 'Type aliases and composite types' },
   '016_unions.a7': { title: 'Unions', category: 'Types', desc: 'Untagged union field literals and access' },

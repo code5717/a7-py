@@ -5,8 +5,8 @@ import SectionPanel from '../components/SectionPanel'
 
 const pitfalls = [
   ['and, or, not', '&&, ||, !', 'Keywords, not symbols'],
-  ['x.adr', '&x', 'Property syntax for address-of'],
-  ['p.val', '*p', 'Property syntax for dereference'],
+  ['increment(x)', 'increment(&x)', 'Pass lvalues directly to ref parameters'],
+  ['box.value', 'manual dereference syntax', 'Ref struct fields are accessed directly after nil checks'],
   ['$T', 'T', 'Generic params need $ prefix'],
   ['PI :: 3.14', 'const PI = 3.14', ':: for constants'],
   ['x := 0', 'let x = 0', ':= for variables'],

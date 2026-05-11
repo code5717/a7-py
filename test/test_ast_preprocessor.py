@@ -4,7 +4,7 @@ Tests for the AST preprocessor (a7/ast_preprocessor.py).
 The AST preprocessor runs after parsing and semantic analysis, before code
 generation. It performs several transformations and annotations:
 
-1. Field sugar lowering (.adr -> ADDRESS_OF, .val -> DEREF)
+1. Legacy field sugar compatibility (.adr/.val are no longer lowered)
 2. Constant folding (compile-time arithmetic)
 3. Mutation analysis (is_mutable on VAR nodes)
 4. Usage analysis (is_used on VAR/PARAMETER nodes)
@@ -62,44 +62,33 @@ def get_function(ast: ASTNode, name: str) -> ASTNode:
 # ===========================================================================
 
 class TestFieldSugarLowering:
-    """Test .adr and .val syntactic sugar lowering to ADDRESS_OF/DEREF nodes.
+    """Legacy .adr/.val are ordinary field names, not reference operations."""
 
-    The parser already lowers .adr/.val in most cases, so these tests
-    construct FIELD_ACCESS nodes manually to verify the preprocessor's
-    _lower_field_sugar pass works correctly as a safety net.
-    """
-
-    def test_adr_on_identifier_becomes_address_of(self):
-        """FIELD_ACCESS with field='adr' on an identifier should become ADDRESS_OF."""
+    def test_adr_on_identifier_remains_field_access(self):
         ident = ASTNode(kind=NodeKind.IDENTIFIER, name="x")
         field_access = ASTNode(kind=NodeKind.FIELD_ACCESS, object=ident, field="adr")
 
         pp = ASTPreprocessor()
         result = pp._lower_field_sugar(field_access)
 
-        assert result.kind == NodeKind.ADDRESS_OF
-        assert result.operand.kind == NodeKind.IDENTIFIER
-        assert result.operand.name == "x"
+        assert result is field_access
+        assert result.kind == NodeKind.FIELD_ACCESS
+        assert result.field == "adr"
+        assert pp.changes_made == 0
 
-    def test_val_on_identifier_becomes_deref(self):
-        """FIELD_ACCESS with field='val' on an identifier should become DEREF."""
+    def test_val_on_identifier_remains_field_access(self):
         ident = ASTNode(kind=NodeKind.IDENTIFIER, name="ptr")
         field_access = ASTNode(kind=NodeKind.FIELD_ACCESS, object=ident, field="val")
 
         pp = ASTPreprocessor()
         result = pp._lower_field_sugar(field_access)
 
-        assert result.kind == NodeKind.DEREF
-        assert result.pointer.kind == NodeKind.IDENTIFIER
-        assert result.pointer.name == "ptr"
+        assert result is field_access
+        assert result.kind == NodeKind.FIELD_ACCESS
+        assert result.field == "val"
+        assert pp.changes_made == 0
 
-    def test_chained_adr_val_produces_nested_nodes(self):
-        """x.adr.val should produce DEREF(ADDRESS_OF(IDENTIFIER(x))).
-
-        The bottom-up transform processes inner nodes first, so
-        the inner .adr becomes ADDRESS_OF, then the outer .val
-        becomes DEREF wrapping the ADDRESS_OF.
-        """
+    def test_chained_adr_val_remains_field_access_chain(self):
         ident = ASTNode(kind=NodeKind.IDENTIFIER, name="x")
         inner_fa = ASTNode(kind=NodeKind.FIELD_ACCESS, object=ident, field="adr")
         outer_fa = ASTNode(kind=NodeKind.FIELD_ACCESS, object=inner_fa, field="val")
@@ -114,10 +103,10 @@ class TestFieldSugarLowering:
         prog = pp.process(prog)
 
         result_value = prog.declarations[0].body.statements[0].value
-        assert result_value.kind == NodeKind.DEREF
-        assert result_value.pointer.kind == NodeKind.ADDRESS_OF
-        assert result_value.pointer.operand.kind == NodeKind.IDENTIFIER
-        assert result_value.pointer.operand.name == "x"
+        assert result_value.kind == NodeKind.FIELD_ACCESS
+        assert result_value.field == "val"
+        assert result_value.object.kind == NodeKind.FIELD_ACCESS
+        assert result_value.object.field == "adr"
 
     def test_normal_field_access_not_lowered(self):
         """A regular field access (e.g., obj.name) should not be transformed."""
@@ -144,28 +133,28 @@ class TestFieldSugarLowering:
         result = pp._lower_field_sugar(lit)
         assert result is lit
 
-    def test_adr_increments_changes_made(self):
-        """Lowering .adr should increment the changes_made counter."""
+    def test_adr_does_not_increment_changes_made(self):
+        """Legacy .adr is no longer lowered."""
         ident = ASTNode(kind=NodeKind.IDENTIFIER, name="x")
         fa = ASTNode(kind=NodeKind.FIELD_ACCESS, object=ident, field="adr")
 
         pp = ASTPreprocessor()
         assert pp.changes_made == 0
         pp._lower_field_sugar(fa)
-        assert pp.changes_made == 1
+        assert pp.changes_made == 0
 
-    def test_val_increments_changes_made(self):
-        """Lowering .val should increment the changes_made counter."""
+    def test_val_does_not_increment_changes_made(self):
+        """Legacy .val is no longer lowered."""
         ident = ASTNode(kind=NodeKind.IDENTIFIER, name="p")
         fa = ASTNode(kind=NodeKind.FIELD_ACCESS, object=ident, field="val")
 
         pp = ASTPreprocessor()
         assert pp.changes_made == 0
         pp._lower_field_sugar(fa)
-        assert pp.changes_made == 1
+        assert pp.changes_made == 0
 
-    def test_adr_preserves_span(self):
-        """The ADDRESS_OF node should carry the span from the original FIELD_ACCESS."""
+    def test_adr_preserves_original_node_and_span(self):
+        """The original field-access node is preserved."""
         from a7.errors import SourceSpan
 
         span = SourceSpan(start_line=5, start_column=10, end_line=5, end_column=15)
@@ -175,6 +164,7 @@ class TestFieldSugarLowering:
         pp = ASTPreprocessor()
         result = pp._lower_field_sugar(fa)
 
+        assert result is fa
         assert result.span is span
 
 
@@ -552,15 +542,21 @@ class TestMutationAnalysis:
         assert var_p.is_mutable is True
 
     def test_address_taken_variable_is_mutable(self):
-        """Taking a local address should force mutable storage for Zig pointers."""
+        """Passing a local to a ref parameter should force mutable Zig storage."""
         code = """
+        touch :: fn(p: ref i32) {
+            p += 1
+        }
         main :: fn() {
             x: i32 = 7
-            p: ref i32 = x.adr
+            touch(x)
         }
         """
-        ast = preprocess(code)
-        stmts = get_function_stmts(ast)
+        ast = parse_a7(code)
+        call = get_function(ast, "main").body.statements[1].expression
+        call.implicit_ref_args = {0}
+        ast = ASTPreprocessor().process(ast)
+        stmts = get_function(ast, "main").body.statements
         var_x = stmts[0]
         assert var_x.kind == NodeKind.VAR
         assert var_x.name == "x"

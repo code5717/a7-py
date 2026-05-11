@@ -24,7 +24,7 @@ from a7.parser import Parser
 from a7.ast_nodes import ASTNode, NodeKind
 from a7.backends.zig import ZigCodeGenerator
 from a7.errors import CodegenError
-from a7.passes import NameResolutionPass, TypeCheckingPass, SemanticValidationPass
+from a7.passes import NameResolutionPass, SafetyProofPass, TypeCheckingPass, SemanticValidationPass
 from a7.stdlib import StdlibRegistry
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
@@ -65,6 +65,13 @@ def compile_a7_to_zig(source: str, filename: str = "test.a7") -> str:
         type_checker.source_lines = source_lines
         type_checker.analyze(ast, filename)
         type_map = type_checker.node_types
+        safety = SafetyProofPass(symbol_table, type_map)
+        safety.source_lines = source_lines
+        backend_plan = safety.analyze(ast, filename)
+        if safety.errors:
+            raise safety.errors[0]
+    else:
+        backend_plan = None
 
     # Preprocess AST
     from a7.ast_preprocessor import ASTPreprocessor
@@ -77,7 +84,12 @@ def compile_a7_to_zig(source: str, filename: str = "test.a7") -> str:
 
     # Generate Zig
     codegen = ZigCodeGenerator()
-    return codegen.generate(ast, type_map=type_map, symbol_table=symbol_table)
+    return codegen.generate(
+        ast,
+        type_map=type_map,
+        symbol_table=symbol_table,
+        backend_plan=backend_plan,
+    )
 
 
 def zig_ast_check(zig_code: str) -> tuple[bool, str]:
@@ -395,27 +407,29 @@ main :: fn() {
     arr: [4]i32 = [10, 20, 30, 40]
     tail := arr[1..4]
     ptr := tail.ptr
-    io.println("{} {}", tail.len, ptr.val)
+    io.println("{}", tail.len)
 }
 '''
         zig = compile_a7_to_zig(source)
         assert "tail.ptr" in zig
         assert "tail.len" in zig
-        assert "ptr[0]" in zig
         ok, err = zig_ast_check(zig)
         assert ok, err
 
     def test_address_taken_local_uses_mutable_storage(self):
         source = '''
+touch :: fn(p: ref i32) {
+    p += 1
+}
+
 main :: fn() {
     x: i32 = 7
-    p: ref i32 = x.adr
-    p.val = 8
+    touch(x)
 }
 '''
         zig = compile_a7_to_zig(source)
         assert "var x: i32 = 7;" in zig
-        assert "const p: ?*i32 = &x;" in zig
+        assert "touch(&x);" in zig
         ok, err = zig_build_check(zig)
         assert ok, err
 
@@ -878,11 +892,37 @@ main :: fn() {
     def test_integer_division(self):
         source = '''
 div :: fn(a: i32, b: i32) i32 {
+    if b == 0 { ret 0 }
     ret a / b
 }
 '''
         zig = compile_a7_to_zig(source)
         assert '@divTrunc' in zig
+
+    def test_approved_numeric_cast_uses_int_cast(self):
+        source = '''
+main :: fn() {
+    x: i32 = 42
+    if x < 0 { ret }
+    y := cast(usize, x)
+}
+'''
+        zig = compile_a7_to_zig(source)
+        assert '@intCast' in zig
+
+    def test_unclassified_cast_is_rejected_by_zig_codegen(self):
+        source = '''
+main :: fn() {
+    x: i32 = 42
+    y := cast(i64, x)
+}
+'''
+        tokenizer = Tokenizer(source)
+        tokens = tokenizer.tokenize()
+        ast = Parser(tokens).parse()
+        codegen = ZigCodeGenerator()
+        with pytest.raises(CodegenError, match="not approved"):
+            codegen.generate(ast)
 
     def test_union_declaration(self):
         source = '''

@@ -35,7 +35,11 @@ area :: fn(point: Point) i32 {
 }
 
 bump :: fn(value: ref i32) {
-    value.val += 1
+    value += 1
+}
+
+HeapBox :: struct {
+    value: i32
 }
 
 apply :: fn(op: BinaryOp, a: i32, b: i32) i32 {
@@ -102,18 +106,23 @@ main :: fn() {
 
     // --- References and heap values ---
     //
-    // References use .adr and .val. Heap allocation uses new/del.
+    // Ref parameters are passed with ordinary lvalue arguments. Heap
+    // allocation uses new/del and field access narrows through checked refs.
     // Split declaration and assignment here so the generated native local is
     // mutable before it is passed by reference.
     counter: i32
     counter = 41
-    bump(counter.adr)
+    bump(counter)
     io.println("counter = {}", counter)
 
-    heap_value := new i32
+    heap_value := new HeapBox
+    if heap_value == nil {
+        io.println("allocation failed")
+        ret
+    }
     defer del heap_value
-    heap_value.val = 99
-    io.println("heap = {}", heap_value.val)
+    heap_value.value = 99
+    io.println("heap = {}", heap_value.value)
 
     // --- Function values ---
     //

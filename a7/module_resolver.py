@@ -62,6 +62,14 @@ class ModuleResolver:
         self.virtual_modules: Set[str] = self.stdlib.public_module_paths()
 
     def _is_safe_module_path(self, module_path: str) -> bool:
+        # Reject null bytes (would crash Path.exists with ValueError),
+        # backslashes (cross-platform path-traversal vector), and any
+        # absolute or parent-relative segments. Empty or whitespace-only
+        # paths are also rejected.
+        if not module_path or not module_path.strip():
+            return False
+        if "\x00" in module_path or "\\" in module_path:
+            return False
         path = Path(module_path)
         return not path.is_absolute() and ".." not in path.parts
 

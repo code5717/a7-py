@@ -145,18 +145,19 @@ class TestGenericFunctions:
         assert isinstance(result, bool)
 
     def test_generic_swap_function(self):
-        """Test generic swap function with references."""
+        """Test generic function with references."""
         source = """
-        swap :: fn(a: ref $T, b: ref $T) {
-            temp := a.val
-            a.val = b.val
-            b.val = temp
+        Box :: struct {
+            value: $T
+        }
+
+        put($T) :: fn(box: ref Box($T), value: $T) {
+            box.value = value
         }
 
         main :: fn() {
-            x: i32 = 10
-            y: i32 = 20
-            swap(x.adr, y.adr)
+            box := Box(i32){value: 10}
+            put(box, 20)
         }
         """
         assert expect_success(source)

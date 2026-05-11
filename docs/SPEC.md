@@ -4,7 +4,7 @@
 > - ✅ **Tokenizer/Lexer**: implemented
 > - ✅ **Parser**: implemented
 > - ✅ **AST generation**: implemented
-> - ✅ **Semantic pipeline**: implemented (name resolution, type checking, semantic validation), including match expressions, pattern type checks, and bool/enum exhaustiveness checks
+> - ✅ **Semantic pipeline**: implemented (name resolution, base type checking, semantic validation, and internal safety proof planning), including match expressions, pattern type checks, bool/enum exhaustiveness checks, and backend-plan approval for risky operations
 > - ✅ **Zig code generation**: implemented
 > - ✅ **Debug/release example artifact builds**: available through `scripts/build_examples.py`
 > - 📊 **Current tests**: check with `PYTHONPATH=. uv run pytest --tb=no -q`
@@ -121,9 +121,6 @@ and  or   !
 
 // Assignment
 =    +=   -=   *=   /=   %=   &=   |=   ^=   <<=  >>=
-
-// Memory
-.adr .val .    
 
 // Generics  
 $    // Generic type parameter prefix
@@ -305,10 +302,12 @@ ptr_ptr: ref ref i32
 // Function pointer
 fn_ptr: ref fn(i32, i32) i32
 
-// All pointers can be modified through dereferencing
+// Ref parameters can modify caller storage through typed lowering
 x := 42
-ptr := x.adr
-ptr.val = 100  // Modifies the value x points to (using . syntax)
+set_to_100 :: fn(value: ref i32) {
+    value = 100
+}
+set_to_100(x)
 ```
 
 #### Structs
@@ -378,29 +377,28 @@ Vector :: [3]f32
 Matrix :: [4][4]f32
 ```
 
-### 3.5 Pointer Semantics
+### 3.5 Reference Semantics
 
 ```a7
-// All pointers allow modification through dereferencing
+// Ref parameters use ordinary lvalue arguments
 x := 42
-ptr := x.adr
-ptr.val = 100  // OK: modifies the value x points to
+set_to_100 :: fn(value: ref i32) {
+    value = 100  // OK: modifies the caller's storage
+}
+set_to_100(x)
 
-// Pointer reassignment
-y := 50
-ptr = y.adr    // OK: pointer now points to y
-
-// Function parameters are immutable (including pointers)
-modify_value :: fn(p: ref i32) {
-    p.val = 200    // OK: modifying through dereference
-    // p = other_var.adr  // ERROR: cannot reassign parameter
+Counter :: struct {
+    value: i32
 }
 
-// To reassign a pointer in a function, use ref ref
-reassign_pointer :: fn(p: ref ref i32, new_target: ref i32) {
-    p.val = new_target  // OK: changes what the original pointer points to
+increment :: fn(counter: ref Counter) {
+    counter.value += 1  // OK: checked field access through ref
 }
 ```
+
+Public address-of and dereference operators are not part of A7. The compiler
+inserts internal reference operations only where a typed construct requires
+them, then proves the operation safe before Zig codegen.
 
 ---
 
@@ -470,12 +468,10 @@ can_exit := !running and cleanup_done
 - Array subscript: `arr[i]`
 - Slice: `arr[1..5]`, `arr[..3]`, `arr[2..]`
 - Field access: `point.x`
-- Address access: `variable.adr`
-- Pointer dereference: `ptr.val`
 - Function call: `max(a, b)`
 
 Method-call sugar such as `vec.length()` is planned syntax, not current
-semantic support. Use explicit functions such as `length(vec.adr)`.
+semantic support. Use explicit functions such as `length(vec)`.
 
 #### Unary Expressions
 - Negation: `-x`
@@ -700,9 +696,9 @@ sincos :: fn(angle: f64) struct { sin: f64, cos: f64 } {
 
 // Generic function examples
 swap :: fn($T, a: ref T, b: ref T) {
-    temp := a.val
-    a.val = b.val
-    b.val = temp
+    temp := a
+    a = b
+    b = temp
 }
 
 // Generic function with type constraint
@@ -762,7 +758,9 @@ factorial_iter :: fn(n: i32) i32 {
 
 ### 6.3 Function Parameter Immutability
 
-**All function parameters in A7 are immutable by design.** This includes both value parameters and pointer parameters - the parameters themselves cannot be reassigned, though data can be modified through pointer dereferencing.
+**All value function parameters in A7 are immutable by design.** `ref`
+parameters can mutate the caller's storage, but the reference binding itself is
+compiler-managed and not exposed as an assignable pointer value.
 
 ```a7
 // Parameters cannot be reassigned
@@ -771,9 +769,9 @@ bad_function :: fn(x: i32) i32 {
     ret x
 }
 
-// Pointers can be dereferenced to modify data
+// Ref parameters can modify caller storage
 increment :: fn(x: ref i32) {
-    x.val += 1  // OK: modifying through pointer dereference
+    x += 1
 }
 
 // To work with a mutable copy, create a local variable
@@ -786,7 +784,7 @@ good_function :: fn(x: i32) i32 {
 // Usage example
 main :: fn() {
     value := 10
-    increment(value.adr)  // Pass pointer to modify original
+    increment(value)  // Passes value by checked reference
     printf("Value: {}\n", value)  // Prints: Value: 11
 }
 ```
@@ -822,14 +820,14 @@ length :: fn(self: ref Vec2) f32 {
 // Method that modifies the receiver
 normalize :: fn(self: ref Vec2) {
     len := sqrt(self.x * self.x + self.y * self.y)
-    self.x /= len  // OK: modifying through pointer dereference
+    self.x /= len  // OK: modifying through checked reference field access
     self.y /= len
 }
 
 // Explicit receiver call
 v := Vec2{3.0, 4.0}
-len := length(v.adr)
-normalize(v.adr)      // Modifies v through pointer
+len := length(v)
+normalize(v)      // Modifies v through checked reference
 ```
 
 ### 6.6 Variadic Functions
@@ -878,9 +876,9 @@ A7 uses a simple generic system where type parameters are compile-time constants
 swap :: fn(a: ref $T, b: ref $T) {
     //           ^^       ^^
     //      $T used inline in type expressions
-    temp := a.val
-    a.val = b.val
-    b.val = temp
+    temp := a
+    a = b
+    b = temp
 }
 
 // Generic function with return type
@@ -1007,18 +1005,29 @@ fn example() {
 ### 8.2 Heap Allocation
 
 ```a7
-// Allocate single value
-ptr := new i32
-ptr.val = 42
-del ptr
+Box :: struct {
+    value: i32
+}
+
+// Allocate a heap struct
+box := new Box
+if box == nil {
+    ret
+}
+box.value = 42
+del box
 
 // Heap fixed arrays are not current syntax. Use stack arrays or slices.
 buffer: [1024]u8
 slice := buffer[0..1024]
 
-// Initialize through the returned reference
+// Initialize fields through the returned reference
 point := new Point
-point.val = Point{x: 10, y: 20}
+if point == nil {
+    ret
+}
+point.x = 10
+point.y = 20
 del point
 
 // `new T(args...)` and `new T{...}` initializer forms are not current syntax.
@@ -1801,7 +1810,7 @@ AST_EXPR_CALL           // Function calls
 AST_EXPR_INDEX          // Array/slice indexing
 AST_EXPR_SLICE          // Slice expressions [start..end]
 AST_EXPR_FIELD          // Struct field access (a.field)
-AST_EXPR_DEREF          // Pointer dereference (ptr.val)
+AST_EXPR_DEREF          // Internal dereference inserted by typed lowering
 AST_EXPR_CAST           // Type casting
 AST_EXPR_IF             // Conditional expressions
 AST_EXPR_MATCH          // Match expressions
@@ -2168,7 +2177,7 @@ A7 supports the full ASCII character set (0-127) only. Characters outside this r
 
 ## Appendix E: Implementation Status (a7-py)
 
-Status snapshot (2026-05-08):
+Status snapshot (2026-05-11):
 
 - ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend).
 - ✅ Examples have end-to-end verification through the Zig backend.
@@ -2176,9 +2185,9 @@ Status snapshot (2026-05-08):
 - 📊 Test status: run `PYTHONPATH=. uv run pytest --tb=no -q` for the current branch.
 - 🚫 Security status: `a7-py` is not a sandbox. Do not compile and execute untrusted A7 source.
 
-### E.1 Current Open Gaps
+### E.1 Current Constraints and Open Gaps
 
-1. **`fall` scope restrictions**
+1. **Supported `fall` scope restrictions**
    - `fall` is supported in match statements and lowers in Zig.
    - `fall` must be the final direct statement of a non-final match case.
    - `fall` is invalid outside match cases, in `else` branches, in final cases,
@@ -2197,11 +2206,10 @@ Status snapshot (2026-05-08):
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.
 
-4. **Backend semantic parity hardening**
-   - Differential parity checks across backends should continue expanding for new language features.
-   - C lowers side-effectful `match` expression scrutinees through generated single-evaluation locals in variable initializers, return values, assignments, function arguments, and I/O arguments.
-   - C lowers raw `fn(...)` parameter and variable declarations as function pointers.
-   - Function-type aliases resolve in semantic analysis and lower as C typedefs.
+4. **Backend hardening**
+   - Zig is the only supported code generation target.
+   - The retired C backend no longer defines release readiness or public support status.
+   - Backend regression coverage should continue expanding for every new language feature.
 
 5. **Release packaging activation**
    - Python packaging and installed CLI are present.

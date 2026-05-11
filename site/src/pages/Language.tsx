@@ -271,7 +271,7 @@ main :: fn() {
             ['Binary', <code className="doc-inline-code">a + b, x {'<'} y, p and q, flags {'<<'} 2</code>],
             ['Call', <code className="doc-inline-code">fn_name(arg1, arg2)</code>],
             ['Index and slice', <code className="doc-inline-code">arr[i], arr[start..end], arr[..end]</code>],
-            ['Field and pointer ops', <code className="doc-inline-code">obj.field, value.adr, ptr.val</code>],
+            ['Fields and refs', <code className="doc-inline-code">obj.field, increment(value), ref_box.field</code>],
             ['Constructors', <code className="doc-inline-code">Type{'{...}'}, new Type, new(Type)</code>],
             ['Casts and intrinsics', <code className="doc-inline-code">cast(i32, x), @type_set(i32, f64)</code>],
             ['Expression control flow', <code className="doc-inline-code">if cond {'{'}a{'}'} else {'{'}b{'}'}, match x {'{'} ... {'}'}</code>],
@@ -287,8 +287,7 @@ arr: [5]i32 = [10, 20, 30, 40, 50]
 mid := arr[1..4]
 
 point := Point{x: 10.0, y: 20.0}
-ptr := point.adr
-x := ptr.val.x
+x := point.x
 
 kind := if x > 0 { "positive" } else { "zero-or-negative" }`}
         />
@@ -339,7 +338,7 @@ match code {
           <code className="doc-inline-code">fall</code> continues into the next match case body. It must be the final direct statement of a non-final case.
         </p>
         <DocCallout tone="warning">
-          Backend note: C match expressions support literal, enum, range, wildcard, existing-identifier patterns, branch-local capture patterns, and single-evaluation lowering for side-effectful scrutinees.
+          Backend note: Zig is the only supported code generation target. Historical C backend behavior is no longer part of the public support matrix.
         </DocCallout>
       </SectionPanel>
 
@@ -365,7 +364,7 @@ printf :: fn(format: string, args: ..)
 // Method style is normal function + ref receiver
 Counter :: struct { value: i32 }
 inc :: fn(counter: ref Counter) {
-    counter.val.value += 1
+    counter.value += 1
 }`}
         />
         <DocCallout tone="info">
@@ -373,15 +372,22 @@ inc :: fn(counter: ref Counter) {
         </DocCallout>
       </SectionPanel>
 
-      <SectionPanel title="Memory and Pointers">
+      <SectionPanel title="Memory and References">
         <CodeBlock
           lang="a7"
-          code={`x := 42
-x_ptr: ref i32 = x.adr
-x_ptr.val += 1
+          code={`bump :: fn(value: ref i32) {
+    value += 1
+}
 
-heap_value := new i32
-heap_value.val = 99
+x := 42
+bump(x)
+
+HeapBox :: struct { value: i32 }
+heap_value := new HeapBox
+if heap_value == nil {
+    ret
+}
+heap_value.value = 99
 del heap_value
 
 main :: fn() {
@@ -395,7 +401,9 @@ main :: fn() {
 }`}
         />
         <p className="text-secondary mt-1">
-          Address-of and dereference use property syntax: <code className="doc-inline-code">.adr</code> and <code className="doc-inline-code">.val</code>.
+          Reference operations are inserted by typed lowering. Source code passes
+          lvalues directly to <code className="doc-inline-code">ref</code> parameters
+          and uses normal field access after nil checks.
         </p>
       </SectionPanel>
 

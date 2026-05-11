@@ -404,8 +404,8 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
         TypeErrorType.INDEX_NOT_INTEGER: "Use an integer type for array indexing",
 
         # Dereference errors
-        TypeErrorType.CANNOT_DEREFERENCE: "Only pointers can be dereferenced using .val",
-        TypeErrorType.ADDRESS_OF_RVALUE: "Use .adr only on variables, fields, indexes, or dereferenced references",
+        TypeErrorType.CANNOT_DEREFERENCE: "Reference use requires a proven non-nil reference",
+        TypeErrorType.ADDRESS_OF_RVALUE: "Internal address-of requires variables, fields, indexes, or dereferenced references",
 
         # Nil errors
         TypeErrorType.NIL_NOT_ALLOWED: "This type cannot be nil",

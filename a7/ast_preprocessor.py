@@ -4,15 +4,14 @@ AST preprocessing pass for A7.
 Simplifies and normalizes the AST before code generation.
 Runs after semantic analysis, before codegen. Sub-passes:
 
-1. Lower .adr/.val sugar → ADDRESS_OF/DEREF nodes
-2. Resolve stdlib calls → annotate with stdlib_canonical
-3. Normalize struct inits → positional → named fields
-4. Analyze mutations → set is_mutable on VAR nodes
-5. Analyze usage → set is_used on VAR/PARAMETER nodes
-6. Infer type annotations → set resolved_type on untyped mutable vars
-7. Resolve variable shadowing → set emit_name
-8. Hoist nested functions → move to module level, set hoisted flag
-9. Fold constants → compile-time arithmetic
+1. Resolve stdlib calls → annotate with stdlib_canonical
+2. Normalize struct inits → positional → named fields
+3. Analyze mutations → set is_mutable on VAR nodes
+4. Analyze usage → set is_used on VAR/PARAMETER nodes
+5. Infer type annotations → set resolved_type on untyped mutable vars
+6. Resolve variable shadowing → set emit_name
+7. Hoist nested functions → move to module level, set hoisted flag
+8. Fold constants → compile-time arithmetic
 
 All tree walks use explicit stacks (no recursion) to avoid Python stack overflow.
 """
@@ -185,36 +184,8 @@ class ASTPreprocessor:
 
         _walk_ast_iterative(root, visitor)
 
-    # ================================================================
-    # Pass 1: Lower .adr/.val sugar
-    # ================================================================
-
     def _lower_field_sugar(self, node: ASTNode) -> ASTNode:
-        """Lower .adr and .val syntactic sugar to ADDRESS_OF / DEREF nodes."""
-        if node.kind != NodeKind.FIELD_ACCESS:
-            return node
-
-        field = getattr(node, 'field', '')
-        obj = getattr(node, 'object', None)
-
-        if field == 'adr' and obj:
-            new_node = ASTNode(
-                kind=NodeKind.ADDRESS_OF,
-                operand=obj,
-                span=node.span,
-            )
-            self.changes_made += 1
-            return new_node
-
-        elif field == 'val' and obj:
-            new_node = ASTNode(
-                kind=NodeKind.DEREF,
-                pointer=obj,
-                span=node.span,
-            )
-            self.changes_made += 1
-            return new_node
-
+        """Compatibility no-op: .adr/.val are no longer pointer syntax."""
         return node
 
     # ================================================================
@@ -363,6 +334,13 @@ class ASTPreprocessor:
                 root = self._get_root_identifier(n.operand)
                 if root:
                     mutations.add(root)
+            elif n.kind == NodeKind.CALL:
+                implicit_ref_args = set(getattr(n, "implicit_ref_args", set()) or set())
+                for index, arg in enumerate(n.arguments or []):
+                    if index in implicit_ref_args:
+                        root = self._get_root_identifier(arg)
+                        if root:
+                            mutations.add(root)
 
         _walk_ast_iterative(node, visitor)
         return mutations

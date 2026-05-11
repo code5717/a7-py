@@ -14,15 +14,14 @@ const stages = [
 const dataLabels = ['tokens', 'AST', 'symbols + types', 'annotated AST', 'Zig']
 
 const subPasses = [
-  { num: 1, name: '.adr/.val lowering' },
-  { num: 2, name: 'Stdlib resolution' },
-  { num: 3, name: 'Struct init normalization' },
-  { num: 4, name: 'Mutation analysis' },
-  { num: 5, name: 'Usage analysis' },
-  { num: 6, name: 'Type inference' },
-  { num: 7, name: 'Shadowing resolution' },
-  { num: 8, name: 'Function hoisting' },
-  { num: 9, name: 'Constant folding' },
+  { num: 1, name: 'Stdlib resolution' },
+  { num: 2, name: 'Struct init normalization' },
+  { num: 3, name: 'Mutation analysis' },
+  { num: 4, name: 'Usage analysis' },
+  { num: 5, name: 'Type inference' },
+  { num: 6, name: 'Shadowing resolution' },
+  { num: 7, name: 'Function hoisting' },
+  { num: 8, name: 'Constant folding' },
 ]
 
 const annotationList = [

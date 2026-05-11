@@ -227,6 +227,11 @@ class Tokenizer:
     }
 
     def __init__(self, source_code: str, filename: Optional[str] = None):
+        # Strip a leading UTF-8 BOM (Windows editors often emit one).
+        # CR characters are still treated as horizontal whitespace by
+        # skip_whitespace; tokenizer tests rely on that legacy behavior.
+        if source_code.startswith("﻿"):
+            source_code = source_code[1:]
         self.source = source_code
         self.filename = filename
         self.source_lines = source_code.splitlines()
@@ -380,7 +385,9 @@ class Tokenizer:
             return True
 
         if self.current_char() == "/" and self.peek_char() == "*":
-            # Multi-line comment - consume but don't add token
+            # Multi-line comment - consume but don't add token. EOF is an
+            # accepted comment terminator (see test_003_comments) so an
+            # unterminated /* simply consumes the rest of the file.
             self.advance()  # /
             self.advance()  # *
 

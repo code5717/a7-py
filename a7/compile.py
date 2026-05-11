@@ -25,7 +25,7 @@ from .backends import get_backend
 from .errors import CompilerError, ParseError, SemanticError, SemanticErrorType, display_error, display_errors
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
-from .passes import NameResolutionPass, SemanticValidationPass, TypeCheckingPass
+from .passes import NameResolutionPass, SafetyProofPass, SemanticValidationPass, TypeCheckingPass
 from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
@@ -150,8 +150,18 @@ class A7Compiler:
             if self.mode == CompileMode.COMPILE:
                 result.output_path = output_path or self._generate_output_path(input_path)
 
-            with open(input_path, "r", encoding="utf-8") as f:
-                source_code = f.read()
+            try:
+                with open(input_path, "r", encoding="utf-8") as f:
+                    source_code = f.read()
+            except (IsADirectoryError, PermissionError, OSError, UnicodeDecodeError) as e:
+                return self._finish_with_failure(
+                    result,
+                    ExitCode.IO,
+                    "io",
+                    f"Cannot read {input_path}: {e}",
+                    start,
+                    compiler_error=CompilerError(f"Cannot read {input_path}: {e}"),
+                )
             result.source_code = source_code
 
             # Stage 1: Tokenization
@@ -186,16 +196,12 @@ class A7Compiler:
                     ast = parser.parse()
                     result.ast = ast
                     result.stages["parse"] = {"ok": True}
-                except ParseError as e:
-                    parse_error = e
                 except CompilerError as e:
+                    # Covers ParseError (subclass) and any other compiler-level
+                    # error surfaced from the parser. Unexpected exceptions
+                    # propagate to the outer Exception handler so they are
+                    # tagged as INTERNAL rather than masquerading as parse.
                     parse_error = e
-                except Exception as e:
-                    parse_error = CompilerError(
-                        str(e),
-                        filename=str(input_path),
-                        source_lines=source_code.splitlines() if source_code else [],
-                    )
 
                 if parse_error is not None:
                     result.stages["parse"] = {"ok": False}
@@ -211,6 +217,7 @@ class A7Compiler:
             # Stage 3: Semantic analysis
             symbol_table = None
             type_map = None
+            backend_plan = None
             all_errors: list[Any] = []
             semantic_passes: list[dict[str, Any]] = []
             semantic_modes = {
@@ -332,12 +339,28 @@ class A7Compiler:
                         if validator.errors:
                             all_errors.extend(validator.errors)
 
+                        if sv_ok:
+                            safety = SafetyProofPass(symbol_table, type_checker.node_types)
+                            safety.source_lines = source_lines
+                            backend_plan = safety.analyze(ast, str(input_path))
+                            sp_ok = len(safety.errors) == 0
+                            semantic_passes.append(
+                                {
+                                    "name": "Safety Proof",
+                                    "ok": sp_ok,
+                                    "errors": len(safety.errors),
+                                }
+                            )
+                            if safety.errors:
+                                all_errors.extend(safety.errors)
+
                 semantic_ok = len(all_errors) == 0
                 result.semantic_results = {
                     "passes": semantic_passes,
                     "errors": all_errors,
                     "symbol_table": symbol_table,
                     "type_map": type_map,
+                    "backend_plan": backend_plan,
                 }
                 result.stages["semantic"] = {
                     "ok": semantic_ok,
@@ -370,7 +393,10 @@ class A7Compiler:
                 try:
                     codegen = get_backend(self.backend)
                     target_code = codegen.generate(
-                        ast, type_map=type_map, symbol_table=symbol_table
+                        ast,
+                        type_map=type_map,
+                        symbol_table=symbol_table,
+                        backend_plan=(result.semantic_results or {}).get("backend_plan"),
                     )
                     language_name = codegen.language_name
                     syntax = self.backend

@@ -8,7 +8,9 @@ from io import StringIO
 from typing import Optional, Dict, Set
 
 from ..ast_nodes import ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp, AssignOp
+from ..cast_classifier import CastClass
 from ..errors import CodegenError
+from ..safety import BackendPlan
 from ..types import ArrayType, PointerType, PrimitiveType
 from .base import CodeGenerator
 
@@ -22,6 +24,7 @@ class ZigCodeGenerator(CodeGenerator):
         self._needs_std = False
         self._type_map: Dict = {}
         self._symbol_table = None
+        self._backend_plan: Optional[BackendPlan] = None
         self._declared_structs: Set[str] = set()
         # Mutation analysis: variables that are targets of assignments
         self._mutated_vars: Set[str] = set()
@@ -49,13 +52,14 @@ class ZigCodeGenerator(CodeGenerator):
         return "Zig"
 
     def generate(self, ast: ASTNode, type_map: Optional[Dict] = None,
-                 symbol_table=None) -> str:
+                 symbol_table=None, backend_plan: Optional[BackendPlan] = None) -> str:
         """Generate Zig source code from an A7 AST."""
         self.reset()
         self._needs_allocator = False
         self._needs_std = False
         self._type_map = type_map or {}
         self._symbol_table = symbol_table
+        self._backend_plan = backend_plan
         self._declared_structs = set()
         self._mutated_vars = set()
         self._used_identifiers = set()
@@ -203,7 +207,7 @@ class ZigCodeGenerator(CodeGenerator):
         mutations = set()
 
         def base_identifier(target: ASTNode) -> Optional[str]:
-            """Resolve base identifier for assignment targets like a, a[i], a.b, p.val.x."""
+            """Resolve base identifier for assignment targets like a, a[i], or a.b."""
             if target is None:
                 return None
             if target.kind == NodeKind.IDENTIFIER:
@@ -227,6 +231,13 @@ class ZigCodeGenerator(CodeGenerator):
                 base = base_identifier(n.operand)
                 if base:
                     mutations.add(base)
+            elif n.kind == NodeKind.CALL:
+                implicit_ref_args = set(getattr(n, "implicit_ref_args", set()) or set())
+                for index, arg in enumerate(n.arguments or []):
+                    if index in implicit_ref_args:
+                        base = base_identifier(arg)
+                        if base:
+                            mutations.add(base)
             # Compound assignment operators also count as mutations
             # (they're also ASSIGNMENT nodes with non-ASSIGN op)
 
@@ -356,8 +367,10 @@ class ZigCodeGenerator(CodeGenerator):
         elif kind == NodeKind.EXPRESSION_STMT:
             self._visit_expression_stmt(node)
         else:
-            # Skip unknown node kinds
-            pass
+            raise CodegenError(
+                f"Zig backend: unhandled node kind '{kind.name}'",
+                getattr(node, "span", None),
+            )
 
     # === Top-level declarations ===
 
@@ -1294,7 +1307,11 @@ class ZigCodeGenerator(CodeGenerator):
             return
 
         self._write_indent()
-        target = self._emit_expr(node.target) if node.target else "undefined"
+        if getattr(node, "implicit_deref_target", False):
+            self._require_backend_approval(node, "deref")
+            target = self._emit_implicit_deref(node.target)
+        else:
+            target = self._emit_expr(node.target) if node.target else "undefined"
         value = self._emit_expr(node.value) if node.value else "undefined"
         zig_op = self._assign_op_to_zig(op)
 
@@ -1540,6 +1557,9 @@ class ZigCodeGenerator(CodeGenerator):
                 self._map_primitive_type(result_type.element_type.name),
             )
 
+        if op in {BinaryOp.DIV, BinaryOp.MOD}:
+            self._require_backend_approval(node, op.name.lower())
+
         # Special cases
         if op == BinaryOp.AND:
             return f"({left} and {right})"
@@ -1621,12 +1641,18 @@ class ZigCodeGenerator(CodeGenerator):
             for name in ordered_names:
                 if name in generic_mapping:
                     args_list.append(self._emit_semantic_type(generic_mapping[name]))
-        args_list.extend(self._emit_expr(a) for a in (node.arguments or []))
+        implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
+        for index, arg in enumerate(node.arguments or []):
+            if index in implicit_ref_args:
+                args_list.append(f"&{self._emit_expr(arg)}")
+            else:
+                args_list.append(self._emit_expr(arg))
         args = ", ".join(args_list)
         return f"{func}({args})"
 
     def _emit_index(self, node: ASTNode) -> str:
         """Emit array indexing."""
+        self._require_backend_approval(node, "index")
         obj = self._emit_expr(node.object)
         if (
             node.index
@@ -1644,36 +1670,101 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_slice(self, node: ASTNode) -> str:
         """Emit slice expression."""
+        self._require_backend_approval(node, "slice")
         obj = self._emit_expr(node.object)
-        start = self._emit_expr(node.start) if node.start else "0"
-        end = self._emit_expr(node.end) if node.end else ""
+        start = self._emit_slice_bound(node.start, default="0")
+        end = self._emit_slice_bound(node.end, default="")
         return f"{obj}[{start}..{end}]"
+
+    def _emit_slice_bound(self, bound: Optional[ASTNode], *, default: str) -> str:
+        """Emit a slice bound, coercing non-usize values via @intCast."""
+        if bound is None:
+            return default
+        if (
+            bound.kind == NodeKind.LITERAL
+            and bound.literal_kind == LiteralKind.INTEGER
+            and isinstance(bound.literal_value, int)
+            and bound.literal_value >= 0
+        ):
+            return str(bound.literal_value)
+        emitted = self._emit_expr(bound)
+        bound_type = self._type_map.get(id(bound))
+        if bound_type is not None and getattr(bound_type, "name", None) == "usize":
+            return emitted
+        return f"@intCast({emitted})"
 
     def _emit_field_access(self, node: ASTNode) -> str:
         """Emit field access."""
-        obj = self._emit_expr(node.object)
+        if getattr(node, "implicit_deref_object", False):
+            self._require_backend_approval(node, "deref")
+            obj = self._emit_implicit_ref_field_base(node.object)
+        else:
+            obj = self._emit_expr(node.object)
         field = node.field or "unknown"
         return f"{obj}.{field}"
 
     def _emit_address_of(self, node: ASTNode) -> str:
-        """Emit address-of (.adr → &)."""
+        """Emit internal address-of."""
         operand = self._emit_expr(node.operand)
         return f"&{operand}"
 
     def _emit_deref(self, node: ASTNode) -> str:
-        """Emit dereference (.val)."""
+        """Emit internal dereference."""
+        self._require_backend_approval(node, "deref")
         pointer = self._emit_expr(node.pointer)
         pointer_type = self._type_map.get(id(node.pointer)) if node.pointer else None
         if isinstance(pointer_type, PointerType):
             return f"{pointer}[0]"
         return f"{pointer}.?.*"
 
+    def _emit_implicit_deref(self, node: Optional[ASTNode]) -> str:
+        expr = self._emit_expr(node) if node else "undefined"
+        node_type = self._type_map.get(id(node)) if node else None
+        if isinstance(node_type, PointerType):
+            return f"{expr}[0]"
+        return f"{expr}.?.*"
+
+    def _emit_implicit_ref_field_base(self, node: Optional[ASTNode]) -> str:
+        expr = self._emit_expr(node) if node else "undefined"
+        node_type = self._type_map.get(id(node)) if node else None
+        if isinstance(node_type, PointerType):
+            return f"{expr}[0]"
+        return f"{expr}.?"
+
     def _emit_cast(self, node: ASTNode) -> str:
         """Emit cast expression."""
+        self._require_backend_approval(node, "cast")
+        decision = getattr(node, "cast_decision", None)
+        if decision is None or not decision.allowed:
+            raise CodegenError("Zig backend: cast was not approved by semantic analysis", node.span)
+
         target_type = self._emit_type_node(node.target_type) if node.target_type else "anytype"
         expr = self._emit_expr(node.expression)
-        # Use appropriate Zig cast builtin
-        return f"@as({target_type}, {expr})"
+        source_type = getattr(node, "cast_source_type", None)
+        cast_target_type = getattr(node, "cast_target_type", None)
+        source_name = getattr(source_type, "name", None)
+        target_name = getattr(cast_target_type, "name", None)
+
+        if decision.kind is CastClass.LOSSLESS:
+            return f"@as({target_type}, {expr})"
+        if source_name in {"f32", "f64"} and target_name in {"f32", "f64"}:
+            return f"@as({target_type}, @floatCast({expr}))"
+        if source_name in {"f32", "f64"}:
+            return f"@as({target_type}, @intFromFloat({expr}))"
+        if target_name in {"f32", "f64"}:
+            return f"@as({target_type}, @floatFromInt({expr}))"
+        return f"@as({target_type}, @intCast({expr}))"
+
+    def _require_backend_approval(self, node: ASTNode, operation: str) -> None:
+        if self._backend_plan is None:
+            raise CodegenError(
+                f"Zig backend: {operation} was not approved by safety proof analysis",
+                node.span,
+            )
+        try:
+            self._backend_plan.require(node, operation)
+        except KeyError as exc:
+            raise CodegenError(f"Zig backend: {operation} was not approved by safety proof analysis", node.span) from exc
 
     def _emit_if_expr(self, node: ASTNode) -> str:
         """Emit if expression."""
@@ -1939,7 +2030,7 @@ class ZigCodeGenerator(CodeGenerator):
         elif kind == NodeKind.TYPE_GENERIC:
             if node.name in generic_env:
                 return node.name
-            raise CodegenError(f"Zig backend: unresolved generic type '${node.name or '?'}'", node.span)
+            raise CodegenError(f"Zig backend: unresolved generic type '{node.name or '?'}'", node.span)
         elif kind == NodeKind.TYPE_FUNCTION:
             params = ", ".join(self._emit_type_node(p, generic_env=generic_env) for p in (node.parameter_types or []))
             ret = self._emit_type_node(node.return_type, generic_env=generic_env) if node.return_type else "void"
@@ -2093,27 +2184,11 @@ class ZigCodeGenerator(CodeGenerator):
         self.output.write(f"__a7_{stream}_print({fmt_str}, {args});\n")
 
     def _emit_io_call_expr(self, node: ASTNode) -> str:
-        """Emit io call as an expression (returns void)."""
-        # This shouldn't normally be used as an expression but handle it
-        func = node.function
-        canonical = getattr(node, "stdlib_canonical", None)
-        field = canonical.split(".")[-1] if canonical else getattr(func, 'field', 'println')
-        args = node.arguments or []
-
-        if not args:
-            raise CodegenError("Zig backend: io.print/io.println cannot be used as expression values", node.span)
-
-        fmt_arg = args[0]
-        rest_args = args[1:]
-        fmt_str = self._emit_expr(fmt_arg)
-        fmt_str = self._convert_format_string(fmt_str, rest_args)
-
-        if field in {"println", "eprintln"} and fmt_str.endswith('"'):
-            fmt_str = fmt_str[:-1] + '\\n"'
-
-        if rest_args:
-            raise CodegenError("Zig backend: io.print/io.println cannot be used as expression values", node.span)
-        raise CodegenError("Zig backend: io.print/io.println cannot be used as expression values", node.span)
+        """io.print/io.println return void; using them as expressions is rejected."""
+        raise CodegenError(
+            "Zig backend: io.print/io.println cannot be used as expression values",
+            node.span,
+        )
 
     def _format_spec_for_arg(self, arg: ASTNode) -> str:
         """Pick a Zig print formatter for an argument node."""
@@ -2132,8 +2207,12 @@ class ZigCodeGenerator(CodeGenerator):
         return "any"
 
     def _convert_format_string(self, fmt_str: str, args: Optional[list[ASTNode]] = None) -> str:
-        """Convert A7 format string {} to Zig placeholders."""
-        # Replace {} placeholders but keep explicit Zig-like placeholders untouched.
+        """Convert A7 format string {} to Zig placeholders.
+
+        Bare {} pairs become Zig placeholders with a per-arg format spec.
+        Any standalone '{' or '}' is escaped to '{{' / '}}' so a literal
+        brace in user text does not get reinterpreted by Zig's std.fmt.
+        """
         placeholder_idx = 0
         result = []
         i = 0
@@ -2147,6 +2226,12 @@ class ZigCodeGenerator(CodeGenerator):
                 result.append('{' + spec + '}')
                 placeholder_idx += 1
                 i += 2
+            elif s[i] == '{':
+                result.append('{{')
+                i += 1
+            elif s[i] == '}':
+                result.append('}}')
+                i += 1
             else:
                 result.append(s[i])
                 i += 1
@@ -2165,10 +2250,15 @@ class ZigCodeGenerator(CodeGenerator):
                 out.append("\\t")
             elif ch == "\r":
                 out.append("\\r")
-            elif ch == "\0":
-                out.append("\\x00")
             else:
-                out.append(ch)
+                code = ord(ch)
+                if code < 0x20 or code == 0x7F:
+                    # Zig string literals reject most control bytes; emit
+                    # an explicit hex escape so the generated source is
+                    # always valid regardless of the input bytes.
+                    out.append(f"\\x{code:02x}")
+                else:
+                    out.append(ch)
         out.append('"')
         return "".join(out)
 

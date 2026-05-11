@@ -126,11 +126,11 @@ export const SECTION_SEARCH_ITEMS: SectionSearchItem[] = [
   { to: '/language#type-system', label: 'Type System', group: 'Language section', detail: 'Primitive types, arrays, slices, references, aliases' },
   { to: '/language#control-flow-and-statements', label: 'Control Flow and Statements', group: 'Language section', detail: 'if, while, for, match, fall status, labeled loops' },
   { to: '/language#generics', label: 'Generics', group: 'Language section', detail: 'Generic parameters, @type_set constraints, current gaps' },
-  { to: '/language#memory-and-pointers', label: 'Memory and Pointers', group: 'Language section', detail: 'new, del, defer, .adr, .val, nil' },
+  { to: '/language#memory-and-pointers', label: 'Memory and References', group: 'Language section', detail: 'new, del, defer, ref parameters, nil' },
   { to: '/language#builtins-and-intrinsics', label: 'Builtins and Intrinsics', group: 'Language section', detail: '@type_set plus reserved intrinsic names' },
   { to: '/start#cli', label: 'CLI Modes and Flags', group: 'CLI', detail: 'compile, tokens, ast, semantic, pipeline, doc, flags, exit codes' },
   { to: '/internals#pipeline', label: 'Pipeline Stages', group: 'Compiler pipeline', detail: 'Tokenizer, parser, semantic validation, preprocessing, codegen' },
   { to: '/language#standard-library', label: 'Standard Library', group: 'Stdlib', detail: 'stdlib, io, math, planned stub modules, compiler intrinsics' },
-  { to: '/status#open-gaps', label: 'Open gaps', group: 'Status section', detail: 'fall semantics, match diagnostics, memory model, generic constraints' },
+  { to: '/status#open-gaps', label: 'Open gaps', group: 'Status section', detail: 'match diagnostics, memory model, module lowering, backend parity, package publishing' },
   { to: '/internals#testing', label: 'Golden output verifier', group: 'Testing', detail: 'Example compile, build, run, and output checks' },
 ]

@@ -330,25 +330,30 @@ class TestUnaryOperators:
         """
         assert expect_success(source)
 
-    def test_address_of_operator(self):
-        """Test address-of operator (.adr)."""
+    def test_ref_parameter_mutates_lvalue(self):
+        """Test implicit reference passing."""
         source = """
+        inc :: fn(x: ref i32) {
+            x += 1
+        }
         main :: fn() {
             x: i32 = 42
-            p := x.adr
-            pp := p.adr
+            inc(x)
         }
         """
         assert expect_success(source)
 
-    def test_address_of_temporary_is_rejected(self):
-        """Address-of requires a real storage location."""
+    def test_ref_parameter_rejects_temporary(self):
+        """Implicit reference passing requires a real storage location."""
         source = """
+        inc :: fn(x: ref i32) {
+            x += 1
+        }
         main :: fn() {
-            p := (1 + 2).adr
+            inc(1 + 2)
         }
         """
-        assert expect_error(source, "temporary")
+        assert expect_error(source, "Argument")
 
 
 class TestStdlibCallValidation:
@@ -385,29 +390,29 @@ class TestStdlibCallValidation:
         """
         assert expect_error(source, "f32 or f64")
 
-    def test_dereference_operator(self):
-        """Test dereference operator (.val)."""
+    def test_ref_struct_field_access(self):
+        """Test ref struct field access."""
         source = """
+        Box :: struct { value: i32 }
+        set :: fn(box: ref Box) {
+            box.value = 100
+        }
         main :: fn() {
-            x: i32 = 42
-            p := x.adr
-            y := p.val
-            p.val = 100
+            b := Box{value: 42}
+            set(b)
         }
         """
         assert expect_success(source)
 
-    def test_dereference_non_pointer_error(self):
-        """Test dereference of non-pointer type."""
+    def test_legacy_val_is_not_pointer_syntax(self):
+        """Test .val is treated as a field name, not a dereference."""
         source = """
         main :: fn() {
             x: i32 = 42
             y := x.val
         }
         """
-        # This should error - can't dereference non-pointer
-        result = expect_error(source, "pointer")
-        # Might not be implemented yet
+        result = expect_error(source, "field")
         assert isinstance(result, bool)
 
 

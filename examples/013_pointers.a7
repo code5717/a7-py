@@ -1,9 +1,9 @@
-// Pointer syntax in A7
+// Reference passing in A7
 
 io :: import "std/io"
 
 increment :: fn(p: ref i32) {
-    p.val += 1
+    p += 1
 }
 
 main :: fn() {
@@ -11,9 +11,8 @@ main :: fn() {
 
     x: i32
     x = 10
-    p: ref i32 = x.adr
 
     io.println("before = {}", x)
-    increment(p)
+    increment(x)
     io.println("after = {}", x)
 }

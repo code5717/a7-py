@@ -31,17 +31,29 @@ class AuditResult:
     detail: str = ""
 
 
-def run_cli(args: list[str]) -> subprocess.CompletedProcess[str]:
+def run_cli(args: list[str], timeout: float = 60.0) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     existing_pythonpath = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = f"{ROOT}:{existing_pythonpath}" if existing_pythonpath else str(ROOT)
-    return subprocess.run(
-        [sys.executable, str(MAIN_PY), *args],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        env=env,
-    )
+    try:
+        return subprocess.run(
+            [sys.executable, str(MAIN_PY), *args],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(
+            args=exc.cmd,
+            returncode=124,
+            stdout=exc.stdout if isinstance(exc.stdout, str) else "",
+            stderr=(
+                (exc.stderr if isinstance(exc.stderr, str) else "")
+                + f"\nCLI timed out after {timeout}s"
+            ),
+        )
 
 
 def parse_json(stdout: str) -> tuple[bool, dict, str]:

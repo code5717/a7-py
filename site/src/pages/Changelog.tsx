@@ -3,11 +3,35 @@ import SectionPanel from '../components/SectionPanel'
 
 const releases = [
   {
+    version: 'Unreleased',
+    date: '',
+    groups: {
+      Added: [
+        'C backend support has been retired from the public compiler; Zig is now the only supported code generation target.',
+        'Higher-order callback trampoline recursion is rejected during semantic validation.',
+        'Generic struct literals retain concrete instance types, and used generic struct instances compile through Zig codegen.',
+        'Release workflow hardening now includes split permissions, pinned audit tooling, artifact checksums, archive verification, and attestations.',
+        'Public Markdown docs, llms.txt, and the docs site now distinguish current features from parsed-only or reserved syntax.',
+      ],
+      Changed: [
+        'Zig stdio lowering now uses shared buffered stdout/stderr writers and generated print helpers.',
+        'Normal example verification fails closed when a golden output fixture is missing.',
+        'Low-recursion documentation now scopes the claim to the compiler stages that are actually stack-based today.',
+        'File-backed imports fail closed before backend codegen until multi-file linking is implemented.',
+      ],
+      Fixed: [
+        'JSON diagnostics serialize selected import item lists without tracebacking.',
+        'Variadic parameters fail closed before backend codegen instead of emitting invalid target signatures.',
+        'Examples now better exercise their documented branches in the Zig backend.',
+        'Formatter symbol collection now surfaces traversal failures instead of swallowing broad exceptions.',
+      ],
+    },
+  },
+  {
     version: '0.3.0',
     date: '2026-05-07',
     groups: {
       Added: [
-        'C backend support was retired; Zig is now the focused generation target.',
         'Labeled loops for while, for, and for-in with labeled break/continue in Zig.',
         'Match expression type checking, bool/enum exhaustiveness, wildcard patterns, and return-path validation.',
         'Error stage verifier and matrix tests for mode/format contracts.',
@@ -19,16 +43,16 @@ const releases = [
       ],
       Changed: [
         'Docs site refresh with corrected quickstart commands, route labels, examples, and status wording.',
-        'All AST traversals converted to iterative stack-based form.',
-        'Semantic errors collected without hard-stop.',
+        'AST-wide analysis, preprocessing, formatter/reporting walks, and backend binary-expression emission moved to explicit stack-based traversal.',
+        'Semantic errors are collected without hard-stop.',
         'Backend reads preprocessor annotations instead of recomputing.',
-        'Semantic backlog tracked by active tests. Run pytest for current counts.',
+        'Semantic backlog is tracked by active tests. Run pytest for current counts.',
       ],
       Fixed: [
         'Match/switch Zig codegen trailing comma edge cases.',
         'Character literal escaping and operator keyword usage.',
         'Struct initialization and nil handling in examples.',
-        'Status/docs/changelog now list exact missing features uncovered by the unskipped semantic tests.',
+        'Status/docs/changelog list exact missing features uncovered by the unskipped semantic tests.',
       ],
     },
   },

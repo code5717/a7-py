@@ -112,15 +112,12 @@ class Scope:
         Returns:
             Symbol if found, None otherwise
         """
-        # Try this scope first
-        symbol = self.symbols.get(name)
-        if symbol:
-            return symbol
-
-        # Try parent scopes
-        if self.parent:
-            return self.parent.lookup(name)
-
+        scope: Optional["Scope"] = self
+        while scope is not None:
+            symbol = scope.symbols.get(name)
+            if symbol is not None:
+                return symbol
+            scope = scope.parent
         return None
 
     def update_symbol(self, name: str, symbol: Symbol) -> bool:

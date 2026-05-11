@@ -198,12 +198,12 @@ class TestFunctionParameters:
         """Test function with reference parameters."""
         source = """
         increment :: fn(x: ref i32) {
-            x.val = x.val + 1
+            x += 1
         }
 
         main :: fn() {
             value: i32 = 10
-            increment(value.adr)
+            increment(value)
         }
         """
         assert expect_success(source)

@@ -109,6 +109,13 @@ Features that are spec'd and partially implemented, or missing from one backend.
 
 ### Type System / Semantics
 
+- [x] Add an internal safety proof and backend-plan phase for risky operations.
+  Files: `a7/safety.py`, `a7/compile.py`, `a7/backends/zig.py`
+  Notes: casts, division/modulo, bounds-sensitive indexing/slicing, and
+  reference dereferences are now checked by internal facts/obligations before
+  Zig codegen can lower them. Public A7 syntax no longer exposes address or
+  dereference operators.
+
 - [x] Add source-language support for `slice.ptr` / `slice.len`.
   Files: `a7/passes/type_checker.py`, `a7/backends/zig.py`
   Notes: slice field access now type-checks `ptr` as `ptr T` and `len` as `usize`; Zig uses native slice fields.

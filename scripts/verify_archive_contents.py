@@ -5,18 +5,66 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import posixpath
 import sys
 import tarfile
 from pathlib import Path
 
 
 def normalize_member(path: str) -> str:
-    return path.strip().lstrip("./").rstrip("/")
+    """Normalize a tar member path for comparison.
+
+    Strips a single leading "./" and trailing slashes. Does NOT use
+    ``str.lstrip("./")`` — that strips any combination of "." and "/" chars
+    from the left and would launder "../etc/passwd" into "etc/passwd".
+    """
+    cleaned = path.strip()
+    if cleaned.startswith("./"):
+        cleaned = cleaned[2:]
+    return cleaned.rstrip("/")
+
+
+def _is_unsafe_member(member: tarfile.TarInfo) -> str | None:
+    """Return a reason string if the member is unsafe, else None."""
+    raw = member.name
+    if not raw:
+        return "empty member name"
+    # Reject absolute paths (POSIX or Windows-style).
+    if raw.startswith("/") or raw.startswith("\\"):
+        return f"absolute member path: {raw!r}"
+    # Reject any ".." segment after POSIX normalization.
+    normalized = posixpath.normpath(raw)
+    if normalized.startswith("../") or normalized == ".." or "/../" in normalized or normalized.startswith("/"):
+        return f"path traversal in member: {raw!r}"
+    # Reject symlinks/hardlinks whose targets escape the archive root.
+    if member.issym() or member.islnk():
+        target = member.linkname or ""
+        if not target:
+            return f"link member with empty target: {raw!r}"
+        if target.startswith("/") or target.startswith("\\"):
+            return f"absolute link target: {raw!r} -> {target!r}"
+        # Resolve the link target relative to the member's directory.
+        member_dir = posixpath.dirname(normalized)
+        resolved = posixpath.normpath(posixpath.join(member_dir, target))
+        if resolved.startswith("../") or resolved == "..":
+            return f"link target escapes archive: {raw!r} -> {target!r}"
+    # Reject device, FIFO, and other non-regular members. We accept
+    # regular files, directories, symlinks, and hardlinks (the latter two
+    # are validated above).
+    if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
+        return f"unsupported member type: {raw!r} (type={member.type!r})"
+    return None
 
 
 def archive_members(path: Path) -> set[str]:
+    members: set[str] = set()
     with tarfile.open(path, "r:*") as archive:
-        return {normalize_member(member.name) for member in archive.getmembers()}
+        for member in archive.getmembers():
+            reason = _is_unsafe_member(member)
+            if reason is not None:
+                raise ValueError(f"unsafe archive member: {reason}")
+            members.add(normalize_member(member.name))
+    return members
 
 
 def main() -> int:
@@ -47,7 +95,7 @@ def main() -> int:
 
     try:
         members = archive_members(archive_path)
-    except (tarfile.TarError, OSError) as exc:
+    except (tarfile.TarError, OSError, ValueError) as exc:
         print(f"could not read archive {archive_path}: {exc}", file=sys.stderr)
         return 2
 

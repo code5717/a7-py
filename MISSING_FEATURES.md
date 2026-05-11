@@ -55,6 +55,10 @@
 38. Zig stdio lowering uses shared buffered stdout/stderr writers, generated
     print helpers, and `main`-scoped deferred flushes instead of per-print
     flush calls.
+39. Internal safety proof planning now owns risky-operation approval for casts,
+    division/modulo, array/slice/string indexing and slicing, and reference
+    dereferences. Zig codegen consumes the resulting backend plan instead of
+    deciding those checks independently.
 
 ---
 

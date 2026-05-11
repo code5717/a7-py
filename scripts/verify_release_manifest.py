@@ -52,6 +52,10 @@ def resolve_artifact(base_dir: Path, artifact_path: str) -> Path:
 
     if (base_dir / candidate).exists():
         return base_dir / candidate
+    # Flat-asset fallback: when manifest paths include directory prefixes
+    # (e.g. "dist/foo.tar.gz") but a user downloaded the assets flat next
+    # to the manifest, fall back to a basename match. Hash verification
+    # below will still detect any wrong-file substitution.
     if (base_dir / candidate.name).exists():
         return base_dir / candidate.name
     if candidate.is_absolute():
