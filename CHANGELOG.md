@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Docs site now renders Markdown in-page with mermaid diagrams (pipeline,
+  verification layers, release flow, doc tree, fetch order, language surface);
+  deduped near-duplicate docs into `/guide` and `/dev` canonical pages with
+  short aliases; expanded `site/public/llms-full.txt` into a true single-file
+  context with the full 43-example catalog, errors/exit-codes table, ASCII
+  pipeline and architecture diagrams, agent fetch order, and plugin pointers.
 - Semantic analysis now has an internal safety-proof phase after base type
   checking and semantic validation. Risky casts, division/modulo, indexing,
   slicing, and reference dereferences must be approved through a `BackendPlan`
@@ -19,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-zero, bounds, and non-nil facts live in the safety analysis layer.
 - Examples using heap `new` now check against `nil` before field access, and the
   function example guards division by zero.
+- Added five runnable application-style examples covering inventory reporting,
+  text analysis, task-board risk scoring, route simulation, and gradebook
+  averages.
 - C backend support has been retired from the public compiler. Zig is now the
   only supported code generation target, and CI/release/example verification
   gates focus on Zig output.

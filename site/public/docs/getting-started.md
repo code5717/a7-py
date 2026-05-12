@@ -23,9 +23,6 @@ uv run a7 examples/001_hello.a7
 
 The default backend emits Zig.
 
-```bash
-```
-
 To learn the current language from one file, run the commented tour:
 
 ```bash

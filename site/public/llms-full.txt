@@ -18,6 +18,47 @@ The source repository is `https://github.com/code5717/a7-py`.
 
 A7 is not a sandbox. Do not compile or run untrusted A7 source.
 
+## Pipeline Diagram (ASCII)
+
+```text
++--------+    +-----------+    +--------+    +----------+    +--------+    +-----------------+    +---------+    +-----+
+| Source | -> | Tokenizer | -> | Parser | -> | Semantic | -> | Safety | -> | AST Preprocess  | -> | Codegen | -> | Zig |
+|  .a7   |    |           |    |        |    | Analysis |    | Proof  |    |                 |    |         |    |     |
++--------+    +-----------+    +--------+    +----------+    +--------+    +-----------------+    +---------+    +-----+
+```
+
+## Architecture Diagram (ASCII)
+
+```text
+                +-------------------+
+                |     a7/cli.py     |
+                +---------+---------+
+                          |
+            +-------------+-------------+
+            |                           |
+   +--------v--------+         +--------v--------+
+   |  a7/tokens.py   |         | a7/parser.py    |
+   +--------+--------+         +--------+--------+
+            |                           |
+            +-------------+-------------+
+                          |
+                   +------v-------+
+                   |  a7/passes/  | (name_resolution, type_checker, semantic_validator)
+                   +------+-------+
+                          |
+                   +------v-------+
+                   |  a7/safety.py |
+                   +------+-------+
+                          |
+                +---------v---------+
+                | a7/ast_preprocessor.py |
+                +---------+---------+
+                          |
+                +---------v---------+
+                | a7/backends/zig.py |
+                +-------------------+
+```
+
 ## Current Status
 
 Implemented:
@@ -29,14 +70,17 @@ Implemented:
 - Simple top-level generic function calls, type-set constraints, and used generic struct instances in Zig.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
-- Arrays, slices, string slices, references, implicit ref-argument passing, and manual `new` / `del`.
+- Arrays, slices, string slices, `slice.ptr` and `slice.len` access, string sub-slicing (`string[start..end]` and `string[start..]` as `[]char`), references, implicit ref-argument passing, and manual `new` / `del`.
 - Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
 - `defer`, unreachable-statement diagnostics, and direct/mutual/alias/callback-trampoline source-recursion diagnostics.
+- Match identifier capture patterns bind the scrutinee in branch-local scope when no visible symbol exists with that name.
 - `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
 - Internal facts and backend-plan approval for casts, division/modulo,
   indexing/slicing, and reference dereferences before Zig emission.
+- Buffered Zig stdio lowering through shared `writerStreaming` stdout/stderr writers, generated print helpers, and deferred per-stream flushing from `main`.
+- C backend support has been retired. Zig is the only supported code generation target; CI, release, and example verification gates focus on Zig output.
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
-- 38 runnable examples verified through the Zig backend.
+- 43 runnable examples verified through the Zig backend.
 - Debug/release artifact verification for Zig.
 - Tag-based draft GitHub releases with package, docs, and native example artifacts.
 
@@ -116,10 +160,21 @@ Flags:
 - `--verbose`: show intermediate results
 - `--mode MODE`: select compiler stage
 - `--format json`: emit structured JSON
-- `--backend zig`: select target backend
+- `--backend zig`: select target backend (Zig is the only supported backend; C backend has been retired)
 - `--doc-out PATH`: write Markdown report
 
-Exit codes:
+## Errors and Exit Codes
+
+| Code | Stage | Meaning |
+| ---: | --- | --- |
+| 0 | runtime | success |
+| 2 | cli | bad arguments |
+| 3 | cli | input file not found |
+| 4 | tokenizer | tokenizer error |
+| 5 | parser | parse error |
+| 6 | semantic | semantic error |
+| 7 | codegen | codegen error |
+| 8 | internal | internal bug |
 
 ```text
 0 success
@@ -275,7 +330,7 @@ Source reference: `docs/SPEC.md`.
 
 ## Examples
 
-The repository contains 38 runnable example programs under `examples/`.
+The repository contains 43 runnable example programs under `examples/`.
 
 Verifier commands:
 
@@ -283,20 +338,54 @@ Verifier commands:
 uv run python scripts/verify_examples_e2e.py
 ```
 
-Both verifiers compile, build, run, and compare output against
+The verifier compiles, builds, runs, and compares output against
 `test/fixtures/golden_outputs/*.out`.
 
-Important examples:
+Full catalog:
 
+- `000_empty.a7`: empty program scaffolding
 - `001_hello.a7`: stdlib IO hello world
-- `012_arrays.a7`: arrays and slices
+- `002_var.a7`: variables and constants
+- `003_comments.a7`: comment forms
+- `004_func.a7`: function declarations and calls
+- `005_for_loop.a7`: classic for loop forms
+- `006_if.a7`: if and else conditionals
+- `007_while.a7`: while loop forms
+- `008_switch.a7`: match statements (switch-style)
+- `009_struct.a7`: struct declarations and field access
+- `010_enum.a7`: enum declarations and matching
+- `011_memory.a7`: memory management basics
+- `012_arrays.a7`: fixed arrays and slices
+- `013_pointers.a7`: ref parameter passing
+- `014_generics.a7`: generic functions and generic struct instances
+- `015_types.a7`: primitive type usage and casts
 - `016_unions.a7`: current untagged union support
+- `017_methods.a7`: method-style behavior using ref parameters
+- `018_modules.a7`: virtual stdlib module imports
+- `019_literals.a7`: literal forms across types
+- `020_operators.a7`: operator surface and precedence
 - `021_control_flow.a7`: loops and conditionals
 - `022_function_pointers.a7`: function aliases and callbacks
-- `014_generics.a7`: generic functions and generic struct instances
-- `026_binary_tree.a7`: explicit stack traversal without recursion
-- `036_control_flow_edges.a7`: labeled loops, sub-slicing, and match-case defer scope
+- `023_inline_structs.a7`: inline struct return values
+- `024_defer.a7`: defer statement behavior
+- `025_linked_list.a7`: linked-list traversal with next indexes
+- `026_binary_tree.a7`: explicit stack tree traversal
+- `027_callbacks.a7`: callback-style event handling
+- `028_state_machine.a7`: match-driven state machine
+- `029_sorting.a7`: sort with comparator callback
+- `030_calculator.a7`: simple calculator
+- `031_number_guessing.a7`: deterministic number guessing
+- `032_prime_numbers.a7`: prime checks and GCD
+- `033_fibonacci.a7`: iterative Fibonacci sequence
+- `034_string_utils.a7`: string utility examples
+- `035_matrix.a7`: matrix operations over flat arrays
+- `036_control_flow_edges.a7`: labeled loops, sub-slicing, defer scope
 - `037_language_tour.a7`: commented language tour
+- `038_inventory_report.a7`: inventory valuation with ref updates
+- `039_text_analyzer.a7`: string slicing and char metrics
+- `040_task_board.a7`: task status and risk reporting
+- `041_route_simulation.a7`: iterative route movement
+- `042_gradebook.a7`: nested score arrays, curves, and grades
 
 ## Compiler Pipeline
 
@@ -307,6 +396,7 @@ Source (.a7)
   -> Tokenizer
   -> Parser
   -> Semantic Analysis
+  -> Safety Proof Planning
   -> AST Preprocessing
   -> Backend Codegen
   -> Zig output
@@ -320,6 +410,7 @@ Core source map:
 - `a7/passes/name_resolution.py`: names and modules
 - `a7/passes/type_checker.py`: type checking
 - `a7/passes/semantic_validator.py`: semantic validation
+- `a7/safety.py`: internal safety proof planning and backend-plan approval
 - `a7/ast_preprocessor.py`: lowering annotations and preprocessing
 - `a7/backends/zig.py`: Zig backend
 - `a7/cli.py`: CLI entrypoint
@@ -349,28 +440,19 @@ tests, Zig example verifier, selected backend smoke checks, debug and
 release artifact builds, error-stage checks, docs style checks, secret scanning,
 and the total pytest suite.
 
-The latest local full gate passed after adding `037_language_tour.a7`; see
-`RELEASE_READINESS_REVIEW.md` for the exact recorded evidence.
+See `RELEASE_READINESS_REVIEW.md` and `COMPLETION_AUDIT.md` for recorded release-gate evidence.
 
-## Release
-
-Build package:
+## Release and Verification Commands
 
 ```bash
-rm -rf dist
-uv build
-```
-
-Build native example artifacts:
-
-```bash
+./run_all_tests.sh
+rm -rf dist && uv build
+uv run python scripts/verify_wheel_install.py --skip-build
+uvx --from pip-audit==2.10.0 pip-audit --strict
+uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
+(cd site && npm audit --omit=dev --audit-level=moderate)
 uv run python scripts/build_examples.py --profile debug --backend zig --clean
 uv run python scripts/build_examples.py --profile release --backend zig --clean
-```
-
-Verify release manifest:
-
-```bash
 uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
 ```
@@ -383,6 +465,27 @@ Release workflows:
 
 Package-registry status: the current workflow does not publish to a package
 registry.
+
+## Agent Fetch Order
+
+```text
+1. https://code5717.github.io/a7-py/llms.txt          (compact routing)
+2. https://code5717.github.io/a7-py/docs/index.md     (document tree)
+3. https://code5717.github.io/a7-py/llms-full.txt     (this aggregate)
+```
+
+Use the compact index first. Use the document tree when you need a specific
+page route. Use this aggregate when a single combined context file is easier
+than many small fetches.
+
+## Plugins
+
+- Amp: `/a7-py/docs/plugins/amp.md`
+- Claude Code: `/a7-py/docs/plugins/claude.md`
+- Codex: `/a7-py/docs/plugins/codex.md`
+- Cursor: `/a7-py/docs/plugins/cursor.md`
+- OpenCode: `/a7-py/docs/plugins/opencode.md`
+- Pi: `/a7-py/docs/plugins/pi.md`
 
 ## Documentation
 

@@ -21,6 +21,8 @@ The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/bl
   curl.md and plugin resources remain available from the docs surfaces.
 - Added `examples/037_language_tour.a7`, a commented compact tour for learning
   the current stable language surface by reading and running one verified file.
+- Added five application-style examples: inventory reporting, text analysis,
+  task-board risk scoring, route simulation, and gradebook averages.
 - Untagged union literals and field access now run in the Zig example verifier;
   tagged union tag workflows remain a known gap.
 - The generics example now runs real generic functions and generic struct

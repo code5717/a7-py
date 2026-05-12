@@ -31,7 +31,7 @@ export default function Status() {
       <section className="metric-grid">
         <MetricTile label="Pipeline" value="Working with open gaps" />
         <MetricTile label="Tests" value="Use live test run" note="PYTHONPATH=. uv run pytest --tb=no -q" />
-        <MetricTile label="Examples" value="Zig verifier" note="38/38 examples" />
+        <MetricTile label="Examples" value="Zig verifier" note="43/43 examples" />
       </section>
 
       <SectionPanel title="Done">

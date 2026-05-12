@@ -1,5 +1,13 @@
 # Status
 
+## Buckets
+
+```mermaid
+flowchart LR
+    I[Implemented] --> G[Known Gaps]
+    G --> P[Planned]
+```
+
 ## Current State
 
 - Tokenizer, parser, semantic pipeline, internal safety proof planning, AST preprocessing, and Zig code generation are implemented.

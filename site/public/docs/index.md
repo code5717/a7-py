@@ -4,6 +4,18 @@
 
 Use these pages when you need current published docs without scraping the React docs app. The links below follow the docs navigation order used by `llms.txt`, `llms-full.txt`, and the site sidebar.
 
+## Document Tree
+
+```mermaid
+flowchart TD
+    Root[A7 Docs] --> Intro[Introduction]
+    Root --> Guide[Guide]
+    Root --> Plug[Plugins]
+    Root --> LLM[LLM Resources]
+    Root --> Contrib[Contributing]
+    Root --> Ref[A7 References]
+```
+
 ## Fetch Order
 
 ```bash

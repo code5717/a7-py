@@ -40,12 +40,12 @@ def test_examples_end_to_end_outputs_match_goldens(tmp_path: Path) -> None:
     )
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode == 0, combined
-    assert "Examples verified: 38/38" in result.stdout
+    assert "Examples verified: 43/43" in result.stdout
 
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["ok"] is True
-    assert payload["passed"] == payload["total"] == 38
-    assert len(payload["results"]) == 38
+    assert payload["passed"] == payload["total"] == 43
+    assert len(payload["results"]) == 43
     for item in payload["results"]:
         assert item["compile_ok"] is True
         assert item["ast_ok"] is True

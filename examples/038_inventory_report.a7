@@ -1,0 +1,60 @@
+// Inventory report with structs, refs, and guarded arithmetic
+
+io :: import "std/io"
+
+Item :: struct {
+    name: string
+    stock: i32
+    reorder: i32
+    price: i32
+}
+
+value_of :: fn(item: Item) i32 {
+    ret item.stock * item.price
+}
+
+apply_discount :: fn(item: ref Item, percent: i32) {
+    if percent <= 0 {
+        ret
+    }
+    if percent >= 100 {
+        item.price = 0
+        ret
+    }
+
+    remaining := 100 - percent
+    item.price = (item.price * remaining) / 100
+}
+
+print_item :: fn(index: i32, item: Item) i32 {
+    line_value := value_of(item)
+    if item.stock <= item.reorder {
+        io.println("{}: {} stock={} value={} reorder=yes", index, item.name, item.stock, line_value)
+        ret 1
+    }
+
+    io.println("{}: {} stock={} value={} reorder=no", index, item.name, item.stock, line_value)
+    ret 0
+}
+
+main :: fn() {
+    io.println("=== Inventory Report ===")
+
+    wrench := Item{name: "wrench", stock: 12, reorder: 5, price: 15}
+    bolt := Item{name: "bolt", stock: 48, reorder: 50, price: 1}
+    sensor := Item{name: "sensor", stock: 7, reorder: 8, price: 42}
+    panel := Item{name: "panel", stock: 3, reorder: 2, price: 75}
+
+    apply_discount(sensor, 10)
+
+    total := value_of(wrench) + value_of(bolt) + value_of(sensor) + value_of(panel)
+    reorder_count := 0
+
+    reorder_count += print_item(0, wrench)
+    reorder_count += print_item(1, bolt)
+    reorder_count += print_item(2, sensor)
+    reorder_count += print_item(3, panel)
+
+    io.println("total value = {}", total)
+    io.println("items to reorder = {}", reorder_count)
+}

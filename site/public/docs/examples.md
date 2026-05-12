@@ -1,11 +1,14 @@
 # Examples
 
-The repository contains 38 runnable example programs in `examples/`.
+The repository contains 43 runnable example programs in `examples/`.
 
 Start with `examples/037_language_tour.a7` when you want a compact
 learn-by-reading path: one commented file that walks through declarations,
 arrays, slices, structs, enums, untagged unions, references, heap values,
 function pointers, loops, and the no-recursion rule.
+
+Recent application-style examples include inventory reporting, text analysis,
+task-board risk scoring, route simulation, and gradebook averages.
 
 ## Verify Examples
 

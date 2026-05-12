@@ -2,6 +2,12 @@
 
 ## Fetch Order
 
+```mermaid
+flowchart LR
+    A[llms.txt] --> B[docs/index.md]
+    B --> C[llms-full.txt]
+```
+
 For curl.md or other agent fetch workflows, start with:
 
 ```text

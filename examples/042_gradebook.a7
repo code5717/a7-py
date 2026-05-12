@@ -1,0 +1,58 @@
+// Gradebook with nested arrays in structs and ref-based curve updates
+
+io :: import "std/io"
+
+Student :: struct {
+    name: string
+    scores: [3]i32
+}
+
+average :: fn(student: Student) i32 {
+    total := student.scores[0] + student.scores[1] + student.scores[2]
+    ret total / 3
+}
+
+letter :: fn(avg: i32) string {
+    match avg {
+        case 90..100: { ret "A" }
+        case 80..89: { ret "B" }
+        case 70..79: { ret "C" }
+        case 60..69: { ret "D" }
+        else: { ret "F" }
+    }
+}
+
+add_curve :: fn(student: ref Student, points: i32) {
+    for i := cast(usize, 0); i < 3; i += 1 {
+        next := student.scores[i] + points
+        if next > 100 {
+            student.scores[i] = 100
+        } else {
+            student.scores[i] = next
+        }
+    }
+}
+
+print_student :: fn(index: i32, student: Student) i32 {
+    avg := average(student)
+    io.println("{}: {} avg={} grade={}", index, student.name, avg, letter(avg))
+    ret avg
+}
+
+main :: fn() {
+    io.println("=== Gradebook ===")
+
+    mira := Student{name: "Mira", scores: [88, 91, 84]}
+    noah := Student{name: "Noah", scores: [73, 78, 81]}
+    lina := Student{name: "Lina", scores: [95, 97, 99]}
+
+    add_curve(noah, 5)
+
+    class_total := 0
+    class_total += print_student(0, mira)
+    class_total += print_student(1, noah)
+    class_total += print_student(2, lina)
+
+    class_avg := class_total / 3
+    io.println("class average = {}", class_avg)
+}

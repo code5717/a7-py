@@ -1,0 +1,7 @@
+=== Inventory Report ===
+0: wrench stock=12 value=180 reorder=no
+1: bolt stock=48 value=48 reorder=yes
+2: sensor stock=7 value=259 reorder=yes
+3: panel stock=3 value=225 reorder=no
+total value = 712
+items to reorder = 2

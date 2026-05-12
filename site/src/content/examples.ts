@@ -42,6 +42,11 @@ const EXAMPLE_META = {
   '035_matrix.a7': { title: 'Matrix Ops', category: 'Applications', desc: '2x2 matrix addition with array +' },
   '036_control_flow_edges.a7': { title: 'Control Flow Edges', category: 'Control Flow', desc: 'Labeled loops, slices, and match-case defer scope' },
   '037_language_tour.a7': { title: 'Language Tour', category: 'Basics', desc: 'One-file tour of declarations, types, control flow, refs, heap values, and function pointers' },
+  '038_inventory_report.a7': { title: 'Inventory Report', category: 'Applications', desc: 'Inventory valuation with structs, ref updates, discounts, and reorder checks' },
+  '039_text_analyzer.a7': { title: 'Text Analyzer', category: 'Applications', desc: 'String slicing, char iteration, vowel counting, and search metrics' },
+  '040_task_board.a7': { title: 'Task Board', category: 'Applications', desc: 'Task status reporting with ref mutation, match labels, and risk scores' },
+  '041_route_simulation.a7': { title: 'Route Simulation', category: 'Applications', desc: 'Iterative path simulation with movement vectors and Manhattan distance' },
+  '042_gradebook.a7': { title: 'Gradebook', category: 'Applications', desc: 'Student records with nested score arrays, curves, averages, and grades' },
 } as const
 
 function titleFromFile(file: string) {

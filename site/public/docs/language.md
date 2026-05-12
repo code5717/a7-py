@@ -4,6 +4,39 @@
 
 A7 is a statically typed systems language with type inference, manual memory operations, modules, generics, and Zig backends.
 
+```mermaid
+mindmap
+  root((A7))
+    Types
+      primitives
+      arrays
+      slices
+      structs
+      enums
+      unions
+      aliases
+    Control
+      if
+      while
+      for
+      match
+      labeled loops
+    Memory
+      ref params
+      new
+      del
+      defer
+    Modules
+      virtual stdlib
+      file-backed (limited)
+    Generics
+      type-set
+      simple specialization
+    Stdlib
+      std/io
+      std/math
+```
+
 The interactive Language page is the Zig-style one-page reference: use browser
 find on the page for syntax, types, control flow, memory, modules, stdlib, and
 current implementation notes.

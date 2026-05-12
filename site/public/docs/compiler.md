@@ -2,6 +2,17 @@
 
 ## Pipeline
 
+```mermaid
+flowchart LR
+    Src[Source .a7] --> Tok[Tokenizer]
+    Tok --> Par[Parser]
+    Par --> Sem[Semantic Analysis]
+    Sem --> Safe[Safety Proof Plan]
+    Safe --> Pre[AST Preprocessing]
+    Pre --> Gen[Codegen]
+    Gen --> Zig[Zig output]
+```
+
 ```text
 Source (.a7) -> Tokenizer -> Parser -> Semantic Analysis -> Safety Proof Plan -> AST Preprocessing -> Backend Codegen -> Zig output
 ```
@@ -12,6 +23,16 @@ Source (.a7) -> Tokenizer -> Parser -> Semantic Analysis -> Safety Proof Plan ->
 - `scripts/build_examples.py` builds debug and release artifacts for Zig.
 
 ## Verification Layers
+
+```mermaid
+flowchart TD
+    P[pytest] --> E[verify_examples_e2e]
+    E --> R[verify_error_stages]
+    R --> D[build_examples debug]
+    R --> Rl[build_examples release]
+    D --> A[run_all_tests]
+    Rl --> A
+```
 
 ```bash
 PYTHONPATH=. uv run pytest --tb=no -q

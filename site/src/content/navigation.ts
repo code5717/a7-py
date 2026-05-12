@@ -76,7 +76,7 @@ export const PAGE_META: Record<string, { title: string; description: string; mar
   '/cli': {
     title: 'CLI',
     description: 'A7 compiler modes, flags, output formats, and exit codes.',
-    markdownPath: '/docs/cli.md',
+    markdownPath: '/docs/guide/cli.md',
   },
   '/pipeline': {
     title: 'Compiler Pipeline',
@@ -111,7 +111,7 @@ export const PAGE_META: Record<string, { title: string; description: string; mar
   '/contributing': {
     title: 'Contributing',
     description: 'A7 contribution workflow, local checks, and project standards.',
-    markdownPath: '/docs/contributing.md',
+    markdownPath: '/docs/dev/develop.md',
   },
   '/changelog': {
     title: 'Changelog',

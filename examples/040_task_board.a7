@@ -1,0 +1,73 @@
+// Task board with ref mutation and priority labels
+
+io :: import "std/io"
+
+Task :: struct {
+    title: string
+    priority: i32
+    estimate: i32
+    done: bool
+}
+
+complete :: fn(task: ref Task) {
+    task.done = true
+}
+
+raise_priority :: fn(task: ref Task) {
+    if task.priority < 5 {
+        task.priority += 1
+    }
+}
+
+risk_score :: fn(task: Task) i32 {
+    if task.done {
+        ret 0
+    }
+    ret task.priority * task.estimate
+}
+
+priority_label :: fn(priority: i32) string {
+    match priority {
+        case 1: { ret "low" }
+        case 2, 3: { ret "normal" }
+        case 4: { ret "high" }
+        else: { ret "critical" }
+    }
+}
+
+print_task :: fn(index: i32, task: Task) i32 {
+    score := risk_score(task)
+    io.println("{}: {} priority={} done={} risk={}", index, task.title, priority_label(task.priority), task.done, score)
+    if task.done {
+        ret 0
+    }
+    ret 1
+}
+
+main :: fn() {
+    io.println("=== Task Board ===")
+
+    parser := Task{title: "parser cleanup", priority: 3, estimate: 4, done: false}
+    docs := Task{title: "docs pass", priority: 2, estimate: 3, done: false}
+    audit := Task{title: "release audit", priority: 4, estimate: 5, done: false}
+    examples := Task{title: "examples", priority: 1, estimate: 2, done: false}
+
+    complete(docs)
+    raise_priority(audit)
+    raise_priority(examples)
+
+    open_tasks := 0
+    total_risk := 0
+
+    open_tasks += print_task(0, parser)
+    total_risk += risk_score(parser)
+    open_tasks += print_task(1, docs)
+    total_risk += risk_score(docs)
+    open_tasks += print_task(2, audit)
+    total_risk += risk_score(audit)
+    open_tasks += print_task(3, examples)
+    total_risk += risk_score(examples)
+
+    io.println("open tasks = {}", open_tasks)
+    io.println("total risk = {}", total_risk)
+}

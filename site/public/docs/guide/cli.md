@@ -26,6 +26,17 @@ uv run python main.py [OPTIONS] <file.a7>
 
 ## Exit Codes
 
+| Code | Stage | Meaning |
+| ---: | --- | --- |
+| 0 | runtime | success |
+| 2 | cli | bad arguments |
+| 3 | cli | input file not found |
+| 4 | tokenizer | tokenizer error |
+| 5 | parser | parse error |
+| 6 | semantic | semantic error |
+| 7 | codegen | codegen error |
+| 8 | internal | internal bug |
+
 ```text
 0 success
 2 bad arguments

@@ -1,5 +1,18 @@
 # Release
 
+## Release Flow
+
+```mermaid
+flowchart TD
+    A[run_all_tests] --> B[uv build]
+    B --> C[wheel smoke test]
+    C --> D[audits: pip-audit, bandit, npm audit]
+    D --> E[build_examples release]
+    E --> F[generate_release_manifest SHA256SUMS]
+    F --> G[tag]
+    G --> H[draft GitHub release: package + docs + native + SHA256SUMS + attestations]
+```
+
 ## Full Local Gate
 
 Run before tagging:
@@ -34,8 +47,8 @@ uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --requ
 
 The tag workflow also verifies that `SHA256SUMS` contains the expected package,
 docs, and native artifact archives before upload. It also checks required
-archive members, asserts the example archive contains all 38 generated Zig
-sources and all 38 native binaries, then re-checks the hashes and sizes on disk.
+archive members, asserts the example archive contains all 43 generated Zig
+sources and all 43 native binaries, then re-checks the hashes and sizes on disk.
 Tag runs also generate GitHub artifact attestations for the package, docs,
 native examples, and checksum manifest.
 
