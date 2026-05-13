@@ -20,6 +20,8 @@ async function ensureMermaid() {
 
 marked.setOptions({ gfm: true, breaks: false })
 
+const EMPTY_MERMAID_BLOCKS: string[] = []
+
 function publicDocsPath(path: string) {
   return `${import.meta.env.BASE_URL.replace(/\/$/, '')}${path}`
 }
@@ -175,16 +177,20 @@ function DocDirectory() {
 }
 
 function MarkdownArticle({ markdownPath }: { markdownPath: string }) {
-  const [html, setHtml] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [blocks, setBlocks] = useState<string[]>([])
+  const [article, setArticle] = useState<{
+    markdownPath: string
+    html: string | null
+    error: string | null
+    blocks: string[]
+  }>({ markdownPath, html: null, error: null, blocks: [] })
   const containerRef = useRef<HTMLElement | null>(null)
   const navigate = useNavigate()
+  const html = article.markdownPath === markdownPath ? article.html : null
+  const error = article.markdownPath === markdownPath ? article.error : null
+  const blocks = article.markdownPath === markdownPath ? article.blocks : EMPTY_MERMAID_BLOCKS
 
   useEffect(() => {
     let cancelled = false
-    setHtml(null)
-    setError(null)
     const url = publicDocsPath(markdownPath)
     fetch(url)
       .then((res) => {
@@ -199,13 +205,17 @@ function MarkdownArticle({ markdownPath }: { markdownPath: string }) {
           ADD_TAGS: ['div'],
           ADD_ATTR: ['data-mermaid-id', 'class'],
         })
-        setBlocks(mermaidBlocks)
-        setHtml(wrapMarkdownTables(clean))
+        setArticle({
+          markdownPath,
+          html: wrapMarkdownTables(clean),
+          error: null,
+          blocks: mermaidBlocks,
+        })
       })
       .catch((err: unknown) => {
         if (cancelled) return
         const message = err instanceof Error ? err.message : String(err)
-        setError(message)
+        setArticle({ markdownPath, html: null, error: message, blocks: [] })
       })
     return () => {
       cancelled = true
