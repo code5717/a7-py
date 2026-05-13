@@ -6,8 +6,8 @@ React + TypeScript + Vite docs frontend for the A7 compiler repository.
 
 ```bash
 cd site
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 The site uses `HashRouter`, so routes resolve as `#/path` locally and on GitHub Pages.
@@ -16,17 +16,17 @@ The site uses `HashRouter`, so routes resolve as `#/path` locally and on GitHub 
 
 ```bash
 cd site
-npm run build
-npm run preview
+bun run build
+bun run preview
 ```
 
 ## Quality Checks
 
 ```bash
 cd site
-npm run lint -- --max-warnings=0
-npm run typecheck
-npm run build
+bun run lint -- --max-warnings=0
+bun run typecheck
+bun run build
 ```
 
 Repository-level docs style checks:
@@ -77,7 +77,7 @@ When adding or renaming a page, update these pieces together:
 - public Markdown files under `site/public/docs/`
 - `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/sitemap.xml`
 - route-specific content with `SectionPanel` titles for stable anchors
-- `npm run lint -- --max-warnings=0`, `npm run typecheck`, and `npm run build`
+- `bun run lint -- --max-warnings=0`, `bun run typecheck`, and `bun run build`
 
 ## Deployment
 

@@ -56,13 +56,13 @@ Run this before tagging:
 
 ```bash
 ./run_all_tests.sh
-(cd site && npm ci && npm run build)
+(cd site && bun install && bun run build)
 rm -rf dist
 uv build
 uv run python scripts/verify_wheel_install.py --skip-build
 uvx --from pip-audit==2.10.0 pip-audit --strict
 uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
-(cd site && npm audit --omit=dev --audit-level=moderate)
+(cd site && bun audit --audit-level=moderate)
 ```
 
 `run_all_tests.sh` includes:

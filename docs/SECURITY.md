@@ -23,8 +23,8 @@ uv build
 uvx --from pip-audit==2.10.0 pip-audit --strict
 uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 uv run python scripts/check_no_secrets.py
-(cd site && npm run build)
-(cd site && npm audit --omit=dev --audit-level=moderate)
+(cd site && bun run build)
+(cd site && bun audit --audit-level=moderate)
 ```
 
 The full gate includes parser/tokenizer tests, semantic tests, Zig backend

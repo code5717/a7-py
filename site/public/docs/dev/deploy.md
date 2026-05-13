@@ -28,14 +28,14 @@ dist/
 
 ```bash
 cd site
-npm ci
-npm run build
+bun install
+bun run build
 ```
 
 The output is `site/dist/`. Inspect it with:
 
 ```bash
-npm run preview
+bun run preview
 # open http://localhost:4173/a7-py/
 ```
 
@@ -86,7 +86,7 @@ files — your changes will be overwritten on the next build.
 
 ```bash
 cd site
-npx tsx scripts/generate-sitemap.ts
+bunx tsx scripts/generate-sitemap.ts
 ```
 
 The sitemap reads the manifest in `src/content/manifest.ts` and writes
@@ -98,7 +98,7 @@ The deploy workflow:
 
 1. Push or PR merge to `master`.
 2. CI runs `./run_all_tests.sh` — must pass.
-3. CI runs `cd site && npm ci && npm run build`.
+3. CI runs `cd site && bun install && bun run build`.
 4. The action publishes `site/dist/` to the `gh-pages` branch (or the
    Pages target).
 

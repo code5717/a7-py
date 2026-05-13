@@ -1,6 +1,6 @@
 /*
  * Tiny build helper: regenerate public/sitemap.xml from the manifest.
- * Invoked manually via `npx tsx scripts/generate-sitemap.ts` after editing the manifest.
+ * Invoked manually via `bunx tsx scripts/generate-sitemap.ts` after editing the manifest.
  * Not wired into vite build to keep the sitemap committed in version control.
  */
 

@@ -83,10 +83,6 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
     return out.sort((a, b) => b.score - a.score).slice(0, 12)
   }, [index, query])
 
-  useEffect(() => {
-    setActiveIdx(0)
-  }, [query])
-
   function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -117,7 +113,10 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
             type="search"
             placeholder="Search docs…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setActiveIdx(0)
+            }}
             spellCheck={false}
             autoComplete="off"
           />

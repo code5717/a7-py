@@ -24,24 +24,27 @@ interface DocJson {
 
 export default function DocPage({ path }: { path: string }) {
   const entry = ENTRIES_BY_PATH.get(path) as ManifestEntry | undefined
-  const [doc, setDoc] = useState<DocJson | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [loadState, setLoadState] = useState<{
+    path: string
+    doc: DocJson | null
+    error: string | null
+  }>({ path: '', doc: null, error: null })
   const proseRef = useRef<HTMLDivElement | null>(null)
   const np = useMemo(() => (entry ? neighbours(entry.path) : { prev: undefined, next: undefined }), [entry])
+  const doc = loadState.path === path ? loadState.doc : null
+  const error = loadState.path === path ? loadState.error : null
 
   useEffect(() => {
     if (!entry) return
-    setDoc(null)
-    setError(null)
     let cancelled = false
     void (async () => {
       try {
         const res = await fetch(dataUrl(entry))
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
         const json = (await res.json()) as DocJson
-        if (!cancelled) setDoc(json)
+        if (!cancelled) setLoadState({ path: entry.path, doc: json, error: null })
       } catch (err) {
-        if (!cancelled) setError((err as Error).message)
+        if (!cancelled) setLoadState({ path: entry.path, doc: null, error: (err as Error).message })
       }
     })()
     return () => {
@@ -84,7 +87,6 @@ export default function DocPage({ path }: { path: string }) {
             <div
               ref={proseRef}
               className="prose"
-              // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: doc.html }}
             />
           )}

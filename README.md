@@ -197,8 +197,8 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 
 ```bash
 cd site
-npm ci
-npm run dev
+bun install
+bun run dev
 ```
 
 ---

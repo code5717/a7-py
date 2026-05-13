@@ -80,8 +80,8 @@ CLI modes (`--mode`): `compile` (default, writes `.zig`), `tokens`, `ast`,
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release jobs run this
   with `--skip-build` after `uv build`)
-- Docs site build: `cd site && npm ci && npm run build`
-- Agent/curl.md docs preview: `cd site && npm run build && npm run preview`
+- Docs site build: `cd site && bun install && bun run build`
+- Agent/curl.md docs preview: `cd site && bun run build && bun run preview`
   then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
   `/a7-py/docs/index.md`.
 

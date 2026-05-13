@@ -79,7 +79,7 @@ If your change affects a user-visible behaviour, update — in the same PR:
 - The matching page under `site/public/docs/`
 
 `site/public/llms.txt` and `llms-full.txt` are auto-regenerated; commit
-the updated files after running `npm run build` under `site/`.
+the updated files after running `bun run build` under `site/`.
 
 ## What lands easily
 
