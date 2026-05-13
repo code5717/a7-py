@@ -1,83 +1,54 @@
-# A7 Docs
+# A7 Documentation
 
-> Documentation for learning A7, using the compiler, and tracking current implementation status.
+A7 is a small, safe ahead-of-time compiler. It lowers `.a7` source to Zig
+source, then to a native binary via the host Zig 0.16 toolchain. The compiler
+is written in Python; there is no runtime.
 
-Start with the user-facing docs below. The same content is also available as plain Markdown for terminals and automation.
+This site is the canonical reference. Every page is also served as raw
+markdown — replace `/path` with `/docs/<source>.md` to fetch it from a
+terminal or agent.
 
-## Document Tree
+## Sections
 
 ```mermaid
-flowchart TD
-    Root[A7 Docs] --> Intro[Introduction]
-    Root --> Guide[Guide]
-    Root --> Plug[Plugins]
-    Root --> LLM[LLM Resources]
-    Root --> Contrib[Contributing]
-    Root --> Ref[A7 References]
+flowchart LR
+    Learn[01 LEARN]    --> Ref[02 REFERENCE]
+    Ref               --> Compiler[03 COMPILER]
+    Compiler          --> Project[04 PROJECT]
+    Learn -.-> LLMs[(llms.txt<br>llms-full.txt)]
+    Ref   -.-> LLMs
 ```
 
-## Introduction
+- **[Learn](/a7-py/learn/start)** — get the compiler running, read why it
+  exists, and walk through real examples.
+- **[Reference](/a7-py/ref/language)** — language, CLI, Python API, and the
+  standard library — the surface area in one place.
+- **[Compiler](/a7-py/compiler/internals)** — pipeline, safety proofs,
+  testing, status, and release process.
+- **[Project](/a7-py/project/contributing)** — how to contribute, deploy the
+  site, and read the changelog.
 
-- [Getting Started](/a7-py/docs/getting-started.md): Fast path from checkout to running examples.
-- [Installation](/a7-py/docs/install.md): Install Python, uv, Zig, and repository dependencies.
-- [Why A7](/a7-py/docs/why.md): Project goals, constraints, and current fit.
-- [FAQ](/a7-py/docs/faq.md): Short answers for agents and maintainers.
+## Agent-facing surfaces
 
-## Guide
+Agents and curl-driven tooling should fetch one of:
 
-- [Features](/a7-py/docs/guide/features.md): Implemented language and compiler capabilities.
-- [Agent Usage](/a7-py/docs/guide/agent-usage.md): Fetch order, verification commands, and trust boundaries for coding agents.
-- [CLI](/a7-py/docs/guide/cli.md): Modes, flags, exit codes, and JSON output.
-- [API and SDK](/a7-py/docs/guide/api.md): Automation entry points and current limits.
-- [Plugins](/a7-py/docs/guide/plugins.md): Agent and editor integration map.
+- `/a7-py/llms.txt` — compact index, one bullet per page.
+- `/a7-py/llms-full.txt` — every page concatenated with section headers and
+  source URLs. Single fetch for full context.
+- `/a7-py/docs/<slug>.md` — raw markdown for any specific page.
 
-## Plugins
+Both `.txt` files are auto-generated from the markdown corpus at build time.
+They do not drift.
 
-- [Amp](/a7-py/docs/plugins/amp.md): Use A7 docs from Amp.
-- [Claude Code](/a7-py/docs/plugins/claude.md): Use A7 docs from Claude Code.
-- [Codex](/a7-py/docs/plugins/codex.md): Use A7 docs from Codex.
-- [Cursor](/a7-py/docs/plugins/cursor.md): Use A7 docs from Cursor.
-- [OpenCode](/a7-py/docs/plugins/opencode.md): Use A7 docs from OpenCode.
-- [Pi](/a7-py/docs/plugins/pi.md): Use A7 docs from Pi.
+## Invariants
 
-## LLM Resources
+Three facts that shape every page on this site:
 
-- [Skills](/a7-py/docs/skills.md): Agent skill guidance and repo rules.
-- [llms.txt](/a7-py/llms.txt): Compact agent entry point.
-- [llms-full.txt](/a7-py/llms-full.txt): Single-file aggregate of the public Markdown docs.
-
-## Contributing
-
-- [Contributing](/a7-py/docs/dev/develop.md): Local development workflow.
-- [Deploy](/a7-py/docs/dev/deploy.md): Docs deploy and release notes.
-- [Kitchen Sink](/a7-py/docs/dev/kitchen-sink.md): Markdown component coverage.
-- [Changelog](/a7-py/docs/changelog.md): Current release notes and notable changes.
-
-## A7 References
-
-- [Language and Library](/a7-py/docs/language.md): One-page reference, integer guidance, stdlib, and no-recursion rule.
-- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, Zig verification, test layers, and local release gate.
-- [Safety Contract](/a7-py/docs/safety.md): Facts, obligations, proofs, ownership checks, and backend-plan invariants.
-- [Examples](/a7-py/docs/examples.md): Runnable programs, the commented language tour, and verification commands.
-- [Release](/a7-py/docs/release.md): Debug/release artifact builds, package build, dependency audits, and draft GitHub release artifacts.
-- [Status](/a7-py/docs/status.md): Implemented surface, remaining gaps, and release risks.
-- [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
-- [Testing](/a7-py/docs/testing.md): Alias for verification commands.
-- [Standard Library](/a7-py/docs/stdlib.md): Alias for current stdlib surface.
-
-## Source References
-
-- [Language Specification](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
-- [Release Checklist](https://github.com/code5717/a7-py/blob/master/docs/RELEASE.md)
-- [Security Policy](https://github.com/code5717/a7-py/blob/master/docs/SECURITY.md)
-- [Status and Roadmap](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
-
-## Plain Markdown Access
-
-```bash
-curl -fsS https://code5717.github.io/a7-py/docs/index.md
-curl -fsS https://code5717.github.io/a7-py/llms.txt
-curl -fsS https://code5717.github.io/a7-py/llms-full.txt
-```
-
-Use `docs/index.md` for the document tree. Use `llms.txt` only when a compact routing file is useful, and `llms-full.txt` only when one combined context file is easier than many small pages.
+1. **A7 source recursion is rejected at compile time.** Direct, mutual, and
+   function-pointer alias cycles all error out. Use loops, worklists, or
+   explicit stacks. Iteration is the supported control structure.
+2. **Compiler internals use iterative traversal.** Semantic passes,
+   formatters, and most backend emission paths use explicit stacks. CI
+   enforces Python recursion limit 100.
+3. **A7 is not a sandbox.** The compiler emits Zig that the host toolchain
+   builds and runs. Only compile source you trust.

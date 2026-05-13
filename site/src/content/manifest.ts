@@ -6,7 +6,7 @@
  * a7-docs Vite plugin renders to /docs-data/<sourceDoc>.json at build time.
  */
 
-export type SectionKey = 'learn' | 'ref' | 'compiler' | 'project' | 'agents'
+export type SectionKey = 'learn' | 'ref' | 'compiler' | 'project'
 
 export interface ManifestEntry {
   /** URL path relative to BrowserRouter basename, e.g. "/learn/start" */
@@ -36,7 +36,6 @@ export const SECTIONS: SectionDef[] = [
   { key: 'ref', label: 'REFERENCE', index: '02' },
   { key: 'compiler', label: 'COMPILER', index: '03' },
   { key: 'project', label: 'PROJECT', index: '04' },
-  { key: 'agents', label: 'AGENTS', index: '05' },
 ]
 
 export const MANIFEST: ManifestEntry[] = [
@@ -201,80 +200,6 @@ export const MANIFEST: ManifestEntry[] = [
     section: 'project',
     navLabel: 'Changelog',
   },
-
-  // -- agents --
-  {
-    path: '/agents',
-    source: 'plugins',
-    title: 'Agents Overview',
-    eyebrow: 'AGENTS / OVERVIEW',
-    section: 'agents',
-    navLabel: 'Overview',
-  },
-  {
-    path: '/agents/usage',
-    source: 'guide/agent-usage',
-    title: 'Agent Usage',
-    eyebrow: 'AGENTS / USAGE',
-    section: 'agents',
-    navLabel: 'Usage',
-  },
-  {
-    path: '/agents/skills',
-    source: 'skills',
-    title: 'Skills',
-    eyebrow: 'AGENTS / SKILLS',
-    section: 'agents',
-    navLabel: 'Skills',
-  },
-  {
-    path: '/agents/claude',
-    source: 'plugins/claude',
-    title: 'Claude',
-    eyebrow: 'AGENTS / CLAUDE',
-    section: 'agents',
-    navLabel: 'Claude',
-  },
-  {
-    path: '/agents/codex',
-    source: 'plugins/codex',
-    title: 'Codex',
-    eyebrow: 'AGENTS / CODEX',
-    section: 'agents',
-    navLabel: 'Codex',
-  },
-  {
-    path: '/agents/cursor',
-    source: 'plugins/cursor',
-    title: 'Cursor',
-    eyebrow: 'AGENTS / CURSOR',
-    section: 'agents',
-    navLabel: 'Cursor',
-  },
-  {
-    path: '/agents/amp',
-    source: 'plugins/amp',
-    title: 'Amp',
-    eyebrow: 'AGENTS / AMP',
-    section: 'agents',
-    navLabel: 'Amp',
-  },
-  {
-    path: '/agents/opencode',
-    source: 'plugins/opencode',
-    title: 'OpenCode',
-    eyebrow: 'AGENTS / OPENCODE',
-    section: 'agents',
-    navLabel: 'OpenCode',
-  },
-  {
-    path: '/agents/pi',
-    source: 'plugins/pi',
-    title: 'Pi',
-    eyebrow: 'AGENTS / PI',
-    section: 'agents',
-    navLabel: 'Pi',
-  },
 ]
 
 /** Legacy URL → new URL (with optional #anchor). Mounted as <Navigate replace> in App. */
@@ -303,22 +228,24 @@ export const LEGACY_REDIRECTS: Array<{ from: string; to: string }> = [
   { from: '/deploy', to: '/project/deploy' },
   { from: '/changelog', to: '/project/changelog' },
 
-  { from: '/plugins', to: '/agents' },
-  { from: '/plugins/claude', to: '/agents/claude' },
-  { from: '/plugins/codex', to: '/agents/codex' },
-  { from: '/plugins/cursor', to: '/agents/cursor' },
-  { from: '/plugins/amp', to: '/agents/amp' },
-  { from: '/plugins/opencode', to: '/agents/opencode' },
-  { from: '/plugins/pi', to: '/agents/pi' },
-  { from: '/agent-usage', to: '/agents/usage' },
-  { from: '/skills', to: '/agents/skills' },
+  // agent surfaces collapsed to llms.txt + llms-full.txt
+  { from: '/plugins', to: '/' },
+  { from: '/plugins/claude', to: '/' },
+  { from: '/plugins/codex', to: '/' },
+  { from: '/plugins/cursor', to: '/' },
+  { from: '/plugins/amp', to: '/' },
+  { from: '/plugins/opencode', to: '/' },
+  { from: '/plugins/pi', to: '/' },
+  { from: '/agents', to: '/' },
+  { from: '/agent-usage', to: '/learn/start#agents' },
+  { from: '/skills', to: '/learn/start#agents' },
 
   // legacy guide/* surfaces that were aliased in the old curlDocs map
   { from: '/guide/cli', to: '/ref/cli' },
   { from: '/guide/api', to: '/ref/api' },
   { from: '/guide/features', to: '/ref/features' },
-  { from: '/guide/plugins', to: '/agents' },
-  { from: '/guide/agent-usage', to: '/agents/usage' },
+  { from: '/guide/plugins', to: '/' },
+  { from: '/guide/agent-usage', to: '/learn/start#agents' },
 ]
 
 /** External URLs (served as raw assets, not React routes). */

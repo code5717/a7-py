@@ -1,36 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://code5717.github.io/a7-py/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/docs/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/learn/start/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/learn/why/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/learn/faq/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/learn/examples/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/ref/language/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/ref/cli/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/ref/api/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/ref/stdlib/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/ref/features/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/internals/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/pipeline/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/safety/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/testing/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/status/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/release/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/project/contributing/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/project/deploy/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/project/changelog/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/llms.txt</loc></url>
   <url><loc>https://code5717.github.io/a7-py/llms-full.txt</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/index.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/getting-started.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/install.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/why.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/faq.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/guide/features.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/guide/agent-usage.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/guide/cli.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/guide/api.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/guide/plugins.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins/amp.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins/claude.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins/codex.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins/cursor.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins/opencode.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/plugins/pi.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/skills.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/dev/develop.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/dev/deploy.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/dev/kitchen-sink.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/changelog.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/language.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/compiler.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/pipeline.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/testing.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/stdlib.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/examples.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/release.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/status.md</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/contributing.md</loc></url>
 </urlset>

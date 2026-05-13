@@ -16,18 +16,23 @@ const ORIGIN = 'https://code5717.github.io/a7-py'
 async function main() {
   const manifestModule = await import('../src/content/manifest.ts')
   const entries = manifestModule.MANIFEST as Array<{ path: string }>
-  const urls = ['/', ...entries.map((e) => e.path)]
-  urls.push('/llms.txt', '/llms-full.txt')
+  const routes = ['/', ...entries.map((e) => e.path)]
+  const assets = ['/llms.txt', '/llms-full.txt']
 
-  const body = urls
-    .map((u) => `  <url><loc>${ORIGIN}${u.replace(/\/$/, '')}/</loc></url>`)
-    .join('\n')
+  const body = [
+    ...routes.map((u) => {
+      const trimmed = u.replace(/\/$/, '')
+      const final = trimmed === '' ? '/' : trimmed + '/'
+      return `  <url><loc>${ORIGIN}${final}</loc></url>`
+    }),
+    ...assets.map((u) => `  <url><loc>${ORIGIN}${u}</loc></url>`),
+  ].join('\n')
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`
 
   const out = path.join(SITE_ROOT, 'public', 'sitemap.xml')
   await fs.writeFile(out, xml, 'utf8')
-  console.log(`sitemap.xml: wrote ${urls.length} urls → ${out}`)
+  console.log(`sitemap.xml: wrote ${routes.length + assets.length} urls → ${out}`)
 }
 
 main().catch((err) => {

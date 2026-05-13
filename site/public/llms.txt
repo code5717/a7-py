@@ -1,59 +1,76 @@
-# A7 Docs
+# A7 — A small, safe compiler for the agent era
 
-> Agent-ready documentation entry point for the A7 compiler and language.
+A7 lowers .a7 source to Zig, then to a native binary via the host Zig 0.16 toolchain.
+No source recursion. Iterative compiler internals. Deterministic exit codes (0/2-8).
 
-A7 is a statically typed systems language compiler implemented in Python. It compiles A7 source to Zig, rejects source recursion, and verifies examples through compile/build/run/output gates.
+Site:    https://code5717.github.io/a7-py/
+Full:    https://code5717.github.io/a7-py/llms-full.txt
+Source:  https://github.com/Airbus5717/a7-py
 
-## Introduction
+## Pages
 
-- [Docs Index](/a7-py/docs/index.md): Full curl.md navigation tree and fetch order.
-- [Full Context](/a7-py/llms-full.txt): Single-file aggregate for large-context ingestion.
-- [Getting Started](/a7-py/docs/getting-started.md): Install, compile, run, and test A7.
-- [Installation](/a7-py/docs/install.md): Toolchain and local docs setup.
-- [Why A7](/a7-py/docs/why.md): Project goals, non-goals, and fit.
-- [FAQ](/a7-py/docs/faq.md): Short answers for agent workflows.
+### LEARN
 
-## Guide
+- Getting Started — https://code5717.github.io/a7-py/learn/start
+  Five-minute path from a fresh checkout to a running A7 binary.
+  Source: https://code5717.github.io/a7-py/docs/getting-started.md
+- Why A7 — https://code5717.github.io/a7-py/learn/why
+  A7 is a deliberately small systems language with one goal: be the cleanest target for both humans and coding agents to write correct, low…
+  Source: https://code5717.github.io/a7-py/docs/why.md
+- FAQ — https://code5717.github.io/a7-py/learn/faq
+  Short answers to questions that come up across issues, PRs, and agent sessions.
+  Source: https://code5717.github.io/a7-py/docs/faq.md
+- Examples — https://code5717.github.io/a7-py/learn/examples
+  The repository ships 46 example programs in examples/ covering every implemented language feature. Each one is verified end-to-end by scr…
+  Source: https://code5717.github.io/a7-py/docs/examples.md
 
-- [Features](/a7-py/docs/guide/features.md): Implemented language, compiler, and verification capabilities.
-- [Agent Usage](/a7-py/docs/guide/agent-usage.md): Fetch order, verification commands, and trust boundaries.
-- [CLI](/a7-py/docs/guide/cli.md): Compiler modes, flags, exit codes, and automation commands.
-- [API and SDK](/a7-py/docs/guide/api.md): Automation entry points and current limits.
-- [Plugins](/a7-py/docs/guide/plugins.md): Agent and editor integration map.
+### REFERENCE
 
-## Plugins
+- Language Reference — https://code5717.github.io/a7-py/ref/language
+  The implemented A7 language surface. Anything you can see in examples/ compiles end-to-end. Anything described here works in the current …
+  Source: https://code5717.github.io/a7-py/docs/language.md
+- CLI — https://code5717.github.io/a7-py/ref/cli
+  The A7 compiler ships one entrypoint: a7. It's installed by uv sync as a console script. Use it via uv run a7 ... or import the Python AP…
+  Source: https://code5717.github.io/a7-py/docs/cli.md
+- API — https://code5717.github.io/a7-py/ref/api
+  The compiler is a normal Python package — a7/ — that you can import and drive programmatically. The CLI (a7.cli:main) is the canonical en…
+  Source: https://code5717.github.io/a7-py/docs/api.md
+- Standard Library — https://code5717.github.io/a7-py/ref/stdlib
+  A7's standard library is small by design. Each module is a single virtual import resolved by the compiler — no source file is loaded from…
+  Source: https://code5717.github.io/a7-py/docs/stdlib.md
+- Features — https://code5717.github.io/a7-py/ref/features
+  This page draws the line between supported features (compile + run end-to-end) and reserved ones (syntax may parse, but the backend rejec…
+  Source: https://code5717.github.io/a7-py/docs/features.md
 
-- [Amp](/a7-py/docs/plugins/amp.md): Use A7 docs from Amp.
-- [Claude Code](/a7-py/docs/plugins/claude.md): Use A7 docs from Claude Code.
-- [Codex](/a7-py/docs/plugins/codex.md): Use A7 docs from Codex.
-- [Cursor](/a7-py/docs/plugins/cursor.md): Use A7 docs from Cursor.
-- [OpenCode](/a7-py/docs/plugins/opencode.md): Use A7 docs from OpenCode.
-- [Pi](/a7-py/docs/plugins/pi.md): Use A7 docs from Pi.
+### COMPILER
 
-## LLM Resources
+- Compiler Internals — https://code5717.github.io/a7-py/compiler/internals
+  The A7 compiler is a single Python package, a7/, structured as a pipeline of independent stages. There is no runtime. Every stage runs ah…
+  Source: https://code5717.github.io/a7-py/docs/compiler.md
+- Pipeline — https://code5717.github.io/a7-py/compiler/pipeline
+  Per-stage detail for the A7 compile pipeline. Each stage takes the previous stage's output, runs an iterative traversal, and hands off to…
+  Source: https://code5717.github.io/a7-py/docs/pipeline.md
+- Safety — https://code5717.github.io/a7-py/compiler/safety
+  A7's safety model is a single compile-time pass that proves or rejects risky operations before the backend emits Zig. There is no runtime…
+  Source: https://code5717.github.io/a7-py/docs/safety.md
+- Testing — https://code5717.github.io/a7-py/compiler/testing
+  A7's tests live in test/ at the repository root. The suite is the contract between the compiler and the language; the docs are downstream…
+  Source: https://code5717.github.io/a7-py/docs/testing.md
+- Implementation Status — https://code5717.github.io/a7-py/compiler/status
+  What works, what's incomplete, and what's deferred. This page is the canonical roadmap. Keep docs/CHANGELOG.md short and release-facing; …
+  Source: https://code5717.github.io/a7-py/docs/status.md
+- Release — https://code5717.github.io/a7-py/compiler/release
+  How an A7 release ships. Tags drive builds; builds drive artifacts; artifacts attach to GitHub releases. There is no package-registry pub…
+  Source: https://code5717.github.io/a7-py/docs/release.md
 
-- [Skills](/a7-py/docs/skills.md): Agent skill guidance and repo rules.
+### PROJECT
 
-## Contributing
-
-- [Contributing](/a7-py/docs/dev/develop.md): Local development workflow.
-- [Deploy](/a7-py/docs/dev/deploy.md): Docs deploy and release notes.
-- [Kitchen Sink](/a7-py/docs/dev/kitchen-sink.md): Markdown component coverage.
-- [Changelog](/a7-py/docs/changelog.md): Current release notes and notable changes.
-
-## A7 References
-
-- [Language and Library](/a7-py/docs/language.md): Syntax, type guidance, stdlib, and recursion rule.
-- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, Zig backend, example verifier, and release gate.
-- [Safety Contract](/a7-py/docs/safety.md): Facts, obligations, proofs, ownership checks, and backend-plan invariants.
-- [Examples](/a7-py/docs/examples.md): Example catalog, including `037_language_tour.a7`, and verification commands.
-- [Release](/a7-py/docs/release.md): Debug/release artifacts, package build, audits, and draft GitHub release artifacts.
-- [Status](/a7-py/docs/status.md): Current implementation status and known gaps.
-- [Pipeline](/a7-py/docs/pipeline.md): Alias for compiler pipeline notes.
-- [Testing](/a7-py/docs/testing.md): Alias for verification commands.
-- [Standard Library](/a7-py/docs/stdlib.md): Alias for current stdlib surface.
-
-## Human Site
-
-- [A7 Docs App](/a7-py/): Interactive docs site.
-- [GitHub Repository](https://github.com/code5717/a7-py): Source, tests, examples, and release workflows.
+- Contributing — https://code5717.github.io/a7-py/project/contributing
+  A7 is an open project. Contributions are welcome — read this before sending a PR.
+  Source: https://code5717.github.io/a7-py/docs/contributing.md
+- Deploy — https://code5717.github.io/a7-py/project/deploy
+  The docs at https://code5717.github.io/a7-py/ deploy from the site/ directory to GitHub Pages. This page covers the workflow, base path, …
+  Source: https://code5717.github.io/a7-py/docs/dev/deploy.md
+- Changelog — https://code5717.github.io/a7-py/project/changelog
+  This page mirrors the canonical docs/CHANGELOG.md in the repository root. Release-facing entries only — longer narratives live in Status.
+  Source: https://code5717.github.io/a7-py/docs/changelog.md

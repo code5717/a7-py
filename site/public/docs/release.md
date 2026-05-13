@@ -1,84 +1,123 @@
 # Release
 
-## Release Flow
+How an A7 release ships. Tags drive builds; builds drive artifacts;
+artifacts attach to GitHub releases. There is no package-registry
+publishing.
 
-```mermaid
-flowchart TD
-    A[run_all_tests] --> B[uv build]
-    B --> C[wheel smoke test]
-    C --> D[audits: pip-audit, bandit, npm audit]
-    D --> E[build_examples release]
-    E --> F[generate_release_manifest SHA256SUMS]
-    F --> G[tag]
-    G --> H[draft GitHub release: package + docs + native + SHA256SUMS + attestations]
-```
+## Cadence
 
-## Full Local Gate
+A7 is pre-1.0. Releases are tagged when:
 
-Run before tagging:
+- A meaningful slice of the [Active priorities](/a7-py/compiler/status)
+  closes.
+- A breaking change in source syntax lands.
+- The Zig toolchain is bumped.
+
+There is no fixed schedule.
+
+## Local pre-release gate
+
+Run the full local gate before tagging:
 
 ```bash
 ./run_all_tests.sh
-(cd site && npm ci && npm run build)
+```
+
+This must pass on a clean checkout with the pinned Zig version. If it
+doesn't, the release isn't ready.
+
+## Building artifacts
+
+```bash
 rm -rf dist
 uv build
-uv run python scripts/verify_wheel_install.py --skip-build
-uvx --from pip-audit==2.10.0 pip-audit --strict
-uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
-(cd site && npm audit --omit=dev --audit-level=moderate)
 ```
 
-Clean `dist/` before `uv build` so local package output contains only the
-current version. GitHub release jobs run in a clean runner, but local release
-prep should not rely on stale artifacts being absent.
-The Python audit tools are pinned so release gates do not fetch arbitrary latest
-tool versions at runtime. `run_all_tests.sh` now includes the package build and
-wheel install smoke test. The wheel install verifier installs the built wheel in
-a clean virtual environment and checks the installed `a7` command through Zig
-code generation.
+`uv build` produces an sdist + wheel under `dist/`. Cleaning first
+prevents stale older artifacts from being mixed with the current build.
 
-Generate checksums before uploading local artifacts:
+## Verifying artifacts
 
 ```bash
+# Checksum manifest
 uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
 uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
-uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --require dist/llms.txt --require dist/llms-full.txt
+
+# Archive contents (must include llms.txt + llms-full.txt for the docs tarball)
+uv run python scripts/verify_archive_contents.py \
+    dist/a7-docs-site.tar.gz \
+    --require dist/llms.txt \
+    --require dist/llms-full.txt
+
+# Clean-venv wheel install smoke test
+uv build
+uv run python scripts/verify_wheel_install.py --skip-build
 ```
 
-The tag workflow also verifies that `SHA256SUMS` contains the expected package,
-docs, and native artifact archives before upload. It also checks required
-archive members, asserts the example archive contains all 43 generated Zig
-sources and all 43 native binaries, then re-checks the hashes and sizes on disk.
-Tag runs also generate GitHub artifact attestations for the package, docs,
-native examples, and checksum manifest.
+## Example artifact builds
 
-Before publishing a draft release, verify the downloaded release assets:
+Native binaries for the example suite are produced under both profiles:
 
 ```bash
-uv run python scripts/verify_release_manifest.py SHA256SUMS
-gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
-gh attestation verify a7_py-*.whl --repo code5717/a7-py
-gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
-gh attestation verify a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz --repo code5717/a7-py
-```
-
-## Debug and Release Artifacts
-
-```bash
-uv run python scripts/build_examples.py --profile debug --backend zig --clean
+uv run python scripts/build_examples.py --profile debug   --backend zig --clean
 uv run python scripts/build_examples.py --profile release --backend zig --clean
 ```
 
-Artifacts are written under:
+Release archives are platform/toolchain-tagged:
 
 ```text
-build/<profile>/zig/src/*.zig
-build/<profile>/zig/bin/*
+a7-example-artifacts-linux-x86_64-zig0.16.0-<profile>.tar.gz
 ```
 
-## Release Status
+Keep any docs or scripts that reference these filenames in sync.
 
-Tag-triggered draft GitHub releases are configured. The current workflow builds
-Python package distributions, docs archives, native example artifacts, and
-checksums, then attaches them to the draft GitHub release. It does not publish
-to a package registry.
+## Tagging and GitHub releases
+
+```bash
+git tag v0.16.x
+git push origin v0.16.x
+```
+
+The release workflow on GitHub:
+
+1. Builds the Python distributions and example artifacts.
+2. Attaches them to a **draft** GitHub release.
+3. Generates and attaches `dist/SHA256SUMS`.
+
+A maintainer reviews the draft and publishes it manually. There is no
+automated registry publish.
+
+## Docs site deploy
+
+The site under `site/` deploys to GitHub Pages at
+<https://code5717.github.io/a7-py/>. The Vite build produces a static
+`dist/` that includes:
+
+- The React SPA bundle.
+- `docs-data/<slug>.json` per page.
+- `llms.txt` and `llms-full.txt` regenerated from the markdown corpus.
+- `sitemap.xml` regenerated from the manifest.
+
+See [Deploy](/a7-py/project/deploy) for the deploy workflow.
+
+## Post-release checklist
+
+When a release ships, update:
+
+1. `docs/CHANGELOG.md` — release-facing entry.
+2. `README.md` — usage, feature lists, examples (if behaviour changed).
+3. `docs/SPEC.md` — language semantics or syntax (if changed).
+4. `docs/STATUS.md` — close or open gaps.
+5. `site/public/docs/*.md` — public docs that mirror the above.
+6. `site/public/llms.txt`, `site/public/llms-full.txt` — auto-regenerated
+   by the docs build; commit the updated files.
+
+Drift between these is a bug. CI's docs-style check helps catch it.
+
+## Out of scope
+
+- No `a7 install`, no package registry, no lockfiles. Vendor-and-commit
+  or use git submodules for downstream A7 code.
+- No staged-channel (`beta`, `stable`) release model yet.
+- No homebrew formula, no apt repo, no scoop bucket. Pip-installable from
+  the GitHub release artifacts only.

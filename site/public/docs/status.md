@@ -1,51 +1,90 @@
-# Status
+# Implementation Status
 
-## Buckets
+What works, what's incomplete, and what's deferred. This page is the
+canonical roadmap. Keep `docs/CHANGELOG.md` short and release-facing;
+this is where the longer story lives.
 
-```mermaid
-flowchart LR
-    I[Implemented] --> G[Known Gaps]
-    G --> P[Planned]
-```
+## Current surface
 
-## Current State
+- **Backend:** Zig is the only supported public backend.
+- **Pipeline:** tokenizer, parser, semantic analysis, internal safety
+  proof planning, AST preprocessing, and Zig code generation are all in
+  place.
+- **Source recursion:** banned across direct, mutual, and
+  function-pointer-alias-cycle forms.
+- **Example suite:** 46 programs, verified against golden output
+  fixtures. Run `uv run python scripts/project_status.py` for current
+  counts.
 
-- Tokenizer, parser, semantic pipeline, internal safety proof planning, AST preprocessing, and Zig code generation are implemented.
-- Direct, mutual, local function-pointer alias, and higher-order callback trampoline source recursion are semantic errors.
-- Debug/release artifact verification is available for Zig.
-- Example end-to-end verification is available for Zig.
-- Selected Zig verification covers contextual array literal assignment, fixed-array `+`, defer unwinding, fallthrough, untagged unions, generic function specialization, type-set constraints, generic struct instances, explicit enum discriminants, stdlib math calls, operator edge cases, enum match expressions, heap structs, and 2D/3D nested fixed arrays.
-- Simple top-level generic function calls, type-set constraints, and used generic struct instances lower in Zig.
-- Array literal assignment validates declared lengths and nested element types.
-- Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
-- Index and slice-bound variables must be `usize`; non-negative integer literals are accepted for simple indexing.
-- Risky casts, division/modulo, indexing/slicing, reference dereferences, and
-  direct use after `del` are checked through internal facts before Zig emission;
-  backend approvals are operation-specific.
-- Invalid ordering comparisons and unsafe signed-to-unsigned integer assignments are rejected during type checking.
-- `fall` lowers in Zig when it is the final direct statement of a non-final match case.
+## Active priorities
 
-## Known Gaps
+1. Keep status and release facts **script-derived**, not hard-coded.
+2. Add practical multi-file A7 support that always emits one combined
+   Zig file.
+3. Write the numeric design brief before adding `int`, `uint`, `number`,
+   or any new `cast()` behaviour.
+4. Split safety proofing into internal CFG, fact, obligation,
+   proof-discharge, and backend-plan stages.
+5. Finish generic specialization before broad cross-module generic
+   workflows.
+6. Add workflow commands: `a7 check`, `a7 build`, `a7 run`, `a7 doctor`,
+   `a7 --version`.
 
-- Advanced match diagnostics still lack arbitrary symbolic inequality reasoning;
-  shared-endpoint symbolic range overlaps and identifier captures are diagnosed.
-- Direct use after `del` is rejected until reassignment, but full ownership,
-  borrow-style lifetime, and aliasing guarantees are not implemented.
-- Heap fixed arrays (`new [N]T`) are rejected until their language and backend representation is defined.
-- Full generic specialization is incomplete beyond simple top-level generic functions and used generic struct instances.
-- Variadic declarations are parsed and partially type-checked in semantic mode,
-  but runtime iteration and backend ABI lowering are not implemented; codegen
-  modes reject them before target emission.
-- Intrinsics beyond `@type_set(...)` are reserved/tokenized but not current
-  semantic or backend features.
-- Multiple return values / destructuring are planned syntax, not current parser support.
-- Untagged union construction/access works; tagged/discriminated union tag workflows are not implemented yet.
-- `std/string`, `std/mem`, and collections are planned but not current public stdlib modules.
-- File-backed local imports lower into one generated Zig file for simple
-  alias-qualified function calls.
-- Selected import metadata parses and serializes, but selected imports do not
-  currently introduce direct unqualified names for runnable backend code.
-  `using import` is planned syntax.
-- Package-registry publishing is not part of the current release workflow.
+## Known gaps
 
-See [`docs/STATUS.md`](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md) for the source-of-truth gap list.
+These exist in code but are incomplete. Treat them as caveats when
+relying on the listed feature.
+
+- **File-backed imports** target one combined Zig output file. Selected
+  imports, `using import`, broad cross-module type checking, and generic
+  module workflows are follow-up work.
+- **Fixed-width overflow** on `+ - *` is not proven by the safety pass.
+- **Shift amount obligations** are not yet enforced.
+- **Union discriminant access** is not lowered.
+- **Full `ref` / `del` alias behaviour** has edge cases the planner
+  doesn't cover.
+- **Ownership and lifetime guarantees** are not modelled beyond
+  use-after-`del`.
+- **Generic specialization** and call-chain propagation are incomplete
+  past simple cases.
+- **Multiple return values, destructuring, tagged union tag workflows,
+  variadic runtime lowering** are not current backend features.
+
+## Stdlib gaps
+
+- `Option<T>`, `Result<T, E>` — planned.
+- Collections (`Vec`, `HashMap`, etc.) — planned.
+- File and network IO — out of current scope.
+- Concurrency primitives — deferred.
+
+See [Standard Library](/a7-py/ref/stdlib) for what is shipped today.
+
+## Deferred tracks
+
+These need design documents and prerequisites before any code lands. We
+are not accepting PRs that take a position on them yet.
+
+- Tensor / array-programming primitives for AI.
+- GPU code generation.
+- Performance annotations and runtime profiling.
+- Package registry / lockfile resolution.
+- Concurrency runtime.
+
+## How to read this page
+
+If a feature is listed under **Active priorities** or **Known gaps**, it
+is partially implemented — you can call it, but expect edges. If a
+feature is listed under **Deferred tracks**, treat it as out of scope
+for the current repository — open a design discussion before any code
+attempt.
+
+If a feature is listed in [Features](/a7-py/ref/features) under
+**Supported**, it's covered by tests and golden outputs.
+
+## Versioning
+
+A7 is pre-1.0. Minor version bumps may break source. Major version bumps
+intentionally do.
+
+The version is `0.16.x` — the digit tracks the pinned Zig toolchain
+version, not the language. When Zig moves to 0.17, A7 follows.

@@ -22,7 +22,7 @@ const SECTIONS = [
     idx: '02',
     label: 'REFERENCE',
     title: 'Read the spec',
-    body: 'Language, CLI, stdlib, and API surfaces — the reference an agent reads first.',
+    body: 'Language, CLI, stdlib, and Python API — the surface area in one place.',
     to: '/ref/language',
   },
   {
@@ -33,11 +33,11 @@ const SECTIONS = [
     to: '/compiler/internals',
   },
   {
-    idx: '05',
-    label: 'AGENTS',
-    title: 'Agent contracts',
-    body: 'Skills, fetch order, trust boundaries, and per-editor plugin notes.',
-    to: '/agents',
+    idx: '04',
+    label: 'PROJECT',
+    title: 'Ship & contribute',
+    body: 'How to contribute, deploy the docs, and read the changelog.',
+    to: '/project/contributing',
   },
 ]
 
