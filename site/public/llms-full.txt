@@ -68,6 +68,7 @@ Implemented:
 - Static typing with inference in supported contexts.
 - Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
 - Simple top-level generic function calls, type-set constraints, and used generic struct instances in Zig.
+- Operation-specific safety backend planning: casts, division/modulo, indexing, slicing, ref deref, and direct use after `del` are proven or rejected before Zig lowering.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
 - `fall` in match statements, restricted to the final direct statement of a non-final case.
 - Arrays, slices, string slices, `slice.ptr` and `slice.len` access, string sub-slicing (`string[start..end]` and `string[start..]` as `[]char`), references, implicit ref-argument passing, and manual `new` / `del`.
@@ -77,7 +78,7 @@ Implemented:
 - `usize` index variables, invalid-comparison rejection, and safer signed/unsigned assignment checks.
 - Internal facts and backend-plan approval for casts, division/modulo,
   indexing/slicing, and reference dereferences before Zig emission.
-- Buffered Zig stdio lowering through shared `writerStreaming` stdout/stderr writers, generated print helpers, and deferred per-stream flushing from `main`.
+- Zig stdio lowering through generated stdout/stderr print helpers that preserve stream separation across supported Zig toolchains.
 - C backend support has been retired. Zig is the only supported code generation target; CI, release, and example verification gates focus on Zig output.
 - Virtual stdlib imports for `std/io`, `io`, `std/math`, and `math`.
 - 43 runnable examples verified through the Zig backend.
@@ -280,6 +281,14 @@ if heap_value == nil {
 defer del heap_value
 heap_value.value = 99
 ```
+
+Compiler safety contract:
+
+- Type checking resolves base types, symbols, signatures, and literal values.
+- Safety proof analysis owns facts such as integer intervals, non-zero values, known lengths, nil/non-nil refs, and moved/deleted bindings.
+- `BackendPlan` approvals are operation-specific; an approval for `index` is not an approval for `cast`, `deref`, or any other lowering.
+- Direct use after `del` is rejected until the binding is assigned a new value.
+- Public `.adr`, `.val`, prefix `&`, prefix `*`, and public borrow/mutate/consume keywords are not part of the A7 source surface.
 
 Integer guidance:
 

@@ -158,13 +158,21 @@ class ZigCodeGenerator(CodeGenerator):
         if self._needs_allocator:
             lines.append("const allocator = std.heap.page_allocator;")
         for stream in sorted(self._io_streams_needed):
-            lines.append(f"var __a7_{stream}_buf: [1024]u8 = undefined;")
-            lines.append(
-                f"var __a7_{stream}_writer = "
-                f"std.fs.File.{stream}().writerStreaming(&__a7_{stream}_buf);"
-            )
+            fd = "STDERR_FILENO" if stream == "stderr" else "STDOUT_FILENO"
             lines.append(f"fn __a7_{stream}_print(comptime fmt: []const u8, args: anytype) void {{")
-            lines.append(f"    __a7_{stream}_writer.interface.print(fmt, args) catch {{}};")
+            lines.append("    if (comptime @hasDecl(std.fs, \"File\")) {")
+            lines.append("        var __a7_stream_buf: [1024]u8 = undefined;")
+            lines.append(
+                f"        var __a7_writer = "
+                f"std.fs.File.{stream}().writerStreaming(&__a7_stream_buf);"
+            )
+            lines.append("        __a7_writer.interface.print(fmt, args) catch {};")
+            lines.append("        __a7_writer.interface.flush() catch {};")
+            lines.append("    } else {")
+            lines.append("        var __a7_print_buf: [4096]u8 = undefined;")
+            lines.append("        const __a7_text = std.fmt.bufPrint(&__a7_print_buf, fmt, args) catch return;")
+            lines.append(f"        _ = std.os.linux.write(std.posix.{fd}, __a7_text.ptr, __a7_text.len);")
+            lines.append("    }")
             lines.append("}")
         if lines:
             lines.append("")
@@ -486,13 +494,7 @@ class ZigCodeGenerator(CodeGenerator):
         if node.body and not (node.body.statements or []):
             self.output.write("{}\n")
         elif node.body:
-            prelude_lines = [
-                f"defer __a7_{stream}_writer.interface.flush() catch {{}};"
-                for stream in sorted(self._io_streams_needed)
-            ]
-            if not is_main:
-                prelude_lines = []
-            self._visit_block_inline(node.body, prelude_lines=prelude_lines)
+            self._visit_block_inline(node.body, prelude_lines=[])
         else:
             self.output.write("{}\n")
         self._pop_scope()
@@ -1314,6 +1316,8 @@ class ZigCodeGenerator(CodeGenerator):
             target = self._emit_expr(node.target) if node.target else "undefined"
         value = self._emit_expr(node.value) if node.value else "undefined"
         zig_op = self._assign_op_to_zig(op)
+        if op in {AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN}:
+            self._require_backend_approval(node, op.name.lower())
 
         self.output.write(f"{target} {zig_op} {value};\n")
 

@@ -6,13 +6,13 @@
 - Functions, structs, enums, untagged union field literals/access, aliases, virtual stdlib modules, and generics.
 - Simple top-level generic function calls and used generic struct instances lower in the Zig backend.
 - `if`, `while`, `for`, `for-in`, `match`, labeled loops, `break`, and `continue`.
-- Arrays, same-shape numeric fixed-array `+`, slices, string slices, pointers, references, and manual `new` / `del`.
+- Arrays, same-shape numeric fixed-array `+`, slices, string slices, pointers, references, manual `new` / `del`, and direct use-after-`del` rejection.
 - `defer` and unreachable-statement diagnostics.
 - Direct, mutual, local alias, and callback-trampoline source-recursion diagnostics.
 
 ## Compiler
 
-- Tokenizer, parser, semantic validation, internal safety proof planning, AST preprocessing, and backend codegen.
+- Tokenizer, parser, semantic validation, internal safety proof planning, operation-specific backend plans, AST preprocessing, and backend codegen.
 - Zig backend.
 - Stable CLI modes and exit codes.
 - Human and JSON output formats.

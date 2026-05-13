@@ -133,7 +133,7 @@ Source (.a7) → Tokenizer → Parser → Semantic Analysis → Safety Proof Pla
 1. **Tokenizer**. Lexes source into tokens. Handles single-token generics (`$T`), nested comments, and number formats.
 2. **Parser**. Uses recursive descent with precedence climbing. Parses all A7 constructs.
 3. **Semantic Analysis**. Runs name resolution, base type checking with inference, control flow validation, and recursion rejection.
-4. **Safety Proof Planning**. Proves or rejects risky operations such as casts, division/modulo, indexing/slicing, and reference dereferences before backend lowering.
+4. **Safety Proof Planning**. Proves or rejects risky operations such as casts, division/modulo, indexing/slicing, reference dereferences, and direct use after `del` before backend lowering.
 5. **AST Preprocessing**. Runs stdlib resolution, struct init normalization, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
 6. **Backend Code Generation**. Translates approved AST operations to valid Zig source code.
 
@@ -159,10 +159,11 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
   support defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the
   language model is defined.
 - **Safety proofing**: casts, division/modulo, bounds-sensitive indexing/slicing,
-  and reference dereferences are checked by internal facts before Zig emission.
+  reference dereferences, operation-specific backend approvals, and direct use
+  after `del` are checked by internal facts before Zig emission.
 - **Imports**: Virtual `std/io` and `std/math` modules with aliases; file-backed local imports resolve for validation but fail closed before backend codegen until module linking is implemented
 - **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, generic struct literals, and simple top-level generic function calls
-- **Code Generation**: A7 → Zig, with buffered `std/io` lowering through shared `writerStreaming` stdout/stderr writers and generated print helpers
+- **Code Generation**: A7 → Zig, with generated `std/io` print helpers that preserve stdout/stderr on current Zig toolchains
 - **Standard Library**: Registry with io and math modules, backend-specific mappings
 - **Error Messages**: Rich formatting with source context and structured error types
 
@@ -184,6 +185,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - Agent docs index: `https://code5717.github.io/a7-py/docs/index.md`
 - Full agent context: `https://code5717.github.io/a7-py/llms-full.txt`
 - `docs/SPEC.md` - Language specification
+- `docs/SAFETY_CONTRACT.md` - Compiler safety contract and proof/backend-plan invariants
 - `RELEASE.md` - Release/debug build checklist
 - `SECURITY.md` - Security policy and trust boundary
 - `RELEASE_READINESS_REVIEW.md` - Current release-readiness audit

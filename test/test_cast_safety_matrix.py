@@ -230,6 +230,72 @@ def test_codegen_refuses_cast_without_semantic_annotation():
         ZigCodeGenerator().generate(ast)
 
 
+def test_backend_plan_is_operation_specific_for_approved_nodes():
+    source = """
+    main :: fn() {
+        arr := [1, 2, 3]
+        x := arr[1]
+    }
+    """
+    ast, symbols, node_types = run_semantic_analysis(source)
+    safety = SafetyProofPass(symbols, node_types)
+    backend_plan = safety.analyze(ast, "<test>")
+
+    index_node = None
+    stack = list(ast.declarations or [])
+    while stack:
+        node = stack.pop()
+        if node.kind == NodeKind.INDEX:
+            index_node = node
+            break
+        for attr in ("body", "statements", "value", "expression", "left", "right", "object", "index"):
+            child = getattr(node, attr, None)
+            if isinstance(child, list):
+                stack.extend(item for item in child if hasattr(item, "kind"))
+            elif hasattr(child, "kind"):
+                stack.append(child)
+
+    assert index_node is not None
+    assert backend_plan.is_approved(index_node, "index")
+    with pytest.raises(KeyError):
+        backend_plan.require(index_node, "cast")
+
+
+def test_direct_use_after_del_is_rejected():
+    source = """
+    Box :: struct {
+        value: i32
+    }
+
+    main :: fn() {
+        box := new Box
+        if box == nil { ret }
+        del box
+        x := box.value
+    }
+    """
+    assert expect_error(source, "moved or deleted")
+
+
+def test_assignment_after_del_reinitializes_binding():
+    source = """
+    Box :: struct {
+        value: i32
+    }
+
+    main :: fn() {
+        box := new Box
+        if box == nil { ret }
+        del box
+        box = new Box
+        if box == nil { ret }
+        box.value = 2
+        del box
+    }
+    """
+    assert expect_success(source)
+
+
 def test_semantic_cast_annotation_survives_on_ast_node():
     source = """
     main :: fn() {

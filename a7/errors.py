@@ -134,6 +134,7 @@ class TypeErrorType(Enum):
     # Dereference errors
     CANNOT_DEREFERENCE = "cannot_dereference"
     ADDRESS_OF_RVALUE = "address_of_rvalue"
+    USE_AFTER_MOVE = "use_after_move"
 
     # Nil errors
     NIL_NOT_ALLOWED = "nil_not_allowed"
@@ -347,6 +348,7 @@ def get_type_error_message(error_type: TypeErrorType) -> str:
         # Dereference errors
         TypeErrorType.CANNOT_DEREFERENCE: "Cannot dereference non-pointer type",
         TypeErrorType.ADDRESS_OF_RVALUE: "Cannot take the address of a temporary value",
+        TypeErrorType.USE_AFTER_MOVE: "Use after move or delete",
 
         # Nil errors
         TypeErrorType.NIL_NOT_ALLOWED: "Nil not allowed for this type",
@@ -406,6 +408,7 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
         # Dereference errors
         TypeErrorType.CANNOT_DEREFERENCE: "Reference use requires a proven non-nil reference",
         TypeErrorType.ADDRESS_OF_RVALUE: "Internal address-of requires variables, fields, indexes, or dereferenced references",
+        TypeErrorType.USE_AFTER_MOVE: "Use the value before deleting it, or assign a new value before reading it again",
 
         # Nil errors
         TypeErrorType.NIL_NOT_ALLOWED: "This type cannot be nil",

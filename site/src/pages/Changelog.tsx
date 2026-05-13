@@ -14,7 +14,7 @@ const releases = [
         'Public Markdown docs, llms.txt, and the docs site now distinguish current features from parsed-only or reserved syntax.',
       ],
       Changed: [
-        'Zig stdio lowering now uses shared buffered stdout/stderr writers and generated print helpers.',
+        'Zig stdio lowering now uses generated stdout/stderr helpers compatible with current local and pinned release toolchains.',
         'Normal example verification fails closed when a golden output fixture is missing.',
         'Low-recursion documentation now scopes the claim to the compiler stages that are actually stack-based today.',
         'File-backed imports fail closed before backend codegen until multi-file linking is implemented.',

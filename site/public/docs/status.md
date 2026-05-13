@@ -19,8 +19,9 @@ flowchart LR
 - Array literal assignment validates declared lengths and nested element types.
 - Same-shape numeric fixed arrays support element-wise `+` assignment in Zig.
 - Index and slice-bound variables must be `usize`; non-negative integer literals are accepted for simple indexing.
-- Risky casts, division/modulo, indexing/slicing, and reference dereferences are
-  approved through internal facts before Zig emission.
+- Risky casts, division/modulo, indexing/slicing, reference dereferences, and
+  direct use after `del` are checked through internal facts before Zig emission;
+  backend approvals are operation-specific.
 - Invalid ordering comparisons and unsafe signed-to-unsigned integer assignments are rejected during type checking.
 - `fall` lowers in Zig when it is the final direct statement of a non-final match case.
 
@@ -28,7 +29,8 @@ flowchart LR
 
 - Advanced match diagnostics still lack arbitrary symbolic inequality reasoning;
   shared-endpoint symbolic range overlaps and identifier captures are diagnosed.
-- Ownership/borrow-style lifetime guarantees are not implemented.
+- Direct use after `del` is rejected until reassignment, but full ownership,
+  borrow-style lifetime, and aliasing guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until their language and backend representation is defined.
 - Full generic specialization is incomplete beyond simple top-level generic functions and used generic struct instances.
 - Variadic declarations are parsed and partially type-checked in semantic mode,

@@ -87,7 +87,8 @@
      arbitrary symbolic inequality reasoning remains open.
 
 2. **Memory/lifetime model**
-   - Current validation covers basic `del` reference checks.
+   - Current validation covers basic `del` reference checks and direct
+     use-after-`del` rejection until reassignment.
    - Ownership/borrow-style lifetime guarantees are not implemented.
    - Heap fixed arrays (`new [N]T`) are rejected until the language defines
      whether they are fixed-array references or heap slices.

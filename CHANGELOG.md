@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ref-struct field access lowers through the internal safety plan.
 - Type checking now records base cast/source/target types only; range,
   non-zero, bounds, and non-nil facts live in the safety analysis layer.
+- Backend safety approvals are now operation-specific, so an AST node approved
+  for one risky lowering cannot be reused for another, and direct use after
+  `del` is rejected until the binding is reassigned.
+- Added `docs/SAFETY_CONTRACT.md` and published Markdown safety docs covering
+  the proof/obligation/backend-plan contract and the current ownership model.
 - Examples using heap `new` now check against `nil` before field access, and the
   function example guards division by zero.
 - Added five runnable application-style examples covering inventory reporting,
@@ -31,9 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C backend support has been retired from the public compiler. Zig is now the
   only supported code generation target, and CI/release/example verification
   gates focus on Zig output.
-- Zig stdio lowering now keeps shared buffered stdout/stderr writers plus small
-  print helpers at module scope, and flushes used streams once from `main`
-  instead of flushing after every `io.print*` statement.
+- Zig stdio lowering now uses generated stdout/stderr print helpers that select
+  the available Zig stdio API, preserving the stream split on current local and
+  pinned release toolchains.
 - Semantic recursion validation now catches higher-order callback trampolines,
   including direct, mutual, and callback-parameter-alias cycles.
 - Zig backend binary-expression emission now uses explicit postorder

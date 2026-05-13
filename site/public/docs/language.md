@@ -45,6 +45,10 @@ For a compact learn-by-reading path, open
 [`examples/037_language_tour.a7`](https://github.com/code5717/a7-py/blob/master/examples/037_language_tour.a7).
 It is a single commented program verified through Zig.
 
+Reference field access is direct after nil-proofing. Public `.adr`, `.val`,
+prefix `&`, and prefix `*` are not A7 source syntax. Direct reads after `del`
+are rejected until the binding is assigned a new value.
+
 ## Recursion Rule
 
 Source recursion is banned. Direct, mutual, local function-pointer alias, and higher-order callback trampoline recursion are rejected during semantic validation. Repeated work should be expressed with loops, explicit stacks, queues, or index-based worklists.

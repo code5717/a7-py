@@ -73,11 +73,11 @@ These are bugs and schema mismatches in already-implemented features.
   Files: `scripts/verify_wheel_install.py`
   Notes: clean-wheel verification now checks installed Zig code generation.
 
-- [x] Hoist and buffer Zig stdio writers.
+- [x] Generate Zig stdio helpers.
   Files: `a7/backends/zig.py`
-  Notes: stdout/stderr writers are module-scope `writerStreaming` values and
-  generated print helpers; `main` now defers stream flushes instead of emitting
-  a flush after every print statement.
+  Notes: generated print helpers preserve stdout/stderr and select the
+  available Zig stdio API. Newer local Zig versions no longer expose the older
+  `std.fs.File` path, so the helper falls back to a direct Linux write path.
 
 - [x] Fix the `defer` AST schema mismatch in semantic analysis.
   Files: `a7/passes/type_checker.py`, `a7/passes/semantic_validator.py`
@@ -272,7 +272,7 @@ These are entire subsystems. Each needs a design decision before implementation 
   Notes: `tensor_to_gpu`, device management. Requires a device runtime.
 
 - [ ] **Memory/lifetime model** (spec §8.4).
-  Notes: beyond basic `new`/`del` shape checks. Ownership, borrowing, lifetime analysis. Language-design research problem.
+  Notes: direct use-after-`del` is rejected until reassignment. Full ownership, borrowing, aliasing, and lifetime analysis remain language-design work.
 
 - [ ] **Performance annotations** (`@vectorize`, `@parallel`, `@prefetch`).
   Notes: requires SIMD/threading runtime support in Zig.

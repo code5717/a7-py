@@ -63,6 +63,7 @@ export const CURL_DOC_GROUPS: CurlDocGroup[] = [
     items: [
       { route: '/language', markdownPath: '/docs/language.md', label: 'Language and Library', note: 'Syntax, integer guidance, stdlib, and no-recursion rule' },
       { route: '/internals', markdownPath: '/docs/compiler.md', label: 'Compiler and Tests', note: 'Pipeline, backends, parity checks, and release gate' },
+      { route: '/safety', markdownPath: '/docs/safety.md', label: 'Safety Contract', note: 'Facts, obligations, proofs, and backend-plan invariants' },
       { route: '/examples', markdownPath: '/docs/examples.md', label: 'Examples', note: 'Runnable programs and verification commands' },
       { route: '/release', markdownPath: '/docs/release.md', label: 'Release', note: 'Artifacts, package build, audits, and draft release status' },
       { route: '/status', markdownPath: '/docs/status.md', label: 'Status', note: 'Implementation status and known gaps' },

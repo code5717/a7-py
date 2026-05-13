@@ -1068,7 +1068,8 @@ if large == nil {
 Current implementation:
 
 1. `new` and `del` parse, type-check, and lower for the implemented backends.
-2. `del` is validated for reference-like values.
+2. `del` is validated for reference-like values, and direct reads after
+   `del` are rejected until the binding is reassigned.
 3. `defer del value` can express manual cleanup at scope exit.
 
 Not yet implemented:
@@ -1571,14 +1572,11 @@ math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
 `math.max`. Some typed math builtin spellings such as `sqrt_f32` and `sqrt_f64`
 also map through the stdlib registry.
 
-The Zig backend lowers current `std/io` calls to buffered
-`std.fs.File.writerStreaming` stdout/stderr writers plus generated print
-helpers. Writers are hoisted at module scope and flushed from `main` with
-`defer` statements so helper calls preserve per-stream output order without
-forcing a flush after every print statement. Because stdout and stderr use
-separate buffers, mixed-stream display order is not guaranteed. Buffered output
-is guaranteed for normal `main` return paths; output still in the buffer can be
-lost on panic or abnormal process termination.
+The Zig backend lowers current `std/io` calls to generated stdout/stderr print
+helpers. The helpers use `std.fs.File.writerStreaming` when that API is
+available and fall back to formatting into a bounded stack buffer plus direct
+Linux writes on newer local Zig toolchains. Stdout and stderr remain separate
+streams; mixed-stream display order is not guaranteed.
 
 The broader string, ASCII, memory, assertion, and allocation function list below
 is planned API shape, not current implementation:
@@ -2204,7 +2202,8 @@ Status snapshot (2026-05-11):
      no existing symbol with that name is visible.
 
 3. **Memory/lifetime model depth**
-   - Basic `new`/`del` validation exists; full ownership/lifetime analysis is not complete.
+   - Basic `new`/`del` validation and direct use-after-`del` rejection exist;
+     full ownership/lifetime and aliasing analysis is not complete.
 
 4. **Backend hardening**
    - Zig is the only supported code generation target.

@@ -182,12 +182,14 @@ class ObligationKind(Enum):
     REF_NON_NIL = auto()
     INTEGER_OVERFLOW = auto()
     UNION_FIELD = auto()
+    MOVE_VALID = auto()
 
 
 @dataclass(frozen=True)
 class Obligation:
     kind: ObligationKind
     node_id: int
+    backend_operation: str
     span: Optional[SourceSpan]
     operand_type: Optional[Type]
     required_proof: str
@@ -203,19 +205,20 @@ class ProofResult:
 
 @dataclass
 class BackendPlan:
-    approved: dict[int, ProofResult] = field(default_factory=dict)
+    approved: dict[tuple[int, str], ProofResult] = field(default_factory=dict)
 
     def approve(self, result: ProofResult) -> None:
-        self.approved[result.obligation.node_id] = result
+        key = (result.obligation.node_id, result.obligation.backend_operation)
+        self.approved[key] = result
 
     def require(self, node: ASTNode, operation: str) -> ProofResult:
-        result = self.approved.get(id(node))
+        result = self.approved.get((id(node), operation))
         if result is None or not result.proven:
             raise KeyError(f"backend operation '{operation}' is not approved")
         return result
 
-    def is_approved(self, node: ASTNode) -> bool:
-        result = self.approved.get(id(node))
+    def is_approved(self, node: ASTNode, operation: str) -> bool:
+        result = self.approved.get((id(node), operation))
         return bool(result and result.proven)
 
 
@@ -230,6 +233,7 @@ class SafetyProofPass:
         self.results: list[ProofResult] = []
         self.backend_plan = BackendPlan()
         self.errors: list[TypeCheckError] = []
+        self.moved_symbols: set[str] = set()
         self.current_file = "<unknown>"
         self.source_lines: list[str] = []
 
@@ -240,6 +244,7 @@ class SafetyProofPass:
         self.results = []
         self.backend_plan = BackendPlan()
         self.facts = FactMap()
+        self.moved_symbols = set()
         self._visit_program(program)
         return self.backend_plan
 
@@ -267,11 +272,12 @@ class SafetyProofPass:
         self,
         kind: ObligationKind,
         node: ASTNode,
+        operation: str,
         operand_type: Optional[Type],
         required: str,
         code: TypeErrorType,
     ) -> Obligation:
-        obligation = Obligation(kind, id(node), node.span, operand_type, required, code)
+        obligation = Obligation(kind, id(node), operation, node.span, operand_type, required, code)
         self.obligations.append(obligation)
         return obligation
 
@@ -305,7 +311,11 @@ class SafetyProofPass:
         elif node.kind == NodeKind.ASSIGNMENT:
             rhs = self._visit_expr(node.value) if node.value else ValueFact()
             if node.target:
-                target_fact = self._visit_expr(node.target)
+                target_fact = (
+                    self._visit_expr(node.target)
+                    if getattr(node, "implicit_deref_target", False) or node.target.kind != NodeKind.IDENTIFIER
+                    else self.facts.symbol(node.target.name)
+                )
                 if getattr(node, "implicit_deref_target", False):
                     self._prove_ref_non_nil_for_node(
                         node,
@@ -315,8 +325,9 @@ class SafetyProofPass:
                     )
                 if node.target.kind == NodeKind.IDENTIFIER and node.target.name:
                     self.facts.set_symbol(node.target.name, rhs)
+                    self.moved_symbols.discard(node.target.name)
             if node.operator in {AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN} and node.value:
-                self._prove_nonzero_divisor(node, node.value)
+                self._prove_nonzero_divisor(node, node.value, node.operator.name.lower())
         elif node.kind == NodeKind.EXPRESSION_STMT and node.expression:
             self._visit_expr(node.expression)
         elif node.kind == NodeKind.RETURN and node.value:
@@ -367,11 +378,15 @@ class SafetyProofPass:
                 self._visit_stmt(stmt)
         elif node.kind == NodeKind.DEFER:
             if node.statement:
-                self._visit_stmt(node.statement)
+                if node.statement.kind == NodeKind.DEL and node.statement.expression:
+                    self._visit_expr(node.statement.expression)
+                else:
+                    self._visit_stmt(node.statement)
             elif node.expression:
                 self._visit_expr(node.expression)
         elif node.kind == NodeKind.DEL and node.expression:
             self._visit_expr(node.expression)
+            self._mark_deleted(node.expression)
 
     def _visit_expr(self, node: Optional[ASTNode]) -> ValueFact:
         if node is None:
@@ -380,6 +395,8 @@ class SafetyProofPass:
         if node.kind == NodeKind.LITERAL:
             fact = self._literal_fact(node)
         elif node.kind == NodeKind.IDENTIFIER:
+            if node.name in self.moved_symbols:
+                self._error_moved_symbol(node, node.name)
             fact = self.facts.symbol(node.name)
         elif node.kind == NodeKind.UNARY:
             operand = self._visit_expr(node.operand)
@@ -389,7 +406,7 @@ class SafetyProofPass:
             right = self._visit_expr(node.right)
             fact = self._binary_fact(node, left, right)
             if node.operator in {BinaryOp.DIV, BinaryOp.MOD} and node.right:
-                self._prove_nonzero_divisor(node, node.right)
+                self._prove_nonzero_divisor(node, node.right, node.operator.name.lower())
             if node.operator in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL}:
                 self._prove_integer_overflow(node, fact)
         elif node.kind == NodeKind.CAST:
@@ -520,7 +537,7 @@ class SafetyProofPass:
             and self._range_fits(source_fact.interval, target_type)
         ):
             decision = CastDecision(CastClass.PROVABLE_NARROWING, "integer value range is proven to fit target")
-        obligation = self._obligation(ObligationKind.CAST, node, source_type, "cast must be classified and range-proven", TypeErrorType.UNSAFE_CAST)
+        obligation = self._obligation(ObligationKind.CAST, node, "cast", source_type, "cast must be classified and range-proven", TypeErrorType.UNSAFE_CAST)
         if decision is None or not decision.allowed:
             self._error(obligation, decision.reason if decision else "unknown source or target type")
         elif decision.kind is CastClass.PROVABLE_NARROWING and not self._range_fits(source_fact.interval, target_type):
@@ -539,16 +556,16 @@ class SafetyProofPass:
     def _type_from_cast_target(self, node: ASTNode) -> Optional[Type]:
         return getattr(node, "cast_target_type", None)
 
-    def _prove_nonzero_divisor(self, node: ASTNode, divisor: ASTNode) -> None:
+    def _prove_nonzero_divisor(self, node: ASTNode, divisor: ASTNode, operation: str) -> None:
         fact = self.facts.node(divisor)
-        obligation = self._obligation(ObligationKind.DIVISOR_NONZERO, node, self._type(divisor), "division/modulo divisor must be non-zero", TypeErrorType.UNSAFE_CAST)
+        obligation = self._obligation(ObligationKind.DIVISOR_NONZERO, node, operation, self._type(divisor), "division/modulo divisor must be non-zero", TypeErrorType.UNSAFE_CAST)
         if fact.nonzero or (fact.interval and fact.interval.is_nonzero()):
             self._prove(obligation, "divisor is proven non-zero")
         else:
             self._error(obligation, "divisor may be zero")
 
     def _prove_index(self, node: ASTNode, obj: ValueFact, idx: ValueFact) -> None:
-        obligation = self._obligation(ObligationKind.INDEX_IN_BOUNDS, node, self._type(node.index), "index must satisfy 0 <= index < len", TypeErrorType.INDEX_NOT_INTEGER)
+        obligation = self._obligation(ObligationKind.INDEX_IN_BOUNDS, node, "index", self._type(node.index), "index must satisfy 0 <= index < len", TypeErrorType.INDEX_NOT_INTEGER)
         length = self._object_length(node.object, obj)
         interval = idx.interval
         if length is not None and interval is not None and interval.contains(0, length - 1):
@@ -557,7 +574,7 @@ class SafetyProofPass:
             self._error(obligation, "index bounds are not proven")
 
     def _prove_slice(self, node: ASTNode, obj: ValueFact, start: ValueFact, end: ValueFact) -> None:
-        obligation = self._obligation(ObligationKind.SLICE_IN_BOUNDS, node, self._type(node.object), "slice must satisfy 0 <= start <= end <= len", TypeErrorType.INDEX_NOT_INTEGER)
+        obligation = self._obligation(ObligationKind.SLICE_IN_BOUNDS, node, "slice", self._type(node.object), "slice must satisfy 0 <= start <= end <= len", TypeErrorType.INDEX_NOT_INTEGER)
         length = self._object_length(node.object, obj)
         si = start.interval
         ei = end.interval
@@ -605,7 +622,7 @@ class SafetyProofPass:
         operand_type: Optional[Type],
         required: str,
     ) -> None:
-        obligation = self._obligation(ObligationKind.REF_NON_NIL, node, operand_type, required, TypeErrorType.CANNOT_DEREFERENCE)
+        obligation = self._obligation(ObligationKind.REF_NON_NIL, node, "deref", operand_type, required, TypeErrorType.CANNOT_DEREFERENCE)
         if fact.non_nil:
             self._prove(obligation, "reference is non-nil")
         else:
@@ -622,7 +639,7 @@ class SafetyProofPass:
             return
         if fact.interval is None or fact.interval.lower is None or fact.interval.upper is None:
             return
-        obligation = self._obligation(ObligationKind.INTEGER_OVERFLOW, node, result_type, "fixed-width integer arithmetic must stay in range", TypeErrorType.UNSAFE_CAST)
+        obligation = self._obligation(ObligationKind.INTEGER_OVERFLOW, node, "arithmetic", result_type, "fixed-width integer arithmetic must stay in range", TypeErrorType.UNSAFE_CAST)
         if self._range_fits(fact.interval, result_type):
             self._prove(obligation, "integer result range fits type")
         else:
@@ -703,3 +720,18 @@ class SafetyProofPass:
             value = self._int_literal(node.operand)
             return -value if value is not None else None
         return None
+
+    def _mark_deleted(self, node: ASTNode) -> None:
+        if node.kind == NodeKind.IDENTIFIER and node.name:
+            self.moved_symbols.add(node.name)
+
+    def _error_moved_symbol(self, node: ASTNode, name: str) -> None:
+        obligation = self._obligation(
+            ObligationKind.MOVE_VALID,
+            node,
+            "move",
+            self._type(node),
+            "moved/deleted values cannot be read",
+            TypeErrorType.USE_AFTER_MOVE,
+        )
+        self._error(obligation, f"'{name}' was moved or deleted earlier")

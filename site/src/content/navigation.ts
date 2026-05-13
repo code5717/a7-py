@@ -130,6 +130,7 @@ export const SECTION_SEARCH_ITEMS: SectionSearchItem[] = [
   { to: '/language#builtins-and-intrinsics', label: 'Builtins and Intrinsics', group: 'Language section', detail: '@type_set plus reserved intrinsic names' },
   { to: '/start#cli', label: 'CLI Modes and Flags', group: 'CLI', detail: 'compile, tokens, ast, semantic, pipeline, doc, flags, exit codes' },
   { to: '/internals#pipeline', label: 'Pipeline Stages', group: 'Compiler pipeline', detail: 'Tokenizer, parser, semantic validation, preprocessing, codegen' },
+  { to: '/safety#current-enforced-obligations', label: 'Safety Contract', group: 'Compiler pipeline', detail: 'Facts, obligations, proofs, and backend approvals' },
   { to: '/language#standard-library', label: 'Standard Library', group: 'Stdlib', detail: 'stdlib, io, math, planned stub modules, compiler intrinsics' },
   { to: '/status#open-gaps', label: 'Open gaps', group: 'Status section', detail: 'match diagnostics, memory model, module lowering, backend parity, package publishing' },
   { to: '/internals#testing', label: 'Golden output verifier', group: 'Testing', detail: 'Example compile, build, run, and output checks' },

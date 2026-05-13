@@ -67,6 +67,7 @@ Fetch `llms.txt` first for routing. Fetch this index when you need the full docu
 
 - [Language and Library](/a7-py/docs/language.md): One-page reference, integer guidance, stdlib, and no-recursion rule.
 - [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, test layers, parity checks, and local release gate.
+- [Safety Contract](/a7-py/docs/safety.md): Facts, obligations, proofs, ownership checks, and backend-plan invariants.
 - [Examples](/a7-py/docs/examples.md): Runnable programs, the commented language tour, and verification commands.
 - [Release](/a7-py/docs/release.md): Debug/release artifact builds, package build, dependency audits, and draft GitHub release artifacts.
 - [Status](/a7-py/docs/status.md): Implemented surface, remaining gaps, and release risks.
