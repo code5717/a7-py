@@ -1,40 +1,18 @@
 {
-  "name": "site",
+  "name": "a7-docs-site",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.16.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "typecheck": "tsc -b --pretty false",
-    "check": "bun run lint -- --max-warnings=0 && bun run typecheck && bun run build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@fontsource-variable/newsreader": "^5.2.0",
-    "@fontsource/geist-mono": "^5.2.0",
-    "@fontsource/jetbrains-mono": "^5.2.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.13.0"
+    "build": "bun run scripts/build.ts && bun run build:css",
+    "build:css": "tailwindcss -i src/tailwind.css -o dist/assets/site.css --minify",
+    "lint": "bun run scripts/lint.ts",
+    "check": "bun run lint && bun run build",
+    "preview": "bun run scripts/serve.ts",
+    "dev": "bun run build && bun run scripts/serve.ts"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^24.10.1",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
-    "eslint": "^9.39.1",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "gray-matter": "^4.0.3",
-    "marked": "^14.1.0",
-    "mermaid": "^11.3.0",
-    "shiki": "^3.22.0",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^8.48.0",
-    "vite": "^7.3.1"
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
   }
 }

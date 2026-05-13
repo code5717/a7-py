@@ -1,31 +1,11 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>A7 Docs</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script>
-      // GitHub Pages SPA fallback for BrowserRouter.
-      // Stash the requested path, redirect to /a7-py/, and let main.tsx
-      // restore the path via history.replaceState before React mounts.
-      ;(function () {
-        var base = '/a7-py'
-        var loc = window.location
-        var requested = loc.pathname + loc.search + loc.hash
-        // Handle legacy /#/route URLs: convert to /route before reload.
-        if (loc.hash && loc.hash.indexOf('#/') === 0) {
-          requested = base + loc.hash.slice(1) + loc.search
-        }
-        try {
-          sessionStorage.setItem('a7:redirect', requested)
-        } catch (_) {
-          /* private mode / cookies disabled — bounce anyway */
-        }
-        loc.replace(base + '/')
-      })()
-    </script>
-  </head>
-  <body>
-    <p><a href="/a7-py/">Open A7 docs</a></p>
-  </body>
-</html>
+<meta charset="utf-8">
+<title>A7 route redirect</title>
+<script>
+  const base = '/a7-py'
+  const path = location.pathname.startsWith(base)
+    ? location.pathname.slice(base.length)
+    : location.pathname
+  location.replace(base + '/?from=' + encodeURIComponent(path + location.search + location.hash))
+</script>
+<a href="/a7-py/">A7 documentation</a>

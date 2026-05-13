@@ -1,25 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://code5717.github.io/a7-py/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/docs/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/learn/start/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/learn/why/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/learn/faq/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/learn/examples/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/ref/language/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/ref/cli/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/ref/api/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/ref/stdlib/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/ref/features/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/compiler/internals/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/compiler/pipeline/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/compiler/safety/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/compiler/testing/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/compiler/status/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/compiler/release/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/project/contributing/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/project/deploy/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/project/changelog/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/llms.txt</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/llms-full.txt</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/start/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/stdlib/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/compiler/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/status/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/release/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/agent-usage/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/project/</loc></url>
 </urlset>

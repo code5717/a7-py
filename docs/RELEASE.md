@@ -17,7 +17,7 @@ A release should contain:
 - Python 3.13+
 - `uv`
 - Zig 0.16.0 on `PATH`
-- Node.js 22+ for the docs site
+- Bun 1.3+ for the docs site
 
 ## Debug Builds
 
