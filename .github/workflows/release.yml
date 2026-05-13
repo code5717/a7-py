@@ -48,19 +48,17 @@ jobs:
           echo "$RUNNER_TEMP/zig" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/zig/zig" version
 
-      - name: Setup Node
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: site/package-lock.json
+          bun-version: "1.3.11"
 
       - name: Install dependencies
         run: uv sync --locked --all-groups
 
       - name: Install docs dependencies
         working-directory: site
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Run release gate
         run: ./run_all_tests.sh
@@ -74,7 +72,7 @@ jobs:
 
       - name: Audit docs runtime dependencies
         working-directory: site
-        run: npm audit --omit=dev --audit-level=moderate
+        run: bun audit --audit-level=moderate
 
       - name: Clean package output
         run: rm -rf dist
@@ -97,7 +95,7 @@ jobs:
 
       - name: Build docs site
         working-directory: site
-        run: npm run build
+        run: bun run build
 
       - name: Build release example artifacts
         run: uv run python scripts/build_examples.py --profile release --backend zig --clean
