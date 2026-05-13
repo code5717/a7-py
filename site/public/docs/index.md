@@ -1,8 +1,8 @@
 # A7 Docs
 
-> curl.md-friendly Markdown documentation for agents and terminal workflows.
+> Documentation for learning A7, using the compiler, and tracking current implementation status.
 
-Use these pages when you need current published docs without scraping the React docs app. The links below follow the docs navigation order used by `llms.txt`, `llms-full.txt`, and the site sidebar.
+Start with the user-facing docs below. The same content is also available as plain Markdown for terminals and automation.
 
 ## Document Tree
 
@@ -15,16 +15,6 @@ flowchart TD
     Root --> Contrib[Contributing]
     Root --> Ref[A7 References]
 ```
-
-## Fetch Order
-
-```bash
-curl -fsS https://code5717.github.io/a7-py/llms.txt
-curl -fsS https://code5717.github.io/a7-py/docs/index.md
-curl -fsS https://code5717.github.io/a7-py/llms-full.txt
-```
-
-Fetch `llms.txt` first for routing. Fetch this index when you need the full document tree. Fetch `llms-full.txt` when a single combined context file is better than many small files.
 
 ## Introduction
 
@@ -81,3 +71,13 @@ Fetch `llms.txt` first for routing. Fetch this index when you need the full docu
 - [Release Checklist](https://github.com/code5717/a7-py/blob/master/docs/RELEASE.md)
 - [Security Policy](https://github.com/code5717/a7-py/blob/master/docs/SECURITY.md)
 - [Status and Roadmap](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Plain Markdown Access
+
+```bash
+curl -fsS https://code5717.github.io/a7-py/docs/index.md
+curl -fsS https://code5717.github.io/a7-py/llms.txt
+curl -fsS https://code5717.github.io/a7-py/llms-full.txt
+```
+
+Use `docs/index.md` for the document tree. Use `llms.txt` only when a compact routing file is useful, and `llms-full.txt` only when one combined context file is easier than many small pages.
