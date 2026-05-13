@@ -91,6 +91,7 @@ Known gaps:
   do not infer arbitrary symbolic inequalities.
 - Ownership, borrowing, lifetime, use-after-free, and double-free guarantees are not implemented.
 - Heap fixed arrays (`new [N]T`) are rejected until representation is defined.
+- Simple file-backed alias imports lower into the same generated Zig file.
 - File-backed selected imports parse as metadata but do not introduce direct
   unqualified names for runnable backend code; `using import` is planned syntax,
   not a current parser form.
@@ -111,7 +112,7 @@ Requirements:
 
 - Python 3.13+
 - `uv`
-- Zig 0.15.2 to build and run generated Zig output
+- Zig 0.16.0 to build and run generated Zig output
 
 Setup:
 
@@ -306,9 +307,9 @@ Virtual stdlib modules are registered through the module resolver, so aliases
 such as `console :: import "std/io"` and `mathlib :: import "std/math"` lower
 the same way as `io` and `math`.
 
-File-backed local imports can be resolved during semantic validation, but
-Zig backend lowering and linking for multiple `.a7` files is not implemented
-yet. Compile, pipeline, and doc modes reject file-backed imports before codegen.
+File-backed local imports can be resolved during semantic validation. Simple
+alias-qualified calls lower into the same generated Zig file; selected imports
+and using imports remain planned.
 
 Selected import metadata serializes in JSON diagnostics, but selected imports
 do not currently introduce direct unqualified names for backend-runnable code.
@@ -449,7 +450,7 @@ tests, Zig example verifier, selected backend smoke checks, debug and
 release artifact builds, error-stage checks, docs style checks, secret scanning,
 and the total pytest suite.
 
-See `RELEASE_READINESS_REVIEW.md` and `COMPLETION_AUDIT.md` for recorded release-gate evidence.
+See `docs/RELEASE.md` and `docs/STATUS.md` for the current release gate, known gaps, and implementation order.
 
 ## Release and Verification Commands
 
@@ -517,11 +518,10 @@ Markdown:
 
 Repo docs that should stay aligned after major changes:
 
-- `CHANGELOG.md`
+- `docs/CHANGELOG.md`
 - `README.md`
 - `docs/SPEC.md`
-- `MISSING_FEATURES.md`
-- `TODO.md`
+- `docs/STATUS.md`
 - `site/public/llms.txt`
 - `site/public/llms-full.txt`
 - `site/public/docs/`

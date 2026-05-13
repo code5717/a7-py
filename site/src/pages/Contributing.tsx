@@ -45,7 +45,7 @@ PYTHONPATH=. uv run pytest --tb=no -q`}
           <li>Read the code near your change before editing.</li>
           <li>Run tests before and after.</li>
           <li>One concern per commit.</li>
-          <li>Update <code className="doc-inline-code">CHANGELOG.md</code>, <code className="doc-inline-code">MISSING_FEATURES.md</code>, and <code className="doc-inline-code">AGENTS.md</code> when relevant.</li>
+          <li>Update <code className="doc-inline-code">docs/CHANGELOG.md</code>, <code className="doc-inline-code">docs/STATUS.md</code>, and <code className="doc-inline-code">AGENTS.md</code> when relevant.</li>
         </ol>
       </SectionPanel>
 

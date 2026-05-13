@@ -56,6 +56,19 @@ const HIGHLIGHTS = [
   { title: 'Compiler', copy: 'Pipeline and backend notes.' },
 ]
 
+const COMMON_TASKS = [
+  { label: 'Install locally', to: '/start#install', detail: 'Clone, sync uv, and compile the first file.' },
+  { label: 'Run examples', to: '/examples', detail: 'Inspect the verified A7 programs.' },
+  { label: 'Read syntax', to: '/language', detail: 'Types, control flow, refs, generics, and stdlib.' },
+  { label: 'Check status', to: '/status', detail: 'Current support, gaps, and next priorities.' },
+]
+
+const HERO_STATS = [
+  { label: 'Target', value: 'Zig 0.16' },
+  { label: 'Examples', value: '43 verified' },
+  { label: 'Output', value: 'single Zig file' },
+]
+
 function QuickstartCommand({ step, label, command }: { step: string; label: string; command: string }) {
   const [copied, setCopied] = useState(false)
   const resetTimerRef = useRef<number | null>(null)
@@ -117,10 +130,19 @@ export default function Home() {
       <section className="home-hero" data-reveal>
         <div className="home-hero-copy">
           <span className="page-header-eyebrow">A7 language</span>
-          <h1 className="page-header-title">Simple, fast systems code.</h1>
+          <h1 className="page-header-title">A7 turns simple systems code into Zig.</h1>
           <p className="page-header-summary">
             Compile one file to Zig. No recursion, no magic runtime.
           </p>
+
+          <dl className="home-hero-stats" aria-label="A7 project highlights">
+            {HERO_STATS.map((item) => (
+              <div key={item.label} className="home-hero-stat">
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
 
           <div className="home-hero-actions">
             <Link to="/start" className="primary-action">
@@ -211,22 +233,17 @@ export default function Home() {
       </SectionPanel>
 
       <SectionPanel className="home-cta-panel home-cta">
-        <div className="home-cta-copy">
-          <h2 className="home-cta-title">A7, simple, fast.</h2>
-          <p>Start with one file. Keep the output inspectable.</p>
-          <div className="home-cta-actions">
-            <Link to="/start" className="primary-action">
-              Get started <span aria-hidden="true">→</span>
+        <div className="common-tasks-head">
+          <p className="section-label">Common tasks</p>
+          <h2 className="home-cta-title">Find the next useful command.</h2>
+        </div>
+        <div className="common-tasks-grid">
+          {COMMON_TASKS.map((task) => (
+            <Link key={task.to} to={task.to} className="common-task-link">
+              <span className="common-task-label">{task.label}</span>
+              <span className="common-task-detail">{task.detail}</span>
             </Link>
-            <a
-              href="https://github.com/code5717/a7-py"
-              className="secondary-action"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Star on GitHub <span aria-hidden="true">↗</span>
-            </a>
-          </div>
+          ))}
         </div>
       </SectionPanel>
     </div>

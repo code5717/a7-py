@@ -54,8 +54,8 @@ export const PAGE_META: Record<string, { title: string; description: string; mar
     markdownPath: '/docs/index.md',
   },
   '/docs': {
-    title: 'Markdown Docs',
-    description: 'Static Markdown documentation index for terminals, curl.md, and editor tools.',
+    title: 'Docs',
+    description: 'Documentation index for learning A7, reading the language reference, and checking compiler status.',
     markdownPath: '/docs/index.md',
   },
   '/start': {
@@ -132,6 +132,6 @@ export const SECTION_SEARCH_ITEMS: SectionSearchItem[] = [
   { to: '/internals#pipeline', label: 'Pipeline Stages', group: 'Compiler pipeline', detail: 'Tokenizer, parser, semantic validation, preprocessing, codegen' },
   { to: '/safety#current-enforced-obligations', label: 'Safety Contract', group: 'Compiler pipeline', detail: 'Facts, obligations, proofs, and backend approvals' },
   { to: '/language#standard-library', label: 'Standard Library', group: 'Stdlib', detail: 'stdlib, io, math, planned stub modules, compiler intrinsics' },
-  { to: '/status#open-gaps', label: 'Open gaps', group: 'Status section', detail: 'match diagnostics, memory model, module lowering, backend parity, package publishing' },
+  { to: '/status#open-gaps', label: 'Open gaps', group: 'Status section', detail: 'match diagnostics, memory model, module lowering, and stdlib work' },
   { to: '/internals#testing', label: 'Golden output verifier', group: 'Testing', detail: 'Example compile, build, run, and output checks' },
 ]

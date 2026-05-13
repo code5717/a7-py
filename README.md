@@ -13,7 +13,7 @@ A7 draws inspiration from practical systems programming languages that prioritiz
 
 ## Quick Start
 
-**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager). Install [Zig 0.15.2](https://ziglang.org/download/) to build and run generated Zig output; CI pins the same version for repeatable artifact checks.
+**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager). Install [Zig 0.16.0](https://ziglang.org/download/) to build and run generated Zig output; CI pins the same version for repeatable artifact checks.
 
 ```bash
 # Install uv (if needed)
@@ -161,7 +161,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Safety proofing**: casts, division/modulo, bounds-sensitive indexing/slicing,
   reference dereferences, operation-specific backend approvals, and direct use
   after `del` are checked by internal facts before Zig emission.
-- **Imports**: Virtual `std/io` and `std/math` modules with aliases; file-backed local imports resolve for validation but fail closed before backend codegen until module linking is implemented
+- **Imports**: Virtual `std/io` and `std/math` modules with aliases; simple file-backed alias imports can lower into the same generated Zig file
 - **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, generic struct literals, and simple top-level generic function calls
 - **Code Generation**: A7 → Zig, with generated `std/io` print helpers that preserve stdout/stderr on current Zig toolchains
 - **Standard Library**: Registry with io and math modules, backend-specific mappings
@@ -174,7 +174,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
   `uv run python scripts/verify_examples_e2e.py`.
 - Debug/release artifact verification is available through `scripts/build_examples.py`.
 - Tag releases attach package artifacts to a draft GitHub release.
-- Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `MISSING_FEATURES.md`.
+- Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `docs/STATUS.md`.
 - Zig backend handles the current example suite and most AST node types; unsupported source constructs should continue moving to compiler-side diagnostics.
 - This compiler is not a sandbox. Do not compile and execute untrusted A7 source.
 
@@ -186,13 +186,11 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - Full agent context: `https://code5717.github.io/a7-py/llms-full.txt`
 - `docs/SPEC.md` - Language specification
 - `docs/SAFETY_CONTRACT.md` - Compiler safety contract and proof/backend-plan invariants
-- `RELEASE.md` - Release/debug build checklist
-- `SECURITY.md` - Security policy and trust boundary
-- `RELEASE_READINESS_REVIEW.md` - Current release-readiness audit
-- `COMPLETION_AUDIT.md` - Strict objective-to-evidence release audit
+- `docs/STATUS.md` - Current gaps, priorities, and roadmap
+- `docs/RELEASE.md` - Release/debug build checklist
+- `docs/SECURITY.md` - Security policy and trust boundary
 - `examples/` - 43 sample programs
-- `MISSING_FEATURES.md` - Feature status and roadmap
-- `CHANGELOG.md` - Change history
+- `docs/CHANGELOG.md` - Change history
 - `docs/ERROR_ANALYSIS.md` - Historical error-analysis snapshot, not current status
 
 ## Docs Development

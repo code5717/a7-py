@@ -15,6 +15,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VERIFY_SCRIPT = PROJECT_ROOT / "scripts" / "verify_examples_e2e.py"
 
 
+def example_count() -> int:
+    return len(list((PROJECT_ROOT / "examples").glob("*.a7")))
+
+
 def has_zig() -> bool:
     try:
         result = subprocess.run(
@@ -40,12 +44,13 @@ def test_examples_end_to_end_outputs_match_goldens(tmp_path: Path) -> None:
     )
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode == 0, combined
-    assert "Examples verified: 43/43" in result.stdout
+    expected = example_count()
+    assert f"Examples verified: {expected}/{expected}" in result.stdout
 
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["ok"] is True
-    assert payload["passed"] == payload["total"] == 43
-    assert len(payload["results"]) == 43
+    assert payload["passed"] == payload["total"] == expected
+    assert len(payload["results"]) == expected
     for item in payload["results"]:
         assert item["compile_ok"] is True
         assert item["ast_ok"] is True

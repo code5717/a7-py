@@ -52,8 +52,7 @@ error-stage checks, docs style checks, and full pytest.
 - The committed-secrets check is pattern- and filename-based and should be
   treated as a guard, not a complete data-loss prevention system.
 
-These limitations are tracked in `MISSING_FEATURES.md`, `TODO.md`, and
-`RELEASE.md`.
+These limitations are tracked in `docs/STATUS.md` and `docs/RELEASE.md`.
 
 ## Reporting
 

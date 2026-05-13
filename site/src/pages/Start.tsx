@@ -50,7 +50,7 @@ export default function Start() {
         <ul className="doc-list">
           <li>Python 3.13+</li>
           <li><a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener noreferrer">uv</a> package manager</li>
-          <li>Zig 0.15.2 compiler (to run generated output)</li>
+          <li>Zig 0.16.0 compiler (to run generated output)</li>
         </ul>
       </SectionPanel>
 

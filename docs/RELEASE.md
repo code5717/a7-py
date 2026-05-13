@@ -16,7 +16,7 @@ A release should contain:
 
 - Python 3.13+
 - `uv`
-- Zig 0.15.2 on `PATH`
+- Zig 0.16.0 on `PATH`
 - Node.js 22+ for the docs site
 
 ## Debug Builds
@@ -97,15 +97,15 @@ uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --requ
 
 The tag release workflow generates `dist/SHA256SUMS` after all release archives
 are built, verifies that the manifest contains the package, docs, and native
-artifact archives, verifies required archive members, asserts the example
-archive contains all 38 generated Zig sources and all 38 native binaries,
-re-checks the hashes and sizes on disk, generates GitHub artifact attestations
-for each release artifact, then attaches the artifacts to the draft GitHub
-release.
+artifact archives, verifies required archive members, derives the current
+example count from `scripts/project_status.py`, asserts the native example
+archive contains that many generated Zig sources and binaries, re-checks the
+hashes and sizes on disk, generates GitHub artifact attestations for each
+release artifact, then attaches the artifacts to the draft GitHub release.
 
 ## Tagging
 
-1. Update `CHANGELOG.md` by moving relevant `Unreleased` notes under a version.
+1. Update `docs/CHANGELOG.md` by moving relevant `Unreleased` notes under a version.
 2. Confirm `pyproject.toml` has the intended version.
 3. Run the full release gate.
 4. Commit the release prep.
@@ -129,7 +129,7 @@ uv run python scripts/verify_release_manifest.py SHA256SUMS
 gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
 gh attestation verify a7_py-*.whl --repo code5717/a7-py
 gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
-gh attestation verify a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz --repo code5717/a7-py
+gh attestation verify a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz --repo code5717/a7-py
 ```
 
 When building locally, remove `dist/` before `uv build`. The release workflow
@@ -153,4 +153,4 @@ The compiler is not a security sandbox. A7 programs compiled to native binaries
 can do whatever the generated Zig program and host runtime allow. Only compile
 and execute source you trust.
 
-Current language gaps remain tracked in `MISSING_FEATURES.md` and `TODO.md`.
+Current language gaps remain tracked in `docs/STATUS.md`.

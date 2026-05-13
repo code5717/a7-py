@@ -22,9 +22,8 @@ Use `llms.txt` for routing, `docs/index.md` for the navigation tree, and `llms-f
 
 - `README.md`: user-facing overview and commands.
 - `docs/SPEC.md`: language specification.
-- `MISSING_FEATURES.md`: current gaps.
-- `TODO.md`: tracked implementation backlog.
-- `RELEASE.md`: release workflow and artifact gates.
+- `docs/STATUS.md`: current gaps, priorities, and roadmap.
+- `docs/RELEASE.md`: release workflow and artifact gates.
 - `AGENTS.md`: repo workflow for coding agents.
 
 ## Preferred Commands
@@ -41,7 +40,7 @@ uv run python scripts/verify_examples_e2e.py
 
 - Do not write recursive A7 examples or tests.
 - Keep `llms.txt`, `llms-full.txt`, and `site/public/docs/` aligned when public docs change.
-- Update `CHANGELOG.md`, `README.md`, `docs/SPEC.md`, `MISSING_FEATURES.md`, and `TODO.md` when language behavior changes.
+- Update `docs/CHANGELOG.md`, `README.md`, `docs/SPEC.md`, and `docs/STATUS.md` when language behavior changes.
 - Treat tests as evidence, not a substitute for reading the code and current hosted workflow state.
 
 ## Trust Boundaries

@@ -29,9 +29,9 @@ export default function Status() {
       />
 
       <section className="metric-grid">
-        <MetricTile label="Pipeline" value="Working with open gaps" />
-        <MetricTile label="Tests" value="Use live test run" note="PYTHONPATH=. uv run pytest --tb=no -q" />
-        <MetricTile label="Examples" value="Zig verifier" note="43/43 examples" />
+        <MetricTile label="Pipeline" value="Working" state="Open gaps tracked below" />
+        <MetricTile label="Tests" value="Run locally" state="pytest and artifact gates" note="PYTHONPATH=. uv run pytest --tb=no -q" />
+        <MetricTile label="Examples" value="43/43" state="Zig verifier suite" />
       </section>
 
       <SectionPanel title="Done">

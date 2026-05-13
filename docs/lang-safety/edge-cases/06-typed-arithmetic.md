@@ -160,7 +160,7 @@ for common patterns, and in the user-surface vocabulary.
 - Type assignability: `a7/types.py:108-140` (`is_assignable_to`)
   encodes signed/unsigned widening rules — relevant input for
   the range tracker.
-- 4 bitwise / shift examples plus arithmetic across all 38 examples
+- 4 bitwise / shift examples plus arithmetic across the current example suite
   to audit.
 
 ## Phase C decision-input summary

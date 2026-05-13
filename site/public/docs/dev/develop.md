@@ -37,7 +37,7 @@ Run the full local gate for release-impacting changes:
 - Prefer explicit stacks for new AST-wide analysis or reporting walks. Backend
   binary-expression emission is stack-based, but statement and non-binary
   expression emission still have recursive paths; keep low-recursion tests
-  passing and track full conversion in `TODO.md`.
+  passing and track full conversion in `docs/STATUS.md`.
 - No recursive A7 source examples.
 - Keep docs and examples aligned.
 - Document remaining gaps instead of hiding them.

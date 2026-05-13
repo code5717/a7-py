@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Guidance for coding agents working in this repository. Keep changes consistent
-with `README.md` and `RELEASE.md`; those are the authoritative user-facing docs.
+with `README.md` and `docs/RELEASE.md`; those are the authoritative user-facing docs.
 For terminal/curl workflows, `site/public/llms.txt`,
 `site/public/llms-full.txt`, and `site/public/docs/index.md` are the
 agent-readable docs entry points derived from the authoritative docs.
@@ -41,7 +41,7 @@ non-trivial.
 
 The public docs site also ships Markdown entry points for agent tooling under
 `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
-Keep those files aligned with `README.md`, `RELEASE.md`, and user-visible site
+Keep those files aligned with `README.md`, `docs/RELEASE.md`, and user-visible site
 navigation when docs structure changes.
 
 ## A7 Source Rules
@@ -65,7 +65,7 @@ navigation when docs structure changes.
   or prefix `*` as reference operations; pass lvalues directly to `ref`
   parameters and use ordinary field access after nil checks.
 - Native release archives are named with platform/toolchain context
-  (`a7-example-artifacts-linux-x86_64-zig0.15.2-<profile>.tar.gz`); keep
+  (`a7-example-artifacts-linux-x86_64-zig0.16.0-<profile>.tar.gz`); keep
   any docs or scripts that reference these filenames in sync.
 - This rule applies to A7 source only. Compiler internals already use
   iterative AST traversals; keep them that way.
@@ -76,18 +76,17 @@ After making major changes (new language features, bug fixes, backend
 additions, refactors), ensure the following docs are up to date before
 committing:
 
-1. **CHANGELOG.md** — add an entry for the change
+1. **docs/CHANGELOG.md** — add a short release-facing entry
 2. **README.md** — update usage, feature lists, or examples if affected
 3. **docs/SPEC.md** — update if language semantics or syntax changed
-4. **MISSING_FEATURES.md** — mark completed gaps or document new ones
-5. **TODO.md** — check off completed items or add newly discovered work
-6. **site/public/llms.txt**, **site/public/llms-full.txt**, and
+4. **docs/STATUS.md** — update current gaps, priorities, or roadmap
+5. **site/public/llms.txt**, **site/public/llms-full.txt**, and
    **site/public/docs/** — update agent/curl.md entry points if site
    navigation, release commands, CLI behavior, or public docs structure
    changed
 
 Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
-`CHANGELOG.md`, `MISSING_FEATURES.md`, `TODO.md`, `site/public/llms.txt`,
+`docs/CHANGELOG.md`, `docs/STATUS.md`, `site/public/llms.txt`,
 `site/public/llms-full.txt`, and `site/public/docs/` — drift between them is
 treated as a bug.
 

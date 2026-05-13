@@ -24,5 +24,5 @@ Use `./run_all_tests.sh` for release-gate changes.
 ## Editing Rules
 
 - Use `apply_patch` for manual edits.
-- Keep site, README, SPEC, TODO, MISSING_FEATURES, and changelog in sync when behavior changes.
-- Do not claim release readiness beyond the evidence in `COMPLETION_AUDIT.md`.
+- Keep site, README, SPEC, `docs/STATUS.md`, and changelog in sync when behavior changes.
+- Do not claim release readiness beyond the current gates documented in `docs/RELEASE.md`.

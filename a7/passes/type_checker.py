@@ -1315,6 +1315,10 @@ class TypeCheckingPass:
                         getattr(node.function.object, 'name', '') or ''
                     )
                     if obj_symbol and obj_symbol.kind == SymbolKind.MODULE:
+                        if getattr(node, "file_module_call", None):
+                            for arg in node.arguments or []:
+                                self.visit_expression(arg)
+                            return UNKNOWN
                         return self._visit_stdlib_module_call(node, obj_symbol)
 
             # Use the span of the function being called, not the whole call expression

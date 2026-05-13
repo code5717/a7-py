@@ -46,6 +46,12 @@ function extractMermaidBlocks(source: string): ExtractResult {
   return { source: out, mermaidBlocks: blocks }
 }
 
+function wrapMarkdownTables(html: string) {
+  return html
+    .replace(/<table>/g, '<div class="markdown-table-wrap"><table>')
+    .replace(/<\/table>/g, '</table></div>')
+}
+
 function FetchCommandRow({
   href,
   label,
@@ -100,55 +106,70 @@ function FetchCommandRow({
 }
 
 function DocDirectory() {
-  const docsIndexHref = publicDocsPath('/docs/index.md')
-  const llmsHref = publicDocsPath('/llms.txt')
-  const llmsFullHref = publicDocsPath('/llms-full.txt')
-  const docsIndexUrl = publicDocsUrl('/docs/index.md')
-  const llmsUrl = publicDocsUrl('/llms.txt')
-  const llmsFullUrl = publicDocsUrl('/llms-full.txt')
-  const llmsCommand = `curl -fsS ${llmsUrl}`
-  const docsIndexCommand = `curl -fsS ${docsIndexUrl}`
-  const llmsFullCommand = `curl -fsS ${llmsFullUrl}`
-
   return (
     <>
       <PageHeader
-        eyebrow="curl.md"
-        title="Fetchable docs"
-        summary="Stable Markdown files for curl.md, agents, terminals, and editor tools."
+        eyebrow="Documentation"
+        title="A7 docs"
+        summary="Start with the language, examples, compiler pipeline, and current implementation status."
       />
 
-      <SectionPanel className="curl-docs-start">
-        <div className="curl-docs-start-copy">
-          <p className="section-label">Start here</p>
-          <h2 className="section-title">A small index, then exact files.</h2>
-          <p className="text-secondary">
-            Fetch `llms.txt` to route. Fetch `docs/index.md` for the full navigation tree.
-            Use `llms-full.txt` only when one combined context file is easier.
-          </p>
-        </div>
-        <div className="curl-docs-commands">
-          <FetchCommandRow href={llmsHref} label="Compact index" command={llmsCommand} />
-          <FetchCommandRow href={docsIndexHref} label="Docs index" command={docsIndexCommand} />
-          <FetchCommandRow href={llmsFullHref} label="Full context" command={llmsFullCommand} />
+      <SectionPanel title="Start here" className="docs-start-grid">
+        <div className="link-card-grid">
+          <Link to="/start" className="link-card">
+            <span className="link-card-title">Getting Started</span>
+            <span className="link-card-desc">Install the repo, compile a program, and run the generated Zig.</span>
+          </Link>
+          <Link to="/language" className="link-card">
+            <span className="link-card-title">Language Reference</span>
+            <span className="link-card-desc">Syntax, types, control flow, refs, generics, stdlib, and current limits.</span>
+          </Link>
+          <Link to="/examples" className="link-card">
+            <span className="link-card-title">Examples</span>
+            <span className="link-card-desc">Browse verified A7 programs and inspect their source.</span>
+          </Link>
+          <Link to="/internals" className="link-card">
+            <span className="link-card-title">Compiler</span>
+            <span className="link-card-desc">Tokenizer, parser, semantic checks, preprocessing, and Zig backend notes.</span>
+          </Link>
+          <Link to="/status" className="link-card">
+            <span className="link-card-title">Status</span>
+            <span className="link-card-desc">Implemented surface, open gaps, and next priorities.</span>
+          </Link>
+          <Link to="/release" className="link-card">
+            <span className="link-card-title">Release</span>
+            <span className="link-card-desc">Artifact builds, package checks, and release verification.</span>
+          </Link>
         </div>
       </SectionPanel>
 
-      {CURL_DOC_GROUPS.map((group) => (
-        <SectionPanel key={group.label} title={group.label} className="curl-docs-group">
-          <div className="doc-link-list">
-            {group.items.map((item) => (
-              <Link key={item.route} to={item.route} className="doc-link-row">
+      <SectionPanel title="Reference map" className="curl-docs-group">
+        <div className="doc-link-list">
+          {[
+            '/install',
+            '/cli',
+            '/language',
+            '/internals',
+            '/safety',
+            '/examples',
+            '/status',
+            '/release',
+            '/contributing',
+            '/changelog',
+          ].map((route) => {
+            const item = CURL_DOC_BY_ROUTE.get(route)
+            if (!item) return null
+            return (
+              <Link key={route} to={item.route} className="doc-link-row">
                 <span>
                   <span className="doc-link-title">{item.label}</span>
                   <span className="doc-link-desc">{item.note}</span>
                 </span>
-                <code className="doc-inline-code">{item.markdownPath}</code>
               </Link>
-            ))}
-          </div>
-        </SectionPanel>
-      ))}
+            )
+          })}
+        </div>
+      </SectionPanel>
     </>
   )
 }
@@ -179,7 +200,7 @@ function MarkdownArticle({ markdownPath }: { markdownPath: string }) {
           ADD_ATTR: ['data-mermaid-id', 'class'],
         })
         setBlocks(mermaidBlocks)
-        setHtml(clean)
+        setHtml(wrapMarkdownTables(clean))
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -283,24 +304,9 @@ export default function CurlDocsPage() {
     <div className="page">
       <PageHeader eyebrow={doc.group} title={doc.label} summary={doc.note} />
 
-      <SectionPanel title="Open Markdown" className="curl-docs-open">
-        <div className="markdown-landing">
-          <a className="primary-action" href={markdownHref}>
-            Open raw Markdown <span aria-hidden="true">→</span>
-          </a>
-          <a className="secondary-action" href={publicDocsPath('/llms.txt')}>
-            llms.txt <span aria-hidden="true">→</span>
-          </a>
-          <a className="secondary-action" href={publicDocsPath('/llms-full.txt')}>
-            full context <span aria-hidden="true">→</span>
-          </a>
-        </div>
-        <FetchCommandRow href={markdownHref} label="Direct fetch" command={markdownCommand} className="single" />
-      </SectionPanel>
-
       <MarkdownArticle markdownPath={doc.markdownPath} />
 
-      <SectionPanel title="Browse" className="curl-docs-group">
+      <SectionPanel title="Browse related docs" className="curl-docs-group">
         <div className="doc-link-list">
           {CURL_DOC_GROUPS.find((group) => group.label === doc.group)?.items.map((item) => (
             <Link key={item.route} to={item.route} className="doc-link-row">
@@ -311,6 +317,15 @@ export default function CurlDocsPage() {
             </Link>
           ))}
         </div>
+      </SectionPanel>
+
+      <SectionPanel title="Source Markdown" className="curl-docs-open">
+        <div className="markdown-landing">
+          <a className="secondary-action" href={markdownHref}>
+            Open raw Markdown <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <FetchCommandRow href={markdownHref} label="Direct fetch" command={markdownCommand} className="single" />
       </SectionPanel>
     </div>
   )

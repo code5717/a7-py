@@ -43,7 +43,7 @@ uv run python scripts/build_examples.py --profile release --backend zig --clean
 ./run_all_tests.sh
 ```
 
-## Backend Parity
+## Zig Example Verification
 
 `scripts/verify_examples_e2e.py` compiles examples through Zig, builds them, runs them, and compares runtime output.
 

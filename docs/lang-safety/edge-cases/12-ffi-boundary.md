@@ -149,7 +149,7 @@ A7 should learn from both.
 ## Source citations
 
 - No FFI exists today.
-- `MISSING_FEATURES.md` doesn't currently list FFI; should add.
+- `docs/STATUS.md` doesn't currently list FFI; should add.
 - Ada reference: `pragma Import` / `pragma Export` /
   `pragma Convention` discussions in
   `learn.adacore.com/courses/intro-to-ada/chapters/interfacing_with_c.html`.

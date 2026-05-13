@@ -25,4 +25,4 @@ https://code5717.github.io/a7-py/llms-full.txt
 - Prefer `usize` for lengths and indices.
 - Prefer `isize` for signed pointer-sized differences.
 - Verify code changes with local commands before trusting prose.
-- Keep public markdown docs aligned with README, SPEC, TODO, and MISSING_FEATURES.
+- Keep public markdown docs aligned with README, SPEC, and `docs/STATUS.md`.

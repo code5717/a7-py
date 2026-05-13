@@ -147,7 +147,7 @@ main :: fn() {
     assert out.exists()
 
 
-def test_cli_local_file_import_fails_closed_before_codegen(tmp_path):
+def test_cli_local_file_import_emits_single_zig_output(tmp_path):
     helper = tmp_path / "helper.a7"
     src = tmp_path / "main.a7"
     helper.write_text(
@@ -168,18 +168,14 @@ main :: fn() {
 """.strip()
     )
 
-    for backend, suffix in [("zig", ".zig")]:
-        out = tmp_path / f"main{suffix}"
-        result = run_cli(["--backend", backend, "--format", "json", str(src), "-o", str(out)])
+    out = tmp_path / "main.zig"
+    result = run_cli(["--format", "json", str(src), "-o", str(out)])
 
-        assert result.returncode == ExitCode.SEMANTIC
-        payload = json.loads(result.stdout)
-        assert payload["error"]["category"] == "semantic"
-        message = payload["error"]["details"][0]["message"].lower()
-        assert "file-backed import 'helper'" in message
-        assert f"{backend} backend" in message
-        assert "not implemented yet" in message
-        assert not out.exists()
+    assert result.returncode == ExitCode.SUCCESS, result.stdout + result.stderr
+    assert out.exists()
+    generated = out.read_text(encoding="utf-8")
+    assert "fn module_helper__double" in generated
+    assert "module_helper__double(21)" in generated
 
 
 def test_cli_local_file_import_semantic_mode_still_validates_resolution(tmp_path):

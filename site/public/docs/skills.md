@@ -14,11 +14,10 @@ Use this page as agent-skill guidance for A7 work.
 
 Update these files when behavior, commands, or public docs change:
 
-- `CHANGELOG.md`
+- `docs/CHANGELOG.md`
 - `README.md`
 - `docs/SPEC.md`
-- `MISSING_FEATURES.md`
-- `TODO.md`
+- `docs/STATUS.md`
 - `site/public/llms.txt`
 - `site/public/llms-full.txt`
 - `site/public/docs/`

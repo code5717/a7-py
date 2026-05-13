@@ -4,7 +4,7 @@
 
 - Python 3.13+
 - `uv`
-- Zig 0.15.2 to build and run generated Zig outputs
+- Zig 0.16.0 to build and run generated Zig outputs
 
 ## Install
 

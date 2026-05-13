@@ -49,6 +49,14 @@ def test_installed_cli_entrypoint_works() -> None:
     assert '"status": "ok"' in result.stdout
 
 
+def test_package_exports_compiler_api() -> None:
+    import a7
+
+    assert a7.A7Compiler is not None
+    assert callable(a7.compile_a7_file)
+    assert callable(a7.compile_a7_project)
+
+
 def test_wheel_install_smoke_uses_built_artifact(tmp_path: Path) -> None:
     result = subprocess.run(
         [
@@ -392,6 +400,25 @@ def test_verify_archive_contents_requires_expected_members(tmp_path: Path) -> No
 
     assert bad_count_result.returncode == 1
     assert "glob count mismatch" in bad_count_result.stderr
+
+
+def test_project_status_reports_example_and_golden_counts() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/project_status.py",
+            "--field",
+            "example_count",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+
+    expected = len(list((ROOT / "examples").glob("*.a7")))
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert result.stdout.strip() == str(expected)
 
 
 def test_secret_scan_flags_sensitive_filenames(tmp_path: Path) -> None:

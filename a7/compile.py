@@ -218,6 +218,7 @@ class A7Compiler:
             symbol_table = None
             type_map = None
             backend_plan = None
+            module_aliases: dict[str, str] = {}
             all_errors: list[Any] = []
             semantic_passes: list[dict[str, Any]] = []
             semantic_modes = {
@@ -243,18 +244,21 @@ class A7Compiler:
                 )
                 import_errors: list[Any] = []
                 try:
-                    module_resolver.load_program_dependencies(ast, str(input_path))
+                    loaded_modules = module_resolver.load_program_dependencies(ast, str(input_path))
                 except SemanticError as e:
                     import_errors.append(e)
+                    loaded_modules = []
                 backend_import_errors: list[Any] = []
                 codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
                 if not import_errors and self.mode in codegen_modes:
-                    backend_import_errors = self._backend_unsupported_import_errors(
-                        ast=ast,
+                    module_aliases = self._file_module_aliases(ast, module_resolver)
+                    self._annotate_file_module_calls(ast, module_aliases)
+                    ast = self._combined_program_for_file_modules(
+                        ast,
+                        loaded_modules,
                         module_resolver=module_resolver,
-                        filename=str(input_path),
-                        source_lines=source_lines,
                     )
+                    result.ast = ast
                 backend_feature_errors: list[Any] = []
                 backend_feature_errors = self._backend_unsupported_feature_errors(
                     ast=ast,
@@ -551,38 +555,76 @@ class A7Compiler:
         if result.doc_path:
             console.print(f"[blue]Documentation written to {result.doc_path}[/blue]")
 
-    def _backend_unsupported_import_errors(
-        self,
-        *,
-        ast: ASTNode,
-        module_resolver: Any,
-        filename: str,
-        source_lines: list[str],
-    ) -> list[SemanticError]:
-        """Reject file-backed modules until codegen can lower/link their symbols."""
+    def _file_module_aliases(self, ast: ASTNode, module_resolver: Any) -> dict[str, str]:
+        aliases: dict[str, str] = {}
         if ast.kind != NodeKind.PROGRAM:
-            return []
-
-        errors: list[SemanticError] = []
+            return aliases
         for decl in ast.declarations or []:
-            if decl.kind != NodeKind.IMPORT:
+            if decl.kind != NodeKind.IMPORT or not decl.alias:
                 continue
             module_path = decl.module_path or ""
-            if module_resolver.is_virtual_module(module_path):
+            if not module_resolver.is_virtual_module(module_path):
+                aliases[decl.alias] = module_path
+        return aliases
+
+    def _module_emit_prefix(self, module_path: str) -> str:
+        cleaned = "".join(ch if ch.isalnum() else "_" for ch in module_path)
+        return f"module_{cleaned}__"
+
+    def _annotate_file_module_calls(self, node: Any, aliases: dict[str, str]) -> None:
+        if not aliases:
+            return
+        stack: list[Any] = [node]
+        seen: set[int] = set()
+        while stack:
+            value = stack.pop()
+            if isinstance(value, ASTNode):
+                node_id = id(value)
+                if node_id in seen:
+                    continue
+                seen.add(node_id)
+                if value.kind == NodeKind.CALL and value.function and value.function.kind == NodeKind.FIELD_ACCESS:
+                    obj = value.function.object
+                    if obj and obj.kind == NodeKind.IDENTIFIER and obj.name in aliases:
+                        value.file_module_call = (
+                            self._module_emit_prefix(aliases[obj.name]),
+                            value.function.field or "",
+                        )
+                stack.extend(value.__dict__.values())
+            elif isinstance(value, (list, tuple)):
+                stack.extend(value)
+
+    def _combined_program_for_file_modules(
+        self,
+        ast: ASTNode,
+        loaded_modules: list[Any],
+        *,
+        module_resolver: Any,
+    ) -> ASTNode:
+        module_decls: list[ASTNode] = []
+        seen_paths: set[str] = set()
+        for module_info in loaded_modules:
+            if module_info.ast is None or module_resolver.is_virtual_module(module_info.path):
                 continue
-            errors.append(
-                SemanticError.from_type(
-                    SemanticErrorType.UNSUPPORTED_IMPORT,
-                    span=decl.span,
-                    filename=filename,
-                    source_lines=source_lines,
-                    custom_message=(
-                        f"File-backed import '{module_path}' resolves, but {self.backend} "
-                        "backend lowering/linking for local modules is not implemented yet"
-                    ),
-                )
-            )
-        return errors
+            if module_info.path in seen_paths:
+                continue
+            seen_paths.add(module_info.path)
+            prefix = self._module_emit_prefix(module_info.path)
+            for decl in module_info.ast.declarations or []:
+                if decl.kind == NodeKind.IMPORT:
+                    continue
+                if decl.kind == NodeKind.FUNCTION:
+                    decl.module_emit_prefix = prefix
+                module_decls.append(decl)
+
+        if not module_decls:
+            return ast
+
+        return ASTNode(
+            kind=NodeKind.PROGRAM,
+            declarations=module_decls + list(ast.declarations or []),
+            span=ast.span,
+        )
 
     def _backend_unsupported_feature_errors(
         self,

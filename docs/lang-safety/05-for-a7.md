@@ -423,7 +423,7 @@ checklist for backend changes is at the end of this section.
 #### 4.8.1 Non-null pointer deref
 
 ```text
-A7:           let x: int = p.val          ; p: ptr int
+A7:           let x: int = get_checked(p) ; p: ref int
 emitted Zig:  const x: i64 = p.*;          // p: *i64, NOT ?*i64
 ```
 
@@ -754,7 +754,7 @@ When threads are added, pick a single model up front:
 - **Mutable value semantics extended with actor isolation** (Hylo/Pony
   lite). Composes cleanly with §3.3–§3.4.
 
-Don't pick now. Note in `MISSING_FEATURES.md`.
+Don't pick now. Note in `docs/STATUS.md`.
 
 ## 6. Anti-recommendations
 

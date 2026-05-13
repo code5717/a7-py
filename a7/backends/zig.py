@@ -157,22 +157,23 @@ class ZigCodeGenerator(CodeGenerator):
             lines.append("const std = @import(\"std\");")
         if self._needs_allocator:
             lines.append("const allocator = std.heap.page_allocator;")
+        if self._io_streams_needed:
+            lines.append("var __a7_io: ?std.Io = null;")
         for stream in sorted(self._io_streams_needed):
-            fd = "STDERR_FILENO" if stream == "stderr" else "STDOUT_FILENO"
+            stream_name = "stderr" if stream == "stderr" else "stdout"
             lines.append(f"fn __a7_{stream}_print(comptime fmt: []const u8, args: anytype) void {{")
-            lines.append("    if (comptime @hasDecl(std.fs, \"File\")) {")
-            lines.append("        var __a7_stream_buf: [1024]u8 = undefined;")
+            lines.append("    var __a7_stream_buf: [1024]u8 = undefined;")
             lines.append(
-                f"        var __a7_writer = "
-                f"std.fs.File.{stream}().writerStreaming(&__a7_stream_buf);"
+                f"    var __a7_writer = "
+                f"std.Io.File.{stream}().writer(__a7_io.?, &__a7_stream_buf);"
             )
-            lines.append("        __a7_writer.interface.print(fmt, args) catch {};")
-            lines.append("        __a7_writer.interface.flush() catch {};")
-            lines.append("    } else {")
-            lines.append("        var __a7_print_buf: [4096]u8 = undefined;")
-            lines.append("        const __a7_text = std.fmt.bufPrint(&__a7_print_buf, fmt, args) catch return;")
-            lines.append(f"        _ = std.os.linux.write(std.posix.{fd}, __a7_text.ptr, __a7_text.len);")
-            lines.append("    }")
+            lines.append(f"    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 {stream_name} write failed\");")
+            lines.append(f"    __a7_writer.interface.flush() catch @panic(\"a7 {stream_name} flush failed\");")
+            lines.append("}")
+        if self._io_streams_needed:
+            lines.append("pub fn main(init: std.process.Init) void {")
+            lines.append("    __a7_io = init.io;")
+            lines.append("    __a7_user_main();")
             lines.append("}")
         if lines:
             lines.append("")
@@ -391,12 +392,14 @@ class ZigCodeGenerator(CodeGenerator):
     def _visit_function(self, node: ASTNode) -> None:
         """Visit function declaration."""
         name = node.name or "anonymous"
+        emit_prefix = getattr(node, "module_emit_prefix", "")
 
         # Skip if this function was hoisted (emitted earlier at module level)
         if name in self._skip_nested_fn_names:
             return
 
-        is_main = (name == "main")
+        is_main = (name == "main" and not emit_prefix)
+        emitted_name = "__a7_user_main" if (is_main and self._io_streams_needed) else f"{emit_prefix}{name}"
 
         # Analyze function body for mutations, used identifiers, nested functions
         saved_mutated = self._mutated_vars
@@ -422,9 +425,9 @@ class ZigCodeGenerator(CodeGenerator):
             self._used_identifiers = set()
 
         # Function signature
-        prefix = "pub " if (is_main or getattr(node, 'is_public', False)) else ""
+        prefix = "pub " if ((is_main and not self._io_streams_needed) or getattr(node, 'is_public', False)) else ""
         self._write_indent()
-        self.output.write(f"{prefix}fn {name}(")
+        self.output.write(f"{prefix}fn {emitted_name}(")
 
         generic_params = [param.name for param in (node.generic_params or []) if param.name]
         for i, generic_name in enumerate(generic_params):
@@ -1581,8 +1584,12 @@ class ZigCodeGenerator(CodeGenerator):
         elif op == BinaryOp.MOD:
             return f"@rem({left}, {right})"
         elif op == BinaryOp.BIT_SHL:
+            if self._is_nonnegative_integer_literal(node.right):
+                return f"({left} << {right})"
             return f"({left} << @intCast({right}))"
         elif op == BinaryOp.BIT_SHR:
+            if self._is_nonnegative_integer_literal(node.right):
+                return f"({left} >> {right})"
             return f"({left} >> @intCast({right}))"
         else:
             return f"({left} {zig_op} {right})"
@@ -1614,6 +1621,12 @@ class ZigCodeGenerator(CodeGenerator):
         # Special-case io.println / io.print
         if self._is_io_call(node):
             return self._emit_io_call_expr(node)
+
+        file_module_call = getattr(node, "file_module_call", None)
+        if file_module_call:
+            prefix, field = file_module_call
+            args = ", ".join(self._emit_expr(a) for a in (node.arguments or []))
+            return f"{prefix}{field}({args})"
 
         canonical = getattr(node, "stdlib_canonical", None)
         if canonical and canonical.startswith("std.math."):
@@ -1757,7 +1770,18 @@ class ZigCodeGenerator(CodeGenerator):
             return f"@as({target_type}, @intFromFloat({expr}))"
         if target_name in {"f32", "f64"}:
             return f"@as({target_type}, @floatFromInt({expr}))"
+        if self._is_nonnegative_integer_literal(node.expression):
+            return f"@as({target_type}, {expr})"
         return f"@as({target_type}, @intCast({expr}))"
+
+    def _is_nonnegative_integer_literal(self, node: Optional[ASTNode]) -> bool:
+        return bool(
+            node
+            and node.kind == NodeKind.LITERAL
+            and node.literal_kind == LiteralKind.INTEGER
+            and isinstance(node.literal_value, int)
+            and node.literal_value >= 0
+        )
 
     def _require_backend_approval(self, node: ASTNode, operation: str) -> None:
         if self._backend_plan is None:
@@ -2203,11 +2227,25 @@ class ZigCodeGenerator(CodeGenerator):
                 return "s"
             if name == "char":
                 return "c"
+            if name in {
+                "i8", "i16", "i32", "i64",
+                "u8", "u16", "u32", "u64",
+                "isize", "usize",
+                "f32", "f64",
+                "bool",
+            }:
+                return ""
         if arg and arg.kind == NodeKind.LITERAL:
             if arg.literal_kind == LiteralKind.STRING:
                 return "s"
             if arg.literal_kind == LiteralKind.CHAR:
                 return "c"
+            if arg.literal_kind in {
+                LiteralKind.INTEGER,
+                LiteralKind.FLOAT,
+                LiteralKind.BOOLEAN,
+            }:
+                return ""
         return "any"
 
     def _convert_format_string(self, fmt_str: str, args: Optional[list[ASTNode]] = None) -> str:

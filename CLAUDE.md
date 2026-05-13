@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Project-level guidance for Claude Code. Mirrors `AGENTS.md`; treat that file
 as the canonical agent guide and keep both in sync. `README.md` and
-`RELEASE.md` remain the authoritative user-facing docs.
+`docs/RELEASE.md` remain the authoritative user-facing docs.
 For terminal/curl workflows, `site/public/llms.txt`,
 `site/public/llms-full.txt`, and `site/public/docs/index.md` are the
 agent-readable docs entry points derived from the authoritative docs.
@@ -96,7 +96,7 @@ wheel install smoke test). Run it before reporting a non-trivial task as done.
 
 The public docs site also ships Markdown entry points for agent tooling under
 `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
-Keep those files aligned with `README.md`, `RELEASE.md`, and user-visible site
+Keep those files aligned with `README.md`, `docs/RELEASE.md`, and user-visible site
 navigation when docs structure changes.
 
 ## A7 Source Rules
@@ -121,14 +121,14 @@ navigation when docs structure changes.
   or prefix `*` as reference operations; pass lvalues directly to `ref`
   parameters and use ordinary field access after nil checks.
 - Native release archives are named with platform/toolchain context
-  (`a7-example-artifacts-linux-x86_64-zig0.15.2-<profile>.tar.gz`); keep
+  (`a7-example-artifacts-linux-x86_64-zig0.16.0-<profile>.tar.gz`); keep
   any docs or scripts that reference these filenames in sync.
 - This rule applies to A7 source only. Compiler internals already use
   iterative AST traversals; keep them that way.
 
 ## Docs Accuracy
 
-User-facing docs (`README.md`, `docs/SPEC.md`, `MISSING_FEATURES.md`,
+User-facing docs (`README.md`, `docs/SPEC.md`, `docs/STATUS.md`,
 `site/public/llms*.txt`, `site/public/docs/`) must clearly distinguish
 **currently supported** features from syntax that is only **parsed or
 reserved** but not yet implemented. In particular, mark these as
@@ -145,24 +145,23 @@ end-to-end is treated the same as a doc/code drift bug.
 
 - Package-registry publishing (a7 package index, registry client, lockfile
   resolution, etc.) is **out of scope** for this repository. Do not add
-  features, examples, docs, or TODO/MISSING entries that assume a registry;
+  features, examples, docs, or status entries that assume a registry;
   treat related requests as out-of-scope and flag them.
 
 ## Post-Change Checklist
 
 When language features, backends, or user-facing behavior change, update:
 
-1. `CHANGELOG.md` — add an entry
+1. `docs/CHANGELOG.md` — add a short release-facing entry
 2. `README.md` — usage, feature lists, examples
 3. `docs/SPEC.md` — language semantics or syntax
-4. `MISSING_FEATURES.md` — close or open gaps
-5. `TODO.md` — check off or add follow-ups
-6. `site/public/llms.txt`, `site/public/llms-full.txt`, and
+4. `docs/STATUS.md` — close or open gaps and priorities
+5. `site/public/llms.txt`, `site/public/llms-full.txt`, and
    `site/public/docs/` — update agent/curl.md entry points when site
    navigation, release commands, CLI behavior, or public docs structure changes
 
 Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
-`CHANGELOG.md`, `MISSING_FEATURES.md`, `TODO.md`, `site/public/llms.txt`,
+`docs/CHANGELOG.md`, `docs/STATUS.md`, `site/public/llms.txt`,
 `site/public/llms-full.txt`, and `site/public/docs/` — drift between them is
 treated as a bug.
 

@@ -59,7 +59,7 @@ uv run python scripts/verify_release_manifest.py SHA256SUMS
 gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
 gh attestation verify a7_py-*.whl --repo code5717/a7-py
 gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
-gh attestation verify a7-example-artifacts-linux-x86_64-zig0.15.2-release.tar.gz --repo code5717/a7-py
+gh attestation verify a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz --repo code5717/a7-py
 ```
 
 ## Debug and Release Artifacts

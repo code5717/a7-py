@@ -308,6 +308,7 @@ export default function Layout() {
         className={`app-sidebar${sidebarOpen ? ' open' : ''}`}
         aria-label="Mobile documentation navigation"
         aria-modal={sidebarOpen ? 'true' : undefined}
+        role={sidebarOpen ? 'dialog' : undefined}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </aside>
@@ -317,6 +318,7 @@ export default function Layout() {
           <div className="site-header-inner">
             <NavLink to="/" className="site-brand">
               <span className="site-brand-mark">A7</span>
+              <span className="site-brand-text">compiler docs</span>
             </NavLink>
 
             <nav className="site-nav" aria-label="Primary">
@@ -455,14 +457,14 @@ export default function Layout() {
       </div>
 
       {searchOpen ? (
-        <div className="search-overlay" role="presentation" onMouseDown={() => setSearchOpen(false)}>
+        <div className="search-overlay" role="presentation" onClick={() => setSearchOpen(false)}>
           <section
             ref={searchPanelRef}
             className="search-panel"
             role="dialog"
             aria-modal="true"
             aria-labelledby="search-title"
-            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="search-panel-head">
               <div>

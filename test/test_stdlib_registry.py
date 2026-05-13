@@ -239,19 +239,19 @@ class TestGetBackendMapping:
         """Zig mapping for std.io.println should target stdout."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.io.println", "zig")
-        assert result == "stdout.writerStreaming.print"
+        assert result == "__a7_stdout_print"
 
     def test_io_print_zig(self):
         """Zig mapping for std.io.print should target stdout."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.io.print", "zig")
-        assert result == "stdout.writerStreaming.print"
+        assert result == "__a7_stdout_print"
 
     def test_io_eprintln_zig(self):
         """Zig mapping for std.io.eprintln should target stderr."""
         registry = StdlibRegistry()
         result = registry.get_backend_mapping("std.io.eprintln", "zig")
-        assert result == "stderr.writerStreaming.print"
+        assert result == "__a7_stderr_print"
 
     def test_math_sqrt_zig(self):
         """Zig mapping for std.math.sqrt should be '@sqrt'."""

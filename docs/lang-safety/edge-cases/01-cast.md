@@ -198,7 +198,7 @@ From the audit:
 - Type assignability rules (for use by the cast classifier):
   `a7/types.py:108-140` — `is_assignable_to`.
 - Example impact: `examples/015_types.a7`, `examples/020_operators.a7`,
-  `examples/037_language_tour.a7` are the candidates to audit first
+  the current example suite are the candidates to audit first
   (each uses `cast(...)`).
 - Spec section: `docs/SPEC.md` has the existing cast definition that
   needs replacement.

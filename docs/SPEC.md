@@ -9,7 +9,7 @@
 > - ✅ **Debug/release example artifact builds**: available through `scripts/build_examples.py`
 > - 📊 **Current tests**: check with `PYTHONPATH=. uv run pytest --tb=no -q`
 >
-> See `MISSING_FEATURES.md`, `TODO.md`, and `RELEASE.md` for detailed feature, verification, and release status.
+> See `docs/STATUS.md` and `docs/RELEASE.md` for feature, verification, and release status.
 
 ## Table of Contents
 
@@ -1087,7 +1087,7 @@ Not yet implemented:
 This section is a design target, not current implementation status. Tensor
 types, broadcasting, vectorized tensor operators, AI primitives, GPU movement,
 and performance annotations are not implemented yet. Current release status is
-tracked in `MISSING_FEATURES.md` and `TODO.md`.
+tracked in `docs/STATUS.md`.
 
 #### Tensor Types
 ```a7
@@ -1449,10 +1449,10 @@ integrate_2d :: fn(f: fn(f64, f64) f64, bounds: [4]f64, steps: [2]usize) f64 {
 
 ### 10.1 File-Based Module Model
 
-Every A7 source file is a module. There is no explicit `module` keyword.
-Current backend codegen does not link multiple `.a7` files yet; file-backed
-imports resolve during semantic validation but are rejected before Zig
-emission.
+Every A7 source file is a module. There is no explicit `module` keyword. The
+current backend lowers supported file-backed imports into the same generated
+Zig file; A7 multi-file support is a frontend/module feature, not separate
+object linking.
 
 ```a7
 // File: vector.a7
@@ -1495,7 +1495,7 @@ import "vector" { Vec3, dot }
 // Planned syntax; not a current parser form
 // using import "vector"
 
-// Resolver-validated local aliases; codegen modes reject before backend output
+// Local aliases lower into the same generated Zig output for simple calls
 sibling :: import "./sibling"
 subfolder :: import "subfolder/helper"
 
@@ -1513,9 +1513,8 @@ Current implementation:
   imported with arbitrary local aliases, for example
   `console :: import "std/io"`.
 - Local file imports such as `./vector` can resolve from on-disk `.a7` files
-  during semantic validation, but backend lowering/linking for file-backed
-  modules is not implemented yet. Compile/pipeline/doc modes reject them before
-  codegen instead of emitting invalid Zig.
+  and simple alias-qualified function calls lower into the same generated Zig
+  output file.
 
 Planned, not implemented as public stdlib modules yet:
 
@@ -1573,10 +1572,9 @@ math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
 also map through the stdlib registry.
 
 The Zig backend lowers current `std/io` calls to generated stdout/stderr print
-helpers. The helpers use `std.fs.File.writerStreaming` when that API is
-available and fall back to formatting into a bounded stack buffer plus direct
-Linux writes on newer local Zig toolchains. Stdout and stderr remain separate
-streams; mixed-stream display order is not guaranteed.
+helpers. The helpers flush after each call, panic on formatting or write
+failure instead of silently dropping output, and keep stdout and stderr as
+separate streams. Mixed-stream display order is not guaranteed.
 
 The broader string, ASCII, memory, assertion, and allocation function list below
 is planned API shape, not current implementation:
@@ -2218,6 +2216,5 @@ Status snapshot (2026-05-11):
 
 ### E.2 Source Of Truth
 
-- `MISSING_FEATURES.md` tracks language gaps with implementation notes.
-- `TODO.md` tracks engineering and verification backlog.
-- `RELEASE.md` tracks local release/debug build gates.
+- `docs/STATUS.md` tracks language gaps, priorities, and roadmap notes.
+- `docs/RELEASE.md` tracks local release/debug build gates.

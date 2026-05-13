@@ -1,6 +1,6 @@
 # Changelog
 
-The canonical changelog is [`CHANGELOG.md`](https://github.com/code5717/a7-py/blob/master/CHANGELOG.md).
+The canonical changelog is [`docs/CHANGELOG.md`](https://github.com/code5717/a7-py/blob/master/docs/CHANGELOG.md).
 
 ## Current Unreleased Focus
 

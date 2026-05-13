@@ -285,8 +285,9 @@ main :: fn() {
 '''
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
-        assert 'pub fn main() void' in zig
-        assert 'std.os.linux.write(std.posix.STDOUT_FILENO' in zig
+        assert 'pub fn main(init: std.process.Init) void' in zig
+        assert 'std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)' in zig
+        assert 'fn __a7_user_main() void' in zig
         assert '__a7_stdout_print("Hello, World!\\n", .{})' in zig
 
     def test_string_escapes_are_emitted_as_zig_escapes(self):
@@ -311,7 +312,7 @@ main :: fn() {
 """
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
-        assert '__a7_stdout_print("{any}\\n", .{@sqrt(9.0)})' in zig
+        assert '__a7_stdout_print("{}\\n", .{@sqrt(9.0)})' in zig
         assert "console.println" not in zig
         assert "mathlib.sqrt" not in zig
 
@@ -353,9 +354,9 @@ main :: fn() {
         assert run.stdout == "out:1 true\n"
         assert run.stderr == "err:\n"
         generated = output.read_text(encoding="utf-8")
-        assert generated.count("std.os.linux.write(std.posix.STDOUT_FILENO") == 1
-        assert generated.count("std.os.linux.write(std.posix.STDERR_FILENO") == 1
-        assert generated.count("writerStreaming") == 2
+        assert generated.count("std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)") == 1
+        assert generated.count("std.Io.File.stderr().writer(__a7_io.?, &__a7_stream_buf)") == 1
+        assert "std.os.linux.write" not in generated
         assert generated.count("interface.flush") == 2
 
     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
@@ -957,16 +958,16 @@ main :: fn() {
         source = '''
 io :: import "std/io"
 main :: fn() {
-    x := 42
-    io.println("Value: {}", x)
-}
-'''
+        x := 42
+        io.println("Value: {}", x)
+    }
+    '''
         zig = compile_a7_to_zig(source)
-        assert 'std.os.linux.write(std.posix.STDOUT_FILENO' in zig
-        assert zig.count('std.os.linux.write(std.posix.STDOUT_FILENO') == 1
+        assert 'std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)' in zig
+        assert 'std.os.linux.write' not in zig
         assert zig.count('interface.flush') == 1
         assert "var __a7_stdout_writer" not in zig[zig.index("pub fn main"):]
-        assert '{any}' in zig  # {} converted to {any}
+        assert '"Value: {}\\n"' in zig  # typed integer placeholder stays stable
 
     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
     def test_helper_prints_use_generated_stdout_helper(self, tmp_path):
@@ -994,7 +995,8 @@ main :: fn() {
         assert compiler.compile_file(str(source), str(output))
         generated = output.read_text(encoding="utf-8")
         assert generated.count("fn __a7_stdout_print") == 1
-        assert generated.count("std.os.linux.write(std.posix.STDOUT_FILENO") == 1
+        assert generated.count("std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)") == 1
+        assert "std.os.linux.write" not in generated
         assert "fn helper() void {\n    __a7_stdout_print" in generated
         assert "fn helper() void {\n    defer " not in generated
 

@@ -66,7 +66,7 @@ Fetch `llms.txt` first for routing. Fetch this index when you need the full docu
 ## A7 References
 
 - [Language and Library](/a7-py/docs/language.md): One-page reference, integer guidance, stdlib, and no-recursion rule.
-- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, backends, test layers, parity checks, and local release gate.
+- [Compiler and Tests](/a7-py/docs/compiler.md): Pipeline, Zig verification, test layers, and local release gate.
 - [Safety Contract](/a7-py/docs/safety.md): Facts, obligations, proofs, ownership checks, and backend-plan invariants.
 - [Examples](/a7-py/docs/examples.md): Runnable programs, the commented language tour, and verification commands.
 - [Release](/a7-py/docs/release.md): Debug/release artifact builds, package build, dependency audits, and draft GitHub release artifacts.
@@ -78,7 +78,6 @@ Fetch `llms.txt` first for routing. Fetch this index when you need the full docu
 ## Source References
 
 - [Language Specification](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
-- [Release Checklist](https://github.com/code5717/a7-py/blob/master/RELEASE.md)
-- [Security Policy](https://github.com/code5717/a7-py/blob/master/SECURITY.md)
-- [Release Readiness Review](https://github.com/code5717/a7-py/blob/master/RELEASE_READINESS_REVIEW.md)
-- [Missing Features](https://github.com/code5717/a7-py/blob/master/MISSING_FEATURES.md)
+- [Release Checklist](https://github.com/code5717/a7-py/blob/master/docs/RELEASE.md)
+- [Security Policy](https://github.com/code5717/a7-py/blob/master/docs/SECURITY.md)
+- [Status and Roadmap](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)

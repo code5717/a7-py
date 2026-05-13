@@ -435,7 +435,7 @@ single allowed boundary at which the language stops enforcing. Each
 foreign function must return a `Result<T, ForeignError>`; the shim
 is a small Zig wrapper that the compiler treats as opaque.
 
-**Proposed change.** Defer. Document in `MISSING_FEATURES.md` that
+**Proposed change.** Defer. Document in `docs/STATUS.md` that
 when FFI is added, it must conform to the §4.7 boundary discipline.
 
 ## 2. What A7 already does right
@@ -449,10 +449,10 @@ Worth being explicit about, so future contributors don't undo it:
   break the contract.
 - **No `inttoptr` syntax**. (But see §1.2 — `cast` currently
   admits the equivalent; that's the gap.)
-- **No raw pointer arithmetic.** Pointer values support `.adr` /
-  `.val` but not `p + n`.
+- **No raw pointer arithmetic.** Public A7 does not expose address-of or
+  dereference syntax; reference lowering is compiler-internal.
 - **Heap fixed arrays (`new [N]T`) are rejected** (`a7/CLAUDE.md`,
-  `a7/MISSING_FEATURES.md`). Keep that until the language model is
+  `docs/STATUS.md`). Keep that until the language model is
   defined.
 - **`match` exhaustiveness is checked** for enums and bools
   (`a7/passes/type_checker.py:1854-1858`). Extend to tagged unions
@@ -465,7 +465,7 @@ Worth being explicit about, so future contributors don't undo it:
 
 ## 3. Things parsed-only / reserved that interact with safety
 
-From `MISSING_FEATURES.md` and `CLAUDE.md`:
+From `docs/STATUS.md` and `CLAUDE.md`:
 
 - **Variadic parameters** are parsed but codegen-rejected. When
   implemented, they must use a typed `va_list` shape and not the
@@ -479,7 +479,7 @@ From `MISSING_FEATURES.md` and `CLAUDE.md`:
 - **Multi-decl / destructuring** is parsed but not implemented.
   When it lands, the definite-assignment pass (§1.6) must extend
   to handle partial destructuring writes.
-- **Multi-file lowering** (`MISSING_FEATURES.md`) — when imports
+- **Multi-file lowering** (`docs/STATUS.md`) — when imports
   link across files, the type-confusion / ODR-mismatch hazards
   Fil-C catalogues ([01 §7 examples 22–26](./01-invisicaps.md#7-worked-examples-from-invisicaps_by_examplehtml))
   apply. The language already discards ODR assumptions by design,

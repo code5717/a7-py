@@ -7,7 +7,7 @@
 > verification, run `uv run python scripts/verify_examples_e2e.py`,
 > `uv run python scripts/build_examples.py --profile release --backend zig --clean`,
 > or `./run_all_tests.sh`.
-> Current gaps are tracked in `MISSING_FEATURES.md` and `TODO.md`.
+> Current gaps are tracked in `docs/STATUS.md`.
 
 Analysis of semantic/type errors across the historical 36-example suite that
 existed when this report was written.

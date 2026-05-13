@@ -138,7 +138,8 @@ happens when the program exceeds it.
 - No stack-size analysis exists today; this is greenfield.
 - Backend emits no stack-size annotation today.
 - `main` entry point in emitted Zig: `build/debug/zig/src/001_hello.zig`
-  shows `pub fn main() void` — no explicit stack-size setting.
+  shows the Zig 0.16 `std.process.Init` entry wrapper — no explicit stack-size
+  setting.
 
 ## Phase C decision-input summary
 

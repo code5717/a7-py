@@ -46,9 +46,8 @@ def iter_doc_paths(root: Path) -> list[Path]:
 
     for fixed in [
         root / "README.md",
-        root / "RELEASE.md",
-        root / "SECURITY.md",
-        root / "RELEASE_READINESS_REVIEW.md",
+        root / "docs/RELEASE.md",
+        root / "docs/SECURITY.md",
         root / "site" / "README.md",
     ]:
         if fixed.exists():

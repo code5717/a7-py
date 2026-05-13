@@ -14,4 +14,4 @@ https://code5717.github.io/a7-py/docs/index.md
 - Source recursion is banned.
 - Zig are both supported backends.
 - Full safety and package publication are still incomplete.
-- `COMPLETION_AUDIT.md` is the current confidence boundary.
+- `docs/RELEASE.md` and `docs/STATUS.md` are the current confidence boundary.

@@ -4,7 +4,7 @@
 
 - Python 3.13+
 - `uv`
-- Zig 0.15.2 for building and running generated Zig outputs
+- Zig 0.16.0 for building and running generated Zig outputs
 
 ## Repository Install
 
@@ -21,7 +21,7 @@ uv run a7 --help
 zig version
 ```
 
-The CI and release workflows pin Zig 0.15.2. Use that version when comparing local output with hosted runs.
+The CI and release workflows pin Zig 0.16.0. Use that version when comparing local output with hosted runs.
 
 ## Local Docs
 

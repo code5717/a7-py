@@ -398,8 +398,8 @@ main :: fn() {
         io.println("Cannot drive")
     }
 
-    p: ref i32 = x.adr                      // `.adr` address-of
-    p.val += 1                               // `.val` dereference
+    bump(x)                                  // pass lvalues directly to ref params
+    person.age += 1                          // use ordinary field access after nil checks
 
     value_ptr := new i32                    // heap allocation
     if value_ptr == nil {                    // `nil` is the existing keyword
@@ -453,7 +453,7 @@ Use this file as the entry point. The other files are referenced as needed.
 
 ## 13. What needs to happen next
 
-Concrete TODO list for whoever picks this up:
+Concrete next-work list for whoever picks this up:
 
 ### Immediate (mechanical fixes)
 
@@ -511,7 +511,7 @@ After user decides each Q, apply the corresponding edits to `08-decisions.md`:
     `docs/A7_SAFETY_DESIGN.md` (Phase D).
 17. Translate the spec into a per-phase implementation roadmap
     `docs/lang-safety/09-implementation-roadmap.md` (Phase E).
-18. Update `MISSING_FEATURES.md` and `TODO.md` to reflect the implementation
+18. Update `docs/STATUS.md` to reflect the implementation
     phases.
 
 ## 14. Conversation style for the user
