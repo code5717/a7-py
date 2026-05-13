@@ -1,251 +1,156 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import CodeBlock from '../components/CodeBlock'
-import SectionPanel from '../components/SectionPanel'
-
-const FRONT_PAGE_CODE = `io :: import "std/io"
-
-main :: fn() {
-    values: [5]i32 = [3, 5, 8, 13, 21]
-    total: i32 = 0
-
-    for value in values {
-        total += value
-    }
-
-    io.println("sum = {}", total)
-}`
-
-const QUICKSTART = [
-  { step: '01', label: 'Clone', command: 'git clone https://github.com/code5717/a7-py.git' },
-  { step: '02', label: 'Enter', command: 'cd a7-py' },
-  { step: '03', label: 'Install', command: 'uv sync' },
-  { step: '04', label: 'Run', command: 'uv run python main.py examples/001_hello.a7' },
-]
-
-const FEATURES = [
-  {
-    title: 'Small language',
-    copy: 'Static types, arrays, slices, refs, structs, enums, and unions.',
-  },
-  {
-    title: 'Zig output',
-    copy: 'Generate inspectable Zig and run it through golden-output checks.',
-  },
-  {
-    title: 'No recursion',
-    copy: 'Use loops, stacks, queues, and worklists.',
-  },
-  {
-    title: 'Plain docs',
-    copy: 'Fetchable Markdown exists, but the site stays human-first.',
-  },
-]
+import StatusChip from '../components/StatusChip'
+import styles from './Home.module.css'
 
 const PIPELINE = [
-  { title: 'Tokenize', copy: 'Source to tokens' },
-  { title: 'Parse', copy: 'Tokens to AST' },
-  { title: 'Validate', copy: 'Semantic checks' },
-  { title: 'Preprocess', copy: 'Lowering annotations' },
-  { title: 'Codegen', copy: 'Zig output' },
+  { idx: '01', label: 'tokens', status: 'OK' as const },
+  { idx: '02', label: 'parser', status: 'OK' as const },
+  { idx: '03', label: 'sema', status: 'OK' as const },
+  { idx: '04', label: 'zig codegen', status: 'OK' as const },
+  { idx: '05', label: 'native binary', status: 'OK' as const },
 ]
 
-const HIGHLIGHTS = [
-  { title: 'Language', copy: 'Syntax and type reference.' },
-  { title: 'Examples', copy: '43 verified programs.' },
-  { title: 'Compiler', copy: 'Pipeline and backend notes.' },
+const SECTIONS = [
+  {
+    idx: '01',
+    label: 'LEARN',
+    title: 'Start here',
+    body: 'Five-minute path from clone to running an A7 example through Zig 0.16.',
+    to: '/learn/start',
+  },
+  {
+    idx: '02',
+    label: 'REFERENCE',
+    title: 'Read the spec',
+    body: 'Language, CLI, stdlib, and API surfaces — the reference an agent reads first.',
+    to: '/ref/language',
+  },
+  {
+    idx: '03',
+    label: 'COMPILER',
+    title: 'Inside the binder',
+    body: 'Pipeline, safety, testing, status — what the compiler does and refuses to do.',
+    to: '/compiler/internals',
+  },
+  {
+    idx: '05',
+    label: 'AGENTS',
+    title: 'Agent contracts',
+    body: 'Skills, fetch order, trust boundaries, and per-editor plugin notes.',
+    to: '/agents',
+  },
 ]
-
-const COMMON_TASKS = [
-  { label: 'Install locally', to: '/start#install', detail: 'Clone, sync uv, and compile the first file.' },
-  { label: 'Run examples', to: '/examples', detail: 'Inspect the verified A7 programs.' },
-  { label: 'Read syntax', to: '/language', detail: 'Types, control flow, refs, generics, and stdlib.' },
-  { label: 'Check status', to: '/status', detail: 'Current support, gaps, and next priorities.' },
-]
-
-const HERO_STATS = [
-  { label: 'Target', value: 'Zig 0.16' },
-  { label: 'Examples', value: '43 verified' },
-  { label: 'Output', value: 'single Zig file' },
-]
-
-function QuickstartCommand({ step, label, command }: { step: string; label: string; command: string }) {
-  const [copied, setCopied] = useState(false)
-  const resetTimerRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current)
-      }
-    }
-  }, [])
-
-  const copyCommand = async () => {
-    if (!navigator.clipboard) {
-      setCopied(false)
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(command)
-      setCopied(true)
-
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current)
-      }
-
-      resetTimerRef.current = window.setTimeout(() => {
-        setCopied(false)
-        resetTimerRef.current = null
-      }, 1400)
-    } catch {
-      setCopied(false)
-    }
-  }
-
-  return (
-    <article className="quickstart-step">
-      <span className="quickstart-num">{step}</span>
-      <span className="quickstart-name">{label}</span>
-      <code className="command-key">
-        <span className="command-prompt" aria-hidden="true">$</span>
-        <span className="command-text">{command}</span>
-      </code>
-      <button
-        type="button"
-        className={`command-copy${copied ? ' copied' : ''}`}
-        onClick={copyCommand}
-        aria-label={`Copy ${label.toLowerCase()} command`}
-      >
-        <span className="command-copy-text">{copied ? 'Copied' : 'Copy'}</span>
-      </button>
-    </article>
-  )
-}
 
 export default function Home() {
   return (
-    <div className="page home-page">
-      <section className="home-hero" data-reveal>
-        <div className="home-hero-copy">
-          <span className="page-header-eyebrow">A7 language</span>
-          <h1 className="page-header-title">A7 turns simple systems code into Zig.</h1>
-          <p className="page-header-summary">
-            Compile one file to Zig. No recursion, no magic runtime.
-          </p>
-
-          <dl className="home-hero-stats" aria-label="A7 project highlights">
-            {HERO_STATS.map((item) => (
-              <div key={item.label} className="home-hero-stat">
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <div className="home-hero-actions">
-            <Link to="/start" className="primary-action">
-              Getting Started <span aria-hidden="true">→</span>
-            </Link>
-            <Link to="/language" className="secondary-action">
-              Language <span aria-hidden="true">→</span>
-            </Link>
-          </div>
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <div className={styles.heroChrome}>
+          <span className={styles.heroTag}>[A7//COMPILER]</span>
+          <span className={styles.heroVer}>[v0.16]</span>
         </div>
-
-        <div className="home-hero-media">
-          <div className="home-hero-code">
-            <CodeBlock code={FRONT_PAGE_CODE} lang="a7" title="sum.a7" />
+        <div className={styles.heroGrid}>
+          <div className={styles.heroLeft}>
+            <p className={styles.eyebrow}>AHEAD-OF-TIME · ZIG BACKEND · ISSUE 04</p>
+            <h1 className={styles.title}>
+              A small, safe compiler<br />for the agent era.
+            </h1>
+            <p className={styles.lead}>
+              A7 lowers <code>.a7</code> source through a constraint-discipline pipeline to Zig, then to a
+              native binary via the host toolchain. Iterative passes. Banned recursion. Deterministic exit codes.
+            </p>
+            <div className={styles.cta}>
+              <Link to="/learn/start" className={`${styles.btn} ${styles.btnPrimary}`}>
+                Get started <span aria-hidden>→</span>
+              </Link>
+              <Link to="/ref/language" className={styles.btn}>
+                Read the spec <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </div>
+          <div className={styles.heroRight}>
+            <div className={styles.terminal}>
+              <header className={styles.terminalStrip}>
+                <span>term.exe</span>
+                <span>/A7-PL-001</span>
+              </header>
+              <pre className={styles.terminalBody}>
+                <span className={styles.term_prompt}>$ </span>
+                <span className={styles.term_cmd}>uv run a7 build hello.a7 --release</span>
+                {'\n'}
+                <span className={styles.term_ok}>✓ parsed</span>{'    '}
+                <span className={styles.term_ok}>✓ typed</span>{'    '}
+                <span className={styles.term_ok}>✓ codegen</span>{'\n'}
+                <span className={styles.term_ok}>✓ zig build</span>{'\n'}
+                <span className={styles.term_dim}>→ out/hello (12 KB)</span>
+              </pre>
+            </div>
+            <div className={styles.pipeline}>
+              <header className={styles.pipelineHead}>
+                <span>COMPILE PIPELINE — DIAGRAM</span>
+                <StatusChip tone="accent">ACTIVE</StatusChip>
+              </header>
+              <ol className={styles.pipelineList}>
+                {PIPELINE.map((s, i) => (
+                  <li key={s.idx} className={styles.pipelineItem}>
+                    <span className={styles.pipelineIdx}>{s.idx}</span>
+                    <span className={styles.pipelineLabel}>{s.label}</span>
+                    <StatusChip tone="ok">{s.status}</StatusChip>
+                    {i < PIPELINE.length - 1 && <span className={styles.pipelineArrow} aria-hidden>→</span>}
+                  </li>
+                ))}
+              </ol>
+            </div>
           </div>
         </div>
       </section>
 
-      <SectionPanel className="home-quickstart quickstart-strip">
-        <div className="quickstart-intro">
-          <p className="quickstart-label">Quick start</p>
-          <h2 className="quickstart-title">From zero to running.</h2>
-          <p className="text-tertiary text-small">
-            Python 3.13+, uv, and Zig.
-          </p>
-        </div>
-
-        <div className="quickstart-steps">
-          {QUICKSTART.map((item) => <QuickstartCommand key={item.step} {...item} />)}
-        </div>
-      </SectionPanel>
-
-      <SectionPanel className="home-feature-grid">
-        <div className="feature-list">
-          {FEATURES.map((feature) => (
-            <article key={feature.title} className="feature-row">
-              <h3 className="feature-title">{feature.title}</h3>
-              <p className="feature-copy">{feature.copy}</p>
-            </article>
-          ))}
-        </div>
-      </SectionPanel>
-
-      <SectionPanel className="home-pipeline pipeline-showcase">
-        <div className="pipeline-intro">
-          <p className="section-label">Compiler</p>
-          <h2 className="home-section-title">Transparent pipeline.</h2>
-          <p className="pipeline-intro-copy">
-            Five visible stages from source to generated code.
-          </p>
-          <Link to="/internals#pipeline" className="pipeline-intro-link">
-            Learn more <span aria-hidden="true">→</span>
+      <section className={styles.sections} aria-label="Documentation entry points">
+        {SECTIONS.map((s) => (
+          <Link key={s.idx} to={s.to} className={styles.card}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIdx}>{s.idx}</span>
+              <span className={styles.cardLabel}>[ {s.label} ]</span>
+            </div>
+            <h2 className={styles.cardTitle}>{s.title}</h2>
+            <p className={styles.cardBody}>{s.body}</p>
+            <span className={styles.cardCta}>READ →</span>
           </Link>
-        </div>
+        ))}
+      </section>
 
-        <div className="pipeline-stage-grid">
-          <div className="pipeline-stage-row">
-            {PIPELINE.map((stage, index) => (
-              <Fragment key={stage.title}>
-                <article className="pipeline-tile">
-                  <span className="pipeline-tile-title">{stage.title}</span>
-                  <span className="pipeline-tile-copy">{stage.copy}</span>
-                </article>
-                {index < PIPELINE.length - 1 ? <span className="pipeline-arrow" aria-hidden="true">→</span> : null}
-              </Fragment>
-            ))}
+      <section className={styles.specStrip}>
+        <header className={styles.specHead}>
+          <span className={styles.specLeft}>[ SPECIFICATIONS ]</span>
+          <span className={styles.specRight}>A7 · ZIG 0.16 · LINUX/x86_64</span>
+        </header>
+        <dl className={styles.specGrid}>
+          <div>
+            <dt>Source</dt>
+            <dd>.a7 → .zig → native binary</dd>
           </div>
-        </div>
-      </SectionPanel>
-
-      <SectionPanel className="home-highlights highlights-section">
-        <div className="highlights-intro">
-          <p className="section-label">Reference</p>
-          <h2 className="home-section-title">Everything important stays close.</h2>
-          <Link to="/docs" className="pipeline-intro-link">
-            Open docs <span aria-hidden="true">→</span>
-          </Link>
-        </div>
-
-        <div className="highlights-grid">
-          {HIGHLIGHTS.map((item) => (
-            <article key={item.title} className="highlight-item">
-              <div className="highlight-title">{item.title}</div>
-              <div className="highlight-copy">{item.copy}</div>
-            </article>
-          ))}
-        </div>
-      </SectionPanel>
-
-      <SectionPanel className="home-cta-panel home-cta">
-        <div className="common-tasks-head">
-          <p className="section-label">Common tasks</p>
-          <h2 className="home-cta-title">Find the next useful command.</h2>
-        </div>
-        <div className="common-tasks-grid">
-          {COMMON_TASKS.map((task) => (
-            <Link key={task.to} to={task.to} className="common-task-link">
-              <span className="common-task-label">{task.label}</span>
-              <span className="common-task-detail">{task.detail}</span>
-            </Link>
-          ))}
-        </div>
-      </SectionPanel>
+          <div>
+            <dt>Recursion</dt>
+            <dd>Rejected at compile time</dd>
+          </div>
+          <div>
+            <dt>Traversal</dt>
+            <dd>Iterative · stack-bounded</dd>
+          </div>
+          <div>
+            <dt>Exit codes</dt>
+            <dd>0 / 2 / 3 / 4 / 5 / 6 / 7 / 8</dd>
+          </div>
+          <div>
+            <dt>Toolchain</dt>
+            <dd>uv · zig 0.16</dd>
+          </div>
+          <div>
+            <dt>License</dt>
+            <dd>MIT</dd>
+          </div>
+        </dl>
+      </section>
     </div>
   )
 }

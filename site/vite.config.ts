@@ -1,10 +1,10 @@
 import path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import a7Docs from './scripts/vite-plugin-a7-docs'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), a7Docs()],
   base: '/a7-py/',
   server: {
     fs: {

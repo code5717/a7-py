@@ -1,78 +1,46 @@
 import { useEffect, useRef, useState } from 'react'
-import { useHighlight } from '../hooks/useHighlight'
+import styles from './CodeBlock.module.css'
 
-interface CodeBlockProps {
-  code: string
-  lang?: string
-  title?: string
+interface Props {
+  /** Pre-highlighted HTML from Shiki (build-time). Already inside the codeblock body. */
+  highlightedHtml?: string
+  /** Plain text (used for copy and as a fallback when highlightedHtml is absent) */
+  source: string
+  language: string
+  filename?: string
 }
 
-export default function CodeBlock({ code, lang, title }: CodeBlockProps) {
-  const html = useHighlight(code, lang)
+export default function CodeBlock({ highlightedHtml, source, language, filename }: Props) {
   const [copied, setCopied] = useState(false)
-  const resetTimerRef = useRef<number | null>(null)
-  const codeLabel = title || lang || 'code'
+  const timeoutRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current)
-      }
-    }
+  useEffect(() => () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
   }, [])
 
-  const copyCode = async () => {
-    if (!navigator.clipboard) {
-      setCopied(false)
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(code)
+  function onCopy() {
+    void navigator.clipboard.writeText(source).then(() => {
       setCopied(true)
-
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current)
-      }
-
-      resetTimerRef.current = window.setTimeout(() => {
-        setCopied(false)
-        resetTimerRef.current = null
-      }, 1400)
-    } catch {
-      setCopied(false)
-    }
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = window.setTimeout(() => setCopied(false), 1400)
+    })
   }
 
   return (
-    <figure className={`code-shell${lang ? ` code-lang-${lang}` : ''}`} data-reveal>
-      {(title || lang) && (
-        <figcaption className="code-head">
-          <span className="code-head-title">{codeLabel}</span>
-          <span className="code-head-tools">
-            {lang ? <span className="code-head-meta">{lang}</span> : null}
-            <button
-              type="button"
-              className={`code-copy-button${copied ? ' copied' : ''}`}
-              onClick={copyCode}
-              aria-label={`Copy ${codeLabel} block`}
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </span>
-        </figcaption>
-      )}
-      {html ? (
-        <div
-          className="code-pre code-highlighted"
-          role="region"
-          aria-label={`${codeLabel} source`}
-          tabIndex={0}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+    <figure className={styles.block}>
+      <header className={styles.strip}>
+        <span className={styles.left}>
+          <span className={styles.lang}>{filename ?? language ?? 'text'}</span>
+        </span>
+        <button type="button" className={styles.copy} onClick={onCopy} aria-label="Copy code">
+          {copied ? '[ copied ]' : '[ copy ]'}
+        </button>
+      </header>
+      {highlightedHtml ? (
+        <div className={styles.body} dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
       ) : (
-        <pre className="code-pre" role="region" aria-label={`${codeLabel} source`} tabIndex={0}>
-          <code>{code}</code>
+        <pre className={styles.body}>
+          <code>{source}</code>
         </pre>
       )}
     </figure>

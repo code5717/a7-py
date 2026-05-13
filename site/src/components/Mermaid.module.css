@@ -1,0 +1,26 @@
+.figure {
+  margin: 1.5em 0;
+  padding: var(--space-5);
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-hairline);
+  overflow-x: auto;
+}
+
+.figure :global(svg) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.error {
+  font-family: var(--font-code);
+  font-size: var(--t-small);
+  color: var(--danger);
+  padding: var(--space-3);
+  border: 1px solid var(--danger);
+  background: transparent;
+  margin: 1em 0;
+  white-space: pre-wrap;
+}
