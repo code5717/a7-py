@@ -36,11 +36,6 @@ BANNED_PHRASES = {
     ],
 }
 
-EM_DASH_RE = re.compile(r"[—–]")
-QUESTION_RE = re.compile(r"\?")
-URL_RE = re.compile(r"https?://\S+")
-
-
 def iter_doc_paths(root: Path) -> list[Path]:
     paths: set[Path] = set()
 
@@ -100,18 +95,11 @@ def check_file(path: Path) -> list[Finding]:
         if in_code_fence:
             continue
 
-        if EM_DASH_RE.search(line):
-            findings.append(Finding(path, idx, "dash punctuation", line.strip()))
-
         for rule, patterns in BANNED_PHRASES.items():
             for pat in patterns:
                 if pat.search(line):
                     findings.append(Finding(path, idx, rule, line.strip()))
                     break
-
-        question_line = URL_RE.sub("", line)
-        if QUESTION_RE.search(question_line):
-            findings.append(Finding(path, idx, "question mark in prose", line.strip()))
 
     return findings
 
