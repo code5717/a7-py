@@ -725,7 +725,7 @@
 
   /* ───── prose ───── */
   .prose {
-    @apply max-w-[900px] text-lg leading-relaxed;
+    @apply max-w-[900px] overflow-x-clip text-lg leading-relaxed;
     font-variation-settings: "opsz" 18, "wght" 400, "SOFT" 30;
   }
   .prose h1 { @apply hidden; }
@@ -828,6 +828,12 @@
   }
 
   table { @apply my-[22px] w-full border-collapse text-[15px]; }
+  .prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   th, td { @apply border border-[#cabd9e] p-2.5 align-top; }
   th {
     @apply bg-paper-200 text-left font-mono text-xs uppercase tracking-wider;
@@ -1036,39 +1042,85 @@
 }
 
 @media (max-width: 1040px) {
-  .shell { @apply grid-cols-1; }
-  .sidebar, .toc { @apply static flex-row flex-wrap border-0 p-0; max-height: none; }
+  .topbar { @apply px-5; }
+  .shell { @apply grid-cols-1 gap-[18px] px-5; }
+  .home { @apply px-5; }
+  .sidebar {
+    @apply static flex-row flex-nowrap overflow-x-auto border-0 border-b border-rule-500 p-0 pb-3;
+    max-height: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sidebar .nav-link { @apply min-w-[132px] shrink-0; }
+  .toc { @apply static flex-row flex-wrap border-0 p-0; max-height: none; }
   .nav-link { @apply min-h-8; }
   .hero { @apply grid-cols-1; }
-  .poster, .route-board, .terminal-strip { @apply grid-cols-1; }
+  .poster, .route-board, .terminal-strip, .preview { @apply grid-cols-1; }
   .spec-spine {
     writing-mode: horizontal-tb;
     @apply min-h-12 flex-row gap-6 border-l-0 border-t px-5 leading-tight;
   }
-  .route-intro { @apply border-r-0 border-b; }
+  .route-intro, .preview-copy { @apply border-r-0 border-b; }
   .route-row { grid-template-columns: 42px minmax(110px, 160px) minmax(0, 1fr); }
+  .site-footer-row { @apply grid-cols-1; }
+  .site-footer-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .shortcuts-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
+  html { scroll-padding-top: 80px; }
+
   .topbar { @apply h-auto flex-col items-start p-4; }
-  .quick { @apply flex-wrap; }
+  .quick { @apply w-full flex-wrap; }
   .shortcut-trigger { @apply hidden; }
   .shell { @apply gap-[18px] px-3.5 pb-12 pt-[18px]; }
   .sidebar { @apply -mx-3.5 flex-nowrap overflow-x-auto border-b border-rule-500 px-3.5 pb-3; }
   .sidebar .nav-link { @apply min-w-[132px] shrink-0; }
   .toc { @apply hidden; }
   .paper { @apply px-[18px] py-6; }
+  .paper > h1 { font-size: clamp(36px, 11vw, 112px); }
   .hero { @apply -mx-[18px] mb-[34px] mt-[-24px] min-h-0 px-[18px] py-6; }
+  .hero h1 { font-size: clamp(56px, 17vw, 220px); }
   .hero img { @apply min-h-[220px]; }
   .prose { @apply text-base; }
+  .prose h2, .prose h3 { scroll-margin-top: 80px; }
+  .prose h2 a::before {
+    position: static;
+    display: inline-block;
+    margin-right: .35ch;
+    opacity: .55;
+  }
+  .prose h2:hover a::before { opacity: 1; }
   .home { @apply px-3.5 pt-3.5; }
   .poster { @apply min-h-0; grid-template-columns: 1fr; }
   .poster-copy { @apply px-5 py-8; }
+  .poster-copy h1 { font-size: clamp(72px, 22vw, 390px); }
+  .poster-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .poster-meta {
+    position: relative;
+    left: auto;
+    right: auto;
+    @apply flex-wrap gap-x-4 gap-y-2 px-5 py-3 text-[9px];
+    letter-spacing: .16em;
+  }
+  .poster-meta span:last-child { @apply hidden; }
   .system-plate { @apply border-l-0 border-t p-5; }
   .spec-spine { @apply flex-wrap items-start justify-start gap-x-8 gap-y-3 py-5; }
+  .route-intro, .preview-copy, .terminal-strip { @apply px-[18px]; }
+  .route-intro h2, .preview-copy h2, .terminal-strip h2 {
+    font-size: clamp(32px, 9vw, 104px);
+  }
   .route-row { @apply gap-2; grid-template-columns: 36px 1fr; }
   .route-row em { @apply col-start-2; }
+  .terminal { min-height: 320px; }
+  .terminal-bar { @apply flex-wrap gap-y-2; }
+  .terminal-tabs { @apply ml-0 w-full flex-wrap; }
   .terminal-strip pre { @apply p-4 text-sm; }
+  .site-footer-row, .site-footer-ticker { @apply px-[18px]; }
+  .site-footer-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @apply gap-x-6 gap-y-5;
+  }
+  .search-footer { @apply flex-wrap justify-start gap-2; }
+  .search-input-row input { @apply text-xl; }
   .doc-pager { grid-template-columns: 1fr; }
 }
