@@ -2,7 +2,7 @@
 title: Project
 nav: Project
 group: Project
-summary: Contribution, deployment, and documentation maintenance rules.
+summary: Contributing, documentation maintenance, and security boundaries.
 order: 8
 ---
 
@@ -25,22 +25,22 @@ behavior.
 Keep the docs minimal:
 
 - Long history belongs in `git log`, not the website.
-- Current gaps belong in `docs/STATUS.md`.
+- Current gaps belong in [Status](/a7-py/status/).
 - Release-facing notes belong in `docs/CHANGELOG.md`.
 - Public site pages should summarize, not duplicate every internal document.
+
+When language features or user-visible behavior change, update `docs/CHANGELOG.md`,
+`README.md`, `docs/SPEC.md`, and `docs/STATUS.md` as needed. Keep the site
+corpus in `site/public/docs/` aligned with those sources.
+
+Agent fetch paths and curl workflows live on [Agent Usage](/a7-py/agent-usage/).
 
 ## Deploy
 
 The `Deploy Docs` GitHub Actions workflow publishes `site/dist` to GitHub
 Pages. The published base path is `/a7-py/`.
 
-Use these checks after deployment:
-
-```bash
-curl -fsSI https://code5717.github.io/a7-py/
-curl -fsSL https://code5717.github.io/a7-py/docs/index.md
-curl -fsSL https://code5717.github.io/a7-py/llms.txt
-```
+Release gates and required archive paths are on [Release](/a7-py/release/).
 
 ## Security
 

@@ -33,16 +33,12 @@ const DOC_ORDER = [
   'project',
 ]
 
-const DOC_KIND: Record<string, string> = {
-  start: 'guide',
-  language: 'reference',
-  stdlib: 'reference',
-  compiler: 'reference',
-  status: 'status',
-  release: 'status',
-  'agent-usage': 'guide',
-  project: 'manual',
-}
+const NAV_GROUP_ORDER = [
+  'Getting started',
+  'Reference',
+  'Project',
+  'Agents',
+]
 
 function escapeHtml(value: string): string {
   return value
@@ -253,14 +249,40 @@ function docHref(slug: string): string {
 }
 
 function navHtml(docs: Doc[], activeSlug: string): string {
-  return docs
-    .map((doc) => {
-      const href = docHref(doc.slug)
-      return `<a class="nav-link${doc.slug === activeSlug ? ' active' : ''}" href="${href}">
+  const sections: string[] = []
+  for (const group of NAV_GROUP_ORDER) {
+    const groupDocs = docs.filter((doc) => doc.group === group)
+    if (groupDocs.length === 0) continue
+    const links = groupDocs
+      .map((doc) => {
+        const href = docHref(doc.slug)
+        return `<a class="nav-link${doc.slug === activeSlug ? ' active' : ''}" href="${href}">
         <span>${String(doc.order).padStart(2, '0')}</span>${escapeHtml(doc.nav)}
       </a>`
-    })
-    .join('')
+      })
+      .join('')
+    sections.push(`<div class="nav-section"><strong>${escapeHtml(group)}</strong>${links}</div>`)
+  }
+  return sections.join('')
+}
+
+function routeBoardHtml(docs: Doc[]): string {
+  const sections: string[] = []
+  for (const group of NAV_GROUP_ORDER) {
+    const groupDocs = docs.filter((doc) => doc.slug !== 'index' && doc.group === group)
+    if (groupDocs.length === 0) continue
+    const rows = groupDocs
+      .map((doc) => {
+        return `<a class="route-row" href="${BASE}/${doc.slug}/">
+      <span class="route-num">${String(doc.order).padStart(2, '0')}</span>
+      <span class="route-title"><strong>${escapeHtml(doc.nav)}</strong></span>
+      <em>${escapeHtml(doc.summary)}</em>
+    </a>`
+      })
+      .join('')
+    sections.push(`<div class="route-group"><h3>${escapeHtml(group)}</h3>${rows}</div>`)
+  }
+  return sections.join('')
 }
 
 function modalsHtml(): string {
@@ -365,7 +387,7 @@ function pageHtml(doc: Doc, docs: Doc[]): string {
       <a href="${BASE}/start/" data-key="S">Start</a>
       <a href="${BASE}/language/" data-key="L">Language</a>
       <a href="${BASE}/stdlib/" data-key="B">Stdlib</a>
-      <a href="${BASE}/llms.txt" data-key="A">llms.txt</a>
+      <a href="${BASE}/compiler/" data-key="C">Compiler</a>
       <button type="button" class="shortcut-trigger" data-search-open aria-label="Open search" title="Search (⌘K)">⌕</button>
       <button type="button" class="shortcut-trigger" data-shortcuts-open aria-label="Show keyboard shortcuts" title="Shortcuts (?)">?</button>
     </nav>
@@ -427,21 +449,6 @@ function docHtml(doc: Doc, docs: Doc[]): string {
 }
 
 function homeHtml(doc: Doc, docs: Doc[]): string {
-  const routes = docs
-    .filter((d) => d.slug !== 'index')
-    .map((d) => {
-      const kind = DOC_KIND[d.slug] ?? 'doc'
-      return `<a class="route-row" href="${BASE}/${d.slug}/" data-kind="${kind}">
-      <span class="route-num">${String(d.order).padStart(2, '0')}</span>
-      <span class="route-title">
-        <strong>${escapeHtml(d.nav)}</strong>
-        <i class="route-kind" aria-hidden="true">${kind}</i>
-      </span>
-      <em>${escapeHtml(d.summary)}</em>
-    </a>`
-    })
-    .join('')
-
   return `<main class="home">
     <section class="poster">
       <span class="reg-mark" data-pos="tl" aria-hidden="true"></span>
@@ -469,20 +476,20 @@ function homeHtml(doc: Doc, docs: Doc[]): string {
           </p>
         </div>
         <h1>A7</h1>
-        <p class="poster-tag">Docs for the A7 programming language.</p>
-        <p class="poster-sub">.a7 → Zig 0.16 → native binary. AOT, no recursion, single-file output.</p>
+        <p class="poster-tag">AOT compiler: .a7 source to a native binary via Zig 0.16.</p>
+        <p class="poster-sub">Python compiler, no runtime. One Zig file out. Source recursion rejected at compile time.</p>
         <div class="hero-actions">
-          <a href="${BASE}/start/" data-primary>Start using A7 →</a>
-          <a href="${BASE}/llms-full.txt">Fetch agent corpus</a>
+          <a href="${BASE}/start/" data-primary>Install and compile →</a>
           <a href="https://github.com/code5717/a7-py" target="_blank" rel="noopener">GitHub</a>
+          <a href="${BASE}/agent-usage/">Agent fetch paths</a>
         </div>
         <dl class="poster-stats" aria-label="At a glance">
-          <div><dt>Docs</dt><dd>${docs.length}</dd></div>
-          <div><dt>Targets</dt><dd>Zig 0.16</dd></div>
+          <div><dt>Examples</dt><dd>verified</dd></div>
+          <div><dt>Target</dt><dd>Zig 0.16</dd></div>
           <div><dt>Output</dt><dd>1 file</dd></div>
           <div><dt>Recursion</dt><dd>banned</dd></div>
         </dl>
-        <p class="poster-scroll" aria-hidden="true">↓ scroll for routes</p>
+        <p class="poster-scroll" aria-hidden="true">↓ documentation index</p>
       </div>
       <figure class="system-plate">
         <img src="${BASE}/a7-system-map.svg" alt="A7 compiler system map">
@@ -492,34 +499,34 @@ function homeHtml(doc: Doc, docs: Doc[]): string {
         <span>NO SOURCE RECURSION</span>
         <span>MULTI-FILE INPUT</span>
         <span>SINGLE ZIG OUTPUT</span>
-        <span>RAW DOCS FOR AGENTS</span>
+        <span>RAW MARKDOWN FOR AGENTS</span>
       </div>
     </section>
     <section class="route-board" aria-label="Documentation routes">
       <div class="route-intro">
-        <p class="eyebrow">§02 · Field Manual</p>
-        <h2>Small corpus.<br>Heavy signal.</h2>
-        <p>Eight pages. Each one is a single markdown file, served raw to agents and rendered for humans.</p>
+        <p class="eyebrow">§02 · Documentation</p>
+        <h2>Read in<br>order.</h2>
+        <p>Nine pages grouped by task: install first, then language and compiler reference, then project status and agent fetch paths.</p>
         <p class="route-intro-meta">
-          <span><kbd>g</kbd> <kbd>s</kbd> jumps to Start</span>
-          <span><kbd>g</kbd> <kbd>l</kbd> jumps to Language</span>
+          <span><kbd>g</kbd> <kbd>s</kbd> Start</span>
+          <span><kbd>g</kbd> <kbd>l</kbd> Language</span>
         </p>
-        <a class="route-intro-link" href="${BASE}/llms.txt">View raw index ↗</a>
+        <a class="route-intro-link" href="${BASE}/start/">Open Start ↗</a>
       </div>
-      <div class="routes">${routes}</div>
+      <div class="routes">${routeBoardHtml(docs)}</div>
     </section>
     <section class="preview" aria-label="Language preview">
       <div class="preview-copy">
-        <p class="eyebrow">§03 · At a glance</p>
-        <h2>Read the language<br>in one glance.</h2>
-        <p>Module imports, typed functions, structs, iterative loops. No source recursion. No hidden allocations.</p>
+        <p class="eyebrow">§03 · Language</p>
+        <h2>Syntax from<br>working examples.</h2>
+        <p>Top-level bindings with <code>::</code>, typed functions, structs, and iterative loops. See <code>examples/037_language_tour.a7</code> for a full walkthrough.</p>
         <ul class="preview-features">
-          <li><strong>::</strong> module &amp; const binding</li>
-          <li><strong>fn</strong> typed functions, named returns</li>
-          <li><strong>for</strong> indexed loop, the only loop form</li>
-          <li><strong>ret</strong> explicit return, no expression bodies</li>
+          <li><strong>::</strong> module and const binding</li>
+          <li><strong>fn</strong> typed functions, explicit ret</li>
+          <li><strong>for</strong> indexed and value iteration</li>
+          <li><strong>ret</strong> explicit return</li>
         </ul>
-        <a class="route-intro-link" href="${BASE}/language/">Open the language reference ↗</a>
+        <a class="route-intro-link" href="${BASE}/language/">Language reference ↗</a>
       </div>
       <figure class="preview-code">
         <figcaption>EXAMPLES / 004_func.a7</figcaption>
@@ -549,9 +556,9 @@ main <span class="hl-op">::</span> <span class="hl-k">fn</span>() {
     </section>
     <section class="terminal-strip" data-tabs>
       <div class="terminal-intro">
-        <p class="eyebrow">§04 · Terminal Contract</p>
-        <h2>Every visual page<br>has a raw text twin.</h2>
-        <p>Agents and humans share one canonical source. Fetch the same Markdown the renderer ships from.</p>
+        <p class="eyebrow">§04 · Toolchain</p>
+        <h2>Compile and<br>verify.</h2>
+        <p>Run the compiler through semantic checks, emit Zig, and build with the host toolchain. Full gates are on the Release page.</p>
       </div>
       <div class="terminal">
         <header class="terminal-bar">
@@ -560,49 +567,38 @@ main <span class="hl-op">::</span> <span class="hl-k">fn</span>() {
           <span class="terminal-light"></span>
           <span class="terminal-title">~/a7</span>
           <nav class="terminal-tabs" role="tablist">
-            <button type="button" role="tab" data-tab="agents" aria-selected="true">agents</button>
-            <button type="button" role="tab" data-tab="compile" aria-selected="false">compile</button>
+            <button type="button" role="tab" data-tab="compile" aria-selected="true">compile</button>
             <button type="button" role="tab" data-tab="release" aria-selected="false">release</button>
+            <button type="button" role="tab" data-tab="agents" aria-selected="false">agents</button>
           </nav>
         </header>
-        <div class="terminal-panel" data-tab-panel="agents">
-<pre><span class="t-prompt">$</span> <span class="t-cmd">curl -fsSL https://code5717.github.io/a7-py/llms.txt</span>
-<span class="t-out"># A7 Docs</span>
-<span class="t-out">- A7 Documentation: .../docs/index.md</span>
-<span class="t-out">- Start: .../docs/start.md</span>
-<span class="t-out">- Language: .../docs/language.md</span>
-<span class="t-out">- Stdlib: .../docs/stdlib.md</span>
-<span class="t-out">- Compiler: .../docs/compiler.md</span>
-<span class="t-out">...</span>
-<span class="t-prompt">$</span> <span class="t-cmd">curl -fsSL https://code5717.github.io/a7-py/docs/language.md</span>
-<span class="t-out"><span class="t-dim">---</span></span>
-<span class="t-out"><span class="t-dim">title: Language</span></span>
-<span class="t-out"><span class="t-dim">---</span></span>
-<span class="t-out"># Language</span>
-<span class="t-out">The implemented A7 language surface and the rules examples must follow today.</span><span class="terminal-cursor" aria-hidden="true"></span></pre>
-        </div>
-        <div class="terminal-panel" data-tab-panel="compile" hidden>
+        <div class="terminal-panel" data-tab-panel="compile">
 <pre><span class="t-prompt">$</span> <span class="t-cmd">uv run a7 examples/001_hello.a7 --mode compile</span>
 <span class="t-out">[compile] tokenize     ok</span>
 <span class="t-out">[compile] parse        ok</span>
 <span class="t-out">[compile] name-resolve ok</span>
 <span class="t-out">[compile] type-check   ok</span>
 <span class="t-out">[compile] safety       ok</span>
-<span class="t-out">[compile] emit zig     ok  -> dist/001_hello.zig</span>
-<span class="t-prompt">$</span> <span class="t-cmd">zig build-exe dist/001_hello.zig -O ReleaseSmall</span>
-<span class="t-out">[zig]     <span class="t-ok">done</span>           -> 001_hello (148K)</span>
-<span class="t-prompt">$</span> <span class="t-cmd">./001_hello</span>
+<span class="t-out">[compile] emit zig     ok  -> examples/001_hello.zig</span>
+<span class="t-prompt">$</span> <span class="t-cmd">zig run examples/001_hello.zig</span>
 <span class="t-out">Hello, World!</span><span class="terminal-cursor" aria-hidden="true"></span></pre>
         </div>
         <div class="terminal-panel" data-tab-panel="release" hidden>
 <pre><span class="t-prompt">$</span> <span class="t-cmd">./run_all_tests.sh</span>
-<span class="t-out">[pytest]               <span class="t-ok">412 passed</span></span>
-<span class="t-out">[examples e2e]         <span class="t-ok">31 / 31</span></span>
+<span class="t-out">[pytest]               <span class="t-ok">passed</span></span>
+<span class="t-out">[examples e2e]         <span class="t-ok">ok</span></span>
 <span class="t-out">[error stage matrix]   <span class="t-ok">ok</span></span>
 <span class="t-out">[docs style]           <span class="t-ok">ok</span></span>
-<span class="t-out">[secrets check]        <span class="t-ok">ok</span></span>
-<span class="t-out">[wheel smoke test]     <span class="t-ok">ok</span></span>
 <span class="t-out">release gate: <span class="t-ok">green</span></span><span class="terminal-cursor" aria-hidden="true"></span></pre>
+        </div>
+        <div class="terminal-panel" data-tab-panel="agents" hidden>
+<pre><span class="t-prompt">$</span> <span class="t-cmd">curl -fsSL https://code5717.github.io/a7-py/llms.txt</span>
+<span class="t-out"># A7 Docs — compact index of raw markdown pages</span>
+<span class="t-out">...</span>
+<span class="t-prompt">$</span> <span class="t-cmd">curl -fsSL https://code5717.github.io/a7-py/docs/language.md</span>
+<span class="t-out"># Language</span>
+<span class="t-out">...</span>
+<span class="t-out"><span class="t-dim">See ${BASE}/agent-usage/ for fetch order and agent rules.</span></span><span class="terminal-cursor" aria-hidden="true"></span></pre>
         </div>
       </div>
     </section>

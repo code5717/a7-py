@@ -4,22 +4,22 @@ A7 lowers .a7 source to Zig 0.16 and then to a native binary.
 Use this file as a compact index. Fetch llms-full.txt for the whole corpus.
 
 - A7 Documentation: https://code5717.github.io/a7-py/docs/index.md
-  A compact reference for the A7 compiler, its current language surface, and the public agent-readable docs contract.
+  What A7 is, how the compiler pipeline works, and where to read next.
 - Start: https://code5717.github.io/a7-py/docs/start.md
-  Install A7, compile a program, and understand the command shape used by CI and examples.
+  Install A7, compile a program, and run the language tour example.
 - Language: https://code5717.github.io/a7-py/docs/language.md
-  The implemented A7 language surface and the rules examples must follow today.
+  Syntax and rules for the A7 language surface that examples use today.
 - Standard Library: https://code5717.github.io/a7-py/docs/stdlib.md
-  The small virtual stdlib surface currently exposed by A7.
+  Virtual stdlib modules registered in the compiler today.
 - Compiler: https://code5717.github.io/a7-py/docs/compiler.md
-  The A7 compiler pipeline, safety checks, and Zig backend contract.
+  Compiler pipeline, CLI modes, exit codes, and Zig backend contract.
 - Status: https://code5717.github.io/a7-py/docs/status.md
   Current implementation state, active priorities, and deferred work.
 - Release: https://code5717.github.io/a7-py/docs/release.md
   Release gates, docs deployment, and artifact checks.
 - Agent Usage: https://code5717.github.io/a7-py/docs/agent-usage.md
-  Stable curl and agent entry points for consuming the A7 documentation.
+  curl and llms.txt entry points for fetching A7 documentation.
 - Project: https://code5717.github.io/a7-py/docs/project.md
-  Contribution, deployment, and documentation maintenance rules.
+  Contributing, documentation maintenance, and security boundaries.
 
 Canonical site: https://code5717.github.io/a7-py/

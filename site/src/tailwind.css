@@ -196,6 +196,16 @@
     @apply text-oxide-600;
     font-feature-settings: "tnum" on, "lnum" on;
   }
+  .nav-section {
+    @apply flex flex-col gap-2;
+  }
+  .nav-section strong {
+    @apply mb-1 mt-3 block font-mono text-[10px] uppercase tracking-wider text-muted-500;
+    letter-spacing: .2em;
+  }
+  .nav-section:first-child strong {
+    @apply mt-0;
+  }
   .toc {
     @apply border-l border-rule-500 pl-[18px] text-muted-500;
   }
@@ -475,6 +485,10 @@
     @apply max-w-[520px] text-xl leading-snug text-[#544b3e];
   }
   .routes { @apply grid; }
+  .route-group h3 {
+    @apply m-0 border-b border-[#cabd9e] bg-paper-200 px-[clamp(20px,4vw,46px)] py-3 font-mono text-[10px] uppercase tracking-wider text-muted-500;
+    letter-spacing: .22em;
+  }
   .route-row {
     @apply relative grid gap-5 border-b border-[#cabd9e] px-[clamp(20px,4vw,46px)] py-6 transition-all duration-300;
     grid-template-columns: 42px minmax(120px, 180px) minmax(0, 1fr);

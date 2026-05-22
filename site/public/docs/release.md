@@ -21,6 +21,10 @@ cd site && bun install && bun run build
 ./run_all_tests.sh
 ```
 
+`run_all_tests.sh` is the single local release gate. It covers pytest, example
+E2E, debug and release artifacts, error-stage matrix, docs style, secrets check,
+package build, and wheel install smoke test.
+
 ## Docs gate
 
 The docs workflow runs:
@@ -29,7 +33,7 @@ The docs workflow runs:
 python3 scripts/check_docs_style.py
 cd site
 bun install --frozen-lockfile
-bun run lint -- --max-warnings=0
+bun run lint
 bun run build
 ```
 
@@ -52,3 +56,5 @@ Keep these paths stable unless the release workflow changes in the same commit.
 
 Release archives include Zig source and binaries for the example suite. Archive
 names include the target toolchain: `zig0.16.0`.
+
+For contributing and doc maintenance rules, see [Project](/a7-py/project/).

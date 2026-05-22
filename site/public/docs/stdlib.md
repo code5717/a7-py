@@ -2,7 +2,7 @@
 title: Standard Library
 nav: Stdlib
 group: Reference
-summary: The small virtual stdlib surface currently exposed by A7.
+summary: Virtual stdlib modules registered in the compiler today.
 order: 3
 ---
 
@@ -11,58 +11,52 @@ order: 3
 A7 standard modules are virtual imports resolved by the compiler. No stdlib
 source file is loaded from disk at compile time.
 
-## `std/io`
+## Implemented modules
 
-Basic output helpers.
+Only these modules are registered in the compiler today:
+
+### `std/io`
+
+Import path: `"std/io"`. Bindings: `print`, `println`, `eprintln`.
 
 ```a7
-import std/io
+io :: import "std/io"
 
-fn main() -> void {
+main :: fn() {
     io.println("hello")
+    io.eprintln("stderr: {}", 42)
 }
 ```
 
-## `std/math`
+### `std/math`
 
-Numeric helpers for current examples. Keep behavior deterministic and easy to
-lower to Zig.
+Import path: `"std/math"`. Functions: `sqrt`, `abs`, `floor`, `ceil`, `sin`,
+`cos`, `tan`, `log`, `exp`, `min`, `max`.
 
-## `std/mem`
-
-Memory helpers that match the current ownership model. This is not a sandbox
-boundary.
-
-## `std/string`
-
-String helpers for examples that need simple scanning or comparison.
-
-## `std/debug`
-
-Debugging aids for compiler examples and generated output inspection.
-
-## `std/random`
-
-Pseudo-random helpers are planned as deterministic, seed-driven APIs. The first
-usable shape should be small:
+Typed variants such as `sqrt_f32` and `sqrt_f64` are also available as bare
+builtins.
 
 ```a7
-import std/random
+io :: import "std/io"
+math :: import "std/math"
 
-fn main() -> void {
-    var rng = random.seed(12345)
-    var n = random.next_u32(ref rng)
+main :: fn() {
+    x := math.sqrt(2.0)
+    io.println("sqrt(2) = {}", x)
 }
 ```
 
-The stdlib should prefer predictable APIs over broad coverage. Add one module
-only when examples and compiler lowering both make the behavior clear.
+## Not registered yet
 
-## Planned
+The repository contains stub modules for `mem` and `string`, but they are not
+registered in the compiler. Do not use them in examples until they appear in
+[Status](/a7-py/status/) as implemented.
 
-- `Option<T>` and `Result<T, E>`.
-- Small collections such as `Vec`.
-- More string and numeric helpers.
-- A deterministic random module.
+These are planned but not available:
+
+- `std/random` — deterministic, seed-driven APIs
+- `std/debug` — debugging aids
+- `Option<T>` and `Result<T, E>`
+- Small collections such as `Vec`
 
 File IO, network IO, and concurrency are out of scope for the current stdlib.
