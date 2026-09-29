@@ -9,7 +9,13 @@ The compiler features a complete pipeline: tokenizer, parser, semantic analysis,
 A7 draws inspiration from practical systems programming languages that prioritize clarity and programmer productivity:
 
 - **[JAI](https://www.youtube.com/playlist?list=PLmV5I2fxaiCKfxMBrNsU1kgKJXD3PkyxO)** by Jonathan Blow - Design philosophy and compile-time features
-- **[Odin](https://odin-lang.org/)** by Ginger Bill - Simplicity and explicit memory management
+- **[Odin](https://odin-lang.org/)** by Ginger Bill - Simple procedures and data-oriented programming
+
+The V1 target adds automatic memory management with measured C-like performance.
+It is not implemented yet: current heap values still require `del` or `defer del`.
+The Python compiler and Zig backend remain the implementation path. See the
+[V1 delivery roadmap](docs/plan/delivery-roadmap.md) for current gates and the
+later A7-written compiler direction.
 
 ## Quick Start
 
@@ -21,16 +27,41 @@ curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux/macOS
 # or: pip install uv
 
 # Clone and setup
-git clone <repository-url>
+git clone https://github.com/code5717/a7-py.git
 cd a7-py
 uv sync
 ```
 
 ## Usage
 
-Run from the repository checkout:
+Run these commands from the repository checkout after `uv sync`:
 
-Compile an A7 program to Zig (default backend):
+```bash
+uv run a7 --version
+uv run a7 doctor
+uv run a7 check examples/001_hello.a7
+uv run a7 check examples/001_hello.a7 --format json
+uv run a7 build examples/001_hello.a7 -o hello
+./hello
+uv run a7 run examples/001_hello.a7 --profile release
+```
+
+`check` runs the full A7 pipeline without writing files or invoking Zig.
+`build` creates a native executable, defaulting to `./<source-stem>`.
+`run` builds a temporary executable and runs it in the current working directory.
+Both require Zig 0.16.0. The default `--profile debug` uses Zig Debug;
+`--profile release` uses ReleaseFast. ReleaseFast does not establish complete
+memory safety. Current alias and lifetime limits still apply.
+
+`doctor` reports the package, Python, platform and Zig versions. It exits with
+code 2 if Zig is missing or has the wrong version, or the environment differs
+from the V1 qualification target of Linux x86_64 and Python 3.13.
+
+Arguments after `a7 run FILE --` go to the native process. `run` returns its exit
+status. This forwarding does not add an A7 argument-reading API; A7 `main` still
+has no parameters or return value.
+
+The existing file-first commands remain available. Compile an A7 program to Zig:
 ```bash
 uv run python main.py examples/001_hello.a7
 # Output: examples/001_hello.zig
@@ -54,6 +85,11 @@ uv run python main.py --mode doc examples/001_hello.a7                     # Doc
 uv run python main.py --verbose examples/009_struct.a7                     # Full pipeline details
 ```
 
+Output and documentation destinations must differ from every input module and
+from each other, including symlink and hard-link aliases. JSON `artifacts` lists
+only files written by that invocation. Source diagnostics retain imported modules'
+file locations.
+
 Use the installed console script after `uv sync`:
 
 ```bash
@@ -62,7 +98,7 @@ uv run a7 examples/001_hello.a7
 
 Exit codes for automation:
 ```text
-0 success, 2 usage, 3 io, 4 tokenize, 5 parse, 6 semantic, 7 codegen, 8 internal
+0 success, 2 usage/toolchain, 3 io, 4 tokenize, 5 parse, 6 semantic, 7 codegen/native build, 8 internal
 ```
 
 Run tests:
@@ -153,7 +189,7 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 - **Declarations**: Functions, structs, enums, unions, variables, constants, type aliases
 - **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
 - **Function Rules**: Direct, mutual, alias-mediated, and callback-trampoline recursion are semantic errors
-- **Expressions**: All operators with proper precedence, fixed-array `+` for same-shape numeric arrays, casts, if-expressions, struct/array literals, untagged union field literals/access
+- **Expressions**: Arithmetic and boolean operators with precedence rules, fixed-array `+` for one-dimensional same-shape numeric arrays, casts, if-expressions, struct/array literals, untagged union field literals/access
 - **Memory**: `ref` parameters use ordinary lvalue arguments, ref struct fields
   are accessed directly after nil-proofing, and scalar/struct `new` plus `del`
   support defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the
@@ -180,9 +216,13 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 
 ## Learn More
 
+Start with the [repository documentation index](docs/README.md) for current
+guidance, safety research, and historical artifacts.
+
 - Documentation website: `https://code5717.github.io/a7-py/`
 - Agent/curl.md docs entry point: `https://code5717.github.io/a7-py/llms.txt`
 - Agent docs index: `https://code5717.github.io/a7-py/docs/index.md`
+- Structured page and feature metadata: `https://code5717.github.io/a7-py/docs/manifest.json`
 - Full agent context: `https://code5717.github.io/a7-py/llms-full.txt`
 - `docs/SPEC.md` - Language specification
 - `docs/SAFETY_CONTRACT.md` - Compiler safety contract and proof/backend-plan invariants
@@ -197,9 +237,13 @@ Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data its
 
 ```bash
 cd site
-bun install
+bun install --frozen-lockfile
 bun run dev
 ```
+
+After editing documentation, run `bun run sync:exports` and `bun run check` from
+`site/`. The check includes generated-output freshness, publishing contracts,
+and internal links. See [the site guide](site/README.md) for content structure.
 
 ---
 

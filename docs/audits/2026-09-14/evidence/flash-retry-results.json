@@ -1,0 +1,32 @@
+[
+  {
+    "area": "interactions",
+    "session": "ses_f61946d66ffebRIjzc1QvCDMSA",
+    "exit_code": 0
+  },
+  {
+    "area": "design-typography",
+    "session": "ses_f61946b5dffeZi84RtK4c2Ql65",
+    "exit_code": 0
+  },
+  {
+    "area": "design-responsive",
+    "session": "ses_f61946c3fffedBXuB07nRVqh1x",
+    "exit_code": 0
+  },
+  {
+    "area": "design-system",
+    "session": "ses_f61946d71ffez2hEnTl7xNMo4D",
+    "exit_code": 0
+  },
+  {
+    "area": "performance",
+    "session": "ses_f61946dbdffeI2JXNMddpGf8XM",
+    "exit_code": 0
+  },
+  {
+    "area": "content",
+    "session": "ses_f61946d34ffewNVcDTi4qRTZ6A",
+    "exit_code": 0
+  }
+]

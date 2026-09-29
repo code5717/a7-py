@@ -13,19 +13,19 @@
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Lexical Structure](#lexical-structure)
-3. [Type System](#type-system)
-4. [Declarations and Expressions](#declarations-and-expressions)
-5. [Control Flow](#control-flow)
-6. [Functions](#functions)
-7. [Generics](#generics)
-8. [Memory Management](#memory-management)
-9. [Planned Array Programming for AI](#planned-array-programming-for-ai)
-10. [Modules and Visibility](#modules-and-visibility)
-11. [Built-in Functions and Operators](#built-in-functions-and-operators)
-12. [Tokens and AST Components](#tokens-and-ast-components)
-13. [Grammar Summary](#grammar-summary)
+1. [Introduction](#1-introduction)
+2. [Lexical Structure](#2-lexical-structure)
+3. [Type System](#3-type-system)
+4. [Declarations and Expressions](#4-declarations-and-expressions)
+5. [Control Flow](#5-control-flow)
+6. [Functions](#6-functions)
+7. [Generics](#7-generics)
+8. [Memory Management](#8-memory-management)
+9. [Planned Array Programming for AI](#9-planned-array-programming-for-ai)
+10. [Modules and Visibility](#10-modules-and-visibility)
+11. [Built-in Functions and Operators](#11-built-in-functions-and-operators)
+12. [Tokens and AST Components](#12-tokens-and-ast-components)
+13. [Grammar Summary](#13-grammar-summary)
 
 ---
 
@@ -128,6 +128,11 @@ $    // Generic type parameter prefix
 // Other
 ::   :    ;    ,    ()   []   {}   ..   ...   @
 ```
+
+Float `%` is remainder with a quotient truncated toward zero. Its nonzero result
+has the dividend's sign. Constant folding follows the same rule as generated
+Zig: `-5.5 % 2.0` is `-1.5`, and exact negative division preserves negative zero.
+This does not relax the existing nonzero-divisor proof requirement.
 
 ### 2.6 Literals
 
@@ -457,6 +462,65 @@ should_process := valid or force_mode
 can_exit := !running and cleanup_done
 ```
 
+### 4.2.1 Untyped numeric constants
+
+This section records the approved P-TYP contract. Production implementation and
+release verification are in progress; see [the packet](plan/packets/P-TYP-forward-globals.md).
+
+Numeric literals and numeric `::` bindings made entirely from supported constant
+expressions retain their exact value until a use needs a concrete type. A use
+does not choose a type for other uses of the same constant. Global dependencies
+resolve before function bodies, so declaration order does not change fitting.
+Local declarations keep their existing visibility rules.
+
+```a7
+RATE :: 2.0
+small: u8 = RATE
+wide: i64 = RATE
+runtime := RATE       // Concrete f64
+```
+
+An integer destination accepts a constant only when its value is integral and
+within range. `2.0` fits `i32`; `2.5`, `256` into `u8`, and `-1` into `usize`
+reject. Implicit fitting never truncates or wraps. `usize` and `isize` use the
+compilation target's pointer width.
+
+A float destination rounds the exact value directly to `f32` or `f64`, nearest
+with ties to even. It preserves signed zero and permits subnormal values and
+underflow to zero. A finite value that would round to infinity rejects. Ordinary
+typed math calls can still produce infinity or NaN. For example,
+`INF :: math.exp(1000.0)` retains the call's concrete result type after importing
+`std/math` as `math`.
+
+Wholly untyped arithmetic uses exact values. `+`, `-` and `*` do not wrap or round.
+With integer-category operands, `/` truncates toward zero. A floating-category
+operand makes `/` exact rational division. Thus `5 / 2` is 2 even when assigned
+to `f64`, while `5.0 / 2` is 2.5. Remainder is `a - trunc(a / b) * b`. Division
+and remainder by zero reject. Comparisons use exact values, so
+`0.1 + 0.2 == 0.3` is true. `1e400 == 1e400` can be true without fitting either
+operand to `f64`.
+
+Untyped bitwise operations require integer-category operands. A spelling such
+as `2.0` remains in the floating category even though its value is integral.
+Untyped shifts require a nonnegative integer-category count. Left shift
+multiplies exactly by a power of two; right shift preserves the sign, so
+`-3 >> 1` is -2. Compiler resource limits still apply.
+
+An inferred runtime value defaults to `i32` for the integer category or `f64`
+for the floating category. Formatting and generic inference without a concrete
+numeric expectation use those same defaults. A large integer needs an explicit
+destination, such as `value: i64 = 9007199254740993`, before formatting.
+Annotated variables, fields, parameters, returns and aggregate elements fit
+directly to their declared type. Array lengths and indices require an integral
+value fitting `usize`. Numeric patterns fit to the subject type.
+
+Typed values remain typed. At a mixed numeric operation, fit the untyped operand
+to its concrete peer before applying the existing typed operation. This keeps
+typed floating arithmetic and typed integer wrapping distinct from exact
+constant arithmetic. Runtime float-to-integer conversion still requires an
+explicit checked cast. `cast(T, value)` first gives an untyped operand its
+category default, then applies the existing cast rules.
+
 ### 4.3 Expression Categories
 
 #### Primary Expressions
@@ -694,11 +758,9 @@ sincos :: fn(angle: f64) struct { sin: f64, cos: f64 } {
     }
 }
 
-// Generic function examples
-swap :: fn($T, a: ref T, b: ref T) {
-    temp := a
-    a = b
-    b = temp
+// Current generic value function
+identity :: fn(value: $T) $T {
+    ret value
 }
 
 // Generic function with type constraint
@@ -805,6 +867,10 @@ result := apply(add, 10, 20)
 
 ### 6.5 Methods
 
+Current implementation is limited. The examples in this section describe the
+intended receiver model, not a fully runnable set. Use ordinary functions and
+consult the language reference for verified reference-parameter forms.
+
 ```a7
 // Methods are functions with receiver
 Vec2 :: struct {
@@ -872,14 +938,8 @@ A7 uses a simple generic system where type parameters are compile-time constants
 - Standalone `$` is invalid and produces a compilation error
 
 ```a7
-// Simple generic function - $T used inline in parameter and return types
-swap :: fn(a: ref $T, b: ref $T) {
-    //           ^^       ^^
-    //      $T used inline in type expressions
-    temp := a
-    a = b
-    b = temp
-}
+// Generic ref swap is not currently supported. Reading/reassigning ref
+// parameters does not provide general value-copy swap semantics.
 
 // Generic function with return type
 identity :: fn(x: $T) $T {
@@ -1568,8 +1628,8 @@ semantically resolved or backend-lowered yet:
 Current virtual modules provide `io.print`, `io.println`, `io.eprintln`, and
 math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
 `math.sin`, `math.cos`, `math.tan`, `math.log`, `math.exp`, `math.min`, and
-`math.max`. Some typed math builtin spellings such as `sqrt_f32` and `sqrt_f64`
-also map through the stdlib registry.
+`math.max`. Typed math spellings such as `sqrt_f32` and `sqrt_f64` are not
+callable; the list below is a planned API shape.
 
 The Zig backend lowers current `std/io` calls to generated stdout/stderr print
 helpers. The helpers flush after each call, panic on formatting or write
@@ -2067,10 +2127,19 @@ defer_stmt = "defer" statement
 
 ### A.2 Type Conversions
 
-No implicit conversions except:
-- Array to slice (safe widening)
-- `T` to `ref T` in function calls
-- Integer literals to any integer type if in range
+Current checked conversions include:
+
+- Safe numeric widening according to the implemented scalar compatibility rules.
+- `T` lvalues to `ref T` in function calls.
+- Integer literals to an integer destination when the value fits, including
+  arguments and return values. A literal branch can take the other branch's type.
+
+Implicit array-to-slice argument conversion is not implemented. Use explicit
+slicing to create a view. Mixed-width arithmetic records the compatible wider
+result type; a narrower result binding requires an explicit checked cast.
+Integer `+`, `-`, and `*`, including compound assignments, use wrapping lowering.
+Unsigned negation is rejected. Constant shift counts must be non-negative and
+less than the operand width. Other numeric edge cases still require qualification.
 
 ### A.3 Name Resolution
 
@@ -2145,6 +2214,30 @@ help: <helpful advice>
 | Import depth | 32 |
 | Defer statements per scope | 255 |
 | Match cases | 1,023 |
+
+The approved exact-constant implementation adds the following caps. Enforcement
+is being integrated under [P-TYP](plan/packets/P-TYP-forward-globals.md).
+
+| Exact evaluation limit | Cap |
+| --- | --- |
+| Absolute decimal exponent in a numeric token | 4,096 |
+| Reduced numerator or denominator | 131,072 bits each |
+| Transient arithmetic component | 262,144 bits |
+| Work per evaluated initializer or fitting context | 2^24 limb-operation credits |
+| Work per compilation | 2^32 limb-operation credits |
+| Retained bindings and exact-value cache | 16 MiB of logical payload |
+| Constant dependency-chain depth | 65,536 bindings |
+| Rendered diagnostic value | 256 characters |
+| Whole exact-evaluation diagnostic | 2,048 characters |
+| Rendered dependency chain | At most 32 links |
+
+Credits measure deterministic work under the
+[resource policy](plan/research/untyped-constant-resource-policy-2026-09-20.md).
+They do not measure elapsed time. Logical payload counts integer-component bytes
+and an entry allowance; it does not measure process memory. The compiler checks
+conservative growth bounds before operations, so a computation can exceed a
+limit even when its final reduced value would fit. Limit errors never substitute
+an approximate result. Target emission uses the destination's bounded encoding.
 
 ---
 

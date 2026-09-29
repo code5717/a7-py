@@ -30,14 +30,4 @@ def register_math_module(registry):
         )
         module.functions[name] = func
 
-        # Register typed variants as builtins: sqrt_f32, sqrt_f64, abs_f32, etc.
-        for suffix in ("_f32", "_f64"):
-            builtin_name = f"{name}{suffix}"
-            builtin_func = StdlibFunction(
-                module="math", name=builtin_name,
-                canonical=f"std.math.{name}",
-                backend_map={"zig": zig_builtin},
-            )
-            registry.register_builtin(builtin_name, builtin_func)
-
     registry.register_module(module)

@@ -1,0 +1,139 @@
+701c67936c70ad2b0608326e23e56cc5d38c9fdb
+134
+ M .github/workflows/ci.yml
+ M .github/workflows/deploy-docs.yml
+ M .github/workflows/release.yml
+ M .gitignore
+ M AGENTS.md
+ M CLAUDE.md
+ M README.md
+ M a7/ast_preprocessor.py
+ M a7/backends/zig.py
+ M a7/compile.py
+ M a7/errors.py
+ M a7/module_resolver.py
+ M a7/parser.py
+ M a7/passes/semantic_validator.py
+ M a7/passes/type_checker.py
+ M a7/safety.py
+ M a7/stdlib/__init__.py
+ M a7/stdlib/math.py
+ M a7/tokens.py
+ M docs/CHANGELOG.md
+ D docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_compact.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_dark.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_latex.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf
+ M docs/RELEASE.md
+ M docs/SAFETY_CONTRACT.md
+ M docs/SPEC.md
+ M docs/STATUS.md
+ M docs/lang-safety/01-invisicaps.md
+ M docs/lang-safety/02-sanitizers.md
+ M docs/lang-safety/03-hardware.md
+ M docs/lang-safety/04-comparison.md
+ M docs/lang-safety/05-for-a7.md
+ M docs/lang-safety/06-compile-time-safety.md
+ M docs/lang-safety/07-language-review.md
+ M docs/lang-safety/08-decisions.md
+ M docs/lang-safety/HANDOFF.md
+ M docs/lang-safety/README.md
+ M docs/lang-safety/codex-review.md
+ M docs/lang-safety/comparative/README.md
+ M docs/lang-safety/comparative/ada-deep-dive.md
+ M docs/lang-safety/comparative/ada.md
+ M docs/lang-safety/comparative/austral.md
+ M docs/lang-safety/comparative/cyclone.md
+ M docs/lang-safety/comparative/hylo.md
+ M docs/lang-safety/comparative/inko-koka-verona.md
+ M docs/lang-safety/comparative/mojo.md
+ M docs/lang-safety/comparative/pony.md
+ M docs/lang-safety/comparative/rust.md
+ M docs/lang-safety/comparative/swift.md
+ M docs/lang-safety/comparative/vale.md
+ M docs/lang-safety/comparative/zig.md
+ M docs/lang-safety/compile-time-knowledge.md
+ M docs/lang-safety/conversions.md
+ M docs/lang-safety/edge-cases/01-cast.md
+ M docs/lang-safety/edge-cases/02-nullable-pointers.md
+ M docs/lang-safety/edge-cases/03-definite-assignment.md
+ M docs/lang-safety/edge-cases/04-nonzero-division.md
+ M docs/lang-safety/edge-cases/05-stack-budget.md
+ M docs/lang-safety/edge-cases/06-typed-arithmetic.md
+ M docs/lang-safety/edge-cases/07-bounded-indexing.md
+ M docs/lang-safety/edge-cases/08-option-result.md
+ M docs/lang-safety/edge-cases/09-refinement-lite.md
+ M docs/lang-safety/edge-cases/10-affine-ownership.md
+ M docs/lang-safety/edge-cases/11-finite-floats.md
+ M docs/lang-safety/edge-cases/12-ffi-boundary.md
+ M docs/lang-safety/narrowing.md
+ M docs/lang-safety/parameter-modes.md
+ M pyproject.toml
+ M run_all_tests.sh
+ M scripts/check_no_secrets.py
+ M scripts/verify_release_manifest.py
+ M site/README.md
+ M site/bun.lock
+ M site/package.json
+ M site/public/404.html
+ M site/public/docs/agent-usage.md
+ M site/public/docs/compiler.md
+ M site/public/docs/index.md
+ M site/public/docs/language.md
+ M site/public/docs/project.md
+ M site/public/docs/release.md
+ M site/public/docs/start.md
+ M site/public/docs/status.md
+ M site/public/docs/stdlib.md
+ M site/public/llms-full.txt
+ M site/public/llms.txt
+ M site/public/sitemap.xml
+ M site/scripts/build.ts
+ M site/scripts/lint.ts
+ M site/scripts/serve.ts
+ M site/src/site.js
+ M site/src/tailwind.css
+ M test/test_codegen_zig.py
+ M test/test_release_tooling.py
+ M test/test_stdlib_registry.py
+ M uv.lock
+?? a7/const_eval.py
+?? docs/README.md
+?? docs/audits/
+?? docs/lang-safety/comparative/bend.md
+?? docs/plan/
+?? site/content/
+?? site/docs/
+?? site/public/docs/examples.md
+?? site/public/docs/language/
+?? site/public/docs/manifest.json
+?? site/public/docs/tour.md
+?? site/scripts/check-coverage.py
+?? site/scripts/check-links.ts
+?? site/scripts/content.ts
+?? site/scripts/exports.ts
+?? site/scripts/icons.ts
+?? site/scripts/markdown-links.ts
+?? site/scripts/publishing.test.ts
+?? site/scripts/search.ts
+?? site/scripts/serve.test.ts
+?? site/tsconfig.json
+?? test/norec_scan.py
+?? test/test_compound_assignment_types.py
+?? test/test_constant_folding_exact.py
+?? test/test_float_nonfinite_folding.py
+?? test/test_module_alias_shadowing.py
+?? test/test_no_recursion.py
+?? test/test_parse_termination.py
+?? test/test_pipeline_artifacts.py
+?? test/test_pipeline_diagnostics.py
+?? test/test_pipeline_native.py
+?? test/test_recursion_detection_scaling.py
+?? test/test_safety_precursors.py
+?? test/test_stdlib_call_resolution.py
+?? test/test_zig_backend_runtime.py
+ test/test_stdlib_registry.py                       |   99 +-
+ uv.lock                                            |   54 +-
+ 99 files changed, 16750 insertions(+), 12654 deletions(-)

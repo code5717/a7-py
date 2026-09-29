@@ -1,0 +1,4 @@
+io :: import "std/io"
+main :: fn() { d: i32 = 1
+ d -= 1
+ io.println("{}", 10 / d) }

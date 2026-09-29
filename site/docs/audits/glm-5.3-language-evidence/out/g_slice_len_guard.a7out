@@ -1,0 +1,16 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Argument type mismatch: expected 'usize', got 'i32' (Argument 2) [line 
+12: col 22]
+────────────────────────────────────────────────────────────────────────────────
+  10 ┃ main :: fn() {
+  11 ┃     arr: [4]i32 = [1, 2, 3, 4]
+  12 ┃     io.println("{}", get(arr[0..4], 2))
+     ┃                      └─┘
+  13 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure argument types match parameter types
+

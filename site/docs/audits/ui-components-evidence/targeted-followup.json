@@ -1,0 +1,38 @@
+[
+  {
+    "hash": "#flags",
+    "current": "#flags",
+    "headingTop": 96.3125
+  },
+  {
+    "hash": "#diagnostics-and-exit-codes",
+    "current": "#diagnostics-and-exit-codes",
+    "headingTop": 95.734375
+  },
+  {
+    "snippets": [
+      "\u2026exclusive. Slices view existing storage. Use usize for index variables and lengths. See arrays and strings.",
+      "\u2026rklists, or explicit stacks. sum_to :: fn(n: usize) usize { total: usize = 0 i: usize = 0 while i <= n { total = total + i i = i + 1 } ret total } Indexed iteration: for index, val\u2026",
+      "\u2026ps, index worklists, or explicit stacks. Use usize for sizes, lengths, capacities, and indexes. Reserve isize for signed pointer-sized offsets and position differences. new [N]T is\u2026",
+      "\u2026e declaration. limit :: 10 count := 0 index: usize = 0 buffer: [4]u8 count = count + 1",
+      "\u2026Choose explicit-width integers for data. Use usize for lengths, capacities, allocation sizes, array indices, and slice bounds. Reserve isize for signed pointer-sized offsets and po\u2026",
+      "\u2026bits 0 to 2^32 - 1 u64 64 bits 0 to 2^64 - 1 usize Target pointer width Non-negative sizes and indices isize Target pointer width Signed offsets f32 32 bits IEEE 754 single precisi\u2026",
+      "Inference and compatibility name := expression infers a variable's type. Explicit declarations check the initializer against the declared type. Integer literals can adopt an intege\u2026",
+      "Casts converted := cast(f64, 42) The compiler classifies a primitive cast and requires a range proof before lowering it. Merely naming the destination type does not make a narrowin\u2026",
+      "Composite and nullable types Arrays use [N]T, nested arrays use [N][M]T, slices use []T, and references use ref T. Structs, enums, unions, function types, and generic instantiation\u2026",
+      "Status and restrictions Status: limited. Core scalar types and value aggregates are implemented, but fixed-width overflow, shifts, full union safety, and some generic compatibility\u2026",
+      "Evidence a7/types.py a7/cast_classifier.py test/test_cast_safety_matrix.py docs/SAFETY_CONTRACT.md docs/STATUS.md",
+      "Related topics Language overview \u00b7 Current status \u00b7 Examples",
+      "\u2026 index, value in values; that index has type usize. numbers: [3]i32 = [10, 20, 30] sum := 0 for index, value in numbers { sum += value } A C-style loop can keep initialization, con\u2026",
+      "\u2026; their public length access is limited. Use usize for all index and bound variables.",
+      "\u2026ration, for index, value in numbers, gives a usize index. Same-shape numeric fixed-array addition is implemented. Other tensor operations must not be inferred from this one operati\u2026",
+      "\u2026r This complete program indexes a slice with usize, reads its length, adds two fixed arrays of the same shape, and iterates a string slice: io :: import \"std/io\" main :: fn() { num\u2026",
+      "\u2026ion or remainder Nonzero divisor Index Valid usize or non-negative literal and in-bounds position Slice Ordered bounds within the length Reference field access Non-nil reference Ba\u2026",
+      "\u2026isize Types, signed types u8, u16, u32, u64, usize Types, unsigned types int, uint Unavailable public integer aliases float, let Reserved lexer words; not recommended executable pu\u2026",
+      "\u2026. Keep generated Zig output single-file. Use usize for index variables and sizes. Never claim tests ran from a source revision or a support label alone."
+    ],
+    "theme": "light",
+    "selected": "light",
+    "scrollbar": "rgb(87, 91, 99) rgba(0, 0, 0, 0)"
+  }
+]

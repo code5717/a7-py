@@ -1,0 +1,12 @@
+{
+  "source_manifest_verified": true,
+  "source_hashes_match_final_compiles": true,
+  "cases": 97,
+  "passing_expectations": 95,
+  "inherited_probes": 2,
+  "accepted_cases": 62,
+  "rejected_cases": 33,
+  "selected_tests": "52 passed, 1 unchanged baseline failure",
+  "new_recursive_groups": [],
+  "candidate_tree_sha256": "caaeeb0030e973b08dfb3454790d5aec985599f5a80039983047f08de71e9c15"
+}

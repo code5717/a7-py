@@ -2,7 +2,9 @@
 Tests for the A7 standard library registry.
 
 Validates StdlibRegistry initialization, module/function resolution,
-builtin resolution, backend mapping, and I/O call detection.
+backend mapping, and I/O call detection. The registry has no bare typed
+builtin names (such as sqrt_f64); test/test_stdlib_call_resolution.py checks
+that a user function with such a name runs as written.
 """
 
 import pytest
@@ -38,17 +40,6 @@ class TestStdlibRegistryInitialization:
                     "tan", "log", "exp", "min", "max"]
         for name in expected:
             assert name in math_mod.functions, f"Missing math function: {name}"
-
-    def test_math_builtins_registered(self):
-        """Typed builtin variants (e.g. sqrt_f32, abs_f64) should be registered."""
-        registry = StdlibRegistry()
-        # Every math function should have _f32 and _f64 variants as builtins
-        math_names = ["sqrt", "abs", "floor", "ceil", "sin", "cos",
-                      "tan", "log", "exp", "min", "max"]
-        for name in math_names:
-            for suffix in ("_f32", "_f64"):
-                key = f"{name}{suffix}"
-                assert key in registry._builtin_map, f"Missing builtin: {key}"
 
     def test_only_two_default_modules(self):
         """Only io and math should be registered by default."""
@@ -161,75 +152,6 @@ class TestResolveCall:
         assert registry.resolve_call("", "") is None
         assert registry.resolve_call("io", "") is None
         assert registry.resolve_call("", "println") is None
-
-
-class TestResolveBuiltin:
-    """Test resolve_builtin for bare builtin name lookups."""
-
-    def test_sqrt_f32(self):
-        """resolve_builtin('sqrt_f32') should return 'std.math.sqrt'."""
-        registry = StdlibRegistry()
-        result = registry.resolve_builtin("sqrt_f32")
-        assert result == "std.math.sqrt"
-
-    def test_sqrt_f64(self):
-        """resolve_builtin('sqrt_f64') should return 'std.math.sqrt'."""
-        registry = StdlibRegistry()
-        result = registry.resolve_builtin("sqrt_f64")
-        assert result == "std.math.sqrt"
-
-    def test_abs_f32(self):
-        """resolve_builtin('abs_f32') should return 'std.math.abs'."""
-        registry = StdlibRegistry()
-        result = registry.resolve_builtin("abs_f32")
-        assert result == "std.math.abs"
-
-    def test_abs_f64(self):
-        """resolve_builtin('abs_f64') should return 'std.math.abs'."""
-        registry = StdlibRegistry()
-        result = registry.resolve_builtin("abs_f64")
-        assert result == "std.math.abs"
-
-    def test_all_math_builtins_f32(self):
-        """All math functions should have working _f32 builtin variants."""
-        registry = StdlibRegistry()
-        math_names = ["sqrt", "abs", "floor", "ceil", "sin", "cos",
-                      "tan", "log", "exp", "min", "max"]
-        for name in math_names:
-            result = registry.resolve_builtin(f"{name}_f32")
-            assert result == f"std.math.{name}", (
-                f"resolve_builtin('{name}_f32') returned {result}, "
-                f"expected 'std.math.{name}'"
-            )
-
-    def test_all_math_builtins_f64(self):
-        """All math functions should have working _f64 builtin variants."""
-        registry = StdlibRegistry()
-        math_names = ["sqrt", "abs", "floor", "ceil", "sin", "cos",
-                      "tan", "log", "exp", "min", "max"]
-        for name in math_names:
-            result = registry.resolve_builtin(f"{name}_f64")
-            assert result == f"std.math.{name}", (
-                f"resolve_builtin('{name}_f64') returned {result}, "
-                f"expected 'std.math.{name}'"
-            )
-
-    def test_nonexistent_builtin(self):
-        """resolve_builtin with an unknown name should return None."""
-        registry = StdlibRegistry()
-        result = registry.resolve_builtin("nonexistent")
-        assert result is None
-
-    def test_bare_math_name_not_a_builtin(self):
-        """resolve_builtin('sqrt') should return None -- bare names are not builtins."""
-        registry = StdlibRegistry()
-        result = registry.resolve_builtin("sqrt")
-        assert result is None
-
-    def test_empty_string(self):
-        """resolve_builtin('') should return None."""
-        registry = StdlibRegistry()
-        assert registry.resolve_builtin("") is None
 
 
 class TestGetBackendMapping:
@@ -347,7 +269,7 @@ class TestIsIoCall:
 
 
 class TestCustomModuleRegistration:
-    """Test registering custom modules and builtins after initialization."""
+    """Test registering custom modules after initialization."""
 
     def test_register_custom_module(self):
         """A manually registered module should be resolvable."""
@@ -362,19 +284,6 @@ class TestCustomModuleRegistration:
 
         assert registry.resolve_call("custom", "do_thing") == "std.custom.do_thing"
         assert registry.get_backend_mapping("std.custom.do_thing", "zig") == "custom.doThing"
-
-    def test_register_custom_builtin(self):
-        """A manually registered builtin should be resolvable."""
-        registry = StdlibRegistry()
-        func = StdlibFunction(
-            module="custom", name="my_builtin",
-            canonical="std.custom.my_builtin",
-            backend_map={"zig": "@my_builtin"},
-        )
-        registry.register_builtin("my_builtin", func)
-
-        assert registry.resolve_builtin("my_builtin") == "std.custom.my_builtin"
-        assert registry.get_backend_mapping("std.custom.my_builtin", "zig") == "@my_builtin"
 
     def test_custom_module_not_io(self):
         """A non-io custom module should not be detected as I/O."""

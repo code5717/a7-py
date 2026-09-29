@@ -1,0 +1,56 @@
+[
+  {
+    "case": "untyped_whole",
+    "order": "before",
+    "source": "const RATE = 2.0;\npub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\n",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "case": "untyped_whole",
+    "order": "after",
+    "source": "pub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\nconst RATE = 2.0;\n",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "case": "untyped_fraction",
+    "order": "before",
+    "source": "const RATE = 2.5;\npub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\n",
+    "exit": 1,
+    "stderr": "tmp/a7-constant-comparison-07nq04m0/untyped_fraction_before.zig:2:37: error: fractional component prevents float value '2.5' from coercion to type 'i32'\npub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\n                                    ^~~~\nreferenced by:\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:698:59\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=5' to see all references\n"
+  },
+  {
+    "case": "untyped_fraction",
+    "order": "after",
+    "source": "pub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\nconst RATE = 2.5;\n",
+    "exit": 1,
+    "stderr": "tmp/a7-constant-comparison-07nq04m0/untyped_fraction_after.zig:1:37: error: fractional component prevents float value '2.5' from coercion to type 'i32'\npub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\n                                    ^~~~\nreferenced by:\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:698:59\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=5' to see all references\n"
+  },
+  {
+    "case": "typed_whole",
+    "order": "before",
+    "source": "const RATE: f64 = 2.0;\npub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\n",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "case": "typed_whole",
+    "order": "after",
+    "source": "pub fn main() void { const n: i32 = RATE; if (n != 2) unreachable; }\nconst RATE: f64 = 2.0;\n",
+    "exit": 0,
+    "stderr": ""
+  },
+  {
+    "case": "zig_runtime_float",
+    "source": "fn convert(rate: f64) i32 { return rate; }\npub fn main() void { _ = convert(2.0); }",
+    "exit": 1,
+    "stderr": "tmp/a7-constant-comparison-07nq04m0/zig_runtime_float.zig:1:36: error: expected type 'i32', found 'f64'\nfn convert(rate: f64) i32 { return rate; }\n                                   ^~~~\ntmp/a7-constant-comparison-07nq04m0/zig_runtime_float.zig:1:23: note: function return type declared here\nfn convert(rate: f64) i32 { return rate; }\n                      ^~~\nreferenced by:\n    main: tmp/a7-constant-comparison-07nq04m0/zig_runtime_float.zig:2:33\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:698:59\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n"
+  },
+  {
+    "case": "rust_typed_constant",
+    "source": "const RATE: f64 = 2.0;\nfn main() { let n: i32 = RATE; println!(\"{}\", n); }",
+    "exit": 1,
+    "stderr": "error[E0308]: mismatched types\n --> tmp/a7-constant-comparison-07nq04m0/rust_typed_constant.rs:2:26\n  |\n2 | fn main() { let n: i32 = RATE; println!(\"{}\", n); }\n  |                    ---   ^^^^ expected `i32`, found `f64`\n  |                    |\n  |                    expected due to this\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0308`.\n"
+  }
+]

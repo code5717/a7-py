@@ -50,20 +50,31 @@ def resolve_artifact(base_dir: Path, artifact_path: str) -> Path:
     if ".." in candidate.parts:
         raise ValueError(f"unsafe artifact path in manifest: {artifact_path}")
 
-    if (base_dir / candidate).exists():
-        return base_dir / candidate
-    # Flat-asset fallback: when manifest paths include directory prefixes
-    # (e.g. "dist/foo.tar.gz") but a user downloaded the assets flat next
-    # to the manifest, fall back to a basename match. Hash verification
-    # below will still detect any wrong-file substitution.
-    if (base_dir / candidate.name).exists():
-        return base_dir / candidate.name
+    base_dir = base_dir.resolve()
+    allowed_roots = (base_dir, ROOT.resolve())
+
+    def checked(path: Path) -> Path:
+        resolved = path.resolve()
+        if not any(resolved.is_relative_to(root) for root in allowed_roots):
+            raise ValueError(f"unsafe artifact path in manifest: {artifact_path}")
+        return resolved
+
     if candidate.is_absolute():
-        resolved_candidate = candidate.resolve()
-        if resolved_candidate.is_relative_to(base_dir) or resolved_candidate.is_relative_to(ROOT):
-            return resolved_candidate
-        raise ValueError(f"unsafe artifact path in manifest: {artifact_path}")
-    return ROOT / candidate
+        try:
+            return checked(candidate)
+        except ValueError:
+            # A downloaded manifest may name the original machine's absolute
+            # path. Only read the local basename, never the external path.
+            local = checked(base_dir / candidate.name)
+            if local.is_file():
+                return local
+            raise
+    # Support repository-relative manifests and assets downloaded into one folder.
+    for option in (base_dir / candidate, base_dir / candidate.name, ROOT / candidate):
+        resolved = checked(option)
+        if resolved.exists():
+            return resolved
+    return checked(ROOT / candidate)
 
 
 def verify_entries(entries: list[ManifestEntry], base_dir: Path) -> list[str]:

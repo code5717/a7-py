@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Fail if likely secrets are committed to the repository."""
+"""Scan tracked files and non-ignored working files for likely secrets."""
 
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,11 +80,17 @@ def should_skip(path: Path) -> bool:
 
 
 def iter_files() -> list[Path]:
-    return sorted(
-        path
-        for path in ROOT.rglob("*")
-        if path.is_file() and not should_skip(path)
+    git = shutil.which("git")
+    if git is None:
+        raise FileNotFoundError("git is required to enumerate repository files")
+    result = subprocess.run(
+        [str(Path(git).resolve()), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=ROOT, check=True, capture_output=True,
     )
+    candidates = {ROOT / name.decode("utf-8", errors="surrogateescape")
+                  for name in result.stdout.split(b"\0") if name}
+    return sorted(path for path in candidates if path.is_file() and not should_skip(path))
+
 
 
 def sensitive_filename_kind(path: Path) -> str | None:
@@ -118,14 +126,20 @@ def scan_file(path: Path) -> list[Finding]:
 
 def main() -> int:
     findings: list[Finding] = []
-    for path in iter_files():
+    try:
+        paths = iter_files()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        detail = exc.stderr.decode(errors="replace").strip() if isinstance(exc, subprocess.CalledProcessError) else str(exc)
+        print(f"secrets-check: cannot enumerate repository files: {detail}", file=sys.stderr)
+        return 2
+    for path in paths:
         findings.extend(scan_file(path))
 
     if not findings:
         print("secrets-check: ok")
         return 0
 
-    print("secrets-check: possible committed secrets found")
+    print("secrets-check: possible repository secrets found")
     for item in findings:
         location = str(item.path.relative_to(ROOT))
         if item.line_no:

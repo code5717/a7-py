@@ -1,0 +1,16 @@
+[
+  {
+    "name": "nonvoid_update",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "body 0\nstep\nbody 1\nstep\nbody 2\nstep\ndone\n",
+    "stderr": ""
+  },
+  {
+    "name": "void_update",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "body 0\nstep\nbody 1\nstep\nbody 2\nstep\ndone\n",
+    "stderr": ""
+  }
+]

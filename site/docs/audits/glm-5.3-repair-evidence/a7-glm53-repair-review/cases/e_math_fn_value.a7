@@ -1,0 +1,7 @@
+io :: import "std/io"
+math :: import "std/math"
+
+main :: fn() {
+    f := math.sqrt
+    io.println("assigned")
+}

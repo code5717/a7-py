@@ -1,0 +1,9 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Error loading module './a': Module './a' not found in search paths: 
+['/tmp/a7-glm53-language-audit/cases', 
+'/tmp/a7-glm53-language-audit/cases/stdlib', 
+'/home/cx89/Projects/pl-dev/a7-py/stdlib'] [line 1: col 1]
+

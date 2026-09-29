@@ -1,0 +1,173 @@
+[
+  {
+    "case": "mixed_overflow",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: i8 = 1\ny := x + 200\nio.println(\"{}\", y)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/mixed_overflow.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/mixed_overflow-bin"
+    ],
+    "exit": 7,
+    "stdout": "",
+    "stderr": "tmp/untyped-constants-next/candidate-evidence/reviewer/a7-native-oijobjp9/program.zig:17:26: error: type 'i8' cannot represent integer value '200'\n    const y: i32 = (x +% 200);\n                         ^~~\nreferenced by:\n    main: tmp/untyped-constants-next/candidate-evidence/reviewer/a7-native-oijobjp9/program.zig:11:19\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n\n"
+  },
+  {
+    "case": "mixed_valid",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: i8 = 1\ny := x + 2\nio.println(\"{}\", y)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/mixed_valid.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/mixed_valid-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/mixed_valid-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "3\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "negative_zero",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: f64 = -0.0\nio.println(\"{}\", x)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/negative_zero.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/negative_zero-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/negative_zero-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "0\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "positive_zero",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: f64 = 0.0\nio.println(\"{}\", x)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/positive_zero.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/positive_zero-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/positive_zero-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "0\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "format_big",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nBIG :: 2147483648\nio.println(\"{}\", BIG)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/format_big.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/format_big-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/format_big-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2147483648\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "format_valid",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nBIG :: 2147483647\nio.println(\"{}\", BIG)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/format_valid.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/format_valid-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/format_valid-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2147483647\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "fraction_comparison",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 0.1 + 0.2\nio.println(\"{}\", X == 0.3)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/fraction_comparison.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/fraction_comparison-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/fraction_comparison-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "local_shadow",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 2.0\n{\ny: i32 = X\nX :: 3.0\nio.println(\"{}\", y)\n}\nz: i32 = X\nio.println(\"{}\", z)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/local_shadow.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/local_shadow-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/local_shadow-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2\n2\n",
+      "stderr": ""
+    }
+  }
+]

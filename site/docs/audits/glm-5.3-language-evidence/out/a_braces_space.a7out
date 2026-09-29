@@ -1,0 +1,17 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Wrong number of arguments (io format string expects 1 values, got 0) 
+[line 4: col 5]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ io :: import "std/io"
+   2 ┃ 
+   3 ┃ main :: fn() {
+   4 ┃     io.println("{ }")
+     ┃     └┘
+   5 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Provide the correct number of arguments
+

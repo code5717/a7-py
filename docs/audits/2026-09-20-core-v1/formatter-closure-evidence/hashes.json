@@ -1,0 +1,6 @@
+{
+  "console.before.py": "224e1f50ab9f7961636b9a738ec8f3f17ae900f65163c15a243a123b81c088c0",
+  "a7/formatters/console_formatter.py": "3f7430cea26fb13ed03c37af45b2effe6e1b0efa09a381b40985dfc3b2d874c9",
+  "test/test_console_review_regressions.py": "2fa12cf1ba61b810eaf327476ed2d4b82feacae16cde17cb5bbf39cfaac8a6ae",
+  "formatter-closure.patch": "92a80c96c09b5f90d8613dc60a0131121b4102e7433413d86dffa6ce98fa42ba"
+}

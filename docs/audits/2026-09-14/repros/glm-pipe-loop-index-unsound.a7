@@ -1,0 +1,13 @@
+// glm-pipe repro: index-bounds obligations inside C-style for bodies are
+// discharged with the FIRST-iteration fact only (safety.py visits init,
+// condition, body, update in that order and never widens loop-modified
+// facts). `arr[i]` below is "proven" because i == 0 at the point the body
+// is checked, although the loop runs i = 0..2 over a 1-element array.
+// The emitted Zig builds under -O ReleaseFast; the out-of-bounds access
+// is unchecked UB at runtime (not executed during this audit).
+main :: fn() {
+    arr: [1]i32 = [7]
+    for i := cast(usize, 0); i < 3; i += 1 {
+        x := arr[i]
+    }
+}

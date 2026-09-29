@@ -1,0 +1,14 @@
+[
+  {
+    "probe": "mixed-width-narrow-binding",
+    "a7_exit": 0,
+    "zig_exit": 1,
+    "zig_output": "/tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:15:22: error: expected type 'i8', found 'i64'\n    const c: i8 = (a + b);\n                   ~~^~~\n/tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:15:22: note: signed 8-bit int cannot represent all possible signed 64-bit values\nreferenced by:\n    __a7_user_main: /tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:22:8\n    main: /tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:11:19\n    5 reference(s) hidden; use '-freference-trace=7' to see all references\n"
+  },
+  {
+    "probe": "nested-recursion-unused",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "zig_output": ""
+  }
+]

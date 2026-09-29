@@ -1,0 +1,8 @@
+{
+  "command": "opencode run -m zai-coding-plan/glm-5.3",
+  "exit_code": 0,
+  "role": "advisory frozen candidate review",
+  "provider_limits_observed": false,
+  "source_changed": false,
+  "native_builds_by_reviewer": false
+}

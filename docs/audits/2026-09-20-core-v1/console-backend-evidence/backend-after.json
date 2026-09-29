@@ -1,0 +1,58 @@
+[
+  {
+    "name": "swap",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "2 1\n",
+    "stderr": ""
+  },
+  {
+    "name": "swap_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "2 1\n",
+    "stderr": ""
+  },
+  {
+    "name": "char_escape",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "\u0001\n",
+    "stderr": ""
+  },
+  {
+    "name": "char_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "A\n",
+    "stderr": ""
+  },
+  {
+    "name": "defer_nonvoid",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "called\n",
+    "stderr": ""
+  },
+  {
+    "name": "defer_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "called\n",
+    "stderr": ""
+  },
+  {
+    "name": "unused_const",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "name": "unused_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "42\n",
+    "stderr": ""
+  }
+]

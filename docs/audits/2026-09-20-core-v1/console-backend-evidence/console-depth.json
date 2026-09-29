@@ -1,0 +1,24 @@
+[
+  {
+    "snapshot": "before",
+    "method": "format_type",
+    "error": "RecursionError"
+  },
+  {
+    "snapshot": "before",
+    "method": "format_statement_label",
+    "error": "RecursionError"
+  },
+  {
+    "snapshot": "after",
+    "method": "format_type",
+    "length": 3603,
+    "error": null
+  },
+  {
+    "snapshot": "after",
+    "method": "format_statement_label",
+    "length": 8437,
+    "error": null
+  }
+]

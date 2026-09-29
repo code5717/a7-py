@@ -1,9 +1,14 @@
 # A7 Compiler Safety Contract
 
-A7 is safe only when the compiler can prove that generated code cannot trap,
-miscompile, or rely on unchecked target-language behavior. The compiler must
-fail closed: if a risky operation has no proof, semantic analysis rejects the
-program before Zig code is emitted.
+This document states the compiler's safety requirements. It is not a guarantee
+that every accepted program is safe. The compiler must reject a risky operation
+when it cannot prove the required condition before emitting Zig. Current gaps
+include shifts, alias and lifetime analysis, and arithmetic edge cases.
+
+The language audit reproduced accepted programs that trapped. The current
+repairs invalidate stale facts at branch joins, loop mutations, reference calls,
+and deferred effects. Passing their regression cases does not prove the contract
+for every program.
 
 This contract covers compiler safety, not sandboxing. A compiled A7 program can
 still access whatever the host process and Zig toolchain allow.
@@ -38,7 +43,9 @@ track:
 
 Facts can be learned from literals, type information, guards, early returns,
 loop shapes, and previous statements. If a fact is invalidated or unknown, the
-compiler rejects the dependent operation.
+compiler must reject the dependent operation. The implementation uses
+conservative invalidation across mutations and calls; this can require an
+additional guard inside a loop or after a call.
 
 ## Risky Operations
 
@@ -51,13 +58,13 @@ compiler rejects the dependent operation.
 | Ref field access or dereference | reference is proven non-nil | `deref` |
 | Assignment through ref | target reference is proven non-nil | `deref` |
 | Use after `del` | deleted binding is not read again before reassignment | semantic rejection |
-| Fixed-width integer arithmetic | result range is proven in-bounds | `arithmetic` |
+| Integer `+`, `-`, `*` and compound forms | defined wrapping lowering | no overflow proof required |
 | Union payload access | active discriminant is proven | union approval |
 
 The current implementation enforces cast, division/modulo, index, slice, ref
 deref, operation-specific backend approvals, and direct use-after-`del` checks.
-Full fixed-width arithmetic, union discriminant proofs, and complete ownership
-analysis remain active compiler-safety work.
+Shift checks, signed division edge cases, signed `abs` at the minimum value,
+union discriminant proofs, and complete ownership analysis remain active work.
 
 ## Reference Surface
 
@@ -87,8 +94,10 @@ The current public model stays simple:
 - assignment after `del` reinitializes the binding
 - implicit deep copy is not provided
 
-The next ownership phase will make heap refs affine, reject conflicting mutable
-aliases, and add explicit stdlib `clone` behavior for deep copies.
+An earlier proposal made public heap refs affine and added explicit `clone`.
+The current [memory plan](plan/memory.md) instead proposes automatic memory
+management under ledger decisions L15-L21. Its details still require approval;
+neither proposal describes implemented ownership guarantees.
 
 ## Backend Rule
 

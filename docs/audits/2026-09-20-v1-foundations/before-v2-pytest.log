@@ -1,0 +1,392 @@
+...........F.......FFFFFFFFFFFF.FF.                                      [100%]
+=================================== FAILURES ===================================
+___________________ test_the_scanner_itself_has_no_recursion ___________________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_the_scanner_itself_has_no0')
+
+    def test_the_scanner_itself_has_no_recursion(tmp_path):
+        root = tmp_path / "scanner"
+        root.mkdir()
+        shutil.copy(Path(norec_scan.__file__), root / "norec_scan.py")
+        result = norec_scan.scan(root)
+        assert result.groups == [], "\n".join(result.describe_group(g) for g in result.groups)
+        assert result.deepcopy_calls == []
+>       assert result.dataclass_findings == []
+E       AssertionError: assert [DataclassFin...can:_Func',))] == []
+E         
+E         Left contains one more item: DataclassFinding(cls='scanner.norec_scan:_Func', kind='repr', path='scanner/norec_scan.py', line=152, fields=('parent',), holds=('scanner.norec_scan:_Func',))
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:333: AssertionError
+_ test_stored_dispatch_tables_preserve_recursive_call_edges[\n        class Walker:\n            def walk(self, kind):\n                return self.handlers[kind](self, kind)\n            def block(self, kind):\n                return self.walk(kind)\n            handlers = {"block": block}\n    -expected0] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_stored_dispatch_tables_pr0')
+source = '\n        class Walker:\n            def walk(self, kind):\n                return self.handlers[kind](self, kind)\n            def block(self, kind):\n                return self.walk(kind)\n            handlers = {"block": block}\n    '
+expected = ('pkg.m:Walker.block', 'pkg.m:Walker.walk')
+
+    @pytest.mark.parametrize("source, expected", [
+        ("""
+            class Walker:
+                def walk(self, kind):
+                    return self.handlers[kind](self, kind)
+                def block(self, kind):
+                    return self.walk(kind)
+                handlers = {"block": block}
+        """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
+        ("""
+            class Walker:
+                def __init__(self):
+                    self.handlers = {"block": self.block}
+                def walk(self, kind):
+                    return self.handlers[kind](kind)
+                def block(self, kind):
+                    return self.walk(kind)
+        """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
+        ("""
+            def walk(kind):
+                return handlers[kind](kind)
+            def block(kind):
+                return walk(kind)
+            handlers = {"block": block}
+        """, ("pkg.m:block", "pkg.m:walk")),
+    ])
+    def test_stored_dispatch_tables_preserve_recursive_call_edges(tmp_path, source, expected):
+        result = scan_sources(tmp_path, {"m.py": source})
+>       assert result.groups == [expected]
+E       AssertionError: assert [] == [('pkg.m:Walk...Walker.walk')]
+E         
+E         Right contains one more item: ('pkg.m:Walker.block', 'pkg.m:Walker.walk')
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:744: AssertionError
+_ test_stored_dispatch_tables_preserve_recursive_call_edges[\n        class Walker:\n            def __init__(self):\n                self.handlers = {"block": self.block}\n            def walk(self, kind):\n                return self.handlers[kind](kind)\n            def block(self, kind):\n                return self.walk(kind)\n    -expected1] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_stored_dispatch_tables_pr1')
+source = '\n        class Walker:\n            def __init__(self):\n                self.handlers = {"block": self.block}\n    ...    return self.handlers[kind](kind)\n            def block(self, kind):\n                return self.walk(kind)\n    '
+expected = ('pkg.m:Walker.block', 'pkg.m:Walker.walk')
+
+    @pytest.mark.parametrize("source, expected", [
+        ("""
+            class Walker:
+                def walk(self, kind):
+                    return self.handlers[kind](self, kind)
+                def block(self, kind):
+                    return self.walk(kind)
+                handlers = {"block": block}
+        """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
+        ("""
+            class Walker:
+                def __init__(self):
+                    self.handlers = {"block": self.block}
+                def walk(self, kind):
+                    return self.handlers[kind](kind)
+                def block(self, kind):
+                    return self.walk(kind)
+        """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
+        ("""
+            def walk(kind):
+                return handlers[kind](kind)
+            def block(kind):
+                return walk(kind)
+            handlers = {"block": block}
+        """, ("pkg.m:block", "pkg.m:walk")),
+    ])
+    def test_stored_dispatch_tables_preserve_recursive_call_edges(tmp_path, source, expected):
+        result = scan_sources(tmp_path, {"m.py": source})
+>       assert result.groups == [expected]
+E       AssertionError: assert [] == [('pkg.m:Walk...Walker.walk')]
+E         
+E         Right contains one more item: ('pkg.m:Walker.block', 'pkg.m:Walker.walk')
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:744: AssertionError
+_ test_stored_dispatch_tables_preserve_recursive_call_edges[\n        def walk(kind):\n            return handlers[kind](kind)\n        def block(kind):\n            return walk(kind)\n        handlers = {"block": block}\n    -expected2] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_stored_dispatch_tables_pr2')
+source = '\n        def walk(kind):\n            return handlers[kind](kind)\n        def block(kind):\n            return walk(kind)\n        handlers = {"block": block}\n    '
+expected = ('pkg.m:block', 'pkg.m:walk')
+
+    @pytest.mark.parametrize("source, expected", [
+        ("""
+            class Walker:
+                def walk(self, kind):
+                    return self.handlers[kind](self, kind)
+                def block(self, kind):
+                    return self.walk(kind)
+                handlers = {"block": block}
+        """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
+        ("""
+            class Walker:
+                def __init__(self):
+                    self.handlers = {"block": self.block}
+                def walk(self, kind):
+                    return self.handlers[kind](kind)
+                def block(self, kind):
+                    return self.walk(kind)
+        """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
+        ("""
+            def walk(kind):
+                return handlers[kind](kind)
+            def block(kind):
+                return walk(kind)
+            handlers = {"block": block}
+        """, ("pkg.m:block", "pkg.m:walk")),
+    ])
+    def test_stored_dispatch_tables_preserve_recursive_call_edges(tmp_path, source, expected):
+        result = scan_sources(tmp_path, {"m.py": source})
+>       assert result.groups == [expected]
+E       AssertionError: assert [] == [('pkg.m:bloc...'pkg.m:walk')]
+E         
+E         Right contains one more item: ('pkg.m:block', 'pkg.m:walk')
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:744: AssertionError
+_____________ test_nonrecursive_dispatch_table_stays_nonrecursive ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_nonrecursive_dispatch_tab0')
+
+    def test_nonrecursive_dispatch_table_stays_nonrecursive(tmp_path):
+        result = scan_sources(tmp_path, {"m.py": """
+            class Walker:
+                def __init__(self):
+                    self.handlers = {"leaf": self.leaf}
+                def walk(self, kind):
+                    return self.handlers[kind]()
+                def leaf(self):
+                    return 1
+        """})
+        assert result.groups == []
+>       assert "pkg.m:Walker.leaf" in result.edges["pkg.m:Walker.walk"]
+E       AssertionError: assert 'pkg.m:Walker.leaf' in set()
+
+tmp/norec0b/before/test/test_no_recursion.py:760: AssertionError
+__________ test_continuation_stack_does_not_call_the_scheduling_frame __________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_continuation_stack_does_n0')
+
+    def test_continuation_stack_does_not_call_the_scheduling_frame(tmp_path):
+        result = scan_sources(tmp_path, {"m.py": """
+            class Driver:
+                def __init__(self):
+                    self.work = []
+                def run(self):
+                    while self.work:
+                        callback = self.work.pop()
+                        callback()
+                def step(self):
+                    self.work.append(lambda: self.step())
+        """})
+>       assert result.groups == []
+E       AssertionError: assert [('pkg.m:Driver.step',)] == []
+E         
+E         Left contains one more item: ('pkg.m:Driver.step',)
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:775: AssertionError
+_ test_synchronously_invoked_lambda_still_reports_recursion[(lambda: self.step())()] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_synchronously_invoked_lam0')
+body = '(lambda: self.step())()'
+
+    @pytest.mark.parametrize("body", [
+        "(lambda: self.step())()",
+        "callback = lambda: self.step(); callback()",
+        "self.callback = lambda: self.step(); self.callback()",
+        "work = [lambda: self.step()]; work.pop()()",
+    ])
+    def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
+        result = scan_sources(tmp_path, {"m.py": f"""
+            class Driver:
+                def step(self):
+                    {body}
+        """})
+>       callback = next(q for q in result.functions if "<lambda@" in q)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tmp/norec0b/before/test/test_no_recursion.py:794: StopIteration
+_ test_synchronously_invoked_lambda_still_reports_recursion[callback = lambda: self.step(); callback()] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_synchronously_invoked_lam1')
+body = 'callback = lambda: self.step(); callback()'
+
+    @pytest.mark.parametrize("body", [
+        "(lambda: self.step())()",
+        "callback = lambda: self.step(); callback()",
+        "self.callback = lambda: self.step(); self.callback()",
+        "work = [lambda: self.step()]; work.pop()()",
+    ])
+    def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
+        result = scan_sources(tmp_path, {"m.py": f"""
+            class Driver:
+                def step(self):
+                    {body}
+        """})
+>       callback = next(q for q in result.functions if "<lambda@" in q)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tmp/norec0b/before/test/test_no_recursion.py:794: StopIteration
+_ test_synchronously_invoked_lambda_still_reports_recursion[self.callback = lambda: self.step(); self.callback()] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_synchronously_invoked_lam2')
+body = 'self.callback = lambda: self.step(); self.callback()'
+
+    @pytest.mark.parametrize("body", [
+        "(lambda: self.step())()",
+        "callback = lambda: self.step(); callback()",
+        "self.callback = lambda: self.step(); self.callback()",
+        "work = [lambda: self.step()]; work.pop()()",
+    ])
+    def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
+        result = scan_sources(tmp_path, {"m.py": f"""
+            class Driver:
+                def step(self):
+                    {body}
+        """})
+>       callback = next(q for q in result.functions if "<lambda@" in q)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tmp/norec0b/before/test/test_no_recursion.py:794: StopIteration
+_ test_synchronously_invoked_lambda_still_reports_recursion[work = [lambda: self.step()]; work.pop()()] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_synchronously_invoked_lam3')
+body = 'work = [lambda: self.step()]; work.pop()()'
+
+    @pytest.mark.parametrize("body", [
+        "(lambda: self.step())()",
+        "callback = lambda: self.step(); callback()",
+        "self.callback = lambda: self.step(); self.callback()",
+        "work = [lambda: self.step()]; work.pop()()",
+    ])
+    def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
+        result = scan_sources(tmp_path, {"m.py": f"""
+            class Driver:
+                def step(self):
+                    {body}
+        """})
+>       callback = next(q for q in result.functions if "<lambda@" in q)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tmp/norec0b/before/test/test_no_recursion.py:794: StopIteration
+___________ test_callback_parameter_invoking_lambda_preserves_cycle ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_callback_parameter_invoki0')
+
+    def test_callback_parameter_invoking_lambda_preserves_cycle(tmp_path):
+        result = scan_sources(tmp_path, {"m.py": """
+            def invoke(callback):
+                return callback()
+            def repeat():
+                return invoke(lambda: repeat())
+        """})
+>       callback = next(q for q in result.functions if "<lambda@" in q)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tmp/norec0b/before/test/test_no_recursion.py:805: StopIteration
+_____ test_unannotated_attribute_delegation_is_unresolved_not_a_self_loop ______
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_unannotated_attribute_del0')
+
+    def test_unannotated_attribute_delegation_is_unresolved_not_a_self_loop(tmp_path):
+        result = scan_sources(tmp_path, {"m.py": """
+            class Worker:
+                def run(self):
+                    return 1
+            class Proxy:
+                def __init__(self, worker):
+                    self.worker = worker
+                def run(self):
+                    return self.worker.run()
+        """})
+>       assert result.groups == []
+E       AssertionError: assert [('pkg.m:Proxy.run',)] == []
+E         
+E         Left contains one more item: ('pkg.m:Proxy.run',)
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:820: AssertionError
+_______ test_unresolved_edges_retain_possible_unannotated_back_reference _______
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_unresolved_edges_retain_p0')
+
+    def test_unresolved_edges_retain_possible_unannotated_back_reference(tmp_path):
+        source = """
+            class Owner:
+                def __init__(self, worker):
+                    self.worker = worker
+                def run(self):
+                    return self.worker.run()
+        """
+        result = scan_sources(tmp_path, {"m.py": source})
+>       assert result.groups == []
+E       AssertionError: assert [('pkg.m:Owner.run',)] == []
+E         
+E         Left contains one more item: ('pkg.m:Owner.run',)
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:835: AssertionError
+_ test_constant_dictionary_key_does_not_call_other_handlers[methods['leaf']()] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_constant_dictionary_key_d0')
+access = "methods['leaf']()"
+
+    @pytest.mark.parametrize("access", ["methods['leaf']()", "methods.get('leaf')()"])
+    def test_constant_dictionary_key_does_not_call_other_handlers(tmp_path, access):
+        result = scan_sources(tmp_path, {"m.py": f"""
+            class Worker:
+                def run(self):
+                    methods = {{"recur": self.run, "leaf": self.leaf}}
+                    return {access}
+                def leaf(self):
+                    return 1
+        """})
+>       assert result.groups == []
+E       AssertionError: assert [('pkg.m:Worker.run',)] == []
+E         
+E         Left contains one more item: ('pkg.m:Worker.run',)
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:855: AssertionError
+_ test_constant_dictionary_key_does_not_call_other_handlers[methods.get('leaf')()] _
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-287/test_constant_dictionary_key_d1')
+access = "methods.get('leaf')()"
+
+    @pytest.mark.parametrize("access", ["methods['leaf']()", "methods.get('leaf')()"])
+    def test_constant_dictionary_key_does_not_call_other_handlers(tmp_path, access):
+        result = scan_sources(tmp_path, {"m.py": f"""
+            class Worker:
+                def run(self):
+                    methods = {{"recur": self.run, "leaf": self.leaf}}
+                    return {access}
+                def leaf(self):
+                    return 1
+        """})
+>       assert result.groups == []
+E       AssertionError: assert [('pkg.m:Worker.run',)] == []
+E         
+E         Left contains one more item: ('pkg.m:Worker.run',)
+E         Use -v to get more diff
+
+tmp/norec0b/before/test/test_no_recursion.py:855: AssertionError
+=========================== short test summary info ============================
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_the_scanner_itself_has_no_recursion
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_stored_dispatch_tables_preserve_recursive_call_edges[\n        class Walker:\n            def walk(self, kind):\n                return self.handlers[kind](self, kind)\n            def block(self, kind):\n                return self.walk(kind)\n            handlers = {"block": block}\n    -expected0]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_stored_dispatch_tables_preserve_recursive_call_edges[\n        class Walker:\n            def __init__(self):\n                self.handlers = {"block": self.block}\n            def walk(self, kind):\n                return self.handlers[kind](kind)\n            def block(self, kind):\n                return self.walk(kind)\n    -expected1]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_stored_dispatch_tables_preserve_recursive_call_edges[\n        def walk(kind):\n            return handlers[kind](kind)\n        def block(kind):\n            return walk(kind)\n        handlers = {"block": block}\n    -expected2]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_nonrecursive_dispatch_table_stays_nonrecursive
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_continuation_stack_does_not_call_the_scheduling_frame
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_synchronously_invoked_lambda_still_reports_recursion[(lambda: self.step())()]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_synchronously_invoked_lambda_still_reports_recursion[callback = lambda: self.step(); callback()]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_synchronously_invoked_lambda_still_reports_recursion[self.callback = lambda: self.step(); self.callback()]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_synchronously_invoked_lambda_still_reports_recursion[work = [lambda: self.step()]; work.pop()()]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_callback_parameter_invoking_lambda_preserves_cycle
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_unannotated_attribute_delegation_is_unresolved_not_a_self_loop
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_unresolved_edges_retain_possible_unannotated_back_reference
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_constant_dictionary_key_does_not_call_other_handlers[methods['leaf']()]
+FAILED tmp/norec0b/before/test/test_no_recursion.py::test_constant_dictionary_key_does_not_call_other_handlers[methods.get('leaf')()]
+15 failed, 20 passed in 1.26s

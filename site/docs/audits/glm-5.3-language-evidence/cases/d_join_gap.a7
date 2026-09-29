@@ -1,0 +1,14 @@
+io :: import "std/io"
+
+main :: fn() {
+    x := 4
+    t := 0
+    while t < 1 {
+        t += 1
+    }
+    if t == 1 {
+        x = 0
+    }
+    y := 100 / x
+    io.println("{}", y)
+}

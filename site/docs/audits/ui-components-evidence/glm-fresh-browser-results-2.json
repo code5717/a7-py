@@ -1,0 +1,37 @@
+[
+  {
+    "n": "rail: current page scrolled into view on short viewport",
+    "p": true,
+    "d": "scrollTop=252"
+  },
+  {
+    "n": "light: article links underlined",
+    "p": true,
+    "d": "underline"
+  },
+  {
+    "n": "outline: mid-scroll active section updates",
+    "p": true,
+    "d": "Labels and jumps"
+  },
+  {
+    "n": "diagram: reference-access flow renders with label and steps",
+    "p": true,
+    "d": "steps=3 label=\"A nil guard precedes access and allocation cleanup.\""
+  },
+  {
+    "n": "diagram: compiler pipeline has 9 steps",
+    "p": true,
+    "d": "steps=9"
+  },
+  {
+    "n": "permalink: h3 anchors present somewhere",
+    "p": true,
+    "d": ""
+  },
+  {
+    "n": "320px with ~200% root text: no horizontal overflow",
+    "p": true,
+    "d": ""
+  }
+]

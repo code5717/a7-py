@@ -1,0 +1,60 @@
+== queued_append_pop_cycle
+   ground truth: TRUE cycle run->lambda->run
+   normal groups:      [('pkg_queued_append_pop_cycle.m:D.run', 'pkg_queued_append_pop_cycle.m:D.step.<lambda@9:25>')]
+   conservative groups:[('pkg_queued_append_pop_cycle.m:D.run', 'pkg_queued_append_pop_cycle.m:D.step.<lambda@9:25>')]
+
+== augassign_queue_cycle
+   ground truth: TRUE cycle run->lambda->run via += list
+   normal groups:      []
+   conservative groups:[]
+
+== partial_queue_cycle
+   ground truth: TRUE cycle run->partial(run)->run
+   normal groups:      []
+   conservative groups:[]
+
+== dict_item_assignment_cycle
+   ground truth: TRUE cycle run->run via d['k']=self.run
+   normal groups:      []
+   conservative groups:[]
+
+== dict_call_constructor_cycle
+   ground truth: TRUE cycle run->run via dict(run=self.run)
+   normal groups:      []
+   conservative groups:[]
+
+== factory_returned_table_cycle
+   ground truth: TRUE cycle run->run via make()['run']()
+   normal groups:      []
+   conservative groups:[]
+
+== self_lambda_recursion
+   ground truth: TRUE cycle f->lambda->f
+   normal groups:      [('pkg_self_lambda_recursion.m:<module>.<lambda@2:4>',)]
+   conservative groups:[('pkg_self_lambda_recursion.m:<module>.<lambda@2:4>',)]
+
+== getattr_constant_cycle
+   ground truth: TRUE cycle run->run via getattr(self,'run')
+   normal groups:      [('pkg_getattr_constant_cycle.m:W.run',)]
+   conservative groups:[('pkg_getattr_constant_cycle.m:W.run',)]
+
+== dynamic_get_cycle
+   ground truth: TRUE cycle run->run via d.get(k)
+   normal groups:      [('pkg_dynamic_get_cycle.m:W.run',)]
+   conservative groups:[('pkg_dynamic_get_cycle.m:W.run',)]
+
+== queued_only_no_cycle
+   ground truth: NO cycle: step queues lambda; nothing pops in step
+   normal groups:      []
+   conservative groups:[]
+
+== sibling_classes_same_attr
+   ground truth: NO cycle: A and B each queue their own leaf
+   normal groups:      []
+   conservative groups:[]
+
+== stored_never_called
+   ground truth: NO cycle: helper stored in dict, only leaf called
+   normal groups:      []
+   conservative groups:[]
+

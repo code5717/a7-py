@@ -1,0 +1,25 @@
+{
+  "note": "Final site and workflow input hashes. Site checked with bun run check and browser review. Workflow YAML parsed and GLM static review completed. GitHub Actions not executed.",
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "76af670efea965f4fd8b2c35b31e083c380ab612a6f19a79cb95184485b62edc"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "sha256": "2ebd374f9322591db12987bdf94b62a37f385a5964ca01daa8d2726f12b83796"
+    },
+    {
+      "path": "site/scripts/build.ts",
+      "sha256": "bf21ba5fa733d0e19dda30283c4d0955a2b4b00ab2fef5d36bb1b994130a1a0f"
+    },
+    {
+      "path": "site/src/tailwind.css",
+      "sha256": "d91e6f24042e548b12f617dbaec3309d06d1485df128f11d27decdb7d3e826d7"
+    },
+    {
+      "path": "site/package.json",
+      "sha256": "659b54c1ca11f082a135488bfabbc57b311321220aa447b03bc60d81ece10a59"
+    }
+  ]
+}

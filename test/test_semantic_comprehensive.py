@@ -608,7 +608,8 @@ class TestControlFlow:
         main :: fn() {
             arr := [1, 2, 3, 4, 5]
             for i, x in arr {
-                y := x + i
+                position: usize = i
+                value: i32 = x
             }
         }
         """

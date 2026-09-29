@@ -1,0 +1,5 @@
+main :: fn() {
+    flag: char = 97
+    other: char = 98
+    ok := flag < other
+}

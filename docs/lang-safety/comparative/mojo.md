@@ -1,48 +1,36 @@
 # Comparative: Mojo
 
-> Phase B artifact in the `docs/lang-safety/` research process.
+Status: Phase B study written before 2026-09-14; dated notes mark superseded A7 points, and current decisions are in [decisions.md](../../plan/decisions.md) and the [memory plan](../../plan/memory.md).
 
-Mojo is the **most recent attempt to ship Rust-class ownership in
-a Python-flavored systems language**. Started in 2023 by
-Chris Lattner's Modular team, Mojo combines:
+## Summary
 
-- **Python-compatible syntax** (familiar surface).
-- **MLIR-based backend** (the same compiler infrastructure as
-  modern LLVM/Swift).
-- **Ownership and borrow checking** (Rust-derived, Swift-influenced).
-- **Value semantics with `inout` and `borrowed` parameters**
-  (similar to Hylo/Swift).
+Mojo is the most recent attempt to ship Rust-class ownership in a
+Python-flavored systems language. Chris Lattner's Modular team started it in
+2023. Mojo combines:
 
-Mojo is **active development** — features are still in flux —
-but the **ownership design decisions are stable enough to study**.
+- Python-compatible syntax;
+- an MLIR-based backend (MLIR is part of the LLVM project);
+- ownership and borrow checking, derived from Rust and influenced by Swift;
+- value semantics with `inout` and `borrowed` parameters, similar to Hylo and
+  Swift.
 
-Primary sources:
-
-- [Mojo Manual — Ownership](https://docs.modular.com/mojo/manual/values/ownership/)
-- [Mojo Manual — Lifetimes](https://docs.modular.com/mojo/manual/values/lifetimes/)
-- [Mojo programming language (Wikipedia)](https://en.wikipedia.org/wiki/Mojo_(programming_language))
-- [Modular blog](https://www.modular.com/blog)
-
----
+Mojo is in active development and many features are in flux. Its ownership
+design was stable enough to study at the time of writing.
 
 ## Argument conventions
 
-Mojo's parameter modes:
-
 | Convention | Semantics |
 | --- | --- |
-| `borrowed` (default for non-`inout` params) | Immutable borrow |
+| `borrowed` (default for non-`inout` parameters) | Immutable borrow |
 | `inout` | Exclusive mutable borrow |
-| `owned` | Consume / take ownership |
+| `owned` | Consume; take ownership |
 
-The defaults are interesting:
+Two defaults stand out:
 
-- **Non-`inout` parameters are `borrowed` by default** for
-  function arguments — closer to "shared reference" than to
-  Rust's "moved value" default.
-- **Mojo does *not* require sigils on the caller side**
-  (`f(&x)` style). The caller writes `f(x)` regardless of
-  parameter mode.
+- Parameters are `borrowed` unless marked otherwise. This is closer to a shared
+  reference than to Rust's move-by-default.
+- Callers write no sigils. The call is `f(x)` whatever the parameter mode, not
+  `f(&x)`.
 
 ```mojo
 fn process(borrowed x: Buffer):
@@ -57,144 +45,122 @@ fn consume_it(owned x: Buffer):
     pass
 ```
 
----
-
 ## Exclusivity
 
-Mojo enforces argument exclusivity for mutable references: a
-function receiving `inout` cannot receive any other reference
-(borrowed or inout) to the same value.
+Mojo enforces argument exclusivity for mutable references. A function that
+receives a value as `inout` cannot receive any other reference, borrowed or
+`inout`, to the same value. As in Swift, this is checked statically where
+possible; a runtime fallback is rare.
 
-Like Swift, this is checked statically where possible. Runtime
-fallback is rare.
+## Per-gap findings
 
----
+| Gap | Mojo |
+| --- | --- |
+| 01 Cast | Python-like patterns with stronger typing; explicit conversions such as `Int(x)` and `Float64(x)`. |
+| 02 Nullable pointers | `Optional[T]`; references are non-null by default in the safe subset. |
+| 03 Definite assignment | Enforced. |
+| 04 `NonZero` division | No `NonZero` family in the standard library yet. Division by zero is a runtime trap. |
+| 05 Stack budget | Not addressed. |
+| 06 Typed arithmetic | Overflow allowed in release; no first-class range tracking. |
+| 07 Bounded indexing | Standard runtime check; out of bounds raises. |
+| 08 Option/Result | `Optional[T]`; the `Result` equivalent is in flux. |
+| 09 Refinement-lite | Not present. |
+| 11 Finite floats | Standard IEEE 754; no `Fin<F>` analog. |
+| 12 FFI | C interop through MLIR's C dialect; details in flux. |
 
-## How Mojo handles each gap
+> Note (2026-09-16): A7 floats now follow IEEE 754 as in Zig and C (L16), so
+> A7 matches Mojo on Gap 11.
 
-### Gap 01 — Cast
+### Gap 10 — Affine ownership
 
-Mojo's casts follow Python-like patterns but with stronger
-typing. Explicit conversion methods like `Int(x)`, `Float64(x)`.
+The three conventions plus argument exclusivity are the core of Mojo's safety
+story. The model is Swift's, with two differences:
 
-### Gap 02 — Nullable pointers
+1. No caller-side sigils: `f(x)` regardless of whether the parameter is
+   `borrowed`, `inout` or `owned`. The syntax is cleaner and less Rust-like.
+   (Swift requires `&x` for `inout` arguments.)
+2. `inout` exclusivity is enforced statically more aggressively than in Swift.
 
-Mojo has `Optional[T]` and references that are non-null by default
-(within the safe subset).
+Mojo's lifetime system (written `Lifetime[bool]` / `Lifetime[mutable]` in the
+original notes) gives reference parameters without named lifetime parameters in
+signatures. The parameter is the lifetime, and it is inferred, similar to Hylo.
 
-### Gap 03 — Definite assignment
+Mojo's pragmatic mix of Rust-class safety with simpler syntax is evidence that
+A7's target is reachable.
 
-Enforced.
+## What A7 should adopt
 
-### Gap 04 — NonZero division
+1. No caller-side sigils, whatever the parameter mode. This is a real ergonomic
+   improvement over Rust's `&x`, `&mut x` and `x` at call sites.
+2. `owned` as the consume keyword. It reads as plain English, better than
+   `consume` or `sink`.
+3. Mojo's existence as evidence that borrow-checker-class safety can ship
+   without alienating mainstream programmers.
 
-No NonZero family in stdlib (yet); division by zero is a
-runtime trap.
+Item 1 is already current A7 behavior for `ref` parameters: the caller passes an
+ordinary lvalue.
 
-### Gap 05 — Stack budget
+```a7
+// Current A7
+Counter :: struct {
+    value: i32
+}
 
-Not addressed.
+increment :: fn(counter: ref Counter) {
+    counter.value += 1
+}
 
-### Gap 06 — Typed arithmetic
+main :: fn() {
+    c := Counter{value: 0}
+    increment(c)   // no sigil at the call site
+}
+```
 
-Mojo allows overflow in release; no first-class range tracking.
+> Note (2026-09-16): Item 2 is superseded. L6 approves no parameter-mode syntax,
+> and the memory plan makes ownership internal, so A7 source has no consume
+> keyword. See [decisions.md](../../plan/decisions.md) and
+> [memory.md](../../plan/memory.md).
 
-### Gap 07 — Bounded indexing
+## What to avoid
 
-Standard runtime check; OOB raises.
+1. Python-compatible syntax; A7 has its own.
+2. The MLIR backend; A7 emits Zig.
+3. Mojo's full runtime and metaprogramming surface.
+4. Parameters borrowed by default, which is debatable. Phase B suggested A7 might
+   prefer by-value parameters, with an implicit borrow for non-`Copy` types.
 
-### Gap 08 — Option/Result
+> Note (2026-09-16): L6 makes argument bindings immutable. The memory plan
+> treats values as copies semantically and lets the compiler remove unobservable
+> copies (contract item 4).
 
-Mojo has `Optional[T]`; the `Result`-equivalent shape is in flux.
+## Lessons for A7
 
-### Gap 09 — Refinement-lite
+In Phase B, Mojo was doing what A7 planned, at a much larger scale and with far
+more compiler engineering. The shipped features were the ones A7 planned to
+ship:
 
-Not present.
+- three parameter modes (`borrowed`, `inout`, `owned`);
+- static argument exclusivity;
+- lifetime inference at function signatures, with no named lifetimes.
 
-### Gap 10 — Affine ownership — **the active feature**
+A7 differed in two ways. It emits Zig rather than targeting LLVM or MLIR, and it
+committed to zero runtime errors rather than safe-by-default with traps. The
+type-system mechanism was the same.
 
-Mojo's three parameter conventions plus argument-exclusivity are
-the core of its safety story. **The model is essentially
-Swift's**, with two differences:
+If A7's design drifted from these basics, Mojo was the counterargument: this is
+what mainstream adoption of compile-time ownership looks like, so match it
+rather than invent something new.
 
-1. **No sigils on the caller side** — `f(x)` regardless of
-   `borrowed`/`inout`/`owned` of `f`'s parameter. Cleaner
-   syntax, less Rust-like.
-2. **`inout` exclusivity is statically enforced** more
-   aggressively than Swift.
+> Note (2026-09-16): Two parts are superseded. The memory plan hides ownership
+> and has no parameter modes in source (O2, L6). The "zero runtime errors"
+> contract is being amended to allow a closed list of residual checks with
+> defined outcomes, such as id lookup returning an optional and a program stop on
+> non-recoverable out-of-memory (memory plan section 6, gates M2 and M16).
+> Static argument exclusivity remains.
 
-The `Lifetime[bool]` / `Lifetime[mutable]` system in modern Mojo
-provides reference parameters that don't require named lifetime
-parameters at function signatures — the lifetime is the
-parameter, inferred. This is similar to Hylo's approach.
+## Sources
 
-**What A7 can steal:**
-
-1. **No sigils on caller side** — `f(x)` regardless of `f`'s
-   parameter mode. This is a real ergonomic improvement over
-   Rust's `&x` / `&mut x` / `x` distinction at the call site.
-2. **`owned` as the keyword for consume** — clear English.
-3. **Mojo's pragmatic mix of Rust-class safety with simpler
-   syntax** — validation that A7's target is reachable.
-
-**What A7 should not steal:**
-
-1. **Python-derived syntax conventions** (the rest of Mojo's
-   surface).
-2. **Default-borrowed parameters** — debatable; A7 may prefer
-   default-by-value (with implicit borrow for non-`Copy` types).
-
-### Gap 11 — Finite floats
-
-Standard IEEE 754; no `Fin<F>` analog.
-
-### Gap 12 — FFI
-
-Mojo has C interop via MLIR's C dialect; specifics still in flux.
-
----
-
-## Primary sources
-
-- [Mojo Manual — Ownership](https://docs.modular.com/mojo/manual/values/ownership/)
-- [Mojo Manual — Lifetimes](https://docs.modular.com/mojo/manual/values/lifetimes/)
+- [Mojo Manual: Ownership](https://docs.modular.com/mojo/manual/values/ownership/)
+- [Mojo Manual: Lifetimes](https://docs.modular.com/mojo/manual/values/lifetimes/)
+- [Mojo programming language (Wikipedia)](https://en.wikipedia.org/wiki/Mojo_(programming_language))
 - [Modular blog](https://www.modular.com/blog)
-
----
-
-## What A7 can steal — consolidated
-
-1. **No sigils on caller side** for parameter modes — purely
-   ergonomic improvement.
-2. **`owned` as the consume keyword** — matches English better
-   than `consume` or `sink`.
-3. **Mojo's pragmatic existence** as evidence that
-   borrow-checker-class safety is *productizable* without
-   alienating mainstream programmers.
-
-## What A7 should not steal
-
-1. Python-compatible syntax (A7 has its own).
-2. MLIR backend (A7 uses Zig).
-3. The full Mojo runtime / metaprogramming surface.
-
-## The lesson for A7
-
-Mojo is **doing exactly what A7 plans to do**, at a much larger
-scale and with much more compiler engineering. The features
-Mojo has shipped are the features A7 should plan to ship:
-
-- Three parameter modes (`borrowed` / `inout` / `owned`).
-- Static argument exclusivity.
-- Lifetime inference at function signatures (no named
-  lifetimes).
-
-A7 differs in two ways: (1) A7 emits Zig, not LLVM/MLIR
-directly; (2) A7 commits to *zero runtime errors* rather than
-"safe by default, trap if violated." But the type-system
-mechanism is the same.
-
-If A7's design ever drifts away from these basics, Mojo's
-existence is the counterargument: "this is what mainstream
-adoption of compile-time ownership looks like; we should match
-it, not invent a new wheel."

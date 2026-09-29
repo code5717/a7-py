@@ -1,0 +1,12 @@
+// a7-glmr repro: SPEC 10.4 says non-pub items are file-private, but the
+// combined-program merge (a7/compile.py:597-627) emits every non-import
+// declaration of an imported file and the type checker's file_module_call
+// path (a7/passes/type_checker.py:1318-1321) never checks the callee
+// signature. Observed: compiles (exit 0) and the emitted Zig contains
+// both module___..._pub_fn and module___..._private_fn.
+h :: import "./a7glmr_mod_helper"
+io :: import "std/io"
+main :: fn() {
+    x := h.private_fn(3)
+    io.println("{}", x)
+}

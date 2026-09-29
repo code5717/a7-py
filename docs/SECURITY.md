@@ -15,21 +15,16 @@ program and host runtime allow. Only compile and run A7 source you trust.
 
 ## Local Verification
 
-Before release or broad testing, run:
+Before release, run the shared local and CI gate:
 
 ```bash
-./run_all_tests.sh
-uv build
-uvx --from pip-audit==2.10.0 pip-audit --strict
-uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
-uv run python scripts/check_no_secrets.py
-(cd site && bun run build)
-(cd site && bun audit --audit-level=moderate)
+./run_release_checks.sh
 ```
 
-The full gate includes parser/tokenizer tests, semantic tests, Zig backend
-tests, example runtime verification, debug/release artifact builds,
-error-stage checks, docs style checks, and full pytest.
+This includes the compiler and native artifact checks, isolated wheel and source
+installation, docs checks, locked project dependency audits, Bandit and the
+repository secret scan. Passing these checks does not establish memory safety or
+replace the required GLM security review of substantive changes.
 
 ## Known Security-Relevant Limitations
 

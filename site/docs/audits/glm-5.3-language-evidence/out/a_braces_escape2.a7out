@@ -1,0 +1,16 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Wrong number of arguments (io format string expects 0 values, got 1) 
+[line 5: col 5]
+────────────────────────────────────────────────────────────────────────────────
+   3 ┃ main :: fn() {
+   4 ┃     x := 7
+   5 ┃     io.println("{{}}", x)
+     ┃     └┘
+   6 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Provide the correct number of arguments
+

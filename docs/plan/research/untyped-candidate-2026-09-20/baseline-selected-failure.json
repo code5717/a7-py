@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "test/test_no_recursion.py::test_listed_recursive_groups_still_exist",
+    "--basetemp=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/baseline-pytest-evidence"
+  ],
+  "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/baseline",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "exit_code": 1,
+  "stdout": "F                                                                        [100%]\n=================================== FAILURES ===================================\n___________________ test_listed_recursive_groups_still_exist ___________________\n\na7_scan = ScanResult(functions={'a7.ast_nodes:create_program': ('a7/ast_nodes.py', 263), 'a7.ast_nodes:create_literal': ('a7/ast...mport', name='lookup_local', path='a7/symbol_table.py', line=458, candidates=('a7.symbol_table:Scope.lookup_local',))])\n\n    def test_listed_recursive_groups_still_exist(a7_scan):\n        gone = sorted(KNOWN_RECURSIVE_GROUPS - set(a7_scan.groups))\n>       assert not gone, (\n            \"These groups are no longer found in a7/; delete them from KNOWN_RECURSIVE_GROUPS:\\n\"\n            + \"\\n\".join(f\"- {', '.join(g)}\" for g in gone)\n        )\nE       AssertionError: These groups are no longer found in a7/; delete them from KNOWN_RECURSIVE_GROUPS:\nE         - a7.passes.semantic_validator:SemanticValidationPass._block_exits_current_block, a7.passes.semantic_validator:SemanticValidationPass._statement_exits_current_block\nE         - a7.passes.semantic_validator:SemanticValidationPass._returns_on_all_paths\nE       assert not [('a7.passes.semantic_validator:SemanticValidationPass._block_exits_current_block', 'a7.passes.semantic_validator:Sema...nPass._statement_exits_current_block'), ('a7.passes.semantic_validator:SemanticValidationPass._returns_on_all_paths',)]\n\ntest/test_no_recursion.py:605: AssertionError\n=========================== short test summary info ============================\nFAILED test/test_no_recursion.py::test_listed_recursive_groups_still_exist - ...\n1 failed in 0.76s\n",
+  "stderr": ""
+}

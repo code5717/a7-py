@@ -1,0 +1,1631 @@
+{
+ "workdir": "/tmp/a7-saf36-sweep-t_2eat3p",
+ "critical_probes": [
+  {
+   "name": "p19_ptr_field_on_struct_local",
+   "main_exit": 0,
+   "candidate_exit": 0,
+   "changed": false,
+   "candidate_error": null
+  },
+  {
+   "name": "p01_match_case_leak_between_cases",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p02_match_case_leak_after",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p26_fall_zero_divisor",
+   "main_exit": 0,
+   "candidate_exit": 6,
+   "changed": true,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p03_early_return_else_assign",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p05_div_result_nonzero",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p07_global_changed_by_call",
+   "main_exit": 0,
+   "candidate_exit": 6,
+   "changed": true,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p16_del_field_twice",
+   "main_exit": 0,
+   "candidate_exit": 0,
+   "changed": false,
+   "candidate_error": null
+  },
+  {
+   "name": "p17b_mul_interval_runtime",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p17c_unclamped_interval_index",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p30h2_cast_unclamped_interval_runtime",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p33_else_branch_leak",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  },
+  {
+   "name": "p33b_else_if_unbraced_leak",
+   "main_exit": 6,
+   "candidate_exit": 6,
+   "changed": false,
+   "candidate_error": "Found 1 error:"
+  }
+ ],
+ "corpus_size": 255,
+ "corpus_changed": [],
+ "corpus": [
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_branch_bounds.a7",
+   "sha256": "26e07a7cfc74c1f68332d4db95fdbe1b9fd94293b70cbe5e2f3d1e77091993da",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_branch_zero.a7",
+   "sha256": "29647aefeb87ed82be3fca8446613535718cab163e44d29a0efb34d4a5a1ab31",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_compound_zero.a7",
+   "sha256": "2f9a8215bce4a812507459e13eeb74165d37fd3a06e737c560af1c09907b7d36",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_deleted_name.a7",
+   "sha256": "eea2ed49cefd530a4655d910e65121822d6ce02730ac976f9ed590a1e7958ce5",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_loop_bounds.a7",
+   "sha256": "2eefd5840a3dd5c0a575afff343aa3af1b000971de1d15978b4cd4817c405e75",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_ref_zero.a7",
+   "sha256": "db44e70cf60ef63c94ffb3e695d41b9b424770e7745ab5f98cfa88b8494f9e82",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_reserved.a7",
+   "sha256": "2f5324ae9276fdc9b49f549f98b56453fc8c71c7fc74dcc8aa9a593443ed680e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_shadow_iterator.a7",
+   "sha256": "62b7189a5b43608635256faff376e6566b3e207aa009dc8b8363dc03ba5d2562",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7audit_unused_iterator.a7",
+   "sha256": "36af2326d0ee5e89feec8244b65600ac0b925e96579f30e8c0b9650aef04e3aa",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_cycle_main.a7",
+   "sha256": "9d2b6934ec577557382ca2f9445e5748dd96f76db0ae08d585b1763bd6ea97cf",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_cycle_moda.a7",
+   "sha256": "cbc67cc4ece76c55826ecd5bc5b6394c171c09379e8ef0d60d51c01bd37951ca",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_cycle_modb.a7",
+   "sha256": "f665ed3bbf71c72ec04759f1c772e77a04afa55d4a48b7bf74979768bd4e33ae",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_dual_spelling_main.a7",
+   "sha256": "568b48e01af52e917d9dd5668240a9ec7763c761c65f2bd485232bcc2f988aac",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_mod_helper.a7",
+   "sha256": "245db154db02a4a45971b11dd0e6df812388c905f4ff4f806ee2abf8f6a03948",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_mod_private_call.a7",
+   "sha256": "fc50ccf3c82a6281382b02699cae21962237844dd11115b0c8a6a6c3246869b9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_overflow_i32.a7",
+   "sha256": "83da020a89b72edf2a0ef8a5d97ad47a0610576890625826557643373d2f9c87",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/a7glmr_silent_drop.a7",
+   "sha256": "b7c881a1e681270579070b17feed4b3e3090cbf7d02aee1d836c778680fc1830",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-alias-double-del.a7",
+   "sha256": "ea0dfa7ed06c66adb9bb1c3bf471e913256819ff095959c3aaf4a25137d4838c",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-call-del-stale-nil.a7",
+   "sha256": "a73facef838a30103e960170ce54242d50ff0bd4218bcb5df4d669007c4dbdad",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-defer-del-double.a7",
+   "sha256": "93008461c6a180efe89f7176acc16c741de4860c8f12dd414586d4a8151279a3",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-del-ref-param.a7",
+   "sha256": "1c0b3c86051b426f4c698592efa058a80646be36a7ebc40d66c0bd77a900edc2",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-del-var-named-p.a7",
+   "sha256": "48b946ebb4a067ecf28033668867e9406871fe3b7e9373c6219d09d6d80250d3",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-generic-slice-index-rejected.a7",
+   "sha256": "99668f9c1b22ba5cb615661c24a6b9613a5fa95f451b0d24185f863032405da8",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-join-stale-index.a7",
+   "sha256": "a17be34662d0114e27965cf5047afc71f9807646515f77bc90ee186c539230eb",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-neg-compound-nil-guard.a7",
+   "sha256": "ea59449ce94f8c4c82b7a5cb1d70557eeaf0152d4961ed68856701a762f7b892",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-neg-index-oob.a7",
+   "sha256": "0cd51bb71576900be9f2378f20dd82b962847035531da5056c74e3d7c0d3a110",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-neg-slice-index.a7",
+   "sha256": "0e36548ebd24a86b5a780bfacb876fc3081ebd55c47ccc6cbefae54e4ab040a5",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-neg-use-after-del.a7",
+   "sha256": "2ac815764ab0315a562d898a4feafd43c56abc9dcb74bd8ef1bc2af69129a267",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-recursion-module/helper.a7",
+   "sha256": "f25a45fb75ffe5083dbd03469eee2cc86dccccd8147ef61dcc71c15034356680",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-recursion-module/main.a7",
+   "sha256": "b76c7aaf0ff840937a6588d1d8da41a7514379d438cb7734d008cf3546445dc4",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-recursion-struct-fnptr.a7",
+   "sha256": "33bddd37288f17384ecf0935033235c5de8fe05f50522420c4b470dce1c7d69e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-slice-stack-escape.a7",
+   "sha256": "b54a8106987b4094a34e0098eefa18e5592f5a246c230e5b1cbdbc02ed0579ba",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-uninit-struct-slice.a7",
+   "sha256": "dd7a34c93b9a090ee6adc590f733f72878505e9fc6ebf790fdf94206a2a3ba9a",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-memsafe-union-inactive-field.a7",
+   "sha256": "0578c022b2fe3846b1dd31684f4fffefe5ec6da6a5dfae5dd90a6ecd8f0341d6",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-import-badmod.a7",
+   "sha256": "02b2622746d517a6fbc89d1ef7252904d9b8f5df89a1ea17ab27fb10b6264dce",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-import-error-span.a7",
+   "sha256": "9a70e3ab4443f9e91176538aad1ac091e208e44f3c376974da7ab94e361d132c",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-literal-fit-gaps.a7",
+   "sha256": "eb56206f8aa341bd99b7942c9ae6cde2a2292a961f5bd3580c48e880074fe3ba",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-loop-index-unsound.a7",
+   "sha256": "ec101cd2ae9c7d248ead624949f071e7f579bdd7dad3e168d7184cb6207677b6",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-match-statement-garbage.a7",
+   "sha256": "57e49069a852bc9e0d65be66014b101557491e96a043a6ccc7b323f9ab748575",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-mixed-width-arith.a7",
+   "sha256": "a4382b9636cf46d3b0f9e24fc14c34367323a5783edf8f1c1f19a9ff033b73c3",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-struct-init-gaps.a7",
+   "sha256": "3b325f1a5861760142884a3bdb14599a3bd0a0233bc6bea6bc41ac4a0cb58873",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-unicode-digit.a7",
+   "sha256": "513d0809518de530f4c1f18a4568df6f01ebd2c364d1f48b8f62be5989901e2a",
+   "before": 4,
+   "after": 4
+  },
+  {
+   "path": "docs/audits/2026-09-14/repros/glm-pipe-while-true-ret.a7",
+   "sha256": "2e123047a4646882de9cd5254e55bef7354b525b7eb1e92e9a335953f4c2a3a6",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "examples/000_empty.a7",
+   "sha256": "f295de2c11b25e13bf531ee45cb4eb09810629dc32b8edbf4f67be3c8cf2b844",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/001_hello.a7",
+   "sha256": "4fbeee3bbea748e70e522b28b9ae8c1944bec452669a19953c03d22b9df17712",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/002_var.a7",
+   "sha256": "aa847b1d13e38c7e628c80c716a3bd6b58727a68f35f81aa69028c2eacd8ee38",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/003_comments.a7",
+   "sha256": "39281e31f5e3a1a95ec8ff9c359cafa567aa37d574f0493f2101d16d7e595682",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/004_func.a7",
+   "sha256": "46b15e4d82ca5d756017e456eac58e534dc2330d05f95e3f0427f1f085193701",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/005_for_loop.a7",
+   "sha256": "356707f1703e5ac4916c0b29b2191f18897a6fa788be3bab58e7beb78b11d58e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/006_if.a7",
+   "sha256": "a431c138087d15322baf7771f265f25fc0d7bdb53468529b15e4fe626b8f9d15",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/007_while.a7",
+   "sha256": "ded74a452057d8fd878eaecb508d9d72a4e75d495e36660090e980d5c7e7826f",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/008_switch.a7",
+   "sha256": "76ad9bbc3fce7a55be048f588e491caeb5a361346b2878f7581dee30995cc439",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/009_struct.a7",
+   "sha256": "6423266d4165b4898e559e691c6dd4dfc13aebe5d0431917973932e6342021d0",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/010_enum.a7",
+   "sha256": "b0cf738da9c96803262d410c5d4052570f8879c55746659ef6443f5a5d604dda",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/011_memory.a7",
+   "sha256": "dc2ca24ff38fcdc306e6f0b7fb5e0c6e2b23c25bb44d66b60ef7e8d23df427dc",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/012_arrays.a7",
+   "sha256": "3f9219f5394ca84c70481a90b7f1601fd761e921c304af18bdd2f9d9bf238f87",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/013_pointers.a7",
+   "sha256": "5a59d4b13dd98a20125adbccfafd02c615d5457e01f6c874c602c0972aee6e8a",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/014_generics.a7",
+   "sha256": "1b8a5821a829744877b13dd0936e9c6866f01e0c584d25e08846c27bb664fa0c",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/015_types.a7",
+   "sha256": "a5a829a22897a60a467d1d5934835ed88ad4d547d881e6628c30f6a2fd59fc95",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/016_unions.a7",
+   "sha256": "1212cca1b25eb2cdb256da214b4624935f0a424d205ed3c4db6127add03cece5",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/017_methods.a7",
+   "sha256": "bc8ecd2ad6cb138a0ee328774a665dde77cbd0566de4c30d29a0ec12a75aa3aa",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/018_modules.a7",
+   "sha256": "7f382be1bb016674f07f7d1671a1c60972aafbbf4bbe2904e4096474babe93e3",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/019_literals.a7",
+   "sha256": "9030aa27853382a0dbfc9ff96e5bcc05515c8bc8026dc6d37958cd2742ebd8cf",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/020_operators.a7",
+   "sha256": "5f6c7027230bf40b2196495da957c4e5afcdc0b3d592617fdec16ed1bd66ce2f",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/021_control_flow.a7",
+   "sha256": "f5131a419128a7e3ca58d7199671e9f20617e309f9086a5eef1f390175144060",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/022_function_pointers.a7",
+   "sha256": "823f0b261493103af2b079979a02e659573b8e4ea31dcd3fef75c3f341930efa",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/023_inline_structs.a7",
+   "sha256": "db448692c5a7b0e2ef2cd19798a306bde765b27756012f49e639063cbbeb902e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/024_defer.a7",
+   "sha256": "36acf2aa7b54f56f1f10b9f06c43a60d31811990f07d36dde57ede6fdd8c6e55",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/025_linked_list.a7",
+   "sha256": "24944ed620a8c8d6f0d45aed81f7aff648ab81d3c9c5a905d8dc4d4e0fefa884",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/026_binary_tree.a7",
+   "sha256": "18681922e7288afadf3e28b5b481833542c116056da4f8e45c6652a6932b66bc",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/027_callbacks.a7",
+   "sha256": "cb64fb78208e8138f3844484c9f2127b480d86c88c519f67b94ffab51a690721",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/028_state_machine.a7",
+   "sha256": "c9181f1c176996a4f17ac93a5a75889ddd6150db872169a42a91ce9166c974b1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/029_sorting.a7",
+   "sha256": "81b2b9ee65b175b5290d93ad457b8808dfc71a80953a769580792962a60ff197",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/030_calculator.a7",
+   "sha256": "5027f9aba2d357f390c7c13c338921f234847685e0a5a0b191cfd48c2d4b8ceb",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/031_number_guessing.a7",
+   "sha256": "76f44cff1005eb536932c562dc9b3a018231e966f56e5c7bbfa1e9fbb3ca2b0e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/032_prime_numbers.a7",
+   "sha256": "8b19ab23f462d743045cb78017acecad3d7788f2191977710c29440016a1b9df",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/033_fibonacci.a7",
+   "sha256": "028a80774f1cc3ff5449943e4f82e0ba70a784b532a25366fa222c9cc9fb87f4",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/034_string_utils.a7",
+   "sha256": "74e31c044f687ebcf9427eca773b1b5e39293af8f4eb041f6fec17d6d8783003",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/035_matrix.a7",
+   "sha256": "6ce056fb674e4b583363562cb9dd9b20f576dd0020957a55055587c07d99aca1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/036_control_flow_edges.a7",
+   "sha256": "378ca52cdc79174da9300fc82bb4c5d1156d4e368ee4d6b52b1f3a5c996594a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/037_language_tour.a7",
+   "sha256": "c8d5de36b6a2ca0c1223ae185676884ecbcf4f9362423acbdfd02a94e8fa7df9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/038_inventory_report.a7",
+   "sha256": "7ab1250a3fa706e960b45d6137b6814e0afdb5c444d84a862e57fca0d5bd3daa",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/039_text_analyzer.a7",
+   "sha256": "dcabaf54448522767c2a8d0de5d08940d628f4a62cbbf6873ac6f40ffb569642",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/040_task_board.a7",
+   "sha256": "2c90f3b266915d9a2ff4a4d1429bdddb51bc78d4254a04974ade62450a3f21ce",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/041_route_simulation.a7",
+   "sha256": "ece512335cd63ec41e3422b2309ab35e040d8795fbe3614dc2b4dfa77372b7d1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "examples/042_gradebook.a7",
+   "sha256": "a763a8d1aca3f1884123ced9af352d7fe6f676cd66db12d0b82e5a688a4e3a3a",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-narrow-binding.a7",
+   "sha256": "e6b0591c9319eb0e0482d19f904ceddeaa4e8156484aa7dd6dbc911d1beb7d85",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-controller-evidence/mixed-width.a7",
+   "sha256": "66c2459c17cb6e29572e59ea9033efe94136a98f0aa7c4054e6a9206892e67cb",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-unused.a7",
+   "sha256": "e2a796952da81ed2a5720e957876acca8458e6a694bb4a49cfeac13fc15d2ebe",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion.a7",
+   "sha256": "7680a3e1aaee4ecc0e28eb144379a39e173abd18cd88081b8670121237355f5d",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a.a7",
+   "sha256": "d9d665144e84c76e274b203883223b80491cfc798a4771f63d2821d462bdd095",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_abs_sub.a7",
+   "sha256": "2a63af9c95c9c7673eb8c7cf340241c4cb05c843365f14024bac1cd3e78c79dd",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_arr_scalar_fill.a7",
+   "sha256": "310748bcfaa7e2a6913df63dce54063ed9541922c2f7225b454c16ec02c0dfbd",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_braces_escape.a7",
+   "sha256": "e901648440499b05700c34fbd995836e972329e8cf07676f82f0417f25279335",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_braces_escape2.a7",
+   "sha256": "7e8feffd53b8a1433590f00ba20a301ee6bf79715ea5efc4072c8399e88f7457",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_braces_space.a7",
+   "sha256": "c7e643a6996a296447ab2aab746046ea50b689f7c06d5d64e070d33575dea543",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_math_abs_signed.a7",
+   "sha256": "c8293a014f446908c92aec9f600ee7b58b00415d6ce8ab37cdae10223922ffcf",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_string_len.a7",
+   "sha256": "5965df0edd2bcb57cd0d02e31b9544175f459db6cb27919fcfe72dbb358de88f",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/a_typeset_alias.a7",
+   "sha256": "9c428b96be3944fcb5c7e33ed122ce6f89ad7ac54bd4ba2be27f8b4c735fe70f",
+   "before": 7,
+   "after": 7
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b.a7",
+   "sha256": "a882a23f39d895220f1ca750e6aa5fce5088039a481152bd7eb9c4619cf9f62a",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_ellipsis_slice.a7",
+   "sha256": "d8524b5225b1fedb4eec6a94d2ce0588290a3c9767f3e0a410a7dd65b66a8912",
+   "before": 4,
+   "after": 4
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_fn_type_no_ret.a7",
+   "sha256": "37a3c0984fbad1e413e4376604691afb55569f45ebabeed3e8b542e98cb6915e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_long_if.a7",
+   "sha256": "db5f5d1666c5f39723a20a32f4c9359ae795820ebcb8d2641fb5fa7c516f1c1f",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_multi_decl.a7",
+   "sha256": "26c2392be4b8cfec2600922735e2190c82d6b22f5cdf0c3c5949088ad8543d41",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_multiline_array.a7",
+   "sha256": "7cdf380b71205f3f06e8eee444a435ebbdd918dee3d70b7ae5cd33494fac9022",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_no_main.a7",
+   "sha256": "a68ce12500959a5eff919c72d97962461a3ad054b6a4669241cfe21eb3b12db1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_range_for.a7",
+   "sha256": "380d272a02eb2f0a70daff107ac1981cec0b50184242fb8e9aa189c5841f270d",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_recovery_drop.a7",
+   "sha256": "cae200040b1b47b382c3fef9b6b368264712faef518377958cf70271a2c69ef9",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/b_underscore_num.a7",
+   "sha256": "c4096cd807b36cd16f3bfed6a2d1a1730be5b68bb0aabb88137679955e4a161b",
+   "before": 4,
+   "after": 4
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_arr_to_slice.a7",
+   "sha256": "9b42e2b5a37c9cbdd4747fffeda6c3928db1dc14c51d2a6b15e83b363e4dd657",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_call_arg_u8.a7",
+   "sha256": "ac277c42ec09c15fa0c334e946905e40c8aacbbe404ef2293fd14b7cb85359f8",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_compound_div_signed.a7",
+   "sha256": "646cf66b8f359301ac48d09b29d9e919ccb7bdabdf0c5a86b26d4780c9fab557",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_ifexpr_mixed.a7",
+   "sha256": "0a6120e2e737379b907c66c00c912395d9c84b898cd7cfa48315d1da3b17a82b",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_mixed_sign_cmp.a7",
+   "sha256": "d3d5213ba52058294eb3f3396db99b07f7597eddc40f06c3a03febaac07e6e39",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_mixed_width.a7",
+   "sha256": "c28f8a66c44b487c075eac5e72e7a7bdf85ad9d5441c35cdbb49b421ddc7a87c",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_neg_unsigned.a7",
+   "sha256": "3c7bffdf9f4d32a2a8bf272b900af0b4985054ed20f9975103f2534c98a261ee",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_partial_struct.a7",
+   "sha256": "e8cb563543690b39a3392ad6b6d2923be187a43b0f5162e245d3e618d7799b76",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_return_u8.a7",
+   "sha256": "d7038a717c6edc644ef267c16900595d88cb0176dc72d5f91626a4cfe619d671",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/c_shift_neg.a7",
+   "sha256": "781763be466db02b7c1be70874c4fe327fa9ecb59ca8ef3a99e9637650ffd96d",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_call_invalidates.a7",
+   "sha256": "4789c004c3751fbf9297cd90363f4d17f1bf80b500490fb8c68058d099d55648",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_del_braced_defer.a7",
+   "sha256": "a3a4023c0441be21e6960d2d7743cd2988c157793b45cd8f2cedca8996953880",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_guard_div_ok.a7",
+   "sha256": "c5454807baa629b2b2adfc0933e5728625437fe221256fbab9e4fba2285cac08",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_join_gap.a7",
+   "sha256": "355a5d3bd51332db87ed5cefb25d70ea480af83a4630de5a6460e64f785306eb",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_loop_defer_del.a7",
+   "sha256": "45becc429381e38f02cd4980117d75fb088f0e27c00eab109cda4636f8717951",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_loop_no_fixedpoint.a7",
+   "sha256": "a7398991777fda57b04fd35621e8bb96f90d1dd7e330d70e9d3ec5ce6f075bc7",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/d_ref_nil_call.a7",
+   "sha256": "d40ae52fb0d650891c2467ed1861d5a2a492b93cd707f481bf60829d793fa8a1",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_generic_struct_field.a7",
+   "sha256": "fbd56de1a54a6dbea03c358ca2e461a38d866ace26fd9326ee925c64d3d9ee66",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_keyword_fn.a7",
+   "sha256": "2e7ede970a848ac5447e29b070144c0bb5e59758eedbc213ff692289b4944b3c",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_main_sig.a7",
+   "sha256": "705d2a60822b997ba3972d73866fa54c00ff017246716160a01b9b8c00489d20",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_math_fn_value.a7",
+   "sha256": "613b66745b7ae1be7e9fe6273aa1efb2e74b10acd8d5cf23d524680a09b3858e",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_module_struct_literal.a7",
+   "sha256": "885ea1728ff853dcf1a84d7984c78760ac83203d838d2cad96632b72c4a70d6a",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_nested_fn_dup.a7",
+   "sha256": "fdd7583f66ba0bc2ce7f42ac44667f8d17d3ff1d7156ab1a1323c3ef97df975f",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_nested_fn_in_if.a7",
+   "sha256": "064757807f3b4d62a1e38a2cf300119a625c1d4be8f5c2e6d98e3041fcb10fd2",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_qualified_type.a7",
+   "sha256": "defbfde5ce770467f013fa7cb3e6fd20d3f3a772770359e7072b1e3cf5b42ff3",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/e_string_array_default.a7",
+   "sha256": "92f96f635b706a6f24778ab043b9c288bcfd37166aa2a8f747928bd3c68d2985",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/f_direct_recursion.a7",
+   "sha256": "5ca22287ef77d99b3f5fcecf6d2252ac763da999944c33a052da725b4c4c0b2a",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/f_false_recursion.a7",
+   "sha256": "7385006218c39df5a19cc450fea82dc4be9d9ddb9a7f2c6bfdee18bb802225ab",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/f_nested_recursion.a7",
+   "sha256": "0bccd64a1fdbdbe8ecb0aedf49f922d0eae2df6a0a5e422479f91d215620cba9",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_cast_divisor.a7",
+   "sha256": "3b054f7167904d251bd7eb43c05d52e2144930954232c3fba9673dc7a61c9141",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_cast_divisor2.a7",
+   "sha256": "e128ec0d6df66b96db330201cd536687bdc6407f74ca21452dd029f086c445a1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_cast_divisor3.a7",
+   "sha256": "448d9065204dfebf845900bc4bf15d8e559d16f4395509f0c4017495b49d5d63",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_char_order.a7",
+   "sha256": "9a482c7260db323effc1935f28adcc2ec4a4ac092d2800a8a6c5d80548115535",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_const_arr_size.a7",
+   "sha256": "3aca4ecf0f11ce18237e2b34b1b3d0c2370a7e7baf067f1f254785d86950c5a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_guard_index.a7",
+   "sha256": "aef6cd5ff4ff67b30d59a8916f4b93999473b9cc5f3bb2b5a700c41e8f1670d4",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_match_no_else.a7",
+   "sha256": "252dd10a00f52a2a04796a8700507872689a68b53001fa640a6d53dd8e77a085",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_ref_return.a7",
+   "sha256": "dc2c518e87e01e3ee572d4bcc1b648e170b1b7709945433a02648e7aa6ecb7fe",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_ref_swap.a7",
+   "sha256": "4b11714f660a011ec346a20a5807c8bbf813b2b56ca9ca847278eae6d1f25a23",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_slice_len_guard.a7",
+   "sha256": "ed327a9e92df45d37e27181ca3e589b5435a29a40ceb3e972670ce4b57e62c51",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/g_sqrt_f64.a7",
+   "sha256": "52d227d9fa354198b7e75d66ed279d4a364d2d61132ba0c67cb1a3b2f0c8dc04",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/l3_float_rem.a7",
+   "sha256": "287d924a4b4d64fc9b8ec62f6b45c9c052dd54b86ee95740839e0206c109b559",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/l5_wrap_test.a7",
+   "sha256": "cbda3eb0b24c95a5f878c786c880288107a6af405193a0841d568a979aece358",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/shm.a7",
+   "sha256": "cc4b44413624ab6502eefff9a3d606702fccf0415c74891bf1eaaa7d8731a7a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/shm2.a7",
+   "sha256": "cc4b44413624ab6502eefff9a3d606702fccf0415c74891bf1eaaa7d8731a7a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-language-evidence/cases/z_smoke.a7",
+   "sha256": "3c0f21efc83aac1cc6940e7185d7aa08cdfad53f7e3acf19e8343c958ee03a21",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_expr_no_else.a7",
+   "sha256": "4d2c1d863566a5ace692a719fc1a5dc2aef1ea49015859211a173ba32451184e",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_expr_no_else_run.a7",
+   "sha256": "c6f4b73ffcbe0f79a91fe4475ae165ee1bcb5264fd891afefa61be5b88915c47",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_expr_wildcard_run.a7",
+   "sha256": "708d7bd1bb609cfaf31778ae804d3f5fe940a7f7ad2a5aac73a43d04306df387",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_fall_braced_no_else.a7",
+   "sha256": "cd594e40dff57eb9d7eddb5d084dcfa1541fa8e1a36dd26c1963a9b30eb006c5",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_no_else_unmatched.a7",
+   "sha256": "61bf3aaa46f1fcd0195fe04f3ed18c766a75e6054fcd72e728acc8e99bdc89ce",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/g_defer_del_read.a7",
+   "sha256": "5640b054f18b21682cfa57b808baa76119088ef8d60fab3d2b95b677d4424503",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/g_loop_del_after.a7",
+   "sha256": "706808c9ce2760a82c24ea8926343b35e7e9f7fabc0cdf266b6ba168530d331b",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/g_nil_resurrect.a7",
+   "sha256": "65141ef148487c8e9dcf4883aecd7fe22838c6bc06ff46054cb35e328e0691ae",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_bool_no_else.a7",
+   "sha256": "2c4df280b9b53a83f49f80fcb739a85bbbcc5aa0535efc08ce31047ca7e012fd",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_expr_no_else.a7",
+   "sha256": "4d2c1d863566a5ace692a719fc1a5dc2aef1ea49015859211a173ba32451184e",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_expr_no_else_run.a7",
+   "sha256": "c6f4b73ffcbe0f79a91fe4475ae165ee1bcb5264fd891afefa61be5b88915c47",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_fall_braced_no_else.a7",
+   "sha256": "cd594e40dff57eb9d7eddb5d084dcfa1541fa8e1a36dd26c1963a9b30eb006c5",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_fall_no_else.a7",
+   "sha256": "58c21bb2d26f247313807f6ba656c9e984ad82374cf1e6b4b86b0debffd7ae90",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_no_else_unmatched.a7",
+   "sha256": "61bf3aaa46f1fcd0195fe04f3ed18c766a75e6054fcd72e728acc8e99bdc89ce",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_backing_mut.a7",
+   "sha256": "fcdb8d2404856dcd5ea2dc285c1675af8964ad85a2241bccf545d7f07a2a2762",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_elem_mut.a7",
+   "sha256": "39d6d8a27fe2956866e9cc976766baa9d6fbe5f19bca4558bdaca3420473115a",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_index_mutated.a7",
+   "sha256": "2d861473864dee4ffec5b0cdaeee04e2e7296005d7851e8f9fa679fa09eefe38",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_index_mutated2.a7",
+   "sha256": "cce7bf47257046367d92c6203b2e019a0938480c2c1e50f0c45a0bdb54c89375",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_literal_bound.a7",
+   "sha256": "943aa38db473244555a97075004cd18a3e9327bd316c238b4ae924432a5a12ab",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_while_len.a7",
+   "sha256": "f895eceacb38aeda71a2dd6f8b20620c7a3d6349c067417cf224cc80417f76af",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a.a7",
+   "sha256": "d9d665144e84c76e274b203883223b80491cfc798a4771f63d2821d462bdd095",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_abs_sub.a7",
+   "sha256": "2a63af9c95c9c7673eb8c7cf340241c4cb05c843365f14024bac1cd3e78c79dd",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_arr_scalar_fill.a7",
+   "sha256": "310748bcfaa7e2a6913df63dce54063ed9541922c2f7225b454c16ec02c0dfbd",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_braces_escape.a7",
+   "sha256": "e901648440499b05700c34fbd995836e972329e8cf07676f82f0417f25279335",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_braces_escape2.a7",
+   "sha256": "7e8feffd53b8a1433590f00ba20a301ee6bf79715ea5efc4072c8399e88f7457",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_braces_space.a7",
+   "sha256": "c7e643a6996a296447ab2aab746046ea50b689f7c06d5d64e070d33575dea543",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_math_abs_signed.a7",
+   "sha256": "c8293a014f446908c92aec9f600ee7b58b00415d6ce8ab37cdae10223922ffcf",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_string_len.a7",
+   "sha256": "5965df0edd2bcb57cd0d02e31b9544175f459db6cb27919fcfe72dbb358de88f",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_typeset_alias.a7",
+   "sha256": "9c428b96be3944fcb5c7e33ed122ce6f89ad7ac54bd4ba2be27f8b4c735fe70f",
+   "before": 7,
+   "after": 7
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b.a7",
+   "sha256": "a882a23f39d895220f1ca750e6aa5fce5088039a481152bd7eb9c4619cf9f62a",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_ellipsis_slice.a7",
+   "sha256": "d8524b5225b1fedb4eec6a94d2ce0588290a3c9767f3e0a410a7dd65b66a8912",
+   "before": 4,
+   "after": 4
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_fn_type_no_ret.a7",
+   "sha256": "37a3c0984fbad1e413e4376604691afb55569f45ebabeed3e8b542e98cb6915e",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_long_if.a7",
+   "sha256": "db5f5d1666c5f39723a20a32f4c9359ae795820ebcb8d2641fb5fa7c516f1c1f",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_multi_decl.a7",
+   "sha256": "26c2392be4b8cfec2600922735e2190c82d6b22f5cdf0c3c5949088ad8543d41",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_multiline_array.a7",
+   "sha256": "7cdf380b71205f3f06e8eee444a435ebbdd918dee3d70b7ae5cd33494fac9022",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_no_main.a7",
+   "sha256": "a68ce12500959a5eff919c72d97962461a3ad054b6a4669241cfe21eb3b12db1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_range_for.a7",
+   "sha256": "380d272a02eb2f0a70daff107ac1981cec0b50184242fb8e9aa189c5841f270d",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_recovery_drop.a7",
+   "sha256": "cae200040b1b47b382c3fef9b6b368264712faef518377958cf70271a2c69ef9",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_underscore_num.a7",
+   "sha256": "c4096cd807b36cd16f3bfed6a2d1a1730be5b68bb0aabb88137679955e4a161b",
+   "before": 4,
+   "after": 4
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_arr_to_slice.a7",
+   "sha256": "9b42e2b5a37c9cbdd4747fffeda6c3928db1dc14c51d2a6b15e83b363e4dd657",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_call_arg_u8.a7",
+   "sha256": "ac277c42ec09c15fa0c334e946905e40c8aacbbe404ef2293fd14b7cb85359f8",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_compound_div_signed.a7",
+   "sha256": "646cf66b8f359301ac48d09b29d9e919ccb7bdabdf0c5a86b26d4780c9fab557",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_ifexpr_mixed.a7",
+   "sha256": "0a6120e2e737379b907c66c00c912395d9c84b898cd7cfa48315d1da3b17a82b",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_mixed_sign_cmp.a7",
+   "sha256": "d3d5213ba52058294eb3f3396db99b07f7597eddc40f06c3a03febaac07e6e39",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_mixed_width.a7",
+   "sha256": "c28f8a66c44b487c075eac5e72e7a7bdf85ad9d5441c35cdbb49b421ddc7a87c",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_neg_unsigned.a7",
+   "sha256": "3c7bffdf9f4d32a2a8bf272b900af0b4985054ed20f9975103f2534c98a261ee",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_partial_struct.a7",
+   "sha256": "e8cb563543690b39a3392ad6b6d2923be187a43b0f5162e245d3e618d7799b76",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_return_u8.a7",
+   "sha256": "d7038a717c6edc644ef267c16900595d88cb0176dc72d5f91626a4cfe619d671",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_shift_neg.a7",
+   "sha256": "781763be466db02b7c1be70874c4fe327fa9ecb59ca8ef3a99e9637650ffd96d",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_call_invalidates.a7",
+   "sha256": "4789c004c3751fbf9297cd90363f4d17f1bf80b500490fb8c68058d099d55648",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_del_braced_defer.a7",
+   "sha256": "a3a4023c0441be21e6960d2d7743cd2988c157793b45cd8f2cedca8996953880",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_guard_div_ok.a7",
+   "sha256": "c5454807baa629b2b2adfc0933e5728625437fe221256fbab9e4fba2285cac08",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_join_gap.a7",
+   "sha256": "355a5d3bd51332db87ed5cefb25d70ea480af83a4630de5a6460e64f785306eb",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_loop_defer_del.a7",
+   "sha256": "45becc429381e38f02cd4980117d75fb088f0e27c00eab109cda4636f8717951",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_loop_no_fixedpoint.a7",
+   "sha256": "a7398991777fda57b04fd35621e8bb96f90d1dd7e330d70e9d3ec5ce6f075bc7",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_ref_nil_call.a7",
+   "sha256": "d40ae52fb0d650891c2467ed1861d5a2a492b93cd707f481bf60829d793fa8a1",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_generic_struct_field.a7",
+   "sha256": "fbd56de1a54a6dbea03c358ca2e461a38d866ace26fd9326ee925c64d3d9ee66",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_keyword_fn.a7",
+   "sha256": "2e7ede970a848ac5447e29b070144c0bb5e59758eedbc213ff692289b4944b3c",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_main_sig.a7",
+   "sha256": "705d2a60822b997ba3972d73866fa54c00ff017246716160a01b9b8c00489d20",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_math_fn_value.a7",
+   "sha256": "613b66745b7ae1be7e9fe6273aa1efb2e74b10acd8d5cf23d524680a09b3858e",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_module_struct_literal.a7",
+   "sha256": "885ea1728ff853dcf1a84d7984c78760ac83203d838d2cad96632b72c4a70d6a",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_nested_fn_dup.a7",
+   "sha256": "fdd7583f66ba0bc2ce7f42ac44667f8d17d3ff1d7156ab1a1323c3ef97df975f",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_nested_fn_in_if.a7",
+   "sha256": "064757807f3b4d62a1e38a2cf300119a625c1d4be8f5c2e6d98e3041fcb10fd2",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_qualified_type.a7",
+   "sha256": "defbfde5ce770467f013fa7cb3e6fd20d3f3a772770359e7072b1e3cf5b42ff3",
+   "before": 5,
+   "after": 5
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_string_array_default.a7",
+   "sha256": "92f96f635b706a6f24778ab043b9c288bcfd37166aa2a8f747928bd3c68d2985",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/f_direct_recursion.a7",
+   "sha256": "5ca22287ef77d99b3f5fcecf6d2252ac763da999944c33a052da725b4c4c0b2a",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/f_false_recursion.a7",
+   "sha256": "7385006218c39df5a19cc450fea82dc4be9d9ddb9a7f2c6bfdee18bb802225ab",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/f_nested_recursion.a7",
+   "sha256": "0bccd64a1fdbdbe8ecb0aedf49f922d0eae2df6a0a5e422479f91d215620cba9",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_cast_divisor.a7",
+   "sha256": "3b054f7167904d251bd7eb43c05d52e2144930954232c3fba9673dc7a61c9141",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_cast_divisor2.a7",
+   "sha256": "e128ec0d6df66b96db330201cd536687bdc6407f74ca21452dd029f086c445a1",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_cast_divisor3.a7",
+   "sha256": "448d9065204dfebf845900bc4bf15d8e559d16f4395509f0c4017495b49d5d63",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_char_order.a7",
+   "sha256": "9a482c7260db323effc1935f28adcc2ec4a4ac092d2800a8a6c5d80548115535",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_const_arr_size.a7",
+   "sha256": "3aca4ecf0f11ce18237e2b34b1b3d0c2370a7e7baf067f1f254785d86950c5a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_guard_index.a7",
+   "sha256": "aef6cd5ff4ff67b30d59a8916f4b93999473b9cc5f3bb2b5a700c41e8f1670d4",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_match_no_else.a7",
+   "sha256": "252dd10a00f52a2a04796a8700507872689a68b53001fa640a6d53dd8e77a085",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_ref_return.a7",
+   "sha256": "dc2c518e87e01e3ee572d4bcc1b648e170b1b7709945433a02648e7aa6ecb7fe",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_ref_swap.a7",
+   "sha256": "4b11714f660a011ec346a20a5807c8bbf813b2b56ca9ca847278eae6d1f25a23",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_slice_len_guard.a7",
+   "sha256": "ed327a9e92df45d37e27181ca3e589b5435a29a40ceb3e972670ce4b57e62c51",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_sqrt_f64.a7",
+   "sha256": "52d227d9fa354198b7e75d66ed279d4a364d2d61132ba0c67cb1a3b2f0c8dc04",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/l3_float_rem.a7",
+   "sha256": "287d924a4b4d64fc9b8ec62f6b45c9c052dd54b86ee95740839e0206c109b559",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/l5_wrap_test.a7",
+   "sha256": "cbda3eb0b24c95a5f878c786c880288107a6af405193a0841d568a979aece358",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_abs_min.a7",
+   "sha256": "76fd569e0d11b4814d4ac6e5fa347199443fea0f5076ecf37d6bf799ea738807",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_char_order.a7",
+   "sha256": "498bb0f463e532d718caa1c738817e7139c6b814cb9629dd47a7ae5aed2fdf47",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_json_match.a7",
+   "sha256": "55358beca4e091e6d6cc0acd4452e44247c0bdf23c2a6ecd969971a5904edd00",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_mixed_sign_runtime.a7",
+   "sha256": "2743d7afea63e910daf7ba9448cc76cb52e11be6f1707a23063a70739499910f",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_mixed_width_annot.a7",
+   "sha256": "1d4a7abd9d37e14fb5572c80d86c013e8547b738255e7d946974d507ebeab792",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_unused_nested_rec.a7",
+   "sha256": "495d8e3346427e81ff1126be547996035865a3b67694176d214f0488a1c3a4cf",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/shm.a7",
+   "sha256": "cc4b44413624ab6502eefff9a3d606702fccf0415c74891bf1eaaa7d8731a7a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/shm2.a7",
+   "sha256": "cc4b44413624ab6502eefff9a3d606702fccf0415c74891bf1eaaa7d8731a7a9",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/z_smoke.a7",
+   "sha256": "3c0f21efc83aac1cc6940e7185d7aa08cdfad53f7e3acf19e8343c958ee03a21",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "site/docs/evidence/reference-smoke.a7",
+   "sha256": "173952e737905bf927652d81e9621b22c8bcdec5d95a4c113750f31d4b5e21c7",
+   "before": 0,
+   "after": 0
+  },
+  {
+   "path": "test/fixtures/safety_regressions/call_delete_guard.a7",
+   "sha256": "23baf8a3a882b96d267b4435d810d32c21785cbac9deda22c4671c6c5955b8e4",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/d_call_invalidates.a7",
+   "sha256": "4789c004c3751fbf9297cd90363f4d17f1bf80b500490fb8c68058d099d55648",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/d_del_braced_defer.a7",
+   "sha256": "a3a4023c0441be21e6960d2d7743cd2988c157793b45cd8f2cedca8996953880",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/d_join_gap.a7",
+   "sha256": "355a5d3bd51332db87ed5cefb25d70ea480af83a4630de5a6460e64f785306eb",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/d_loop_defer_del.a7",
+   "sha256": "45becc429381e38f02cd4980117d75fb088f0e27c00eab109cda4636f8717951",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/d_loop_no_fixedpoint.a7",
+   "sha256": "a7398991777fda57b04fd35621e8bb96f90d1dd7e330d70e9d3ec5ce6f075bc7",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/d_ref_nil_call.a7",
+   "sha256": "d40ae52fb0d650891c2467ed1861d5a2a492b93cd707f481bf60829d793fa8a1",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/deferred_delete_guard.a7",
+   "sha256": "5104f181801a41e33050041db63979f8728b8d103130b8ac72341dccf4304c23",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/loop_call_delete_guard.a7",
+   "sha256": "3f572c61853147afe68bc34bc969067f84105c3843ec6c9c36dc181d60937796",
+   "before": 6,
+   "after": 6
+  },
+  {
+   "path": "test/fixtures/safety_regressions/loop_delete_guard.a7",
+   "sha256": "9d302d9a980c6f99400bdd6498ebad9d53c97b2a324772e4dde015266b302542",
+   "before": 6,
+   "after": 6
+  }
+ ],
+ "failures": []
+}

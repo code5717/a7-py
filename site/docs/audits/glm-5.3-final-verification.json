@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-09-19T20:47:40.312696+00:00",
+  "source_files_checked": 133,
+  "changed_files": [],
+  "release_gate_exit": 0,
+  "release_gate_checks": "9/9",
+  "pytest_passed": 2087,
+  "native_examples": "43/43",
+  "debug_artifacts": "43/43",
+  "release_artifacts": "43/43",
+  "error_stage_checks": "61/61"
+}

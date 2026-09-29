@@ -1,0 +1,6 @@
+{
+  "ordinary_build_exit": 0,
+  "public_unchanged": true,
+  "stale_export_exit": 1,
+  "stale_export_stderr": "Stale generated export: llms.txt. Run bun run sync:exports.\n"
+}

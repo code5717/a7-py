@@ -1,0 +1,9 @@
+Ints :: @type_set(i32, i64)
+
+abs2($T: Ints) :: fn(x: $T) $T {
+    ret if x < 0 { 0 - x } else { x }
+}
+
+main :: fn() {
+    y := abs2(-3)
+}

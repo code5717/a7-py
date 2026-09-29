@@ -1,0 +1,11 @@
+io :: import "std/io"
+
+pick :: fn(x: i32) i32 {
+    ret match x {
+        case 1: 10
+    }
+}
+
+main :: fn() {
+    io.println("{}", pick(1))
+}

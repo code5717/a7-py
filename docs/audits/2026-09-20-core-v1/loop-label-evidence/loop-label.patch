@@ -1,0 +1,232 @@
+--- a/a7/backends/zig.py
++++ b/a7/backends/zig.py
+@@ -42,6 +42,7 @@
+         self._identifier_uses: Dict[str, int] = {}
+         # Track if we're inside a function body
+         self._in_function = False
++        self._targeted_loops: Set[int] = set()
+         self._loop_label_stack: list[tuple[Optional[str], Optional[str]]] = []
+         self._fall_context_stack: list[tuple[str, str]] = []
+         self._name_counter = 0
+@@ -75,6 +76,7 @@
+         self._rename_snapshots = []
+         self._identifier_uses = {}
+         self._in_function = False
++        self._targeted_loops = set()
+         self._loop_label_stack = []
+         self._fall_context_stack = []
+         self._name_counter = 0
+@@ -480,6 +482,8 @@
+         saved_mutated = self._mutated_vars
+         saved_mutated_declarations = self._mutated_declarations
+         saved_used = self._used_identifiers
++        saved_targeted_loops = self._targeted_loops
++        self._targeted_loops = self._collect_targeted_loops(node.body)
+         hoisted_names = set()
+         if node.body:
+             self._mutated_vars = self._collect_mutations(node.body)
+@@ -588,6 +592,7 @@
+         self._mutated_vars = saved_mutated
+         self._mutated_declarations = saved_mutated_declarations
+         self._used_identifiers = saved_used
++        self._targeted_loops = saved_targeted_loops
+ 
+     def _visit_struct(self, node: ASTNode) -> None:
+         """Visit struct declaration."""
+@@ -920,7 +925,7 @@
+     def _visit_while(self, node: ASTNode) -> None:
+         """Visit while statement."""
+         self._write_indent()
+-        emitted_label = self._loop_label_name(node.label)
++        emitted_label = self._loop_label_name(node)
+         if emitted_label:
+             self.output.write(f"{emitted_label}: ")
+         if node.condition:
+@@ -947,7 +952,7 @@
+ 
+         # Infinite loop: for { ... }
+         if not node.init and not node.condition and not node.update:
+-            emitted_label = self._loop_label_name(node.label)
++            emitted_label = self._loop_label_name(node)
+             if emitted_label:
+                 self.output.write(f"{emitted_label}: ")
+             self.output.write("while (true) ")
+@@ -976,7 +981,7 @@
+ 
+         # While with continue expression
+         self._write_indent()
+-        emitted_label = self._loop_label_name(node.label)
++        emitted_label = self._loop_label_name(node)
+         if emitted_label:
+             self.output.write(f"{emitted_label}: ")
+         if node.condition:
+@@ -1016,7 +1021,7 @@
+         self._push_scope()
+         iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
+         before = {iter_name: self._identifier_uses.get(iter_name, 0)}
+-        emitted_label = self._loop_label_name(node.label)
++        emitted_label = self._loop_label_name(node)
+         outer_output = self.output
+         self.output = StringIO()
+ 
+@@ -1049,7 +1054,7 @@
+         iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
+         index_name = self._declare_var_in_scope(node.index_var) if node.index_var else "_"
+         before = {name: self._identifier_uses.get(name, 0) for name in (iter_name, index_name)}
+-        emitted_label = self._loop_label_name(node.label)
++        emitted_label = self._loop_label_name(node)
+         outer_output = self.output
+         self.output = StringIO()
+ 
+@@ -2487,11 +2492,44 @@
+         out.append('"')
+         return "".join(out)
+ 
+-    def _loop_label_name(self, label: Optional[str]) -> Optional[str]:
+-        if not label:
++    def _collect_targeted_loops(self, root: Optional[ASTNode]) -> Set[int]:
++        """Resolve labeled transfers to loop identities without recursive calls."""
++        # Enter loop, resolve nearest matching transfers, then exit loop.
++        targeted = set()
++        loops = []
++        stack = [("visit", root)]
++        loop_kinds = {NodeKind.WHILE, NodeKind.FOR, NodeKind.FOR_IN,
++                      NodeKind.FOR_IN_INDEXED}
++        while stack:
++            event, node = stack.pop()
++            if event == "exit":
++                loops.pop()
++                continue
++            if node is None or node.kind == NodeKind.FUNCTION:
++                continue
++            if node.kind in {NodeKind.BREAK, NodeKind.CONTINUE} and node.label:
++                for loop in reversed(loops):
++                    if loop.label == node.label:
++                        targeted.add(id(loop))
++                        break
++            if node.kind in loop_kinds:
++                loops.append(node)
++                stack.append(("exit", node))
++            children = []
++            for attr in self._AST_CHILD_ATTRS:
++                value = getattr(node, attr, None)
++                if isinstance(value, ASTNode):
++                    children.append(value)
++                elif isinstance(value, list):
++                    children.extend(child for child in value if isinstance(child, ASTNode))
++            stack.extend(("visit", child) for child in reversed(children))
++        return targeted
++
++    def _loop_label_name(self, node: ASTNode) -> Optional[str]:
++        # Zig rejects labels that no break or continue targets.
++        if id(node) not in self._targeted_loops:
+             return None
+-        safe = label.replace("$", "_").replace(".", "_").replace("-", "_")
+-        return f"a7_loop_{safe}"
++        return self._unique_name("__a7_loop")
+ 
+     def _resolve_loop_label(self, label: Optional[str]) -> Optional[str]:
+         if label is None:
+--- a/test/test_codegen_zig.py
++++ b/test/test_codegen_zig.py
+@@ -8,6 +8,7 @@
+ """
+ 
+ import os
++import re
+ import subprocess
+ import sys
+ import tempfile
+@@ -784,10 +785,10 @@
+ }
+ '''
+         zig = compile_a7_to_zig(source)
+-        assert 'a7_loop_outer_break: while' in zig
+-        assert 'break :a7_loop_outer_break;' in zig
+-        assert 'a7_loop_outer_continue: while' in zig
+-        assert 'continue :a7_loop_outer_continue;' in zig
++        labels = re.findall(r'([A-Za-z_][A-Za-z_0-9]*): while', zig)
++        assert len(labels) == 2 and len(set(labels)) == 2
++        assert f'break :{labels[0]};' in zig
++        assert f'continue :{labels[1]};' in zig
+ 
+     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+     def test_labeled_for_in_and_indexed_for_in_runtime(self, tmp_path: Path):
+@@ -828,14 +829,13 @@
+ }
+ '''
+         zig = compile_a7_to_zig(source)
+-        assert "a7_loop_outer_break: for" in zig
+-        assert "break :a7_loop_outer_break" in zig
+-        assert "a7_loop_outer_continue: for" in zig
+-        assert "continue :a7_loop_outer_continue" in zig
+-        assert "a7_loop_outer_indexed: for" in zig
++        labels = re.findall(r'([A-Za-z_][A-Za-z_0-9]*): for', zig)
++        assert len(labels) == 3 and len(set(labels)) == 3
++        assert f'break :{labels[0]};' in zig
++        assert f'continue :{labels[1]};' in zig
+         assert "for (arr, 0..) |x, i|" in zig
+         assert "@intCast(i)" not in zig
+-        assert "break :a7_loop_outer_indexed" in zig
++        assert f'break :{labels[2]};' in zig
+ 
+         source_path = tmp_path / "labeled_for_in.zig"
+         binary_path = tmp_path / "labeled_for_in"
+--- /dev/null
++++ b/test/test_loop_label_regressions.py
+@@ -0,0 +1,55 @@
++"""Native loop transfer results, including labels with no transfers."""
++import pytest
++from test_zig_backend_runtime import build, compile_with_cli, run_piped, zig, zig_cache
++
++CASES = {
++    'unused-all-loop-forms': ('''io :: import "std/io"
++main :: fn() {
++    n: i32 = 0
++    @unused while n < 2 { n += 1 }
++    @unused for { n += 1; break }
++    @unused for j := 0; j < 2; j += 1 { n += 1; continue }
++    values: [2]i32 = [3, 4]
++    @unused for value in values { n += value }
++    @unused for index, value in values { io.println("{}:{}", index, value) }
++    io.println("{}", n)
++}
++''', '0:3\n1:4\n12\n'),
++    'targeted-and-reused-labels': ('''io :: import "std/io"
++step :: fn() i32 { io.println("step"); ret 1 }
++main :: fn() {
++    i: i32 = 0
++    @outer for i = 0; i < 4; step() {
++        @inner for {
++            io.println("body {}", i)
++            if i == 2 { break outer }
++            i += 1
++            continue outer
++        }
++    }
++    @same for { break }
++    @same for { break same }
++    @same for {
++        @same for { break same }
++        io.println("nearest")
++        break same
++    }
++    n: i32 = 0
++    @count while n < 3 { n += 1; continue count }
++    values: [2]i32 = [3, 4]
++    @items for value in values { io.println("item {}", value); break items }
++    @indexed for index, value in values {
++        if index == 0 { continue indexed }
++        io.println("indexed {}", value)
++    }
++    io.println("done {} {}", i, n)
++}
++''', 'body 0\nstep\nbody 1\nstep\nbody 2\nnearest\nitem 3\nindexed 4\ndone 2 3\n'),
++}
++
++@pytest.mark.parametrize('profile', ['Debug', 'ReleaseFast'])
++@pytest.mark.parametrize('source,expected', CASES.values(), ids=CASES.keys())
++def test_loop_labels_native(tmp_path, zig, zig_cache, profile, source, expected):
++    output = compile_with_cli(tmp_path, source)
++    binary = build(zig, zig_cache, tmp_path, output, profile)
++    assert run_piped(binary) == (expected, '')

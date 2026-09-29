@@ -1,0 +1,135 @@
+[
+  {
+    "name": "f32_mid_below",
+    "destination": "f32",
+    "literal": "1.000000059604644775390624",
+    "expected_bits": "3f800000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_mid_tie",
+    "destination": "f32",
+    "literal": "1.000000059604644775390625",
+    "expected_bits": "3f800000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_mid_above",
+    "destination": "f32",
+    "literal": "1.0000000596046447753906250000000000000000000000000000000000000000000000001",
+    "expected_bits": "3f800001",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_mid_below",
+    "destination": "f64",
+    "literal": "1.00000000000000011102230246251565404236316680908203124",
+    "expected_bits": "3ff0000000000000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_mid_tie",
+    "destination": "f64",
+    "literal": "1.00000000000000011102230246251565404236316680908203125",
+    "expected_bits": "3ff0000000000000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_mid_above",
+    "destination": "f64",
+    "literal": "1.00000000000000011102230246251565404236316680908203126",
+    "expected_bits": "3ff0000000000001",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_under_below",
+    "destination": "f32",
+    "literal": "7.006492321624085e-46",
+    "expected_bits": "00000000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_under_above",
+    "destination": "f32",
+    "literal": "7.006492321624086e-46",
+    "expected_bits": "00000001",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_min_subnormal",
+    "destination": "f32",
+    "literal": "1.401298464324817e-45",
+    "expected_bits": "00000001",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_under_below",
+    "destination": "f64",
+    "literal": "2.4703282292062327e-324",
+    "expected_bits": "0000000000000000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_under_above",
+    "destination": "f64",
+    "literal": "2.4703282292062328e-324",
+    "expected_bits": "0000000000000001",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_min_subnormal",
+    "destination": "f64",
+    "literal": "4.9406564584124654e-324",
+    "expected_bits": "0000000000000001",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_max",
+    "destination": "f32",
+    "literal": "340282346638528859811704183484516925440.0",
+    "expected_bits": "7f7fffff",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_overflow_below",
+    "destination": "f32",
+    "literal": "340282356779733661637539395458142568447.0",
+    "expected_bits": "7f7fffff",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f32_overflow_tie",
+    "destination": "f32",
+    "literal": "340282356779733661637539395458142568448.0",
+    "expected_bits": null,
+    "expected_a7_exit": 6
+  },
+  {
+    "name": "f64_max",
+    "destination": "f64",
+    "literal": "1.7976931348623157e308",
+    "expected_bits": "7fefffffffffffff",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_overflow",
+    "destination": "f64",
+    "literal": "1.7976931348623159e308",
+    "expected_bits": null,
+    "expected_a7_exit": 6
+  },
+  {
+    "name": "f32_negative_zero",
+    "destination": "f32",
+    "literal": "-0.0",
+    "expected_bits": "80000000",
+    "expected_a7_exit": 0
+  },
+  {
+    "name": "f64_negative_underflow",
+    "destination": "f64",
+    "literal": "-1e-400",
+    "expected_bits": "8000000000000000",
+    "expected_a7_exit": 0
+  }
+]

@@ -1,0 +1,5 @@
+a :: import "./a"
+
+pub fb :: fn() i32 {
+    ret a.fa()
+}

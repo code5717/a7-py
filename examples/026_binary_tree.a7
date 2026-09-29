@@ -45,6 +45,7 @@ main :: fn() {
     total := 0
 
     while top > 0 {
+        if top > 3 { ret }
         top -= 1
         index := stack[top]
         value := node_value(index, root, left, right)
@@ -53,12 +54,14 @@ main :: fn() {
 
         right_index := node_right(index, root, left, right)
         if right_index != empty {
+            if top >= 3 { ret }
             stack[top] = right_index
             top += 1
         }
 
         left_index := node_left(index, root, left, right)
         if left_index != empty {
+            if top >= 3 { ret }
             stack[top] = left_index
             top += 1
         }

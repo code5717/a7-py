@@ -1,0 +1,16 @@
+// a7-glmr repro: parser error recovery can silently drop declarations.
+// "good" parses first; the malformed import inside "main" triggers
+// synchronize() (a7/parser.py:194,235) which restarts at the IMPORT token,
+// discarding "main :: fn() {...}" wholesale. Observed with a7 @ 701c679:
+//   exit 0, "Compiled ..." message, emitted .zig contains only good(),
+//   no main entry point. Violates the fail-closed contract wording in
+//   docs/SAFETY_CONTRACT.md ("must fail closed ... rejects the program").
+// Variant without the leading "good" decl re-raises the ParseError (exit 5)
+// because parser.py:174 only re-raises when zero declarations parsed so far.
+good :: fn() {
+    x := 1
+}
+main :: fn() {
+    io :: import "std/io"
+    io.println(42)
+}

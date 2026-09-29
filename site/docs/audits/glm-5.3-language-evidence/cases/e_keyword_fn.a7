@@ -1,0 +1,9 @@
+io :: import "std/io"
+
+test :: fn() {
+    io.println("in test")
+}
+
+main :: fn() {
+    test()
+}

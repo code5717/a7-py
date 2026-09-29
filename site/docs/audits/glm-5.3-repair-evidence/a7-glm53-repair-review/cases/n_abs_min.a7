@@ -1,0 +1,8 @@
+main :: fn() {
+    x: i32 = -2147483648
+    y := cast(i32, math_abs_helper(x))
+}
+
+math_abs_helper :: fn(v: i32) i32 {
+    ret v
+}

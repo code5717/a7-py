@@ -1,0 +1,53 @@
+{
+  "note": "Original source records preserved on 2026-09-19, including varied inline URL metadata and secondary citations. Read dates and verification statements describe earlier research, not fresh verification. Saved downloads remain beside original temporary manifests. Local repository prefixes were normalized in copies.",
+  "records": [
+    {
+      "original": "tmp/research/runtime-model/sources/claim1/SOURCES.md",
+      "sha256": "652943ec8ea7ae9e33a00bff665dd88dc0d67a532c93b475ff8a55ced65f5ae3",
+      "preserved": "docs/plan/research/runtime-model/sources/claim1/SOURCES.md",
+      "preserved_sha256": "c10f7c90cbf7aad8d53b434c3eb20ff56a883a7f42748e21a8f829cc883c24c9"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim2/SOURCES.md",
+      "sha256": "4ebd644a7a10595ba335535a3833855b59d7884913911926e77125883aadd1e2",
+      "preserved": "docs/plan/research/runtime-model/sources/claim2/SOURCES.md",
+      "preserved_sha256": "85a67058df77186ce949165dddb2c06fd6567e97feb7a6b8c510ab579d4f60cf"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim3/SOURCES.md",
+      "sha256": "d4172f2fe2fab3f17385c14001075b3074c7eac1f47ae77f0995c84d2bcfff12",
+      "preserved": "docs/plan/research/runtime-model/sources/claim3/SOURCES.md",
+      "preserved_sha256": "7eee4fb1ad8eb7259734215f342528b503f2d9f7370ed72dff45a29c97436917"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim4/SOURCES.md",
+      "sha256": "7d554cedeb13cf20f6a37903415394ede0f63249b426dcc975460717dde8f3b6",
+      "preserved": "docs/plan/research/runtime-model/sources/claim4/SOURCES.md",
+      "preserved_sha256": "4fcdbfa76bdbc8253ce728950e31acada079ffaa299fcd587d382cf8a866a4ce"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim5/SOURCES.md",
+      "sha256": "23c904291fafced66a90659e1e1d01a759830dc6394b773751764f242ce7fb71",
+      "preserved": "docs/plan/research/runtime-model/sources/claim5/SOURCES.md",
+      "preserved_sha256": "e9f07f2c9578f38e686940a4192fbb67962eea69fa32161f4e2551e5bb325885"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim6/SOURCES.md",
+      "sha256": "7c5d9c9a8a0be090bfeea4d7f7355e13ecd82120e14035797c00ec0d3036d129",
+      "preserved": "docs/plan/research/runtime-model/sources/claim6/SOURCES.md",
+      "preserved_sha256": "0289826c12bbccfa045e519011173f26ca7a9c9f2adfccb5c09f497646a325c5"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim7/SOURCES.md",
+      "sha256": "57a8cc564c18415c3d5e248f65f2086f29284bc840a7b4c3e280023cc8fe9271",
+      "preserved": "docs/plan/research/runtime-model/sources/claim7/SOURCES.md",
+      "preserved_sha256": "12a74a610e7f31b3df04461940b62c36093a58da17e83f0b1012d2c9cfc52573"
+    },
+    {
+      "original": "tmp/research/runtime-model/sources/claim8/SOURCES.md",
+      "sha256": "b449b9c614ae697fe1fde4f7e544a7dc9564f5310b94de73fc1ad9ef2a4ffc0a",
+      "preserved": "docs/plan/research/runtime-model/sources/claim8/SOURCES.md",
+      "preserved_sha256": "dca200e651a89c92acd758a9ea97cb9a482bf3529bd6fd5912c76e5b8f203ef1"
+    }
+  ]
+}

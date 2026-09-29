@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -64,20 +65,21 @@ def test_wheel_install_smoke_uses_built_artifact(tmp_path: Path) -> None:
             "scripts/verify_wheel_install.py",
             "--dist-dir",
             str(tmp_path / "dist"),
+            "--verify-sdist",
         ],
         cwd=ROOT,
         text=True,
         capture_output=True,
-        timeout=180,
+        timeout=360,
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "Wheel install verified: a7_py-" in result.stdout
+    assert "Source distribution install verified: a7_py-" in result.stdout
 
 
 def test_debug_build_script_verifies_single_zig_example(tmp_path: Path) -> None:
-    if shutil.which("zig") is None:
-        return
+    assert shutil.which("zig"), "Zig is required for native release verification"
 
     examples_dir = tmp_path / "examples"
     examples_dir.mkdir()
@@ -105,6 +107,17 @@ def test_debug_build_script_verifies_single_zig_example(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "Build artifacts verified: 1/1" in result.stdout
+
+
+def test_wheel_verification_fails_without_zig(tmp_path: Path) -> None:
+    env = os.environ.copy()
+    env["PATH"] = str(tmp_path)
+    result = subprocess.run(
+        [sys.executable, "scripts/verify_wheel_install.py", "--skip-build"],
+        cwd=ROOT, env=env, text=True, capture_output=True, timeout=10,
+    )
+    assert result.returncode == 2
+    assert "zig is required" in result.stderr
 
 
 def test_release_manifest_has_stable_checksums(tmp_path: Path) -> None:
@@ -456,3 +469,67 @@ def test_secret_scan_deduplicates_specific_secret_lines(tmp_path: Path) -> None:
     assert [(item.line_no, item.kind) for item in findings] == [
         (1, "anthropic api key")
     ]
+
+
+def test_manifest_rejects_external_files_and_symlinks(tmp_path: Path) -> None:
+    """An external file with the right hash must not satisfy a release entry."""
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    outside = tmp_path / "outside.txt"
+    payload = b"external fixture\n"
+    outside.write_bytes(payload)
+    (assets / "link.txt").symlink_to(outside)
+    for artifact in (str(outside), "link.txt"):
+        manifest = assets / "SHA256SUMS"
+        manifest.write_text(f"{sha256(payload).hexdigest()}  {len(payload)}  {artifact}\n")
+        result = subprocess.run(
+            [sys.executable, "scripts/verify_release_manifest.py", str(manifest)],
+            cwd=ROOT, text=True, capture_output=True, timeout=10,
+        )
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "unsafe artifact path" in result.stderr
+
+
+def test_manifest_flat_download_uses_local_bytes(tmp_path: Path) -> None:
+    """Absolute paths from the publisher resolve only to downloaded local bytes."""
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    outside = tmp_path / "artifact.tar.gz"
+    outside.write_bytes(b"publisher bytes differ")
+    payload = b"downloaded bytes\n"
+    (assets / outside.name).write_bytes(payload)
+    manifest = assets / "SHA256SUMS"
+    manifest.write_text(f"{sha256(payload).hexdigest()}  {len(payload)}  {outside}\n")
+    result = subprocess.run(
+        [sys.executable, "scripts/verify_release_manifest.py", str(manifest)],
+        cwd=ROOT, text=True, capture_output=True, timeout=10,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_secret_scan_respects_ignored_downloads_but_checks_tracked_files(tmp_path, monkeypatch):
+    scanner = load_check_no_secrets_module()
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "no-global-config"))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setattr(scanner, "ROOT", tmp_path)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / ".gitignore").write_text("downloads/\n.env.local\n")
+    downloads = tmp_path / "downloads"
+    downloads.mkdir()
+    (downloads / "page.html").write_text("downloaded fixture")
+    secret = tmp_path / ".env.local"
+    secret.write_text("fixture, detected by filename")
+    (tmp_path / "new.py").write_text("# untracked source\n")
+    subprocess.run(["git", "add", "-f", ".env.local"], cwd=tmp_path, check=True)
+    files = scanner.iter_files()
+    assert downloads / "page.html" not in files
+    assert tmp_path / "new.py" in files
+    assert secret in files
+    assert scanner.scan_file(secret)[0].kind == "sensitive secret filename"
+
+
+def test_secret_scan_fails_when_repository_cannot_be_enumerated(tmp_path, monkeypatch, capsys):
+    scanner = load_check_no_secrets_module()
+    monkeypatch.setattr(scanner, "ROOT", tmp_path)
+    assert scanner.main() == 2
+    assert "cannot enumerate repository files" in capsys.readouterr().err

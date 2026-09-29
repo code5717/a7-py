@@ -1,0 +1,99 @@
+{
+  "total": 255,
+  "baseline_accepted": 135,
+  "candidate_accepted": 136,
+  "changed": 13,
+  "changes": [
+    {
+      "source": "docs/audits/2026-09-14/repros/a7glmr_mod_helper.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "docs/audits/2026-09-14/repros/a7glmr_mod_private_call.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "docs/audits/2026-09-14/repros/glm-pipe-literal-fit-gaps.a7",
+      "baseline_exit": 6,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": true
+    },
+    {
+      "source": "examples/002_var.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "examples/015_types.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "examples/016_unions.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "examples/018_modules.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "examples/019_literals.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "examples/030_calculator.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "examples/035_matrix.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "site/docs/audits/glm-5.3-language-evidence/cases/l3_float_rem.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/l3_float_rem.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    },
+    {
+      "source": "site/docs/evidence/reference-smoke.a7",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "zig_changed": true,
+      "diagnostics_changed": false
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+== g_defer_del_read : a7-exit=0 
+   zig-build=OK run-exit=0 | 
+== g_loop_del_after : a7-exit=6 | error: Use after move or delete (moved/deleted values cannot be read: 'b' was 
+== g_nil_resurrect : a7-exit=6 | error: Use after move or delete (moved/deleted values cannot be read: 'b' was 
+== m_bool_no_else : a7-exit=6 | error: Non-exhaustive match: Missing bool case(s): false [line 3: col 5]
+== m_expr_no_else : a7-exit=0 
+   zig-build=FAIL | m_expr_no_else.zig:3:20: error: switch must handle all possibilities
+== m_fall_no_else : a7-exit=5 | error: Expected 'case' or 'else' in match statement [line 8: col 9]
+== m_no_else_unmatched : a7-exit=0 
+   zig-build=OK run-exit=0 | done one done 
+== s_backing_mut : a7-exit=0 
+   zig-build=OK run-exit=0 | 9 
+== s_elem_mut : a7-exit=6 | error: Index not proven in bounds (index must satisfy 0 <= index < len: index 
+== s_index_mutated : a7-exit=6 | error: Cannot assign to immutable binding: 'i' is immutable [line 3: col 9]
+== s_literal_bound : a7-exit=0 
+   zig-build=OK run-exit=0 | 
+== s_while_len : a7-exit=0 
+   zig-build=OK run-exit=0 | 1 2 3 

@@ -1,0 +1,85 @@
+[
+  {
+    "check": "search-results",
+    "result": "18 results. Use arrow keys to move through results."
+  },
+  {
+    "check": "search-keyboard",
+    "result": "{\"tag\":\"A\",\"href\":\"/a7-py/tour/#2-work-with-arrays-and-slices\"}"
+  },
+  {
+    "check": "search-focus-return",
+    "result": true
+  },
+  {
+    "check": "clipboard-failure",
+    "result": "Copy failed. Select code to copy."
+  },
+  {
+    "check": "search-failure",
+    "result": "Search could not load. Check your connection and retry, or use the documentation navigation."
+  },
+  {
+    "check": "blocked-fonts",
+    "result": "{\"width\":390,\"scroll\":375,\"fontStatus\":\"loaded\"}"
+  },
+  {
+    "check": "storage-unavailable",
+    "result": "{\"article\":true,\"themeVisible\":true,\"searchVisible\":true}"
+  },
+  {
+    "check": "no-js-navigation",
+    "result": {
+      "initialOpen": true,
+      "initialVisibleLinks": 23,
+      "firstClickOpen": false,
+      "secondClickOpen": true,
+      "searchHidden": true
+    }
+  },
+  {
+    "check": "text-spacing-320",
+    "result": "{\"width\":320,\"scroll\":305}"
+  },
+  {
+    "check": "text-200-percent-320",
+    "result": {
+      "width": 320,
+      "scroll": 305,
+      "includesSpacingOverrides": true,
+      "afterWrappingFix": true
+    }
+  },
+  {
+    "check": "theme-persistence",
+    "result": "{\"selected\":\"light\",\"theme\":\"light\"}"
+  },
+  {
+    "check": "empty-search",
+    "result": "No matching documentation. Try another word."
+  },
+  {
+    "check": "real-clipboard-copy",
+    "result": {
+      "label": "Copied",
+      "clipboardMatchesCode": true
+    }
+  },
+  {
+    "check": "retry-before",
+    "result": "Search could not load. Check your connection and retry, or use the documentation navigation."
+  },
+  {
+    "check": "retry-after",
+    "result": "20 results shown. Use arrow keys to move through results."
+  },
+  {
+    "check": "dialog-tab-containment",
+    "result": {
+      "tabs": 27,
+      "allWithinDialog": false,
+      "underlyingPageControlFocused": false,
+      "exception": "Native Tab sequence transfers focus to browser chrome once, then returns to dialog; document.hasFocus false at that stop."
+    }
+  }
+]

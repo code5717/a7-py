@@ -1,25 +1,43 @@
-# A7 Docs
+# A7 documentation
 
-A7 lowers .a7 source to Zig 0.16 and then to a native binary.
-Use this file as a compact index. Fetch llms-full.txt for the whole corpus.
+Experimental A7 compiler and language reference. Start with the relevant pages below. Retrieve the full corpus only when needed.
 
-- A7 Documentation: https://code5717.github.io/a7-py/docs/index.md
-  What A7 is, how the compiler pipeline works, and where to read next.
-- Start: https://code5717.github.io/a7-py/docs/start.md
-  Install A7, compile a program, and run the language tour example.
-- Language: https://code5717.github.io/a7-py/docs/language.md
-  Syntax and rules for the A7 language surface that examples use today.
-- Standard Library: https://code5717.github.io/a7-py/docs/stdlib.md
-  Virtual stdlib modules registered in the compiler today.
-- Compiler: https://code5717.github.io/a7-py/docs/compiler.md
-  Compiler pipeline, CLI modes, exit codes, and Zig backend contract.
-- Status: https://code5717.github.io/a7-py/docs/status.md
-  Current implementation state, active priorities, and deferred work.
-- Release: https://code5717.github.io/a7-py/docs/release.md
-  Release gates, docs deployment, and artifact checks.
-- Agent Usage: https://code5717.github.io/a7-py/docs/agent-usage.md
-  curl and llms.txt entry points for fetching A7 documentation.
-- Project: https://code5717.github.io/a7-py/docs/project.md
-  Contributing, documentation maintenance, and security boundaries.
+## Getting started
 
-Canonical site: https://code5717.github.io/a7-py/
+- [A7 documentation](https://code5717.github.io/a7-py/docs/index.md): An experimental systems language that compiles to Zig and native programs.
+- [Get started](https://code5717.github.io/a7-py/docs/start.md): Install the compiler, compile your first program, and diagnose setup failures.
+- [A7 tour](https://code5717.github.io/a7-py/docs/tour.md): Learn declarations, arrays, control flow, references, and generics through runnable examples.
+- [Examples](https://code5717.github.io/a7-py/docs/examples.md): Browse every checked-in A7 example with source, commands, output fixtures, and related reference topics.
+
+## Reference
+
+- [Language](https://code5717.github.io/a7-py/docs/language.md): Syntax, implementation qualifications, and evidence for the A7 language.
+- [Syntax and lexical structure](https://code5717.github.io/a7-py/docs/language/syntax.md): Source files, comments, identifiers, literals, escapes, and punctuation.
+- [Declarations and scope](https://code5717.github.io/a7-py/docs/language/declarations.md): Mutable variables, constants, initialization, aliases, and scope.
+- [Types and conversions](https://code5717.github.io/a7-py/docs/language/types.md): Numeric types, inference, casts, compatibility, and nil.
+- [Operators and evaluation](https://code5717.github.io/a7-py/docs/language/operators.md): Arithmetic, logic, precedence, assignment, and numeric restrictions.
+- [Control flow](https://code5717.github.io/a7-py/docs/language/control-flow.md): Conditions, loops, match patterns, labels, and restricted fallthrough.
+- [Functions and callbacks](https://code5717.github.io/a7-py/docs/language/functions.md): Declarations, parameters, returns, callbacks, and recursion restrictions.
+- [Arrays, slices, and strings](https://code5717.github.io/a7-py/docs/language/arrays-strings.md): Fixed arrays, slice views, strings, bounds, and planned tensor work.
+- [Structs, enums, and unions](https://code5717.github.io/a7-py/docs/language/aggregate-types.md): Structs, enums, unions, initialization, and payload restrictions.
+- [Generics and type sets](https://code5717.github.io/a7-py/docs/language/generics.md): Type parameters, concrete specialization, type sets, and current limits.
+- [Memory and references](https://code5717.github.io/a7-py/docs/language/memory.md): Allocation, references, nil guards, cleanup, and safety enforcement.
+- [Modules and visibility](https://code5717.github.io/a7-py/docs/language/modules.md): File imports, aliases, visibility, and combined Zig output.
+- [Builtins and keyword index](https://code5717.github.io/a7-py/docs/language/builtins.md): Current intrinsics, reserved operations, and the complete keyword index.
+- [Standard library](https://code5717.github.io/a7-py/docs/stdlib.md): Every registered std/io and std/math call, its arguments, and current restrictions.
+- [Compiler](https://code5717.github.io/a7-py/docs/compiler.md): CLI modes, flags, JSON diagnostics, artifacts, exit codes, and the Zig boundary.
+
+## Project
+
+- [Implementation status](https://code5717.github.io/a7-py/docs/status.md): Current support, known compiler gaps, and planned work.
+- [Project](https://code5717.github.io/a7-py/docs/project.md): Contribute to A7 and maintain the shared human and agent documentation.
+- [Release](https://code5717.github.io/a7-py/docs/release.md): Repository-root release commands, native artifacts, dependency audits, and docs gates.
+
+## Agents
+
+- [Agent usage](https://code5717.github.io/a7-py/docs/agent-usage.md): Selectively retrieve Markdown topics, feature metadata, examples, and compiler diagnostics.
+
+## Optional
+
+- [Full corpus](https://code5717.github.io/a7-py/llms-full.txt)
+- [Structured manifest](https://code5717.github.io/a7-py/docs/manifest.json)

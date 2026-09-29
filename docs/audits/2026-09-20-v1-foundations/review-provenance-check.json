@@ -1,0 +1,43 @@
+{
+  "checked": 1055,
+  "unchanged": 1045,
+  "changed_after_batch": [
+    "a7/backends/zig.py",
+    "a7/safety.py",
+    "a7/symbol_table.py",
+    "docs/CHANGELOG.md",
+    "docs/STATUS.md",
+    "docs/plan/README.md",
+    "docs/plan/audit/open-items.md",
+    "docs/plan/execution.md",
+    "test/norec_scan.py",
+    "test/test_no_recursion.py"
+  ],
+  "missing_paths": [
+    {
+      "path": "docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf",
+      "recorded_sha256": null
+    },
+    {
+      "path": "docs/POINTER_SYNTAX_ANALYSIS_compact.pdf",
+      "recorded_sha256": null
+    },
+    {
+      "path": "docs/POINTER_SYNTAX_ANALYSIS_dark.pdf",
+      "recorded_sha256": null
+    },
+    {
+      "path": "docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf",
+      "recorded_sha256": null
+    },
+    {
+      "path": "docs/POINTER_SYNTAX_ANALYSIS_latex.pdf",
+      "recorded_sha256": null
+    },
+    {
+      "path": "docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf",
+      "recorded_sha256": null
+    }
+  ],
+  "git_object_content_used": false
+}

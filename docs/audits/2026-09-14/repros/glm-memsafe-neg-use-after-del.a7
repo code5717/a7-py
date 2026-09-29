@@ -1,0 +1,9 @@
+Point :: struct {
+    x: i32
+}
+
+main :: fn() {
+    p := new Point
+    del p
+    p.x = 1
+}

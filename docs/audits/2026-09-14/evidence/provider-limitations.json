@@ -1,0 +1,84 @@
+[
+  {
+    "log": "contract-release-glm.log",
+    "limitations": [
+      "! permission requested: external_directory (/home/cx89/Projects/pl-dev/*); auto-rejecting"
+    ]
+  },
+  {
+    "log": "memory-codex.log",
+    "limitations": [
+      "ERROR: This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request. To get authorized for security work, join the Trusted Access for Cyber program: https://chatgpt.com/cyber"
+    ]
+  },
+  {
+    "log": "memory-glm.log",
+    "limitations": [
+      "Error: Subagent failed (task_id: ses_f61964c5affel6hhsCJKiGCsjl): Rate limit reached for requests",
+      "Error: Subagent failed (task_id: ses_f61964c6bffecA4i5yx6xiahU6): Rate limit reached for requests",
+      "Error: Subagent failed (task_id: ses_f61964c74ffe1hJKQZGLggMgG3): Rate limit reached for requests"
+    ]
+  },
+  {
+    "log": "memory-qualification-followup.log",
+    "limitations": [
+      "   with `Rate limit reached for requests` (provider-side limit); all three were retried"
+    ]
+  },
+  {
+    "log": "security-followup.log",
+    "limitations": [
+      "! permission requested: external_directory (/tmp/a7-audit-20260914/*); auto-rejecting"
+    ]
+  },
+  {
+    "log": "security-glm.log",
+    "limitations": [
+      "Error: Subagent failed (task_id: ses_f61941ca7ffeAqAfQtTVOb183P): Rate limit reached for requests",
+      "Error: Subagent failed (task_id: ses_f61941cb7ffeUn7aun71gY8p80): Rate limit reached for requests",
+      "! permission requested: external_directory (/etc/*); auto-rejecting"
+    ]
+  },
+  {
+    "log": "website-flash-content.log",
+    "limitations": [
+      "Error: Rate limit reached for requests"
+    ]
+  },
+  {
+    "log": "website-flash-design-responsive.log",
+    "limitations": [
+      "Error: Rate limit reached for requests"
+    ]
+  },
+  {
+    "log": "website-flash-design-system.log",
+    "limitations": [
+      "Error: Rate limit reached for requests"
+    ]
+  },
+  {
+    "log": "website-flash-design-typography.log",
+    "limitations": [
+      "Error: Rate limit reached for requests"
+    ]
+  },
+  {
+    "log": "website-flash-interactions.log",
+    "limitations": [
+      "Error: Rate limit reached for requests"
+    ]
+  },
+  {
+    "log": "website-flash-performance-resume.log",
+    "limitations": [
+      "! permission requested: external_directory (/home/cx89/Projects/pl-dev/dist/*); auto-rejecting"
+    ]
+  },
+  {
+    "log": "website-flash-performance.log",
+    "limitations": [
+      "Error: Rate limit reached for requests"
+    ]
+  }
+]

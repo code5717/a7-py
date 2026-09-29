@@ -1,0 +1,18 @@
+io :: import "std/io"
+
+other :: fn(n: i32) {
+    io.println("{}", n)
+}
+
+g :: fn(cb: fn(i32)) {
+    cb(1)
+}
+
+caller :: fn(g: fn(i32)) {
+    h := g
+    h(5)
+}
+
+main :: fn() {
+    g(other)
+}

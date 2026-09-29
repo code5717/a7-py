@@ -1,0 +1,64 @@
+== a : a7-exit=6 | Found 1 error:
+== a_abs_sub : a7-exit=0 
+== a_arr_scalar_fill : a7-exit=6 | Found 1 error:
+== a_braces_escape : a7-exit=0 
+== a_braces_escape2 : a7-exit=6 | Found 1 error:
+== a_braces_space : a7-exit=0 
+== a_math_abs_signed : a7-exit=0 
+== a_string_len : a7-exit=6 | Found 1 error:
+== a_typeset_alias : a7-exit=7 
+== b : a7-exit=6 | Found 1 error:
+== b_ellipsis_slice : a7-exit=4 | error: The '...' operator is unsupported; use '..' for slice bounds [line 3: col
+== b_fn_type_no_ret : a7-exit=0 
+== b_long_if : a7-exit=0 
+== b_multi_decl : a7-exit=5 | error: Expected expression [line 4: col 6]
+== b_multiline_array : a7-exit=0 
+== b_no_main : a7-exit=0 
+== b_range_for : a7-exit=5 | error: Expected LEFT_BRACE, got DOT_DOT [line 2: col 15]
+== b_recovery_drop : a7-exit=5 | error: Unexpected identifier after 'bad'; missing operator? [line 9: col 9]
+== b_underscore_num : a7-exit=4 | error: Invalid numeric literal '1_' [line 2: col 10]
+== c_arr_to_slice : a7-exit=6 | Found 1 error:
+== c_call_arg_u8 : a7-exit=0 
+== c_compound_div_signed : a7-exit=0 
+== c_ifexpr_mixed : a7-exit=0 
+== c_mixed_sign_cmp : a7-exit=0 
+== c_mixed_width : a7-exit=0 
+== c_neg_unsigned : a7-exit=6 | Found 1 error:
+== c_partial_struct : a7-exit=6 | Found 1 error:
+== c_return_u8 : a7-exit=0 
+== c_shift_neg : a7-exit=6 | Found 1 error:
+== d_call_invalidates : a7-exit=6 | Found 1 error:
+== d_del_braced_defer : a7-exit=6 | Found 1 error:
+== d_guard_div_ok : a7-exit=0 
+== d_join_gap : a7-exit=6 | Found 1 error:
+== d_loop_defer_del : a7-exit=6 | Found 1 error:
+== d_loop_no_fixedpoint : a7-exit=6 | Found 1 error:
+== d_ref_nil_call : a7-exit=6 | Found 1 error:
+== e_generic_struct_field : a7-exit=0 
+== e_keyword_fn : a7-exit=0 
+== e_main_sig : a7-exit=6 | Found 1 error:
+== e_math_fn_value : a7-exit=6 | Found 1 error:
+== e_module_struct_literal : a7-exit=5 | error: Expected type [line 4: col 28]
+== e_nested_fn_dup : a7-exit=6 | error: Undefined type (Identifier 'helper') [line 8: col 10]
+== e_nested_fn_in_if : a7-exit=6 | error: Undefined type (Identifier 'inner') [line 9: col 9]
+== e_qualified_type : a7-exit=5 | error: Expected expression [line 4: col 10]
+== e_string_array_default : a7-exit=0 
+== f_direct_recursion : a7-exit=6 | error: Return type mismatch: expected 'void' (Cannot return value from void 
+== f_false_recursion : a7-exit=0 
+== f_nested_recursion : a7-exit=6 | error: Undefined type (Identifier 'inner') [line 5: col 5]
+== g_cast_divisor : a7-exit=0 
+== g_cast_divisor2 : a7-exit=0 
+== g_cast_divisor3 : a7-exit=0 
+== g_char_order : a7-exit=6 | error: Type mismatch: expected 'char', got 'i32' (Variable 'flag') [line 2: col 
+== g_const_arr_size : a7-exit=0 
+== g_guard_index : a7-exit=0 
+== g_match_no_else : a7-exit=0 
+== g_ref_return : a7-exit=6 | Found 1 error:
+== g_ref_swap : a7-exit=6 | error: Cannot assign to immutable binding: 'a' is immutable [line 5: col 5]
+== g_slice_len_guard : a7-exit=6 | Found 1 error:
+== g_sqrt_f64 : a7-exit=6 | error: Undefined type (Identifier 'sqrt_f64') [line 2: col 10]
+== l3_float_rem : a7-exit=0 
+== l5_wrap_test : a7-exit=0 
+== shm : a7-exit=0 
+== shm2 : a7-exit=0 
+== z_smoke : a7-exit=0 

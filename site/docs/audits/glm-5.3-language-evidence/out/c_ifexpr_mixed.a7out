@@ -1,0 +1,17 @@
+
+Found 1 error:
+
+Error 1/1:
+error: If expression branches have different types: expected 'i32', got 'i64' 
+[line 4: col 10]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ main :: fn() {
+   2 ┃     x: i64 = 5
+   3 ┃     c := true
+   4 ┃     m := if c { 1 } else { x }
+     ┃          └┘
+   5 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Both branches of if expression must have the same type
+

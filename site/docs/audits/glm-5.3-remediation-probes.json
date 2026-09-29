@@ -1,0 +1,466 @@
+[
+  {
+    "case": "a.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "a.a7:1:1: Circular dependency detected: ./b -> ./a -> ./b"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "a_abs_sub.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "a_arr_scalar_fill.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "a_arr_scalar_fill.a7:2:5: Type mismatch: expected '[3]i32', got 'i32' (Variable 'arr')"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "a_braces_escape.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "a_braces_escape2.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "a_braces_escape2.a7:5:5: Wrong number of arguments (io format string expects 0 values, got 1)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "a_braces_space.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "a_math_abs_signed.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "a_string_len.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "a_string_len.a7:3:10: Cannot access field on non-struct type: got 'string'"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "a_typeset_alias.a7",
+    "a7_exit": 7,
+    "diagnostics": [
+      "1:9: Zig backend: unsupported expression node 'TYPE_SET'"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "b.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "b.a7:1:1: Circular dependency detected: ./a -> ./b -> ./a"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "b_ellipsis_slice.a7",
+    "a7_exit": 4,
+    "diagnostics": [
+      "b_ellipsis_slice.a7:3:15: The '...' operator is unsupported; use '..' for slice bounds"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "b_fn_type_no_ret.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "b_long_if.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "b_multi_decl.a7",
+    "a7_exit": 5,
+    "diagnostics": [
+      "b_multi_decl.a7:4:6: Expected expression"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "b_multiline_array.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "b_no_main.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "b_range_for.a7",
+    "a7_exit": 5,
+    "diagnostics": [
+      "b_range_for.a7:2:15: Expected LEFT_BRACE, got DOT_DOT"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "b_recovery_drop.a7",
+    "a7_exit": 5,
+    "diagnostics": [
+      "b_recovery_drop.a7:9:9: Unexpected identifier after 'bad'; missing operator?"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "b_underscore_num.a7",
+    "a7_exit": 4,
+    "diagnostics": [
+      "b_underscore_num.a7:2:10: Invalid numeric literal '1_'"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "c_arr_to_slice.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "c_arr_to_slice.a7:10:10: Argument type mismatch: expected '[]i32', got '[3]i32' (Argument 1)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "c_call_arg_u8.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "c_compound_div_signed.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "c_ifexpr_mixed.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "c_mixed_sign_cmp.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "c_mixed_width.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "c_neg_unsigned.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "c_neg_unsigned.a7:3:10: Operator requires compatible types (Cannot negate unsigned type 'u8'; cast to a signed type first)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "c_partial_struct.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "c_partial_struct.a7:7:10: Type mismatch (Missing struct fields: count)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "c_return_u8.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "c_shift_neg.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "c_shift_neg.a7: Operator requires compatible types (Shift count must be non-negative and less than 32)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "d_call_invalidates.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "d_call_invalidates.a7:11:20: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "d_del_braced_defer.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "d_del_braced_defer.a7:13:5: Use after move or delete (moved/deleted values cannot be read: 'b' was moved or deleted earlier)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "d_guard_div_ok.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "d_join_gap.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "d_join_gap.a7:12:16: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "d_loop_defer_del.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "d_loop_defer_del.a7:13:9: Reference not proven non-nil (reference must be proven non-nil before field access through it: reference may be nil)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "d_loop_no_fixedpoint.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "d_loop_no_fixedpoint.a7:9:10: Index not proven in bounds (index must satisfy 0 <= index < len: index bounds are not proven)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "d_ref_nil_call.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "d_ref_nil_call.a7:11:5: Reference not proven non-nil (reference argument must be proven non-nil: reference may be nil)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_generic_struct_field.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "e_keyword_fn.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "e_main_sig.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "e_main_sig.a7:3:1: Executable entry point main must have no parameters and no return value"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_math_fn_value.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "e_math_fn_value.a7:5:10: Unsupported feature: Standard-library operations must be called directly; function values are unavailable"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_module_struct_literal.a7",
+    "a7_exit": 5,
+    "diagnostics": [
+      "e_module_struct_literal.a7:4:28: Expected type"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_nested_fn_dup.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "e_nested_fn_dup.a7:8:10: Undefined type (Identifier 'helper')",
+      "e_nested_fn_dup.a7:8:10: Type is not callable (Cannot call undefined identifier 'helper')",
+      "e_nested_fn_dup.a7:16:10: Undefined type (Identifier 'helper')",
+      "e_nested_fn_dup.a7:16:10: Type is not callable (Cannot call undefined identifier 'helper')"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_nested_fn_in_if.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "e_nested_fn_in_if.a7:9:9: Undefined type (Identifier 'inner')",
+      "e_nested_fn_in_if.a7:9:9: Type is not callable (Cannot call undefined identifier 'inner')"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_qualified_type.a7",
+    "a7_exit": 5,
+    "diagnostics": [
+      "e_qualified_type.a7:4:10: Expected expression"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "e_string_array_default.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "f_direct_recursion.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "f_direct_recursion.a7:4:9: Return type mismatch: expected 'void' (Cannot return value from void function)",
+      "f_direct_recursion.a7:6:5: Return type mismatch: expected 'void' (Cannot return value from void function)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "f_false_recursion.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "f_nested_recursion.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "f_nested_recursion.a7:5:5: Undefined type (Identifier 'inner')",
+      "f_nested_recursion.a7:5:5: Type is not callable (Cannot call undefined identifier 'inner')"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "g_cast_divisor.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "g_cast_divisor2.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "g_cast_divisor3.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "g_char_order.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "g_char_order.a7:2:5: Type mismatch: expected 'char', got 'i32' (Variable 'flag')",
+      "g_char_order.a7:3:5: Type mismatch: expected 'char', got 'i32' (Variable 'other')",
+      "g_char_order.a7: Operator requires compatible types (lt between char and char)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "g_const_arr_size.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "g_const_arr_size.a7:5:10: Index not proven in bounds (index must satisfy 0 <= index < len: index bounds are not proven)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "g_guard_index.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "g_match_no_else.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "g_ref_return.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "g_ref_return.a7:4:5: Return type mismatch: expected 'i32', got 'ref i32'"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "g_ref_swap.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "g_ref_swap.a7:5:5: Cannot assign to immutable binding: 'a' is immutable",
+      "g_ref_swap.a7:6:5: Cannot assign to immutable binding: 'b' is immutable"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "g_slice_len_guard.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "g_slice_len_guard.a7:5:13: Index not proven in bounds (index must satisfy 0 <= index < len: index bounds are not proven)"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "g_sqrt_f64.a7",
+    "a7_exit": 6,
+    "diagnostics": [
+      "g_sqrt_f64.a7:2:10: Undefined type (Identifier 'sqrt_f64')",
+      "g_sqrt_f64.a7:2:10: Type is not callable (Cannot call undefined identifier 'sqrt_f64')"
+    ],
+    "zig_artifact": false
+  },
+  {
+    "case": "l3_float_rem.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "l5_wrap_test.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "shm.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "shm2.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  },
+  {
+    "case": "z_smoke.a7",
+    "a7_exit": 0,
+    "diagnostics": [],
+    "zig_artifact": true
+  }
+]

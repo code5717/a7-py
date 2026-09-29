@@ -1,0 +1,14 @@
+thread 3727722 panic: attempt to use null value
+/tmp/a7-glm53-language-audit/out/d_ref_nil_call.zig:6:7: 0x11d2e46 in g (d_ref_nil_call.zig)
+    b2.?.value = 1;
+      ^
+/tmp/a7-glm53-language-audit/out/d_ref_nil_call.zig:11:6: 0x11d2d9e in main (d_ref_nil_call.zig)
+    g(b);
+     ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:698:59: 0x11d26b1 in callMain (std.zig)
+    if (fn_info.params.len == 0) return wrapMain(root.main());
+                                                          ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:190:5: 0x11d20e1 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+timeout: the monitored command dumped core

@@ -1,0 +1,8 @@
+{
+  "zig.before.py": "e1003c3ef78fef38f026c6981fa06eb96cc89440aba1360a7d2aa628a6fc1687",
+  "test_codegen.before.py": "eba6dd6aa6904722681f91416a54d25cea4aadccea3437de6aec0c61fac98945",
+  "a7/backends/zig.py": "372de1713b2bcedf2541e9a5e5058c1413f1fbd80bd26b80b20027e1d9b6f26c",
+  "test/test_codegen_zig.py": "dea5991f4c466726865e7d325eef9d26fbb02dd06029f9a1c2cbc6528ebc0d1e",
+  "test/test_loop_label_regressions.py": "a0548d9add37389cdaac61f857ccc72eee1dd138c4292fb16c532dc087d8e8e7",
+  "loop-label.patch": "27ebb0d89a4a3920f5ca5bbd39ddb3dd5c11aee763fe9f89a3fac66c85d91d95"
+}

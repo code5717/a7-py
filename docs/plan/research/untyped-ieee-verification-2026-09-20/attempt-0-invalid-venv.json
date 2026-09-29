@@ -1,0 +1,569 @@
+{
+  "compiler_root": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+  "zig_version": {
+    "command": [
+      "/home/cx89/.local/share/mise/installs/zig/0.16.0/zig",
+      "version"
+    ],
+    "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+    "exit": 0,
+    "stdout": "0.16.0\n",
+    "stderr": ""
+  },
+  "script_sha256": "4a715c03f9229c62e76aee431bdedf7d09ba896b694bf73216019e42fd3f879b",
+  "source_hashes_before": {
+    "a7/__init__.py": "004b4df2d71f04771a073dfc3f4a12a70b95cb2b2372315855d79df6b3ecd5da",
+    "a7/ast_nodes.py": "932e0ccc7d92817d20515c73da9a9859c9b908f2bd54e1dc4c83858b42232dac",
+    "a7/ast_preprocessor.py": "156b916a1b299e360934a30ec1aa3ab878215b9245632daba82f50a9ae121cd3",
+    "a7/backends/__init__.py": "132179f771bf2839eb6c79163c81ce376ca81d37d79380d874494e81e4dfbcc7",
+    "a7/backends/base.py": "e974e54fcfc63ce499892c3220107e1b22f2eda489e2e0cfebeb6e54939bfb0a",
+    "a7/backends/zig.py": "4b0a63298188e2727b33443c64da8193190721c341ac55db500040d04733d16d",
+    "a7/cast_classifier.py": "fe712a707588af9cc36123f2b3a4f0e1272a8e605586b28193880d30e56bf66a",
+    "a7/cli.py": "e0e622016f8533c0b1ca990c3ba361f7d97ad24ffabb30b38a753a813a20abbf",
+    "a7/compile.py": "6ca3d19da3f9379f45385b4e8ca923f175db1f8def7ca3f23f2b410ddfd2561a",
+    "a7/const_eval.py": "cde1afdb8e3a55bbdb14469035e12ab44b925ad545296243d5a8cb6f14170862",
+    "a7/errors.py": "6072206ee3e1eee78f8471fc82d99490780c2bf2ac00e95f2f31ca0783e08edd",
+    "a7/exact_constants.py": "b8365bb442ca5473e59d8c7d66b3ce13d850922ed2fdf23668f76945e6ade7a9",
+    "a7/formatters/__init__.py": "8809929d202d7cabbf96b55149ddef68457fe16697e9cc134a7e9626d37a8933",
+    "a7/formatters/console_formatter.py": "3f7430cea26fb13ed03c37af45b2effe6e1b0efa09a381b40985dfc3b2d874c9",
+    "a7/formatters/json_formatter.py": "9102209851b3dd09003249d86492a7dcfdeefd128bff3513afa20bbe68b64326",
+    "a7/formatters/markdown_formatter.py": "cf052ae1cbaf2712088e3bde6c7f4c39fe5f0d294b23c0cb8916a79b8119cf7f",
+    "a7/generics.py": "7cae39f378110669ccc7094b6a6b88f75a595345f73627604a6d32653ba7df8b",
+    "a7/module_resolver.py": "ba8241a7808bf12579aabda92a2d1c5d241d5e3e75ef07fa82f87c2132fd8c41",
+    "a7/parser.py": "1c534ce4c102ef2e2208e91490bf64a53e4d478f946a9f564c81dbba4563ea29",
+    "a7/passes/__init__.py": "259e439e0df4b38f2bc0752f0a5d7ce0579948d4874b0d39c75f4e9411bad4a2",
+    "a7/passes/name_resolution.py": "e4e0e8928e545f372b4bc9ad7572ffb3bcf7266b5831bbd0a90df026e0945d2e",
+    "a7/passes/semantic_validator.py": "8dedd6cd19847de36ec35532e8e133a03677a158201206b59364468643388bac",
+    "a7/passes/type_checker.py": "a41e67b21b5a82b87395e305ab1e3c40de7ac6a9d621d093d468326c225e2345",
+    "a7/safety.py": "6a8c5f1273c3675b6c4bb3bee2140ce491bac187b4e5aaadc0bd19dc14c34169",
+    "a7/semantic_context.py": "b2e921c8f8c26f88cf847880e640e787ff8c0aa3acf4ec69d7a50fc221a5c293",
+    "a7/stdlib/__init__.py": "72fb5f3d8d6cb6e2e83ae840616c1d088fa6a1185c96ab26e0084aaee77a076f",
+    "a7/stdlib/io.py": "7b60de9c4c6f2a0b285ac2bd5a0b0be8dbc649e968da247a97fecd653514033a",
+    "a7/stdlib/math.py": "44599bc615b5b2a36ebaa6b5028889653e6ebbdef4541f7a00fb0eeea04098e5",
+    "a7/stdlib/mem.py": "067c6b4e64e6785478afdf4369944d50561284d0849d3787509739d841622699",
+    "a7/stdlib/string.py": "1ae4bd08d93d0ee57c63fc857c1f5a211744b50fc82a40a699f3b4504c15864e",
+    "a7/symbol_table.py": "6212d06edd6a311a7823506ea0ed807c38288fbeebd0c9fc6449b31ebe26792d",
+    "a7/tokens.py": "7fd33d7b12949754429cbe9dfacf2190ff8c02b4a497b7bf10286ed338c90bcd",
+    "a7/toolchain.py": "15c5a8e26e6ea340913711b86733088cd18fe749f1de58354b2e087da5b4b721",
+    "a7/types.py": "0f8e0a962f9007ed6f554b3f3ea649455e1d3ce93802d521768e82c3118556b3",
+    "main.py": "1a0754070ee209f099e9522e30e3293f343ccd0696fbd395cf988c06d42e98d3"
+  },
+  "source_hashes_after": {
+    "a7/__init__.py": "004b4df2d71f04771a073dfc3f4a12a70b95cb2b2372315855d79df6b3ecd5da",
+    "a7/ast_nodes.py": "932e0ccc7d92817d20515c73da9a9859c9b908f2bd54e1dc4c83858b42232dac",
+    "a7/ast_preprocessor.py": "156b916a1b299e360934a30ec1aa3ab878215b9245632daba82f50a9ae121cd3",
+    "a7/backends/__init__.py": "132179f771bf2839eb6c79163c81ce376ca81d37d79380d874494e81e4dfbcc7",
+    "a7/backends/base.py": "e974e54fcfc63ce499892c3220107e1b22f2eda489e2e0cfebeb6e54939bfb0a",
+    "a7/backends/zig.py": "4b0a63298188e2727b33443c64da8193190721c341ac55db500040d04733d16d",
+    "a7/cast_classifier.py": "fe712a707588af9cc36123f2b3a4f0e1272a8e605586b28193880d30e56bf66a",
+    "a7/cli.py": "e0e622016f8533c0b1ca990c3ba361f7d97ad24ffabb30b38a753a813a20abbf",
+    "a7/compile.py": "6ca3d19da3f9379f45385b4e8ca923f175db1f8def7ca3f23f2b410ddfd2561a",
+    "a7/const_eval.py": "cde1afdb8e3a55bbdb14469035e12ab44b925ad545296243d5a8cb6f14170862",
+    "a7/errors.py": "6072206ee3e1eee78f8471fc82d99490780c2bf2ac00e95f2f31ca0783e08edd",
+    "a7/exact_constants.py": "b8365bb442ca5473e59d8c7d66b3ce13d850922ed2fdf23668f76945e6ade7a9",
+    "a7/formatters/__init__.py": "8809929d202d7cabbf96b55149ddef68457fe16697e9cc134a7e9626d37a8933",
+    "a7/formatters/console_formatter.py": "3f7430cea26fb13ed03c37af45b2effe6e1b0efa09a381b40985dfc3b2d874c9",
+    "a7/formatters/json_formatter.py": "9102209851b3dd09003249d86492a7dcfdeefd128bff3513afa20bbe68b64326",
+    "a7/formatters/markdown_formatter.py": "cf052ae1cbaf2712088e3bde6c7f4c39fe5f0d294b23c0cb8916a79b8119cf7f",
+    "a7/generics.py": "7cae39f378110669ccc7094b6a6b88f75a595345f73627604a6d32653ba7df8b",
+    "a7/module_resolver.py": "ba8241a7808bf12579aabda92a2d1c5d241d5e3e75ef07fa82f87c2132fd8c41",
+    "a7/parser.py": "1c534ce4c102ef2e2208e91490bf64a53e4d478f946a9f564c81dbba4563ea29",
+    "a7/passes/__init__.py": "259e439e0df4b38f2bc0752f0a5d7ce0579948d4874b0d39c75f4e9411bad4a2",
+    "a7/passes/name_resolution.py": "e4e0e8928e545f372b4bc9ad7572ffb3bcf7266b5831bbd0a90df026e0945d2e",
+    "a7/passes/semantic_validator.py": "8dedd6cd19847de36ec35532e8e133a03677a158201206b59364468643388bac",
+    "a7/passes/type_checker.py": "a41e67b21b5a82b87395e305ab1e3c40de7ac6a9d621d093d468326c225e2345",
+    "a7/safety.py": "6a8c5f1273c3675b6c4bb3bee2140ce491bac187b4e5aaadc0bd19dc14c34169",
+    "a7/semantic_context.py": "b2e921c8f8c26f88cf847880e640e787ff8c0aa3acf4ec69d7a50fc221a5c293",
+    "a7/stdlib/__init__.py": "72fb5f3d8d6cb6e2e83ae840616c1d088fa6a1185c96ab26e0084aaee77a076f",
+    "a7/stdlib/io.py": "7b60de9c4c6f2a0b285ac2bd5a0b0be8dbc649e968da247a97fecd653514033a",
+    "a7/stdlib/math.py": "44599bc615b5b2a36ebaa6b5028889653e6ebbdef4541f7a00fb0eeea04098e5",
+    "a7/stdlib/mem.py": "067c6b4e64e6785478afdf4369944d50561284d0849d3787509739d841622699",
+    "a7/stdlib/string.py": "1ae4bd08d93d0ee57c63fc857c1f5a211744b50fc82a40a699f3b4504c15864e",
+    "a7/symbol_table.py": "6212d06edd6a311a7823506ea0ed807c38288fbeebd0c9fc6449b31ebe26792d",
+    "a7/tokens.py": "7fd33d7b12949754429cbe9dfacf2190ff8c02b4a497b7bf10286ed338c90bcd",
+    "a7/toolchain.py": "15c5a8e26e6ea340913711b86733088cd18fe749f1de58354b2e087da5b4b721",
+    "a7/types.py": "0f8e0a962f9007ed6f554b3f3ea649455e1d3ce93802d521768e82c3118556b3",
+    "main.py": "1a0754070ee209f099e9522e30e3293f343ccd0696fbd395cf988c06d42e98d3"
+  },
+  "source_unchanged": true,
+  "parallel_workers": 3,
+  "observation_boundary": "Only final generated print argument is changed to expose stored IEEE bits. Ordinary A7 float formatting remains unverified.",
+  "cases": [
+    {
+      "name": "f32_mid_below",
+      "destination": "f32",
+      "literal": "1.000000059604644775390624",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 1.000000059604644775390624\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "3f800000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_mid_below/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_mid_below/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_mid_tie",
+      "destination": "f32",
+      "literal": "1.000000059604644775390625",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 1.000000059604644775390625\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "3f800000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_mid_tie/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_mid_tie/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_mid_above",
+      "destination": "f32",
+      "literal": "1.0000000596046447753906250000000000000000000000000000000000000000000000001",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 1.0000000596046447753906250000000000000000000000000000000000000000000000001\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "3f800001",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_mid_above/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_mid_above/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_mid_below",
+      "destination": "f64",
+      "literal": "1.00000000000000011102230246251565404236316680908203124",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 1.00000000000000011102230246251565404236316680908203124\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "3ff0000000000000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_mid_below/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_mid_below/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_mid_tie",
+      "destination": "f64",
+      "literal": "1.00000000000000011102230246251565404236316680908203125",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 1.00000000000000011102230246251565404236316680908203125\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "3ff0000000000000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_mid_tie/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_mid_tie/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_mid_above",
+      "destination": "f64",
+      "literal": "1.00000000000000011102230246251565404236316680908203126",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 1.00000000000000011102230246251565404236316680908203126\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "3ff0000000000001",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_mid_above/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_mid_above/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_under_below",
+      "destination": "f32",
+      "literal": "7.006492321624085e-46",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 7.006492321624085e-46\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "00000000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_under_below/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_under_below/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_under_above",
+      "destination": "f32",
+      "literal": "7.006492321624086e-46",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 7.006492321624086e-46\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "00000001",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_under_above/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_under_above/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_min_subnormal",
+      "destination": "f32",
+      "literal": "1.401298464324817e-45",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 1.401298464324817e-45\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "00000001",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_min_subnormal/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_min_subnormal/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_under_below",
+      "destination": "f64",
+      "literal": "2.4703282292062327e-324",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 2.4703282292062327e-324\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "0000000000000000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_under_below/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_under_below/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_under_above",
+      "destination": "f64",
+      "literal": "2.4703282292062328e-324",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 2.4703282292062328e-324\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "0000000000000001",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_under_above/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_under_above/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_min_subnormal",
+      "destination": "f64",
+      "literal": "4.9406564584124654e-324",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 4.9406564584124654e-324\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "0000000000000001",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_min_subnormal/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_min_subnormal/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_max",
+      "destination": "f32",
+      "literal": "340282346638528859811704183484516925440.0",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 340282346638528859811704183484516925440.0\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "7f7fffff",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_max/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_max/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_overflow_below",
+      "destination": "f32",
+      "literal": "340282356779733661637539395458142568447.0",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 340282356779733661637539395458142568447.0\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "7f7fffff",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_overflow_below/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_overflow_below/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_overflow_tie",
+      "destination": "f32",
+      "literal": "340282356779733661637539395458142568448.0",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = 340282356779733661637539395458142568448.0\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": null,
+      "expected_rejection": true,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_overflow_tie/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_overflow_tie/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_max",
+      "destination": "f64",
+      "literal": "1.7976931348623157e308",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 1.7976931348623157e308\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "7fefffffffffffff",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_max/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_max/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_overflow",
+      "destination": "f64",
+      "literal": "1.7976931348623159e308",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = 1.7976931348623159e308\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": null,
+      "expected_rejection": true,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_overflow/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_overflow/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f32_negative_zero",
+      "destination": "f32",
+      "literal": "-0.0",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f32 = -0.0\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "80000000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_negative_zero/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f32_negative_zero/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    },
+    {
+      "name": "f64_negative_underflow",
+      "destination": "f64",
+      "literal": "-1e-400",
+      "source": "io :: import \"std/io\"\nmain :: fn() {\n    observed_value: f64 = -1e-400\n    io.println(\"{}\", observed_value)\n}\n",
+      "expected_bits": "8000000000000000",
+      "expected_rejection": false,
+      "compile": {
+        "command": [
+          "/home/cx89/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_negative_underflow/main.a7",
+          "--format",
+          "json",
+          "--output",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/ieee-observer/final/f64_negative_underflow/original.zig"
+        ],
+        "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2",
+        "exit": 1,
+        "stdout": "",
+        "stderr": "Traceback (most recent call last):\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py\", line 4, in <module>\n    from a7.cli import main\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py\", line 7, in <module>\n    from .compile import A7Compiler, compile_a7_file, compile_a7_project\n  File \"/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py\", line 20, in <module>\n    from rich.console import Console\nModuleNotFoundError: No module named 'rich'\n"
+      },
+      "artifact_exists": false,
+      "passed": false
+    }
+  ],
+  "passed": false
+}

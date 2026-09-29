@@ -1,0 +1,15 @@
+// a7-glmr repro: same helper file imported under two spellings.
+// Module identity is the import string, not the resolved file
+// (a7/module_resolver.py loaded_modules key; a7/compile.py:605-611
+// seen_paths), so the file is parsed twice and its declarations are
+// merged twice. Observed: three "Already defined" semantic errors whose
+// underlines point at this file's import lines / call statement instead
+// of the duplicated declarations in the helper.
+a :: import "./a7glmr_mod_helper"
+b :: import "a7glmr_mod_helper"
+io :: import "std/io"
+main :: fn() {
+    x := a.pub_fn(1)
+    y := b.pub_fn(2)
+    io.println("{} {}", x, y)
+}

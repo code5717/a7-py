@@ -1,0 +1,6 @@
+io :: import "std/io"
+main :: fn() { a := [1,2,3]
+ i: usize = 0
+ for { io.println("{}", a[i])
+ i += 1
+ if i > 3 { break } } }

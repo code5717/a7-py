@@ -1,0 +1,47 @@
+============================================================
+A7 COMPILER - COMPLETE TEST RESULTS
+============================================================
+
+All Pytest Tests:
+FAIL: 2 failed, 2073 passed in 654.30s (0:10:54)
+---- recent output ----
+E     Error 4/4:
+E     error: Type mismatch (Duplicate struct field initializer) [line 14: col 10]
+E     ────────────────────────────────────────────────────────────────────────────────
+E       12 ┃     a := Pt{y: tag(2), x: tag(1)}
+E       13 ┃     io.println("a {} {}", a.x, a.y)
+E       14 ┃     b := Pt{tag(3), tag(4)}
+E          ┃          └┘
+E       15 ┃     io.println("b {} {}", b.x, b.y)
+E       16 ┃ }
+E     
+E     ────────────────────────────────────────────────────────────────────────────────
+E     hint: Ensure the types match or use an explicit cast
+E     
+E     
+E   assert 6 == 0
+E    +  where 6 = CompletedProcess(args=['/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python', '/home/cx89/Projects/pl-dev/a7-py/main.py'...────────────────────────────────────────────────\nhint: Ensure the types match or use an explicit cast\n\n', stderr='').returncode
+=========================== short test summary info ============================
+FAILED test/test_float_nonfinite_folding.py::test_comparison_over_overflowing_floats_gives_the_f64_answer
+FAILED test/test_zig_backend_runtime.py::test_struct_literal_fields_evaluate_in_declaration_order[named-out-of-order]
+2 failed, 2073 passed in 654.30s (0:10:54)
+-----------------------
+
+Examples E2E Verification (compile/build/run/output):
+PASS: Examples verified: 43/43
+
+Debug Artifact Build Verification (Zig):
+FAIL: /home/cx89/Projects/pl-dev/a7-py/build/debug/zig/src/037_language_tour.zig
+---- recent output ----
+Build artifacts verified: 40/43
+
+Failures:
+- debug/zig/010_enum: zig fmt --check failed:
+/home/cx89/Projects/pl-dev/a7-py/build/debug/zig/src/010_enum.zig
+- debug/zig/028_state_machine: zig fmt --check failed:
+/home/cx89/Projects/pl-dev/a7-py/build/debug/zig/src/028_state_machine.zig
+- debug/zig/037_language_tour: zig fmt --check failed:
+/home/cx89/Projects/pl-dev/a7-py/build/debug/zig/src/037_language_tour.zig
+-----------------------
+
+Release Artifact Build Verification (Zig):

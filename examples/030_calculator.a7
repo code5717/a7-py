@@ -59,6 +59,7 @@ sqrt :: fn(x: f64) f64 {
     epsilon := 0.00001
 
     for i := 0; i < 20; i += 1 {
+        if guess == 0.0 { ret 0.0 }
         next_guess := (guess + x / guess) / 2.0
         diff := if (next_guess - guess) > 0.0 {
             next_guess - guess

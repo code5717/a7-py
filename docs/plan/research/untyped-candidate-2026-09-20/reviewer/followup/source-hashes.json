@@ -1,0 +1,5 @@
+{
+  "a7/exact_constants.py": "8dfb9652c90169e2c56f6af352fe1631692d1f3edd96a7faa767d142ff1a6832",
+  "a7/passes/type_checker.py": "41c833df381961d7e24b5379c9910aac958f1a839ff68833931001131ac544a1",
+  "a7/backends/zig.py": "920b692b27b44f4655b0841186b3dfe7015291169e1429ecee945a17ceea841f"
+}

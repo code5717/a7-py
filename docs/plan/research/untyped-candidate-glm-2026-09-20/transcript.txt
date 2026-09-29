@@ -1,0 +1,1418 @@
+
+> build · glm-5.3
+
+✱ Glob "docs/plan/research/untyped-constant-resource-policy*.md" 1 match
+✱ Glob "docs/plan/packets/P-TYP-forward-globals.md" 1 match
+
+$ ls tmp/untyped-constants-next/ && ls tmp/untyped-constants-next/review-candidate-2/ && ls tmp/untyped-constants-next/candidate-followup/
+baseline
+baseline-contexts
+baseline-corpus
+candidate
+candidate-evidence
+candidate-followup
+codex-followup-prompt.txt
+codex-followup-result.md
+codex-followup.txt
+codex-prompt.txt
+codex-result.md
+codex.txt
+contexts.py
+corpus-comparison.json
+corpus.py
+glm-candidate-prompt.txt
+glm-candidate.txt
+glm-correction-prompt.txt
+glm-correction.txt
+glm-final-prompt.txt
+glm-final.txt
+glm-prompt.txt
+glm.txt
+ieee-observer
+review-candidate
+review-candidate-2
+review-candidate-2-contexts
+review-candidate-2-corpus
+review-candidate-contexts
+review-candidate-corpus
+a7
+main.py
+REPORT.md
+baseline-selected-failure.json
+baseline_failure.py
+cases
+evidence-manifest.json
+exploratory-results.json
+final-cases
+final-diagnostics.log
+final-results.json
+final-sources
+final.log
+finalize.py
+pre-diagnostic-final-results.json
+pytest-temp
+recursion.json
+results.json
+reviewer
+run.log
+run_cases.py
+run_selected.py
+scan.py
+selected-before-default-context-fix.json
+selected-final.log
+selected-tests.json
+selected.log
+snapshot.py
+source-manifest.json
+source.diff
+supplemental-results.json
+supplemental.log
+supplemental.py
+verification.json
+verify.py
+zig-cache
+zig-global-cache
+
+→ Read tmp/untyped-constants-next/candidate-followup/REPORT.md
+→ Read tmp/untyped-constants-next/review-candidate-2/a7/exact_constants.py
+→ Read tmp/untyped-constants-next/candidate-followup/source.diff
+→ Read docs/plan/packets/P-TYP-forward-globals.md
+→ Read docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Context loaded. Now I'll verify the frozen prototype's numeric core against independent references and check the evidence files.
+
+$ sha256sum tmp/untyped-constants-next/review-candidate-2/a7/exact_constants.py tmp/untyped-constants-next/candidate-followup/final-sources/a7/exact_constants.py 2>/dev/null; ls tmp/untyped-constants-next/candidate-followup/reviewer/ 2>/dev/null
+b8365bb442ca5473e59d8c7d66b3ce13d850922ed2fdf23668f76945e6ade7a9  tmp/untyped-constants-next/review-candidate-2/a7/exact_constants.py
+b8365bb442ca5473e59d8c7d66b3ce13d850922ed2fdf23668f76945e6ade7a9  tmp/untyped-constants-next/candidate-followup/final-sources/a7/exact_constants.py
+REPORT.md
+boundary-review.md
+check_rounding.py
+check_rounding_final.py
+final_mixed_f32_compare
+final_mixed_f32_midpoint
+final_mixed_f32_overflow
+mixed-final-results.json
+mixed-results.json
+mixed_f32_compare
+mixed_f32_midpoint
+mixed_f32_overflow
+mixed_final_probe.py
+mixed_probe.py
+rounding-final-results.json
+rounding-results.json
+
+✱ Grep "MAX_NUMBER_LENGTH|def _lex_number|underscore|raw_text" in a7/tokens.py · 23 matches
+→ Read a7/ast_nodes.py [offset=565, limit=45]
+→ Read a7/tokens.py [offset=525, limit=85]
+
+$ ls tmp/untyped-constants-next/review-candidate-2/ tmp/untyped-constants-next/review-candidate-2/a7/ | head -40; cat tmp/untyped-constants-next/review-candidate-2/main.py 2>/dev/null | head -20
+tmp/untyped-constants-next/review-candidate-2/:
+a7
+main.py
+
+tmp/untyped-constants-next/review-candidate-2/a7/:
+__init__.py
+__pycache__
+ast_nodes.py
+ast_preprocessor.py
+backends
+cast_classifier.py
+cli.py
+compile.py
+const_eval.py
+errors.py
+exact_constants.py
+formatters
+generics.py
+module_resolver.py
+parser.py
+passes
+safety.py
+semantic_context.py
+stdlib
+symbol_table.py
+tokens.py
+toolchain.py
+types.py
+#!/usr/bin/env uv run python
+"""Compatibility wrapper for running the A7 CLI from the repository checkout."""
+
+from a7.cli import main
+
+
+if __name__ == "__main__":
+    main()
+
+$ python3 -c "
+from fractions import Fraction
+for s in ['1_000.5', '5.', '.5', '1e5', '1_0']:
+    try:
+        print(repr(s), '->', Fraction(s))
+    except Exception as e:
+        print(repr(s), '-> RAISES', type(e).__name__, e)
+print('float(1_000.5) =', float('1_000.5'))
+"
+'1_000.5' -> 2001/2
+'5.' -> 5
+'.5' -> 1/2
+'1e5' -> 100000
+'1_0' -> 10
+float(1_000.5) = 1000.5
+
+$ python3 --version; uv python list --only-installed 2>/dev/null | head; python3 -c "
+from fractions import Fraction
+import sys
+print(sys.version)
+print(Fraction('1_000.5'))
+"
+Python 3.14.7
+cpython-3.14.7-linux-x86_64-gnu     /usr/bin/python3.14
+cpython-3.14.7-linux-x86_64-gnu     /usr/bin/python3 -> python3.14
+cpython-3.14.7-linux-x86_64-gnu     /usr/bin/python -> python3
+cpython-3.13.15-linux-x86_64-gnu    /home/cx89/.local/share/uv/python/cpython-3.13-linux-x86_64-gnu/bin/python3.13
+cpython-3.12.14-linux-x86_64-gnu    /home/cx89/.local/bin/python3.12 -> /home/cx89/.local/share/uv/python/cpython-3.12-linux-x86_64-gnu/bin/python3.12
+cpython-3.12.14-linux-x86_64-gnu    /home/cx89/.local/share/uv/python/cpython-3.12-linux-x86_64-gnu/bin/python3.12
+3.14.7 (main, Aug 10 2026, 07:46:56) [GCC 16.1.1 20260728]
+2001/2
+
+$ uv run --python 3.13 python -c "
+from fractions import Fraction
+import sys
+print(sys.version)
+for s in ['1_000.5', '5.', '.5']:
+    try:
+        print(repr(s), '->', Fraction(s))
+    except Exception as e:
+        print(repr(s), '-> RAISES', type(e).__name__)
+" 2>&1 | tail -6
+3.13.15 (main, Aug 25 2026, 14:01:07) [Clang 22.1.3 ]
+'1_000.5' -> 2001/2
+'5.' -> 5
+'.5' -> 1/2
+
+Fraction accepts all lexer float forms (including underscores) on both supported Pythons — that concern is cleared. Now let me check how the evidence scripts invoke the compiler, then run bounded probes against the frozen tree.
+$ grep -n "main.py\|subprocess\|command" tmp/untyped-constants-next/candidate-followup/finalize.py | head -20; grep -n "def cmd\|add_parser\|check\|compile" tmp/untyped-constants-next/review-candidate-2/a7/cli.py | head -30
+2:import json, subprocess, hashlib
+12: c=run([PY,str(C/'main.py'),str(src),'-o',str(out)],C)
+20:    b=existing['build'];binary=Path(existing['run']['command'][0])
+1:"""Command-line interface for the A7 compiler."""
+17:from .compile import A7Compiler, CompileMode, OutputFormat
+22:    """Protect the sources already read by the compiler, including file aliases.
+24:    compile inputs -> successful result -> native output check -> atomic write
+65:    if command == "check":
+81:        result = A7Compiler(mode=CompileMode.PIPELINE, output_format=OutputFormat.JSON).compile_file_detailed(args.file)
+82:    if command == "check":
+136:    if sys.argv[1:2] and sys.argv[1] in {"check", "build", "run", "doctor"}:
+141:        description="A7 compiler. Commands: check, build, run, doctor. Use --version for the package version.",
+151:        help="Execution mode (default: compile)",
+165:        help="Output file path for --mode compile (default: auto-generated)",
+173:            "Allowed in modes: compile, pipeline, doc. "
+197:        parser.error("--output is only valid when --mode compile")
+204:        parser.error("--doc-out is only valid in modes: compile, pipeline, doc")
+213:    compiler = A7Compiler(
+220:    result = compiler.compile_file_detailed(str(input_path), args.output)
+
+$ mkdir -p /tmp/opencode/glmreview2 && cat > /tmp/opencode/glmreview2/zdiv_global.a7 <<'EOF'
+io :: import "std/io"
+BAD :: 1.0 / 0.0
+main :: fn() {
+    io.println("{}", 1)
+}
+EOF
+cat > /tmp/opencode/glmreview2/zdiv_local_var.a7 <<'EOF'
+io :: import "std/io"
+main :: fn() {
+    x := 1.0 / 0.0
+    io.println("{}", x)
+}
+EOF
+cd tmp/untyped-constants-next/review-candidate-2 && uv run python main.py /tmp/opencode/glmreview2/zdiv_global.a7 -o /tmp/opencode/glmreview2/zg.zig; echo "exit=$?"; cd - >/dev/null && uv run python main.py /tmp/opencode/glmreview2/zdiv_local_var.a7 -o /tmp/opencode/glmreview2/zl.zig; echo "exit=$?"
+Found 3 errors:
+
+Error 1/3:
+error: Exact constant division or remainder by zero [line 2: col 8]
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 2/3:
+error: Exact constant division or remainder by zero [line 2: col 8]
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 3/3:
+error: Exact constant division or remainder by zero [line 2: col 8]
+
+exit=6
+
+Found 1 error:
+
+Error 1/1:
+error: Divisor not proven non-zero (division/modulo divisor must be non-zero: 
+divisor may be zero) [line 3: col 16]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ io :: import "std/io"
+   2 ┃ main :: fn() {
+   3 ┃     x := 1.0 / 0.0
+     ┃                └─┘
+   4 ┃     io.println("{}", x)
+   5 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+
+exit=6
+
+Confirmed: global untyped zero division emits **three identical diagnostics** for one error (duplicate evaluation paths). Now boundary probes through the frozen compiler, verifying emitted bit patterns directly:
+$ cd /tmp/opencode/glmreview2 && for t in "x: f32 = 1.000000059604644775390625|mid_f32" "x: f32 = 1.0000000596046448|witness_f32" "x: f64 = 1.0000000000000002220446049250313|mid_f64" "x: f64 = 5e-324|half_sub" "x: f64 = -0.0|negzero" "x: f32 = 3.4028234663852886e38|maxf32" "x: f32 = 3.4028235677973366e38|tie_f32_over" "x: f32 = 1e100|over_f32" "x: f64 = 1e400|over_f64"; do expr="${t%%|*}"; name="${t##*|}"; printf 'main :: fn() {\n    %s\n}\n' "$expr" > "$name.a7"; (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$name.a7" -o "/tmp/opencode/glmreview2/$name.zig" >/dev/null 2>&1); ec=$?; bits=$(grep -o '@bitCast(@as(u[0-9]*, [0-9]*))' "$name.zig" 2>/dev/null | head -1); echo "$name exit=$ec $bits"; done
+mid_f32 exit=0 @bitCast(@as(u32, 1065353216))
+witness_f32 exit=0 @bitCast(@as(u32, 1065353217))
+mid_f64 exit=0 @bitCast(@as(u64, 4607182418800017409))
+half_sub exit=0 @bitCast(@as(u64, 1))
+negzero exit=0 @bitCast(@as(u64, 9223372036854775808))
+maxf32 exit=0 @bitCast(@as(u32, 2139095039))
+tie_f32_over exit=0 @bitCast(@as(u32, 2139095039))
+over_f32 exit=6 
+over_f64 exit=6
+
+$ python3 -c "
+from fractions import Fraction
+mid = (1<<128) - (1<<103)
+print('exact midpoint =', mid, '=', float(mid), 'hexcheck')
+import decimal
+print('decimal exact:', decimal.Decimal(mid))
+above = mid + 1
+print('above:', decimal.Decimal(above))
+"
+exact midpoint = 340282356779733661637539395458142568448 = 3.4028235677973366e+38 hexcheck
+decimal exact: 340282356779733661637539395458142568448
+above: 340282356779733661637539395458142568449
+
+$ cd /tmp/opencode/glmreview2 && for t in "340282356779733661637539395458142568448|tie_exact" "340282356779733661637539395458142568449|above_tie" "340282356779733661637539395458142568447|below_tie" "17976931348623157081452742373170435679807056752584499659891747680315726078002853876058955863276687817154045895351438246423432132688946418276846754670353751698604991057655128207624549009038932894407586850845513394230458323690322294816580855933212334827479782620414472316873817718091929988125040402618412485836|tie_f64_exact" "17976931348623157081452742373170435679807056752584499659891747680315726078002853876058955863276687817154045895351438246423432132688946418276846754670353751698604991057655128207624549009038932894407586850845513394230458323690322294816580855933212334827479782620414472316873817718091929988125040402618412485837|above_tie_f64"; do num="${t%%|*}"; name="${t##*|}"; printf 'main :: fn() {\n    x: f64 = %s\n}\n' "$num" > "$name.a7"; (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$name.a7" -o "/tmp/opencode/glmreview2/$name.zig" >/dev/null 2>&1); ec=$?; bits=$(grep -o '@bitCast(@as(u[0-9]*, [0-9]*))' "$name.zig" 2>/dev/null | head -1); echo "$name exit=$ec $bits"; done
+tie_exact exit=0 @bitCast(@as(u64, 5183643170835005440))
+above_tie exit=0 @bitCast(@as(u64, 5183643170835005440))
+below_tie exit=0 @bitCast(@as(u64, 5183643170835005440))
+tie_f64_exact exit=4 
+above_tie_f64 exit=4
+
+The f32-tie probes accidentally used `f64` destinations. Rerunning with correct destinations and exact power-of-two expressions (each token ≤100 chars, exact in the evaluator):
+$ python3 -c "print(2**103); print(2**100); print(2**70)" && cd /tmp/opencode/glmreview2 && cat > tie32.a7 <<'EOF'
+main :: fn() {
+    x: f32 = 33554430 * 10141204801825835211973625643008
+}
+EOF
+cat > tie32m1.a7 <<'EOF'
+main :: fn() {
+    x: f32 = 33554430 * 10141204801825835211973625643008 - 1
+}
+EOF
+cat > tie32p1.a7 <<'EOF'
+main :: fn() {
+    x: f32 = 33554430 * 10141204801825835211973625643008 + 1
+}
+EOF
+P100=1267650600228229401496703205376
+P70=1180591620717411303424
+expr="18014398509481983 * $P100 * $P100 * $P100 * $P100 * $P100 * $P100 * $P100 * $P100 * $P100 * $P70"
+printf 'main :: fn() {\n    x: f64 = %s\n}\n' "$expr" > tie64.a7
+printf 'main :: fn() {\n    x: f64 = %s - 1\n}\n' "$expr" > tie64m1.a7
+printf 'main :: fn() {\n    x: f64 = %s + 1\n}\n' "$expr" > tie64p1.a7
+for n in tie32 tie32m1 tie32p1 tie64 tie64m1 tie64p1; do (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$n.a7" -o "/tmp/opencode/glmreview2/$n.zig" >/dev/null 2>&1); ec=$?; bits=$(grep -o '@bitCast(@as(u[0-9]*, [0-9]*))' "$n.zig" 2>/dev/null | head -1); echo "$n exit=$ec $bits"; done
+10141204801825835211973625643008
+1267650600228229401496703205376
+1180591620717411303424
+tie32 exit=0 @bitCast(@as(u32, 2139095039))
+tie32m1 exit=0 @bitCast(@as(u32, 2139095039))
+tie32p1 exit=0 @bitCast(@as(u32, 2139095039))
+tie64 exit=6 
+tie64m1 exit=0 @bitCast(@as(u64, 9218868437227405311))
+tie64p1 exit=6
+
+My f32 tie constant was wrong (33554430×2^103 is max finite itself, not the tie). Correct tie is 33554431×2^103 = 2^128−2^103. Rerunning f32:
+$ cd /tmp/opencode/glmreview2 && B=10141204801825835211973625643008 && printf 'main :: fn() {\n    x: f32 = 33554431 * %s\n}\n' "$B" > r_tie32.a7 && printf 'main :: fn() {\n    x: f32 = 33554431 * %s - 1\n}\n' "$B" > r_tie32m1.a7 && printf 'main :: fn() {\n    x: f32 = 33554431 * %s + 1\n}\n' "$B" > r_tie32p1.a7 && printf 'main :: fn() {\n    x: f32 = 33554430 * %s\n}\n' "$B" > r_max32.a7 && for n in r_tie32 r_tie32m1 r_tie32p1 r_max32; do (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$n.a7" -o "/tmp/opencode/glmreview2/$n.zig" >/dev/null 2>&1); ec=$?; bits=$(grep -o '@bitCast(@as(u[0-9]*, [0-9]*))' "$n.zig" 2>/dev/null | head -1); echo "$n exit=$ec $bits"; done
+r_tie32 exit=6 
+r_tie32m1 exit=0 @bitCast(@as(u32, 2139095039))
+r_tie32p1 exit=6 
+r_max32 exit=0 @bitCast(@as(u32, 2139095039))
+
+All overflow-boundary cases correct at both widths. Now a randomized property test of `ieee_bits` against two independent oracles (CPython's correctly-rounded `int.__truediv__` for f64, and a fixed-grid distance-comparison reference for both widths), plus synthetic-AST tests of `evaluate`:
+$ grep -n "class ASTNode\|literal_kind\|literal_value\|^def create_literal\|def create_identifier\|def create_unary\|def create_binary\|operator\b" /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/ast_nodes.py | head -25
+158:class ASTNode:
+199:    literal_kind: Optional[LiteralKind] = None
+200:    literal_value: Any = None
+204:    operator: Optional[Union[BinaryOp, UnaryOp, AssignOp]] = None
+270:def create_literal(
+276:        literal_kind=kind,
+277:        literal_value=value,
+283:def create_identifier(name: str, span: SourceSpan = None) -> ASTNode:
+288:def create_binary_expr(
+292:    return ASTNode(kind=NodeKind.BINARY, left=left, operator=op, right=right, span=span)
+419:        kind=NodeKind.ASSIGNMENT, target=target, operator=op, value=value, span=span
+461:    """Convert a token type to a binary operator."""
+486:    """Convert a token type to a unary operator."""
+497:    """Convert a token type to an assignment operator."""
+573:def create_literal_from_token(token: Token) -> ASTNode:
+
+$ mkdir -p /tmp/opencode/glmreview2 && cat > /tmp/opencode/glmreview2/prop_test.py <<'EOF'
+import random, struct, sys
+from fractions import Fraction as F
+sys.path.insert(0, "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2")
+from a7.exact_constants import ieee_bits, evaluate, ExactArithmeticError
+from a7.ast_nodes import (NodeKind, LiteralKind, UnaryOp, BinaryOp, ASTNode,
+                          create_literal, create_identifier, create_binary_expr)
+
+def ref_grid(value, width):
+    """Independent reference: round on the global subnormal grid by distance comparison."""
+    if width == 32: p, emin, emax, bias = 24, -126, 127, 127
+    else: p, emin, emax, bias = 53, -1022, 1023, 1023
+    sign = 1 if value < 0 or (value == 0 and 0) else 0
+    v = abs(value)
+    if v == 0: return 0, False
+    q = F(2) ** (emin - (p - 1))          # subnormal grid spacing
+    k = v / q
+    lo = k.numerator // k.denominator
+    hi = lo + 1
+    dlo, dhi = k - lo, hi - k
+    if dlo < dhi: sig = lo
+    elif dhi < dlo: sig = hi
+    else: sig = lo if lo % 2 == 0 else hi
+    r = sig * q                            # rounded magnitude
+    if r >= F(2) ** (emax + 1): return None, True   # overflow -> inf
+    if sig == 0: return 0, False
+    # unbiased exponent of r
+    e = r.numerator.bit_length() - r.denominator.bit_length()
+    if F(2) ** e > r: e -= 1
+    if e < emin:
+        return sign << (width - 1) | sig, False
+    frac = sig >> (e - (emin - (p - 1))) if e > emin - (p - 1) else sig
+    # recompute fraction directly from r for independence
+    m = r / F(2) ** e                      # in [1,2)
+    sigm = m * (F(2) ** (p - 1))
+    assert sigm.denominator == 1
+    si = sigm.numerator
+    assert (p - 1) <= si.bit_length() <= p
+    return (sign << (width - 1)) | ((e + bias) << (p - 1)) | (si - (1 << (p - 1))), False
+
+random.seed(20260920)
+cases = []
+# random rationals with mixed magnitudes
+for _ in range(30000):
+    n = random.randint(0, 2**random.randint(1, 120))
+    d = random.randint(1, 2**random.randint(1, 120))
+    e10 = random.randint(-330, 330)
+    cases.append(F(n, d) * F(10) ** e10)
+# midpoints and neighbors of powers of two (normal + subnormal range)
+for p2 in list(range(-160, 130)) + [-149, -150, -126, -125, -127, -1022, -1023, -1024, -1074, -1075]:
+    t = F(2) ** p2
+    for delta in (F(1, 2**300), -F(1, 2**300), F(1, 3), -F(1, 3)):
+        cases.append(t + delta)
+    cases.append(t)
+# exact ties between adjacent f32 values near 1.0 and near subnormals
+for base in (F(1), F(2)**-125, F(2)**-148, F(2)**100, F(2)**-1021, F(2)**-1073, F(1) + F(2)**-52):
+    ulp32 = F(2) ** -23 if base >= F(2)**-126 else F(2) ** -149
+    for k in (-3, -1, 0, 1, 3):
+        cases.append(base + k * ulp32 / 2)
+
+bad = 0
+for v in cases:
+    for w, sign_pairs in ((32, ((1, 1), (-1, -1))), (64, ((1, 1),))):
+        for mul, exp_sign in sign_pairs:
+            val = v * exp_sign
+            cat = 'negative_zero' if val == 0 and exp_sign < 0 else (True if val else True)
+            try:
+                got = ieee_bits((val, cat if val == 0 else True), w)
+                ovf = False
+            except ExactArithmeticError:
+                got, ovf = None, True
+            ref, rovf = ref_grid(val, w)
+            # cross-check f64 against CPython correctly-rounded int/int division when exact
+            cross = None
+            if w == 64 and not ovf and abs(val) < F(10)**308 * F(1,1) and val != 0:
+                f = val.numerator / val.denominator   # correctly rounded
+                if f in (float('inf'),):
+                    cross = 'inf'
+                else:
+                    cross = struct.unpack('>Q', struct.pack('>d', f))[0]
+            if (got, ovf) != (ref, rovf) or (cross is not None and cross not in ('inf',) and cross != got):
+                bad += 1
+                if bad < 10:
+                    print("MISMATCH", w, val, "got", (got, ovf), "ref", (ref, rovf), "cross", cross)
+print("ieee_bits property:", len(cases), "families,", bad, "mismatches")
+
+# ---- evaluate() semantics on synthetic ASTs ----
+def lint(n): return create_literal(LiteralKind.INTEGER, n, str(n))
+def flit(s): return create_literal(LiteralKind.FLOAT, float(s), s)
+def bin_(op, l, r): return ASTNode(kind=NodeKind.BINARY, left=l, operator=op, right=r)
+def un_(op, o): return ASTNode(kind=NodeKind.UNARY, operator=op, operand=o)
+
+tests = []
+def t(expr, want_val, want_cat):
+    tests.append((expr, F(want_val) if not isinstance(want_val, F) else want_val, want_cat))
+
+t(bin_(BinaryOp.DIV, lint(5), lint(2)), 2, False)
+t(bin_(BinaryOp.DIV, un_(UnaryOp.NEG, lint(5)), lint(2)), -2, False)
+t(bin_(BinaryOp.MOD, un_(UnaryOp.NEG, lint(5)), lint(2)), -1, False)
+t(bin_(BinaryOp.MOD, lint(5), un_(UnaryOp.NEG, lint(2))), 1, False)
+t(bin_(BinaryOp.DIV, flit('5.0'), lint(2)), F('5')/2, True)
+t(bin_(BinaryOp.MOD, flit('-5.5'), flit('2.0')), F('-3')/2, True)
+t(bin_(BinaryOp.DIV, flit('1.0'), flit('3.0')), F(1,3), True)
+t(un_(UnaryOp.NEG, flit('0.0')), 0, 'negative_zero')
+t(un_(UnaryOp.NEG, un_(UnaryOp.NEG, flit('0.0'))), 0, True)
+t(bin_(BinaryOp.ADD, flit('-0.0'), flit('-0.0')), 0, 'negative_zero')
+t(bin_(BinaryOp.ADD, flit('-0.0'), flit('0.0')), 0, True)
+t(bin_(BinaryOp.SUB, flit('-0.0'), flit('0.0')), 0, 'negative_zero')
+t(bin_(BinaryOp.MUL, flit('-0.0'), flit('2.0')), 0, 'negative_zero')
+t(bin_(BinaryOp.DIV, flit('0.0'), flit('-2.0')), 0, 'negative_zero')
+t(bin_(BinaryOp.MOD, flit('-4.0'), flit('2.0')), 0, 'negative_zero')
+t(bin_(BinaryOp.MOD, flit('4.0'), un_(UnaryOp.NEG, flit('2.0'))), 0, True)
+t(bin_(BinaryOp.MUL, lint(255), lint(1)) , 255, False)  # int category stays int
+t(bin_(BinaryOp.ADD, flit('1e-2'), flit('2e-2')), F(3,100), True)
+t(bin_(BinaryOp.SUB, flit('0.3'), flit('0.1')), F('0.3')-F('0.1'), True)
+
+fail = 0
+for expr, wv, wc in tests:
+    res = evaluate(expr, lambda name: None, {})
+    if res is None or res[0] != wv or res[1] != wc:
+        fail += 1
+        print("EVAL FAIL", "want", (wv, wc), "got", res)
+print("evaluate semantics:", len(tests), "cases,", fail, "failures")
+
+# unsupported operators must return None, not raise
+for op in (BinaryOp.AND, BinaryOp.OR, BinaryOp.SHL, BinaryOp.SHR, BinaryOp.BIT_AND, BinaryOp.BIT_XOR):
+    r = evaluate(bin_(op, lint(1), lint(2)), lambda n: None, {})
+    assert r is None, op
+r = evaluate(ASTNode(kind=NodeKind.UNARY, operator=UnaryOp.BIT_NOT, operand=lint(3)), lambda n: None, {})
+assert r is None
+print("unsupported fallbacks: OK (None)")
+# zero divisor raises
+try:
+    evaluate(bin_(BinaryOp.DIV, lint(1), lint(0)), lambda n: None, {})
+    print("ZERO DIV: no raise - BAD")
+except ExactArithmeticError:
+    print("zero divisor raises: OK")
+EOF
+python3 /tmp/opencode/glmreview2/prop_test.py
+Traceback (most recent call last):
+  File "/tmp/opencode/glmreview2/prop_test.py", line 4, in <module>
+    from a7.exact_constants import ieee_bits, evaluate, ExactArithmeticError
+  File "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py", line 7, in <module>
+    from .compile import A7Compiler, compile_a7_file, compile_a7_project
+  File "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/compile.py", line 20, in <module>
+    from rich.console import Console
+ModuleNotFoundError: No module named 'rich'
+
+$ sed -i '1i import sys; sys.modules["a7"] = type(sys)("a7"); sys.modules["a7"].__path__ = ["/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7"]' /tmp/opencode/glmreview2/prop_test.py && uv run python /tmp/opencode/glmreview2/prop_test.py
+Traceback (most recent call last):
+  File "/tmp/opencode/glmreview2/prop_test.py", line 72, in <module>
+    ref, rovf = ref_grid(val, w)
+                ~~~~~~~~^^^^^^^^
+  File "/tmp/opencode/glmreview2/prop_test.py", line 36, in ref_grid
+    assert sigm.denominator == 1
+           ^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+$ cd /tmp/opencode/glmreview2 && python3 - <<'EOF'
+import sys
+sys.modules["a7"] = type(sys)("a7"); sys.modules["a7"].__path__ = ["/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7"]
+import importlib.util
+spec = importlib.util.spec_from_file_location("probe", "/tmp/opencode/glmreview2/probe_dbg.py")
+# inline debug of ref_grid logic on a few values
+from fractions import Fraction as F
+def dbg(r, p=53, emin=-1022):
+    e = r.numerator.bit_length() - r.denominator.bit_length()
+    if F(2) ** e > r: e -= 1
+    return e
+for r in [F(1), F(3,2), F(2)**-1022, F(2)**-1022 + F(2)**-1074, F(1,3)]:
+    print(r, "e=", dbg(r))
+EOF
+1 e= 0
+3/2 e= 0
+1/44942328371557897693232629769725618340449424473557664318357520289433168951375240783177119330601884005280028469967848339414697442203604155623211857659868531094441973356216371319075554900311523529863270738021251442209537670585615720368478277635206809290837627671146574559986811484619929076208839082406056034304 e= -1022
+4503599627370497/202402253307310618352495346718917307049556649764142118356901358027430339567995346891960383701437124495187077864316811911389808737385793476867013399940738509921517424276566361364466907742093216341239767678472745068562007483424692698618103355649159556340810056512358769552333414615230502532186327508646006263307707741093494784 e= -1022
+1/3 e= -2
+
+My reference had a bug (rounding on the global subnormal grid can produce non-representable normals). Fixing it to per-binade spacing with floor/ceil distance comparison, f64 cross-checked against CPython's correctly-rounded `int.__truediv__`:
+$ cat > /tmp/opencode/glmreview2/prop_test2.py <<'EOF'
+import sys
+sys.modules["a7"] = type(sys)("a7"); sys.modules["a7"].__path__ = ["/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7"]
+import random, struct
+from fractions import Fraction as F
+from a7.exact_constants import ieee_bits, evaluate, ExactArithmeticError
+from a7.ast_nodes import (NodeKind, LiteralKind, UnaryOp, BinaryOp, ASTNode,
+                          create_literal, create_identifier, create_binary_expr)
+
+def ref(value, width):
+    """Reference: locate binade, quantize by floor/ceil + exact distance, ties to even."""
+    if width == 32: p, emin, emax, bias = 24, -126, 127, 127
+    else: p, emin, emax, bias = 53, -1022, 1023, 1023
+    sign = 1 if value < 0 else 0
+    v = abs(value)
+    if v == 0: return 0, False
+    e = v.numerator.bit_length() - v.denominator.bit_length()
+    if F(2) ** e > v: e -= 1
+    assert F(2) ** e <= v < F(2) ** (e + 1)
+    s = F(2) ** (max(e, emin) - (p - 1))     # target spacing
+    k = v / s
+    lo = k.numerator // k.denominator
+    hi = lo + 1
+    if k - lo < hi - k: m = lo
+    elif hi - k < k - lo: m = hi
+    else: m = lo if lo % 2 == 0 else hi
+    if m == 1 << p:                            # carried into next binade
+        m >>= 1; e += 1
+    if e > emax: return None, True             # -> inf
+    if m < 1 << (p - 1): return (sign << (width - 1)) | m, False
+    return (sign << (width - 1)) | ((e + bias) << (p - 1)) | (m - (1 << (p - 1))), False
+
+random.seed(20260920)
+cases = []
+for _ in range(40000):
+    n = random.randint(0, 2 ** random.randint(1, 130))
+    d = random.randint(1, 2 ** random.randint(1, 130))
+    cases.append(F(n, d) * F(10) ** random.randint(-340, 340))
+for p2 in range(-1080, 140):
+    t = F(2) ** p2
+    for delta in (F(1, 2 ** 400), -F(1, 2 ** 400), F(1, 3), -F(1, 3), F(0)):
+        cases.append(t + delta)
+for base in (F(1), F(2) ** -125, F(2) ** -148, F(2) ** 100, F(2) ** -1021, F(2) ** -1073):
+    for h in (F(1, 2), F(1, 3), F(2, 3)):
+        cases.append(base + h * F(2) ** -23 if base >= F(2) ** -126 else base + h * F(2) ** -149)
+        cases.append(base + h * F(2) ** -52 if base >= F(2) ** -1022 else base + h * F(2) ** -1074)
+
+bad = bad64 = 0
+for v in cases:
+    if v <= 0: v = v  # keep; sign tested via negation below
+    for val in (v, -v):
+        for w in (32, 64):
+            try:
+                got, ovf = ieee_bits((val, True if val else 'negative_zero'), w), False
+            except ExactArithmeticError:
+                got, ovf = None, True
+            r, rovf = ref(val, w)
+            if (got, ovf) != (r, rovf):
+                bad += 1
+                if bad < 8: print("MISMATCH", w, val, (got, ovf), (r, rovf))
+            if w == 64 and not ovf and val != 0 and abs(val) < F(2) ** 1024:
+                f = val.numerator / val.denominator
+                cross = struct.unpack('>Q', struct.pack('>d', f))[0]
+                if cross != got:
+                    bad64 += 1
+                    if bad64 < 8: print("CPYTHON-XCHECK FAIL", val, got, cross)
+print(f"ieee_bits: {len(cases)} families x2 signs x2 widths, ref mismatches={bad}, cpython-f64 mismatches={bad64}")
+
+def lint(n): return create_literal(LiteralKind.INTEGER, n, str(n))
+def flit(s): return create_literal(LiteralKind.FLOAT, float(s), s)
+def bin_(op, l, r): return ASTNode(kind=NodeKind.BINARY, left=l, operator=op, right=r)
+def un_(op, o): return ASTNode(kind=NodeKind.UNARY, operator=op, operand=o)
+
+tests = [
+    (bin_(BinaryOp.DIV, lint(5), lint(2)), F(2), False),
+    (bin_(BinaryOp.DIV, un_(UnaryOp.NEG, lint(5)), lint(2)), F(-2), False),
+    (bin_(BinaryOp.MOD, un_(UnaryOp.NEG, lint(5)), lint(2)), F(-1), False),
+    (bin_(BinaryOp.MOD, lint(5), un_(UnaryOp.NEG, lint(2))), F(1), False),
+    (bin_(BinaryOp.DIV, flit('5.0'), lint(2)), F(5, 2), True),
+    (bin_(BinaryOp.MOD, flit('-5.5'), flit('2.0')), F(-3, 2), True),
+    (bin_(BinaryOp.DIV, flit('1.0'), flit('3.0')), F(1, 3), True),
+    (un_(UnaryOp.NEG, flit('0.0')), F(0), 'negative_zero'),
+    (un_(UnaryOp.NEG, un_(UnaryOp.NEG, flit('0.0'))), F(0), True),
+    (bin_(BinaryOp.ADD, flit('-0.0'), flit('-0.0')), F(0), 'negative_zero'),
+    (bin_(BinaryOp.ADD, flit('-0.0'), flit('0.0')), F(0), True),
+    (bin_(BinaryOp.SUB, flit('-0.0'), flit('0.0')), F(0), 'negative_zero'),
+    (bin_(BinaryOp.MUL, flit('-0.0'), flit('2.0')), F(0), 'negative_zero'),
+    (bin_(BinaryOp.DIV, flit('0.0'), flit('-2.0')), F(0), 'negative_zero'),
+    (bin_(BinaryOp.MOD, flit('-4.0'), flit('2.0')), F(0), 'negative_zero'),
+    (bin_(BinaryOp.MOD, flit('4.0'), un_(UnaryOp.NEG, flit('2.0'))), F(0), True),
+    (bin_(BinaryOp.MUL, lint(255), lint(1)), F(255), False),
+    (bin_(BinaryOp.ADD, flit('0.01'), flit('0.02')), F(3, 100), True),
+    (bin_(BinaryOp.SUB, flit('0.3'), flit('0.1')), F(2, 10), True),
+    (bin_(BinaryOp.ADD, lint(1), flit('2.0')), F(3), True),
+]
+fail = sum(1 for e, wv, wc in tests if (lambda r: r is None or r[0] != wv or r[1] != wc)(evaluate(e, lambda n: None, {})))
+for e, wv, wc in tests:
+    r = evaluate(e, lambda n: None, {})
+    if r is None or r[0] != wv or r[1] != wc: print("EVAL FAIL want", (wv, wc), "got", r)
+print(f"evaluate semantics: {len(tests)} cases, {fail} failures")
+for op in (BinaryOp.AND, BinaryOp.OR, BinaryOp.SHL, BinaryOp.SHR, BinaryOp.BIT_AND, BinaryOp.BIT_XOR):
+    assert evaluate(bin_(op, lint(1), lint(2)), lambda n: None, {}) is None, op
+assert evaluate(ASTNode(kind=NodeKind.UNARY, operator=UnaryOp.BIT_NOT, operand=lint(3)), lambda n: None, {}) is None
+try:
+    evaluate(bin_(BinaryOp.DIV, lint(1), lint(0)), lambda n: None, {}); print("ZERO DIV NOT RAISED")
+except ExactArithmeticError: pass
+print("unsupported fallbacks + zero divisor: OK")
+EOF
+python3 /tmp/opencode/glmreview2/prop_test2.py
+Traceback (most recent call last):
+  File "/tmp/opencode/glmreview2/prop_test2.py", line 5, in <module>
+    from a7.exact_constants import ieee_bits, evaluate, ExactArithmeticError
+  File "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/exact_constants.py", line 8, in <module>
+    from a7.ast_nodes import NodeKind, LiteralKind, UnaryOp, BinaryOp
+  File "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/ast_nodes.py", line 11, in <module>
+    from .tokens import Token, TokenType
+  File "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/tokens.py", line 10, in <module>
+    from .errors import TokenizerError, TokenizerErrorType
+  File "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/errors.py", line 9, in <module>
+    from rich.console import Console
+ModuleNotFoundError: No module named 'rich'
+
+$ sed -i '2d' /tmp/opencode/glmreview2/prop_test2.py && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run python -c "import a7.exact_constants as m; print('frozen module:', m.__file__)" && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run python /tmp/opencode/glmreview2/prop_test2.py
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import a7.exact_constants as m; print('frozen module:', m.__file__)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'a7.exact_constants'
+
+$ PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python -c "import a7; print(a7.__file__)" && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python /tmp/opencode/glmreview2/prop_test2.py
+/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/__init__.py
+MISMATCH 32 0 (2147483648, False) (0, False)
+MISMATCH 64 0 (9223372036854775808, False) (0, False)
+MISMATCH 32 0 (2147483648, False) (0, False)
+MISMATCH 64 0 (9223372036854775808, False) (0, False)
+MISMATCH 32 0 (2147483648, False) (0, False)
+MISMATCH 64 0 (9223372036854775808, False) (0, False)
+MISMATCH 32 0 (2147483648, False) (0, False)
+ieee_bits: 46136 families x2 signs x2 widths, ref mismatches=950, cpython-f64 mismatches=0
+evaluate semantics: 20 cases, 0 failures
+Traceback (most recent call last):
+  File "/tmp/opencode/glmreview2/prop_test2.py", line 99, in <module>
+    for op in (BinaryOp.AND, BinaryOp.OR, BinaryOp.SHL, BinaryOp.SHR, BinaryOp.BIT_AND, BinaryOp.BIT_XOR):
+                                          ^^^^^^^^^^^^
+AttributeError: type object 'BinaryOp' has no attribute 'SHL'
+
+All 950 "mismatches" are my harness bug: I passed `'negative_zero'` category for positive zero too, and my reference ignored category. The f64 cross-check against CPython's correctly-rounded division is already 0 mismatches. Fixing both harness issues:
+$ grep -n "class BinaryOp" -A 30 /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/a7/ast_nodes.py | head -35; cd /tmp/opencode/glmreview2 && python3 - <<'EOF'
+import re
+s = open('prop_test2.py').read()
+s = s.replace("got, ovf = ieee_bits((val, True if val else 'negative_zero'), w), False",
+              "cat = 'negative_zero' if (val == 0 and neg) else (True if val else True)\n                got, ovf = ieee_bits((val, cat), w), False")
+s = s.replace("for val in (v, -v):", "for neg in (False, True):\n                val = -v if neg else v")
+s = s.replace("for op in (BinaryOp.AND, BinaryOp.OR, BinaryOp.SHL, BinaryOp.SHR, BinaryOp.BIT_AND, BinaryOp.BIT_XOR):",
+              "for op in (BinaryOp.AND, BinaryOp.OR, getattr(BinaryOp,'SHIFT_LEFT',None), getattr(BinaryOp,'SHIFT_RIGHT',None)):")
+open('prop_test2.py','w').write(s)
+EOF
+echo patched
+102:class BinaryOp(Enum):
+103-    """Binary operators."""
+104-
+105-    # Arithmetic
+106-    ADD = auto()  # +
+107-    SUB = auto()  # -
+108-    MUL = auto()  # *
+109-    DIV = auto()  # /
+110-    MOD = auto()  # %
+111-
+112-    # Comparison
+113-    EQ = auto()  # ==
+114-    NE = auto()  # !=
+115-    LT = auto()  # <
+116-    LE = auto()  # <=
+117-    GT = auto()  # >
+118-    GE = auto()  # >=
+119-
+120-    # Logical
+121-    AND = auto()  # and
+122-    OR = auto()  # or
+123-
+124-    # Bitwise
+125-    BIT_AND = auto()  # &
+126-    BIT_OR = auto()  # |
+127-    BIT_XOR = auto()  # ^
+128-    BIT_SHL = auto()  # <<
+129-    BIT_SHR = auto()  # >>
+130-
+131-
+132-class UnaryOp(Enum):
+patched
+
+$ cd /tmp/opencode/glmreview2 && sed -i "s/getattr(BinaryOp,'SHIFT_LEFT',None), getattr(BinaryOp,'SHIFT_RIGHT',None)/BinaryOp.BIT_SHL, BinaryOp.BIT_SHR, BinaryOp.BIT_AND, BinaryOp.BIT_OR, BinaryOp.BIT_XOR/" prop_test2.py && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python prop_test2.py
+File "/tmp/opencode/glmreview2/prop_test2.py", line 51
+    for w in (32, 64):
+                      ^
+IndentationError: unindent does not match any outer indentation level
+
+$ cd /tmp/opencode/glmreview2 && sed -n '44,58p' prop_test2.py
+cases.append(base + h * F(2) ** -52 if base >= F(2) ** -1022 else base + h * F(2) ** -1074)
+
+bad = bad64 = 0
+for v in cases:
+    if v <= 0: v = v  # keep; sign tested via negation below
+    for neg in (False, True):
+                val = -v if neg else v
+        for w in (32, 64):
+            try:
+                cat = 'negative_zero' if (val == 0 and neg) else (True if val else True)
+                got, ovf = ieee_bits((val, cat), w), False
+            except ExactArithmeticError:
+                got, ovf = None, True
+            r, rovf = ref(val, w)
+            if (got, ovf) != (r, rovf):
+
+← Edit /tmp/opencode/glmreview2/prop_test2.py
+Index: /tmp/opencode/glmreview2/prop_test2.py
+===================================================================
+--- /tmp/opencode/glmreview2/prop_test2.py
++++ /tmp/opencode/glmreview2/prop_test2.py
+@@ -46,12 +46,12 @@
+ bad = bad64 = 0
+ for v in cases:
+     if v <= 0: v = v  # keep; sign tested via negation below
+     for neg in (False, True):
+-                val = -v if neg else v
++        val = -v if neg else v
+         for w in (32, 64):
++            cat = 'negative_zero' if (val == 0 and neg) else True
+             try:
+-                cat = 'negative_zero' if (val == 0 and neg) else (True if val else True)
+                 got, ovf = ieee_bits((val, cat), w), False
+             except ExactArithmeticError:
+                 got, ovf = None, True
+             r, rovf = ref(val, w)
+
+
+$ cd /tmp/opencode/glmreview2 && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python prop_test2.py
+MISMATCH 32 0 (2147483648, False) (0, False)
+MISMATCH 64 0 (9223372036854775808, False) (0, False)
+MISMATCH 32 0 (2147483648, False) (0, False)
+MISMATCH 64 0 (9223372036854775808, False) (0, False)
+MISMATCH 32 0 (2147483648, False) (0, False)
+MISMATCH 64 0 (9223372036854775808, False) (0, False)
+MISMATCH 32 0 (2147483648, False) (0, False)
+ieee_bits: 46136 families x2 signs x2 widths, ref mismatches=476, cpython-f64 mismatches=0
+evaluate semantics: 20 cases, 0 failures
+unsupported fallbacks + zero divisor: OK
+
+The remaining 476 are again zero-family artifacts (my reference can't see the negative-zero category). Skipping zeros with a direct assertion instead:
+$ cd /tmp/opencode/glmreview2 && python3 - <<'EOF'
+s = open('prop_test2.py').read()
+s = s.replace("""        for w in (32, 64):
+            cat = 'negative_zero' if (val == 0 and neg) else True""",
+"""        for w in (32, 64):
+            cat = 'negative_zero' if (val == 0 and neg) else True
+            if val == 0:
+                assert got_placeholder if False else True
+                pass""")
+open('prop_test2.py','w').write(s)
+EOF
+echo nope
+nope
+
+← Edit /tmp/opencode/glmreview2/prop_test2.py
+Index: /tmp/opencode/glmreview2/prop_test2.py
+===================================================================
+--- /tmp/opencode/glmreview2/prop_test2.py
++++ /tmp/opencode/glmreview2/prop_test2.py
+@@ -50,10 +50,11 @@
+ val = -v if neg else v
+ for w in (32, 64):
+     cat = 'negative_zero' if (val == 0 and neg) else True
+     if val == 0:
+-        assert got_placeholder if False else True
+-        pass
++        want = (1 << (width_sign := w - 1)) if neg else 0
++        assert ieee_bits((val, cat), w) == want, (neg, w)
++        continue
+     try:
+         got, ovf = ieee_bits((val, cat), w), False
+     except ExactArithmeticError:
+         got, ovf = None, True
+
+
+$ cd /tmp/opencode/glmreview2 && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python prop_test2.py
+MISMATCH 32 30354201441027016733116592294117482916287606860189680019559568902170379456331382783/2582249878086908589655919172003011874329705792829223512830659356540647622016841194629645353280137831435903171972747493376 (8388608, False) (0, False)
+MISMATCH 32 -30354201441027016733116592294117482916287606860189680019559568902170379456331382783/2582249878086908589655919172003011874329705792829223512830659356540647622016841194629645353280137831435903171972747493376 (2155872256, False) (2147483648, False)
+ieee_bits: 46136 families x2 signs x2 widths, ref mismatches=2, cpython-f64 mismatches=0
+evaluate semantics: 20 cases, 0 failures
+unsupported fallbacks + zero divisor: OK
+
+Two real f32 mismatches on one rational family. Investigating precisely:
+$ cd /tmp/opencode/glmreview2 && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python - <<'EOF'
+from fractions import Fraction as F
+from a7.exact_constants import ieee_bits
+num = 30354201441027016733116592294117482916287606860189680019559568902170379456331382783
+den = 2582249878086908589655919172003011874329705792829223512830659356540647622016841194629645353280137831435903171972747493376
+v = F(num, den)
+print("v =", float(v), "binade exp:", v.numerator.bit_length(), v.denominator.bit_length())
+# correct f32 via float->float32 path? use my ref logic manually:
+p, emin = 24, -126
+e = v.numerator.bit_length() - v.denominator.bit_length()
+if F(2)**e > v: e -= 1
+print("normalized e =", e)
+s = F(2)**(max(e,emin)-(p-1))
+k = v/s
+lo = k.numerator//k.denominator
+print("spacing 2^", max(e,emin)-(p-1), " significand k =", float(k), "lo =", lo)
+import struct
+print("candidate bits:", ieee_bits((v, True), 32), hex(ieee_bits((v, True), 32)))
+# what does the correctly rounded f32 look like? round via exact reference:
+from decimal import Decimal
+hi = lo+1
+m = lo if (k-lo < hi-k or (k-lo == hi-k and lo%2==0)) else hi
+print("reference significand:", m, "->", hex(m))
+EOF
+v = 1.1754943508222875e-38 binade exp: 274 401
+normalized e = -127
+spacing 2^ -149  significand k = 8388608.0 lo = 8388607
+candidate bits: 8388608 0x800000
+reference significand: 8388608 -> 0x800000
+
+My reference had the bug — it lacks the subnormal→normal encoding transition (rounding up to exactly 2^-126 must switch to normal encoding; the candidate's `max(exponent, emin)` handles this correctly). Verifying v is the top of the last subnormal binade, then fixing ref and rerunning:
+← Edit /tmp/opencode/glmreview2/prop_test2.py
+Index: /tmp/opencode/glmreview2/prop_test2.py
+===================================================================
+--- /tmp/opencode/glmreview2/prop_test2.py
++++ /tmp/opencode/glmreview2/prop_test2.py
+@@ -23,8 +23,11 @@
+ elif hi - k < k - lo: m = hi
+ else: m = lo if lo % 2 == 0 else hi
+ if m == 1 << p:                            # carried into next binade
+     m >>= 1; e += 1
++r = m * s                                  # rounded magnitude
++e = r.numerator.bit_length() - r.denominator.bit_length()
++if F(2) ** e > r: e -= 1                   # binade of the ROUNDED value
+ if e > emax: return None, True             # -> inf
+ if m < 1 << (p - 1): return (sign << (width - 1)) | m, False
+ return (sign << (width - 1)) | ((e + bias) << (p - 1)) | (m - (1 << (p - 1))), False
+ 
+
+
+$ cd /tmp/opencode/glmreview2 && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python prop_test2.py
+MISMATCH 64 -5016456510113118655434598811035278955030765345404790744303017523831112055108147451509157692220295382716162651878526895249385292291816524375083746691371804094271873160484737966720260389217684476157468082175/12953744211667879574559702190010707651171625584905095574841686913755541732351702201085464556891975967691972983316275962328947759192690782519488857596207264634977115153700247127325882095493965845839345131422255684387968478939180332711558614761546211605811843616790961251349338535374752162059924960553344400851693295429983666176 (12029114604706594816, False) (12024611005079224320, False)
+MISMATCH 64 5016456510113118655434598811035278955030765345404790744303017523831112055108147451509157692220295382716162651878526895249385292291816524375083746691371804094271873160484737966720260389217684476157468082175/12953744211667879574559702190010707651171625584905095574841686913755541732351702201085464556891975967691972983316275962328947759192690782519488857596207264634977115153700247127325882095493965845839345131422255684387968478939180332711558614761546211605811843616790961251349338535374752162059924960553344400851693295429983666176 (2805742567851819008, False) (2801238968224448512, False)
+MISMATCH 64 -2508228255056559327717299405517639477515382672702395372151508761915556027554073725754578846110147691358081325939263447624692646145908262187541873345685902047135936580242368983360130194608842238078734041087/6476872105833939787279851095005353825585812792452547787420843456877770866175851100542732278445987983845986491658137981164473879596345391259744428798103632317488557576850123563662941047746982922919672565711127842193984239469590166355779307380773105802905921808395480625674669267687376081029962480276672200425846647714991833088 (12029114604706594816, False) (12024611005079224320, False)
+MISMATCH 64 2508228255056559327717299405517639477515382672702395372151508761915556027554073725754578846110147691358081325939263447624692646145908262187541873345685902047135936580242368983360130194608842238078734041087/6476872105833939787279851095005353825585812792452547787420843456877770866175851100542732278445987983845986491658137981164473879596345391259744428798103632317488557576850123563662941047746982922919672565711127842193984239469590166355779307380773105802905921808395480625674669267687376081029962480276672200425846647714991833088 (2805742567851819008, False) (2801238968224448512, False)
+MISMATCH 64 -1254114127528279663858649702758819738757691336351197686075754380957778013777036862877289423055073845679040662969631723812346323072954131093770936672842951023567968290121184491680065097304421119039367020543/3238436052916969893639925547502676912792906396226273893710421728438885433087925550271366139222993991922993245829068990582236939798172695629872214399051816158744278788425061781831470523873491461459836282855563921096992119734795083177889653690386552901452960904197740312837334633843688040514981240138336100212923323857495916544 (12029114604706594816, False) (12024611005079224320, False)
+MISMATCH 64 1254114127528279663858649702758819738757691336351197686075754380957778013777036862877289423055073845679040662969631723812346323072954131093770936672842951023567968290121184491680065097304421119039367020543/3238436052916969893639925547502676912792906396226273893710421728438885433087925550271366139222993991922993245829068990582236939798172695629872214399051816158744278788425061781831470523873491461459836282855563921096992119734795083177889653690386552901452960904197740312837334633843688040514981240138336100212923323857495916544 (2805742567851819008, False) (2801238968224448512, False)
+MISMATCH 64 -627057063764139831929324851379409869378845668175598843037877190478889006888518431438644711527536922839520331484815861906173161536477065546885468336421475511783984145060592245840032548652210559519683510271/1619218026458484946819962773751338456396453198113136946855210864219442716543962775135683069611496995961496622914534495291118469899086347814936107199525908079372139394212530890915735261936745730729918141427781960548496059867397541588944826845193276450726480452098870156418667316921844020257490620069168050106461661928747958272 (12029114604706594816, False) (12024611005079224320, False)
+ieee_bits: 46136 families x2 signs x2 widths, ref mismatches=3118, cpython-f64 mismatches=0
+evaluate semantics: 20 cases, 0 failures
+unsupported fallbacks + zero divisor: OK
+
+My "fix" broke the normal case (CPython oracle still confirms the candidate on every value — 0 mismatches). Reverting to the original ref with only the subnormal→normal transition patched:
+← Edit /tmp/opencode/glmreview2/prop_test2.py
+Index: /tmp/opencode/glmreview2/prop_test2.py
+===================================================================
+--- /tmp/opencode/glmreview2/prop_test2.py
++++ /tmp/opencode/glmreview2/prop_test2.py
+@@ -23,11 +23,10 @@
+ elif hi - k < k - lo: m = hi
+ else: m = lo if lo % 2 == 0 else hi
+ if m == 1 << p:                            # carried into next binade
+     m >>= 1; e += 1
+-r = m * s                                  # rounded magnitude
+-e = r.numerator.bit_length() - r.denominator.bit_length()
+-if F(2) ** e > r: e -= 1                   # binade of the ROUNDED value
++if e < emin and m == 1 << (p - 1):         # rounded up to exactly min normal
++    e = emin
+ if e > emax: return None, True             # -> inf
+ if m < 1 << (p - 1): return (sign << (width - 1)) | m, False
+ return (sign << (width - 1)) | ((e + bias) << (p - 1)) | (m - (1 << (p - 1))), False
+ 
+
+
+$ cd /tmp/opencode/glmreview2 && PYTHONPATH=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 uv run --project /home/cx89/Projects/pl-dev/a7-py python prop_test2.py 2>&1 | tail -5
+ieee_bits: 46136 families x2 signs x2 widths, ref mismatches=0, cpython-f64 mismatches=0
+evaluate semantics: 20 cases, 0 failures
+unsupported fallbacks + zero divisor: OK
+
+`ieee_bits` verified: ~184k conversions across both widths, 0 mismatches against two independent oracles. Now checking evidence files, REPORT claims, and the forward-global boundary:
+$ ls a7/exact_constants.py 2>&1; git status --porcelain a7/ docs/ test/ | head; git log --oneline -3
+ls: cannot access 'a7/exact_constants.py': No such file or directory
+ M a7/ast_preprocessor.py
+ M a7/backends/zig.py
+ M a7/cli.py
+ M a7/compile.py
+ M a7/errors.py
+ M a7/formatters/console_formatter.py
+ M a7/formatters/json_formatter.py
+ M a7/generics.py
+ M a7/module_resolver.py
+ M a7/parser.py
+701c679 Bump anthropics/claude-code-action from 0.0.63 to 1.0.148 (#22)
+f3f6286 Bump actions/checkout from 5.0.1 to 6.0.3 (#21)
+70e95ab Bump actions/attest (#10)
+
+$ python3 - <<'EOF'
+import json
+d = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/final-results.json'))
+s = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/supplemental-results.json'))
+r = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/reviewer/rounding-final-results.json'))
+def walk(o):
+    if isinstance(o, dict):
+        if 'a7' in json.dumps(o)[:200]: pass
+        for v in o.values(): yield from walk(v)
+    elif isinstance(o, list):
+        for v in o: yield from walk(v)
+    elif isinstance(o, dict): pass
+print('final keys:', list(d.keys())[:10])
+print('final cases:', len(d.get('cases', d.get('results', []))))
+print('supp keys:', list(s.keys())[:10], 'supp cases:', len(s.get('cases', s.get('results', []))))
+print('oracle keys:', list(r.keys())[:12])
+print('oracle summary:', {k: r[k] for k in r if not isinstance(r[k], (list, dict))})
+EOF
+final keys: ['python', 'zig', 'source_hashes_at_start', 'cases', 'source_hashes_unchanged']
+final cases: 94
+Traceback (most recent call last):
+  File "<stdin>", line 14, in <module>
+AttributeError: 'list' object has no attribute 'keys'
+
+$ grep -rn "exact_constant\|exact_float_bits\|ExactArithmeticError" a7/ test/ 2>/dev/null | head -5; echo "---"; git diff --stat a7/backends/zig.py | tail -2; git diff a7/backends/zig.py | grep -c "bitCast\|exact" || true
+---
+ a7/backends/zig.py | 714 +++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 496 insertions(+), 218 deletions(-)
+0
+
+$ python3 - <<'EOF'
+import json
+base = '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/'
+d = json.load(open(base + 'final-results.json'))
+s = json.load(open(base + 'supplemental-results.json'))
+r = json.load(open(base + 'reviewer/rounding-final-results.json'))
+acc = sum(1 for c in d['cases'] if c.get('a7', {}).get('returncode') == 0)
+rej = sum(1 for c in d['cases'] if c.get('a7', {}).get('returncode') != 0)
+probes = [c.get('name', c.get('id', '?')) for c in d['cases'] if 'probe' in str(c).lower()[:400] or 'inherited' in str(c.get('name', '')).lower()]
+print('final: accepted', acc, 'rejected', rej, 'total', len(d['cases']))
+zdiv = [c for c in d['cases'] if 'by zero' in json.dumps(c)]
+print('zero-div cases:', len(zdiv))
+for c in zdiv[:2]:
+    out = c['a7'].get('stdout', '') or c['a7'].get('stderr', '') or ''
+    print('  case stdout lines:', out.count('division or remainder by zero'), '| first 120:', out.strip().splitlines()[-1][:120] if out else '?')
+sa = sum(1 for c in s['cases'] if c.get('a7', {}).get('returncode') == 0)
+sr = sum(1 for c in s['cases'] if c.get('a7', {}).get('returncode') != 0)
+print('supp: accepted', sa, 'rejected', sr, 'total', len(s['cases']))
+print('oracle fields:', {k: v for k, v in r.items() if not isinstance(v, (list, dict))})
+print('oracle helper hash present:', 'helper_sha256' in json.dumps(r)[:3000] or any('sha' in str(k).lower() for k in r.keys()))
+EOF
+final: accepted 0 rejected 94 total 94
+zero-div cases: 2
+Traceback (most recent call last):
+  File "<stdin>", line 13, in <module>
+KeyError: 'a7'
+
+$ python3 - <<'EOF'
+import json
+base = '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/'
+d = json.load(open(base + 'final-results.json'))
+c0 = d['cases'][0]
+print('case keys:', list(c0.keys()))
+print(json.dumps(c0, indent=1)[:600])
+EOF
+case keys: ['name', 'source', 'expected_stdout', 'expected_diagnostic', 'note', 'compile', 'artifact_exists', 'profiles', 'emitted_zig', 'passes_expectation']
+{
+ "name": "forward_whole",
+ "source": "io :: import \"std/io\"\n\nmain :: fn() {\nx: i32 = VALUE\nio.println(\"{}\", x)\n}\nVALUE :: 2.0\n",
+ "expected_stdout": "2\n",
+ "expected_diagnostic": null,
+ "note": null,
+ "compile": {
+  "command": [
+   "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+   "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+   "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/final-cases/forward_whole/main.a7",
+   "-o",
+   "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/final-
+
+$ python3 - <<'EOF'
+import json
+base = '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/'
+d = json.load(open(base + 'final-results.json'))
+s = json.load(open(base + 'supplemental-results.json'))
+r = json.load(open(base + 'reviewer/rounding-final-results.json'))
+
+def rc(c):
+    # compile dict may be replaced by a prior-evidence reference
+    comp = c.get('compile') or {}
+    if isinstance(comp, dict):
+        return comp.get('returncode')
+    return None
+def outcome(c):
+    comp = c.get('compile') or {}
+    if not isinstance(comp, dict): return 'reuse'
+    rc_ = comp.get('returncode')
+    if rc_ == 0 and c.get('expected_stdout') is not None: return 'accepted'
+    if rc_ != 0 and c.get('expected_diagnostic') is not None: return 'rejected'
+    return 'other'
+
+from collections import Counter
+print('final outcomes:', Counter(outcome(c) for c in d['cases']))
+print('final passes_expectation:', Counter(str(c.get('passes_expectation')) for c in d['cases']))
+print('supp outcomes:', Counter(outcome(c) for c in s['cases']), 'total', len(s['cases']))
+# zero division evidence: check stdout duplication
+for c in d['cases']:
+    txt = json.dumps(c)
+    if 'by zero' in txt:
+        comp = c.get('compile') or {}
+        out = (comp.get('stdout') or '') + (comp.get('stderr') or '')
+        n = out.count('division or remainder by zero')
+        print('zero-div case:', c['name'], 'rc', comp.get('returncode'), 'diagnostic repeats:', n)
+# oracle hash claim
+print('oracle scalar fields:', {k: v for k, v in r.items() if not isinstance(v, (list, dict))})
+for k in r:
+    if 'sha' in str(k).lower() or 'hash' in str(k).lower(): print(' ', k, '=', r[k])
+EOF
+final outcomes: Counter({'other': 62, 'rejected': 32})
+final passes_expectation: Counter({'True': 92, 'None': 2})
+Traceback (most recent call last):
+  File "<stdin>", line 24, in <module>
+TypeError: list indices must be integers or slices, not str
+
+$ python3 - <<'EOF'
+import json
+base = '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/'
+s = json.load(open(base + 'supplemental-results.json'))
+if isinstance(s, list):
+    print('supp is list of', len(s), 'entries; keys:', list(s[0].keys()))
+    for e in s:
+        comp = e.get('compile') or {}
+        print(' ', e.get('name'), 'rc', comp.get('returncode') if isinstance(comp, dict) else comp)
+r = json.load(open(base + 'reviewer/rounding-final-results.json'))
+print('oracle top type:', type(r).__name__)
+if isinstance(r, dict):
+    print({k: v for k, v in r.items() if not isinstance(v, (list, dict))})
+d = json.load(open(base + 'final-results.json'))
+for c in d['cases']:
+    comp = c.get('compile')
+    if isinstance(comp, dict):
+        out = (comp.get('stdout') or '') + (comp.get('stderr') or '')
+        if 'by zero' in out:
+            print('zero-div:', c['name'], 'rc', comp.get('returncode'), 'repeats:', out.count('division or remainder by zero'))
+EOF
+supp is list of 3 entries; keys: ['name', 'source', 'expected_stdout', 'expected_diagnostic', 'compile', 'artifact_exists', 'profiles', 'emitted_zig', 'passes_expectation']
+  max_f64 rc None
+  boundary_overflow_f64 rc None
+  below_overflow_f32 rc None
+oracle top type: dict
+{'method': 'Decode chosen IEEE integer encodings into exact rationals, inspect midpoint and values on either side; expected tie follows lower encoding parity. Includes subnormal, normal-boundary, exponent-carry, max-finite and signed-zero controls. Seeded random neighbor sampling augments named boundaries.', 'candidate_exact_constants_sha256': 'b8365bb442ca5473e59d8c7d66b3ce13d850922ed2fdf23668f76945e6ade7a9'}
+zero-div: zero_81 rc None repeats: 1
+zero-div: zero_82 rc None repeats: 1
+
+$ python3 - <<'EOF'
+import json
+base = '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/'
+s = json.load(open(base + 'supplemental-results.json'))
+d = json.load(open(base + 'final-results.json'))
+for e in s:
+    print(e['name'], '| passes:', e.get('passes_expectation'), '| compile type:', type(e.get('compile')).__name__, '|', json.dumps(e.get('compile'))[:220])
+for c in d['cases']:
+    if c['name'] in ('zero_81', 'zero_82'):
+        print('---', c['name'], 'source:')
+        print(c['source'])
+        comp = c['compile']
+        print('rc:', comp.get('returncode'), '| expected_diag:', c.get('expected_diagnostic'))
+EOF
+max_f64 | passes: True | compile type: dict | {"command": ["/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-fo
+boundary_overflow_f64 | passes: True | compile type: dict | {"command": ["/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-fo
+below_overflow_f32 | passes: True | compile type: dict | {"command": ["/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-fo
+--- zero_81 source:
+io :: import "std/io"
+
+main :: fn() {
+x := 1.0/0.0
+}
+
+rc: None | expected_diag: zero
+--- zero_82 source:
+io :: import "std/io"
+
+main :: fn() {
+x := 1%0
+}
+
+rc: None | expected_diag: zero
+
+Their zero-division probes were local, and their recorded diagnostics differ from what the review-candidate-2 tree produces for the same source. Verifying whether review-candidate-2 matches the candidate/final-sources trees:
+$ for f in passes/type_checker.py backends/zig.py exact_constants.py; do for t in candidate final-sources; do h1=$(sha256sum "tmp/untyped-constants-next/review-candidate-2/a7/$f" | cut -c1-16); h2=$(sha256sum "tmp/untyped-constants-next/$([ $t = final-sources ] && echo candidate-followup/final-sources || echo candidate)/a7/$f" | cut -c1-16); echo "$f review-candidate-2=$h1 $t=$h2"; done; done
+passes/type_checker.py review-candidate-2=a41e67b21b5a82b8 candidate=a41e67b21b5a82b8
+passes/type_checker.py review-candidate-2=a41e67b21b5a82b8 final-sources=a41e67b21b5a82b8
+backends/zig.py review-candidate-2=4b0a63298188e272 candidate=4b0a63298188e272
+backends/zig.py review-candidate-2=4b0a63298188e272 final-sources=4b0a63298188e272
+exact_constants.py review-candidate-2=b8365bb442ca5473 candidate=b8365bb442ca5473
+exact_constants.py review-candidate-2=b8365bb442ca5473 final-sources=b8365bb442ca5473
+
+$ python3 - <<'EOF'
+import json
+d = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/final-results.json'))
+for c in d['cases']:
+    if c['name'] == 'zero_81':
+        comp = c['compile']
+        print('rc:', comp.get('returncode'))
+        print('stdout:', repr((comp.get('stdout') or '')[:400]))
+        print('stderr:', repr((comp.get('stderr') or '')[:400]))
+        for k in comp:
+            if 'reus' in k.lower() or 'prior' in k.lower(): print(k, comp[k])
+EOF
+printf 'io :: import "std/io"\n\nmain :: fn() {\nx := 1.0/0.0\n}\n' > /tmp/opencode/glmreview2/z81.a7 && cd tmp/untyped-constants-next/review-candidate-2 && uv run python main.py /tmp/opencode/glmreview2/z81.a7 -o /tmp/opencode/glmreview2/z81.zig 2>&1 | grep -E "error|Error" | head -4; echo "exit=$?"
+rc: None
+stdout: '\nFound 1 error:\n\nError 1/1:\nerror: Exact constant division or remainder by zero [line 4: col 6]\n\n'
+stderr: ''
+Found 1 error:
+Error 1/1:
+error: Exact constant division or remainder by zero [line 4: col 6]
+exit=0
+
+Spacing changes which diagnostic fires. A/B testing to pin it down:
+$ cd /tmp/opencode/glmreview2 && for v in "x := 1.0/0.0" "x := 1.0 / 0.0" "x := 1.0  /  0.0" "y := 1.0/0.0"; do printf 'io :: import "std/io"\n\nmain :: fn() {\n%s\n}\n' "$v" > ab.a7; echo "== [$v]"; (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py /tmp/opencode/glmreview2/ab.a7 -o /tmp/opencode/glmreview2/ab.zig 2>&1 | grep "^error"); done
+== [x := 1.0/0.0]
+error: Exact constant division or remainder by zero [line 4: col 6]
+== [x := 1.0 / 0.0]
+error: Exact constant division or remainder by zero [line 4: col 6]
+== [x := 1.0  /  0.0]
+error: Exact constant division or remainder by zero [line 4: col 6]
+== [y := 1.0/0.0]
+error: Exact constant division or remainder by zero [line 4: col 6]
+
+$ cd /tmp/opencode/glmreview2 && probe() { printf 'io :: import "std/io"\n\nmain :: fn() {\n%s\n}\n' "$1" > ab.a7; echo "== [$(echo "$1" | tr '\n' ';')]"; (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py /tmp/opencode/glmreview2/ab.a7 -o /tmp/opencode/glmreview2/ab.zig 2>&1 | grep "^error" | head -3); }; probe '    x := 1.0 / 0.0'; probe 'x := 1.0 / 0.0
+io.println("{}", x)'; probe 'x := 1.0 / 0.0
+io.println("{}", 1)'
+== [    x := 1.0 / 0.0;]
+error: Exact constant division or remainder by zero [line 4: col 10]
+== [x := 1.0 / 0.0;io.println("{}", x);]
+error: Exact constant division or remainder by zero [line 4: col 6]
+== [x := 1.0 / 0.0;io.println("{}", 1);]
+error: Exact constant division or remainder by zero [line 4: col 6]
+
+$ cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py /tmp/opencode/glmreview2/zdiv_local_var.a7 -o /tmp/opencode/glmreview2/zl.zig 2>&1 | grep -E "^error|Found" | head -3; echo "---file---"; cat /tmp/opencode/glmreview2/zdiv_local_var.a7
+Found 1 error:
+error: Exact constant division or remainder by zero [line 3: col 10]
+---file---
+io :: import "std/io"
+main :: fn() {
+    x := 1.0 / 0.0
+    io.println("{}", x)
+}
+
+Resolved: the earlier "Divisor not proven non-zero" came from an accidental production-compiler run (`cd -` in my first command). Re-verifying the global triple-diagnostic cleanly:
+$ uv run python main.py /tmp/opencode/glmreview2/zdiv_global.a7 -o /tmp/opencode/glmreview2/zg2.zig 2>&1 | grep -c "division or remainder by zero"; echo "exit=$(uv run python main.py /tmp/opencode/glmreview2/zdiv_global.a7 -o /tmp/opencode/glmreview2/zg2.zig >/dev/null 2>&1; echo $?)"
+3
+exit=6
+
+$ cd /tmp/opencode/glmreview2 && cat > rate_fwd.a7 <<'EOF'
+io :: import "std/io"
+show :: fn() {
+    n: i32 = RATE
+    io.println("{}", n)
+}
+RATE :: 2.0
+main :: fn() { show() }
+EOF
+cat > rate_frac.a7 <<'EOF'
+main :: fn() {
+    n: i32 = FRAC
+}
+FRAC :: 2.5
+EOF
+cat > int_div_f64.a7 <<'EOF'
+io :: import "std/io"
+main :: fn() {
+    r: f64 = 5 / 2
+    io.println("{}", r)
+}
+EOF
+cat > flt_div_f64.a7 <<'EOF'
+io :: import "std/io"
+main :: fn() {
+    r: f64 = 5.0 / 2
+    io.println("{}", r)
+}
+EOF
+cat > flt_div_i32.a7 <<'EOF'
+main :: fn() {
+    r: i32 = 5.0 / 2
+}
+EOF
+cat > big_f_to_i64.a7 <<'EOF'
+io :: import "std/io"
+main :: fn() {
+    v: i64 = 9007199254740993.0
+    io.println("{}", v)
+}
+EOF
+cat > mixed_i8_200.a7 <<'EOF'
+main :: fn() {
+    a: i8 = 1
+    b := a + 200
+}
+EOF
+cat > cast_256.a7 <<'EOF'
+main :: fn() {
+    x := cast(u8, 256)
+}
+EOF
+for n in rate_fwd rate_frac int_div_f64 flt_div_f64 flt_div_i32 big_f_to_i64 mixed_i8_200 cast_256; do (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$n.a7" -o "/tmp/opencode/glmreview2/$n.zig" >/tmp/opencode/glmreview2/$n.log 2>&1); ec=$?; msg=$(grep -m1 "^error" /tmp/opencode/glmreview2/$n.log | cut -c1-95); echo "$n exit=$ec ${msg:-OK}"; done
+rate_fwd exit=0 OK
+rate_frac exit=6 error: Exact constant 5/2 is fractional and cannot fit i32 [line 2: col 14]
+int_div_f64 exit=0 OK
+flt_div_f64 exit=0 OK
+flt_div_i32 exit=6 error: Exact constant 5/2 is fractional and cannot fit i32 [line 2: col 14]
+big_f_to_i64 exit=0 OK
+mixed_i8_200 exit=6 error: Exact constant 200 is out of range for i8 [line 3: col 14]
+cast_256 exit=6 error: Unsafe type cast (cast must be classified and range-proven: cast target
+
+$ cd /tmp/opencode/glmreview2 && for n in rate_fwd int_div_f64 flt_div_f64 big_f_to_i64; do echo "== $n"; grep -E "bitCast|var n|var r|var v|: i32 =|: i64 =|: f64 =" $n.zig | head -3; done
+== rate_fwd
+    const n: i32 = 2;
+const RATE = @as(f64, @bitCast(@as(u64, 4611686018427387904)));
+== int_div_f64
+    const r: f64 = @as(f64, @bitCast(@as(u64, 4611686018427387904)));
+== flt_div_f64
+    const r: f64 = @as(f64, @bitCast(@as(u64, 4612811918334230528)));
+== big_f_to_i64
+    const v: i64 = 9007199254740993;
+
+$ cd /tmp/opencode/glmreview2 && cat > exact_cmp.a7 <<'EOF'
+io :: import "std/io"
+main :: fn() {
+    if (1.0/3.0)*3.0 == 1.0 { io.println("thirds ok") }
+    if 0.1 + 0.2 == 0.3 { io.println("decimals ok") }
+    if 2 == 2.0 { io.println("mixed ok") }
+}
+EOF
+cat > cycle.a7 <<'EOF'
+FIRST :: SECOND
+SECOND :: FIRST
+main :: fn() {
+    io_dummy := FIRST
+}
+EOF
+cat > typed_f64_cmp.a7 <<'EOF'
+io :: import "std/io"
+main :: fn() {
+    t: f64 = 0.1
+    if t + 0.2 == 0.3 { io.println("untyped-style") } else { io.println("ieee") }
+}
+EOF
+for n in exact_cmp cycle typed_f64_cmp; do (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$n.a7" -o "/tmp/opencode/glmreview2/$n.zig" >/tmp/opencode/glmreview2/$n.log 2>&1); ec=$?; msg=$(grep -m1 "^error" /tmp/opencode/glmreview2/$n.log | cut -c1-90); z=$(grep -m2 -E "ok|ieee|untyped" $n.zig 2>/dev/null | head -2 | tr '\n' ' '); echo "$n exit=$ec ${msg:-OK} | emitted: $z"; done
+exact_cmp exit=0 OK | emitted:         __a7_stdout_print("thirds ok\n", .{});         __a7_stdout_print("decimals ok\n", .{}); 
+cycle exit=6 error: Unresolved global value dependency involving 'FIRST' [line 1: col 1] | emitted: 
+typed_f64_cmp exit=0 OK | emitted:         __a7_stdout_print("untyped-style\n", .{});         __a7_stdout_print("ieee\n", .{});
+
+$ python3 -c "
+import json
+r = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/recursion.json'))
+print(json.dumps(r, indent=1)[:800])
+t = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/selected-tests.json'))
+print('selected summary:', {k: t[k] for k in t if not isinstance(t[k], (list, dict))} if isinstance(t, dict) else type(t).__name__)
+"
+{
+ "baseline": [
+  [
+   "a7.backends.zig:ZigCodeGenerator._emit_address_of",
+   "a7.backends.zig:ZigCodeGenerator._emit_array_init",
+   "a7.backends.zig:ZigCodeGenerator._emit_binary_iterative",
+   "a7.backends.zig:ZigCodeGenerator._emit_call",
+   "a7.backends.zig:ZigCodeGenerator._emit_cast",
+   "a7.backends.zig:ZigCodeGenerator._emit_deref",
+   "a7.backends.zig:ZigCodeGenerator._emit_expr",
+   "a7.backends.zig:ZigCodeGenerator._emit_field_access",
+   "a7.backends.zig:ZigCodeGenerator._emit_if_expr",
+   "a7.backends.zig:ZigCodeGenerator._emit_implicit_ref_field_base",
+   "a7.backends.zig:ZigCodeGenerator._emit_index",
+   "a7.backends.zig:ZigCodeGenerator._emit_match_condition_zig",
+   "a7.backends.zig:ZigCodeGenerator._emit_match_expr",
+   "a7.backends.zig:ZigCodeGenerator._emit_match_exp
+selected summary: {'cwd': '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate', 'exit_code': 1, 'stdout': '..............F......................................                    [100%]\n=================================== FAILURES ===================================\n___________________ test_listed_recursive_groups_still_exist ___________________\n\na7_scan = ScanResult(functions={\'a7.ast_nodes:create_program\': (\'a7/ast_nodes.py\', 263), \'a7.ast_nodes:create_literal\': (\'a7/ast...mport\', name=\'lookup_local\', path=\'a7/symbol_table.py\', line=458, candidates=(\'a7.symbol_table:Scope.lookup_local\',))])\n\n    def test_listed_recursive_groups_still_exist(a7_scan):\n        gone = sorted(KNOWN_RECURSIVE_GROUPS - set(a7_scan.groups))\n>       assert not gone, (\n            "These groups are no longer found in a7/; delete them from KNOWN_RECURSIVE_GROUPS:\\n"\n            + "\\n".join(f"- {\', \'.join(g)}" for g in gone)\n        )\nE       AssertionError: These groups are no longer found in a7/; delete them from KNOWN_RECURSIVE_GROUPS:\nE         - a7.passes.semantic_validator:SemanticValidationPass._block_exits_current_block, a7.passes.semantic_validator:SemanticValidationPass._statement_exits_current_block\nE         - a7.passes.semantic_validator:SemanticValidationPass._returns_on_all_paths\nE       assert not [(\'a7.passes.semantic_validator:SemanticValidationPass._block_exits_current_block\', \'a7.passes.semantic_validator:Sema...nPass._statement_exits_current_block\'), (\'a7.passes.semantic_validator:SemanticValidationPass._returns_on_all_paths\',)]\n\ntest/test_no_recursion.py:605: AssertionError\n=========================== short test summary info ============================\nFAILED test/test_no_recursion.py::test_listed_recursive_groups_still_exist - ...\n1 failed, 52 passed in 49.03s\n', 'stderr': ''}
+
+$ cd /tmp/opencode/glmreview2 && printf 'main :: fn() {\n    x: f64 = 1e400\n}\n' > ovf_span.a7 && printf 'main :: fn() {\n    y := 1e400 == 1e400\n}\n' > cmp_ovf.a7 && printf 'io :: import "std/io"\nmain :: fn() {\n    if 1e400 == 1e400 { io.println("equal") }\n}\n' > cmp_ovf2.a7 && for n in ovf_span cmp_ovf cmp_ovf2; do (cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py "/tmp/opencode/glmreview2/$n.a7" -o "/tmp/opencode/glmreview2/$n.zig" >/tmp/opencode/glmreview2/$n.log 2>&1); ec=$?; msg=$(grep -m1 "^error" /tmp/opencode/glmreview2/$n.log | cut -c1-80); z=$(grep -m1 "equal" $n.zig 2>/dev/null); echo "$n exit=$ec ${msg:-OK} ${z:+(emits: $z)}"; done
+ovf_span exit=6 error: Finite exact constant overflows f64 [line 2: col 14] 
+cmp_ovf exit=0 OK 
+cmp_ovf2 exit=0 OK (emits:         __a7_stdout_print("equal\n", .{});)
+
+$ python3 -c "
+import json
+r = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/recursion.json'))
+print('recursion keys:', list(r.keys()))
+print({k: r[k] for k in r if not isinstance(r[k], list)})
+m = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/reviewer/mixed-final-results.json'))
+print('mixed-final:', json.dumps(m)[:300])
+" ; cd /tmp/opencode/glmreview2 && cat > mixed_f32_ovf.a7 <<'EOF'
+main :: fn() {
+    t: f32 = 1.0
+    s := t * 1e100
+}
+EOF
+(cd /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2 && uv run python main.py /tmp/opencode/glmreview2/mixed_f32_ovf.a7 -o /tmp/opencode/glmreview2/mfo.zig 2>&1 | grep -m1 "^error"; echo "exit=$?")
+recursion keys: ['baseline', 'candidate', 'new_groups']
+{}
+mixed-final: [{"case": "mixed_f32_midpoint", "source": "io :: import \"std/io\"\nmain :: fn() { x: f32 = 0.0; y := x + 1.0000000596046448; io.println(\"{}\", y == 1.0) }\n", "compile": {"command": ["/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/c
+error: Finite exact constant overflows f32 [line 3: col 14]
+exit=0
+
+$ python3 -c "
+import json
+base = '/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/'
+r = json.load(open(base + 'recursion.json'))
+print('new_groups:', r['new_groups'])
+m = json.load(open(base + 'reviewer/mixed-final-results.json'))
+for e in m:
+    comp = e.get('compile') or {}
+    print(e['case'], '| passes:', e.get('passes_expectation'), '| rc:', comp.get('returncode') if isinstance(comp, dict) else '?', '| expected:', e.get('expected_stdout'), '| got stdout:', repr((comp.get('stdout') if isinstance(comp, dict) else '') or '')[:40])
+"
+new_groups: []
+mixed_f32_midpoint | passes: None | rc: None | expected: None | got stdout: '{\n  "schema_version": "2.0",\n  "mode"
+mixed_f32_overflow | passes: None | rc: None | expected: None | got stdout: '{\n  "schema_version": "2.0",\n  "mode"
+mixed_f32_compare | passes: None | rc: None | expected: None | got stdout: '{\n  "schema_version": "2.0",\n  "mode"
+
+$ python3 -c "
+import json
+m = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/reviewer/mixed-final-results.json'))
+for e in m:
+    print('==', e['case'])
+    for k in ('expected','result','native_stdout','expected_native','verdict','ok','pass'):
+        if k in e: print('  ', k, '=', str(e[k])[:80])
+    p = e.get('profiles') or e.get('native') or {}
+    if p: print('   profiles:', json.dumps(p)[:200])
+"
+== mixed_f32_midpoint
+   profiles: {"Debug": {"build": {"command": ["zig", "build-exe", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/reviewer/final_mixed_f32_midpoint/out.zig", "-O", "Debug", "-femit-
+== mixed_f32_overflow
+== mixed_f32_compare
+   profiles: {"Debug": {"build": {"command": ["zig", "build-exe", "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/reviewer/final_mixed_f32_compare/out.zig", "-O", "Debug", "-femit-b
+
+$ python3 -c "
+import json
+m = json.load(open('/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/reviewer/mixed-final-results.json'))
+for e in m:
+    print('==', e['case'], '| note:', e.get('note'))
+    for prof, data in (e.get('profiles') or {}).items():
+        run = data.get('run') or {}
+        print('  ', prof, 'stdout:', repr(run.get('stdout', ''))[:30])
+    for k in ('expectation','expected_result','assertion'):
+        if k in e: print('  ', k, '=', e[k])
+" 2>&1 | head -20
+== mixed_f32_midpoint | note: None
+   Debug stdout: 'false\n'
+   ReleaseFast stdout: 'false\n'
+== mixed_f32_overflow | note: None
+== mixed_f32_compare | note: None
+   Debug stdout: 'true\n'
+   ReleaseFast stdout: 'true\n'
+
+All verification complete. Here is the review.
+
+---
+
+# GLM-5.3 read-only review — frozen numeric prototype (review-candidate-2 / candidate-followup)
+
+**Verdict: numerically sound within its tested scope.** I independently verified the rounding core, exact semantics, and exact-to-typed boundaries far beyond the report's matrix and found no wrong number. Two minor diagnostic/boundary findings (F1, F2) and one unverified flag (F3). The report does not overclaim; its scoping statements held up under checking. No language-approval inference is made.
+
+## Independently verified correct
+
+**Rounding (`ieee_bits`, exact_constants.py:81-111).** ~184,600 conversions (46,136 value families × 2 signs × 2 widths: random rationals up to ~130-bit components × 10^±340, powers of two ± tiny deltas across [-1080, 140], midpoints of every boundary family): 0 mismatches vs a floor/ceil distance-comparison reference, and 0 mismatches on the f64 subset vs CPython's correctly-rounded `int.__truediv__`. IEEE parameters, ties-to-even, subnormal quantization and the subnormal→normal transition (exact_constants.py:96,111), binade carry (104-106), and overflow classification are correct, including the exact overflow tie at both widths: 2^128−2^103 → reject for f32, 2^1024−2^970 → reject for f64, ±1 neighbors → max-finite/reject respectively. Three earlier "mismatches" during this review were bugs in my own reference, not the candidate.
+
+**Exact semantics (`evaluate`, exact_constants.py:11-74).** 20/20 synthetic-AST cases: integer division truncates toward zero (−5/2 = −2), remainder takes the dividend's sign (−5%2 = −1, 4.0 % −2.0 = +0), floating quotient stays exact (1.0/3.0 = 1/3), all IEEE signed-zero rules for neg/+/−/×/÷/%, integer category preserved unless a floating operand participates. Shifts, bitwise, `and`/`or`, `~`, and calls return `None` (fallback, not approximate); division by zero raises the located error. `Fraction(raw_text)` accepts every float spelling the lexer produces (`5.`, `.5`, underscores, exponents) on Python 3.13 and 3.14 — checked, no crash path there.
+
+**End-to-end through the frozen compiler** (compile-level, emitted bits inspected directly): f32 midpoint → 0x3F800000; double-rounding witness 1.0000000596046448 → 0x3F800001; 5e-324 → bit 1; −0.0 → sign bit preserved; max-finite accept / 1e100→f32 and 1e400→f64 reject at the operand span; `5/2`→f64 emits 2.0 bits, `5.0/2`→f64 emits 2.5 bits, `5.0/2`→i32 rejects fractional; `9007199254740993.0`→i64 emits the exact integer; forward-global `RATE :: 2.0` fits to `i32 = 2` with no first-use bias at the use; `i8 + 200` rejects (out of range for i8); `cast(u8, 256)` still rejected; global value cycle rejects with location; `(1.0/3.0)*3.0 == 1.0`, `0.1+0.2 == 0.3`, `2 == 2.0` fold true; typed comparison is *not* folded with untyped rules.
+
+**Emission (backends/zig.py hunk).** `@as(fN, @bitCast(@as(uN, bits)))` from the already-selected bits — no decimal reparsing, no `comptime_float` intermediate; the report's emission claim is accurate.
+
+**Evidence integrity.** Frozen helper SHA256 `b8365bb4…` matches final-sources and the reviewer oracle's recorded hash. final-results.json: 94 cases, 92 `passes_expectation: true` + 2 probes; 32 rejected — matches the report. Supplemental: 3 max-finite controls, all passing. selected-tests.json: 52 passed / 1 failed exactly as disclosed (no-recursion allowlist; `new_groups: []`). Reviewer's mixed-f32 midpoint probe prints `false` in Debug and ReleaseFast — native confirmation of direct f32 rounding in the mixed path. source.diff touches exactly the four claimed files; production `a7/` contains no exact-constant code (the working tree's other modifications predate/are unrelated to this candidate — the production zig.py diff has no bitCast/exact lines).
+
+## Findings
+
+**F1 — duplicated diagnostics for global zero division (minor, diagnostics quality).** `BAD :: 1.0 / 0.0` at global scope reports the identical located error **three times** (exit 6): once per fixed-point round in the pre-pass (type_checker.py hunk, `pending` loop), once in `visit_const_decl`'s own evaluation, once via `visit_expression`. Reproduced twice. Their matrix tested only local zero division (`zero_81/82`, which reports once), so the report's claim is accurate but this shape is untested and degraded.
+
+**F2 — comparison-only acceptance of overflowing constants (boundary, defensible but undocumented).** `1e400 == 1e400` compiles and folds to `true` (both `y :=` and `if` forms) with no overflow error, because comparison folding (type_checker.py hunk at `visit_expression`) discards operands before any default materialization. Consistent with the packet (comparisons compare exact values; overflow rejection is a *fitting* rule), but any doc or report text saying "1e400 rejects" needs the "when fitted to a float destination" qualifier; the report's table doesn't carry it.
+
+**F3 — skipped legacy typing on the mixed-integral path (flagged, not verified as harmful).** The mixed binary rule `return concrete` (type_checker.py hunk, ADD/SUB/MUL with exactly one exact operand and an integral peer) bypasses the remaining arithmetic-op typing block. My probes and their retained wrapping tests show correct behavior, but any legacy invariants living in the skipped block (e.g., proof annotations consumed by the safety pass) are skipped on this path; I did not run the full typed-wrapping matrix to bound this. Inference, not a confirmed defect.
+
+## Limitations of this review
+
+- I ran no Zig builds; native-output claims rest on the recorded evidence (Debug+ReleaseFast, host + Zig 0.16.0 only, as the report itself scopes) plus my compile-level bit-pattern checks. The controller's separate realnative IEEE runs remain the native authority.
+- `evaluate`'s interaction surface (parenthesized chains, deeper DAGs, generic/pattern/index contexts) was tested at synthetic-AST level and via the report's matrix, not exhaustively; the report's own exclusion list ("no general exactness claim…") stands.
+- The known blocker (no resource caps; unbounded bigint growth, O(n²) global fixed-point, whole-subtree dependency walks) is excluded per instructions; the report discloses it accurately.
+- Advisory only; no source or docs were edited; no exhaustion or unsafe execution performed (all arithmetic bounded; largest values used were ~460-bit).

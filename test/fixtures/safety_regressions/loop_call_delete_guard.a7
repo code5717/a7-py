@@ -1,0 +1,13 @@
+Box :: struct { value: i32 }
+free :: fn(b: ref Box) { del b }
+main :: fn() {
+    b := new Box
+    i := 0
+    while i < 2 {
+        if b != nil {
+            b.value = 2
+            free(b)
+        }
+        i += 1
+    }
+}

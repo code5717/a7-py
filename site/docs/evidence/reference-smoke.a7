@@ -1,0 +1,54 @@
+io :: import "std/io"
+Handle :: u64
+Vector :: [3]f32
+Counter :: struct {
+    value: i32
+}
+Color :: enum {
+    Red,
+    Green,
+    Blue
+}
+Value :: union {
+    int_val: i32
+    float_val: f64
+}
+Box :: struct {
+    value: $T
+}
+Pair($A, $B) :: struct {
+    first: $A
+    second: $B
+}
+identity($T) :: fn(value: $T) $T {
+    ret value
+}
+add :: fn(x: i32, y: i32) i32 {
+    ret x + y
+}
+increment :: fn(counter: ref Counter) {
+    counter.value += 1
+}
+main :: fn() {
+    limit :: 10
+    count := 0
+    index: usize = 0
+    buffer: [4]u8
+    count = count + 1
+    numbers: [5]i32 = [10, 20, 30, 40, 50]
+    matrix: [2][2]i32 = [[1, 2], [3, 4]]
+    zeroes: [4]u8
+    sum := 0
+    for position, value in numbers {
+        sum += value
+    }
+    converted := cast(f64, 42)
+    counter := Counter{value: 0}
+    counter.value = 1
+    increment(counter)
+    int_value := Value{int_val: 42}
+    box := Box(i32){value: 7}
+    pair := Pair(i32, string){first: 7, second: "ok"}
+    io.println("limit = {}", limit)
+    io.println("{} {} {} {} {} {}", sum, counter.value, int_value.int_val, box.value, pair.second, identity(7))
+}

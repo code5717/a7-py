@@ -1,0 +1,14 @@
+Box :: struct {
+    value: i32
+}
+
+main :: fn() {
+    b := new Box
+    if b == nil {
+        ret
+    }
+    b.value = 1
+    del b
+    defer { b = new Box }
+    b.value = 2
+}

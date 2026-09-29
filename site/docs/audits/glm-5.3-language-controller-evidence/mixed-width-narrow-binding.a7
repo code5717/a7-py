@@ -1,0 +1,10 @@
+io :: import "std/io"
+add :: fn(a: i8, b: i64) {
+    c: i8 = a + b
+    io.println("{}", c)
+}
+main :: fn() {
+    a: i8 = 100
+    b: i64 = 200
+    add(a, b)
+}

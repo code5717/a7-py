@@ -1,0 +1,8 @@
+// a7-glmr repro helper: mixed pub/non-pub top-level declarations.
+helper_value :: 7
+pub pub_fn :: fn(x: i32) i32 {
+    ret x + helper_value
+}
+private_fn :: fn(x: i32) i32 {
+    ret x * 2
+}

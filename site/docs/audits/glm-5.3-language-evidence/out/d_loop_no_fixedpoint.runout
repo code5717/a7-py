@@ -1,0 +1,14 @@
+thread 3727534 panic: index out of bounds: index 4, len 4
+/tmp/a7-glm53-language-audit/out/d_loop_no_fixedpoint.zig:20:18: 0x11d80e0 in __a7_user_main (d_loop_no_fixedpoint.zig)
+    const x = arr[i];
+                 ^
+/tmp/a7-glm53-language-audit/out/d_loop_no_fixedpoint.zig:11:19: 0x11d7f8f in main (d_loop_no_fixedpoint.zig)
+    __a7_user_main();
+                  ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30: 0x11d2a53 in callMain (std.zig)
+    return wrapMain(root.main(.{
+                             ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:190:5: 0x11d20e1 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+timeout: the monitored command dumped core

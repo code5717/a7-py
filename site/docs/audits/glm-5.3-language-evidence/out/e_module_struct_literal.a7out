@@ -1,0 +1,30 @@
+
+Found 2 errors:
+
+Error 1/2:
+error: Undefined type (Identifier 'c') [line 5: col 10]
+────────────────────────────────────────────────────────────────────────────────
+   3 ┃ main :: fn() {
+   4 ┃     c := sh.Counter{value: 1}
+   5 ┃     x := c.value
+     ┃          ▲
+   6 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure the type is defined before use
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 2/2:
+error: Cannot access field on non-struct type (Cannot access field 'value' on 
+undefined identifier 'c') [line 5: col 10]
+────────────────────────────────────────────────────────────────────────────────
+   3 ┃ main :: fn() {
+   4 ┃     c := sh.Counter{value: 1}
+   5 ┃     x := c.value
+     ┃          ▲
+   6 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Field access requires a struct type
+

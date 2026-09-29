@@ -1,17 +1,20 @@
 # 02 — Runtime Sanitizers
 
-> Part of the `docs/lang-safety/` series. See the
-> [README](./README.md) for the full map. Siblings:
-> [01 — InvisiCaps](./01-invisicaps.md) ·
-> [03 — Hardware-assisted safety](./03-hardware.md) ·
-> [04 — Comparison](./04-comparison.md) ·
-> [05 — Take-aways for A7](./05-for-a7.md).
+Status: external-technology study notes on Clang/LLVM sanitizers, written
+before 2026-09-14. Current A7 decisions are in the
+[decision ledger](../plan/decisions.md).
 
-The Clang/LLVM sanitizers are the most widely-deployed memory-safety
-tooling in production C and C++. They are *not* full memory-safety
-languages — they are debug instruments that turn many UB conditions into
-deterministic crashes. Their algorithms are the practical baseline that
-any new language's safety story has to clear.
+Part of the `docs/lang-safety/` series ([README](./README.md)). Siblings:
+[01 — InvisiCaps](./01-invisicaps.md) ·
+[03 — Hardware-assisted safety](./03-hardware.md) ·
+[04 — Comparison](./04-comparison.md) ·
+[05 — Take-aways for A7](./05-for-a7.md).
+
+The Clang/LLVM sanitizers are the most widely deployed memory-safety tools
+for production C and C++. They do not make a language memory-safe. They are
+debug instruments that turn many UB conditions into deterministic crashes.
+Their algorithms are the practical baseline a new language's safety story
+must beat.
 
 Primary sources:
 
@@ -49,17 +52,16 @@ Primary sources:
 
 ### Bug classes detected
 
-- Out-of-bounds heap / stack / global access
+- Out-of-bounds heap, stack, and global access
 - Use-after-free, use-after-return, use-after-scope
 - Double-free, invalid free
 - Initialization-order fiasco
-- (Through integrated LSan) memory leaks
+- Memory leaks (through integrated LSan)
 
 ### Algorithm — shadow memory at 1:8
 
-ASan reserves a shadow region where one byte of shadow describes the
-addressability of 8 bytes of application memory. The mapping (64-bit
-Linux):
+ASan reserves a shadow region. One shadow byte describes whether 8 bytes of
+application memory are addressable. The mapping on 64-bit Linux:
 
 ```
 Shadow = (Mem >> 3) + 0x7fff8000
@@ -75,9 +77,8 @@ Memory layout:
 | HighShadow | `0x02008fff7000–0x10007fff7fff` |
 | HighMem | `0x10007fff8000–0x7fffffffffff` |
 
-The ShadowGap is mapped `PROT_NONE` so any attempt to dereference the
-shadow of the shadow itself segfaults — that's how the runtime detects
-its own bugs.
+The ShadowGap is mapped `PROT_NONE`. Dereferencing the shadow of the shadow
+segfaults, which is how the runtime catches its own bugs.
 
 ### Shadow byte values
 
@@ -109,26 +110,25 @@ if (shadow_value) {
 }
 ```
 
-The slow-path check handles partial poisoning of a granule:
+The slow path handles a partly poisoned granule:
 
 ```c
 size_t last_accessed_byte = (address & 7) + kAccessSize - 1;
 return last_accessed_byte >= shadow_value;
 ```
 
-Two loads + a branch on the fast path. The branch is almost always
-not-taken, so on a modern CPU the instrumentation is mostly a few cycles
-per access.
+The fast path is two loads and a branch. The branch is almost never taken,
+so on a modern CPU each access costs a few cycles.
 
 ### malloc / free / quarantine
 
-- **malloc** allocates the requested size *plus* redzones (typically 32
-  bytes on either side), poisons the redzone shadow bytes, and clears
-  the user-region shadow.
-- **free** poisons the entire chunk's shadow with `0xfd` and pushes it
-  into a *quarantine* queue. Quarantined chunks are not reused until
-  they age out, so use-after-free is caught for a tunable window.
-  Quarantine size defaults to 256 MB.
+- **malloc** allocates the requested size plus redzones (typically 32 bytes
+  on each side), poisons the redzone shadow, and clears the user-region
+  shadow.
+- **free** poisons the whole chunk's shadow with `0xfd` and puts the chunk in
+  a quarantine queue. Quarantined chunks are not reused until they age out,
+  so use-after-free is caught for a tunable window. The quarantine defaults
+  to 256 MB.
 
 ### Stack and global redzones
 
@@ -141,61 +141,60 @@ char redzone2[24];
 char redzone3[32];   // 32-byte aligned
 ```
 
-and initializes shadow bytes around `a` accordingly. On return, all
-shadow bytes are reset. Globals are surrounded by similar redzones at
-link time.
+It sets the shadow bytes around `a` to match and resets them all on return.
+Globals get similar redzones at link time.
 
 ### Performance
 
 > "The average slowdown of the instrumented program is ~2×."
 
-Memory overhead is roughly **3×** in practice (1× for the program, 1/8×
-for shadow, ~2× for redzones + quarantine). Mac and Linux x86_64 are the
+Memory overhead is about 3× in practice: 1× for the program, 1/8× for
+shadow, ~2× for redzones and quarantine. Mac and Linux x86_64 are the
 best-supported targets.
 
 ### Flags worth knowing
 
-- `-fsanitize=address` — enable
-- `-O1` or higher recommended
-- `-fno-omit-frame-pointer` — better stack traces
-- `-g` — symbolized output
-- `ASAN_OPTIONS=halt_on_error=0` — continue after the first error
-- `ASAN_OPTIONS=detect_leaks=1` — integrated leak detection (default on
-  Linux x86_64)
-- `ASAN_OPTIONS=quarantine_size_mb=N` — tune the quarantine window
-- `ASAN_OPTIONS=verbosity=1` — diagnostic noise
+| Flag | Effect |
+| --- | --- |
+| `-fsanitize=address` | Enable |
+| `-O1` or higher | Recommended |
+| `-fno-omit-frame-pointer` | Better stack traces |
+| `-g` | Symbolized output |
+| `ASAN_OPTIONS=halt_on_error=0` | Continue after the first error |
+| `ASAN_OPTIONS=detect_leaks=1` | Integrated leak detection (default on Linux x86_64) |
+| `ASAN_OPTIONS=quarantine_size_mb=N` | Tune the quarantine window |
+| `ASAN_OPTIONS=verbosity=1` | Diagnostic output |
 
 ---
 
 ## 2. LeakSanitizer (LSan)
 
-LSan is the leak detector inside (or alongside) ASan. It is essentially
-a **mark-and-sweep run at process exit** that reports any heap chunk
-that no live pointer references.
+LSan is the leak detector inside or alongside ASan. It runs a mark-and-sweep
+at process exit and reports every heap chunk no live pointer references.
 
-- Roots: global and TLS sections, every thread's stack and registers.
-- Marker: scans each root word-by-word, treating any value that looks
-  like a chunk pointer as a heap reference.
-- Sweep: every heap chunk not reachable from any root is reported as a
-  *direct* or *indirect* leak.
+- **Roots:** global and TLS sections, and every thread's stack and registers.
+- **Mark:** scan each root word by word; any value that looks like a chunk
+  pointer counts as a heap reference.
+- **Sweep:** report every chunk not reachable from a root as a direct or
+  indirect leak.
 
 Modes:
 
-- **Integrated** with ASan: default on x86_64 Linux. On macOS, enable via
+- **Integrated with ASan:** default on x86_64 Linux. On macOS, enable with
   `ASAN_OPTIONS=detect_leaks=1`.
-- **Stand-alone**: `-fsanitize=leak` without ASan; lighter weight but less
-  battle-tested.
+- **Stand-alone:** `-fsanitize=leak` without ASan. Lighter, but less tested.
 
 Flags via `LSAN_OPTIONS`:
 
-- `exitcode=23` — exit code on detected leak (default 23)
-- `max_leaks=N` — report only top N
-- `suppressions=/path` — suppression file; entries look like
-  `leak:FunctionName`, anchored with `^` / `$`
-- `report_objects=1` — list individual leaked objects with addresses
+| Flag | Effect |
+| --- | --- |
+| `exitcode=23` | Exit code on a detected leak (default 23) |
+| `max_leaks=N` | Report only the top N |
+| `suppressions=/path` | Suppression file; entries look like `leak:FunctionName`, anchored with `^` / `$` |
+| `report_objects=1` | List individual leaked objects with addresses |
 
-LSan misses leaks of objects still reachable from a global, even if
-nothing will ever use them ("dead" but not "lost").
+LSan misses objects still reachable from a global that nothing will use
+again: "dead" but not "lost".
 
 ---
 
@@ -203,41 +202,40 @@ nothing will ever use them ("dead" but not "lost").
 
 ### What it detects
 
-Uninitialized reads — the things ASan can't see because the memory *is*
-addressable, just full of garbage.
+Uninitialized reads. ASan cannot see these, because the memory is
+addressable; it just holds garbage.
 
 ### Algorithm
 
-- A separate shadow region tracks **uninitialized bits** with bit-exact
-  precision. One bit of shadow per application bit; a shadow bit of 1
-  means "this bit is poisoned (uninitialized)".
-- Arithmetic, logic, and copies **propagate** the poison rather than
-  warning. The poison spreads silently through every derived value.
-- A warning is issued only when poison influences observable behavior:
-  - A conditional branch on a poisoned value.
-  - A poisoned address used as a pointer (load / store).
-  - A poisoned value passed to or returned from an *uninstrumented*
-    function (typically libc).
+- A separate shadow region tracks uninitialized bits exactly: one shadow bit
+  per application bit. A shadow bit of 1 means the bit is poisoned
+  (uninitialized).
+- Arithmetic, logic, and copies propagate poison without warning. Poison
+  spreads through every derived value.
+- MSan warns only when poison affects observable behavior:
+  - a conditional branch on a poisoned value;
+  - a poisoned address used as a pointer (load or store);
+  - a poisoned value passed to or returned from an uninstrumented function
+    (typically libc).
 
-This "report on use, not on copy" rule is what keeps the false-positive
-rate manageable.
+Reporting on use instead of on copy keeps false positives manageable.
 
 ### Origin tracking
 
 `-fsanitize-memory-track-origins` (and the deeper
-`-fsanitize-memory-track-origins=2`) records the allocation site of
-every poisoned value and propagates that origin with the data. The
-warning then includes the chain "this came from `new int[10]` at
-file:line, was copied here, was copied there, finally read at file:line".
+`-fsanitize-memory-track-origins=2`) records the allocation site of each
+poisoned value and carries it with the data. The warning then shows the
+chain: "this came from `new int[10]` at file:line, was copied here, was
+copied there, finally read at file:line".
 
 ### Cost
 
 - ~3× slowdown without origin tracking.
-- Additional **1.5×–2.5×** on top with origin tracking.
-- Whole-program build requirement: every translation unit, including
-  libc++ and libstdc++, must be MSan-instrumented or MSan will report
-  false positives on stdlib internals. There are pre-built MSan-clean
-  libstdc++ images and a documented libc++ workflow.
+- A further 1.5×–2.5× with origin tracking.
+- Whole-program build: every translation unit, including libc++ and
+  libstdc++, must be MSan-instrumented. Otherwise MSan reports false
+  positives in stdlib internals. Pre-built MSan-clean libstdc++ images and a
+  documented libc++ workflow exist.
 
 ### Example
 
@@ -253,8 +251,7 @@ if (a[argc])      // UMR: a[1..argc-1] never written
     #0 0x7fd1c2944171 in main umr.cc:6
 ```
 
-With origin tracking, the trace includes the originating `new int[10]`
-call site.
+With origin tracking, the trace also names the `new int[10]` call site.
 
 ### Platform support
 
@@ -266,37 +263,35 @@ x86_64, AArch64, PPC64, MIPS64. Requires `-fPIE -pie`.
 
 ### What it detects
 
-Data races (two threads access the same location concurrently with at
-least one writer and no synchronizing happens-before edge between
-them), as well as some deadlock and signal-handler-safety violations.
+Data races: two threads access the same location concurrently, at least one
+writes, and no synchronizing happens-before edge separates them. TSan also
+finds some deadlocks and signal-handler-safety violations.
 
 ### Algorithm sketch
 
-- For each memory location, TSan keeps a small **shadow cell** (a few
-  bytes — typically 4 shadow slots, each 16 bytes — per 8 bytes of
-  application memory).
-- Each slot records (tid, epoch, access kind, size). A new access
-  compares its vector-clock entry against the slot's: if the slot was
-  written by a *different* thread and the writer's epoch is not in the
-  current thread's happens-before set, it's a race.
-- The happens-before relation is built from pthread/mutex/atomic ops,
-  which the runtime interposes.
+- Each location has a small shadow cell: typically 4 shadow slots of 16
+  bytes each per 8 bytes of application memory.
+- Each slot records (tid, epoch, access kind, size). A new access compares
+  its vector-clock entry with each slot. If a different thread wrote the slot
+  and that writer's epoch is not in the current thread's happens-before set,
+  the access is a race.
+- The runtime builds the happens-before relation by intercepting pthread,
+  mutex, and atomic operations.
 
 ### Cost
 
 > "Memory usage may increase by 5–10× and execution time by 2–20×."
 
-Higher than ASan because every memory access updates a 4-slot shadow,
-not just reads a byte.
+This is higher than ASan because every access updates a 4-slot shadow
+instead of reading one byte.
 
 ### Limitations
 
-- All linked code must be `-fsanitize=thread`-built; non-instrumented
-  code can cause both false positives and false negatives.
-- Static linking of libc/libstdc++ unsupported.
-- C++ exceptions not supported.
-- Detection is dynamic — only races that actually happen in this run
-  are reported.
+- All linked code must be built with `-fsanitize=thread`. Uninstrumented
+  code causes both false positives and false negatives.
+- Static linking of libc/libstdc++ is unsupported.
+- C++ exceptions are unsupported.
+- Detection is dynamic: TSan reports only races that happen in the run.
 
 ### Example
 
@@ -313,7 +308,7 @@ int main() {
 }
 ```
 
-Diagnostic lists the read+write pair, both backtraces, and the
+The diagnostic lists the read and write pair, both backtraces, and the
 `pthread_create` sites.
 
 ---
@@ -322,24 +317,21 @@ Diagnostic lists the read+write pair, both backtraces, and the
 
 ### Pitch
 
-HWASAN is ASan's successor for AArch64 (and increasingly x86_64 with
-Intel LAM). It replaces the 1:8 shadow-with-redzones scheme with
-**tagged pointers** — a top-byte ignore (TBI) tag that the hardware
-strips before address translation. Memory overhead drops from ~3× to
-roughly 1/16, and tagging granularity matches the natural allocator
-alignment.
+HWASAN succeeds ASan on AArch64, and increasingly on x86_64 with Intel LAM.
+It replaces ASan's 1:8 shadow with redzones by tagged pointers: a tag in the
+top byte, which the hardware strips before address translation (top-byte
+ignore, TBI). Memory overhead drops from ~3× to about 1/16, and tag
+granularity matches normal allocator alignment.
 
 ### Mechanism
 
-- **Top byte of every pointer is a tag.** AArch64 already ignores the
-  top byte in address translation (TBI), so tagged pointers can be
-  dereferenced directly.
-- **Memory is tagged in shadow at granule TG bytes** (16 or 64). One
-  shadow byte stores the tag for one granule.
-- **Allocator assigns a random TS-bit tag** (typically 4 or 8 bits per
-  granule).
-- **Every load / store checks** that the pointer tag matches the shadow
-  tag for that granule. Mismatch ⇒ crash.
+- **The top byte of every pointer is a tag.** AArch64 already ignores the top
+  byte during address translation, so tagged pointers dereference directly.
+- **Shadow holds one tag per granule** of TG bytes (16 or 64).
+- **The allocator assigns a random TS-bit tag** per granule (typically 4 or 8
+  bits).
+- **Every load and store checks** that the pointer tag matches the granule's
+  shadow tag. A mismatch crashes.
 
 ### Granule and tag size
 
@@ -349,15 +341,14 @@ alignment.
 | Larger | 8 | 16 B | ~0.39 % | ~6.25 % |
 | Coarser | 4 | 64 B | ~6.25 % | ~1.6 % |
 
-The detection is **probabilistic**: with 4 bits, ~1 / 16 = 6.25 % of bug
-instances can collide on the tag and slip through. This is the explicit
-trade against ASan's deterministic redzones.
+Detection is probabilistic. With 4 bits, about 1/16 (6.25 %) of bug instances
+collide on the tag and go undetected. This is the deliberate trade against
+ASan's deterministic redzones.
 
 ### Short granules
 
-For allocations smaller than a granule (1..TG-1 bytes), the shadow byte
-holds the *size* and the *last byte of the granule* carries the actual
-tag. The instrumented check is:
+For allocations smaller than a granule (1..TG-1 bytes), the shadow byte holds
+the size and the last byte of the granule holds the real tag. The check is:
 
 ```
 tag_match = (pointer_tag == shadow_byte)
@@ -381,31 +372,30 @@ foo:
     ret
 ```
 
-The check is outlined into a function with a *custom calling
-convention* that preserves most registers — that's how HWASAN keeps
-register pressure manageable.
+The check is outlined into a function with a custom calling convention that
+preserves most registers. This keeps register pressure low.
 
 ### Relationship to MTE
 
-ARM **Memory Tagging Extension (MTE)** does the same thing in hardware,
-on actual silicon: tag bits stored in DRAM via separate ECC-style
-metadata, tag check enforced by the MMU. HWASAN is the software
-prototype that proves the model and is the fallback when MTE is absent.
-See [03 — Hardware-assisted safety](./03-hardware.md).
+ARM's Memory Tagging Extension (MTE) implements the same model in silicon.
+Tag bits live in DRAM as separate ECC-style metadata, and the MMU enforces
+the check. HWASAN is the software prototype that proved the model, and the
+fallback when MTE is absent. See
+[03 — Hardware-assisted safety](./03-hardware.md).
 
 ### Intel LAM (x86_64)
 
-Intel's Linear Address Masking exposes the top byte similarly to TBI but
-is only on the newest x86_64 silicon. HWASAN on x86_64 currently
-emulates this via page aliasing and supports the heap only.
+Intel's Linear Address Masking exposes the top bits much like TBI, but only
+on the newest x86_64 silicon. HWASAN on x86_64 currently emulates it through
+page aliasing and covers the heap only.
 
 ---
 
 ## 6. UndefinedBehaviorSanitizer (UBSan)
 
-UBSan is the lightweight UB-into-defined-behavior tool. It inserts
-inline checks for specific UB rules and either calls a runtime to
-diagnose, or traps directly.
+UBSan is the lightweight tool for turning UB into defined behavior. It
+inserts inline checks for specific UB rules and either calls a runtime to
+report or traps directly.
 
 ### The full check menu
 
@@ -442,13 +432,12 @@ diagnose, or traps directly.
 
 ### Groups
 
-- `undefined` — most of the above except `float-divide-by-zero`,
-  unsigned overflow, implicit conversion, local-bounds, vptr, and
-  nullability.
-- `integer` — signed/unsigned overflow + shift + divide-by-zero +
-  truncation + sign-change.
-- `nullability` — the three nullability checks.
-- `implicit-conversion` — implicit integer + bitfield conversions.
+| Group | Contents |
+| --- | --- |
+| `undefined` | Most of the above, except `float-divide-by-zero`, unsigned overflow, implicit conversion, local-bounds, vptr, and nullability |
+| `integer` | Signed/unsigned overflow, shift, divide-by-zero, truncation, sign-change |
+| `nullability` | The three nullability checks |
+| `implicit-conversion` | Implicit integer and bitfield conversions |
 
 ### Runtime modes
 
@@ -459,9 +448,9 @@ diagnose, or traps directly.
 | `-fsanitize-trap=...` | Trap instruction (SIGILL) | No runtime needed |
 | `-fsanitize-minimal-runtime` | Tiny runtime, dedup-only logging | Reduced attack surface for prod |
 
-`-fsanitize-trap=undefined` is the standard way to ship UBSan in
-**production**: zero runtime, deterministic SIGILL on UB, ~0 % overhead
-for checks the optimizer can elide entirely.
+`-fsanitize-trap=undefined` is the standard way to ship UBSan in production.
+It needs no runtime, raises a deterministic SIGILL on UB, and costs ~0 % for
+checks the optimizer removes.
 
 ### Example
 
@@ -497,56 +486,52 @@ vptr:libfoo.so
 
 ## 7. Control Flow Integrity (CFI)
 
-CFI defends *forward edges* (indirect calls, virtual calls) against
-hijacking by checking the call target's type against the call-site
-expectation.
+CFI protects forward edges (indirect calls and virtual calls) from hijacking.
+It checks the call target's type against what the call site expects.
 
 ### Schemes
 
-- `-fsanitize=cfi-vcall` — virtual call type check
-- `-fsanitize=cfi-nvcall` — non-virtual call type check
-- `-fsanitize=cfi-icall` — indirect function call type check
-- `-fsanitize=cfi-derived-cast` / `-fsanitize=cfi-unrelated-cast` — bad
-  cast detection
-- `-fsanitize=cfi-mfcall` — member-function-pointer call check
-- `-fsanitize=kcfi` — low-overhead kernel variant, no LTO required
+| Flag | Check |
+| --- | --- |
+| `-fsanitize=cfi-vcall` | Virtual call type |
+| `-fsanitize=cfi-nvcall` | Non-virtual call type |
+| `-fsanitize=cfi-icall` | Indirect function call type |
+| `-fsanitize=cfi-derived-cast` / `-fsanitize=cfi-unrelated-cast` | Bad casts |
+| `-fsanitize=cfi-mfcall` | Member-function-pointer call |
+| `-fsanitize=kcfi` | Low-overhead kernel variant; no LTO required |
 
 ### Mechanics
 
-- Requires `-flto` or `-flto=thin` and static linking (KCFI is the
-  exception).
-- At LTO time, classes/functions of the same type signature are placed
-  into a *jump table*. Indirect calls go through table entries that
-  validate type identity.
-- Vtables get class hierarchy metadata used to verify dynamic type at
-  call site.
+- Requires `-flto` or `-flto=thin` and static linking (KCFI excepted).
+- At LTO time, functions with the same type signature go into a jump table.
+  Indirect calls go through table entries that validate the type.
+- Vtables carry class-hierarchy metadata used to check the dynamic type at
+  the call site.
 
 ### Cost
 
 > "Virtual call checking demonstrates minimal overhead—less than 1 %
 > measured on the Chromium browser."
 
-Binary size can grow up to **15 %** because of the jump tables and the
-extra metadata.
+Binary size can grow by up to 15 % from jump tables and metadata.
 
 ### Threat model coverage
 
-CFI does *not* fix the bug — it stops the **exploit** that depends on
-indirect-call hijacking after a memory-safety violation has occurred.
-Combine with ASan (in test) and UBSan-trap (in prod) for a layered
-defense.
+CFI does not fix the bug. It stops exploits that hijack indirect calls after
+a memory-safety violation. Layer it with ASan in testing and UBSan-trap in
+production.
 
 ---
 
 ## 8. `-fbounds-safety`
 
-Clang's experimental but production-validated bounds-safety dialect for
-C. Apple's kernel and OS userspace are the proof-of-concept production
-deployment ("millions of lines").
+Clang's bounds-safety dialect for C. It is experimental but validated in
+production: Apple's kernel and OS userspace deploy it across "millions of
+lines".
 
 ### Annotations
 
-External (refer to another variable / constant):
+External annotations (refer to another variable or constant):
 
 | Annotation | Meaning |
 | --- | --- |
@@ -554,7 +539,7 @@ External (refer to another variable / constant):
 | `__sized_by(N)` | Pointer has `N` valid bytes (good for `void*`) |
 | `__ended_by(P)` | Iterator-style: valid up to `P` |
 
-Internal (pointer becomes a "wide pointer"):
+Internal annotations (the pointer becomes a wide pointer):
 
 | Annotation | Layout |
 | --- | --- |
@@ -564,89 +549,98 @@ Internal (pointer becomes a "wide pointer"):
 | `__null_terminated` | C-string-style |
 | `__terminated_by(T)` | Custom sentinel-delimited |
 
-### Defaulting strategy (the clever bit)
+### Defaulting strategy
 
-- **Locals default to `__bidi_indexable`**: they're wide pointers in
-  registers, paying a small register-pressure cost but giving full
-  bounds info "for free".
-- **ABI-visible pointers default to `__single`**: struct fields,
-  function parameters keep their 8-byte ABI; bounds must be carried
-  separately by the programmer or an annotation.
+- **Locals default to `__bidi_indexable`.** They are wide pointers in
+  registers. This costs some register pressure but gives full bounds
+  information without annotations.
+- **ABI-visible pointers default to `__single`.** Struct fields and function
+  parameters keep their 8-byte ABI. The programmer or an annotation must
+  carry bounds separately.
 
-This combination is what makes the model adoptable on existing C: most
-code compiles unchanged, and the annotations needed are concentrated at
-ABI boundaries.
+This combination makes the model adoptable for existing C. Most code
+compiles unchanged, and annotations concentrate at ABI boundaries.
 
 ### Trap behavior
 
-Bounds violations *deterministically trap before* the out-of-bounds
-access occurs. The compiler also enforces that pointer-and-bound
-updates happen "side by side with no side effects between them," so
-the wide pointer can never desynchronize.
+Bounds violations trap deterministically before the out-of-bounds access.
+The compiler also requires pointer and bound updates to happen "side by side
+with no side effects between them," so a wide pointer can never fall out of
+sync.
 
 ### Backwards compatibility
 
-A header macro-defines the annotations as type attributes when the
-extension is enabled and as nothing when it isn't — so the same source
-compiles with a non-supporting toolchain.
+A header defines the annotations as type attributes when the extension is on
+and as nothing when it is off. The same source compiles with toolchains that
+lack the extension.
 
 ---
 
 ## 9. Side family: SafeStack, ShadowCallStack, PAC
 
-Three more LLVM features that target **return-address corruption** —
-the classic stack-smashing exploit primitive.
+Three more LLVM features target return-address corruption, the classic
+stack-smashing exploit primitive.
 
 | Feature | What it does | Cost |
 | --- | --- | --- |
-| **SafeStack** (`-fsanitize=safe-stack`) | Splits the stack into a "safe stack" (return addresses, register spills) and an "unsafe stack" (arrays, address-taken locals). Buffer overflow on the unsafe stack can't touch return addresses. | < 0.1 % overhead reported. |
-| **ShadowCallStack** (`-fsanitize=shadow-call-stack`) | Mirrors every return address into a separate, hardware-protected (mprotect / register-pinned) shadow stack. Mismatch on return ⇒ abort. AArch64 / RISC-V; Android uses it widely. | A few percent. |
-| **Pointer Authentication (PAC)** (`-fsanitize=pointer-auth` on AArch64) | Signs pointers (function pointers, return addresses) with a hardware-generated MAC using a per-process key. Tampering changes the signature ⇒ invalid pointer ⇒ crash. | Single-instruction sign/auth; near-zero overhead. |
+| SafeStack (`-fsanitize=safe-stack`) | Splits the stack into a safe stack (return addresses, register spills) and an unsafe stack (arrays, address-taken locals). An overflow on the unsafe stack cannot reach return addresses. | < 0.1 % reported |
+| ShadowCallStack (`-fsanitize=shadow-call-stack`) | Copies every return address to a separate protected shadow stack (mprotect or a pinned register). A mismatch on return aborts. AArch64 / RISC-V; widely used on Android. | A few percent |
+| Pointer Authentication (PAC) (`-fsanitize=pointer-auth` on AArch64) | Signs function pointers and return addresses with a hardware MAC under a per-process key. Tampering breaks the signature, yielding an invalid pointer that crashes. | One instruction to sign or verify; near zero |
 
-These are *integrity* mechanisms — they don't catch bugs, they make
-some classes of exploits infeasible. They compose well with ASan / UBSan
-in the test build and ship in production hardened by themselves.
+These are integrity mechanisms. They do not find bugs; they make some
+exploit classes infeasible. They combine with ASan and UBSan in test builds
+and can ship alone in hardened production builds.
 
 ---
 
 ## 10. Common limitations and what they tell us
 
-Cross-cutting properties of every sanitizer above:
+Properties shared by the sanitizers above:
 
-1. **Dynamic, not static.** They catch bugs in the runs they observe.
-   Code paths never executed by your test corpus produce zero output.
-   This is exactly the gap that a typed language closes by construction.
-2. **Whole-program build needed (except UBSan and CFI).** MSan and TSan
-   demand that libc++ / glibc be rebuilt with instrumentation, which is
-   why production deployment is rare. A language with a clean ABI can
-   sidestep this entirely.
-3. **No use-after-free guarantee under heap grooming.** ASan's
-   quarantine is finite. Pour 100 million allocations through it and the
-   freed chunk is reused; the next use-after-free reads adjacent live
-   data and reports nothing. This is the exact gap Fil-C's
-   FUGC fills by keeping freed capabilities alive in shadow until the
-   collector proves nothing else references them — see
+1. **Dynamic, not static.** They catch bugs only in the runs they observe.
+   Paths the test corpus never executes produce no output. A typed language
+   closes this gap by construction.
+2. **Whole-program builds (except UBSan and CFI).** MSan and TSan need libc++
+   and glibc rebuilt with instrumentation, so production use is rare. A
+   language with a clean ABI can avoid this.
+3. **No use-after-free guarantee under heap grooming.** ASan's quarantine is
+   finite. After 100 million allocations the freed chunk is reused, and a
+   later use-after-free reads live data without a report. Fil-C closes this
+   gap: `free()` sets the capability's bounds to zero, and FUGC repoints
+   stale in-memory capabilities to a free singleton before reusing the
+   memory. See
    [01 — InvisiCaps §8](./01-invisicaps.md#8-fugc--the-garbage-collector-that-backs-the-model).
-4. **Concurrency is the hardest case.** TSan exists *because* races are
-   not addressable by ASan-style instrumentation alone — the violation
-   isn't at a single access, it's at the relation between two. A static
-   ownership / borrow discipline (Rust) avoids the entire shadow-cell
-   apparatus.
-5. **Tagged-pointer schemes (HWASAN, MTE) are probabilistic.** With 4
-   tag bits, ~6.25 % of bugs go undetected per access. Acceptable for
-   *fuzz farms* and *production hardening*; not acceptable for a
-   *language safety claim*.
-6. **CFI, SafeStack, ShadowCallStack, PAC are exploit mitigations, not
-   bug detectors.** A new language should still emit them when targeting
-   native binaries, because they harden against bugs in **non-language
-   parts** of the system (linked C libraries, the kernel).
-7. **UBSan-trap mode is the right baseline for any AOT compiler that
-   emits unchecked arithmetic.** It's nearly free, deterministic, and
-   prevents the "signed overflow turned silent infinite loop" class of
-   failures. If A7 emits Zig (which has its own UB semantics), the
-   corresponding setting in Zig (`-O ReleaseSafe` keeps checks;
-   `-O ReleaseFast` drops them) is the analog.
+4. **Concurrency is the hardest case.** TSan exists because ASan-style
+   checks cannot see races: the violation is a relation between two
+   accesses, not a single access. A static ownership and borrowing
+   discipline (Rust) avoids the shadow-cell machinery.
+5. **Tagged-pointer schemes (HWASAN, MTE) are probabilistic.** With 4 tag
+   bits, ~6.25 % of bugs go undetected per access. That is acceptable for
+   fuzzing farms and production hardening, not for a language safety claim.
+6. **CFI, SafeStack, ShadowCallStack, and PAC mitigate exploits; they do not
+   detect bugs.** A new language should still enable them for native
+   binaries. They harden the parts outside the language: linked C libraries
+   and the kernel.
+7. **UBSan-trap mode is the right baseline for an AOT compiler that emits
+   unchecked arithmetic.** It is nearly free, deterministic, and prevents
+   failures such as signed overflow turning into a silent infinite loop. For
+   A7, which emits Zig (with its own UB rules), the analog is Zig's build
+   mode: `-O ReleaseSafe` keeps runtime checks and `-O ReleaseFast` drops
+   them.
 
-Continue to [03 — Hardware-assisted safety](./03-hardware.md) for the
-silicon side of the story, or jump to
-[05 — Take-aways for A7](./05-for-a7.md) for the implementation guide.
+> Note (2026-09-16): item 7 does not match A7's current model or plan.
+> A7's example builds use `-ODebug` and `-OReleaseFast`, not ReleaseSafe
+> ([`scripts/build_examples.py`](../../scripts/build_examples.py)). The
+> [safety contract](../SAFETY_CONTRACT.md) does not rely on Zig runtime
+> checks: the compiler must prove a risky operation safe or reject the
+> program before emitting Zig. The proposed
+> [memory plan](../plan/memory.md) says any remaining runtime check is
+> emitted as explicit A7 code, not a Zig safety check that ReleaseFast
+> removes. Ledger L5 makes `+`, `-` and `*` wrap, so they will not be
+> overflow traps. As of this note, the Zig backend does not yet emit
+> wrapping operators; the contract still lists range proofs for them
+> ([ledger](../plan/decisions.md), superseded-material table).
+
+Continue to [03 — Hardware-assisted safety](./03-hardware.md) for the silicon
+side, or [05 — Take-aways for A7](./05-for-a7.md) for the implementation
+guide.

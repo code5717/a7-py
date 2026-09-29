@@ -1,0 +1,6 @@
+// glm-pipe repro: mixed-width arithmetic is typed as the LEFT operand
+// (a7/passes/type_checker.py:1222-1227). Both examples pass the a7 pipeline
+// but emit `(a + b)` which Zig rejects: "expected type 'u8', found 'u32'".
+mixed_width :: fn(a: u8, b: u32) u8 {
+    ret a + b
+}

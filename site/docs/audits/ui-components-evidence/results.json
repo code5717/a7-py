@@ -1,0 +1,94 @@
+[
+  {
+    "check": "rail-current-visible-document-unmoved",
+    "result": "{\"visible\":true,\"railScroll\":171,\"scrollY\":0}"
+  },
+  {
+    "check": "search-arrow-down",
+    "result": "search-results"
+  },
+  {
+    "check": "search-arrow-up-input",
+    "result": "search-input"
+  },
+  {
+    "check": "search-control-arrow-preserved",
+    "result": "search-input"
+  },
+  {
+    "check": "search-close-arrow-preserved",
+    "result": true
+  },
+  {
+    "check": "search-end-no-wrap",
+    "result": true
+  },
+  {
+    "check": "search-return-focus",
+    "result": true
+  },
+  {
+    "check": "copy-failure-flow",
+    "result": "{\"message\":\"Copy failed. Select the code and copy it manually, or try again.\",\"feedbackBelowCode\":true,\"toolbarAboveCode\":true,\"pageWidth\":305,\"viewport\":320}"
+  },
+  {
+    "check": "copy-failure-200-spacing",
+    "result": "{\"feedbackBelowCode\":true,\"toolbarAboveCode\":true,\"pageWidth\":305,\"viewport\":320}"
+  },
+  {
+    "check": "heading-focus-visible",
+    "result": "{\"opacity\":\"1\",\"name\":\"Link to Pipeline\",\"outline\":\"solid\",\"href\":\"#pipeline\"}"
+  },
+  {
+    "check": "heading-link-followed",
+    "result": "#pipeline"
+  },
+  {
+    "check": "mobile-outline-current",
+    "result": "#pipeline"
+  },
+  {
+    "check": "responsive-320-light",
+    "result": "{\"viewport\":320,\"scrollWidth\":305}"
+  },
+  {
+    "check": "responsive-320-dark",
+    "result": "{\"viewport\":320,\"scrollWidth\":305}"
+  },
+  {
+    "check": "responsive-390-light",
+    "result": "{\"viewport\":390,\"scrollWidth\":375}"
+  },
+  {
+    "check": "responsive-390-dark",
+    "result": "{\"viewport\":390,\"scrollWidth\":375}"
+  },
+  {
+    "check": "responsive-768-light",
+    "result": "{\"viewport\":768,\"scrollWidth\":753}"
+  },
+  {
+    "check": "responsive-768-dark",
+    "result": "{\"viewport\":768,\"scrollWidth\":753}"
+  },
+  {
+    "check": "responsive-1024-light",
+    "result": "{\"viewport\":1024,\"scrollWidth\":1009}"
+  },
+  {
+    "check": "responsive-1024-dark",
+    "result": "{\"viewport\":1024,\"scrollWidth\":1009}"
+  },
+  {
+    "check": "responsive-1440-light",
+    "result": "{\"viewport\":1440,\"scrollWidth\":1425}"
+  },
+  {
+    "check": "responsive-1440-dark",
+    "result": "{\"viewport\":1440,\"scrollWidth\":1425}"
+  },
+  {
+    "check": "no-js-code",
+    "result": "{\"toolbar\":\"A7\",\"copyHidden\":true,\"code\":\"io :: import \\\"std/io\\\"\\n\\nmain :: fn() {\\n    io.println(\\\"Hello, World!\\\")\\n}\\n\",\"headingLink\":true}"
+  }
+]

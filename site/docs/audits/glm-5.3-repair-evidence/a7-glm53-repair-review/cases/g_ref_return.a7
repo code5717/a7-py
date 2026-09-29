@@ -1,0 +1,10 @@
+io :: import "std/io"
+
+helper :: fn(v: ref i32) i32 {
+    ret v
+}
+
+main :: fn() {
+    n := 3
+    io.println("{}", helper(n))
+}

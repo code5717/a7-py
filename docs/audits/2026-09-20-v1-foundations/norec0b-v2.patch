@@ -1,0 +1,461 @@
+--- a/test/norec_scan.py
++++ b/test/norec_scan.py
+@@ -40,6 +40,14 @@
+ * ``x.m`` where inference fails: edges to methods named ``m`` in the caller's
+   class, its in-package bases, and every subclass of those; any other
+   in-package method named ``m`` is recorded as an unresolved call, not an edge.
++  An untyped ``self.attribute`` receiver has no assumed relationship to its
++  owner's class; all matching methods are recorded as unresolved candidates.
++* Callable dictionaries assigned at module, class or instance scope are followed
++  through subscript and ``get`` calls. Dynamic keys conservatively reach every
++  stored value. Local callable assignments and list/queue insertion and removal
++  are followed too.
++* Lambdas have separate call-graph nodes. Creating or queuing a lambda does not
++  execute its body; invoking it, including through a callback parameter, does.
+ * ``getattr(recv, <constant prefix> ...)`` (f-string, ``+``, ``%`` or
+   ``.format`` with a constant prefix): edges to every method of the receiver's
+   class hierarchy whose name starts with the prefix. ``getattr(recv, "name")``
+@@ -56,8 +64,8 @@
+ Limits (not modelled): calls made from class bodies and module-level code
+ (they cannot be part of a cycle), operators other than ``==``/``!=``, iteration
+ protocols, descriptors other than ``@property``, ``exec``/``eval``, and
+-dispatch through dictionaries of non-constant names on objects other than
+-``self``. The MRO is a depth-first left-to-right walk of in-package bases, not
++dictionary mutation through item assignment, arbitrary container protocols,
++``singledispatch`` registrations, and callable factories with inferred returns. The MRO is a depth-first left-to-right walk of in-package bases, not
+ C3.
+ """
+ 
+@@ -158,7 +166,7 @@
+     cls: Optional[str]
+     self_name: Optional[str]
+     self_is_class: bool
+-    parent: Optional["_Func"]
++    parent: Optional["_Func"] = field(repr=False)
+     is_module: bool = False
+     is_method: bool = False
+     calls_params: bool = False
+@@ -233,6 +241,9 @@
+         self.unresolved: list = []
+         self.deepcopy_calls: list = []
+         self.include_unresolved = False
++        self.lambda_funcs: dict = {}
++        self.class_values: dict = {}
++        self.container_values: dict = {}
+ 
+     # ------------------------------------------------------------------ loading
+     def load(self) -> None:
+@@ -251,7 +262,15 @@
+         for mod, (display, tree, is_pkg) in self.modules.items():
+             self._collect_imports(mod, tree, is_pkg)
+             self._collect_defs(mod, display, tree)
++        self._collect_lambdas()
+         for cls in self.classes.values():
++            context = _Func(f"{cls.key}.<body>", cls.module, cls.node, cls.path,
++                            cls.node.lineno, cls.key, None, False, None)
++            context.local_defs.update(cls.methods)
++            for node in cls.node.body:
++                if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
++                    for name in _assigned_names(node):
++                        self.class_values.setdefault((cls.key, name), []).append((context, node.value))
+             for expr in cls.base_exprs:
+                 r = self._static_module(cls.module, expr)
+                 if r and r[0] == "class":
+@@ -266,6 +285,23 @@
+             self._collect_dataclass(cls)
+         for fn in self.func_list:
+             self._collect_locals(fn)
++
++    def _collect_lambdas(self) -> None:
++        pending = list(self.module_funcs.values()) + self.func_list
++        index = 0
++        while index < len(pending):
++            owner = pending[index]
++            index += 1
++            for node in self._body_nodes(owner):
++                if not isinstance(node, ast.Lambda) or id(node) in self.lambda_funcs:
++                    continue
++                qual = f"{owner.qual}.<lambda@{node.lineno}:{node.col_offset}>"
++                fn = _Func(qual, owner.module, node, owner.path, node.lineno,
++                           owner.cls, owner.self_name, owner.self_is_class, owner)
++                self.lambda_funcs[id(node)] = qual
++                self.funcs[qual] = fn
++                self.func_list.append(fn)
++                pending.append(fn)
+ 
+     def _abs_module(self, mod: str, is_pkg: bool, node: ast.ImportFrom) -> str:
+         if not node.level:
+@@ -765,6 +801,8 @@
+         node = fn.node
+         if fn.is_module:
+             roots = [n for n in node.body if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))]
++        elif isinstance(node, ast.Lambda):
++            roots = [node.body]
+         elif isinstance(node, _MergedBody):
+             roots = node.bodies()
+         else:
+@@ -773,8 +811,8 @@
+         while stack:
+             n = stack.pop()
+             yield n
+-            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+-                kids = list(n.decorator_list) + list(n.args.defaults) + [d for d in n.args.kw_defaults if d]
++            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
++                kids = list(getattr(n, "decorator_list", ())) + list(n.args.defaults) + [d for d in n.args.kw_defaults if d]
+             elif isinstance(n, ast.ClassDef):
+                 kids = list(n.decorator_list) + list(n.bases) + [k.value for k in n.keywords]
+             else:
+@@ -817,10 +855,6 @@
+                 fn.assigns.append((n.name, "unknown", None))
+             elif isinstance(n, ast.NamedExpr):
+                 self._record_target(fn, n.target, "value", n.value)
+-            elif isinstance(n, ast.Lambda):
+-                a = n.args
+-                for p in a.posonlyargs + a.args + a.kwonlyargs:
+-                    fn.assigns.append((p.arg, "unknown", None))
+             elif isinstance(n, (ast.MatchAs, ast.MatchStar)) and n.name:
+                 fn.assigns.append((n.name, "unknown", None))
+             elif isinstance(n, ast.MatchMapping) and n.rest:
+@@ -882,7 +916,7 @@
+         for q in quals:
+             fn = self.funcs[q]
+             nodes = fn.node.nodes if isinstance(fn.node, _MergedBody) else [fn.node]
+-            ann = nodes[0].returns
++            ann = getattr(nodes[0], "returns", None)
+             if ann is None:
+                 return TOP
+             out = _join_pair(out, self._ann_pair(fn.module, ann))
+@@ -1100,6 +1134,16 @@
+ 
+     # -------------------------------------------------------------- edges
+     def build_edges(self) -> None:
++        for fn in list(self.module_funcs.values()) + self.func_list:
++            for node in self._body_nodes(fn):
++                if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
++                    continue
++                method = node.func.attr
++                if method not in ("append", "appendleft", "extend", "extendleft", "insert") or not node.args:
++                    continue
++                value = node.args[-1] if method == "insert" else node.args[0]
++                for key in self._container_keys(fn, node.func.value):
++                    self.container_values.setdefault(key, []).append((fn, value))
+         for fn in self.func_list:
+             fn.calls_params = self._calls_params(fn)
+         for fn in list(self.module_funcs.values()) + self.func_list:
+@@ -1123,6 +1167,77 @@
+             inst = self._receiver_classes(fn, expr.value)
+             return self._resolve_attr(fn, expr.value, expr.attr, inst, False)
+         return set()
++
++    def _container_keys(self, fn: _Func, expr) -> list:
++        if isinstance(expr, ast.Name):
++            resolved = self._resolve_name(fn, expr.id)
++            if resolved is not None and resolved[0] == "local":
++                return [(resolved[1].qual, expr.id)]
++            if resolved is not None and resolved[0] == "var":
++                return [(resolved[1], resolved[2])]
++        if isinstance(expr, ast.Attribute):
++            classes = self._receiver_classes(fn, expr.value)
++            return [(key, expr.attr) for cls in classes or () for key in self._mro(cls)]
++        return []
++
++    def _callable_targets(self, fn: _Func, expr) -> set:
++        """Follow callable assignments and container values with an explicit worklist."""
++        out, seen = set(), set()
++        unknown_key = object()
++        pending = [(fn, expr, unknown_key)]
++        while pending:
++            context, node, selected = pending.pop()
++            key = (context.qual, id(node), selected)
++            if node is None or key in seen:
++                continue
++            seen.add(key)
++            for storage in self._container_keys(context, node):
++                pending.extend((owner, value, selected) for owner, value in self.container_values.get(storage, ()))
++            if isinstance(node, ast.Lambda):
++                qual = self.lambda_funcs.get(id(node))
++                if qual:
++                    out.add(qual)
++            elif isinstance(node, ast.Name):
++                resolved = self._resolve_name(context, node.id)
++                if resolved is not None and resolved[0] == "func":
++                    out.add(resolved[1])
++                elif resolved is not None and resolved[0] in ("local", "var"):
++                    owner = resolved[1] if resolved[0] == "local" else self.module_funcs[resolved[1]]
++                    name = node.id if resolved[0] == "local" else resolved[2]
++                    pending.extend((owner, value, selected) for target, _, value in owner.assigns if target == name)
++            elif isinstance(node, ast.Attribute):
++                out |= self._function_refs(context, node)
++                classes = self._receiver_classes(context, node.value)
++                static = self._static(context, node.value)
++                if static is not None and static[0] == "class":
++                    classes = {static[1]}
++                elif static is not None and static[0] == "module":
++                    owner = self.module_funcs[static[1]]
++                    pending.extend((owner, value, selected) for target, _, value in owner.assigns if target == node.attr)
++                for cls in classes or ():
++                    for base in self._mro(cls) + self._subclasses(cls):
++                        pending.extend((owner, value, selected) for owner, value in self.class_values.get((base, node.attr), ()))
++                        pending.extend((owner, value, selected) for key, attr, owner, _, value in self.attr_assigns
++                                       if key == base and attr == node.attr)
++            elif isinstance(node, ast.Subscript):
++                index = node.slice.value if isinstance(node.slice, ast.Constant) else unknown_key
++                pending.append((context, node.value, index))
++            elif isinstance(node, ast.Dict):
++                for key_node, value in zip(node.keys, node.values):
++                    if (selected is unknown_key or key_node is None
++                            or not isinstance(key_node, ast.Constant) or key_node.value == selected):
++                        pending.append((context, value, unknown_key if key_node is not None else selected))
++            elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
++                pending.extend((context, value, unknown_key) for value in node.elts)
++            elif isinstance(node, ast.IfExp):
++                pending.extend(((context, node.body, selected), (context, node.orelse, selected)))
++            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
++                if node.func.attr in ("pop", "popleft", "get"):
++                    index = unknown_key
++                    if node.func.attr == "get" and node.args and isinstance(node.args[0], ast.Constant):
++                        index = node.args[0].value
++                    pending.append((context, node.func.value, index))
++        return out
+ 
+     def _callback_edges(self, fn: _Func, call: ast.Call) -> None:
+         """A function that calls its parameters may call any function passed to it."""
+@@ -1139,7 +1254,7 @@
+             return
+         refs = set()
+         for arg in list(call.args) + [k.value for k in call.keywords]:
+-            refs |= self._function_refs(fn, arg.value if isinstance(arg, ast.Starred) else arg)
++            refs |= self._callable_targets(fn, arg.value if isinstance(arg, ast.Starred) else arg)
+         saved = self._line
+         for callee in callees:
+             # The call happens inside the callee; cite its definition line.
+@@ -1229,7 +1344,7 @@
+         if inst is None or inst is BOT:
+             if name not in self.methods_by_name:
+                 return set()
+-            return self._fallback_candidates(fn, name)
++            return set() if self._is_self_attr(fn, recv) else self._fallback_candidates(fn, name)
+         out = set()
+         for k in inst:
+             out |= self._virtual(k, name)
+@@ -1248,6 +1363,11 @@
+         if inst is None:
+             if name not in self.methods_by_name:
+                 return set()
++            if self._is_self_attr(fn, recv):
++                candidates = tuple(sorted(self.methods_by_name[name]))
++                if (is_call or name in self.property_names) and not fn.is_module:
++                    self.unresolved.append(Unresolved(fn.qual, name, fn.path, line, candidates))
++                return set(candidates) if self.include_unresolved else set()
+             return self._fallback(fn, name, line, record=is_call or name in self.property_names)
+         return self._resolve_attr(fn, recv, name, inst, is_call)
+ 
+@@ -1361,12 +1481,25 @@
+ 
+     def _edges_for(self, fn: _Func) -> None:
+         call_funcs = set()
++        stored_refs = set()
++        for node in self._body_nodes(fn):
++            if isinstance(node, ast.Dict):
++                values = list(node.values)
++                while values:
++                    value = values.pop()
++                    if isinstance(value, (ast.Name, ast.Attribute)):
++                        stored_refs.add(id(value))
++                    elif isinstance(value, ast.IfExp):
++                        values.extend((value.body, value.orelse))
++                    elif isinstance(value, (ast.List, ast.Tuple, ast.Set)):
++                        values.extend(value.elts)
+         for n in self._body_nodes(fn):
+             self._line = getattr(n, "lineno", fn.line)
+             if isinstance(n, ast.Call):
+                 call_funcs.add(id(n.func))
+                 self._callback_edges(fn, n)
+                 f = n.func
++                self._add(fn, self._callable_targets(fn, f))
+                 if isinstance(f, ast.Name):
+                     r = self._resolve_name(fn, f.id)
+                     if r == ("builtin", "getattr") and len(n.args) >= 2:
+@@ -1407,11 +1540,11 @@
+                 items = n.right.elts if isinstance(n.right, ast.Tuple) else [n.right]
+                 for item in items:
+                     self._add(fn, self._dunder_targets(fn, item, "__str__"))
+-            elif isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load):
++            elif isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and id(n) not in stored_refs:
+                 r = self._resolve_name(fn, n.id)
+                 if r is not None and r[0] == "func":
+                     self._add(fn, {r[1]})
+-            elif isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Load):
++            elif isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Load) and id(n) not in stored_refs:
+                 self._add(fn, self._attr_targets(fn, n.value, n.attr, id(n) in call_funcs, n.lineno))
+ 
+     # ---------------------------------------------------------------- SCCs
+--- a/test/test_no_recursion.py
++++ b/test/test_no_recursion.py
+@@ -330,6 +330,7 @@
+     result = norec_scan.scan(root)
+     assert result.groups == [], "\n".join(result.describe_group(g) for g in result.groups)
+     assert result.deepcopy_calls == []
++    assert result.dataclass_findings == []
+ 
+ 
+ # --------------------------------------------------------------------------
+@@ -711,3 +712,158 @@
+     assert not gone, "No longer recursive; delete from KNOWN_RECURSIVE_DATACLASS_METHODS:\n" + "\n".join(
+         f"- {c} __{k}__" for c, k in gone
+     )
++
++@pytest.mark.parametrize("source, expected", [
++    ("""
++        class Walker:
++            def walk(self, kind):
++                return self.handlers[kind](self, kind)
++            def block(self, kind):
++                return self.walk(kind)
++            handlers = {"block": block}
++    """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
++    ("""
++        class Walker:
++            def __init__(self):
++                self.handlers = {"block": self.block}
++            def walk(self, kind):
++                return self.handlers[kind](kind)
++            def block(self, kind):
++                return self.walk(kind)
++    """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
++    ("""
++        def walk(kind):
++            return handlers[kind](kind)
++        def block(kind):
++            return walk(kind)
++        handlers = {"block": block}
++    """, ("pkg.m:block", "pkg.m:walk")),
++])
++def test_stored_dispatch_tables_preserve_recursive_call_edges(tmp_path, source, expected):
++    result = scan_sources(tmp_path, {"m.py": source})
++    assert result.groups == [expected]
++    assert expected[1] in result.edges[expected[0]]
++    assert expected[0] in result.edges[expected[1]]
++
++
++def test_nonrecursive_dispatch_table_stays_nonrecursive(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Walker:
++            def __init__(self):
++                self.handlers = {"leaf": self.leaf}
++            def walk(self, kind):
++                return self.handlers[kind]()
++            def leaf(self):
++                return 1
++    """})
++    assert result.groups == []
++    assert "pkg.m:Walker.leaf" in result.edges["pkg.m:Walker.walk"]
++
++
++def test_continuation_stack_does_not_call_the_scheduling_frame(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Driver:
++            def __init__(self):
++                self.work = []
++            def run(self):
++                while self.work:
++                    callback = self.work.pop()
++                    callback()
++            def step(self):
++                self.work.append(lambda: self.step())
++    """})
++    assert result.groups == []
++    callback = next(q for q in result.functions if "<lambda@" in q)
++    assert callback in result.edges["pkg.m:Driver.run"]
++    assert result.edges[callback] == {"pkg.m:Driver.step"}
++    assert callback not in result.edges.get("pkg.m:Driver.step", ())
++
++
++@pytest.mark.parametrize("body", [
++    "(lambda: self.step())()",
++    "callback = lambda: self.step(); callback()",
++    "self.callback = lambda: self.step(); self.callback()",
++    "work = [lambda: self.step()]; work.pop()()",
++])
++def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
++    result = scan_sources(tmp_path, {"m.py": f"""
++        class Driver:
++            def step(self):
++                {body}
++    """})
++    callback = next(q for q in result.functions if "<lambda@" in q)
++    assert result.groups == [tuple(sorted(("pkg.m:Driver.step", callback)))]
++
++
++def test_callback_parameter_invoking_lambda_preserves_cycle(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        def invoke(callback):
++            return callback()
++        def repeat():
++            return invoke(lambda: repeat())
++    """})
++    callback = next(q for q in result.functions if "<lambda@" in q)
++    assert result.groups == [tuple(sorted(("pkg.m:invoke", "pkg.m:repeat", callback)))]
++
++
++def test_unannotated_attribute_delegation_is_unresolved_not_a_self_loop(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Worker:
++            def run(self):
++                return 1
++        class Proxy:
++            def __init__(self, worker):
++                self.worker = worker
++            def run(self):
++                return self.worker.run()
++    """})
++    assert result.groups == []
++    unresolved = [item for item in result.unresolved if item.caller == "pkg.m:Proxy.run"]
++    assert len(unresolved) == 1
++    assert unresolved[0].candidates == ("pkg.m:Proxy.run", "pkg.m:Worker.run")
++
++
++def test_unresolved_edges_retain_possible_unannotated_back_reference(tmp_path):
++    source = """
++        class Owner:
++            def __init__(self, worker):
++                self.worker = worker
++            def run(self):
++                return self.worker.run()
++    """
++    result = scan_sources(tmp_path, {"m.py": source})
++    assert result.groups == []
++    conservative = norec_scan.scan(tmp_path / "pkg", include_unresolved=True)
++    assert conservative.groups == [("pkg.m:Owner.run",)]
++
++
++def test_unresolved_edges_do_not_change_a7_recursive_groups(a7_scan):
++    conservative = norec_scan.scan(A7_ROOT, include_unresolved=True)
++    assert conservative.groups == a7_scan.groups
++
++
++@pytest.mark.parametrize("access", ["methods['leaf']()", "methods.get('leaf')()"])
++def test_constant_dictionary_key_does_not_call_other_handlers(tmp_path, access):
++    result = scan_sources(tmp_path, {"m.py": f"""
++        class Worker:
++            def run(self):
++                methods = {{"recur": self.run, "leaf": self.leaf}}
++                return {access}
++            def leaf(self):
++                return 1
++    """})
++    assert result.groups == []
++    assert result.edges["pkg.m:Worker.run"] == {"pkg.m:Worker.leaf"}
++
++
++def test_dynamic_dictionary_key_retains_all_possible_handlers(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Worker:
++            def run(self, key):
++                methods = {"recur": self.run, "leaf": self.leaf}
++                return methods[key](key)
++            def leaf(self, key):
++                return 1
++    """})
++    assert result.groups == [("pkg.m:Worker.run",)]
++    assert result.edges["pkg.m:Worker.run"] == {"pkg.m:Worker.run", "pkg.m:Worker.leaf"}

@@ -1,0 +1,16 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Divisor not proven non-zero (division/modulo divisor must be non-zero: 
+divisor may be zero) [line 7: col 20]
+────────────────────────────────────────────────────────────────────────────────
+   5 ┃ f :: fn(c: i32) {
+   6 ┃     if c != 0 {
+   7 ┃         z := 100 / cast(i32, c)
+     ┃                    └──┘
+   8 ┃     }
+   9 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+

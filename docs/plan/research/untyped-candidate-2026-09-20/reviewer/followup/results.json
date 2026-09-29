@@ -1,0 +1,442 @@
+[
+  {
+    "case": "mixed_overflow",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: i8 = 1\ny := x + 200\nio.println(\"{}\", y)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_overflow.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_overflow-debug"
+    ],
+    "exit": 6,
+    "stdout": "",
+    "stderr": "Semantic analysis failed with 1 error(s)\nmixed_overflow.a7:4:10: Exact constant 200 is out of range for i8\n"
+  },
+  {
+    "case": "mixed_overflow",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: i8 = 1\ny := x + 200\nio.println(\"{}\", y)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_overflow.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_overflow-release"
+    ],
+    "exit": 6,
+    "stdout": "",
+    "stderr": "Semantic analysis failed with 1 error(s)\nmixed_overflow.a7:4:10: Exact constant 200 is out of range for i8\n"
+  },
+  {
+    "case": "mixed_valid",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: i8 = 1\ny := x + 2\nio.println(\"{}\", y)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_valid.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_valid-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_valid-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "3\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "mixed_valid",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: i8 = 1\ny := x + 2\nio.println(\"{}\", y)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_valid.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_valid-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/mixed_valid-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "3\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "negative_zero",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: f64 = -0.0\nio.println(\"{}\", x)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/negative_zero.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/negative_zero-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/negative_zero-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "-0\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "negative_zero",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: f64 = -0.0\nio.println(\"{}\", x)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/negative_zero.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/negative_zero-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/negative_zero-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "-0\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "positive_zero",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: f64 = 0.0\nio.println(\"{}\", x)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/positive_zero.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/positive_zero-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/positive_zero-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "0\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "positive_zero",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nx: f64 = 0.0\nio.println(\"{}\", x)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/positive_zero.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/positive_zero-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/positive_zero-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "0\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "format_big",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nBIG :: 2147483648\nio.println(\"{}\", BIG)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_big.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_big-debug"
+    ],
+    "exit": 6,
+    "stdout": "",
+    "stderr": "Semantic analysis failed with 1 error(s)\nformat_big.a7:4:18: Exact constant does not fit formatting default i32; use an explicitly typed intermediate\n"
+  },
+  {
+    "case": "format_big",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nBIG :: 2147483648\nio.println(\"{}\", BIG)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_big.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_big-release"
+    ],
+    "exit": 6,
+    "stdout": "",
+    "stderr": "Semantic analysis failed with 1 error(s)\nformat_big.a7:4:18: Exact constant does not fit formatting default i32; use an explicitly typed intermediate\n"
+  },
+  {
+    "case": "format_valid",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nBIG :: 2147483647\nio.println(\"{}\", BIG)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_valid.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_valid-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_valid-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2147483647\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "format_valid",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nBIG :: 2147483647\nio.println(\"{}\", BIG)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_valid.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_valid-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/format_valid-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2147483647\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "fraction_comparison",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 0.1 + 0.2\nio.println(\"{}\", X == 0.3)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/fraction_comparison.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/fraction_comparison-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/fraction_comparison-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "fraction_comparison",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 0.1 + 0.2\nio.println(\"{}\", X == 0.3)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/fraction_comparison.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/fraction_comparison-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/fraction_comparison-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "local_shadow",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 2.0\n{\ny: i32 = X\nX :: 3.0\nio.println(\"{}\", y)\n}\nz: i32 = X\nio.println(\"{}\", z)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/local_shadow.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/local_shadow-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/local_shadow-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2\n2\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "local_shadow",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 2.0\n{\ny: i32 = X\nX :: 3.0\nio.println(\"{}\", y)\n}\nz: i32 = X\nio.println(\"{}\", z)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/local_shadow.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/local_shadow-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/local_shadow-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "2\n2\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "comparison_distinct",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 9007199254740993.0\nio.println(\"{}\", X == 9007199254740992.0)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_distinct.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_distinct-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_distinct-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "false\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "comparison_distinct",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 9007199254740993.0\nio.println(\"{}\", X == 9007199254740992.0)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_distinct.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_distinct-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_distinct-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "false\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "comparison_same",
+    "profile": "debug",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 9007199254740993.0\nio.println(\"{}\", X == 9007199254740993.0)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_same.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_same-debug"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_same-debug\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "comparison_same",
+    "profile": "release",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 9007199254740993.0\nio.println(\"{}\", X == 9007199254740993.0)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_same.a7",
+      "--profile",
+      "release",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_same-release"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/followup/comparison_same-release\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  }
+]

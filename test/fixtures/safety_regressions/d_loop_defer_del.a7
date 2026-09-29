@@ -1,0 +1,16 @@
+Box :: struct {
+    value: i32
+}
+
+main :: fn() {
+    b := new Box
+    if b == nil {
+        ret
+    }
+    n := 0
+    while n < 3 {
+        defer del b
+        b.value += 1
+        n += 1
+    }
+}

@@ -1,0 +1,10 @@
+make :: fn(n: i32) []i32 {
+    buf: [4]i32 = [0, 0, 0, 0]
+    buf[0] = n
+    ret buf[0..4]
+}
+
+main :: fn() {
+    t := 7
+    s := make(t)
+}

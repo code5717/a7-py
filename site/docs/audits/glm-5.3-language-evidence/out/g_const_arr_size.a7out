@@ -1,0 +1,15 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Index not proven in bounds (index must satisfy 0 <= index < len: index 
+bounds are not proven) [line 5: col 10]
+────────────────────────────────────────────────────────────────────────────────
+   3 ┃ main :: fn() {
+   4 ┃     arr: [N]i32
+   5 ┃     x := arr[0]
+     ┃          └─┘
+   6 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+

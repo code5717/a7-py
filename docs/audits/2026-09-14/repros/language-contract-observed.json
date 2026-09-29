@@ -1,0 +1,26 @@
+{
+  "cyclic_imports": {
+    "cli_error": null,
+    "cli_exit_code": 0,
+    "resolver_loaded_modules": [
+      "a",
+      "b"
+    ],
+    "topological_sort_error": "Circular dependency detected in module graph"
+  },
+  "documentation_overwrites_source": {
+    "exit_code": 0,
+    "is_markdown_report": true,
+    "source_changed": true
+  },
+  "failed_compile_reports_old_artifact": {
+    "exit_code": 5,
+    "old_file_unchanged": true,
+    "reports_output_artifact": true
+  },
+  "output_overwrites_source": {
+    "exit_code": 0,
+    "first_line": "pub fn main() void {}",
+    "source_changed": true
+  }
+}

@@ -1,0 +1,699 @@
+[
+  {
+    "name": "forward_whole",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_whole/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_whole/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_whole/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_whole/main.zig (621 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_fraction",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_fraction/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_fraction/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 5/2 is fractional and cannot fit i32 [line 4: col 10]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'i32', got 'f64' (Variable 'x') [line 4: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x: i32 = VALUE\n     \u2503 \u25b2\n   5 \u2503 io.println(\"{}\", x)\n   6 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_range",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_range/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_range/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 256 is out of range for u8 [line 4: col 9]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'u8', got 'f64' (Variable 'x') [line 4: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x: u8 = VALUE\n     \u2503 \u25b2\n   5 \u2503 io.println(\"{}\", x)\n   6 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_range_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_range_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_range_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_range_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_range_control/main.zig (624 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_exact_large",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_exact_large/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_exact_large/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_exact_large/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_exact_large/main.zig (651 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_negative",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_negative/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_negative/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant -1 is out of range for usize [line 4: col 12]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'usize', got 'f64' (Variable 'x') [line 4: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x: usize = VALUE\n     \u2503 \u25b2\n   5 \u2503 io.println(\"{}\", x)\n   6 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_negative_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_negative_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_negative_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_negative_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_negative_control/main.zig (623 bytes, 3 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "forward_string",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_string/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/forward_string/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_string/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/forward_string/main.zig (611 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_whole",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_whole/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_whole/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_whole/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_whole/main.zig (621 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_fraction",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_fraction/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_fraction/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 5/2 is fractional and cannot fit i32 [line 5: col 10]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'i32', got 'f64' (Variable 'x') [line 5: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   3 \u2503 \n   4 \u2503 main :: fn() {\n   5 \u2503 x: i32 = VALUE\n     \u2503 \u25b2\n   6 \u2503 io.println(\"{}\", x)\n   7 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_range",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_range/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_range/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 256 is out of range for u8 [line 5: col 9]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'u8', got 'f64' (Variable 'x') [line 5: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   3 \u2503 \n   4 \u2503 main :: fn() {\n   5 \u2503 x: u8 = VALUE\n     \u2503 \u25b2\n   6 \u2503 io.println(\"{}\", x)\n   7 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_range_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_range_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_range_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_range_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_range_control/main.zig (624 bytes, 4 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_exact_large",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_exact_large/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_exact_large/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_exact_large/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_exact_large/main.zig (651 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_negative",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_negative/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_negative/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant -1 is out of range for usize [line 5: col 12]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'usize', got 'f64' (Variable 'x') [line 5: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   3 \u2503 \n   4 \u2503 main :: fn() {\n   5 \u2503 x: usize = VALUE\n     \u2503 \u25b2\n   6 \u2503 io.println(\"{}\", x)\n   7 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_negative_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_negative_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_negative_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_negative_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_negative_control/main.zig (623 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "backward_string",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_string/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/backward_string/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_string/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/backward_string/main.zig (611 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "alias_chain",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/alias_chain/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/alias_chain/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/alias_chain/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/alias_chain/main.zig (722 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "multi_use",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/multi_use/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/multi_use/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/multi_use/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/multi_use/main.zig (657 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "multi_use_reverse",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/multi_use_reverse/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/multi_use_reverse/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/multi_use_reverse/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/multi_use_reverse/main.zig (657 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "multi_use_bad",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/multi_use_bad/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/multi_use_bad/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 200 is out of range for i8 [line 5: col 9]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'i8', got 'f64' (Variable 'b') [line 5: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   3 \u2503 main :: fn() {\n   4 \u2503 a: u8 = VALUE\n   5 \u2503 b: i8 = VALUE\n     \u2503 \u25b2\n   6 \u2503 }\n   7 \u2503 VALUE :: 200.0\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "local_exact",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_exact/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_exact/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_exact/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_exact/main.zig (722 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "local_fraction",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_fraction/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_fraction/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 5/2 is fractional and cannot fit i32 [line 5: col 10]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'i32', got 'f64' (Variable 'x') [line 5: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   3 \u2503 main :: fn() {\n   4 \u2503 VALUE :: 2.5\n   5 \u2503 x: i32 = VALUE\n     \u2503 \u25b2\n   6 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "local_shadow",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_shadow/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_shadow/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_shadow/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_shadow/main.zig (778 bytes, 4 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "exact_arithmetic",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/exact_arithmetic/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/exact_arithmetic/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/exact_arithmetic/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/exact_arithmetic/main.zig (751 bytes, 3 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "arithmetic_range",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/arithmetic_range/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/arithmetic_range/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Exact constant 256 is out of range for u8 [line 4: col 9]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Type mismatch: expected 'u8', got 'i32' (Variable 'x') [line 4: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x: u8 = SUM\n     \u2503 \u25b2\n   5 \u2503 }\n   6 \u2503 SUM :: 255 + 1\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "typed_runtime_reject",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_runtime_reject/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_runtime_reject/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Type mismatch: expected 'i32', got 'f64' (Variable 'x') [line 5: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   3 \u2503 main :: fn() {\n   4 \u2503 r := RATE\n   5 \u2503 x: i32 = r\n     \u2503 \u25b2\n   6 \u2503 }\n   7 \u2503 RATE :: 2.0\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "typed_runtime_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_runtime_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_runtime_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/typed_runtime_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/typed_runtime_control/main.zig (645 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "typed_call_reject",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_call_reject/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_call_reject/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Type mismatch: expected 'i32', got 'f64' (Variable 'x') [line 4: col 1]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x: i32 = VALUE\n     \u2503 \u25b2\n   5 \u2503 }\n   6 \u2503 VALUE :: get()\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the types match or use an explicit cast\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "typed_call_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_call_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_call_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/typed_call_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/typed_call_control/main.zig (661 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "default_range_reject",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/default_range_reject/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/default_range_reject/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Exact constant does not fit default i32; use an explicit destination type\n[line 4: col 6]\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "default_range_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/default_range_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/default_range_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/default_range_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/default_range_control/main.zig (635 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "mixed_range_reject",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/mixed_range_reject/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/mixed_range_reject/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Exact constant 200 is out of range for i8 [line 5: col 10]\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "mixed_range_control",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/mixed_range_control/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/mixed_range_control/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/mixed_range_control/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/mixed_range_control/main.zig (649 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "typed_wrapping",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_wrapping/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/typed_wrapping/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/typed_wrapping/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/typed_wrapping/main.zig (631 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "global_cycle",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/global_cycle/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/global_cycle/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 2 errors:\n\nError 1/2:\nerror: Unresolved global value dependency involving 'A' [line 6: col 1]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/2:\nerror: Unresolved global value dependency involving 'B' [line 7: col 1]\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "missing_name",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/missing_name/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/missing_name/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Undefined type (Identifier 'MISSING') [line 4: col 10]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   1 \u2503 io :: import \"std/io\"\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x: i32 = MISSING\n     \u2503          \u2514\u2500\u2500\u2500\u2500\u2500\u2518\n   5 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: Ensure the type is defined before use\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "local_forward_probe",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_forward_probe/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_forward_probe/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_forward_probe/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_forward_probe/main.zig (99 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": null
+  },
+  {
+    "name": "local_runtime_order",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_runtime_order/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/local_runtime_order/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_runtime_order/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/local_runtime_order/main.zig (777 bytes, 4 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "global_runtime_order_probe",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/global_runtime_order_probe/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/global_runtime_order_probe/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/global_runtime_order_probe/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/p\nreflight/global_runtime_order_probe/main.zig (720 bytes, 5 ms)\n",
+      "stderr": ""
+    },
+    "compile_expectation": null
+  },
+  {
+    "name": "explicit_cast_fraction",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/explicit_cast_fraction/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/explicit_cast_fraction/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Unsafe type cast (cast must be classified and range-proven: float-to-int \ncast requires finite integral range proof) [line 4: col 6]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   1 \u2503 io :: import \"std/io\"\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x := cast(i32, 2.5)\n     \u2503      \u2514\u2500\u2500\u2518\n   5 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: This cast may lose information or cause undefined behavior\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  },
+  {
+    "name": "explicit_cast_range",
+    "command": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/explicit_cast_range/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/preflight/explicit_cast_range/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Unsafe type cast (cast must be classified and range-proven: cast target \nrange is not proven) [line 4: col 6]\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   1 \u2503 io :: import \"std/io\"\n   2 \u2503 \n   3 \u2503 main :: fn() {\n   4 \u2503 x := cast(u8, 256)\n     \u2503      \u2514\u2500\u2500\u2518\n   5 \u2503 }\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nhint: This cast may lose information or cause undefined behavior\n\n",
+      "stderr": ""
+    },
+    "compile_expectation": true
+  }
+]

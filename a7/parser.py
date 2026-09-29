@@ -105,6 +105,20 @@ class Parser:
         """Check if we're at the end of input."""
         return self.match(TokenType.EOF)
 
+    def _fatal_error(self, message: str, token: Token) -> ParseError:
+        """Build a diagnostic for a parser progress failure."""
+        error = ParseError.from_token(message, token, self.filename, self.source_lines)
+        error.fatal = True
+        return error
+
+    def _require_progress(self, iteration_start: int, construct: str) -> None:
+        """Raise if one iteration of a loop that runs to a closing token consumed nothing."""
+        if self.position == iteration_start and not self.at_end():
+            token = self.current()
+            raise self._fatal_error(
+                f"Unexpected token '{token.value}' in {construct}", token
+            )
+
     def _should_parse_struct_literal(self) -> bool:
         """
         Determine if we should parse identifier{ as a struct literal.
@@ -149,69 +163,15 @@ class Parser:
 
         self.skip_terminators()
 
-        # Safety mechanism to prevent infinite loops
-        max_iterations = 1000
-        iteration_count = 0
-
-        while not self.at_end() and iteration_count < max_iterations:
-            iteration_count += 1
-            prev_position = self.position
-
-            try:
-                decl = self.parse_declaration()
-                if decl:
-                    declarations.append(decl)
-                self.skip_terminators()
-
-                # Ensure we're making progress
-                if self.position <= prev_position and not self.at_end():
-                    # Force advancement if we're stuck
-                    self.advance()
-
-            except ParseError as e:
-                # If no complete declarations have been parsed, re-raise the error
-                # This ensures malformed syntax raises proper errors
-                if len(declarations) == 0:
-                    raise e
-
-                # Check for specific error patterns that should not be recovered from
-                error_msg = str(e)
-                
-                # Case 1: Single declaration with unexpected tokens after complete program
-                if len(declarations) == 1 and "Expected declaration" in error_msg:
-                    current_token = self.current()
-                    raise ParseError.from_token(
-                        f"Unexpected token '{current_token.value}' after parsing complete program",
-                        current_token, self.filename
-                    )
-                
-                # Case 2: Incomplete expressions (missing operand after operator) 
-                if "Expected expression after" in error_msg:
-                    # These are syntax errors that shouldn't be recovered from
-                    raise e
-
-                # Otherwise do error recovery for multi-declaration programs
-                self.synchronize()
-
-                # Ensure we're making progress after error recovery
-                if self.position <= prev_position and not self.at_end():
-                    # Force advancement if synchronization didn't help
-                    self.advance()
-
-        if iteration_count >= max_iterations:
-            # Log warning but don't crash
-            if hasattr(self, "filename") and self.filename:
-                print(
-                    f"Warning: Parser stopped after {max_iterations} iterations in {self.filename}"
-                )
-
-        # Check if there are unparsed tokens remaining
-        if not self.at_end():
-            current_token = self.current()
-            raise ParseError.from_token(
-                f"Unexpected token '{current_token.value}' after parsing complete program",
-                current_token, self.filename
-            )
+        # Compilation cannot use a partial AST. A failed declaration must not
+        # disappear or promote its remaining local statements to module scope.
+        while not self.at_end():
+            previous_position = self.position
+            declaration = self.parse_declaration()
+            if declaration is not None:
+                declarations.append(declaration)
+            self.skip_terminators()
+            self._require_progress(previous_position, "program")
 
         # Create span for program node
         if declarations:
@@ -231,41 +191,6 @@ class Parser:
             # Empty program - use default span
             span = SourceSpan(1, 0, 1, 0)
         return create_program(declarations, span)
-
-    def synchronize(self):
-        """Synchronize after a parse error."""
-        # Prevent infinite loops by tracking position
-        start_position = self.position
-        max_tokens_to_skip = 100  # Safety limit
-        tokens_skipped = 0
-
-        while not self.at_end() and tokens_skipped < max_tokens_to_skip:
-            if self.match(TokenType.TERMINATOR):
-                self.advance()
-                return
-
-            # Look for keywords that start declarations
-            if self.match(
-                TokenType.FN,
-                TokenType.STRUCT,
-                TokenType.ENUM,
-                TokenType.PUB,
-                TokenType.IMPORT,
-            ):
-                return
-
-            # Look for identifier followed by declaration operators (safer recovery)
-            if self.match(TokenType.IDENTIFIER):
-                next_token = self.peek()
-                if next_token.type in (TokenType.DECLARE_CONST, TokenType.DECLARE_VAR):
-                    return
-
-            self.advance()
-            tokens_skipped += 1
-
-        # If we've skipped too many tokens, force advancement to EOF to prevent infinite loops
-        if tokens_skipped >= max_tokens_to_skip and not self.at_end():
-            self.position = len(self.tokens) - 1  # Move to EOF
 
     def parse_declaration(self) -> Optional[ASTNode]:
         """Parse top-level declarations."""
@@ -397,6 +322,7 @@ class Parser:
             imported_items = []
 
             while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+                iteration_start = self.position
                 if self.match(TokenType.IDENTIFIER):
                     imported_items.append(self.advance().value)
 
@@ -404,6 +330,7 @@ class Parser:
                     self.advance()
                 elif not self.match(TokenType.RIGHT_BRACE):
                     break
+                self._require_progress(iteration_start, "import list")
 
             self.consume(TokenType.RIGHT_BRACE)
 
@@ -625,6 +552,7 @@ class Parser:
         self.consume(TokenType.LEFT_PAREN)
 
         while not self.match(TokenType.RIGHT_PAREN) and not self.at_end():
+            iteration_start = self.position
             if self.match(TokenType.GENERIC_TYPE):
                 generic_token = self.advance()
                 # Extract the name without the $ prefix for consistency
@@ -648,6 +576,7 @@ class Parser:
                 self.advance()
             else:
                 break
+            self._require_progress(iteration_start, "generic parameter list")
 
         self.consume(TokenType.RIGHT_PAREN)
         return params
@@ -659,6 +588,7 @@ class Parser:
 
         types = []
         while not self.match(TokenType.RIGHT_PAREN) and not self.at_end():
+            iteration_start = self.position
             type_node = self.parse_type()
             types.append(type_node)
 
@@ -666,6 +596,7 @@ class Parser:
                 self.advance()
             elif not self.match(TokenType.RIGHT_PAREN):
                 break
+            self._require_progress(iteration_start, "@type_set")
 
         self.consume(TokenType.RIGHT_PAREN)
 
@@ -683,6 +614,7 @@ class Parser:
         regular_params = []
 
         while not self.match(TokenType.RIGHT_PAREN) and not self.at_end():
+            iteration_start = self.position
             self.skip_terminators()
             if self.match(TokenType.RIGHT_PAREN):
                 break
@@ -695,6 +627,7 @@ class Parser:
                 self.advance()
             elif not self.match(TokenType.RIGHT_PAREN):
                 break
+            self._require_progress(iteration_start, "parameter list")
 
         self.skip_terminators()
         self.consume(TokenType.RIGHT_PAREN)
@@ -785,6 +718,7 @@ class Parser:
             param_types = []
 
             while not self.match(TokenType.RIGHT_PAREN) and not self.at_end():
+                iteration_start = self.position
                 self.skip_terminators()
                 if self.match(TokenType.RIGHT_PAREN):
                     break
@@ -798,6 +732,7 @@ class Parser:
                     self.advance()
                 elif not self.match(TokenType.RIGHT_PAREN):
                     break
+                self._require_progress(iteration_start, "function type parameter list")
 
             self.skip_terminators()
             self.consume(TokenType.RIGHT_PAREN)
@@ -828,6 +763,7 @@ class Parser:
             self.skip_terminators()
 
             while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+                iteration_start = self.position
                 # Parse field: name: type
                 field_name_token = self.consume(TokenType.IDENTIFIER)
                 self.consume(TokenType.COLON)
@@ -846,6 +782,7 @@ class Parser:
                     self.advance()
 
                 self.skip_terminators()
+                self._require_progress(iteration_start, "inline struct type")
 
             self.consume(TokenType.RIGHT_BRACE)
 
@@ -875,9 +812,11 @@ class Parser:
                 self.advance()
                 generic_params = []
                 while not self.match(TokenType.RIGHT_PAREN) and not self.at_end():
+                    iteration_start = self.position
                     generic_params.append(self.parse_type())
                     if self.match(TokenType.COMMA):
                         self.advance()
+                    self._require_progress(iteration_start, "type argument list")
                 self.consume(TokenType.RIGHT_PAREN)
 
                 # Create a generic type instantiation node
@@ -930,15 +869,12 @@ class Parser:
         self.skip_terminators()
 
         while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
-            try:
-                stmt = self.parse_statement()
-                if stmt:
-                    statements.append(stmt)
-                self.skip_terminators()
-            except ParseError as e:
-                # Re-raise syntax errors inside function bodies
-                # rather than attempting error recovery
-                raise e
+            iteration_start = self.position
+            stmt = self.parse_statement()
+            if stmt:
+                statements.append(stmt)
+            self.skip_terminators()
+            self._require_progress(iteration_start, "block")
 
         end_token = self.consume(TokenType.RIGHT_BRACE)
 
@@ -1664,11 +1600,13 @@ class Parser:
                 # Try to parse type arguments
                 try:
                     while not self.match(TokenType.RIGHT_PAREN) and not self.at_end():
+                        iteration_start = self.position
                         type_args.append(self.parse_type())
                         if self.match(TokenType.COMMA):
                             self.advance()
                         elif not self.match(TokenType.RIGHT_PAREN):
                             break
+                        self._require_progress(iteration_start, "type argument list")
 
                     if self.match(TokenType.RIGHT_PAREN):
                         self.advance()  # consume ')'
@@ -1679,7 +1617,7 @@ class Parser:
                             struct_literal = self.parse_struct_literal(name, create_span_from_token(start_token))
                             struct_literal.type_arguments = type_args
                             return struct_literal
-                except:
+                except ParseError:
                     # If parsing fails, backtrack
                     self.position = saved_position
 
@@ -1712,7 +1650,7 @@ class Parser:
             return self.parse_match_expression()
 
         raise ParseError.from_token(
-            "Expected expression", self.current(), self.filename
+            "Expected expression", self.current(), self.filename, self.source_lines
         )
 
     def parse_cast_expression(self, start_token: Token) -> ASTNode:
@@ -1842,6 +1780,7 @@ class Parser:
         else_case = None
 
         while not self.at_end():
+            iteration_start = self.position
             self.skip_terminators()
             if self.match(TokenType.RIGHT_BRACE) or self.at_end():
                 break
@@ -1880,6 +1819,7 @@ class Parser:
                 )
 
             self.skip_terminators()
+            self._require_progress(iteration_start, "match expression")
 
         self.consume(TokenType.RIGHT_BRACE)
 
@@ -1895,14 +1835,18 @@ class Parser:
         """Parse array literals: [1, 2, 3]"""
         start_token = self.consume(TokenType.LEFT_BRACKET)
         elements = []
+        self.skip_terminators()
 
         if not self.match(TokenType.RIGHT_BRACKET):
             elements.append(self.parse_expression())
+            self.skip_terminators()
             while self.match(TokenType.COMMA):
                 self.advance()
+                self.skip_terminators()
                 if self.match(TokenType.RIGHT_BRACKET):  # Handle trailing comma
                     break
                 elements.append(self.parse_expression())
+                self.skip_terminators()
 
         self.consume(TokenType.RIGHT_BRACKET)
 
@@ -2010,6 +1954,7 @@ class Parser:
         fields = []
 
         while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+            iteration_start = self.position
             self.skip_terminators()
             if self.match(TokenType.RIGHT_BRACE):
                 break
@@ -2036,6 +1981,7 @@ class Parser:
                 self.advance()
 
             self.skip_terminators()
+            self._require_progress(iteration_start, "struct body")
 
         self.consume(TokenType.RIGHT_BRACE)
 
@@ -2061,6 +2007,7 @@ class Parser:
         self.skip_terminators()
 
         while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+            iteration_start = self.position
             variant_name_token = self.consume(TokenType.IDENTIFIER)
             variant_value = None
 
@@ -2082,6 +2029,7 @@ class Parser:
                 self.advance()
 
             self.skip_terminators()
+            self._require_progress(iteration_start, "enum body")
 
         self.consume(TokenType.RIGHT_BRACE)
 
@@ -2113,6 +2061,7 @@ class Parser:
         fields = []
 
         while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+            iteration_start = self.position
             self.skip_terminators()
             if self.match(TokenType.RIGHT_BRACE):
                 break
@@ -2134,6 +2083,7 @@ class Parser:
                 self.advance()
 
             self.skip_terminators()
+            self._require_progress(iteration_start, "union body")
 
         self.consume(TokenType.RIGHT_BRACE)
 
@@ -2232,7 +2182,12 @@ class Parser:
         cases = []
         else_case = None
 
-        while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+        while not self.at_end():
+            iteration_start = self.position
+            self.skip_terminators()
+            if self.match(TokenType.RIGHT_BRACE) or self.at_end():
+                break
+
             if self.match(TokenType.CASE):
                 case_token = self.advance()
 
@@ -2258,7 +2213,14 @@ class Parser:
                 self.consume(TokenType.COLON)
                 else_case = [self.parse_statement()]
 
+            else:
+                raise self._fatal_error(
+                    "Expected 'case' or 'else' in match statement",
+                    self.current(),
+                )
+
             self.skip_terminators()
+            self._require_progress(iteration_start, "match statement")
 
         self.consume(TokenType.RIGHT_BRACE)
 

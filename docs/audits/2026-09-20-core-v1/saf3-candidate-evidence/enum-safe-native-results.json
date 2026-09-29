@@ -1,0 +1,94 @@
+[
+  {
+    "name": "enum_safe",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf3-design-mwnrnj73/enum_safe-before.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf3-design-mwnrnj73/enum_safe-Debug"
+    ],
+    "build_exit": 0,
+    "build_stdout": "",
+    "build_stderr": "",
+    "run": {
+      "command": [
+        "/tmp/a7-saf3-design-mwnrnj73/enum_safe-Debug"
+      ],
+      "exit": 0,
+      "stdout": "2\n",
+      "stderr": ""
+    }
+  },
+  {
+    "name": "enum_safe",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf3-design-mwnrnj73/enum_safe-before.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf3-design-mwnrnj73/enum_safe-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stdout": "",
+    "build_stderr": "",
+    "run": {
+      "command": [
+        "/tmp/a7-saf3-design-mwnrnj73/enum_safe-ReleaseFast"
+      ],
+      "exit": 0,
+      "stdout": "2\n",
+      "stderr": ""
+    }
+  },
+  {
+    "name": "enum_global_noop_control",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf3-design-mwnrnj73/enum_global_noop_control-before.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf3-design-mwnrnj73/enum_global_noop_control-Debug"
+    ],
+    "build_exit": 0,
+    "build_stdout": "",
+    "build_stderr": "",
+    "run": {
+      "command": [
+        "/tmp/a7-saf3-design-mwnrnj73/enum_global_noop_control-Debug"
+      ],
+      "exit": 0,
+      "stdout": "2\n",
+      "stderr": ""
+    }
+  },
+  {
+    "name": "enum_global_noop_control",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf3-design-mwnrnj73/enum_global_noop_control-before.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf3-design-mwnrnj73/enum_global_noop_control-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stdout": "",
+    "build_stderr": "",
+    "run": {
+      "command": [
+        "/tmp/a7-saf3-design-mwnrnj73/enum_global_noop_control-ReleaseFast"
+      ],
+      "exit": 0,
+      "stdout": "2\n",
+      "stderr": ""
+    }
+  }
+]

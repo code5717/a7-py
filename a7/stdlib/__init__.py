@@ -37,7 +37,6 @@ class StdlibRegistry:
 
     def __init__(self):
         self.modules: Dict[str, StdlibModule] = {}
-        self._builtin_map: Dict[str, StdlibFunction] = {}  # bare name -> function
 
         # Auto-register built-in modules
         self._register_defaults()
@@ -61,10 +60,6 @@ class StdlibRegistry:
         """Return all public import paths provided by the built-in stdlib."""
         return set(STDLIB_MODULE_ALIASES)
 
-    def register_builtin(self, bare_name: str, func: StdlibFunction):
-        """Register a bare builtin name (e.g., sqrt_f32) that maps to a stdlib function."""
-        self._builtin_map[bare_name] = func
-
     def resolve_call(self, module_name: str, method_name: str) -> Optional[str]:
         """Resolve a module.method call to its canonical name."""
         module_name = self.canonical_module_name(module_name) or module_name
@@ -75,23 +70,12 @@ class StdlibRegistry:
                 return func.canonical
         return None
 
-    def resolve_builtin(self, name: str) -> Optional[str]:
-        """Resolve a bare builtin name to its canonical name."""
-        func = self._builtin_map.get(name)
-        if func:
-            return func.canonical
-        return None
-
     def get_backend_mapping(self, canonical: str, backend: str) -> Optional[str]:
         """Get the backend-specific code for a canonical stdlib function."""
         for module in self.modules.values():
             for func in module.functions.values():
                 if func.canonical == canonical:
                     return func.backend_map.get(backend)
-        # Also check builtins
-        for func in self._builtin_map.values():
-            if func.canonical == canonical:
-                return func.backend_map.get(backend)
         return None
 
     def is_io_call(self, module_name: str, method_name: str) -> bool:

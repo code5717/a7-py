@@ -1,0 +1,20 @@
+{
+  "method": "Decode chosen IEEE integer encodings into exact rationals, inspect midpoint and values on either side; expected tie follows lower encoding parity. Includes subnormal, normal-boundary, exponent-carry, max-finite and signed-zero controls. Seeded random neighbor sampling augments named boundaries.",
+  "candidate_exact_constants_sha256": "df3012843980d92f8843bbe72714eb302e0599d872c01b25c413650398ab11b7",
+  "results": [
+    {
+      "width": 32,
+      "neighbor_checks": 2120,
+      "overflow_checks": 6,
+      "above_maxfinite_rounds_to_maxfinite_checks": 2,
+      "status": "pass"
+    },
+    {
+      "width": 64,
+      "neighbor_checks": 2120,
+      "overflow_checks": 6,
+      "above_maxfinite_rounds_to_maxfinite_checks": 2,
+      "status": "pass"
+    }
+  ]
+}

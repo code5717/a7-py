@@ -20,3 +20,6 @@ examples/*.zig
 .claude/
 .hermes/
 skills-lock.json
+
+# Local research downloads, audit logs, and disposable compiler probes
+/tmp/

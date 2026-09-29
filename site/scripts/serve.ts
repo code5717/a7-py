@@ -1,11 +1,10 @@
 import { serve } from 'bun'
-import { existsSync, statSync } from 'node:fs'
+import { realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 
-const root = path.resolve(import.meta.dir, '..', 'dist')
-const port = Number(process.env.PORT ?? '4173')
-
 function contentType(file: string): string {
+  if (file.endsWith('.json')) return 'application/json; charset=utf-8'
+  if (file.endsWith('.woff2')) return 'font/woff2'
   if (file.endsWith('.html')) return 'text/html; charset=utf-8'
   if (file.endsWith('.css')) return 'text/css; charset=utf-8'
   if (file.endsWith('.js')) return 'text/javascript; charset=utf-8'
@@ -15,19 +14,43 @@ function contentType(file: string): string {
   return 'application/octet-stream'
 }
 
-serve({
-  port,
-  async fetch(req) {
-    const url = new URL(req.url)
-    const stripped = url.pathname.replace(/^\/a7-py\/?/, '/')
-    const rel = decodeURIComponent(stripped === '/' ? '/index.html' : stripped)
-    let file = path.join(root, rel)
-    if (existsSync(file) && statSync(file).isDirectory()) {
-      file = path.join(file, 'index.html')
-    }
-    if (!existsSync(file)) file = path.join(root, '404.html')
-    return new Response(Bun.file(file), { headers: { 'content-type': contentType(file) } })
-  },
-})
+export async function startPreview(directory: string, port: number) {
+  const root = await realpath(directory)
+  const inside = (file: string) => file === root || file.startsWith(root + path.sep)
+  return serve({
+    hostname: '127.0.0.1',
+    port,
+    async fetch(req) {
+      let pathname: string
+      try {
+        pathname = decodeURIComponent(new URL(req.url).pathname)
+      } catch {
+        return new Response('Invalid URL encoding', { status: 400 })
+      }
+      if (pathname.includes('\0') || pathname.includes('\\') || pathname.split('/').includes('..')) {
+        return new Response('Forbidden', { status: 403 })
+      }
+      const relative = pathname.replace(/^\/a7-py(?:\/|$)/, '/')
+      let file = path.resolve(root, '.' + relative)
+      if (!inside(file)) return new Response('Forbidden', { status: 403 })
+      try {
+        file = await realpath(file)
+        if (!inside(file)) return new Response('Forbidden', { status: 403 })
+        if ((await stat(file)).isDirectory()) file = await realpath(path.join(file, 'index.html'))
+        if (!inside(file)) return new Response('Forbidden', { status: 403 })
+        if (!(await stat(file)).isFile()) return new Response('Not found', { status: 404 })
+        return new Response(Bun.file(file), { headers: { 'content-type': contentType(file) } })
+      } catch (error) {
+        if (['ENOENT', 'ENOTDIR'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+          return new Response('Not found', { status: 404 })
+        }
+        throw error
+      }
+    },
+  })
+}
 
-console.log(`preview: http://localhost:${port}/a7-py/`)
+if (import.meta.main) {
+  const server = await startPreview(path.resolve(import.meta.dir, '..', 'dist'), Number(process.env.PORT ?? '4173'))
+  console.log(`preview: http://127.0.0.1:${server.port}/a7-py/`)
+}

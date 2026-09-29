@@ -1,0 +1,78 @@
+........................................................................ [ 25%]
+........................................................................ [ 51%]
+........................................................................ [ 77%]
+...............................FF............................            [100%]
+=================================== FAILURES ===================================
+_________________ TestCodePatterns.test_labeled_break_continue _________________
+
+self = <test_codegen_zig.TestCodePatterns object at 0x7f33f7705db0>
+
+        def test_labeled_break_continue(self):
+            source = '''
+    main :: fn() {
+        @outer_break while true {
+            break outer_break
+        }
+    
+        @outer_continue for i := 0; i < 2; i += 1 {
+            continue outer_continue
+        }
+    }
+    '''
+            zig = compile_a7_to_zig(source)
+>           assert 'a7_loop_outer_break: while' in zig
+E           AssertionError: assert 'a7_loop_outer_break: while' in 'pub fn main() void {\n    __a7_loop_1: while (true) {\n        break :__a7_loop_1;\n    }\n    {\n        var i: i32 = 0;\n        __a7_loop_2: while ((i < 2)) : (i +%= 1) {\n            continue :__a7_loop_2;\n        }\n    }\n}\n'
+
+/home/cx89/Projects/pl-dev/a7-py/test/test_codegen_zig.py:787: AssertionError
+_______ TestCodePatterns.test_labeled_for_in_and_indexed_for_in_runtime ________
+
+self = <test_codegen_zig.TestCodePatterns object at 0x7f33f7705e00>
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-359/test_labeled_for_in_and_indexe0')
+
+        @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+        def test_labeled_for_in_and_indexed_for_in_runtime(self, tmp_path: Path):
+            source = '''
+    io :: import "std/io"
+    
+    main :: fn() {
+        arr: [3]i32 = [1, 2, 3]
+    
+        break_total := 0
+        @outer_break for x in arr {
+            if x == 2 {
+                break outer_break
+            }
+            break_total += x
+        }
+    
+        continue_total := 0
+        @outer_continue for x in arr {
+            if x == 2 {
+                continue outer_continue
+            }
+            continue_total += x
+        }
+    
+        indexed_total: usize = 0
+        @outer_indexed for i, x in arr {
+            if i == 2 {
+                break outer_indexed
+            }
+            if x == 0 {
+                indexed_total += 100
+            }
+            indexed_total += i
+        }
+    
+        io.println("{} {} {}", break_total, continue_total, indexed_total)
+    }
+    '''
+            zig = compile_a7_to_zig(source)
+>           assert "a7_loop_outer_break: for" in zig
+E           assert 'a7_loop_outer_break: for' in 'const std = @import("std");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anyty...dexed_total +%= i;\n    }\n    __a7_stdout_print("{} {} {}\\n", .{ break_total, continue_total, indexed_total });\n}\n'
+
+/home/cx89/Projects/pl-dev/a7-py/test/test_codegen_zig.py:831: AssertionError
+=========================== short test summary info ============================
+FAILED test/test_codegen_zig.py::TestCodePatterns::test_labeled_break_continue
+FAILED test/test_codegen_zig.py::TestCodePatterns::test_labeled_for_in_and_indexed_for_in_runtime
+2 failed, 275 passed in 46.99s

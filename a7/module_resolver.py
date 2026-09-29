@@ -10,7 +10,7 @@ from pathlib import Path
 
 from a7.ast_nodes import ASTNode, NodeKind
 from a7.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
-from a7.errors import SemanticError
+from a7.errors import CompilerError, SemanticError
 from a7.stdlib import StdlibRegistry
 from a7.types import UNKNOWN
 
@@ -111,90 +111,106 @@ class ModuleResolver:
         return None
 
     def load_module(self, module_path: str) -> Optional[ModuleInfo]:
-        """
-        Load a module and its dependencies.
-
-        Args:
-            module_path: Module path to load
-
-        Returns:
-            ModuleInfo if loaded successfully, None otherwise
-        """
-        # Check if already loaded
-        if module_path in self.loaded_modules:
-            return self.loaded_modules[module_path]
-
-        if self.is_virtual_module(module_path):
-            return self._load_virtual_module(module_path)
-
-        # Check for circular dependency
-        if module_path in self.loading_stack:
-            cycle = " -> ".join(self.loading_stack + [module_path])
-            raise SemanticError(
-                f"Circular dependency detected: {cycle}"
-            )
-
-        # Resolve module path to file
-        file_path = self.resolve_module_path(module_path)
-        if not file_path:
-            raise SemanticError(
-                f"Module '{module_path}' not found in search paths: {self.search_paths}"
-            )
-
-        # Mark as loading
-        self.loading_stack.append(module_path)
-
+        """Load dependencies in source order without using the Python call stack."""
+        initial_depth = len(self.loading_stack)
+        active = set(self.loading_stack)
+        # An exit event completes a cached module after all its imports finish.
+        # Enter events carry the importing declaration for unlocated errors.
+        pending = [(False, module_path, None)]
         try:
-            # Read the source file
-            with open(file_path, "r", encoding="utf-8") as f:
-                source = f.read()
-
-            # Tokenize and parse
-            from a7.tokens import Tokenizer
-            from a7.parser import Parser
-
-            tokenizer = Tokenizer(source, file_path)
-            tokens = tokenizer.tokenize()
-            source_lines = source.splitlines()
-            parser = Parser(tokens, file_path, source_lines)
-            ast = parser.parse()
-
-            # Run name resolution to build symbol table
-            from a7.passes.name_resolution import NameResolutionPass
-            name_pass = NameResolutionPass()
-            name_pass.analyze(ast, file_path)
-            symbols = name_pass.symbols
-
-            # Extract dependencies for this module
-            deps = []
-            for decl in (ast.declarations or []):
-                if decl.kind == NodeKind.IMPORT:
-                    dep_path = decl.module_path or ""
-                    deps.append(dep_path)
-
-            module_info = ModuleInfo(
-                path=module_path,
-                file_path=file_path,
-                ast=ast,
-                symbols=symbols,
-                dependencies=deps,
-            )
-
-            # Register module in the module table
-            self.module_table.register_module(module_path, symbols)
-
-            # Cache the module
-            self.loaded_modules[module_path] = module_info
-
-            # Recursively load dependencies
-            for dep_path in deps:
-                self.load_module(dep_path)
-
-            return module_info
-
+            while pending:
+                exiting, path, origin = pending.pop()
+                if exiting:
+                    active.remove(self.loading_stack.pop())
+                    continue
+                try:
+                    # Check active modules before the cache so cycles cannot
+                    # masquerade as already completed imports.
+                    if path in active:
+                        cycle = " -> ".join(self.loading_stack + [path])
+                        raise SemanticError(f"Circular dependency detected: {cycle}")
+                    if path in self.loaded_modules:
+                        continue
+                    if self.is_virtual_module(path):
+                        self._load_virtual_module(path)
+                        continue
+                    file_path = self.resolve_module_path(path)
+                    if not file_path:
+                        raise SemanticError(
+                            f"Module '{path}' not found in search paths: {self.search_paths}"
+                        )
+                    self.loading_stack.append(path)
+                    active.add(path)
+                    module_info, imports, source_lines = self._read_module(path, file_path)
+                    self.module_table.register_module(path, module_info.symbols)
+                    self.loaded_modules[path] = module_info
+                    pending.append((True, path, None))
+                    for declaration in reversed(imports):
+                        pending.append((False, declaration.module_path or "",
+                                        (declaration, file_path, source_lines)))
+                except CompilerError as error:
+                    if error.span is not None or origin is None:
+                        raise
+                    declaration, filename, lines = origin
+                    raise SemanticError(
+                        error.message, span=declaration.span, filename=filename,
+                        source_lines=lines,
+                    ) from error
+            return self.loaded_modules[module_path]
+        except BaseException:
+            # A partially loaded module must not become a successful cache hit
+            # on retry. Completed dependencies retain their existing identities.
+            for path in self.loading_stack[initial_depth:]:
+                self.loaded_modules.pop(path, None)
+                self.module_table.modules.pop(path, None)
+            raise
         finally:
-            # Remove from loading stack
-            self.loading_stack.pop()
+            del self.loading_stack[initial_depth:]
+
+    def _read_module(
+        self, module_path: str, file_path: str,
+    ) -> tuple[ModuleInfo, List[ASTNode], List[str]]:
+        """Parse one file and collect its imports without loading dependencies."""
+        from a7.tokens import Tokenizer
+        from a7.parser import Parser
+        from a7.passes.name_resolution import NameResolutionPass
+
+        with open(file_path, "r", encoding="utf-8") as source_file:
+            source = source_file.read()
+        tokens = Tokenizer(source, file_path).tokenize()
+        source_lines = source.splitlines()
+        ast = Parser(tokens, file_path, source_lines).parse()
+        self._attach_source_context(ast, file_path, source_lines)
+        name_pass = NameResolutionPass()
+        name_pass.analyze(ast, file_path)
+        imports = [decl for decl in ast.declarations or [] if decl.kind == NodeKind.IMPORT]
+        module_info = ModuleInfo(
+            path=module_path,
+            file_path=file_path,
+            ast=ast,
+            symbols=name_pass.symbols,
+            dependencies=[decl.module_path or "" for decl in imports],
+        )
+        return module_info, imports, source_lines
+
+    @staticmethod
+    def _attach_source_context(root: ASTNode, filename: str, lines: List[str]) -> None:
+        """Keep module origins when declarations enter the combined program."""
+        stack = [root]
+        seen = set()
+        while stack:
+            node = stack.pop()
+            if id(node) in seen:
+                continue
+            seen.add(id(node))
+            if node.span is not None:
+                node.span.origin_file = filename
+                node.span.origin_lines = lines
+            for value in node.__dict__.values():
+                if isinstance(value, ASTNode):
+                    stack.append(value)
+                elif isinstance(value, (list, tuple)):
+                    stack.extend(child for child in value if isinstance(child, ASTNode))
 
     def process_imports(self, program: ASTNode) -> List[str]:
         """
@@ -245,6 +261,10 @@ class ModuleResolver:
         # Extract imports
         import_paths = self.process_imports(program)
 
+        import_declarations = {
+            decl.module_path or "": decl for decl in program.declarations or []
+            if decl.kind == NodeKind.IMPORT
+        }
         # Load each imported module
         loaded = []
         for module_path in import_paths:
@@ -252,11 +272,14 @@ class ModuleResolver:
                 module_info = self.load_module(module_path)
                 if module_info:
                     loaded.append(module_info)
-            except SemanticError as e:
-                # Re-raise with better context
+            except CompilerError as error:
+                if error.span is not None:
+                    raise
+                declaration = import_declarations[module_path]
                 raise SemanticError(
-                    f"Error loading module '{module_path}' imported by '{current_path}': {str(e)}"
-                )
+                    f"Error loading module '{module_path}': {error.message}",
+                    span=declaration.span, filename=current_path,
+                ) from error
 
         return loaded
 

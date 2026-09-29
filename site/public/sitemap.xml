@@ -2,11 +2,25 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://code5717.github.io/a7-py/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/start/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/tour/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/examples/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/language/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/syntax/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/declarations/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/types/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/operators/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/control-flow/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/functions/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/arrays-strings/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/aggregate-types/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/generics/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/memory/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/modules/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/language/builtins/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/stdlib/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/compiler/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/status/</loc></url>
+  <url><loc>https://code5717.github.io/a7-py/project/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/release/</loc></url>
   <url><loc>https://code5717.github.io/a7-py/agent-usage/</loc></url>
-  <url><loc>https://code5717.github.io/a7-py/project/</loc></url>
 </urlset>

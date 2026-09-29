@@ -1,0 +1,5 @@
+io :: import "std/io"
+f :: fn() { p := new i32
+ del p }
+main :: fn() { p: i32 = 1
+ io.println("{}", p) }

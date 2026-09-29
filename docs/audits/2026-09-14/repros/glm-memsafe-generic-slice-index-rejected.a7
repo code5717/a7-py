@@ -1,0 +1,9 @@
+first :: fn(a: []$T) $T {
+    ret a[0]
+}
+
+main :: fn() {
+    arr: [2]i32 = [1, 2]
+    s := arr[0..2]
+    v := first(s)
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "unused-all-loop-forms",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\n    n: i32 = 0\n    @unused while n < 2 { n += 1 }\n    @unused for { n += 1; break }\n    @unused for j := 0; j < 2; j += 1 { n += 1; continue }\n    values: [2]i32 = [3, 4]\n    @unused for value in values { n += value }\n    @unused for index, value in values { io.println(\"{}:{}\", index, value) }\n    io.println(\"{}\", n)\n}\n",
+    "expected": "0:3\n1:4\n12\n",
+    "compile_exit": 0,
+    "compile_output": "Compiled /tmp/a7-loop-label-baseline/unused-all-loop-forms.a7 -> \n/tmp/a7-loop-label-baseline/unused-all-loop-forms.zig (1101 bytes, 5 ms)\n",
+    "zig_exit": 1,
+    "zig_output": "unused-all-loop-forms.zig:16:5: error: unused while loop label\n    a7_loop_unused: while ((n < 2)) {\n    ^~~~~~~~~~~~~~\nunused-all-loop-forms.zig:19:5: error: unused while loop label\n    a7_loop_unused: while (true) {\n    ^~~~~~~~~~~~~~\nunused-all-loop-forms.zig:25:9: error: unused while loop label\n        a7_loop_unused: while ((j < 2)) : (j +%= 1) {\n        ^~~~~~~~~~~~~~\nunused-all-loop-forms.zig:31:5: error: unused for loop label\n    a7_loop_unused: for (values) |value| {\n    ^~~~~~~~~~~~~~\nunused-all-loop-forms.zig:34:5: error: unused for loop label\n    a7_loop_unused: for (values, 0..) |value, index| {\n    ^~~~~~~~~~~~~~\n"
+  },
+  {
+    "name": "targeted-and-reused-labels",
+    "source": "io :: import \"std/io\"\nstep :: fn() i32 { io.println(\"step\"); ret 1 }\nmain :: fn() {\n    i: i32 = 0\n    @outer for i = 0; i < 4; step() {\n        @inner for {\n            io.println(\"body {}\", i)\n            if i == 2 { break outer }\n            i += 1\n            continue outer\n        }\n    }\n    @same for { break }\n    @same for { break same }\n    @same for {\n        @same for { break same }\n        io.println(\"nearest\")\n        break same\n    }\n    n: i32 = 0\n    @count while n < 3 { n += 1; continue count }\n    values: [2]i32 = [3, 4]\n    @items for value in values { io.println(\"item {}\", value); break items }\n    @indexed for index, value in values {\n        if index == 0 { continue indexed }\n        io.println(\"indexed {}\", value)\n    }\n    io.println(\"done {} {}\", i, n)\n}\n",
+    "expected": "body 0\nstep\nbody 1\nstep\nbody 2\nnearest\nitem 3\nindexed 4\ndone 2 3\n",
+    "compile_exit": 0,
+    "compile_output": "Compiled /tmp/a7-loop-label-baseline/targeted-and-reused-labels.a7 -> \n/tmp/a7-loop-label-baseline/targeted-and-reused-labels.zig (1829 bytes, 8 ms)\n",
+    "zig_exit": 1,
+    "zig_output": "targeted-and-reused-labels.zig:24:13: error: unused while loop label\n            a7_loop_inner: while (true) {\n            ^~~~~~~~~~~~~\ntargeted-and-reused-labels.zig:34:5: error: unused while loop label\n    a7_loop_same: while (true) {\n    ^~~~~~~~~~~~\ntargeted-and-reused-labels.zig:41:9: error: redefinition of label 'a7_loop_same'\n        a7_loop_same: while (true) {\n        ^~~~~~~~~~~~\ntargeted-and-reused-labels.zig:40:5: note: previous definition here\n    a7_loop_same: while (true) {\n    ^~~~~~~~~~~~\n"
+  }
+]

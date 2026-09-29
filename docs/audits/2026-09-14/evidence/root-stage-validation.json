@@ -1,0 +1,154 @@
+[
+  {
+    "name": "unicode_digit",
+    "exit": 8,
+    "stderr": "",
+    "json_valid": true,
+    "error": {
+      "category": "internal",
+      "message": "invalid literal for int() with base 10: '\u00b2'",
+      "details": [],
+      "span": null,
+      "exception_type": "ValueError"
+    },
+    "generated": null,
+    "source": "main :: fn() { x := \u00b2 }"
+  },
+  {
+    "name": "return_literal_fit",
+    "exit": 6,
+    "stderr": "",
+    "json_valid": true,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 1 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "return_literal_fit.a7:1:16: Return type mismatch: expected 'u8', got 'i32'",
+          "file": "/tmp/a7-root-stages-g5lp1xxm/return_literal_fit.a7",
+          "span": {
+            "start_line": 1,
+            "start_column": 16,
+            "end_line": 1,
+            "end_column": 19,
+            "length": 3
+          }
+        }
+      ],
+      "span": {
+        "start_line": 1,
+        "start_column": 16,
+        "end_line": 1,
+        "end_column": 19,
+        "length": 3
+      },
+      "exception_type": null
+    },
+    "generated": null,
+    "source": "f :: fn() u8 { ret 0 }\nmain :: fn() {}"
+  },
+  {
+    "name": "argument_literal_fit",
+    "exit": 6,
+    "stderr": "",
+    "json_valid": true,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 1 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "argument_literal_fit.a7:2:16: Argument type mismatch: expected 'u8', got 'i32' (Argument 1)",
+          "file": "/tmp/a7-root-stages-g5lp1xxm/argument_literal_fit.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 16,
+            "end_line": 2,
+            "end_column": 17,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 2,
+        "start_column": 16,
+        "end_line": 2,
+        "end_column": 17,
+        "length": 1
+      },
+      "exception_type": null
+    },
+    "generated": null,
+    "source": "f :: fn(x: u8) {}\nmain :: fn() { f(5) }"
+  },
+  {
+    "name": "undefined_struct",
+    "exit": 0,
+    "stderr": "",
+    "json_valid": true,
+    "error": null,
+    "generated": "pub fn main() void {\n    const p = Point{ .x = 1 };\n    _ = p;\n}\n",
+    "source": "main :: fn() { p := Point{x: 1} }",
+    "zig_exit": 1,
+    "zig_stderr": "/tmp/a7-root-stages-g5lp1xxm/undefined_struct.zig:2:15: error: use of undeclared identifier 'Point'\n    const p = Point{ .x = 1 };\n              ^~~~~\n"
+  },
+  {
+    "name": "missing_struct_field",
+    "exit": 0,
+    "stderr": "",
+    "json_valid": true,
+    "error": null,
+    "generated": "const P = struct {\n    x: i32,\n    y: i32,\n};\n\npub fn main() void {\n    const p = P{ .x = 1 };\n    _ = p;\n}\n",
+    "source": "P :: struct { x: i32\n y: i32 }\nmain :: fn() { p := P{x: 1} }",
+    "zig_exit": 1,
+    "zig_stderr": "/tmp/a7-root-stages-g5lp1xxm/missing_struct_field.zig:7:16: error: missing struct field: y\n    const p = P{ .x = 1 };\n              ~^~~~~~~~~~\n/tmp/a7-root-stages-g5lp1xxm/missing_struct_field.zig:1:11: note: struct declared here\nconst P = struct {\n          ^~~~~~\nreferenced by:\n    callMain [inlined]: /tmp/a7-audit-20260914/zig/lib/std/start.zig:698:59\n    callMainWithArgs [inlined]: /tmp/a7-audit-20260914/zig/lib/std/start.zig:638:20\n    posixCallMainAndExit: /tmp/a7-audit-20260914/zig/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=5' to see all references\n"
+  },
+  {
+    "name": "declaration_limit",
+    "exit": 5,
+    "stderr": "",
+    "json_valid": false,
+    "stdout_prefix": "Warning: Parser stopped after 1000 iterations in /tmp/a7-root-stages-g5lp1xxm/declaration_limit.a7\n{\n  \"schema_version\": \"2.0\",\n  \"mode\": \"compile\",\n  \"status\": \"error\",\n  \"input\": \"/tmp/a7-root-stages-g5lp1xxm/declaration_limit.a7\",\n  \"backend\": \"zig\",\n  \"timing_ms\": 30,\n  \"stages\": {\n    \"tokenize\": {\n      \"ok\": true,\n      \"token_count\": 8007,\n      \"tokens\": [\n        {\n          \"type\": \"IDENTIFIER\",\n          \"value\": \"f0\",\n          \"line\": 1,\n          \"column\": 1,\n          \"length\": 2"
+  },
+  {
+    "name": "module-mode-semantic",
+    "exit": 6,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 1 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "module.a7:2:21: Type is not callable (Unknown stdlib call 'helper.value')",
+          "file": "/tmp/a7-root-stages-g5lp1xxm/module.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 21,
+            "end_line": 2,
+            "end_column": 22,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 2,
+        "start_column": 21,
+        "end_line": 2,
+        "end_column": 22,
+        "length": 1
+      },
+      "exception_type": null
+    }
+  },
+  {
+    "name": "module-mode-pipeline",
+    "exit": 0,
+    "error": null
+  },
+  {
+    "name": "module-mode-compile",
+    "exit": 0,
+    "error": null
+  }
+]

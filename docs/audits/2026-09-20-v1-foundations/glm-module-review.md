@@ -1,0 +1,43 @@
+Resuming with corrected in-repository paths. Two outstanding checks: fixture parity rerun and source-hash verification.
+
+All checks complete. Final report:
+
+---
+
+# P-MOD modules packet — GLM-5.3 external review (advisory)
+
+**Verdict (scoped):** The packet is well-formed, respects the L25–L31 scope, and its measured/proposed separation is disciplined and truthful for everything it does measure. It correctly declares itself not ready for implementation approval. One medium finding: the "current behavior" baseline omits the most basic multi-file case — a non-entry file importing another module — which is entirely broken on the current tree, so M-DEPTH's compatibility-impact text overstates today's capability. Two low findings on evolved historical defects absent from the measured set. The controller's finished full gate (exit 0, 9/9, 2,106 tests) is recorded as controller-reported; it does not close this packet or V1, and I did not rerun it.
+
+## What checks out
+
+- **Ledger fidelity.** The packet's rules (lines 14–24) match `docs/plan/decisions.md` L25–L31 exactly: file-is-module, duplicate-import error incl. alternate spellings, `_`/`__` visibility, local-alias clash, fields visible cross-file (L29), relative resolution with `..` containment, bare stdlib names reserved. The `execution.md#module-design-mod` anchor exists (`docs/plan/execution.md:61`), and the packet correctly marks the MOD design items (uniform scopes, qualified types, iterative loading, cycle rejection, per-module Zig struct) as proposals beyond the ledger.
+- **Evidence parity — exact.** All inline example sources in the packet match the `files` fields of the 11 probe records in `docs/audits/2026-09-20-v1-foundations/module-packet-probes/results.json` (systematic comparison: zero diffs; `directory_fallback` includes `pkg/mod.a7`). Every table row matches the evidence: A7 exits 0×8/5/6, Zig exits 1 for `named_import` ("use of undeclared identifier 'value'") and `sibling_call` ("use of undeclared identifier 'helper'"), native stdouts 7/7/7/9/9/7/1. The original-probe cross-references hold: import cycle now exit 6; the 1,100-module chain still exit 8 with `RecursionError`.
+- **Provenance.** `source_hashes` (32 entries, all `a7/*.py`) match current disk byte-for-byte — I independently re-hashed all 32 — confirming `compiler_hashes_unchanged: true`; compiler mtimes (e.g. `a7/module_resolver.py` 2026-09-19 22:54) predate the packet (00:33), supporting "No module implementation changed during packet preparation". I also reran `unqualified_leak` on the current tree: exit 0, status ok, leaked `VALUE` present in emitted Zig — tree parity with probe time.
+- **No implied approval of untested code.** Proposed sources are labeled "not claimed to execute correctly today"; the qualified-type fixture "has not been compile-qualified"; the packet states twice it is not ready for implementation approval; hardlink identity and initializer ordering are explicitly unresolved (lines 9–10, 269–270, 288).
+- **Compatibility breaks disclosed.** Each M-* row names what stops compiling and offers an alternative; M-BOUNDARY records the measured breaking effects of the approved direction.
+- **Acceptance requirements are real.** Items 1–8 demand Debug and ReleaseFast execution of every positive fixture with stdout/stderr/exit comparison, a corpus compatibility scan, hardlink/diamond/`./`/`..`/symlink duplicate detection, depth 31/32/33 plus recursion-limit-100 loading, hash-seed and checkout-path determinism, and consistent module graphs across modes. These are independently checkable, not self-referential.
+- **Layout framing.** One-Zig-struct-per-module is presented as an internal implementation choice with generated names explicitly not a public ABI, and the compatibility scan must identify tooling relying on current emitted names — not a gratuitous permission request.
+
+## Findings
+
+| # | Severity | Finding |
+|---|---|---|
+| F-A | MEDIUM | **Measured-baseline gap: non-entry importers are wholly broken today, and the packet never measures one.** None of the 11 fixtures contains an import inside a non-entry file. On the current tree, any qualified use from a non-entry module fails type checking — even a constant load: `b :: import "b"; pub v :: fn() i32 { ret b.CONST }` in `a.a7` → exit 6, "Undefined type (Identifier 'b')" (probes `glm-module-probes/depth2`, `depth5`, `iso_const`). Qualified types in field annotations do not even parse ("Expected IDENTIFIER, got DOT", `iso_type`). Consequently M-DEPTH's compatibility claim "Programs deeper than 32 may newly reject" misstates the baseline: import chains of depth ≥ 2 do not compile today, so the break is far larger than the row implies. The acceptance items (2, 3, 6) would catch this, but the packet's own discipline — measured witnesses versus proposals — should carry this fact in the "Current behavior measured" table. Evidence: `tmp/v1-delivery-2026-09-20/glm-module-probes/{depth2,depth5,iso_const,iso_type}/compile.json`. |
+| F-B | LOW | PIP-18 (global `h := 5` declared before `h :: import "flat"`) has evolved since the 2026-09-18 finding: it is now rejected at exit 6, but only accidentally, via unrelated diagnostics ("Cannot access field on non-struct type: got 'i32'") rather than an L28-style alias-clash rule (`glm-module-probes/pip18`). The packet's alias coverage measures only the local variant (`alias_local`, silently accepted today). The global-alias variant should be a named case in the compatibility scan list. |
+| F-C | LOW | The MTH-12 area (module-qualified struct literals) now parse-rejects ("Expected type", exit 5, `glm-module-probes/mth12`) instead of silently deleting `main`. This is consistent with the packet's honesty about the proposed `g.Point{...}` fixture, but the current rejection — and its interaction with the VIS-5 annotation forms — belongs in the measured table since qualified types are a core proposal area. |
+
+None of these block the packet's stated purpose (user decision preparation); they correct its measured-baseline record before that decision.
+
+## Prior-report corrections — confirmed
+
+Verified by reading the actual rows: all six deleted PDFs carry `sha256: null` in `baseline-inputs.json` (no git-object hashing; `review-provenance-check.json` records `git_object_content_used: false`, 1,045 unchanged + 10 expected changes). My round-2 statements that the manifest "hashed git-tracked content" and that 16 paths mismatched were wrong; the correct count is 10 changed. My attribution of the historical 2,629-test count to whole-tree collection is also withdrawn — the cited note does not establish that count's cause. `review-disposition.md` preserves both reports and these corrections accurately.
+
+## Execution limitations
+
+- One tool call was rejected by the external-directory permission guard because I used a relative `../../module-packet-probes` path from inside `glm-module-probes`; no outside-workspace access occurred or was granted. Redone with exact in-repository absolute paths. Recorded as an execution limitation, not a successful check.
+- No native Zig builds were run by me (the controller's gate has since completed). All my probes are compiler-only or file inspections; outputs saved only under `tmp/v1-delivery-2026-09-20/glm-module-probes/`. No source, doc, or test files were modified.
+- The controller-reported final gate result (exit 0, 9/9 checks, 2,106 tests, 43 examples, 43+43 artifacts, 61 diagnostic cases, docs style, secrets, package build, clean wheel install) is recorded as reported; I did not rerun or independently verify it, and it does not close the module packet, the compatibility scan, or V1.
+
+## Scoped verdict
+
+The packet meets its procedural obligations — exact L25–L31 scoping, honest proposal labeling, disclosed breaks, real acceptance criteria, verifiable evidence with full parity. It is not ready for implementation approval, by its own statement and correctly so. Before user disposition, add the non-entry-importer measurements (F-A) so M-DEPTH and the compatibility scan argue from the actual baseline, and note the two evolved defects (F-B, F-C). No unresolved semantics should be silently chosen; the packet does not, and my findings ask for measurement, not for picking outcomes.

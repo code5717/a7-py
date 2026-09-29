@@ -1,0 +1,15 @@
+Measured 2026-09-18 on this machine. zig version 0.16.0. CPython 3.13.15, uv run a7.
+
+Full A7 pipeline, --mode pipeline (tokenize -> parse -> semantic -> codegen, no file write):
+  examples/001_hello.a7        (4 lines)    108 ms
+  examples/037_language_tour.a7 (143 lines) 217 ms
+  examples/030_calculator.a7   (139 lines)  306 ms
+
+Edit -> native binary, examples/037_language_tour.a7:
+  a7 compile to .zig                         142 ms
+  zig build-exe, cold cache                 5626 ms
+  zig build-exe, after a comment edit         342 ms
+  zig build-exe, after a literal change       346 ms
+
+Steady-state edit -> binary loop: ~0.5 s (142 ms A7 + ~346 ms Zig, Debug,
+self-hosted x86_64 backend, no -fincremental).

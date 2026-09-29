@@ -1,0 +1,41 @@
+$ bun run lint && bun run typecheck && bun run check:coverage && bun run test && bun run build && bun run check:exports && bun run check:links
+$ bun run scripts/lint.ts
+site-lint: ok
+$ tsc --noEmit
+$ python3 scripts/check-coverage.py
+Coverage check passed: 428 records; SPEC headings, keywords, operators, stdlib, examples, proposed APIs, evidence paths, and matrix agree.
+$ bun test scripts/*.test.ts
+bun test v1.4.2 (744846f84)
+
+scripts/serve.test.ts:
+(pass) preview serves docs and confines requests to its directory [3.73ms]
+
+scripts/publishing.test.ts:
+(pass) Markdown publication requirements > literal code survives HTML escaping and raw HTML never becomes executable markup [3.27ms]
+(pass) Markdown publication requirements > nested instructions, blockquotes and tables retain their document structure [0.52ms]
+(pass) Markdown publication requirements > repeated headings receive unique stable link targets [0.32ms]
+(pass) registry preserves old routes and covers all twelve approved reference topics [23.26ms]
+(pass) each published document has matching discovery, manifest and sitemap records [27.10ms]
+(pass) Markdown topic links resolve to HTML topics and preserve fragment targets [0.13ms]
+(pass) local article links resolve to a documented route and section [9.10ms]
+(pass) full corpus leaves fenced examples untouched while converting prose links [7.37ms]
+(pass) full corpus resolves nested relative Markdown links from each source document [7.64ms]
+(pass) search excerpts preserve identifiers and ignore Markdown links and fenced headings [9.66ms]
+(pass) agent export preserves inline and indented code that looks like links [9.39ms]
+
+ 12 pass
+ 0 fail
+ 2491 expect() calls
+Ran 12 tests across 2 files. [119.00ms]
+$ bun run scripts/build.ts && bun run build:css
+built 23 pages with Markdown, search, and manifest
+$ tailwindcss -i src/tailwind.css -o dist/assets/site.css --minify
+≈ tailwindcss v4.3.0
+
+(node:3702899) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Done in 51ms
+$ bun run scripts/exports.ts
+exports current
+$ bun run scripts/check-links.ts
+links: 1467 local resources and 172 search targets checked

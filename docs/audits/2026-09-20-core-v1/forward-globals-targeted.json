@@ -1,0 +1,26 @@
+[
+  {
+    "name": "backward_float.a7",
+    "exit": 6,
+    "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': \"backward_float.a7:5:5: Type mismatch: expected 'i32', got 'f64' (Variable 'n')\", 'file': '/tmp/a7-global-types-lhaddwcg/backward_float.a7', 'span': {'start_line': 5, 'start_column': 5, 'end_line': 5, 'end_column': 6, 'length': 1}}], span={'start_line': 5, 'start_column': 5, 'end_line': 5, 'end_column': 6, 'length': 1}, exception_type=None)",
+    "code": null
+  },
+  {
+    "name": "forward_float.a7",
+    "exit": 6,
+    "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': \"forward_float.a7:4:5: Type mismatch: expected 'i32', got 'f64' (Variable 'n')\", 'file': '/tmp/a7-global-types-lhaddwcg/forward_float.a7', 'span': {'start_line': 4, 'start_column': 5, 'end_line': 4, 'end_column': 6, 'length': 1}}], span={'start_line': 4, 'start_column': 5, 'end_line': 4, 'end_column': 6, 'length': 1}, exception_type=None)",
+    "code": null
+  },
+  {
+    "name": "backward_string.a7",
+    "exit": 0,
+    "failure": "None",
+    "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nconst GREETING = \"hello\";\n\nfn show() void {\n    __a7_stdout_print(\"{s}\\n\", .{GREETING});\n}\n\nfn __a7_user_main() void {\n    show();\n}\n"
+  },
+  {
+    "name": "forward_string.a7",
+    "exit": 0,
+    "failure": "None",
+    "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn show() void {\n    __a7_stdout_print(\"{s}\\n\", .{GREETING});\n}\n\nconst GREETING = \"hello\";\n\nfn __a7_user_main() void {\n    show();\n}\n"
+  }
+]

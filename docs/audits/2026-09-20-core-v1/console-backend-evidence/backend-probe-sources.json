@@ -1,0 +1,10 @@
+{
+  "swap": "io :: import \"std/io\"\nmain :: fn() { a: [2]i32 = [1,2]; a = [a[1],a[0]]; io.println(\"{} {}\",a[0],a[1]) }\n",
+  "swap_control": "io :: import \"std/io\"\nmain :: fn() { a: [2]i32 = [1,2]; t := a[0]; a = [a[1],t]; io.println(\"{} {}\",a[0],a[1]) }\n",
+  "char_escape": "io :: import \"std/io\"\nmain :: fn() { io.println(\"{}\", '\\x01') }\n",
+  "char_control": "io :: import \"std/io\"\nmain :: fn() { io.println(\"{}\", 'A') }\n",
+  "defer_nonvoid": "io :: import \"std/io\"\nf :: fn() i32 { io.println(\"called\"); ret 7 }\nmain :: fn() { defer f() }\n",
+  "defer_control": "io :: import \"std/io\"\nf :: fn() { io.println(\"called\") }\nmain :: fn() { defer f() }\n",
+  "unused_const": "main :: fn() { answer :: 42 }\n",
+  "unused_control": "io :: import \"std/io\"\nmain :: fn() { answer :: 42; io.println(\"{}\",answer) }\n"
+}

@@ -245,7 +245,8 @@ class TestForLoops:
         main :: fn() {
             arr: [5]i32 = [1, 2, 3, 4, 5]
             for i, x in arr {
-                y := i + x
+                position: usize = i
+                value: i32 = x
             }
         }
         """
@@ -1366,7 +1367,8 @@ class TestForInIterableValidation:
         source = """
         main :: fn() {
             for i, x in 42 {
-                y := i + x
+                position: usize = i
+                value: i32 = x
             }
         }
         """

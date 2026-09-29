@@ -1,0 +1,424 @@
+
+> build · glm-5.3
+
+→ Read docs/plan/research/untyped-constants-glm-review-2026-09-20.md
+→ Read docs/plan/packets/P-TYP-forward-globals.md
+I own the resource/security policy review. I'll ground the policy in the actual compiler code first, then write the policy document.
+→ Read a7/const_eval.py
+
+$ rg -n "requires-python" pyproject.toml && python3 --version && python3 -c "import sys; print(sys.int_info.str_digits_check_threshold if hasattr(sys,'int_info') else 'n/a'); print(getattr(sys, 'get_int_max_str_digits', lambda: 'n/a')())"
+6:requires-python = ">=3.13"
+Python 3.14.7
+640
+4300
+
+Python ≥3.13 confirmed; default int↔str cap is 4300 digits (min configurable 640). Now grounding the lexer, AST, backend emission, and decisions.
+→ Read a7/ast_nodes.py [offset=575, limit=30]
+→ Read a7/tokens.py [offset=560, limit=50]
+→ Read docs/plan/decisions.md
+→ Read a7/backends/zig.py [offset=1680, limit=60]
+Grounding four more details: current lexer literal-length cap, exponent handling, the no-recursion test, and how diagnostics render values.
+
+$ rg -n "MAX_NUMBER_LENGTH|MAX_IDENTIFIER|MAX_STRING|MAX_" a7/tokens.py | head -30
+14:MAX_IDENTIFIER_LENGTH = 100
+15:MAX_NUMBER_LENGTH = 100
+16:MAX_STRING_LENGTH = 2**15 - 1  # Very large but finite limit
+445:            if len(number_text) > MAX_NUMBER_LENGTH:
+483:            if len(number_text) > MAX_NUMBER_LENGTH:
+519:            if len(number_text) > MAX_NUMBER_LENGTH:
+573:        if len(number_text) > MAX_NUMBER_LENGTH:
+807:        if len(identifier_text) > MAX_IDENTIFIER_LENGTH:
+
+$ rg -n "MAX.*DEPTH|limit|recursion" test/test_no_recursion.py | head -20; rg -c "def " a7/const_eval.py
+1:"""No recursion anywhere in the compiler (`a7/`).
+10:recursion that still exists in `a7/`; see "No recursion anywhere in the
+39:# Scanner specification: recursion that must be reported
+42:def test_direct_self_recursion_is_reported(tmp_path):
+54:def test_mutual_recursion_across_methods_is_one_group(tmp_path):
+71:def test_recursion_through_nested_functions_is_reported(tmp_path):
+326:def test_the_scanner_itself_has_no_recursion(tmp_path):
+391:# to it: convert the new recursion to an explicit stack instead. See the
+392:# "No recursion anywhere in the compiler" section of docs/plan/execution.md.
+593:def test_no_new_recursion_in_a7(a7_scan):
+715:def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
+8
+
+→ Read a7/tokens.py [limit=60, offset=505]
+Grounding is complete. Before writing the policy, I'll verify arithmetic/host facts I intend to cite: the double-rounding example, Python's decimal-vs-hex conversion asymmetry, and the operator set (no `**`; short-circuit ops exist or not). These are tiny, closed-form checks, not exhaustion experiments.
+
+$ rg -n "class BinaryOp" -A 30 a7/ast_nodes.py | head -45; rg -n "AND|OR" a7/ast_nodes.py | rg "LOGIC|AND|OR" | head -10
+102:class BinaryOp(Enum):
+103-    """Binary operators."""
+104-
+105-    # Arithmetic
+106-    ADD = auto()  # +
+107-    SUB = auto()  # -
+108-    MUL = auto()  # *
+109-    DIV = auto()  # /
+110-    MOD = auto()  # %
+111-
+112-    # Comparison
+113-    EQ = auto()  # ==
+114-    NE = auto()  # !=
+115-    LT = auto()  # <
+116-    LE = auto()  # <=
+117-    GT = auto()  # >
+118-    GE = auto()  # >=
+119-
+120-    # Logical
+121-    AND = auto()  # and
+122-    OR = auto()  # or
+123-
+124-    # Bitwise
+125-    BIT_AND = auto()  # &
+126-    BIT_OR = auto()  # |
+127-    BIT_XOR = auto()  # ^
+128-    BIT_SHL = auto()  # <<
+129-    BIT_SHR = auto()  # >>
+130-
+131-
+132-class UnaryOp(Enum):
+20:    IMPORT = auto()
+63:    FOR = auto()
+64:    FOR_IN = auto()  # for value in iterable
+65:    FOR_IN_INDEXED = auto()  # for i, value in iterable
+121:    AND = auto()  # and
+122:    OR = auto()  # or
+125:    BIT_AND = auto()  # &
+126:    BIT_OR = auto()  # |
+127:    BIT_XOR = auto()  # ^
+149:    AND_ASSIGN = auto()  # &=
+
+$ python3 - <<'EOF'
+from fractions import Fraction as F
+import struct, math
+
+# 1) current lexer float path facts
+print("float('1e400') =", float("1e400"))
+print("float('1e-400') =", float("1e-400"))
+
+# 2) int<->str asymmetry (CPython >=3.11)
+try:
+    str(10**5000)
+    print("str big: ok")
+except ValueError as e:
+    print("str big decimal: ValueError:", str(e)[:60])
+print("hex big: len", len(hex(10**5000)))
+print("int(hex,16) big: bitlen", int(hex(10**5000),16).bit_length())
+print("int dec str big:", end=" ")
+try:
+    int("1"+"0"*5000)
+except ValueError as e:
+    print("ValueError:", str(e)[:50])
+print("int(s, base 2) big bitlen:", int("1"+"0"*5000, 2).bit_length())
+
+# 3) double-rounding witness v = 1 + 2**-25 + 2**-54
+def round_f32_exact(v: F):
+    # correctly-rounded Fraction -> f32 bits, integer math only
+    sign = v < 0
+    v = abs(v)
+    if v == 0: return 0
+    # find e with 2^e <= v < 2^(e+1)
+    e = v.numerator.bit_length() - v.denominator.bit_length()
+    while F(2)**e > v: e -= 1
+    while F(2)**(e+1) <= v: e += 1
+    # normal/subnormal split
+    if e < -126:  # subnormal: fixed exponent -127... scale so target is integer with 24 bits
+        scale = 2**149  # 2^(127+22)? do: mantissa_scaled = v * 2^149 -> integer around 2^24
+        m = v * F(2)**149
+        # round to integer ties-to-even
+        n = m.numerator // m.denominator
+        rem = m - n
+        if rem > F(1,2) or (rem == F(1,2) and n % 2 == 1): n += 1
+        # n may carry into normal range
+        bits = n
+        if bits >= 2**24:  # became normal
+            exp = -126; frac = bits - 2**23
+        else:
+            exp = 0; frac = bits
+    else:
+        m = v / F(2)**e   # in [1,2)
+        scaled = m * F(2)**23  # in [2^23, 2^24)
+        n = scaled.numerator // scaled.denominator
+        rem = scaled - n
+        if rem > F(1,2) or (rem == F(1,2) and n % 2 == 1): n += 1
+        if n >= 2**24: n //= 2; e += 1
+        assert n >= 2**23, (n, e)
+        exp = e + 127
+        frac = n - 2**23
+        bits = (exp << 23) | frac
+    return (1<<31)|bits if sign else bits
+
+def f32_from_f64(v: F):
+    d = float(v)              # correctly rounded f64
+    return struct.unpack("<I", struct.pack("<f", d))[0]
+
+v = 1 + F(2)**-25 + F(2)**-54
+print("v exact decimal:", format(v.numerator) + "/" + format(v.denominator))
+from decimal import Decimal, getcontext
+getcontext().prec = 80
+print("v ~=", +Decimal(v.numerator)/Decimal(v.denominator))
+direct = round_f32_exact(v)
+via    = f32_from_f64(v)
+print("direct f32 bits:", hex(direct), "= value", struct.unpack("<f", struct.pack("<I", direct))[0])
+print("via-f64 f32 bits:", hex(via), "= value", struct.unpack("<f", struct.pack("<I", via))[0])
+print("differ:", direct != via)
+# sanity of round_f32_exact on knowns
+print("sanity 1.0:", hex(round_f32_exact(F(1))))
+print("sanity 1+2**-23:", struct.unpack("<f", struct.pack("<I", round_f32_exact(1+F(2)**-23)))[0])
+print("sanity tie 1+2**-25 -> ties-to-even 1.0:", struct.unpack("<f", struct.pack("<I", round_f32_exact(1+F(2)**-25)))[0])
+EOF
+float('1e400') = inf
+float('1e-400') = 0.0
+str big decimal: ValueError: Exceeds the limit (4300 digits) for integer string conversio
+hex big: len 4155
+int(hex,16) big: bitlen 16610
+int dec str big: ValueError: Exceeds the limit (4300 digits) for integer string
+int(s, base 2) big bitlen: 5001
+v exact decimal: 18014399046352897/18014398509481984
+v ~= 1.000000029802322443206463731257827021181583404541015625
+direct f32 bits: 0x3f800000 = value 1.0
+via-f64 f32 bits: 0x3f800000 = value 1.0
+differ: False
+sanity 1.0: 0x3f800000
+sanity 1+2**-23: 1.0000001192092896
+sanity tie 1+2**-25 -> ties-to-even 1.0: 1.0
+
+My first candidate was below the f32 tie point — not a witness. Recomputing with the correct midpoint (1+2⁻²⁴) and two proper candidates:
+$ python3 - <<'EOF'
+from fractions import Fraction as F
+import struct
+
+def round_f32_exact(v: F):
+    sign = v < 0; v = abs(v)
+    if v == 0: return 0
+    e = v.numerator.bit_length() - v.denominator.bit_length()
+    while F(2)**e > v: e -= 1
+    while F(2)**(e+1) <= v: e += 1
+    m = v / F(2)**e
+    scaled = m * F(2)**23
+    n = scaled.numerator // scaled.denominator
+    rem = scaled - n
+    if rem > F(1,2) or (rem == F(1,2) and n % 2 == 1): n += 1
+    if n >= 2**24: n //= 2; e += 1
+    assert 2**23 <= n < 2**24
+    return ((1<<31) if sign else 0) | ((e+127) << 23) | (n - 2**23)
+
+def f32_via_f64(v: F):
+    return struct.unpack("<I", struct.pack("<f", float(v)))[0]
+
+def bits_to_f32(b): return struct.unpack("<f", struct.pack("<I", b))[0]
+
+w1 = 1 + F(2)**-24 + F(2)**-53            # exact rational witness
+w2 = F("1.0000000596046448")              # short decimal-literal witness
+for name, w in [("1+2^-24+2^-53", w1), ("1.0000000596046448", w2)]:
+    d, v = round_f32_exact(w), f32_via_f64(w)
+    print(name)
+    print("  direct f32:", bits_to_f32(d), " via-f64 f32:", bits_to_f32(v), " differ:", d != v)
+
+# tie sanity: exact tie rounds to even (1.0), both paths agree
+tie = 1 + F(2)**-24
+print("tie 1+2^-24 direct:", bits_to_f32(round_f32_exact(tie)), "via:", bits_to_f32(f32_via_f64(tie)))
+# exact-decimal tie case for the doc: v has exact decimal expansion
+from decimal import Decimal, getcontext
+getcontext().prec = 90
+print("w1 exact dec:", +Decimal(w1.numerator)/Decimal(w1.denominator))
+print("len('1.0000000596046448') =", len("1.0000000596046448"))
+EOF
+1+2^-24+2^-53
+  direct f32: 1.0000001192092896  via-f64 f32: 1.0  differ: True
+1.0000000596046448
+  direct f32: 1.0000001192092896  via-f64 f32: 1.0  differ: True
+tie 1+2^-24 direct: 1.0 via: 1.0
+w1 exact dec: 1.00000005960464488641292746251565404236316680908203125
+len('1.0000000596046448') = 18
+
+All facts verified. The witness `1.0000000596046448` confirms direct-f32 vs via-f64 divergence, and the decimal/hex conversion asymmetry is confirmed. Now writing the policy document (the only file I will create or modify).
+← Write docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Wrote file successfully.
+
+Verifying no other files were touched and the document is intact:
+$ git status --porcelain && rg -c "" docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+M .github/workflows/ci.yml
+ M .github/workflows/deploy-docs.yml
+ M .github/workflows/release.yml
+ M .gitignore
+ M AGENTS.md
+ M CLAUDE.md
+ M README.md
+ M a7/ast_preprocessor.py
+ M a7/backends/zig.py
+ M a7/cli.py
+ M a7/compile.py
+ M a7/errors.py
+ M a7/formatters/console_formatter.py
+ M a7/formatters/json_formatter.py
+ M a7/generics.py
+ M a7/module_resolver.py
+ M a7/parser.py
+ M a7/passes/semantic_validator.py
+ M a7/passes/type_checker.py
+ M a7/safety.py
+ M a7/stdlib/__init__.py
+ M a7/stdlib/math.py
+ M a7/symbol_table.py
+ M a7/tokens.py
+ M a7/types.py
+ M docs/CHANGELOG.md
+ D docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_compact.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_dark.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_latex.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf
+ M docs/RELEASE.md
+ M docs/SAFETY_CONTRACT.md
+ M docs/SECURITY.md
+ M docs/SPEC.md
+ M docs/STATUS.md
+ M docs/lang-safety/01-invisicaps.md
+ M docs/lang-safety/02-sanitizers.md
+ M docs/lang-safety/03-hardware.md
+ M docs/lang-safety/04-comparison.md
+ M docs/lang-safety/05-for-a7.md
+ M docs/lang-safety/06-compile-time-safety.md
+ M docs/lang-safety/07-language-review.md
+ M docs/lang-safety/08-decisions.md
+ M docs/lang-safety/HANDOFF.md
+ M docs/lang-safety/README.md
+ M docs/lang-safety/codex-review.md
+ M docs/lang-safety/comparative/README.md
+ M docs/lang-safety/comparative/ada-deep-dive.md
+ M docs/lang-safety/comparative/ada.md
+ M docs/lang-safety/comparative/austral.md
+ M docs/lang-safety/comparative/cyclone.md
+ M docs/lang-safety/comparative/hylo.md
+ M docs/lang-safety/comparative/inko-koka-verona.md
+ M docs/lang-safety/comparative/mojo.md
+ M docs/lang-safety/comparative/pony.md
+ M docs/lang-safety/comparative/rust.md
+ M docs/lang-safety/comparative/swift.md
+ M docs/lang-safety/comparative/vale.md
+ M docs/lang-safety/comparative/zig.md
+ M docs/lang-safety/compile-time-knowledge.md
+ M docs/lang-safety/conversions.md
+ M docs/lang-safety/edge-cases/01-cast.md
+ M docs/lang-safety/edge-cases/02-nullable-pointers.md
+ M docs/lang-safety/edge-cases/03-definite-assignment.md
+ M docs/lang-safety/edge-cases/04-nonzero-division.md
+ M docs/lang-safety/edge-cases/05-stack-budget.md
+ M docs/lang-safety/edge-cases/06-typed-arithmetic.md
+ M docs/lang-safety/edge-cases/07-bounded-indexing.md
+ M docs/lang-safety/edge-cases/08-option-result.md
+ M docs/lang-safety/edge-cases/09-refinement-lite.md
+ M docs/lang-safety/edge-cases/10-affine-ownership.md
+ M docs/lang-safety/edge-cases/11-finite-floats.md
+ M docs/lang-safety/edge-cases/12-ffi-boundary.md
+ M docs/lang-safety/narrowing.md
+ M docs/lang-safety/parameter-modes.md
+ M examples/026_binary_tree.a7
+ M examples/030_calculator.a7
+ M examples/032_prime_numbers.a7
+ M pyproject.toml
+ M run_all_tests.sh
+ M scripts/check_no_secrets.py
+ M scripts/verify_release_manifest.py
+ M scripts/verify_wheel_install.py
+ M site/README.md
+ M site/bun.lock
+ M site/package.json
+ M site/public/404.html
+ M site/public/docs/agent-usage.md
+ M site/public/docs/compiler.md
+ M site/public/docs/index.md
+ M site/public/docs/language.md
+ M site/public/docs/project.md
+ M site/public/docs/release.md
+ M site/public/docs/start.md
+ M site/public/docs/status.md
+ M site/public/docs/stdlib.md
+ M site/public/llms-full.txt
+ M site/public/llms.txt
+ M site/public/sitemap.xml
+ M site/scripts/build.ts
+ M site/scripts/lint.ts
+ M site/scripts/serve.ts
+ M site/src/site.js
+ M site/src/tailwind.css
+ M test/test_cast_safety_matrix.py
+ M test/test_codegen_zig.py
+ M test/test_error_stage_matrix.py
+ M test/test_parser_creative_cases.py
+ M test/test_release_tooling.py
+ M test/test_semantic_comprehensive.py
+ M test/test_semantic_control_flow.py
+ M test/test_stdlib_registry.py
+ M uv.lock
+?? a7/const_eval.py
+?? a7/toolchain.py
+?? docs/README.md
+?? docs/audits/
+?? docs/lang-safety/comparative/bend.md
+?? docs/plan/
+?? run_release_checks.sh
+?? scripts/verify_release_version.py
+?? site/content/
+?? site/docs/
+?? site/public/docs/examples.md
+?? site/public/docs/language/
+?? site/public/docs/manifest.json
+?? site/public/docs/tour.md
+?? site/scripts/check-coverage.py
+?? site/scripts/check-links.ts
+?? site/scripts/content.ts
+?? site/scripts/exports.ts
+?? site/scripts/icons.ts
+?? site/scripts/markdown-links.ts
+?? site/scripts/publishing.test.ts
+?? site/scripts/search.ts
+?? site/scripts/serve.test.ts
+?? site/tsconfig.json
+?? test/fixtures/safety_regressions/
+?? test/norec_scan.py
+?? test/test_audit_backend_repairs.py
+?? test/test_audit_safety_repairs.py
+?? test/test_audit_type_boundaries.py
+?? test/test_cli_workflows.py
+?? test/test_compound_assignment_types.py
+?? test/test_console_review_regressions.py
+?? test/test_constant_folding_exact.py
+?? test/test_float_nonfinite_folding.py
+?? test/test_glm_for_update.py
+?? test/test_iterative_console.py
+?? test/test_iterative_helpers.py
+?? test/test_iterative_module_loading.py
+?? test/test_iterative_preprocessor.py
+?? test/test_iterative_return_analysis.py
+?? test/test_iterative_type_equality_hashing.py
+?? test/test_iterative_types.py
+?? test/test_language_audit_json_formatter.py
+?? test/test_language_audit_match_coverage.py
+?? test/test_language_audit_parser_fixes.py
+?? test/test_module_alias_shadowing.py
+?? test/test_no_recursion.py
+?? test/test_parse_termination.py
+?? test/test_pipeline_artifacts.py
+?? test/test_pipeline_diagnostics.py
+?? test/test_pipeline_native.py
+?? test/test_recursion_detection_scaling.py
+?? test/test_release_version.py
+?? test/test_resume_backend_bindings.py
+?? test/test_saf4_early_return.py
+?? test/test_safety_precursors.py
+?? test/test_stdlib_call_resolution.py
+?? test/test_v1_backend_regressions.py
+?? test/test_zig_backend_runtime.py
+379
+
+Policy complete. `docs/plan/research/untyped-constant-resource-policy-2026-09-20.md` (379 lines) is the only file I created or modified; everything else in the dirty tree pre-existed my session.
+
+**Proposed caps (units in parentheses):** token length 100 chars (existing, `a7/tokens.py:15`); decimal exponent |e| ≤ 4096 checked at tokenize; per-value component (numerator/denominator, reduced) ≤ 131,072 bits; transient cross-product scratch ≤ 262,144 bits; work budget 2^24 limb-ops per `::` binding and 2^32 per compilation (quadratic-overcharge cost model for mul/gcd); cache 16 MiB; dependency chain ≤ 65,536 links with iterative worklists only; diagnostics ≤ 256 chars/value and 2 KiB/message; emission ≤ 64-bit integer literals or ≤ 32-char float literals. Preflight-before-allocation is a per-operation table on result bit lengths; shifts need no separate count cap because the result preflight covers them.
+
+**Grounding verified, not asserted:** host Python 3.14 with the 4,300-digit default decimal int↔str cap (min configurable 640); `hex()`/`int(s,16)` are uncapped linear paths, so the policy mandates hex-default rendering, a ≤600-digit decimal guard, and explicitly rejects raising/disabling the host cap globally. The f32 double-rounding witness `1.0000000596046448` (direct → 1.0000001192092896, via-f64 → 1.0) was verified by an integer-arithmetic reference implementation and anchors boundary test T8. Worst legal literal under the lexer's 100-char rule is ~13,930 bits exact, ~9.4x under the value cap; ordinary f32/f64/i64 constants have >2,000x margin — no legit constant is affected.
+
+**Scope separation:** proposed limits vs measured qualification (12 named boundary tests, including lowered-cap enforcement via an internal test-only policy object, no user-facing flags) vs whole-compiler sandboxing (explicitly out of scope; AGENTS.md's not-a-sandbox caveat stands). Self-review covers multiplication chains, rational cross products, cancellation-based work-budget attacks, and short-circuit accounting, plus one semantics note (`false and (1/0 == 0)` suppresses the untyped error) left to the packet owner. No exhaustion experiments run; no compiler or Zig invocations; no sub-agents or nested CLIs (recursion guard held). F2 is resolved as policy; F1 and G3 remain open approval items as before. No deadlines imposed.

@@ -1,0 +1,188 @@
+[
+  {
+    "name": "max_f64",
+    "source": "io :: import \"std/io\"\n\nmain :: fn() {\nx: f64 = 1.7976931348623157e308\nio.println(\"{}\",x>1e308)\n}\n",
+    "expected_stdout": "true\n",
+    "expected_diagnostic": null,
+    "compile": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/c\nases/max_f64/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/c\nases/max_f64/main.zig (703 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "artifact_exists": true,
+    "profiles": {
+      "Debug": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/main.zig",
+            "-O",
+            "Debug",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/Debug",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "run": {
+          "command": [
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/Debug"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "true\n",
+          "stderr": ""
+        }
+      },
+      "ReleaseFast": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/main.zig",
+            "-O",
+            "ReleaseFast",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/ReleaseFast",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "run": {
+          "command": [
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/max_f64/ReleaseFast"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "true\n",
+          "stderr": ""
+        }
+      }
+    },
+    "emitted_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: f64 = @as(f64, @bitCast(@as(u64, 9218868437227405311)));\n\n    __a7_stdout_print(\"{}\\n\", .{(x > @as(f64, @bitCast(@as(u64, 9214871658872686752))))});\n}\n",
+    "passes_expectation": true
+  },
+  {
+    "name": "boundary_overflow_f64",
+    "source": "io :: import \"std/io\"\n\nmain :: fn() {\nx: f64 = 1.7976931348623159e308\n}\n",
+    "expected_stdout": null,
+    "expected_diagnostic": "overflows f64",
+    "compile": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/boundary_overflow_f64/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/boundary_overflow_f64/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 6,
+      "stdout": "\nFound 1 error:\n\nError 1/1:\nerror: Finite exact constant overflows f64 [line 4: col 10]\n\n",
+      "stderr": ""
+    },
+    "artifact_exists": false,
+    "profiles": {},
+    "passes_expectation": true
+  },
+  {
+    "name": "below_overflow_f32",
+    "source": "io :: import \"std/io\"\n\nmain :: fn() {\nx: f32 = 340282356779733661637539395458142568447.0\ny: f32 = 340282346638528859811704183484516925440.0\nio.println(\"{}\",x==y)\n}\n",
+    "expected_stdout": "true\n",
+    "expected_diagnostic": null,
+    "compile": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/c\nases/below_overflow_f32/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/c\nases/below_overflow_f32/main.zig (709 bytes, 4 ms)\n",
+      "stderr": ""
+    },
+    "artifact_exists": true,
+    "profiles": {
+      "Debug": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/main.zig",
+            "-O",
+            "Debug",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/Debug",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "run": {
+          "command": [
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/Debug"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "true\n",
+          "stderr": ""
+        }
+      },
+      "ReleaseFast": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/main.zig",
+            "-O",
+            "ReleaseFast",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/ReleaseFast",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "run": {
+          "command": [
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-followup/cases/below_overflow_f32/ReleaseFast"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 0,
+          "stdout": "true\n",
+          "stderr": ""
+        }
+      }
+    },
+    "emitted_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: f32 = @as(f32, @bitCast(@as(u32, 2139095039)));\n\n    const y: f32 = @as(f32, @bitCast(@as(u32, 2139095039)));\n\n    __a7_stdout_print(\"{}\\n\", .{(x == y)});\n}\n",
+    "passes_expectation": true
+  }
+]

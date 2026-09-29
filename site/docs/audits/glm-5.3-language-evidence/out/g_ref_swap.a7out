@@ -1,0 +1,31 @@
+
+Found 2 errors:
+
+Error 1/2:
+error: Cannot assign to immutable binding: 'a' is immutable [line 5: col 5]
+────────────────────────────────────────────────────────────────────────────────
+   3 ┃ swap :: fn(a: ref i32, b: ref i32) {
+   4 ┃     temp := a
+   5 ┃     a = b
+     ┃     ▲
+   6 ┃     b = temp
+   7 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Declare the binding with := if it needs to be reassigned
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 2/2:
+error: Cannot assign to immutable binding: 'b' is immutable [line 6: col 5]
+────────────────────────────────────────────────────────────────────────────────
+   4 ┃     temp := a
+   5 ┃     a = b
+   6 ┃     b = temp
+     ┃     ▲
+   7 ┃ }
+   8 ┃ 
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Declare the binding with := if it needs to be reassigned
+

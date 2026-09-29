@@ -1,0 +1,11 @@
+// glm-pipe repro: the classic diverging-loop idiom is rejected by the
+// semantic validator with MISSING_RETURN. `_returns_on_all_paths` returns
+// False for WHILE/FOR, even when the condition is the literal `true` and
+// the body returns. The type checker explicitly documents infinite loops
+// as non-errors (a7/passes/type_checker.py:617-621), so the two passes
+// disagree.
+spin :: fn() i32 {
+    while true {
+        ret 1
+    }
+}

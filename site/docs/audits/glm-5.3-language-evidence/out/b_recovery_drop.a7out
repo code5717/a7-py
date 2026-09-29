@@ -1,0 +1,31 @@
+
+Found 2 errors:
+
+Error 1/2:
+error: Return type mismatch: expected 'i32', got 'ref i32' [line 4: col 5]
+────────────────────────────────────────────────────────────────────────────────
+   2 ┃ 
+   3 ┃ helper :: fn(v: ref i32) i32 {
+   4 ┃     ret v
+     ┃     └─┘
+   5 ┃ }
+   6 ┃ 
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Return value must match the function's return type
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 2/2:
+error: Return type mismatch: expected 'void' (Cannot return value from void 
+function) [line 13: col 5]
+────────────────────────────────────────────────────────────────────────────────
+  11 ┃ 
+  12 ┃ unused :: fn() {
+  13 ┃     ret 1
+     ┃     └─┘
+  14 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Return value must match the function's return type
+

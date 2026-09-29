@@ -1,0 +1,100 @@
+[
+  {
+    "snapshot": "pre_conversion",
+    "probe": "type_set",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "           ~~~~~~~~~~~~~~~~~~^~~~~~",
+      "TypeError: can only concatenate str (not \"NoneType\") to str"
+    ]
+  },
+  {
+    "snapshot": "pre_conversion",
+    "probe": "slice_cycle",
+    "timeout_seconds": 1
+  },
+  {
+    "snapshot": "pre_conversion",
+    "probe": "generic_cycle",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "           ~~~~~~~~~^^^^^^^^^^",
+      "RecursionError: maximum recursion depth exceeded"
+    ]
+  },
+  {
+    "snapshot": "pre_conversion",
+    "probe": "defer_cycle",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "           ~~~~~~~~~^^^^^^^^^^",
+      "RecursionError: maximum recursion depth exceeded"
+    ]
+  },
+  {
+    "snapshot": "pre_conversion",
+    "probe": "tree_cycle",
+    "timeout_seconds": 1
+  },
+  {
+    "snapshot": "candidate_before",
+    "probe": "type_set",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "           ~~~~~~~^^^^^^^",
+      "TypeError: sequence item 0: expected str instance, NoneType found"
+    ]
+  },
+  {
+    "snapshot": "candidate_before",
+    "probe": "slice_cycle",
+    "timeout_seconds": 1
+  },
+  {
+    "snapshot": "candidate_before",
+    "probe": "generic_cycle",
+    "timeout_seconds": 1
+  },
+  {
+    "snapshot": "candidate_before",
+    "probe": "defer_cycle",
+    "timeout_seconds": 1
+  },
+  {
+    "snapshot": "candidate_before",
+    "probe": "tree_cycle",
+    "timeout_seconds": 1
+  },
+  {
+    "snapshot": "patched",
+    "probe": "type_set",
+    "exit": 0,
+    "stdout": "@type_set(i32)\n",
+    "stderr_tail": []
+  },
+  {
+    "snapshot": "patched",
+    "probe": "slice_cycle",
+    "exit": 0,
+    "stdout": "[]<cycle>\n",
+    "stderr_tail": []
+  },
+  {
+    "snapshot": "patched",
+    "probe": "generic_cycle",
+    "exit": 0,
+    "stdout": "Box(<cycle>)\n",
+    "stderr_tail": []
+  },
+  {
+    "snapshot": "patched",
+    "probe": "defer_cycle",
+    "exit": 0,
+    "stdout": "[blue]DEFER[/blue] \u2192 [dim]<cycle>[/dim]\n",
+    "stderr_tail": []
+  }
+]

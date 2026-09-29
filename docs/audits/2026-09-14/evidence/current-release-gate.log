@@ -1,0 +1,64 @@
+============================================================
+A7 COMPILER - COMPLETE TEST RESULTS
+============================================================
+
+Parser & Tokenizer Tests:
+PASS: 503 passed in 0.61s
+
+Semantic Analysis Tests (All):
+PASS: 351 passed in 0.24s
+
+Compiler/CLI/Backend Tests:
+PASS: 332 passed in 5.66s
+
+Examples E2E Verification (compile/build/run/output):
+PASS: Examples verified: 43/43
+
+Debug Artifact Build Verification (Zig):
+PASS: Build artifacts verified: 43/43
+
+Release Artifact Build Verification (Zig):
+PASS: Build artifacts verified: 43/43
+
+Error Stage Verification (mode/format matrix):
+PASS: Error-stage audit: 61/61 checks passed
+
+Docs Style Check:
+PASS: docs-style: ok
+
+Secrets Check:
+PASS: secrets-check: ok
+
+Package Build:
+PASS: Successfully built dist/a7_py-0.3.0-py3-none-any.whl
+
+Wheel Install Smoke Test:
+PASS: Wheel install verified: a7_py-0.3.0-py3-none-any.whl
+
+TOTAL (All Pytest Tests):
+FAIL: 12 failed, 2515 passed in 73.63s (0:01:13)
+---- recent output ----
+........................................................................ [ 88%]
+........................................................................ [ 91%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 99%]
+.......                                                                  [100%]
+=========================== short test summary info ============================
+FAILED test/test_pipeline_artifacts.py::test_cli_rejects_input_destination_without_changing_source[--output]
+FAILED test/test_pipeline_artifacts.py::test_cli_rejects_input_destination_without_changing_source[--doc-out]
+FAILED test/test_pipeline_artifacts.py::test_failed_compile_does_not_advertise_stale_output
+FAILED test/test_pipeline_artifacts.py::test_output_write_failure_does_not_advertise_directory_as_artifact
+FAILED test/test_pipeline_diagnostics.py::test_cli_source_diagnostic_points_to_offending_token[parse]
+FAILED test/test_pipeline_diagnostics.py::test_missing_import_diagnostic_locates_import_declaration
+FAILED test/test_pipeline_diagnostics.py::test_imported_parse_error_is_a_source_failure_with_module_location
+FAILED test/test_pipeline_diagnostics.py::test_imported_semantic_error_preserves_origin_file
+FAILED test/test_pipeline_native.py::test_valid_a7_bindings_build_with_zig[zig-keyword-local]
+FAILED test/test_pipeline_native.py::test_valid_a7_bindings_build_with_zig[unused-loop-capture]
+FAILED test/test_pipeline_native.py::test_valid_a7_bindings_build_with_zig[shadowed-loop-capture]
+FAILED test/test_pipeline_native.py::test_large_integer_folding_preserves_exact_quotient_and_remainder
+12 failed, 2515 passed in 73.63s (0:01:13)
+-----------------------
+
+============================================================
+Summary: 11/12 checks passed

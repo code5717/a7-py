@@ -1,0 +1,134 @@
+{
+  "baseline_revision": "701c67936c70ad2b0608326e23e56cc5d38c9fdb",
+  "status": "audit evidence and proposed roadmap; not release qualification",
+  "routing": "Cybersecurity follow-up belongs to GLM. External reports are advisory and require coordinator reconciliation.",
+  "reports": [
+    {
+      "file": "compiler-review.md",
+      "reviewer": "Codex built-in sub-agent",
+      "scope": "Compiler",
+      "artifact_saved": true
+    },
+    {
+      "file": "language-contract-review.md",
+      "reviewer": "Codex built-in sub-agent",
+      "scope": "Language contract",
+      "artifact_saved": true
+    },
+    {
+      "file": "tests-codex-review.md",
+      "reviewer": "Codex CLI",
+      "scope": "Meaningful tests",
+      "artifact_saved": true
+    },
+    {
+      "file": "docs-cleanup-report.md",
+      "reviewer": "Codex CLI",
+      "scope": "Documentation preservation and organization",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-codex-review.md",
+      "reviewer": "Codex CLI",
+      "scope": "Website",
+      "artifact_saved": true
+    },
+    {
+      "file": "pipeline-glm-review.md",
+      "reviewer": "zai-coding-plan/glm-5.3",
+      "scope": "Pipeline",
+      "artifact_saved": true
+    },
+    {
+      "file": "contract-release-glm-review.md",
+      "reviewer": "zai-coding-plan/glm-5.3",
+      "scope": "Contract and release",
+      "artifact_saved": true
+    },
+    {
+      "file": "memory-safety-glm-review.md",
+      "reviewer": "zai-coding-plan/glm-5.3",
+      "scope": "Dedicated memory safety",
+      "artifact_saved": true
+    },
+    {
+      "file": "security-glm-review.md",
+      "reviewer": "zai-coding-plan/glm-5.3",
+      "scope": "Cybersecurity",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-glm-review.md",
+      "reviewer": "zai-coding-plan/glm-5.3",
+      "scope": "Website",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-accessibility.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "accessibility",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-content.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "content",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-design-responsive.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "design-responsive",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-design-system.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "design-system",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-design-typography.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "design-typography",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-interactions.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "interactions",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-organization.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "organization",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-performance.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "performance",
+      "artifact_saved": true
+    },
+    {
+      "file": "website-flash-seo.md",
+      "reviewer": "zai-coding-plan/glm-5.3-flash",
+      "scope": "seo",
+      "artifact_saved": true
+    }
+  ],
+  "incomplete_reviews": [
+    {
+      "review": "Dedicated Codex memory CLI",
+      "reason": "Provider safety-filter termination, exit 1, before requested report. Not retried; dedicated GLM review saved."
+    }
+  ],
+  "unverified_acceptance": [
+    "Current browser interaction and visual evidence",
+    "Measured website performance",
+    "Corrected project-target dependency audit",
+    "Remote CI and published release qualification",
+    "Supported cross-platform matrix"
+  ]
+}

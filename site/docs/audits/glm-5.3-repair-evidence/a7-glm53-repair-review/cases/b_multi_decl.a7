@@ -1,0 +1,6 @@
+io :: import "std/io"
+
+main :: fn() {
+    x, y := 10, 20
+    io.println("{}", x)
+}

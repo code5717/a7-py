@@ -1,0 +1,8 @@
+{
+  "a7/safety.py": "a0e79a6cbe2c5e2608781aec6c86e4044890ac3eb1496a8dc5c6b097b125bdeb",
+  "a7/safety.enum-no-call-invalidation.py": "a212e70bc8b90744b30c88debd73992e7bd279e9bdceacfabe63741930a69430",
+  "saf3-enum-not-ready.patch": "f63ae1db2d0ec53be0d925289dc6dd946b340070797d6951af01766e41b8e7fc",
+  "enum-results.json": "bc4a40542a2e5373fa5c57ed054fade9b481581ededf8a754fe0b6e90a144525",
+  "enum-safe-native-results.json": "353e3d27f73d39263ce6b8488fa0b484c1834ed82bb3b7e6cee4d4032002516e",
+  "ENUM-REPORT.md": "ae4da7b91574a097863cf2b7c7901b31a387638dff90fd5b8c32baff9912dc94"
+}

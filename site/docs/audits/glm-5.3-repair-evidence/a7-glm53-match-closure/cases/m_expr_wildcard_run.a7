@@ -1,0 +1,12 @@
+io :: import "std/io"
+
+by_wild :: fn(x: i32) i32 {
+    ret match x {
+        case 1: 10
+        case _: 30
+    }
+}
+
+main :: fn() {
+    io.println("{} {}", by_wild(1), by_wild(7))
+}

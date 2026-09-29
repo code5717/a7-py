@@ -1,0 +1,138 @@
+[
+  {
+    "name": "large_div",
+    "source": "io :: import \"std/io\"\nmain :: fn() { x: i64 = 9007199254740993 / 1\n io.println(\"{}\", x) }",
+    "exit": 0,
+    "stderr": "",
+    "error": null,
+    "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: i64 = 9007199254740992;\n    __a7_stdout_print(\"{}\\n\", .{x});\n}\n",
+    "json_valid": true,
+    "build_exit": 0,
+    "build_stderr": "",
+    "native_exit": 0,
+    "native_stdout": "9007199254740992\n",
+    "native_stderr": ""
+  },
+  {
+    "name": "large_mod",
+    "source": "io :: import \"std/io\"\nmain :: fn() { x: i64 = 9007199254740993 % 2\n io.println(\"{}\", x) }",
+    "exit": 0,
+    "stderr": "",
+    "error": null,
+    "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: i64 = 1;\n    __a7_stdout_print(\"{}\\n\", .{x});\n}\n",
+    "json_valid": true,
+    "build_exit": 0,
+    "build_stderr": "",
+    "native_exit": 0,
+    "native_stdout": "1\n",
+    "native_stderr": ""
+  },
+  {
+    "name": "lex_bad_escape",
+    "source": "main :: fn() { x := \"\\q\" }",
+    "exit": 4,
+    "stderr": "",
+    "error": {
+      "category": "tokenize",
+      "message": "lex_bad_escape.a7:1:22: Invalid string escape sequence",
+      "details": [
+        {
+          "type": "TokenizerError",
+          "message": "lex_bad_escape.a7:1:22: Invalid string escape sequence",
+          "file": "/tmp/a7-root-pipeline-m1vd_wzl/lex_bad_escape.a7",
+          "span": {
+            "start_line": 1,
+            "start_column": 22,
+            "end_line": 1,
+            "end_column": 24,
+            "length": 2
+          }
+        }
+      ],
+      "span": {
+        "start_line": 1,
+        "start_column": 22,
+        "end_line": 1,
+        "end_column": 24,
+        "length": 2
+      },
+      "exception_type": null
+    },
+    "code": null,
+    "json_valid": true
+  },
+  {
+    "name": "parse_eof",
+    "source": "main :: fn() {",
+    "exit": 5,
+    "stderr": "",
+    "error": {
+      "category": "parse",
+      "message": "parse_eof.a7:1:15: Expected RIGHT_BRACE, got EOF",
+      "details": [
+        {
+          "type": "ParseError",
+          "message": "parse_eof.a7:1:15: Expected RIGHT_BRACE, got EOF",
+          "file": "/tmp/a7-root-pipeline-m1vd_wzl/parse_eof.a7",
+          "span": {
+            "start_line": 1,
+            "start_column": 15,
+            "end_line": 1,
+            "end_column": 15,
+            "length": 0
+          }
+        }
+      ],
+      "span": {
+        "start_line": 1,
+        "start_column": 15,
+        "end_line": 1,
+        "end_column": 15,
+        "length": 0
+      },
+      "exception_type": null
+    },
+    "code": null,
+    "json_valid": true
+  },
+  {
+    "name": "type_bad",
+    "source": "main :: fn() { x: i32 = \"wrong\" }",
+    "exit": 6,
+    "stderr": "",
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 1 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "type_bad.a7:1:16: Type mismatch: expected 'i32', got 'string' (Variable 'x')",
+          "file": "/tmp/a7-root-pipeline-m1vd_wzl/type_bad.a7",
+          "span": {
+            "start_line": 1,
+            "start_column": 16,
+            "end_line": 1,
+            "end_column": 17,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 1,
+        "start_column": 16,
+        "end_line": 1,
+        "end_column": 17,
+        "length": 1
+      },
+      "exception_type": null
+    },
+    "code": null,
+    "json_valid": true
+  },
+  {
+    "name": "import_parse_error",
+    "exit": 8,
+    "stdout": "{\n  \"schema_version\": \"2.0\",\n  \"mode\": \"compile\",\n  \"status\": \"error\",\n  \"input\": \"/tmp/a7-root-pipeline-m1vd_wzl/main.a7\",\n  \"backend\": \"zig\",\n  \"timing_ms\": 1,\n  \"stages\": {\n    \"tokenize\": {\n      \"ok\": true,\n      \"token_count\": 17,\n      \"tokens\": [\n        {\n          \"type\": \"IDENTIFIER\",\n          \"value\": \"lib\",\n          \"line\": 1,\n          \"column\": 1,\n          \"length\": 3\n        },\n        {\n          \"type\": \"DECLARE_CONST\",\n          \"value\": \"::\",\n          \"line\": 1,\n          \"column\": 3,\n          \"length\": 2\n        },\n        {\n          \"type\": \"IMPORT\",\n          \"value\": \"import\",\n          \"line\": 1,\n          \"column\": 8,\n          \"length\": 6\n        },\n        {\n          \"type\": \"STRING_LITERAL\",\n          \"value\": \"\\\"broken\\\"\",\n          \"line\": 1,\n          \"column\": 15,\n          \"length\": 8\n        },\n        {\n          \"type\": \"TERMINATOR\",\n          \"value\": \"\\n\",\n          \"line\": 1,\n          \"column\": 22,\n          \"length\": 1\n        },\n        {\n          \"type\": \"IDENTIFIER\",\n          \"value\": \"main\",\n          \"line\": 2,\n          \"column\": 1,\n          \"length\": 4\n        },\n        {\n          \"type\": \"DECLARE_CONST\",\n          \"value\": \"::\",\n          \"line\": 2,\n          \"column\": 4,\n          \"length\": 2\n        },\n        {\n          \"type\": \"FN\",\n          \"value\": \"fn\",\n          \"line\": 2,\n          \"column\": 9,\n          \"length\": 2\n        },\n        {\n          \"type\": \"LEFT_PAREN\",\n          \"value\": \"(\",\n          \"line\": 2,\n          \"column\": 10,\n          \"length\": 1\n        },\n        {\n          \"type\": \"RIGHT_PAREN\",\n          \"value\": \")\",\n          \"line\": 2,\n          \"column\": 11,\n          \"length\": 1\n        },\n        {\n          \"type\": \"LEFT_BRACE\",\n          \"value\": \"{\",\n          \"line\": 2,\n          \"column\": 13,\n          \"length\": 1\n        },\n        {\n          \"type\": \"IDENTIFIER\",\n          \"value\": \"lib\",\n          \"line\": 2,\n          \"column\": 16,\n          \"length\": 3\n        },\n        {\n          \"type\": \"DOT\",\n          \"value\": \".\",\n          \"line\": 2,\n          \"column\": 18,\n          \"length\": 1\n        },\n        {\n          \"type\": \"IDENTIFIER\",\n          \"value\": \"work\",\n          \"line\": 2,\n          \"column\": 20,\n          \"length\": 4\n        },\n        {\n          \"type\": \"LEFT_PAREN\",\n          \"value\": \"(\",\n          \"line\": 2,\n          \"column\": 23,\n          \"length\": 1\n        },\n        {\n          \"type\": \"RIGHT_PAREN\",\n          \"value\": \")\",\n          \"line\": 2,\n          \"column\": 24,\n          \"length\": 1\n        },\n        {\n          \"type\": \"RIGHT_BRACE\",\n          \"value\": \"}\",\n          \"line\": 2,\n          \"column\": 26,\n          \"length\": 1\n        },\n        {\n          \"type\": \"EOF\",\n          \"value\": \"\",\n          \"line\": 2,\n          \"column\": 28,\n          \"length\": 0\n        }\n      ]\n    },\n    \"parse\": {\n      \"ok\": true,\n      \"ast\": {\n        \"kind\": \"PROGRAM\",\n        \"span\": {\n          \"start_line\": 1,\n          \"start_column\": 1,\n          \"end_line\": 2,\n          \"end_column\": 5,\n          \"length\": 1\n        },\n        \"is_public\": false,\n        \"is_using\": false,\n        \"is_tagged\": false,\n        \"is_variadic\": false,\n        \"has_fallthrough\": false,\n        \"declarations\": [\n          {\n            \"kind\": \"IMPORT\",\n            \"span\": {\n              \"start_line\": 1,\n              \"start_column\": 1,\n              \"end_line\": 1,\n              \"end_column\": 4,\n              \"length\": 3\n            },\n            \"is_public\": false,\n            \"is_using\": false,\n            \"is_tagged\": false,\n            \"is_variadic\": false,\n            \"has_fallthrough\": false,\n            \"module_path\": \"broken\",\n            \"alias\": \"lib\"\n          },\n          {\n            \"kind\": \"FUNCTION\",\n            \"span\": {\n              \"start_line\": 2,\n              \"start_column\": 1,\n              \"end_line\": 2,\n              \"end_column\": 5,\n              \"length\": 4\n            },\n            \"name\": \"main\",\n            \"is_public\": false,\n            \"is_using\": false,\n            \"is_tagged\": false,\n            \"is_variadic\": false,\n            \"has_fallthrough\": false,\n            \"parameters\": [],\n            \"body\": {\n              \"kind\": \"BLOCK\",\n              \"span\": {\n                \"start_line\": 2,\n                \"start_column\": 13,\n                \"end_line\": 2,\n                \"end_column\": 27,\n                \"length\": 14\n              },\n              \"is_public\": false,\n              \"is_using\": false,\n              \"is_tagged\": false,\n              \"is_variadic\": false,\n              \"has_fallthrough\": false,\n              \"statements\": [\n                {\n                  \"kind\": \"EXPRESSION_STMT\",\n                  \"span\": {\n                    \"start_line\": 2,\n                    \"start_column\": 16,\n                    \"end_line\": 2,\n                    \"end_column\": 19,\n                    \"length\": 3\n                  },\n                  \"is_public\": false,\n                  \"is_using\": false,\n                  \"is_tagged\": false,\n                  \"is_variadic\": false,\n                  \"has_fallthrough\": false,\n                  \"expression\": {\n                    \"kind\": \"CALL\",\n                    \"span\": {\n                      \"start_line\": 2,\n                      \"start_column\": 16,\n                      \"end_line\": 2,\n                      \"end_column\": 19,\n                      \"length\": 3\n                    },\n                    \"is_public\": false,\n                    \"is_using\": false,\n                    \"is_tagged\": false,\n                    \"is_variadic\": false,\n                    \"has_fallthrough\": false,\n                    \"arguments\": [],\n                    \"function\": {\n                      \"kind\": \"FIELD_ACCESS\",\n                      \"span\": {\n                        \"start_line\": 2,\n                        \"start_column\": 16,\n                        \"end_line\": 2,\n                        \"end_column\": 19,\n                        \"length\": 3\n                      },\n                      \"is_public\": false,\n                      \"is_using\": false,\n                      \"is_tagged\": false,\n                      \"is_variadic\": false,\n                      \"has_fallthrough\": false,\n                      \"field\": \"work\",\n                      \"object\": {\n                        \"kind\": \"IDENTIFIER\",\n                        \"span\": {\n                          \"start_line\": 2,\n                          \"start_column\": 16,\n                          \"end_line\": 2,\n                          \"end_column\": 19,\n                          \"length\": 3\n                        },\n                        \"name\": \"lib\",\n                        \"is_public\": false,\n                        \"is_using\": false,\n                        \"is_tagged\": false,\n                        \"is_variadic\": false,\n                        \"has_fallthrough\": false\n                      }\n                    }\n                  }\n                }\n              ]\n            }\n          }\n        ]\n      }\n    }\n  },\n  \"artifacts\": {},\n  \"error\": {\n    \"category\": \"internal\",\n    \"message\": \"broken.a7:1:19: Expected RIGHT_BRACE, got EOF\",\n    \"details\": [],\n    \"span\": null,\n    \"exception_type\": \"ParseError\"\n  }\n}\n",
+    "stderr": ""
+  }
+]

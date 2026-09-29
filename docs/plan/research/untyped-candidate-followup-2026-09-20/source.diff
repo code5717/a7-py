@@ -1,0 +1,476 @@
+--- baseline/a7/backends/zig.py
++++ candidate/a7/backends/zig.py
+@@ -1687,6 +1687,10 @@
+         if lk == LiteralKind.INTEGER:
+             return str(val)
+         elif lk == LiteralKind.FLOAT:
++            bits = getattr(node, 'exact_float_bits', None)
++            if bits is not None:
++                width, value = bits
++                return f'@as(f{width}, @bitCast(@as(u{width}, {value})))'
+             if isinstance(val, float) and not math.isfinite(val):
+                 return self._emit_nonfinite_float(node, val)
+             s = str(val)
+--- baseline/a7/exact_constants.py
++++ candidate/a7/exact_constants.py
+@@ -0,0 +1,154 @@
++"""Experimental exact rational numeric constants. No resource-policy qualification.
++
++Values are (Fraction, floating-category) pairs. Binding caches use declaration
++identity. This module never follows a declaration recursively or evaluates calls.
++"""
++from fractions import Fraction
++import struct
++from a7.ast_nodes import NodeKind, LiteralKind, UnaryOp, BinaryOp
++
++
++def evaluate(root, lookup, bindings):
++    """Evaluate one expression with an explicit postorder stack, or return None."""
++    if root is None:
++        return None
++    values = {}
++    stack = [(root, False)]
++    while stack:
++        node, ready = stack.pop()
++        key = id(node)
++        saved = getattr(node, 'exact_constant', None)
++        if saved is not None:
++            values[key] = saved
++        elif node.kind == NodeKind.LITERAL:
++            if node.literal_kind == LiteralKind.INTEGER:
++                values[key] = (Fraction(node.literal_value), False)
++            elif node.literal_kind == LiteralKind.FLOAT:
++                value = Fraction(node.raw_text)
++                floating = 'negative_zero' if not value and node.raw_text.startswith('-') else True
++                values[key] = (value, floating)
++            else:
++                return None
++        elif node.kind == NodeKind.IDENTIFIER:
++            symbol = lookup(node.name)
++            value = bindings.get(id(symbol.node)) if symbol and symbol.node else None
++            if value is None:
++                return None
++            values[key] = value
++        elif node.kind == NodeKind.UNARY and node.operator == UnaryOp.NEG:
++            if not ready:
++                stack.extend([(node, True), (node.operand, False)])
++            else:
++                value, floating = values[id(node.operand)]
++                values[key] = (-value, ('negative_zero' if floating != 'negative_zero' else True) if floating and not value else floating)
++        elif node.kind == NodeKind.BINARY and node.operator in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD}:
++            if not ready:
++                stack.extend([(node, True), (node.right, False), (node.left, False)])
++            else:
++                left, lf = values[id(node.left)]
++                right, rf = values[id(node.right)]
++                if node.operator == BinaryOp.ADD:
++                    result = left + right
++                elif node.operator == BinaryOp.SUB:
++                    result = left - right
++                elif node.operator == BinaryOp.MUL:
++                    result = left * right
++                else:
++                    if not right:
++                        raise ExactArithmeticError('Exact constant division or remainder by zero')
++                    quotient = left / right
++                    truncated = abs(quotient.numerator) // quotient.denominator
++                    if quotient < 0:
++                        truncated = -truncated
++                    result = (quotient if lf or rf else Fraction(truncated)) if node.operator == BinaryOp.DIV else left - truncated * right
++                floating = bool(lf or rf)
++                if not result and floating:
++                    ln = left < 0 or lf == 'negative_zero'
++                    rn = right < 0 or rf == 'negative_zero'
++                    negative = (ln != rn) if node.operator in {BinaryOp.MUL, BinaryOp.DIV} else ln if node.operator == BinaryOp.MOD else (ln and (rn if node.operator == BinaryOp.ADD else not rn))
++                    if negative:
++                        floating = 'negative_zero'
++                values[key] = (result, floating)
++        else:
++            return None
++    return values[id(root)]
++
++
++class ExactArithmeticError(ValueError):
++    pass
++
++
++def ieee_bits(exact, width):
++    """Round a rational directly to IEEE nearest, ties to even, using integers."""
++    value, category = exact
++    precision, emin, emax, bias = (24, -126, 127, 127) if width == 32 else (53, -1022, 1023, 1023)
++    sign = int(value < 0 or category == 'negative_zero') << (width - 1)
++    numerator, denominator = abs(value.numerator), value.denominator
++    if not numerator:
++        return sign
++    exponent = numerator.bit_length() - denominator.bit_length()
++    if exponent >= 0:
++        if numerator < denominator << exponent:
++            exponent -= 1
++    elif numerator << -exponent < denominator:
++        exponent -= 1
++    # Quantize at the normal exponent or at the subnormal spacing.
++    shift = max(exponent, emin) - (precision - 1)
++    if shift >= 0:
++        denominator <<= shift
++    else:
++        numerator <<= -shift
++    significand, remainder = divmod(numerator, denominator)
++    if 2 * remainder > denominator or (2 * remainder == denominator and significand & 1):
++        significand += 1
++    if significand == 1 << precision:
++        significand >>= 1
++        exponent += 1
++    if exponent > emax:
++        raise ExactArithmeticError(f'Finite exact constant overflows f{width}')
++    if significand < 1 << (precision - 1):
++        return sign | significand
++    return sign | ((max(exponent, emin) + bias) << (precision - 1)) | (significand - (1 << (precision - 1)))
++
++
++def expression_span(root):
++    """Locate the first source operand when an operator has no parser span."""
++    stack = [root]
++    while stack:
++        node = stack.pop()
++        if node.span is not None:
++            return node.span
++        for name in ('right', 'left', 'operand'):
++            child = getattr(node, name, None)
++            if child is not None:
++                stack.append(child)
++    return None
++
++
++def materialize(node, exact, integer=False, width=None):
++    """Replace one use; retain its rational until its destination is known."""
++    value, floating = exact
++    node.span = expression_span(node)
++    node.exact_constant = exact
++    node.kind = NodeKind.LITERAL
++    node.literal_kind = LiteralKind.FLOAT if (floating or width) and not integer else LiteralKind.INTEGER
++    node.exact_float_bits = None
++    node.exact_float_error = None
++    if node.literal_kind == LiteralKind.INTEGER:
++        node.literal_value = value.numerator
++        node.raw_text = str(value.numerator)
++    else:
++        target = width or 64
++        try:
++            bits = ieee_bits(exact, target)
++        except ExactArithmeticError as error:
++            # A later integer or float destination may still replace this use.
++            node.exact_float_error = str(error)
++            node.literal_value = 0.0
++            node.raw_text = '0.0'
++        else:
++            node.exact_float_bits = (target, bits)
++            node.literal_value = struct.unpack('>f' if target == 32 else '>d', bits.to_bytes(target // 8, 'big'))[0]
++            node.raw_text = repr(node.literal_value)
++    node.left = node.right = node.operand = None
++    node.name = None
+--- baseline/a7/passes/type_checker.py
++++ candidate/a7/passes/type_checker.py
+@@ -24,6 +24,7 @@
+ )
+ from a7.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
+ from a7.stdlib import StdlibRegistry
++from a7.exact_constants import evaluate, materialize, ExactArithmeticError, expression_span
+ 
+ 
+ class TypeCheckingPass:
+@@ -60,6 +61,7 @@
+         self._generic_constraints: Dict[str, TypeSet] = {}
+         self._nonnegative_vars: Set[str] = set()
+         self.stdlib = StdlibRegistry()
++        self.exact_bindings = {}
+ 
+     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
+         """
+@@ -87,8 +89,32 @@
+         # Visit the program
+         self.visit_program(program)
+ 
++        # Check default float destinations after contextual fitting has finished.
++        stack = [program]
++        seen = set()
++        while stack:
++            node = stack.pop()
++            if id(node) in seen:
++                continue
++            seen.add(id(node))
++            error = getattr(node, 'exact_float_error', None)
++            if error:
++                self.add_error(error, node.span)
++            for value in vars(node).values():
++                if isinstance(value, ASTNode):
++                    stack.append(value)
++                elif isinstance(value, list):
++                    stack.extend(child for child in value if isinstance(child, ASTNode))
++
+         # Return the node types map for use by later passes
+         return self.node_types
++
++    def _evaluate_exact(self, node, lookup, bindings):
++        try:
++            return evaluate(node, lookup, bindings)
++        except ExactArithmeticError as error:
++            self.add_error(str(error), expression_span(node))
++            return None
+ 
+     def add_error(self, message: str, span: Optional[SourceSpan] = None) -> None:
+         """Add a type checking error (legacy - prefer add_type_error)."""
+@@ -180,9 +206,54 @@
+             if decl.kind == NodeKind.FUNCTION:
+                 self.register_function_signature(decl)
+ 
+-        # Third pass: type check all declarations (including function bodies)
++        # Resolve exact global bindings without moving runtime declarations.
++        pending = [d for d in node.declarations or [] if d.kind == NodeKind.CONST and not d.explicit_type]
++        while pending:
++            remaining = []
++            for decl in pending:
++                exact = self._evaluate_exact(decl.value, self.symbols.lookup, self.exact_bindings)
++                if exact is None:
++                    remaining.append(decl)
++                else:
++                    self.exact_bindings[id(decl)] = exact
++            if len(remaining) == len(pending):
++                break
++            pending = remaining
++
++        # Resolve global types using dependencies. No initializer is executed here.
++        globals_ = [d for d in node.declarations or [] if d.kind in {NodeKind.CONST, NodeKind.VAR}]
++        pending = list(globals_)
++        global_ids = {id(d) for d in globals_}
++        done = set()
++        while pending:
++            remaining = []
++            for decl in pending:
++                dependencies = set()
++                stack = [decl.value] if decl.value else []
++                while stack:
++                    expr = stack.pop()
++                    if expr.kind == NodeKind.IDENTIFIER:
++                        symbol = self.symbols.lookup(expr.name)
++                        if symbol and id(symbol.node) in global_ids:
++                            dependencies.add(id(symbol.node))
++                    for value in vars(expr).values():
++                        if isinstance(value, ASTNode):
++                            stack.append(value)
++                        elif isinstance(value, list):
++                            stack.extend(child for child in value if isinstance(child, ASTNode))
++                if dependencies - done:
++                    remaining.append(decl)
++                else:
++                    self.visit_declaration(decl)
++                    done.add(id(decl))
++            if len(remaining) == len(pending):
++                for decl in remaining:
++                    self.add_error(f"Unresolved global value dependency involving '{decl.name}'", decl.span)
++                break
++            pending = remaining
+         for decl in node.declarations or []:
+-            self.visit_declaration(decl)
++            if decl.kind not in {NodeKind.CONST, NodeKind.VAR}:
++                self.visit_declaration(decl)
+ 
+     def register_type_decl(self, node: ASTNode) -> None:
+         """Register a type declaration (first pass)."""
+@@ -642,6 +713,10 @@
+     def visit_const_decl(self, node: ASTNode) -> None:
+         """Visit a constant declaration."""
+         const_name = node.name or "<unknown>"
++        if not node.explicit_type:
++            exact = self._evaluate_exact(node.value, self.symbols.lookup, self.exact_bindings)
++            if exact is not None:
++                self.exact_bindings[id(node)] = exact
+ 
+         # Type check the value
+         value_type = UNKNOWN
+@@ -651,7 +726,7 @@
+         # If explicit type given, check compatibility
+         if node.explicit_type:
+             explicit_type = self.resolve_type_node(node.explicit_type)
+-            if not value_type.is_assignable_to(explicit_type):
++            if not self._is_initializer_assignable_to(node.value, value_type, explicit_type, node.span):
+                 self.add_type_error(
+                     TypeErrorType.TYPE_MISMATCH,
+                     node.span,
+@@ -749,6 +824,10 @@
+             self.errors.append(error)
+             value_type = UNKNOWN
+ 
++        if not node.explicit_type and node.value:
++            exact = getattr(node.value, 'exact_constant', None)
++            if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I32):
++                self.add_error("Exact constant does not fit default i32; use an explicit destination type", node.value.span)
+         self.set_type(node, value_type)
+         # Update the existing symbol's type (symbol was defined during name resolution)
+         existing_symbol = self.symbols.lookup(var_name)
+@@ -1155,6 +1234,20 @@
+         Returns:
+             Type of the expression
+         """
++        if node.kind == NodeKind.BINARY and node.operator in {BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE}:
++            left = self._evaluate_exact(node.left, self.symbols.lookup, self.exact_bindings)
++            right = self._evaluate_exact(node.right, self.symbols.lookup, self.exact_bindings)
++            if left is not None and right is not None:
++                a, b = left[0], right[0]
++                comparisons = {BinaryOp.EQ: a == b, BinaryOp.NE: a != b, BinaryOp.LT: a < b, BinaryOp.LE: a <= b, BinaryOp.GT: a > b, BinaryOp.GE: a >= b}
++                node.literal_value = comparisons[node.operator]
++                node.kind = NodeKind.LITERAL
++                node.literal_kind = LiteralKind.BOOLEAN
++                node.raw_text = 'true' if node.literal_value else 'false'
++                node.left = node.right = None
++        exact = self._evaluate_exact(node, self.symbols.lookup, self.exact_bindings)
++        if exact is not None:
++            materialize(node, exact)
+         expr_type = self._visit_expression_impl(node)
+         self.set_type(node, expr_type)
+         return expr_type
+@@ -1235,6 +1328,26 @@
+         right_type = self.visit_expression(node.right) if node.right else UNKNOWN
+ 
+         op = node.operator
++        left_exact = getattr(node.left, 'exact_constant', None)
++        right_exact = getattr(node.right, 'exact_constant', None)
++        if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL} and (left_exact is None) != (right_exact is None):
++            constant = node.left if left_exact is not None else node.right
++            concrete = right_type if left_exact is not None else left_type
++            if isinstance(concrete, PrimitiveType) and concrete.is_integral():
++                self._is_initializer_assignable_to(constant, self.get_type(constant), concrete, constant.span)
++                return concrete
++
++        numeric_ops = {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD,
++                       BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE}
++        if op in numeric_ops and (left_exact is None) != (right_exact is None):
++            constant = node.left if left_exact is not None else node.right
++            concrete = right_type if left_exact is not None else left_type
++            if isinstance(concrete, PrimitiveType) and concrete.is_floating():
++                self._is_initializer_assignable_to(constant, self.get_type(constant), concrete, constant.span)
++                if left_exact is not None:
++                    left_type = concrete
++                else:
++                    right_type = concrete
+ 
+         # Arithmetic operators: +, -, *, /, %
+         if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD}:
+@@ -1510,6 +1623,10 @@
+         args = node.arguments or []
+         if not args:
+             return
++        for arg in args[1:]:
++            exact = getattr(arg, 'exact_constant', None)
++            if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I32):
++                self.add_error("Exact constant does not fit formatting default i32; use an explicitly typed intermediate", arg.span)
+         format_type = arg_types[0] if arg_types else UNKNOWN
+         if not format_type.equals(STRING):
+             self.add_type_error(
+@@ -2988,6 +3105,24 @@
+                 context,
+             )
+         if isinstance(expected_type, PrimitiveType):
++            exact = getattr(value_node, 'exact_constant', None)
++            if exact is not None and expected_type.name in {'f32', 'f64'}:
++                materialize(value_node, exact, width=int(expected_type.name[1:]))
++                self.set_type(value_node, expected_type)
++                # The final traversal reports value overflow at the operand.
++                # Its numeric type is valid, so do not add a type mismatch.
++                return True
++            if exact is not None and expected_type.is_integral():
++                value, floating = exact
++                if value.denominator != 1:
++                    self.add_error(f"Exact constant {value} is fractional and cannot fit {expected_type}", value_node.span)
++                    return False
++                if not self._integer_literal_fits_type(value.numerator, expected_type):
++                    self.add_error(f"Exact constant {value} is out of range for {expected_type}", value_node.span)
++                    return False
++                materialize(value_node, exact, integer=True)
++                self.set_type(value_node, expected_type)
++                return True
+             literal_value = self._integer_literal_value(value_node)
+             if literal_value is not None:
+                 return self._integer_literal_fits_type(literal_value, expected_type)
+--- baseline/test/test_constant_folding_exact.py
++++ candidate/test/test_constant_folding_exact.py
+@@ -267,8 +267,16 @@
+     io.println("{} {} {} {}", value / 1, value % 1, value / 2, value % 2)
+ }
+ main :: fn() {
+-    io.println("{} {} {} {}", 9007199254740993 / 1, 9007199254740993 % 1, 9007199254740993 / 2, 9007199254740993 % 2)
+-    io.println("{} {} {} {}", 18014398509481983 / 1, 18014398509481983 % 1, 18014398509481983 / 2, 18014398509481983 % 2)
++    exact_value_0: i64 = 9007199254740993 / 1
++    exact_value_1: i64 = 9007199254740993 % 1
++    exact_value_2: i64 = 9007199254740993 / 2
++    exact_value_3: i64 = 9007199254740993 % 2
++    io.println("{} {} {} {}", exact_value_0, exact_value_1, exact_value_2, exact_value_3)
++    exact_value_4: i64 = 18014398509481983 / 1
++    exact_value_5: i64 = 18014398509481983 % 1
++    exact_value_6: i64 = 18014398509481983 / 2
++    exact_value_7: i64 = 18014398509481983 % 2
++    io.println("{} {} {} {}", exact_value_4, exact_value_5, exact_value_6, exact_value_7)
+     show(9007199254740993)
+     show(18014398509481983)
+ }
+@@ -283,14 +291,8 @@
+ 
+ 
+ def test_boundary_values_match_the_run_time_result(tmp_path, zig):
+-    # Each show_* prints quotient and remainder computed at run time from a
+-    # typed parameter; main prints the same expressions on literals. The
+-    # type checker types integer literal expressions as i32, and A7 folds a
+-    # result only when it fits that type. So the i8 and u8 lines, and the
+-    # remainders of i64 max and u64 max, are folded exactly by A7; the other
+-    # i64 and u64 results are left for Zig to evaluate. Both paths must print
+-    # the run-time result. Divisors are nonzero literals and no quotient
+-    # overflows its type.
++    # Exact constant results need a concrete destination before formatting
++    # when they exceed default i32. Pair these with typed runtime operations.
+     output = emit(tmp_path, '''io :: import "std/io"
+ show_i8 :: fn(a: i8) {
+     io.println("{} {} {} {}", a / 3, a % 3, a / -4, a % -4)
+@@ -317,11 +319,21 @@
+     show_i8(i8_min)
+     io.println("{} {}", 255 / 7, 255 % 7)
+     show_u8(u8_max)
+-    io.println("{} {} {} {}", 9223372036854775807 / 10, 9223372036854775807 % 10, 9223372036854775807 / -10, 9223372036854775807 % -10)
++    exact_value_8: i64 = 9223372036854775807 / 10
++    exact_value_9: i64 = 9223372036854775807 % 10
++    exact_value_10: i64 = 9223372036854775807 / -10
++    exact_value_11: i64 = 9223372036854775807 % -10
++    io.println("{} {} {} {}", exact_value_8, exact_value_9, exact_value_10, exact_value_11)
+     show_i64(i64_max)
+-    io.println("{} {} {} {}", -9223372036854775808 / 10, -9223372036854775808 % 10, -9223372036854775808 / -10, -9223372036854775808 % -10)
++    exact_value_12: i64 = -9223372036854775808 / 10
++    exact_value_13: i64 = -9223372036854775808 % 10
++    exact_value_14: i64 = -9223372036854775808 / -10
++    exact_value_15: i64 = -9223372036854775808 % -10
++    io.println("{} {} {} {}", exact_value_12, exact_value_13, exact_value_14, exact_value_15)
+     show_i64(i64_min)
+-    io.println("{} {}", 18446744073709551615 / 10, 18446744073709551615 % 10)
++    exact_value_16: i64 = 18446744073709551615 / 10
++    exact_value_17: i64 = 18446744073709551615 % 10
++    io.println("{} {}", exact_value_16, exact_value_17)
+     show_u64(u64_max)
+     io.println("{} {} {}", 2147483647 + 0, -2147483647 - 1, 2147483647 * 1)
+ }
+@@ -336,6 +348,7 @@
+         + "2147483647 -2147483648 2147483647\n"
+     )
+     assert run_all_profiles(zig, tmp_path, output) == expect_everywhere(stdout)
++
+ 
+ 
+ # ---------------------------------------------------------------------------
+@@ -362,3 +375,11 @@
+     assert process.returncode != 8, process.stdout + process.stderr
+     if process.returncode == 0 and forbidden is not None:
+         assert re.search(forbidden, out.read_text(encoding="utf-8")) is None
++
++
++@pytest.mark.parametrize("expression", ["9007199254740993 / 1", "9223372036854775807 / 10"])
++def test_exact_quotient_formatting_requires_fitting_default(expression, tmp_path):
++    process, out = cli_compile(tmp_path, 'io :: import "std/io"\nmain :: fn() { io.println("{}", ' + expression + ') }\n')
++    assert process.returncode == 6
++    assert "formatting default i32" in process.stdout
++    assert not out.exists()

@@ -1,0 +1,11 @@
+// glm-pipe repro: struct literals with an undefined type name, unknown
+// fields, missing fields, or too many positional fields pass the whole
+// a7 pipeline (exit 0) and only fail later as invalid Zig:
+//   error: use of undeclared identifier 'Point'  / no field named 'z' ...
+P2 :: struct { x: i32, y: i32 }
+main :: fn() {
+    p := Point{x: 1, y: 2}
+    q := P2{x: 1, z: 9}
+    r := P2{x: 1}
+    s := P2{1, 2, 3}
+}

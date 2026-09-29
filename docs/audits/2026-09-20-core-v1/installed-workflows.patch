@@ -1,0 +1,163 @@
+--- a/scripts/verify_wheel_install.py
++++ b/scripts/verify_wheel_install.py
+@@ -5,14 +5,17 @@
+ 
+ import argparse
+ import glob
++from email.parser import Parser
+ import json
+ import os
++import platform
+ import shutil
+ import subprocess
+ import sys
+ import tarfile
+ import tempfile
+ import venv
++import zipfile
+ from pathlib import Path
+ 
+ 
+@@ -67,28 +70,55 @@
+     zig = shutil.which("zig")
+     if zig is None:
+         raise RuntimeError("zig is required for installed-package native verification")
++    with zipfile.ZipFile(wheel) as archive:
++        metadata_paths = [name for name in archive.namelist() if name.endswith(".dist-info/METADATA")]
++        if len(metadata_paths) != 1:
++            raise RuntimeError("wheel must contain exactly one distribution metadata file")
++        metadata = Parser().parsestr(archive.read(metadata_paths[0]).decode("utf-8"))
++    expected_version = metadata.get("Version")
++    if metadata.get("Name") != "a7-py" or not expected_version:
++        raise RuntimeError("wheel has missing or unexpected package identity")
+     with tempfile.TemporaryDirectory(prefix="a7-wheel-smoke-") as tmp_name:
+         tmp = Path(tmp_name)
+         venv_dir = tmp / "venv"
+-        program = tmp / "hello.a7"
+-        zig_output = tmp / "hello.zig"
++        work = tmp / "project with spaces"
++        work.mkdir()
++        program = work / "hello.a7"
++        zig_output = work / "hello.zig"
+         env = clean_python_env()
+ 
+         venv.EnvBuilder(with_pip=True).create(venv_dir)
+         python = venv_bin(venv_dir, "python")
+         a7_cli = venv_bin(venv_dir, "a7")
+ 
+-        install = run_cmd([str(python), "-m", "pip", "install", str(wheel)], cwd=tmp, timeout=120, env=env)
++        install = run_cmd([str(python), "-m", "pip", "install", str(wheel)], cwd=work, timeout=120, env=env)
+         if install.returncode != 0:
+             raise RuntimeError(f"wheel install failed:\n{first_error_text(install)}")
+ 
+         origin = run_cmd(
+-            [str(python), "-I", "-c", "import a7; print(a7.__file__)"], cwd=tmp, env=env,
++            [str(python), "-I", "-c", "import a7; print(a7.__file__)"], cwd=work, env=env,
+         )
+         if origin.returncode != 0 or not Path(origin.stdout.strip()).resolve().is_relative_to(venv_dir.resolve()):
+             raise RuntimeError(f"installed package did not resolve inside the clean venv: {origin.stdout!r}")
+ 
+-        (tmp / "helper.a7").write_text(
++        identity = run_cmd(
++            [str(python), "-I", "-c", "import a7, importlib.metadata, json; "
++             "print(json.dumps([importlib.metadata.version('a7-py'), a7.__version__]))"],
++            cwd=work, env=env,
++        )
++        if identity.returncode != 0 or json.loads(identity.stdout) != [expected_version, expected_version]:
++            raise RuntimeError(f"installed package version disagrees with wheel metadata: {identity.stdout!r}")
++        version = run_cmd([str(a7_cli), "--version"], cwd=work, env=env)
++        if version.returncode != 0 or version.stdout != f"a7 {expected_version}\n":
++            raise RuntimeError(f"installed CLI version disagrees with wheel metadata: {version.stdout!r}")
++        doctor = run_cmd([str(a7_cli), "doctor"], cwd=work, env=env)
++        qualified = sys.version_info[:2] == (3, 13) and sys.platform == "linux" and platform.machine() == "x86_64"
++        if doctor.returncode != (0 if qualified else 2) or "Zig 0.16.0:" not in doctor.stdout:
++            raise RuntimeError(f"installed CLI doctor failed: {doctor.stdout}\n{doctor.stderr}")
++        if not qualified and "outside the V1 qualification target" not in doctor.stderr:
++            raise RuntimeError("installed CLI doctor omitted the unsupported-environment diagnostic")
++
++        (work / "helper.a7").write_text(
+             "pub answer :: fn() i32 {\n    ret 42\n}\n", encoding="utf-8"
+         )
+         program.write_text(
+@@ -104,7 +134,7 @@
+ 
+         tokens = run_cmd(
+             [str(a7_cli), "--format", "json", "--mode", "tokens", str(program)],
+-            cwd=tmp,
++            cwd=work,
+             timeout=30,
+             env=env,
+         )
+@@ -119,37 +149,57 @@
+         if payload.get("schema_version") != "2.0" or payload.get("status") != "ok":
+             raise RuntimeError(f"installed CLI JSON payload is not an ok v2 response: {payload!r}")
+ 
+-        zig_compile = run_cmd([str(a7_cli), str(program), "-o", str(zig_output)], cwd=tmp, timeout=30, env=env)
++        before_check = set(work.rglob("*"))
++        checked = run_cmd([str(a7_cli), "check", str(program), "--format", "json"], cwd=work, env=env)
++        checked_payload = json.loads(checked.stdout)
++        if (checked.returncode != 0 or checked_payload.get("status") != "ok"
++                or checked_payload.get("artifacts") != {} or set(work.rglob("*")) != before_check):
++            raise RuntimeError(f"installed CLI check failed or wrote artifacts: {checked.stdout}")
++
++        zig_compile = run_cmd([str(a7_cli), str(program), "-o", str(zig_output)], cwd=work, timeout=30, env=env)
+         if zig_compile.returncode != 0:
+             raise RuntimeError(f"installed CLI Zig compile failed:\n{first_error_text(zig_compile)}")
+ 
+-        for profile in ("Debug", "ReleaseFast"):
+-            binary = tmp / (f"hello-{profile}" + (".exe" if sys.platform == "win32" else ""))
+-            build = run_cmd(
+-                [zig, "build-exe", str(zig_output), "-O", profile, f"-femit-bin={binary}"],
+-                cwd=tmp, timeout=120, env=env,
+-            )
+-            if build.returncode != 0:
+-                raise RuntimeError(f"installed CLI {profile} native build failed:\n{first_error_text(build)}")
+-            native = run_cmd([str(binary)], cwd=tmp, timeout=10, env=env)
+-            if native.returncode != 0 or native.stdout != "wheel smoke 42\n" or native.stderr:
++        binary = work / ("hello-debug.exe" if sys.platform == "win32" else "hello-debug")
++        build = run_cmd(
++            [str(a7_cli), "build", str(program), "--profile", "debug", "-o", str(binary)],
++            cwd=work, timeout=120, env=env,
++        )
++        if build.returncode != 0:
++            raise RuntimeError(f"installed CLI debug build failed:\n{first_error_text(build)}")
++        native = run_cmd([str(binary)], cwd=work, timeout=10, env=env)
++        release = run_cmd(
++            [str(a7_cli), "run", str(program), "--profile", "release"], cwd=work, timeout=120, env=env,
++        )
++        for profile, process in (("debug", native), ("release", release)):
++            if process.returncode != 0 or process.stdout != "wheel smoke 42\n" or process.stderr:
+                 raise RuntimeError(
+                     f"installed CLI {profile} native output mismatch: "
+-                    f"exit={native.returncode}, stdout={native.stdout!r}, stderr={native.stderr!r}"
++                    f"exit={process.returncode}, stdout={process.stdout!r}, stderr={process.stderr!r}"
+                 )
+ 
+-        invalid = tmp / "invalid.a7"
+-        invalid_output = tmp / "invalid.zig"
++        invalid = work / "invalid.a7"
++        invalid_output = work / "invalid.zig"
+         invalid.write_text("main :: fn() {\n    missing_function()\n}\n", encoding="utf-8")
+         rejected = run_cmd(
+             [str(a7_cli), "--format", "json", str(invalid), "-o", str(invalid_output)],
+-            cwd=tmp, timeout=30, env=env,
++            cwd=work, timeout=30, env=env,
+         )
+         if rejected.returncode != 6 or invalid_output.exists():
+             raise RuntimeError(f"installed CLI failed to reject invalid source without an artifact: {rejected}")
+         failure = json.loads(rejected.stdout)
+         if failure.get("status") != "error" or "missing_function" not in rejected.stdout:
+             raise RuntimeError(f"installed CLI omitted the invalid-source diagnostic: {failure!r}")
++
++        before_invalid_check = set(work.rglob("*"))
++        invalid_check = run_cmd(
++            [str(a7_cli), "check", str(invalid), "--format", "json"], cwd=work, env=env,
++        )
++        invalid_payload = json.loads(invalid_check.stdout)
++        if (invalid_check.returncode != 6 or invalid_payload.get("status") != "error"
++                or invalid_payload.get("artifacts") != {} or "missing_function" not in invalid_check.stdout
++                or set(work.rglob("*")) != before_invalid_check):
++            raise RuntimeError(f"installed CLI check omitted rejection or wrote artifacts: {invalid_check.stdout}")
+ 
+ 
+ def verify_sdist(dist_dir: Path) -> str:

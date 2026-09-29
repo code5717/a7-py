@@ -1,0 +1,33 @@
+{
+  "compiler_hashes_unchanged": true,
+  "run_count": 45,
+  "dispositions": {
+    "PAR-02": {
+      "status": "reproduced, failure containment improved",
+      "evidence": "Six original long-condition/inline-struct shapes reject with exit 5; the short-condition control compiles. None hangs or emits partial Zig. The struct-literal context defect remains; silent dropping is repaired in these forms."
+    },
+    "PAR-03": {
+      "status": "original selected recovery failures no longer reproduce",
+      "evidence": "All eight selected original recovery/declaration cases reject with exit 5 and no Zig artifact. Typed/untyped local promotion and silent function loss do not reproduce. Valid function-type declarations still reject, which is a separate parsing limitation; no claim of full parser support."
+    },
+    "PAR-05": {
+      "status": "verified fixed for both original JSON reproductions",
+      "evidence": "Both original match-expression else probes produce valid JSON and exit 0 in compile, AST and semantic modes, six checks total. Duplicate else acceptance in p12b is unchanged and is not approved by this result. No native behavior checked."
+    },
+    "TOK-03": {
+      "status": "partially fixed; lexical contract decision remains",
+      "evidence": "All eight original malformed separator cases and superscript digit reject with exit 4, not internal exit 8. Original 0x_1, Arabic decimal 1\u0663 and fullwidth float 1.\uff15 still compile. Accepted spelling policy remains a decision; do not mark all TOK-03 closed."
+    },
+    "TOK-04": {
+      "status": "verified fixed for original reported column shapes",
+      "evidence": "Original two fixtures plus six verbatim snippets give correct operator/newline/brace columns. Explicit assertions cover + at 3, newline at 6, braces at 1, <<= at 3, .. at 2, and leading operators at 1. Closing-brace token now has column 1; the compile fails earlier at the missing-parenthesis newline, line 5 column 12. No full source-map guarantee."
+    },
+    "PIP-10": {
+      "status": "cycle fixed; deep recursion failure reproduced",
+      "evidence": "Original cyclic fixtures reject with exit 6. Original 1100-file import chain still exits 8 with RecursionError. This finding remains open for iterative loading and the depth contract."
+    }
+  },
+  "token_column_assertions": "passed",
+  "failed_runs_wrote_no_zig": true,
+  "all_final_runs_valid_json": true
+}

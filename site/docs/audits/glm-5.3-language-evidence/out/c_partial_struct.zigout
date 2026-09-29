@@ -1,0 +1,11 @@
+c_partial_struct.zig:7:22: error: missing struct field: count
+    const c = Counter{ .value = 0 };
+              ~~~~~~~^~~~~~~~~~~~~~
+c_partial_struct.zig:1:17: note: struct declared here
+const Counter = struct {
+                ^~~~~~
+referenced by:
+    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:698:59
+    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20
+    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38
+    2 reference(s) hidden; use '-freference-trace=5' to see all references

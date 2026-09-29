@@ -1,0 +1,12 @@
+// a7-glmr repro: fixed-width overflow is not proven (acknowledged gap in
+// docs/STATUS.md "Fixed-width overflow ... incomplete") and the emitted
+// Zig keeps comptime_int precision for literal-seeded arithmetic.
+// Observed with zig 0.16.0: a7 exit 0; built binary prints 2147483648 in
+// BOTH -ODebug and -OReleaseFast, i.e. a value outside the declared i32
+// range survives the pipeline instead of being rejected or wrapping.
+io :: import "std/io"
+main :: fn() {
+    big := 2147483647
+    wrapped := big + 1
+    io.println("{}", wrapped)
+}

@@ -1,0 +1,22 @@
+io :: import "std/io"
+
+outer1 :: fn() {
+    io.println("one")
+    helper :: fn(v: i32) i32 {
+        ret v
+    }
+    x := helper(1)
+}
+
+outer2 :: fn() {
+    io.println("two")
+    helper :: fn(v: i32) i32 {
+        ret v
+    }
+    x := helper(2)
+}
+
+main :: fn() {
+    outer1()
+    outer2()
+}

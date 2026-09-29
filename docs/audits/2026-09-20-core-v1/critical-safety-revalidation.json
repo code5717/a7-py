@@ -1,0 +1,113 @@
+{
+  "status": "Compiler-only revalidation, no generated unsafe program built or executed.",
+  "invocation": "A7Compiler().compile_file_detailed(input_path, output_path), exact source preserved per case",
+  "probes": [
+    {
+      "name": "p19_ptr_field_on_struct_local",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nInner :: struct {\n    value: i32\n}\n\nOuter :: struct {\n    ptr: ref Inner\n}\n\nmain :: fn() {\n    o := Outer{ptr: nil}\n    o.ptr.value = 7\n    io.println(\"done\")\n}\n",
+      "exit": 0,
+      "failure": "None",
+      "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nconst Inner = struct {\n    value: i32,\n};\n\nconst Outer = struct {\n    ptr: ?*Inner,\n};\n\nfn __a7_user_main() void {\n    var o = Outer{ .ptr = null };\n    o.ptr.?.value = 7;\n    __a7_stdout_print(\"done\\n\", .{});\n}\n"
+    },
+    {
+      "name": "p01_match_case_leak_between_cases",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 0\n    k := 2\n    match k {\n        case 1: x = 5\n        case 2: io.println(\"{}\", 10 / x)\n        else: io.println(\"other\")\n    }\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p01_match_case_leak_between_cases.a7:9:39: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)', 'file': '/tmp/a7-next-critical-wnvwn07e/p01_match_case_leak_between_cases.a7', 'span': {'start_line': 9, 'start_column': 39, 'end_line': 9, 'end_column': 40, 'length': 1}}], span={'start_line': 9, 'start_column': 39, 'end_line': 9, 'end_column': 40, 'length': 1}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p02_match_case_leak_after",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 0\n    k := 2\n    match k {\n        case 1: x = 5\n        else: io.println(\"other\")\n    }\n    y := 10 / x\n    io.println(\"{}\", y)\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p02_match_case_leak_after.a7:11:15: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)', 'file': '/tmp/a7-next-critical-wnvwn07e/p02_match_case_leak_after.a7', 'span': {'start_line': 11, 'start_column': 15, 'end_line': 11, 'end_column': 16, 'length': 1}}], span={'start_line': 11, 'start_column': 15, 'end_line': 11, 'end_column': 16, 'length': 1}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p26_fall_zero_divisor",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            x = 0\n            fall\n        }\n        case 2: {\n            io.println(\"{}\", 10 / x)\n        }\n        else: {\n            io.println(\"other\")\n        }\n    }\n}\n",
+      "exit": 0,
+      "failure": "None",
+      "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    var x: i32 = 5;\n    const k: i32 = 1;\n    {\n        const __a7_match_1 = k;\n        var __a7_match_done_2: bool = false;\n        var __a7_match_fall_3: bool = false;\n        if (!__a7_match_done_2 and !__a7_match_fall_3 and (__a7_match_1 == 1)) __a7_match_fall_3 = true;\n        if (__a7_match_fall_3) __a7_match_case_0_4: {\n            __a7_match_fall_3 = false;\n{\n                x = 0;\n                __a7_match_fall_3 = true;\n                break :__a7_match_case_0_4;\n            }\n            if (!__a7_match_fall_3) __a7_match_done_2 = true;\n        }\n        if (!__a7_match_done_2 and !__a7_match_fall_3 and (__a7_match_1 == 2)) __a7_match_fall_3 = true;\n        if (__a7_match_fall_3) {\n            __a7_match_fall_3 = false;\n{\n                __a7_stdout_print(\"{}\\n\", .{@divTrunc(10, x)});\n            }\n            if (!__a7_match_fall_3) __a7_match_done_2 = true;\n        }\n        if (!__a7_match_done_2 and !__a7_match_fall_3) __a7_match_fall_3 = true;\n        if (__a7_match_fall_3) {\n            __a7_match_fall_3 = false;\n{\n                __a7_stdout_print(\"other\\n\", .{});\n            }\n            if (!__a7_match_fall_3) __a7_match_done_2 = true;\n        }\n    }\n}\n"
+    },
+    {
+      "name": "p03_early_return_else_assign",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nf :: fn(x: i32) i32 {\n    v := x\n    if v == 0 {\n        ret 0\n    } else {\n        v = 0\n    }\n    ret 10 / v\n}\n\nmain :: fn() {\n    io.println(\"{}\", f(3))\n}\n",
+      "exit": 0,
+      "failure": "None",
+      "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn f(x: i32) i32 {\n    var v: i32 = x;\n    if ((v == 0)) {\n        return 0;\n    } else {\n        v = 0;\n    }\n    return @divTrunc(10, v);\n}\n\nfn __a7_user_main() void {\n    __a7_stdout_print(\"{}\\n\", .{f(3)});\n}\n"
+    },
+    {
+      "name": "p05_div_result_nonzero",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nf :: fn(a: i32, b: i32) i32 {\n    if a != 0 {\n        if b != 0 {\n            c := a / b\n            ret 100 / c\n        }\n    }\n    ret 0\n}\n\nmain :: fn() {\n    io.println(\"{}\", f(1, 2))\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p05_div_result_nonzero.a7:8:23: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)', 'file': '/tmp/a7-next-critical-wnvwn07e/p05_div_result_nonzero.a7', 'span': {'start_line': 8, 'start_column': 23, 'end_line': 8, 'end_column': 24, 'length': 1}}], span={'start_line': 8, 'start_column': 23, 'end_line': 8, 'end_column': 24, 'length': 1}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p07_global_changed_by_call",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    zero_g()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+      "exit": 0,
+      "failure": "None",
+      "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nvar g: i32 = 5;\n\nfn zero_g() void {\n    g = 0;\n}\n\nfn __a7_user_main() void {\n    g = 5;\n    zero_g();\n    const y: i32 = @divTrunc(10, g);\n    __a7_stdout_print(\"{}\\n\", .{y});\n}\n"
+    },
+    {
+      "name": "p16_del_field_twice",
+      "source": "// probe: compile-only\nBox :: struct {\n    v: i32\n}\n\nHolder :: struct {\n    child: ref Box\n}\n\nmain :: fn() {\n    h := Holder{child: new Box}\n    del h.child\n    del h.child\n}\n",
+      "exit": 0,
+      "failure": "None",
+      "code": "const std = @import(\"std\");\nconst allocator = std.heap.page_allocator;\n\nconst Box = struct {\n    v: i32,\n};\n\nconst Holder = struct {\n    child: ?*Box,\n};\n\npub fn main() void {\n    const h = Holder{ .child = allocator.create(Box) catch null };\n    if (h.child) |p| allocator.destroy(p);\n    if (h.child) |p| allocator.destroy(p);\n}\n"
+    },
+    {
+      "name": "p17b_mul_interval_runtime",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    a: i32 = 1\n    a = 65536\n    b := a * a\n    y := 10 / b\n    io.println(\"{}\", y)\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p17b_mul_interval_runtime.a7:8:15: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)', 'file': '/tmp/a7-next-critical-wnvwn07e/p17b_mul_interval_runtime.a7', 'span': {'start_line': 8, 'start_column': 15, 'end_line': 8, 'end_column': 16, 'length': 1}}], span={'start_line': 8, 'start_column': 15, 'end_line': 8, 'end_column': 16, 'length': 1}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p17c_unclamped_interval_index",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    arr: [6]i32 = [1, 2, 3, 4, 5, 6]\n    x: u8 = 1\n    x = 200\n    y := x + x\n    idx := cast(usize, y) - 395\n    io.println(\"{}\", arr[idx])\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p17c_unclamped_interval_index.a7:10:22: Index not proven in bounds (index must satisfy 0 <= index < len: index bounds are not proven)', 'file': '/tmp/a7-next-critical-wnvwn07e/p17c_unclamped_interval_index.a7', 'span': {'start_line': 10, 'start_column': 22, 'end_line': 10, 'end_column': 25, 'length': 3}}], span={'start_line': 10, 'start_column': 22, 'end_line': 10, 'end_column': 25, 'length': 3}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p30h2_cast_unclamped_interval_runtime",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x: i32 = 1\n    x = 2000000000\n    y := x + x\n    z := cast(u32, y)\n    io.println(\"{}\", z)\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p30h2_cast_unclamped_interval_runtime.a7:8:10: Unsafe type cast (cast must be classified and range-proven: signed-to-unsigned cast requires a non-negative proof)', 'file': '/tmp/a7-next-critical-wnvwn07e/p30h2_cast_unclamped_interval_runtime.a7', 'span': {'start_line': 8, 'start_column': 10, 'end_line': 8, 'end_column': 14, 'length': 4}}], span={'start_line': 8, 'start_column': 10, 'end_line': 8, 'end_column': 14, 'length': 4}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p33_else_branch_leak",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 0\n    c := true\n    if c {\n        io.println(\"then\")\n    } else x = 5\n    io.println(\"{}\", 10 / x)\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p33_else_branch_leak.a7:10:27: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)', 'file': '/tmp/a7-next-critical-wnvwn07e/p33_else_branch_leak.a7', 'span': {'start_line': 10, 'start_column': 27, 'end_line': 10, 'end_column': 28, 'length': 1}}], span={'start_line': 10, 'start_column': 27, 'end_line': 10, 'end_column': 28, 'length': 1}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "p33b_else_if_unbraced_leak",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 0\n    c := true\n    if c {\n        io.println(\"then\")\n    } else if c {\n        io.println(\"elif\")\n    } else x = 5\n    io.println(\"{}\", 10 / x)\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'p33b_else_if_unbraced_leak.a7:12:27: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)', 'file': '/tmp/a7-next-critical-wnvwn07e/p33b_else_if_unbraced_leak.a7', 'span': {'start_line': 12, 'start_column': 27, 'end_line': 12, 'end_column': 28, 'length': 1}}], span={'start_line': 12, 'start_column': 27, 'end_line': 12, 'end_column': 28, 'length': 1}, exception_type=None)",
+      "code": null
+    }
+  ],
+  "saf2_controls": [
+    {
+      "name": "same_nil_field_named_link",
+      "source": "// probe: compile-only\nio :: import \"std/io\"\n\nInner :: struct {\n    value: i32\n}\n\nOuter :: struct {\n    link: ref Inner\n}\n\nmain :: fn() {\n    o := Outer{link: nil}\n    o.link.value = 7\n    io.println(\"done\")\n}\n",
+      "exit": 6,
+      "failure": "FailureInfo(category='semantic', message='Semantic analysis failed with 1 error(s)', details=[{'type': 'TypeCheckError', 'message': 'same_nil_field_named_link.a7:14:5: Reference not proven non-nil (reference must be proven non-nil before field access through it: reference may be nil)', 'file': '/tmp/a7-next-critical-wnvwn07e/same_nil_field_named_link.a7', 'span': {'start_line': 14, 'start_column': 5, 'end_line': 14, 'end_column': 6, 'length': 1}}], span={'start_line': 14, 'start_column': 5, 'end_line': 14, 'end_column': 6, 'length': 1}, exception_type=None)",
+      "code": null
+    },
+    {
+      "name": "ptr_scalar_field_control",
+      "source": "io :: import \"std/io\"\nOuter :: struct { ptr: i32 }\nmain :: fn() { o := Outer{ptr: 7}; io.println(\"{}\", o.ptr) }\n",
+      "exit": 0,
+      "failure": "None",
+      "code": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nconst Outer = struct {\n    ptr: i32,\n};\n\nfn __a7_user_main() void {\n    const o = Outer{ .ptr = 7 };\n    __a7_stdout_print(\"{}\\n\", .{o.ptr});\n}\n"
+    }
+  ]
+}

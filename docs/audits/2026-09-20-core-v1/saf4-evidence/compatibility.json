@@ -1,0 +1,511 @@
+[
+  {
+    "name": "original.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 6,
+      "error": {
+        "category": "semantic",
+        "message": "Semantic analysis failed with 1 error(s)",
+        "details": [
+          {
+            "type": "TypeCheckError",
+            "message": "original.a7:11:14: Divisor not proven non-zero (division/modulo divisor must be non-zero: divisor may be zero)",
+            "file": "/tmp/a7-saf4-isolated/original.a7",
+            "span": {
+              "start_line": 11,
+              "start_column": 14,
+              "end_line": 11,
+              "end_column": 15,
+              "length": 1
+            }
+          }
+        ],
+        "span": {
+          "start_line": 11,
+          "start_column": 14,
+          "end_line": 11,
+          "end_column": 15,
+          "length": 1
+        },
+        "exception_type": null
+      }
+    }
+  },
+  {
+    "name": "000_empty.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "001_hello.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "002_var.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "003_comments.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "004_func.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "005_for_loop.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "006_if.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "007_while.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "008_switch.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "009_struct.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "010_enum.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "011_memory.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "012_arrays.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "013_pointers.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "014_generics.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "015_types.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "016_unions.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "017_methods.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "018_modules.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "019_literals.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "020_operators.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "021_control_flow.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "022_function_pointers.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "023_inline_structs.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "024_defer.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "025_linked_list.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "026_binary_tree.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "027_callbacks.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "028_state_machine.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "029_sorting.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "030_calculator.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "031_number_guessing.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "032_prime_numbers.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "033_fibonacci.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "034_string_utils.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "035_matrix.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "036_control_flow_edges.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "037_language_tour.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "038_inventory_report.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "039_text_analyzer.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "040_task_board.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "041_route_simulation.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "042_gradebook.a7",
+    "before": {
+      "exit": 0,
+      "error": null
+    },
+    "after": {
+      "exit": 0,
+      "error": null
+    }
+  }
+]

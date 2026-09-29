@@ -1,0 +1,5 @@
+{
+  "baseline_safety_sha256": "6a8c5f1273c3675b6c4bb3bee2140ce491bac187b4e5aaadc0bd19dc14c34169",
+  "candidate_safety_sha256": "ce6730236b1bf3925d583fd5ffa7e10f28c472cf1a301eaf715f81419e54427b",
+  "patch_sha256": "9f8580c2a50a0c29e1c6b3a6855799926262d56fce7342888ea9d75c8003007a"
+}

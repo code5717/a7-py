@@ -1,0 +1,8 @@
+io :: import "std/io"
+
+main :: fn() {
+    arr: [3]i32 = [1, 2, 3]
+    s := arr[0..3]
+    s[1] = 9
+    io.println("{}", arr[1])
+}

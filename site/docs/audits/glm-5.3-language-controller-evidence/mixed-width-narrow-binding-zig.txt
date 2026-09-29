@@ -1,0 +1,8 @@
+/tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:15:22: error: expected type 'i8', found 'i64'
+    const c: i8 = (a + b);
+                   ~~^~~
+/tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:15:22: note: signed 8-bit int cannot represent all possible signed 64-bit values
+referenced by:
+    __a7_user_main: /tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:22:8
+    main: /tmp/a7-glm-reconcile-components/mixed-width-narrow-binding.zig:11:19
+    5 reference(s) hidden; use '-freference-trace=7' to see all references

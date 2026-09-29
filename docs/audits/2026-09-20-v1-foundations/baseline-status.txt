@@ -1,0 +1,896 @@
+ M .github/workflows/ci.yml
+ M .github/workflows/deploy-docs.yml
+ M .github/workflows/release.yml
+ M .gitignore
+ M AGENTS.md
+ M CLAUDE.md
+ M README.md
+ M a7/ast_preprocessor.py
+ M a7/backends/zig.py
+ M a7/compile.py
+ M a7/errors.py
+ M a7/formatters/json_formatter.py
+ M a7/module_resolver.py
+ M a7/parser.py
+ M a7/passes/semantic_validator.py
+ M a7/passes/type_checker.py
+ M a7/safety.py
+ M a7/stdlib/__init__.py
+ M a7/stdlib/math.py
+ M a7/tokens.py
+ M docs/CHANGELOG.md
+ D docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_compact.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_dark.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_latex.pdf
+ D docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf
+ M docs/RELEASE.md
+ M docs/SAFETY_CONTRACT.md
+ M docs/SPEC.md
+ M docs/STATUS.md
+ M docs/lang-safety/01-invisicaps.md
+ M docs/lang-safety/02-sanitizers.md
+ M docs/lang-safety/03-hardware.md
+ M docs/lang-safety/04-comparison.md
+ M docs/lang-safety/05-for-a7.md
+ M docs/lang-safety/06-compile-time-safety.md
+ M docs/lang-safety/07-language-review.md
+ M docs/lang-safety/08-decisions.md
+ M docs/lang-safety/HANDOFF.md
+ M docs/lang-safety/README.md
+ M docs/lang-safety/codex-review.md
+ M docs/lang-safety/comparative/README.md
+ M docs/lang-safety/comparative/ada-deep-dive.md
+ M docs/lang-safety/comparative/ada.md
+ M docs/lang-safety/comparative/austral.md
+ M docs/lang-safety/comparative/cyclone.md
+ M docs/lang-safety/comparative/hylo.md
+ M docs/lang-safety/comparative/inko-koka-verona.md
+ M docs/lang-safety/comparative/mojo.md
+ M docs/lang-safety/comparative/pony.md
+ M docs/lang-safety/comparative/rust.md
+ M docs/lang-safety/comparative/swift.md
+ M docs/lang-safety/comparative/vale.md
+ M docs/lang-safety/comparative/zig.md
+ M docs/lang-safety/compile-time-knowledge.md
+ M docs/lang-safety/conversions.md
+ M docs/lang-safety/edge-cases/01-cast.md
+ M docs/lang-safety/edge-cases/02-nullable-pointers.md
+ M docs/lang-safety/edge-cases/03-definite-assignment.md
+ M docs/lang-safety/edge-cases/04-nonzero-division.md
+ M docs/lang-safety/edge-cases/05-stack-budget.md
+ M docs/lang-safety/edge-cases/06-typed-arithmetic.md
+ M docs/lang-safety/edge-cases/07-bounded-indexing.md
+ M docs/lang-safety/edge-cases/08-option-result.md
+ M docs/lang-safety/edge-cases/09-refinement-lite.md
+ M docs/lang-safety/edge-cases/10-affine-ownership.md
+ M docs/lang-safety/edge-cases/11-finite-floats.md
+ M docs/lang-safety/edge-cases/12-ffi-boundary.md
+ M docs/lang-safety/narrowing.md
+ M docs/lang-safety/parameter-modes.md
+ M examples/026_binary_tree.a7
+ M examples/030_calculator.a7
+ M examples/032_prime_numbers.a7
+ M pyproject.toml
+ M run_all_tests.sh
+ M scripts/check_no_secrets.py
+ M scripts/verify_release_manifest.py
+ M site/README.md
+ M site/bun.lock
+ M site/package.json
+ M site/public/404.html
+ M site/public/docs/agent-usage.md
+ M site/public/docs/compiler.md
+ M site/public/docs/index.md
+ M site/public/docs/language.md
+ M site/public/docs/project.md
+ M site/public/docs/release.md
+ M site/public/docs/start.md
+ M site/public/docs/status.md
+ M site/public/docs/stdlib.md
+ M site/public/llms-full.txt
+ M site/public/llms.txt
+ M site/public/sitemap.xml
+ M site/scripts/build.ts
+ M site/scripts/lint.ts
+ M site/scripts/serve.ts
+ M site/src/site.js
+ M site/src/tailwind.css
+ M test/test_cast_safety_matrix.py
+ M test/test_codegen_zig.py
+ M test/test_error_stage_matrix.py
+ M test/test_parser_creative_cases.py
+ M test/test_release_tooling.py
+ M test/test_semantic_comprehensive.py
+ M test/test_semantic_control_flow.py
+ M test/test_stdlib_registry.py
+ M uv.lock
+?? a7/const_eval.py
+?? docs/README.md
+?? docs/audits/2026-09-14/README.md
+?? docs/audits/2026-09-14/audit-matrix.md
+?? docs/audits/2026-09-14/compiler-review.md
+?? docs/audits/2026-09-14/completion-roadmap.md
+?? docs/audits/2026-09-14/contract-release-glm-review.md
+?? docs/audits/2026-09-14/docs-cleanup-report.md
+?? docs/audits/2026-09-14/evidence/README.md
+?? docs/audits/2026-09-14/evidence/audit-navigation-check.json
+?? docs/audits/2026-09-14/evidence/bandit.log
+?? docs/audits/2026-09-14/evidence/baseline-release-gate.log
+?? docs/audits/2026-09-14/evidence/bun-audit.log
+?? docs/audits/2026-09-14/evidence/current-release-gate.log
+?? docs/audits/2026-09-14/evidence/docs-preservation-coordinator.json
+?? docs/audits/2026-09-14/evidence/flash-retry-results.json
+?? docs/audits/2026-09-14/evidence/new-regressions.log
+?? docs/audits/2026-09-14/evidence/parser-recovery-coordinator.json
+?? docs/audits/2026-09-14/evidence/pdf-inventory.json
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS.txt
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS_beamer.txt
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS_compact.txt
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS_dark.txt
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS_html_styled.txt
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS_latex.txt
+?? docs/audits/2026-09-14/evidence/pdf-text/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.txt
+?? docs/audits/2026-09-14/evidence/pip-audit-target-inventory.json
+?? docs/audits/2026-09-14/evidence/pip-audit.log
+?? docs/audits/2026-09-14/evidence/provider-limitations.json
+?? docs/audits/2026-09-14/evidence/review-ledger.json
+?? docs/audits/2026-09-14/evidence/root-pipeline-probes.json
+?? docs/audits/2026-09-14/evidence/root-stage-validation.json
+?? docs/audits/2026-09-14/evidence/site-check-after-cleanup.log
+?? docs/audits/2026-09-14/evidence/site-links-after-cleanup.json
+?? docs/audits/2026-09-14/evidence/site-links-before-cleanup.json
+?? docs/audits/2026-09-14/language-contract-review.md
+?? docs/audits/2026-09-14/memory-safety-glm-review.md
+?? docs/audits/2026-09-14/pipeline-glm-review.md
+?? docs/audits/2026-09-14/repros/a7audit_branch_bounds.a7
+?? docs/audits/2026-09-14/repros/a7audit_branch_zero.a7
+?? docs/audits/2026-09-14/repros/a7audit_compound_zero.a7
+?? docs/audits/2026-09-14/repros/a7audit_deleted_name.a7
+?? docs/audits/2026-09-14/repros/a7audit_loop_bounds.a7
+?? docs/audits/2026-09-14/repros/a7audit_ref_zero.a7
+?? docs/audits/2026-09-14/repros/a7audit_reserved.a7
+?? docs/audits/2026-09-14/repros/a7audit_shadow_iterator.a7
+?? docs/audits/2026-09-14/repros/a7audit_unused_iterator.a7
+?? docs/audits/2026-09-14/repros/a7glmr_cycle_main.a7
+?? docs/audits/2026-09-14/repros/a7glmr_cycle_moda.a7
+?? docs/audits/2026-09-14/repros/a7glmr_cycle_modb.a7
+?? docs/audits/2026-09-14/repros/a7glmr_dual_spelling_main.a7
+?? docs/audits/2026-09-14/repros/a7glmr_mod_helper.a7
+?? docs/audits/2026-09-14/repros/a7glmr_mod_private_call.a7
+?? docs/audits/2026-09-14/repros/a7glmr_overflow_i32.a7
+?? docs/audits/2026-09-14/repros/a7glmr_silent_drop.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-alias-double-del.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-call-del-stale-nil.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-defer-del-double.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-del-ref-param.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-del-var-named-p.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-generic-slice-index-rejected.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-join-stale-index.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-neg-compound-nil-guard.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-neg-index-oob.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-neg-slice-index.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-neg-use-after-del.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-recursion-module/helper.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-recursion-module/main.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-recursion-struct-fnptr.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-slice-stack-escape.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-uninit-struct-slice.a7
+?? docs/audits/2026-09-14/repros/glm-memsafe-union-inactive-field.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-import-badmod.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-import-error-span.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-literal-fit-gaps.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-loop-index-unsound.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-match-statement-garbage.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-mixed-width-arith.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-struct-init-gaps.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-unicode-digit.a7
+?? docs/audits/2026-09-14/repros/glm-pipe-while-true-ret.a7
+?? docs/audits/2026-09-14/repros/language-contract-observed.json
+?? docs/audits/2026-09-14/repros/language_contract.py
+?? docs/audits/2026-09-14/root-review.md
+?? docs/audits/2026-09-14/security-glm-review.md
+?? docs/audits/2026-09-14/tests-codex-review.md
+?? docs/audits/2026-09-14/website-codex-review.md
+?? docs/audits/2026-09-14/website-flash-accessibility.md
+?? docs/audits/2026-09-14/website-flash-content.md
+?? docs/audits/2026-09-14/website-flash-design-responsive.md
+?? docs/audits/2026-09-14/website-flash-design-system.md
+?? docs/audits/2026-09-14/website-flash-design-typography.md
+?? docs/audits/2026-09-14/website-flash-interactions.md
+?? docs/audits/2026-09-14/website-flash-organization.md
+?? docs/audits/2026-09-14/website-flash-performance.md
+?? docs/audits/2026-09-14/website-flash-seo.md
+?? docs/audits/2026-09-14/website-glm-review.md
+?? docs/audits/2026-09-14/website-reconciliation.md
+?? docs/audits/2026-09-16/baseline.md
+?? docs/audits/2026-09-16/compiler/backend.md
+?? docs/audits/2026-09-16/compiler/parser.md
+?? docs/audits/2026-09-16/compiler/pipeline.md
+?? docs/audits/2026-09-16/compiler/safety.md
+?? docs/audits/2026-09-16/compiler/tokenizer.md
+?? docs/audits/2026-09-16/compiler/types.md
+?? docs/audits/2026-09-18/README.md
+?? docs/audits/2026-09-18/design-gaps.md
+?? docs/audits/2026-09-18/examples-tests.md
+?? docs/audits/2026-09-18/language-features.md
+?? docs/audits/2026-09-18/methods.md
+?? docs/audits/2026-09-18/production-readiness.md
+?? docs/audits/2026-09-18/stdlib.md
+?? docs/audits/2026-09-18/visibility-modules.md
+?? docs/audits/2026-09-19/README.md
+?? docs/audits/2026-09-19/browser/checks.json
+?? docs/audits/2026-09-19/browser/compiler-1440-final.png
+?? docs/audits/2026-09-19/browser/compiler-390-final.png
+?? docs/audits/2026-09-19/browser/home-1440-final.png
+?? docs/audits/2026-09-19/browser/home-390-final.png
+?? docs/audits/2026-09-19/browser/search-check.json
+?? docs/audits/2026-09-19/compiler-inventory.json
+?? docs/audits/2026-09-19/docs-link-check.json
+?? docs/audits/2026-09-19/followup-inputs.json
+?? docs/audits/2026-09-19/gate-inputs.json
+?? docs/audits/2026-09-19/gate-results.txt
+?? docs/audits/2026-09-19/glm-dependencies-review.md
+?? docs/audits/2026-09-19/glm-pipeline-review.md
+?? docs/audits/2026-09-19/glm-release-review.md
+?? docs/audits/2026-09-19/glm-secrets-review.md
+?? docs/audits/2026-09-19/glm-tooling-review.md
+?? docs/audits/2026-09-19/pdf-checks.json
+?? docs/audits/2026-09-19/site-link-check.json
+?? docs/audits/README.md
+?? docs/lang-safety/comparative/bend.md
+?? docs/plan/README.md
+?? docs/plan/audit/2026-09-16-inventory-repro.md
+?? docs/plan/audit/evidence/2026-09-16-ledger-part1.md
+?? docs/plan/audit/evidence/2026-09-16-ledger-part2.md
+?? docs/plan/audit/language-audit-checklist.md
+?? docs/plan/audit/language-evidence-map.md
+?? docs/plan/audit/language-interactions.md
+?? docs/plan/audit/open-items.md
+?? docs/plan/decisions.md
+?? docs/plan/execution.md
+?? docs/plan/fix-program/backend-fix-plan.md
+?? docs/plan/fix-program/frontend-fix-plan.md
+?? docs/plan/memory-brainstorm.md
+?? docs/plan/memory.md
+?? docs/plan/packets/P0-plan-confirmations.md
+?? docs/plan/packets/P0b-unsafe-programs.md
+?? docs/plan/research/CLAIMS.md
+?? docs/plan/research/CONCEPTS.md
+?? docs/plan/research/EVALUATION.md
+?? docs/plan/research/README.md
+?? docs/plan/research/ai-frameworks-codex.md
+?? docs/plan/research/bend-for-a7.md
+?? docs/plan/research/hardware-export/01-software-to-hardware.md
+?? docs/plan/research/hardware-export/README.md
+?? docs/plan/research/hardware-export/claims.md
+?? docs/plan/research/hardware-export/source-manifest.json
+?? docs/plan/research/hardware-providers-codex.md
+?? docs/plan/research/ir/README.md
+?? docs/plan/research/language-facilities/README.md
+?? docs/plan/research/language-features-codex.md
+?? docs/plan/research/live-environment/00-claims-audit.md
+?? docs/plan/research/live-environment/README.md
+?? docs/plan/research/memory-design-codex.md
+?? docs/plan/research/memory-security-glm.md
+?? docs/plan/research/memory/advice-fable.md
+?? docs/plan/research/memory/advice-glm.md
+?? docs/plan/research/memory/advice-grok.md
+?? docs/plan/research/memory/advice-prompt.md
+?? docs/plan/research/memory/audit/audit-1-values-moves-extents.md
+?? docs/plan/research/memory/audit/audit-2-collections-strings-exclusivity.md
+?? docs/plan/research/memory/audit/audit-3-concurrency-failure-native.md
+?? docs/plan/research/memory/audit/audit-4-tensors-autodiff.md
+?? docs/plan/research/memory/audit/audit-5-consistency-impact.md
+?? docs/plan/research/memory/edge-case-audit.md
+?? docs/plan/research/memory/functional-memory-fact-check.md
+?? docs/plan/research/memory/gemini-comparison.md
+?? docs/plan/research/memory/languages/carp-verify.md
+?? docs/plan/research/memory/languages/carp.md
+?? docs/plan/research/memory/languages/koka.md
+?? docs/plan/research/memory/languages/lean4.md
+?? docs/plan/research/memory/languages/roc.md
+?? docs/plan/research/memory/notes-a-lang-safety-01-04.md
+?? docs/plan/research/memory/notes-b-lang-safety-05-07.md
+?? docs/plan/research/memory/notes-c-decisions-handoff-modes.md
+?? docs/plan/research/memory/notes-d-conversions-narrowing-edge-cases.md
+?? docs/plan/research/memory/notes-e-comparative-languages.md
+?? docs/plan/research/memory/notes-f-plan-memory-research.md
+?? docs/plan/research/memory/notes-g-language-ai-hardware.md
+?? docs/plan/research/memory/notes-h-audits-pdfs-current-memory.md
+?? docs/plan/research/memory/reuse-languages.md
+?? docs/plan/research/memory/review-prompt.md
+?? docs/plan/research/memory/review/README.md
+?? docs/plan/research/memory/review/glm-ai.md
+?? docs/plan/research/memory/review/glm-architecture.md
+?? docs/plan/research/memory/review/glm-concurrency.md
+?? docs/plan/research/memory/review/glm-consistency.md
+?? docs/plan/research/memory/review/glm-contract.md
+?? docs/plan/research/memory/review/glm-docscheck.md
+?? docs/plan/research/memory/review/glm-performance.md
+?? docs/plan/research/memory/review/glm-security.md
+?? docs/plan/research/memory/review/glm-usermodel.md
+?? docs/plan/research/memory/review/kimi.md
+?? docs/plan/research/memory/review/qwen.md
+?? docs/plan/research/memory/synthesis.md
+?? docs/plan/research/modules-odin-zig-go.md
+?? docs/plan/research/numerical-policy-glm.md
+?? docs/plan/research/optimization/01-learned-optimization.md
+?? docs/plan/research/optimization/README.md
+?? docs/plan/research/ownership-zig-odin-glm.md
+?? docs/plan/research/runtime-model/00-claims-audit.md
+?? docs/plan/research/runtime-model/README.md
+?? docs/plan/research/runtime-model/claims.md
+?? docs/plan/research/runtime-model/source-manifest.json
+?? docs/plan/research/runtime-model/sources/claim1/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim2/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim3/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim4/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim5/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim6/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim7/SOURCES.md
+?? docs/plan/research/runtime-model/sources/claim8/SOURCES.md
+?? docs/plan/research/tooling/01-debug-info.md
+?? docs/plan/research/tooling/07-prevention-by-design.md
+?? docs/plan/research/tooling/08-agentic-debugging.md
+?? docs/plan/research/tooling/README.md
+?? site/content/diagrams.ts
+?? site/content/features.json
+?? site/content/legacy-anchors.json
+?? site/docs/agent-retrieval.md
+?? site/docs/audits/glm-5.3-final-repair-gate.log
+?? site/docs/audits/glm-5.3-final-site-check.log
+?? site/docs/audits/glm-5.3-final-source-snapshot.json
+?? site/docs/audits/glm-5.3-final-verification.json
+?? site/docs/audits/glm-5.3-flash-closure.md
+?? site/docs/audits/glm-5.3-flash-events.jsonl
+?? site/docs/audits/glm-5.3-flash-followup-events.jsonl
+?? site/docs/audits/glm-5.3-flash-followup-prompt.md
+?? site/docs/audits/glm-5.3-flash-followup-run.json
+?? site/docs/audits/glm-5.3-flash-followup-stderr.log
+?? site/docs/audits/glm-5.3-flash-full-review.md
+?? site/docs/audits/glm-5.3-flash-prompt.md
+?? site/docs/audits/glm-5.3-flash-run.json
+?? site/docs/audits/glm-5.3-flash-stderr.log
+?? site/docs/audits/glm-5.3-initial-repair-gate.log
+?? site/docs/audits/glm-5.3-language-controller-evidence/followup-results.json
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-compile.json
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-compile.stderr
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-narrow-binding-compile.json
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-narrow-binding-zig.txt
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-narrow-binding.a7
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-narrow-binding.zig
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width-zig.txt
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width.a7
+?? site/docs/audits/glm-5.3-language-controller-evidence/mixed-width.zig
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-compile.json
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-compile.stderr
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-unused-compile.json
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-unused-zig.txt
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-unused.a7
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion-unused.zig
+?? site/docs/audits/glm-5.3-language-controller-evidence/nested-recursion.a7
+?? site/docs/audits/glm-5.3-language-controller-evidence/results.json
+?? site/docs/audits/glm-5.3-language-events.jsonl
+?? site/docs/audits/glm-5.3-language-evidence/cases/a.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_abs_sub.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_arr_scalar_fill.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_braces_escape.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_braces_escape2.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_braces_space.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_math_abs_signed.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_string_len.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/a_typeset_alias.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_ellipsis_slice.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_fn_type_no_ret.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_long_if.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_multi_decl.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_multiline_array.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_no_main.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_range_for.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_recovery_drop.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/b_underscore_num.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_arr_to_slice.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_call_arg_u8.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_compound_div_signed.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_ifexpr_mixed.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_mixed_sign_cmp.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_mixed_width.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_neg_unsigned.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_partial_struct.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_return_u8.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/c_shift_neg.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_call_invalidates.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_del_braced_defer.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_guard_div_ok.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_join_gap.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_loop_defer_del.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_loop_no_fixedpoint.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/d_ref_nil_call.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_generic_struct_field.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_keyword_fn.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_main_sig.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_math_fn_value.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_module_struct_literal.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_nested_fn_dup.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_nested_fn_in_if.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_qualified_type.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/e_string_array_default.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/f_direct_recursion.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/f_false_recursion.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/f_nested_recursion.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_cast_divisor.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_cast_divisor2.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_cast_divisor3.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_char_order.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_const_arr_size.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_guard_index.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_match_no_else.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_ref_return.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_ref_swap.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_slice_len_guard.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/g_sqrt_f64.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/l3_float_rem.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/l5_wrap_test.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/shm.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/shm2.a7
+?? site/docs/audits/glm-5.3-language-evidence/cases/z_smoke.a7
+?? site/docs/audits/glm-5.3-language-evidence/out/a.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_abs_sub.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_abs_sub.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_abs_sub.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/a_abs_sub.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/a_arr_scalar_fill.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_arr_scalar_fill.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape2.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape2.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_escape2.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_space.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_braces_space.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_math_abs_signed.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_math_abs_signed.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_math_abs_signed.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/a_math_abs_signed.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/a_math_abs_signed.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/a_string_len.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_string_len.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/a_typeset_alias.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/a_typeset_alias.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/all-a7-runs.txt
+?? site/docs/audits/glm-5.3-language-evidence/out/b.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_ellipsis_slice.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_ellipsis_slice.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_fn_type_no_ret.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_fn_type_no_ret.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_fn_type_no_ret.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/b_fn_type_no_ret.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/b_fn_type_no_ret.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/b_long_if.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_long_if.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_long_if.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/b_multi_decl.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_multi_decl.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_multi_decl.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/b_multiline_array.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_multiline_array.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_no_main.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_no_main.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_no_main.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/b_range_for.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_range_for.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_recovery_drop.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_recovery_drop.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/b_underscore_num.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/b_underscore_num.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_arr_to_slice.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_arr_to_slice.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_call_arg_u8.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_call_arg_u8.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_compound_div_signed.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_compound_div_signed.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_compound_div_signed.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/c_compound_div_signed.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_ifexpr_mixed.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_ifexpr_mixed.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_sign_cmp.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_sign_cmp.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_sign_cmp.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_sign_cmp.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_sign_cmp.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_width.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_width.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_width.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_width.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/c_mixed_width.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_neg_unsigned.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_neg_unsigned.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_neg_unsigned.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/c_neg_unsigned.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_partial_struct.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_partial_struct.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_partial_struct.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/c_partial_struct.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/c_return_u8.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_return_u8.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_shift_neg.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/c_shift_neg.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/c_shift_neg.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/c_shift_neg.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/cyc_a.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/cyc_a.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/cyc_b.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/cyc_b.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_call_invalidates.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_call_invalidates.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_call_invalidates.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_call_invalidates.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_call_invalidates.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_del_braced_defer.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_del_braced_defer.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_del_braced_defer.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_del_braced_defer.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_del_braced_defer.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_guard_div_ok.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_guard_div_ok.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_guard_div_ok.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_guard_div_ok.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_guard_div_ok.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_join_gap.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_join_gap.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_join_gap.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_join_gap.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_join_gap.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_defer_del.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_defer_del.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_defer_del.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_defer_del.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_defer_del.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_no_fixedpoint.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_no_fixedpoint.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_no_fixedpoint.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_no_fixedpoint.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_loop_no_fixedpoint.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_ref_nil_call.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/d_ref_nil_call.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/d_ref_nil_call.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/d_ref_nil_call.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/d_ref_nil_call.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/e_generic_struct_field.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_generic_struct_field.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_keyword_fn.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_keyword_fn.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_keyword_fn.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/e_keyword_fn.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/e_main_sig.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_main_sig.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_main_sig.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/e_main_sig.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/e_math_fn_value.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_math_fn_value.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_math_fn_value.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/e_math_fn_value.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/e_module_struct_literal.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_module_struct_literal.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_nested_fn_dup.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_nested_fn_dup.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_nested_fn_in_if.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_nested_fn_in_if.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_qualified_type.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_qualified_type.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_string_array_default.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/e_string_array_default.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/e_string_array_default.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/e_string_array_default.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/f_direct_recursion.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/f_direct_recursion.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/f_false_recursion.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/f_false_recursion.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/f_false_recursion.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/f_false_recursion.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/f_nested_recursion.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/f_nested_recursion.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor2.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor2.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor2.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor2.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor2.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor3.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_cast_divisor3.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_char_order.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_char_order.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_const_arr_size.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_const_arr_size.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_guard_index.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_guard_index.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_match_no_else.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_match_no_else.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_match_no_else.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/g_match_no_else.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/g_ref_return.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_ref_return.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_ref_swap.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_ref_swap.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_slice_len_guard.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_slice_len_guard.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/g_sqrt_f64.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/g_sqrt_f64.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/l3_float_rem.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/l3_float_rem.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/l3_float_rem.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/l3_float_rem.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/l3_float_rem.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/l5_wrap_test.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/l5_wrap_test.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/l5_wrap_test.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/l5_wrap_test.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/l5_wrap_test.zigout
+?? site/docs/audits/glm-5.3-language-evidence/out/shm.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/shm.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/shm.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/z_smoke.a7err
+?? site/docs/audits/glm-5.3-language-evidence/out/z_smoke.a7out
+?? site/docs/audits/glm-5.3-language-evidence/out/z_smoke.runout
+?? site/docs/audits/glm-5.3-language-evidence/out/z_smoke.zig
+?? site/docs/audits/glm-5.3-language-evidence/out/z_smoke.zigout
+?? site/docs/audits/glm-5.3-language-evidence/repo-state-snapshot.txt
+?? site/docs/audits/glm-5.3-language-evidence/run_a7.sh
+?? site/docs/audits/glm-5.3-language-evidence/run_zig.sh
+?? site/docs/audits/glm-5.3-language-full-review.md
+?? site/docs/audits/glm-5.3-language-prompt.md
+?? site/docs/audits/glm-5.3-language-reconciliation.md
+?? site/docs/audits/glm-5.3-language-resume-events.jsonl
+?? site/docs/audits/glm-5.3-language-resume-prompt.md
+?? site/docs/audits/glm-5.3-language-resume-run.json
+?? site/docs/audits/glm-5.3-language-resume-stderr.log
+?? site/docs/audits/glm-5.3-language-review-backend-cli-modules.md
+?? site/docs/audits/glm-5.3-language-review-lexer-parser-internals.md
+?? site/docs/audits/glm-5.3-language-review-safety-semantic-passes.md
+?? site/docs/audits/glm-5.3-language-review-test-architecture.md
+?? site/docs/audits/glm-5.3-language-review-type-checker-internals.md
+?? site/docs/audits/glm-5.3-language-run.json
+?? site/docs/audits/glm-5.3-language-source-snapshot.json
+?? site/docs/audits/glm-5.3-language-source-verification.json
+?? site/docs/audits/glm-5.3-language-stderr.log
+?? site/docs/audits/glm-5.3-match-closure-events.jsonl
+?? site/docs/audits/glm-5.3-match-closure-prompt.md
+?? site/docs/audits/glm-5.3-match-closure-run.json
+?? site/docs/audits/glm-5.3-match-closure-stderr.log
+?? site/docs/audits/glm-5.3-match-closure.md
+?? site/docs/audits/glm-5.3-remediation-probes.json
+?? site/docs/audits/glm-5.3-remediation.md
+?? site/docs/audits/glm-5.3-repair-closure-events.jsonl
+?? site/docs/audits/glm-5.3-repair-closure-prompt.md
+?? site/docs/audits/glm-5.3-repair-closure-run.json
+?? site/docs/audits/glm-5.3-repair-closure-stderr.log
+?? site/docs/audits/glm-5.3-repair-closure.md
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_expr_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_expr_no_else_run.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_expr_wildcard_run.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_fall_braced_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/cases/m_no_else_unmatched.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-match-closure/run.sh
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/g_defer_del_read.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/g_loop_del_after.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/g_nil_resurrect.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_bool_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_expr_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_expr_no_else_run.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_fall_braced_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_fall_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/m_no_else_unmatched.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_backing_mut.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_elem_mut.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_index_mutated.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_index_mutated2.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_literal_bound.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/cases/s_while_len.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/out/all-results.txt
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/repo-state.txt
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-closure/run.sh
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_abs_sub.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_arr_scalar_fill.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_braces_escape.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_braces_escape2.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_braces_space.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_math_abs_signed.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_string_len.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/a_typeset_alias.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_ellipsis_slice.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_fn_type_no_ret.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_long_if.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_multi_decl.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_multiline_array.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_no_main.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_range_for.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_recovery_drop.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/b_underscore_num.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_arr_to_slice.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_call_arg_u8.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_compound_div_signed.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_ifexpr_mixed.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_mixed_sign_cmp.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_mixed_width.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_neg_unsigned.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_partial_struct.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_return_u8.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/c_shift_neg.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_call_invalidates.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_del_braced_defer.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_guard_div_ok.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_join_gap.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_loop_defer_del.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_loop_no_fixedpoint.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/d_ref_nil_call.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_generic_struct_field.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_keyword_fn.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_main_sig.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_math_fn_value.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_module_struct_literal.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_nested_fn_dup.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_nested_fn_in_if.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_qualified_type.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/e_string_array_default.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/f_direct_recursion.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/f_false_recursion.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/f_nested_recursion.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_cast_divisor.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_cast_divisor2.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_cast_divisor3.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_char_order.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_const_arr_size.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_guard_index.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_match_no_else.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_ref_return.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_ref_swap.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_slice_len_guard.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/g_sqrt_f64.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/l3_float_rem.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/l5_wrap_test.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_abs_min.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_char_order.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_json_match.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_mixed_sign_runtime.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_mixed_width_annot.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/n_unused_nested_rec.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/shm.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/shm2.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/cases/z_smoke.a7
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/out/all-a7-rerun.txt
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/out/final-a7-rerun.txt
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/out/n_json_ast.json
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/out/n_json_sem.json
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/repo-state.txt
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/run_a7.sh
+?? site/docs/audits/glm-5.3-repair-evidence/a7-glm53-repair-review/run_zig.sh
+?? site/docs/audits/glm-5.3-repair-review-events.jsonl
+?? site/docs/audits/glm-5.3-repair-review-prompt.md
+?? site/docs/audits/glm-5.3-repair-review-run.json
+?? site/docs/audits/glm-5.3-repair-review-stderr.log
+?? site/docs/audits/glm-5.3-repair-review.md
+?? site/docs/audits/ui-components-evidence/compiler-1440-light.png
+?? site/docs/audits/ui-components-evidence/compiler-390-dark.png
+?? site/docs/audits/ui-components-evidence/copy-failure-320-light.png
+?? site/docs/audits/ui-components-evidence/glm-browser-check.mjs
+?? site/docs/audits/ui-components-evidence/glm-browser-check2.mjs
+?? site/docs/audits/ui-components-evidence/glm-closure-browser-results.json
+?? site/docs/audits/ui-components-evidence/glm-closure-check.mjs
+?? site/docs/audits/ui-components-evidence/glm-fresh-browser-results-2.json
+?? site/docs/audits/ui-components-evidence/glm-fresh-browser-results.json
+?? site/docs/audits/ui-components-evidence/release-gate.log
+?? site/docs/audits/ui-components-evidence/results.json
+?? site/docs/audits/ui-components-evidence/search-1440-light.png
+?? site/docs/audits/ui-components-evidence/site-check-after-review.log
+?? site/docs/audits/ui-components-evidence/site-check.log
+?? site/docs/audits/ui-components-evidence/targeted-followup.json
+?? site/docs/audits/ui-components-evidence/theme-verification.json
+?? site/docs/audits/ui-components.md
+?? site/docs/browser-verification.md
+?? site/docs/content-probes.json
+?? site/docs/content-verification.md
+?? site/docs/coverage.md
+?? site/docs/evidence/agent-retrieval.json
+?? site/docs/evidence/all-pages.json
+?? site/docs/evidence/blocked-fonts-390.png
+?? site/docs/evidence/compiler-1440-light.png
+?? site/docs/evidence/compiler-390-light.png
+?? site/docs/evidence/contrast.json
+?? site/docs/evidence/export-checks.json
+?? site/docs/evidence/final-polish.json
+?? site/docs/evidence/font-loading.json
+?? site/docs/evidence/full-release-gate.log
+?? site/docs/evidence/home-1024-dark.png
+?? site/docs/evidence/home-1024-light.png
+?? site/docs/evidence/home-1440-dark.png
+?? site/docs/evidence/home-1440-light.png
+?? site/docs/evidence/home-320-dark.png
+?? site/docs/evidence/home-320-light.png
+?? site/docs/evidence/home-390-dark.png
+?? site/docs/evidence/home-390-light.png
+?? site/docs/evidence/home-768-dark.png
+?? site/docs/evidence/home-768-light.png
+?? site/docs/evidence/interaction-results.json
+?? site/docs/evidence/language-memory-1440-light.png
+?? site/docs/evidence/language-memory-390-light.png
+?? site/docs/evidence/no-js-navigation-390.png
+?? site/docs/evidence/reference-smoke.a7
+?? site/docs/evidence/reference-smoke.txt
+?? site/docs/evidence/site-check.log
+?? site/docs/evidence/standalone-snippets.json
+?? site/docs/evidence/text-200-percent-320.png
+?? site/docs/evidence/text-spacing-320.png
+?? site/docs/evidence/viewport-results.json
+?? site/docs/examples-verification.json
+?? site/docs/reference-probes.json
+?? site/docs/research-decisions.md
+?? site/docs/verification.md
+?? site/docs/verify-content.py
+?? site/docs/verify-reference-content.py
+?? site/docs/verify-snippets.py
+?? site/public/docs/examples.md
+?? site/public/docs/language/aggregate-types.md
+?? site/public/docs/language/arrays-strings.md
+?? site/public/docs/language/builtins.md
+?? site/public/docs/language/control-flow.md
+?? site/public/docs/language/declarations.md
+?? site/public/docs/language/functions.md
+?? site/public/docs/language/generics.md
+?? site/public/docs/language/memory.md
+?? site/public/docs/language/modules.md
+?? site/public/docs/language/operators.md
+?? site/public/docs/language/syntax.md
+?? site/public/docs/language/types.md
+?? site/public/docs/manifest.json
+?? site/public/docs/tour.md
+?? site/scripts/check-coverage.py
+?? site/scripts/check-links.ts
+?? site/scripts/content.ts
+?? site/scripts/exports.ts
+?? site/scripts/icons.ts
+?? site/scripts/markdown-links.ts
+?? site/scripts/publishing.test.ts
+?? site/scripts/search.ts
+?? site/scripts/serve.test.ts
+?? site/tsconfig.json
+?? test/fixtures/safety_regressions/call_delete_guard.a7
+?? test/fixtures/safety_regressions/d_call_invalidates.a7
+?? test/fixtures/safety_regressions/d_del_braced_defer.a7
+?? test/fixtures/safety_regressions/d_join_gap.a7
+?? test/fixtures/safety_regressions/d_loop_defer_del.a7
+?? test/fixtures/safety_regressions/d_loop_no_fixedpoint.a7
+?? test/fixtures/safety_regressions/d_ref_nil_call.a7
+?? test/fixtures/safety_regressions/deferred_delete_guard.a7
+?? test/fixtures/safety_regressions/loop_call_delete_guard.a7
+?? test/fixtures/safety_regressions/loop_delete_guard.a7
+?? test/norec_scan.py
+?? test/test_audit_backend_repairs.py
+?? test/test_audit_safety_repairs.py
+?? test/test_audit_type_boundaries.py
+?? test/test_compound_assignment_types.py
+?? test/test_constant_folding_exact.py
+?? test/test_float_nonfinite_folding.py
+?? test/test_language_audit_json_formatter.py
+?? test/test_language_audit_match_coverage.py
+?? test/test_language_audit_parser_fixes.py
+?? test/test_module_alias_shadowing.py
+?? test/test_no_recursion.py
+?? test/test_parse_termination.py
+?? test/test_pipeline_artifacts.py
+?? test/test_pipeline_diagnostics.py
+?? test/test_pipeline_native.py
+?? test/test_recursion_detection_scaling.py
+?? test/test_safety_precursors.py
+?? test/test_stdlib_call_resolution.py
+?? test/test_zig_backend_runtime.py

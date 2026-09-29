@@ -1,0 +1,12 @@
+io :: import "std/io"
+
+sum :: fn(s: []i32) i32 {
+    t: i32 = 0
+    ret t
+}
+
+main :: fn() {
+    arr: [3]i32 = [1, 2, 3]
+    r := sum(arr)
+    io.println("{}", r)
+}

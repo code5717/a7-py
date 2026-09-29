@@ -1,0 +1,36 @@
+{
+  "checked": 264,
+  "issues": [],
+  "http": [
+    {
+      "route": "/a7-py/",
+      "status": 200,
+      "bytes": 16621
+    },
+    {
+      "route": "/a7-py/status/",
+      "status": 200,
+      "bytes": 9202
+    },
+    {
+      "route": "/a7-py/language/",
+      "status": 200,
+      "bytes": 10094
+    },
+    {
+      "route": "/a7-py/llms.txt",
+      "status": 200,
+      "bytes": 1358
+    },
+    {
+      "route": "/a7-py/llms-full.txt",
+      "status": 200,
+      "bytes": 15401
+    },
+    {
+      "route": "/a7-py/docs/index.md",
+      "status": 200,
+      "bytes": 2050
+    }
+  ]
+}

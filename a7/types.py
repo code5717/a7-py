@@ -4,7 +4,7 @@ Type system for A7 semantic analysis.
 Provides type representation, type checking, and type compatibility analysis.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import Optional, List, Dict, Any, Tuple
 from enum import Enum, auto
 
@@ -158,15 +158,18 @@ class ArrayType(Type):
         object.__setattr__(self, 'size', size)
 
     def equals(self, other: Type) -> bool:
-        return (isinstance(other, ArrayType) and
-                self.size == other.size and
-                self.element_type.equals(other.element_type))
+        return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
-        return f"[{self.size}]{self.element_type}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        return hash(('array', hash(self.element_type), self.size))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -179,13 +182,18 @@ class SliceType(Type):
         object.__setattr__(self, 'element_type', element_type)
 
     def equals(self, other: Type) -> bool:
-        return isinstance(other, SliceType) and self.element_type.equals(other.element_type)
+        return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
-        return f"[]{self.element_type}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        return hash(('slice', hash(self.element_type)))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -198,13 +206,18 @@ class PointerType(Type):
         object.__setattr__(self, 'pointee_type', pointee_type)
 
     def equals(self, other: Type) -> bool:
-        return isinstance(other, PointerType) and self.pointee_type.equals(other.pointee_type)
+        return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
-        return f"ptr {self.pointee_type}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        return hash(('pointer', hash(self.pointee_type)))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -217,13 +230,18 @@ class ReferenceType(Type):
         object.__setattr__(self, 'referent_type', referent_type)
 
     def equals(self, other: Type) -> bool:
-        return isinstance(other, ReferenceType) and self.referent_type.equals(other.referent_type)
+        return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
-        return f"ref {self.referent_type}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        return hash(('reference', hash(self.referent_type)))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -247,35 +265,18 @@ class FunctionType(Type):
         object.__setattr__(self, 'generic_param_order', tuple(generic_param_order or ()))
 
     def equals(self, other: Type) -> bool:
-        if not isinstance(other, FunctionType):
-            return False
-
-        if len(self.param_types) != len(other.param_types):
-            return False
-
-        if not all(p1.equals(p2) for p1, p2 in zip(self.param_types, other.param_types)):
-            return False
-
-        if self.return_type is None and other.return_type is None:
-            return True
-
-        if self.return_type is None or other.return_type is None:
-            return False
-
-        return self.return_type.equals(other.return_type)
+        return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
-        params = ', '.join(str(p) for p in self.param_types)
-        if self.is_variadic:
-            if self.variadic_type:
-                params += f', ..{self.variadic_type}' if params else f'..{self.variadic_type}'
-            else:
-                params += ', ..' if params else '..'
-        ret = f' {self.return_type}' if self.return_type else ''
-        return f"fn({params}){ret}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        return hash(('function', self.param_types, hash(self.return_type) if self.return_type else None, self.generic_param_order))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -285,7 +286,12 @@ class StructField:
     field_type: Type
 
     def __hash__(self) -> int:
-        return hash((self.name, hash(self.field_type)))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -307,19 +313,7 @@ class StructType(Type):
         object.__setattr__(self, 'generic_params', generic_params)
 
     def equals(self, other: Type) -> bool:
-        if not isinstance(other, StructType):
-            return False
-
-        # Named structs: compare by name
-        if self.name and other.name:
-            return self.name == other.name
-
-        # Anonymous structs: compare structurally
-        if len(self.fields) != len(other.fields):
-            return False
-
-        return all(f1.name == f2.name and f1.field_type.equals(f2.field_type)
-                  for f1, f2 in zip(self.fields, other.fields))
+        return _compare_types(self, other, semantic=True)
 
     def get_field(self, name: str) -> Optional[StructField]:
         """Get field by name."""
@@ -329,19 +323,15 @@ class StructType(Type):
         return None
 
     def __str__(self) -> str:
-        if self.name:
-            if self.generic_params:
-                params = ', '.join(self.generic_params)
-                return f"{self.name}({params})"
-            return self.name
-        # Anonymous struct
-        field_strs = ', '.join(f"{f.name}: {f.field_type}" for f in self.fields)
-        return f"struct {{ {field_strs} }}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        if self.name:
-            return hash(('struct', self.name))
-        return hash(('struct', self.fields))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -388,7 +378,12 @@ class UnionField:
     field_type: Type
 
     def __hash__(self) -> int:
-        return hash((self.name, hash(self.field_type)))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -420,6 +415,11 @@ class UnionType(Type):
     def __hash__(self) -> int:
         return hash(('union', self.name))
 
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
+
 
 @dataclass(frozen=True)
 class GenericParamType(Type):
@@ -436,12 +436,15 @@ class GenericParamType(Type):
         return isinstance(other, GenericParamType) and self.name == other.name
 
     def __str__(self) -> str:
-        if self.constraint:
-            return f"${self.name}: {self.constraint}"
-        return f"${self.name}"
+        return _format_type(self)
 
     def __hash__(self) -> int:
         return hash(('generic_param', self.name))
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -458,19 +461,18 @@ class GenericInstanceType(Type):
         object.__setattr__(self, 'type_args', type_args)
 
     def equals(self, other: Type) -> bool:
-        if not isinstance(other, GenericInstanceType):
-            return False
-
-        return (self.base_name == other.base_name and
-                len(self.type_args) == len(other.type_args) and
-                all(t1.equals(t2) for t1, t2 in zip(self.type_args, other.type_args)))
+        return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
-        args = ', '.join(str(t) for t in self.type_args)
-        return f"{self.base_name}({args})"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        return hash(('generic_instance', self.base_name, self.type_args))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -485,26 +487,22 @@ class TypeSet(Type):
         object.__setattr__(self, 'name', name)
 
     def equals(self, other: Type) -> bool:
-        if not isinstance(other, TypeSet):
-            return False
-        if self.name and other.name:
-            return self.name == other.name
-        return self.types == other.types
+        return _compare_types(self, other, semantic=True)
 
     def contains(self, type_: Type) -> bool:
         """Check if a type is in this type set."""
         return any(type_.equals(t) for t in self.types)
 
     def __str__(self) -> str:
-        if self.name:
-            return self.name
-        type_strs = ', '.join(str(t) for t in sorted(self.types, key=str))
-        return f"@type_set({type_strs})"
+        return _format_type(self)
 
     def __hash__(self) -> int:
-        if self.name:
-            return hash(('type_set', self.name))
-        return hash(('type_set', self.types))
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
 
 
 @dataclass(frozen=True)
@@ -543,6 +541,351 @@ class VoidType(Type):
 
     def __hash__(self) -> int:
         return hash('void')
+
+
+def _format_type(root: Type) -> str:
+    """Render types into fragments without retaining every nested spelling.
+
+    Only unnamed type-set members need separate strings for sorting. Named
+    records terminate at their name. Structural cycles retain the previous
+    RecursionError outcome instead of inventing a recursive type spelling.
+    """
+    output: List[str] = []
+    active: set[int] = set()
+    pending = [("visit", root, output)]
+    while pending:
+        action, node, target = pending.pop()
+        if action == "leave":
+            active.remove(node)
+            continue
+        if action == "sort":
+            target.append(", ".join(sorted("".join(member) for member in node)))
+            continue
+        if isinstance(node, str):
+            target.append(node)
+            continue
+
+        identity = id(node)
+        if identity in active:
+            raise RecursionError("Cannot render a structural cycle in a type")
+        active.add(identity)
+        pending.append(("leave", identity, target))
+
+        if isinstance(node, PrimitiveType):
+            parts = [node.name]
+        elif isinstance(node, ArrayType):
+            parts = [f"[{node.size}]", node.element_type]
+        elif isinstance(node, SliceType):
+            parts = ["[]", node.element_type]
+        elif isinstance(node, PointerType):
+            parts = ["ptr ", node.pointee_type]
+        elif isinstance(node, ReferenceType):
+            parts = ["ref ", node.referent_type]
+        elif isinstance(node, FunctionType):
+            parts = ["fn("]
+            for index, param in enumerate(node.param_types):
+                if index:
+                    parts.append(", ")
+                parts.append(param)
+            if node.is_variadic:
+                parts.append(", .." if node.param_types else "..")
+                if node.variadic_type:
+                    parts.append(node.variadic_type)
+            parts.append(")")
+            if node.return_type:
+                parts.extend([" ", node.return_type])
+        elif isinstance(node, StructType):
+            if node.name:
+                parts = [node.name]
+                if node.generic_params:
+                    parts.extend(["(", ", ".join(node.generic_params), ")"])
+            else:
+                parts = ["struct { "]
+                for index, field in enumerate(node.fields):
+                    if index:
+                        parts.append(", ")
+                    parts.extend([field.name, ": ", field.field_type])
+                parts.append(" }")
+        elif isinstance(node, (EnumType, UnionType)):
+            parts = [node.name]
+        elif isinstance(node, GenericParamType):
+            parts = ["$", node.name]
+            if node.constraint:
+                parts.extend([": ", node.constraint])
+        elif isinstance(node, GenericInstanceType):
+            parts = [node.base_name, "("]
+            for index, arg in enumerate(node.type_args):
+                if index:
+                    parts.append(", ")
+                parts.append(arg)
+            parts.append(")")
+        elif isinstance(node, TypeSet):
+            if node.name:
+                parts = [node.name]
+            elif len(node.types) <= 1:
+                parts = ["@type_set(", *node.types, ")"]
+            else:
+                # Render each member separately, then append it in spelling
+                # order. Keep ordinary nested types as fragments throughout.
+                members = [[] for _ in node.types]
+                target.append("@type_set(")
+                pending.append(("visit", ")", target))
+                pending.append(("sort", members, target))
+                pending.extend(("visit", member, fragments)
+                               for member, fragments in zip(node.types, members))
+                continue
+        elif isinstance(node, UnknownType):
+            parts = ["unknown type"]
+        elif isinstance(node, VoidType):
+            parts = ["void"]
+        else:
+            raise NotImplementedError(f"__str__ not implemented for {node.__class__.__name__}")
+        pending.extend(("visit", part, target) for part in reversed(parts))
+    return "".join(output)
+
+
+def _comparison_plan(left, right, semantic):
+    """Describe one comparison without invoking child equality methods."""
+    def pair(a, b, language=False):
+        return ('pair', a, b, language)
+
+    if not semantic:
+        # Python containers skip equality for identical elements. Dataclass
+        # equality compares tuples of fields, so it has the same shortcut.
+        if left is right:
+            return True
+        if isinstance(left, (Type, StructField, UnionField, EnumVariant)):
+            if left.__class__ is not right.__class__:
+                return False
+            return ('all', [pair(getattr(left, f.name), getattr(right, f.name))
+                            for f in fields(left) if f.compare])
+        if isinstance(left, (tuple, list)):
+            if not isinstance(right, type(left)) or len(left) != len(right):
+                return False
+            return ('all', [pair(a, b) for a, b in zip(left, right)])
+        if isinstance(left, (set, frozenset)):
+            if not isinstance(right, (set, frozenset)) or len(left) != len(right):
+                return False
+            # Set membership uses hashes and Python equality, not .equals().
+            buckets = {}
+            for member in right:
+                buckets.setdefault(_hash_type(member, honor_override=True), []).append(member)
+            return ('all', [('any', [pair(a, b) for b in buckets.get(_hash_type(a, honor_override=True), ())])
+                            for a in left])
+        return left == right
+
+    category = next((cls for cls in (PrimitiveType, EnumType, UnionType, GenericParamType,
+                                    UnknownType, VoidType, ArrayType, SliceType, PointerType,
+                                    ReferenceType, FunctionType, StructType, GenericInstanceType,
+                                    TypeSet) if isinstance(left, cls)), Type)
+    if isinstance(left, (PrimitiveType, EnumType, UnionType, GenericParamType)):
+        return isinstance(right, category) and left.name == right.name
+    if isinstance(left, (UnknownType, VoidType)):
+        return isinstance(right, category)
+    if not isinstance(right, category):
+        return False
+    if isinstance(left, ArrayType):
+        return ('all', [pair(left.size, right.size), pair(left.element_type, right.element_type, True)])
+    if isinstance(left, SliceType):
+        return pair(left.element_type, right.element_type, True)
+    if isinstance(left, PointerType):
+        return pair(left.pointee_type, right.pointee_type, True)
+    if isinstance(left, ReferenceType):
+        return pair(left.referent_type, right.referent_type, True)
+    if isinstance(left, FunctionType):
+        if len(left.param_types) != len(right.param_types):
+            return False
+        children = [pair(a, b, True) for a, b in zip(left.param_types, right.param_types)]
+        children.append(pair(left.return_type, right.return_type,
+                             left.return_type is not None and right.return_type is not None))
+        return ('all', children)
+    if isinstance(left, StructType):
+        if left.name and right.name:
+            return left.name == right.name
+        if len(left.fields) != len(right.fields):
+            return False
+        children = []
+        for a, b in zip(left.fields, right.fields):
+            children.extend([pair(a.name, b.name), pair(a.field_type, b.field_type, True)])
+        return ('all', children)
+    if isinstance(left, GenericInstanceType):
+        if left.base_name != right.base_name or len(left.type_args) != len(right.type_args):
+            return False
+        return ('all', [pair(a, b, True) for a, b in zip(left.type_args, right.type_args)])
+    if isinstance(left, TypeSet):
+        if left.name and right.name:
+            return left.name == right.name
+        return pair(left.types, right.types)
+    raise NotImplementedError(f"equals not implemented for {left.__class__.__name__}")
+
+
+def _compare_types(left, right, semantic):
+    """Evaluate ordered pairs with short circuiting and an explicit work stack.
+
+    Actual structural cycles retain RecursionError. Named language comparisons
+    terminate at names; Python equality retains container identity shortcuts.
+    No coinductive equality for recursive structural types is introduced.
+    """
+    work = [('pair', left, right, semantic)]
+    active = set()
+    completed = {}
+    result = True
+    first_pair = True
+    while work:
+        task = work.pop()
+        action = task[0]
+        if action == 'done':
+            active.remove(task[1])
+            completed[task[1]] = result
+        elif action == 'next':
+            _, iterator, conjunction = task
+            if result != conjunction:
+                continue
+            child = next(iterator, None)
+            if child is not None:
+                work.append(task)
+                work.append(child)
+        elif action in ('all', 'any'):
+            result = action == 'all'
+            work.append(('next', iter(task[1]), result))
+        else:
+            _, a, b, language = task
+            # Preserve extension methods on nested types. A root call may be
+            # super().__eq__/equals from such a method, so do not redispatch it.
+            method = getattr(type(a), 'equals' if language else '__eq__', None)
+            custom_left = (isinstance(a, (Type, StructField, UnionField, EnumVariant))
+                           and method not in _TYPE_COMPARISON_METHODS)
+            custom_right = (not language and isinstance(b, (Type, StructField, UnionField, EnumVariant))
+                            and type(b).__eq__ not in _TYPE_COMPARISON_METHODS)
+            if not first_pair and (custom_left or custom_right):
+                result = method(a, b) if language else (a is b or a == b)
+                continue
+            first_pair = False
+            key = (id(a), id(b), language)
+            if key in completed:
+                result = completed[key]
+                continue
+            if key in active:
+                raise RecursionError('Cannot compare a structural cycle in a type')
+            plan = _comparison_plan(a, b, language)
+            if isinstance(plan, bool):
+                result = plan
+                continue
+            active.add(key)
+            work.append(('done', key))
+            work.append(plan)
+    return result
+
+
+class _TypeHashValue:
+    """A child object's hash for Python's native tuple hash algorithm."""
+    __slots__ = ('value',)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __hash__(self):
+        return self.value
+
+
+def _hash_type(root, honor_override=False):
+    """Hash children bottom up, preserving the original tuple payloads.
+
+    Some payloads contain hash(child) integers, others contain child objects.
+    Keep that distinction: hash(an_integer_hash) need not equal that integer.
+    Frozen sets already cache member hashes, so their native hash is safe.
+    """
+    pending = [('visit', root)]
+    active = set()
+    computed = {}
+    first_node = True
+    while pending:
+        action, node, *rest = pending.pop()
+        identity = id(node)
+        if action == 'finish':
+            parts, children = rest
+            for index, child, as_integer in children:
+                value = computed[id(child)]
+                parts[index] = value if as_integer else _TypeHashValue(value)
+            computed[identity] = hash(tuple(parts))
+            active.remove(identity)
+            continue
+        if identity in computed:
+            continue
+        if honor_override or not first_node:
+            method = getattr(type(node), '__hash__', None)
+            if isinstance(node, (Type, StructField, UnionField, EnumVariant)) and method not in _TYPE_HASH_METHODS:
+                if method is None:
+                    raise TypeError(f"unhashable type: '{type(node).__name__}'")
+                computed[identity] = hash(_TypeHashValue(method(node)))
+                continue
+        first_node = False
+        if identity in active:
+            raise RecursionError('Cannot hash a structural cycle in a type')
+        children = []
+        if isinstance(node, ArrayType):
+            parts = ['array', None, node.size]
+            children = [(1, node.element_type, True)]
+        elif isinstance(node, (SliceType, PointerType, ReferenceType)):
+            if isinstance(node, SliceType):
+                tag, child = 'slice', node.element_type
+            elif isinstance(node, PointerType):
+                tag, child = 'pointer', node.pointee_type
+            else:
+                tag, child = 'reference', node.referent_type
+            parts = [tag, None]
+            children = [(1, child, True)]
+        elif isinstance(node, FunctionType):
+            parts = ['function', None, None, node.generic_param_order]
+            children = [(1, node.param_types, False)]
+            if node.return_type:
+                children.append((2, node.return_type, True))
+        elif isinstance(node, (StructField, UnionField)):
+            parts = [node.name, None]
+            children = [(1, node.field_type, True)]
+        elif isinstance(node, StructType):
+            parts = ['struct', node.name if node.name else None]
+            if not node.name:
+                children = [(1, node.fields, False)]
+        elif isinstance(node, GenericInstanceType):
+            parts = ['generic_instance', node.base_name, None]
+            children = [(2, node.type_args, False)]
+        elif isinstance(node, TypeSet):
+            parts = ['type_set', node.name if node.name else node.types]
+        elif isinstance(node, (PrimitiveType, EnumType, UnionType, GenericParamType)):
+            tag = next(label for cls, label in ((PrimitiveType, 'primitive'),
+                       (EnumType, 'enum'), (UnionType, 'union'),
+                       (GenericParamType, 'generic_param')) if isinstance(node, cls))
+            parts = [tag, node.name]
+        elif isinstance(node, EnumVariant):
+            parts = [node.name, node.value]
+        elif isinstance(node, (UnknownType, VoidType)):
+            computed[identity] = hash('unknown' if isinstance(node, UnknownType) else 'void')
+            continue
+        elif isinstance(node, tuple):
+            parts = [None] * len(node)
+            children = [(i, child, False) for i, child in enumerate(node)]
+        elif isinstance(node, Type):
+            raise NotImplementedError(f"__hash__ not implemented for {node.__class__.__name__}")
+        else:
+            computed[identity] = hash(node)
+            continue
+        active.add(identity)
+        pending.append(('finish', node, parts, children))
+        pending.extend(('visit', child) for _, child, _ in reversed(children))
+    return computed[id(root)]
+
+
+# Recognize inherited built-in methods while leaving extension overrides intact.
+_TYPE_CLASSES = (Type, PrimitiveType, ArrayType, SliceType, PointerType,
+                 ReferenceType, FunctionType, StructField, StructType,
+                 EnumVariant, EnumType, UnionField, UnionType, GenericParamType,
+                 GenericInstanceType, TypeSet, UnknownType, VoidType)
+_TYPE_COMPARISON_METHODS = frozenset(
+    method for cls in _TYPE_CLASSES for name in ('equals', '__eq__')
+    if (method := getattr(cls, name, None)) is not None
+)
+_TYPE_HASH_METHODS = frozenset(cls.__hash__ for cls in _TYPE_CLASSES)
 
 
 # Predefined type instances (singletons)

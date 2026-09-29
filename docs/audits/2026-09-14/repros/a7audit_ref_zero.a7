@@ -1,0 +1,5 @@
+io :: import "std/io"
+zero :: fn(x: ref i32) { x = 0 }
+main :: fn() { d: i32 = 1
+ zero(d)
+ io.println("{}", 10 / d) }

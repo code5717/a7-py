@@ -1,0 +1,41 @@
+{
+  "baseline_files": 69,
+  "unchanged_files": 64,
+  "missing": [],
+  "changed": [
+    {
+      "path": "README.md",
+      "removed_lines": []
+    },
+    {
+      "path": "docs/SPEC.md",
+      "removed_lines": [
+        "1. [Introduction](#introduction)",
+        "2. [Lexical Structure](#lexical-structure)",
+        "3. [Type System](#type-system)",
+        "4. [Declarations and Expressions](#declarations-and-expressions)",
+        "5. [Control Flow](#control-flow)",
+        "6. [Functions](#functions)",
+        "7. [Generics](#generics)",
+        "8. [Memory Management](#memory-management)",
+        "9. [Planned Array Programming for AI](#planned-array-programming-for-ai)",
+        "10. [Modules and Visibility](#modules-and-visibility)",
+        "11. [Built-in Functions and Operators](#built-in-functions-and-operators)",
+        "12. [Tokens and AST Components](#tokens-and-ast-components)",
+        "13. [Grammar Summary](#grammar-summary)"
+      ]
+    },
+    {
+      "path": "docs/lang-safety/README.md",
+      "removed_lines": []
+    },
+    {
+      "path": "site/public/docs/index.md",
+      "removed_lines": []
+    },
+    {
+      "path": "site/public/llms-full.txt",
+      "removed_lines": []
+    }
+  ]
+}

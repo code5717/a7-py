@@ -1,0 +1,6 @@
+sh :: import "./shm2"
+
+main :: fn() {
+    c := sh.Counter{value: 1}
+    x := c.value
+}

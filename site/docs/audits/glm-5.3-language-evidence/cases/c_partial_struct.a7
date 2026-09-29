@@ -1,0 +1,8 @@
+Counter :: struct {
+    value: i32
+    count: i32
+}
+
+main :: fn() {
+    c := Counter{value: 0}
+}

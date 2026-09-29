@@ -1,0 +1,11 @@
+Segmentation fault at address 0x7f021e64d000
+/tmp/a7-glm53-language-audit/out/d_del_braced_defer.zig:18:8: 0x11d2e94 in main (d_del_braced_defer.zig)
+    b.?.value = 2;
+       ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:698:59: 0x11d26b1 in callMain (std.zig)
+    if (fn_info.params.len == 0) return wrapMain(root.main());
+                                                          ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:190:5: 0x11d20e1 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+timeout: the monitored command dumped core

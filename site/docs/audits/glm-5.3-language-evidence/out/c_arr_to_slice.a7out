@@ -1,0 +1,17 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Argument type mismatch: expected '[]i32', got '[3]i32' (Argument 1) [line
+10: col 10]
+────────────────────────────────────────────────────────────────────────────────
+   8 ┃ main :: fn() {
+   9 ┃     arr: [3]i32 = [1, 2, 3]
+  10 ┃     r := sum(arr)
+     ┃          └─┘
+  11 ┃     io.println("{}", r)
+  12 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure argument types match parameter types
+

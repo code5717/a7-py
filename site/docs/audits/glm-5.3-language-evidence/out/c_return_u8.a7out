@@ -1,0 +1,15 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Return type mismatch: expected 'u8', got 'i32' [line 2: col 5]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ g :: fn() u8 {
+   2 ┃     ret 200
+     ┃     └─┘
+   3 ┃ }
+   4 ┃ 
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Return value must match the function's return type
+

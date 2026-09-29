@@ -1,0 +1,274 @@
+{
+  "zig": "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+  "version": "0.16.0",
+  "cases": [
+    {
+      "case": "i8_plus_literal",
+      "profile": "Debug",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/i8_plus_literal.zig",
+          "-O",
+          "Debug",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/i8_plus_literal-Debug"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "tmp/untyped-constants-review/i8_plus_literal.zig:17:26: error: type 'i8' cannot represent integer value '200'\n    const n: i32 = (x +% 200);\n                         ^~~\nreferenced by:\n    main: tmp/untyped-constants-review/i8_plus_literal.zig:11:19\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n"
+      }
+    },
+    {
+      "case": "i8_plus_literal",
+      "profile": "ReleaseFast",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/i8_plus_literal.zig",
+          "-O",
+          "ReleaseFast",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/i8_plus_literal-ReleaseFast"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "tmp/untyped-constants-review/i8_plus_literal.zig:17:26: error: type 'i8' cannot represent integer value '200'\n    const n: i32 = (x +% 200);\n                         ^~~\nreferenced by:\n    main: tmp/untyped-constants-review/i8_plus_literal.zig:11:19\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n"
+      }
+    },
+    {
+      "case": "i8_plus_named_constant",
+      "profile": "Debug",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/i8_plus_named_constant.zig",
+          "-O",
+          "Debug",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/i8_plus_named_constant-Debug"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "tmp/untyped-constants-review/i8_plus_named_constant.zig:19:26: error: type 'i8' cannot represent integer value '200'\n    const n: i32 = (x +% K);\n                         ^\nreferenced by:\n    main: tmp/untyped-constants-review/i8_plus_named_constant.zig:11:19\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n"
+      }
+    },
+    {
+      "case": "i8_plus_named_constant",
+      "profile": "ReleaseFast",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/i8_plus_named_constant.zig",
+          "-O",
+          "ReleaseFast",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/i8_plus_named_constant-ReleaseFast"
+        ],
+        "exit": 1,
+        "stdout": "",
+        "stderr": "tmp/untyped-constants-review/i8_plus_named_constant.zig:19:26: error: type 'i8' cannot represent integer value '200'\n    const n: i32 = (x +% K);\n                         ^\nreferenced by:\n    main: tmp/untyped-constants-review/i8_plus_named_constant.zig:11:19\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n"
+      }
+    },
+    {
+      "case": "f32_plus_literal",
+      "profile": "Debug",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/f32_plus_literal.zig",
+          "-O",
+          "Debug",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_literal-Debug"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_literal-Debug"
+        ],
+        "exit": 0,
+        "stdout": "inf\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "f32_plus_literal",
+      "profile": "ReleaseFast",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/f32_plus_literal.zig",
+          "-O",
+          "ReleaseFast",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_literal-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_literal-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "inf\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "f32_plus_named_constant",
+      "profile": "Debug",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/f32_plus_named_constant.zig",
+          "-O",
+          "Debug",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_named_constant-Debug"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_named_constant-Debug"
+        ],
+        "exit": 0,
+        "stdout": "inf\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "f32_plus_named_constant",
+      "profile": "ReleaseFast",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/f32_plus_named_constant.zig",
+          "-O",
+          "ReleaseFast",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_named_constant-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/f32_plus_named_constant-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "inf\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "integer_div_to_f64",
+      "profile": "Debug",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/integer_div_to_f64.zig",
+          "-O",
+          "Debug",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/integer_div_to_f64-Debug"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/integer_div_to_f64-Debug"
+        ],
+        "exit": 0,
+        "stdout": "2\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "integer_div_to_f64",
+      "profile": "ReleaseFast",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/integer_div_to_f64.zig",
+          "-O",
+          "ReleaseFast",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/integer_div_to_f64-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/integer_div_to_f64-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "2\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "float_div_to_f64",
+      "profile": "Debug",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/float_div_to_f64.zig",
+          "-O",
+          "Debug",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/float_div_to_f64-Debug"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/float_div_to_f64-Debug"
+        ],
+        "exit": 0,
+        "stdout": "2.5\n",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "float_div_to_f64",
+      "profile": "ReleaseFast",
+      "build": {
+        "command": [
+          "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+          "build-exe",
+          "tmp/untyped-constants-review/float_div_to_f64.zig",
+          "-O",
+          "ReleaseFast",
+          "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/float_div_to_f64-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "run": {
+        "command": [
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-review/float_div_to_f64-ReleaseFast"
+        ],
+        "exit": 0,
+        "stdout": "2.5\n",
+        "stderr": ""
+      }
+    }
+  ]
+}

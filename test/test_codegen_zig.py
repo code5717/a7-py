@@ -286,7 +286,7 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
         assert 'pub fn main(init: std.process.Init) void' in zig
-        assert 'std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)' in zig
+        assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)' in zig
         assert 'fn __a7_user_main() void' in zig
         assert '__a7_stdout_print("Hello, World!\\n", .{})' in zig
 
@@ -354,8 +354,8 @@ main :: fn() {
         assert run.stdout == "out:1 true\n"
         assert run.stderr == "err:\n"
         generated = output.read_text(encoding="utf-8")
-        assert generated.count("std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)") == 1
-        assert generated.count("std.Io.File.stderr().writer(__a7_io.?, &__a7_stream_buf)") == 1
+        assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
+        assert generated.count("std.Io.File.stderr().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
         assert "std.os.linux.write" not in generated
         assert generated.count("interface.flush") == 2
 
@@ -481,7 +481,7 @@ main :: fn() {
     def test_variable_declaration(self):
         source = 'x := 42\n'
         zig = compile_a7_to_zig(source)
-        assert 'var x = 42' in zig
+        assert 'var x: i32 = 42' in zig
 
     def test_typed_variable(self):
         source = '''
@@ -501,7 +501,7 @@ add :: fn(a: i32, b: i32) i32 {
 '''
         zig = compile_a7_to_zig(source)
         assert 'fn add(a: i32, b: i32) i32' in zig
-        assert 'return (a + b)' in zig
+        assert 'return (a +% b)' in zig
 
     def test_main_is_pub(self):
         source = '''
@@ -563,7 +563,7 @@ main :: fn() {
 '''
         zig = compile_a7_to_zig(source)
         assert 'while' in zig
-        assert 'i += 1' in zig
+        assert 'i +%= 1' in zig
 
     def test_for_c_style(self):
         source = '''
@@ -576,7 +576,7 @@ main :: fn() {
 '''
         zig = compile_a7_to_zig(source)
         assert 'while' in zig  # C-style for becomes while in Zig
-        assert 'i += 1' in zig
+        assert 'i +%= 1' in zig
 
     def test_match_to_switch(self):
         source = '''
@@ -608,7 +608,7 @@ double :: fn(x: i32) i32 {
 }
 '''
         zig = compile_a7_to_zig(source)
-        assert 'return (x * 2)' in zig
+        assert 'return (x *% 2)' in zig
 
     def test_string_type_mapping(self):
         source = '''
@@ -963,7 +963,7 @@ main :: fn() {
     }
     '''
         zig = compile_a7_to_zig(source)
-        assert 'std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)' in zig
+        assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)' in zig
         assert 'std.os.linux.write' not in zig
         assert zig.count('interface.flush') == 1
         assert "var __a7_stdout_writer" not in zig[zig.index("pub fn main"):]
@@ -995,7 +995,7 @@ main :: fn() {
         assert compiler.compile_file(str(source), str(output))
         generated = output.read_text(encoding="utf-8")
         assert generated.count("fn __a7_stdout_print") == 1
-        assert generated.count("std.Io.File.stdout().writer(__a7_io.?, &__a7_stream_buf)") == 1
+        assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
         assert "std.os.linux.write" not in generated
         assert "fn helper() void {\n    __a7_stdout_print" in generated
         assert "fn helper() void {\n    defer " not in generated

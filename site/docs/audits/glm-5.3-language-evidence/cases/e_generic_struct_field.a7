@@ -1,0 +1,7 @@
+Box($T) :: struct {
+    items: []$T
+}
+
+main :: fn() {
+    b: Box(i32)
+}

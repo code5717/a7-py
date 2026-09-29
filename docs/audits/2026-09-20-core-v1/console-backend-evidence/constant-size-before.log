@@ -1,0 +1,46 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_contextual_literals_and_widening_native _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-318/test_contextual_literals_and_w0')
+
+    def test_contextual_literals_and_widening_native(tmp_path):
+        source = '''io :: import "std/io"
+    f :: fn(x: u8) u8 { ret x }
+    g :: fn() u8 { ret 255 }
+    main :: fn() {
+        N :: 3
+        Alias :: N
+        buffer: [Alias]i32
+        io.println("{}", buffer[2])
+        a: i8 = 1
+        b: i64 = 300
+        c := a + b
+        x: i64 = 300
+        yes := true
+        choice := if yes { 1 } else { x }
+        io.println("{} {} {} {}", c, f(200), g(), choice)
+        io.println("{ } {{}}")
+    }
+    '''
+        result, out = compile_source(tmp_path, source)
+        assert result.returncode == 0, result.stdout + result.stderr
+        zig = shutil.which('zig')
+        assert zig, 'Zig required for native type agreement'
+        binary = tmp_path / 'case'
+        build = subprocess.run([zig, 'build-exe', str(out), f'-femit-bin={binary}'], capture_output=True, text=True)
+>       assert build.returncode == 0, build.stderr
+E       AssertionError: /tmp/pytest-of-cx89/pytest-318/test_contextual_literals_and_w0/case.zig:25:9: error: pointless discard of local constant
+E             _ = Alias;
+E                 ^~~~~
+E         /tmp/pytest-of-cx89/pytest-318/test_contextual_literals_and_w0/case.zig:26:45: note: used here
+E             const buffer: [Alias]i32 = [_]i32{0} ** Alias;
+E                                                     ^~~~~
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig', 'build-exe', '/tmp/pytest-of-cx89/p...e: used here\n    const buffer: [Alias]i32 = [_]i32{0} ** Alias;\n                                            ^~~~~\n').returncode
+
+test/test_audit_type_boundaries.py:79: AssertionError
+=========================== short test summary info ============================
+FAILED test/test_audit_type_boundaries.py::test_contextual_literals_and_widening_native
+1 failed in 0.29s

@@ -1,0 +1,13 @@
+{
+  "recorded": "after focused checks, before full release qualification",
+  "sha256": {
+    "a7/backends/zig.py": "22b99fc97d98f8a64d69a4b4f6964e2292924e3537e9dcea6ad4e12b13054c15",
+    "test/test_v1_backend_regressions.py": "0d92be83a5c5d117840535722ecad9d57693c3c51a9c183b92d023609570e711",
+    "a7/formatters/console_formatter.py": "224e1f50ab9f7961636b9a738ec8f3f17ae900f65163c15a243a123b81c088c0",
+    "test/test_iterative_console.py": "9ae4e38d552fe504520a4c2b3ddadcea0d879034f010327d7a9446f501edf4cd"
+  },
+  "baseline_sha256": {
+    "backend": "60e343ae9eeed17bec74d58ba33399869b3ee068c6fe1aa154914851a0b7eeed",
+    "console": "1a5da46645fdf3ceb05302eddcea942046469cfe029b0d5b12dfca75d84fde92"
+  }
+}

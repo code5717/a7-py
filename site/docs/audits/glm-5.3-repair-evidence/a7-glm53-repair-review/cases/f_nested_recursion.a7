@@ -1,0 +1,6 @@
+main :: fn() {
+    inner :: fn() {
+        inner()
+    }
+    inner()
+}

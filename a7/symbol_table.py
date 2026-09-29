@@ -312,15 +312,15 @@ class SymbolTable:
             scope = self.global_scope
 
         lines = []
-        prefix = "  " * indent
-
-        lines.append(f"{prefix}{scope.name}:")
-        for name, symbol in sorted(scope.symbols.items()):
-            used = "✓" if symbol.is_used else "✗"
-            lines.append(f"{prefix}  [{used}] {symbol}")
-
-        for child in scope.children:
-            lines.append(self.dump(child, indent + 1))
+        pending = [(scope, indent)]
+        while pending:
+            current, level = pending.pop()
+            prefix = "  " * level
+            lines.append(f"{prefix}{current.name}:")
+            for name, symbol in sorted(current.symbols.items()):
+                used = "✓" if symbol.is_used else "✗"
+                lines.append(f"{prefix}  [{used}] {symbol}")
+            pending.extend((child, level + 1) for child in reversed(current.children))
 
         return "\n".join(lines)
 

@@ -1,0 +1,9 @@
+c_compound_div_signed.zig:17:7: error: division with 'i32' and 'i32': signed integers must use @divTrunc, @divFloor, or @divExact
+    x /= y;
+    ~~^~~~
+referenced by:
+    main: c_compound_div_signed.zig:11:19
+    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30
+    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20
+    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38
+    2 reference(s) hidden; use '-freference-trace=6' to see all references

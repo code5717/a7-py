@@ -1,0 +1,8 @@
+Box :: struct { value: i32 }
+free :: fn(b: ref Box) { del b }
+main :: fn() {
+    b := new Box
+    if b == nil { ret }
+    free(b)
+    if b != nil { b.value = 2 }
+}

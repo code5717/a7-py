@@ -1,0 +1,12 @@
+Box :: struct {
+    value: i32
+}
+
+g :: fn(b2: ref Box) {
+    b2.value = 1
+}
+
+main :: fn() {
+    b: ref Box = nil
+    g(b)
+}

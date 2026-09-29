@@ -1,0 +1,11 @@
+main :: fn() {
+    n: i32 = 3
+    if n > 0 {
+        ret 1
+    }
+    ret 0
+}
+
+fact :: fn(n: i32) i32 {
+    ret n * fact(n - 1)
+}

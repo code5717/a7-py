@@ -1,0 +1,9 @@
+Pt :: struct {
+    x: i32
+}
+
+main :: fn() {
+    pp := new Pt
+    defer del pp
+    del pp
+}

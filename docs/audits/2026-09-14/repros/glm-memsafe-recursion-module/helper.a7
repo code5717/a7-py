@@ -1,0 +1,3 @@
+work :: fn(n: i32) i32 {
+    ret task(n)
+}

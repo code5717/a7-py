@@ -1,0 +1,87 @@
+--- a/a7/safety.py
++++ b/a7/safety.py
+@@ -680,18 +680,77 @@
+             self.facts.restore_symbols(saved)
+             self._forget_names(changed)
+         elif node.kind == NodeKind.MATCH:
+-            self._visit_expr(node.expression)
++            selector = self._visit_expr(node.expression)
+             saved = self.facts.copy_symbols()
+             moved = set(self.moved_symbols)
+-            joined = dict(saved)  # A non-exhaustive match can execute no arm.
++            joined = dict(saved)
+             all_moved = set(moved)
+-            branches = [case.statements or ([] if case.statement is None else [case.statement]) for case in node.cases or []]
+-            branches.append(node.else_case or [])
+-            for statements in branches:
+-                self.facts.restore_symbols(dict(saved))
+-                self.moved_symbols = set(moved)
++            fall_state = None
++            fall_moved = set()
++            unmatched = True
++            cases = list(node.cases or [])
++            branches = [(case, case.statements or ([] if case.statement is None else [case.statement])) for case in cases]
++            branches.append((None, node.else_case or []))
++            for case, statements in branches:
++                possible = unmatched
++                certain = case is None
++                if case is not None and unmatched:
++                    possible = False
++                    for pattern in case.patterns or []:
++                        relation = None
++                        if pattern.kind == NodeKind.PATTERN_WILDCARD:
++                            relation = True
++                        elif pattern.kind == NodeKind.PATTERN_IDENTIFIER and (
++                            pattern.name == "_" or getattr(pattern, "is_capture_pattern", False)
++                        ):
++                            relation = True
++                        elif pattern.kind == NodeKind.PATTERN_LITERAL:
++                            literal = self._int_literal(pattern.literal)
++                            interval = selector.interval
++                            if literal is not None and interval is not None:
++                                if interval.lower is not None and literal < interval.lower:
++                                    relation = False
++                                elif interval.upper is not None and literal > interval.upper:
++                                    relation = False
++                                elif interval.lower == interval.upper == literal:
++                                    relation = True
++                        elif pattern.kind == NodeKind.PATTERN_RANGE:
++                            lower = self._int_literal(pattern.start.literal) if pattern.start and pattern.start.kind == NodeKind.PATTERN_LITERAL else None
++                            upper = self._int_literal(pattern.end.literal) if pattern.end and pattern.end.kind == NodeKind.PATTERN_LITERAL else None
++                            interval = selector.interval
++                            if lower is not None and upper is not None and interval is not None:
++                                if interval.upper is not None and interval.upper < lower:
++                                    relation = False
++                                elif interval.lower is not None and interval.lower > upper:
++                                    relation = False
++                                elif interval.lower is not None and interval.upper is not None and lower <= interval.lower <= interval.upper <= upper:
++                                    relation = True
++                        possible |= relation is not False
++                        certain |= relation is True
++                if certain:
++                    unmatched = False
++                reachable = possible or fall_state is not None
++                if possible and fall_state is not None:
++                    entry = self._join_facts(saved, fall_state)
++                    entry_moved = moved | fall_moved
++                elif fall_state is not None:
++                    entry = dict(fall_state)
++                    entry_moved = set(fall_moved)
++                else:
++                    # Preserve checks of an unreachable body's own operations.
++                    # Only its outgoing fall edge is suppressed.
++                    entry = dict(saved)
++                    entry_moved = set(moved)
++                self.facts.restore_symbols(entry)
++                self.moved_symbols = entry_moved
+                 for stmt in statements:
+                     self._visit_stmt(stmt)
++                direct = statements
++                if len(direct) == 1 and direct[0].kind == NodeKind.BLOCK:
++                    direct = direct[0].statements or []
++                falls = bool(direct) and direct[-1].kind == NodeKind.FALL
++                fall_state = self.facts.copy_symbols() if falls and reachable else None
++                fall_moved = set(self.moved_symbols) if falls and reachable else set()
+                 joined = self._join_facts(joined, self.facts.by_symbol)
+                 all_moved.update(self.moved_symbols)
+             self.facts.restore_symbols(joined)

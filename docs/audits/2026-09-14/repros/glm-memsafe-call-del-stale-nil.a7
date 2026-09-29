@@ -1,0 +1,16 @@
+Pt :: struct {
+    x: i32
+}
+
+kill :: fn(pp: ref Pt) {
+    del pp
+}
+
+main :: fn() {
+    q := new Pt
+    if q == nil {
+        ret
+    }
+    kill(q)
+    q.x = 1
+}

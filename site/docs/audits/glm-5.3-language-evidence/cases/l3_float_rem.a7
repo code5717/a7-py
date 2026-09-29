@@ -1,0 +1,7 @@
+io :: import "std/io"
+
+main :: fn() {
+    x: f64 = -5.5
+    y: f64 = 2.0
+    io.println("{} {}", -5.5 % 2.0, x % y)
+}

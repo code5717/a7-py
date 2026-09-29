@@ -52,18 +52,28 @@ build/release/zig/bin/*
 
 ## Full Release Gate
 
-Run this before tagging:
+Run the same command used by release CI:
 
 ```bash
-./run_all_tests.sh
-(cd site && bun install && bun run build)
-rm -rf dist
-uv build
-uv run python scripts/verify_wheel_install.py --skip-build
-uvx --from pip-audit==2.10.0 pip-audit --strict
-uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
-(cd site && bun audit --audit-level=moderate)
+./run_release_checks.sh
+# Before a tag is created, also verify its intended identity:
+./run_release_checks.sh --tag v0.3.0
 ```
+
+The command checks tag/package/changelog agreement before building. An untagged
+run verifies the current package without claiming a tagged release. It runs the
+compiler gate, installed wheel and source-distribution native checks, docs checks,
+locked Python and Bun dependency audits, and Bandit. Any failed step fails the
+command. It does not publish or create a tag.
+
+Python dependency auditing exports the locked project requirements, including
+development dependencies, before passing them to pinned `pip-audit`. Auditing the
+tool's isolated environment alone does not qualify the project dependencies.
+
+After intentional website content edits, run `(cd site && bun run sync:exports)`
+and review the generated diff before running the site check. Ordinary builds do
+not rewrite tracked exports. The site check detects stale exports and validates
+reference coverage, types, publication tests, and generated links.
 
 `run_all_tests.sh` includes:
 
@@ -80,9 +90,10 @@ uvx --from bandit==1.9.4 bandit -r a7 scripts main.py -q --skip B404,B603
 - clean-venv wheel install smoke test
 - full pytest suite
 
-The Python and docs dependency audits are separate release-gate commands above.
+The complete release command includes Python and docs dependency audits.
 The Python audit tools are pinned so release gates do not fetch arbitrary latest
-tool versions at runtime. The wheel install verifier installs the built wheel in
+tool versions at runtime. The install verifier installs the built wheel and a wheel rebuilt from the source
+distribution in
 a clean virtual environment and exercises the installed `a7` entrypoint through
 Zig code generation before release.
 

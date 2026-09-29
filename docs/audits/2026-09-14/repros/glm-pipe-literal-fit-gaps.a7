@@ -1,0 +1,14 @@
+// glm-pipe repro: literal-fit checking is applied to initializers and
+// assignments but NOT to return values or call arguments. All three
+// functions below are rejected with type errors even though every literal
+// fits its target type:
+//   ret0:   "Return type mismatch: expected 'u8', got 'i32'"
+//   call5:  "Argument type mismatch: expected 'u8', got 'i32'"
+//   sum:    "Type mismatch: expected 'u8', got 'i32'" (100 + 100 not folded
+//           before type checking)
+u8ret :: fn() u8 { ret 0 }
+takes :: fn(x: u8) u8 { ret x }
+main :: fn() {
+    y := takes(5)
+    z: u8 = 100 + 100
+}

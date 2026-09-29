@@ -1,0 +1,18 @@
+Reference excerpt integration smoke, 2026-09-19
+
+From the repository root:
+uv run a7 site/docs/evidence/reference-smoke.a7 -o /tmp/a7-reference-smoke.zig
+zig build-exe /tmp/a7-reference-smoke.zig -femit-bin=/tmp/a7-reference-smoke
+/tmp/a7-reference-smoke
+
+Observed stdout:
+limit = 10
+150 2 42 7 ok 7
+
+The compiler, Zig build, and executable exited 0 after the source consumed the
+local constant `limit`. The first attempt omitted that use and Zig rejected
+an unused local constant. This finding concerns unused declarations, not a
+failure of the selected array, generic, cast, reference, or union expressions.
+
+This checks the combined source in reference-smoke.a7. It is not exhaustive
+language qualification, nor proof of full ownership or arithmetic safety.

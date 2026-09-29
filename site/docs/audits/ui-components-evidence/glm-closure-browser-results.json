@@ -1,0 +1,92 @@
+[
+  {
+    "n": "404 route returns 404 with styled page",
+    "p": false,
+    "d": ""
+  },
+  {
+    "n": "fixture exists: entries with 'stdlib' only in metadata and 'println' in text",
+    "p": true,
+    "d": "1 entries"
+  },
+  {
+    "n": "query 'stdlib println' returns results",
+    "p": true,
+    "d": "status=\"5 results.\" results=5"
+  },
+  {
+    "n": "rendered excerpts match new first-in-text-term algorithm",
+    "p": true,
+    "d": "5 compared, 0 mismatched"
+  },
+  {
+    "n": "excerpt offsets into text (leading ellipsis) present",
+    "p": true,
+    "d": "4/5"
+  },
+  {
+    "n": "matched term highlighted in excerpts",
+    "p": true,
+    "d": "4/5"
+  },
+  {
+    "n": "no raw feature ids leak into excerpts",
+    "p": true,
+    "d": ""
+  },
+  {
+    "n": "control border uses --muted",
+    "p": true,
+    "d": "rgb(87, 91, 99) vs rgb(87, 91, 99)"
+  },
+  {
+    "n": "prose links underlined",
+    "p": true,
+    "d": "underline"
+  },
+  {
+    "n": "desktop toolbar min-height 3.25rem",
+    "p": true,
+    "d": "52px"
+  },
+  {
+    "n": "outline highlights clicked section",
+    "p": true,
+    "d": "Requirements"
+  },
+  {
+    "n": "desktop copy button 32px (2rem)",
+    "p": true,
+    "d": "32"
+  },
+  {
+    "n": "mobile copy control >= 44px",
+    "p": true,
+    "d": "44"
+  },
+  {
+    "n": "mobile toolbar min-height 3.75rem (60px)",
+    "p": true,
+    "d": "60px"
+  },
+  {
+    "n": "mobile outline marks active section after link click",
+    "p": true,
+    "d": "Requirements"
+  },
+  {
+    "n": "mobile 390 no horizontal overflow",
+    "p": true,
+    "d": ""
+  },
+  {
+    "n": "light theme prose link underlined",
+    "p": true,
+    "d": "underline"
+  },
+  {
+    "n": "light theme control border renders",
+    "p": true,
+    "d": "rgb(87, 91, 99)"
+  }
+]

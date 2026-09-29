@@ -1,0 +1,12 @@
+get :: fn(s: []i32, i: usize) i32 {
+    if i < s.len {
+        s[0] = 5
+        ret s[i]
+    }
+    ret 0
+}
+
+main :: fn() {
+    arr: [3]i32 = [1, 2, 3]
+    x := get(arr[0..3], 2)
+}

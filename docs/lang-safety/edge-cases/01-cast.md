@@ -1,218 +1,404 @@
 # Gap 01 — Cast (`cast(T, x)`)
 
-> Edge-case enumeration for the audit finding in
-> [`../07-language-review.md` §1.2](../07-language-review.md#12-cast--unrestricted-and-admits-intptr).
-> Phase A artifact; decisions land in [`../08-decisions.md`](../08-decisions.md) (Phase C).
+Status: Phase A research from before 2026-09-14, not a decision. Decisions are in the [ledger](../../plan/decisions.md); cast rules stay open under gate [G3](../../plan/README.md#g3-numeric-rules-beyond-wrapping).
 
-The cast operator is the **most urgent** safety gap. The current
-implementation type-checks the target type and operand but performs
-**no validity check** — `cast(ref T, some_usize)` compiles and emits a
-reinterpret. The job of this file is to enumerate every concrete cast
-the language admits today, decide which class it falls into, and log
-the open questions about which classes A7 will continue to permit.
+Audit finding: [`../07-language-review.md` §1.2](../07-language-review.md#12-cast--unrestricted-and-admits-intptr).
+Phase C decisions were to land in [`../08-decisions.md`](../08-decisions.md).
+
+## Summary
+
+Phase A rated cast the most urgent safety gap. The type checker checked
+the target type and the operand, but it did not check whether the cast
+was valid. `cast(ref T, some_usize)` compiled and emitted a reinterpret.
+
+This file lists every concrete cast the language admitted, assigns each
+one a target class and records the open questions about which classes A7
+should keep.
+
+## Current behavior (2026-09-16)
+
+Note (2026-09-16): the Phase A "Today" claims no longer describe the
+compiler. Evidence is a source read on 2026-09-16; no program was
+compiled in this session.
+
+- `a7/cast_classifier.py` sorts each cast into `LOSSLESS`,
+  `EXPLICIT_NUMERIC`, `PROVABLE_NARROWING` or `FORBIDDEN`.
+- Casts that involve a reference or function type are forbidden. So is
+  every cast whose source or target is not a primitive numeric type:
+  enums, arrays, slices, structs and generic parameters.
+- `a7/safety.py:522-554` records a `cast` obligation for every cast.
+  Integer narrowing and sign changes pass only when the source value's
+  known interval fits the target type. Float-to-integer passes only for
+  a finite, integral float literal that fits (`a7/safety.py:654-661`).
+- `a7/backends/zig.py:1751-1775` (`_emit_cast`) refuses a cast without
+  backend approval. It emits `@as`, `@floatCast`, `@intFromFloat`,
+  `@floatFromInt` or `@intCast`.
+- The ledger marks the old decisions D.024 (keep `cast`) and D.038
+  (remove `cast`) as contradictory; neither holds, and G3 decides.
+- The [memory plan](../../plan/memory.md) proposes removing
+  `cast(ref T, value)` from the public surface.
 
 ## Subcases
 
-A flat catalog. Each row is a real cast someone might write; the
-decision column is the Phase C target.
+Each row is a cast someone might write. "Phase A: today" and "Phase A:
+target" are the original enumeration. "Now" is the 2026-09-16 source
+read.
 
-| # | Cast | Today | Class |
-| --- | --- | --- | --- |
-| C-01 | `cast(i64, x: i32)` — widening signed→signed | Compiles, emits `@as(i64, x)` | **Lossless** |
-| C-02 | `cast(u64, x: u32)` — widening unsigned→unsigned | Compiles, emits `@as(u64, x)` | **Lossless** |
-| C-03 | `cast(i32, x: i64)` — narrowing signed→signed | Compiles, emits `@as(i32, x)`; truncates silently | **Truncating** (must return `?T`) |
-| C-04 | `cast(u32, x: u64)` — narrowing unsigned→unsigned | Compiles, emits `@as(u32, x)`; truncates silently | **Truncating** |
-| C-05 | `cast(i64, x: u64)` — same-width sign change | Compiles; reinterpret | **Sign-change** (must return `?T` or be `bit_cast`) |
-| C-06 | `cast(u64, x: i64)` — same-width sign change | Compiles; reinterpret | **Sign-change** |
-| C-07 | `cast(i32, x: u32)` — same-width sign change | Compiles | **Sign-change** |
-| C-08 | `cast(usize, x: isize)` — pointer-sized cross | Compiles | **Sign-change** |
-| C-09 | `cast(f64, x: i32)` — int→float | Compiles, emits `@as(f64, @floatFromInt(x))` (TBD) | **Lossless** for small ints; **truncating** for `i64→f64` over 2^53 |
-| C-10 | `cast(i32, x: f64)` — float→int | Compiles; semantics depend on Zig | **Truncating + fallible** (NaN/inf → `none`; out-of-range → `none`); must return `?T` |
-| C-11 | `cast(u32, x: f32)` — same | Same hazards | **Truncating + fallible** |
-| C-12 | `cast(u8, x: i32)` — narrowing + range | Compiles | **Truncating** |
-| C-13 | `cast(ref T, x: usize)` — **integer to pointer** | **Compiles** — the critical hole | **Forbidden** |
-| C-14 | `cast(usize, x: ref T)` — pointer to integer | **Compiles** | **Forbidden** (no escape to opaque int) |
-| C-15 | `cast(ref U, x: ref T)` — pointer-type punning | Compiles; arbitrary reinterpret | **Forbidden** for unrelated types; allowed for `ref T → ref void` (if void-pointers exist) |
-| C-16 | `cast(ref T, x: ref T)` — identity | Compiles, no-op | **Lossless** |
-| C-17 | `cast(?ref T, x: ref T)` — non-null to nullable | Should be implicit, not require `cast` | **Implicit upcast** |
-| C-18 | `cast(ref T, x: ?ref T)` — nullable to non-null | Today: just emits `@as(?*T, x)`, no unwrap | **Forbidden** — only `match` may narrow |
-| C-19 | `cast(u32, x: f32)` with `bit_cast` intent | Today: no separate operator | **Bit-cast** (new operator) |
-| C-20 | `cast(fn(...) T, x: usize)` — int to function pointer | **Compiles** | **Forbidden** |
-| C-21 | `cast(fn(B) C, x: fn(A) B)` — function-pointer cross-typing | Compiles; ABI mismatch UB | **Forbidden** |
-| C-22 | `cast(EnumA, x: EnumB)` — enum cross-cast | Behaviour today unclear; likely permitted | **Forbidden** |
-| C-23 | `cast(u32, x: EnumT)` — enum to underlying integer | Permitted today | **Lossless** (if discriminant fits) |
-| C-24 | `cast(EnumT, x: u32)` — integer to enum (no validation) | Permitted today; can produce invalid enum | **Truncating + fallible** (must `match` against valid range) |
-| C-25 | `cast([]T, x: [N]T)` — array to slice | Permitted today; implicit in most places | **Lossless** (already implicit in many cases) |
-| C-26 | `cast([N]T, x: []T)` — slice to fixed array | Today: silent truncation/expansion | **Truncating + fallible** — requires `s.length == N` proof |
-| C-27 | `cast([]u8, x: T)` — value to byte-slice ("punning") | Permitted today via address-of? | **Forbidden** at the value level; permitted only via explicit `&x as []u8` if at all |
-| C-28 | `cast($U, x: $T)` — generic-parameter cast where the constraints disagree | Today: unclear | **Forbidden** |
-| C-29 | `cast(ref T, x: opaque)` at FFI boundary | No FFI today | **FFI-only**, restricted form |
-| C-30 | `cast(T, T(...))` — calling a type as a constructor | Not a cast at all; constructor syntax | n/a |
+| # | Cast | Phase A: today | Phase A: target class | Now (2026-09-16) |
+| --- | --- | --- | --- | --- |
+| C-01 | `cast(i64, x: i32)`, signed widening | Compiles, emits `@as(i64, x)` | Lossless | Lossless, `@as` |
+| C-02 | `cast(u64, x: u32)`, unsigned widening | Compiles, emits `@as(u64, x)` | Lossless | Lossless, `@as` |
+| C-03 | `cast(i32, x: i64)`, signed narrowing | Compiles, emits `@as(i32, x)`; truncates silently | Truncating (must return `?T`) | Rejected unless the interval of `x` fits `i32` |
+| C-04 | `cast(u32, x: u64)`, unsigned narrowing | Compiles, emits `@as(u32, x)`; truncates silently | Truncating | Rejected unless the interval fits |
+| C-05 | `cast(i64, x: u64)`, same-width sign change | Compiles; reinterpret | Sign-change (must return `?T` or be `bit_cast`) | Rejected unless the interval fits |
+| C-06 | `cast(u64, x: i64)`, same-width sign change | Compiles; reinterpret | Sign-change | Rejected unless `x` is proven non-negative and in range |
+| C-07 | `cast(i32, x: u32)`, same-width sign change | Compiles | Sign-change | Rejected unless the interval fits |
+| C-08 | `cast(usize, x: isize)`, pointer-sized sign change | Compiles | Sign-change | Rejected unless proven non-negative and in range |
+| C-09 | `cast(f64, x: i32)`, int to float | Compiles, emits `@as(f64, @floatFromInt(x))` (TBD) | Lossless for small ints; truncating for `i64 → f64` above 2^53 | `EXPLICIT_NUMERIC`, emits `@floatFromInt`. Precision loss above 2^53 is not checked |
+| C-10 | `cast(i32, x: f64)`, float to int | Compiles; semantics depend on Zig | Truncating and fallible (NaN, inf, out of range give `none`); must return `?T` | Rejected unless `x` is a finite integral float literal that fits. Failure semantics open under G1 |
+| C-11 | `cast(u32, x: f32)` | Same hazards as C-10 | Truncating and fallible | Same as C-10 |
+| C-12 | `cast(u8, x: i32)`, narrowing plus range | Compiles | Truncating | Rejected unless the interval fits `u8` |
+| C-13 | `cast(ref T, x: usize)`, integer to pointer | Compiles: the critical hole | Forbidden | Forbidden |
+| C-14 | `cast(usize, x: ref T)`, pointer to integer | Compiles | Forbidden (no escape to an opaque int) | Forbidden |
+| C-15 | `cast(ref U, x: ref T)`, pointer punning | Compiles; arbitrary reinterpret | Forbidden for unrelated types; allowed for `ref T → ref void` if void pointers exist | Forbidden, with no `void` exception |
+| C-16 | `cast(ref T, x: ref T)`, identity | Compiles, no-op | Lossless | Forbidden: the reference check runs before the identity check |
+| C-17 | `cast(?ref T, x: ref T)`, non-null to nullable | Should be implicit, not need `cast` | Implicit upcast | `?ref T` does not exist; reference casts are forbidden |
+| C-18 | `cast(ref T, x: ?ref T)`, nullable to non-null | Emits `@as(?*T, x)`, no unwrap | Forbidden; only `match` may narrow | Forbidden. Nil state is an internal fact (Gap 02) |
+| C-19 | `cast(u32, x: f32)` meant as a bit cast | No separate operator | Bit-cast (new operator) | No bit-cast operator; the cast follows C-11 |
+| C-20 | `cast(fn(...) T, x: usize)`, int to function pointer | Compiles | Forbidden | Forbidden |
+| C-21 | `cast(fn(B) C, x: fn(A) B)`, function-pointer cross-typing | Compiles; ABI mismatch is UB | Forbidden | Forbidden |
+| C-22 | `cast(EnumA, x: EnumB)`, enum cross-cast | Unclear; likely permitted | Forbidden | Forbidden (not primitive) |
+| C-23 | `cast(u32, x: EnumT)`, enum to integer | Permitted | Lossless if the discriminant fits | Forbidden (not primitive) |
+| C-24 | `cast(EnumT, x: u32)`, integer to enum | Permitted; can produce an invalid enum | Truncating and fallible (must `match` against the valid range) | Forbidden (not primitive) |
+| C-25 | `cast([]T, x: [N]T)`, array to slice | Permitted; implicit in most places | Lossless (already implicit in many cases) | Forbidden as a cast. Implicit coercion not rechecked |
+| C-26 | `cast([N]T, x: []T)`, slice to fixed array | Silent truncation or expansion | Truncating and fallible; needs a `s.length == N` proof | Forbidden |
+| C-27 | `cast([]u8, x: T)`, value to byte slice | Permitted via address-of? | Forbidden at the value level; at most an explicit address-of form | Forbidden. Public address-of syntax does not exist |
+| C-28 | `cast($U, x: $T)` with disagreeing constraints | Unclear | Forbidden | Generic parameter types are not primitive, so forbidden. Behavior after specialization not checked |
+| C-29 | `cast(ref T, x: opaque)` at an FFI boundary | No FFI | FFI-only, restricted form | No FFI (v1 plan track 10) |
+| C-30 | `T(...)`, a type called as a constructor | Constructor syntax, not a cast | n/a | n/a |
+
+### Examples
+
+Current A7 blocks use today's syntax. The class comments come from
+`a7/cast_classifier.py` and `a7/safety.py`. Compiled 2026-09-16: every block
+below parses, but only the widening block (C-01, C-02, C-09) and the struct
+construction block (C-30) are accepted. The rest are rejected at the safety
+stage with exit 6; each block records the message it produced. The rejections
+match the class table above rather than contradicting it.
+
+```a7
+// Current A7. C-01, C-02, C-09: widening and int-to-float.
+widen :: fn(small: i32, count: u32) {
+    wide := cast(i64, small)     // C-01: lossless
+    big := cast(u64, count)      // C-02: lossless
+    ratio := cast(f64, small)    // C-09: explicit numeric
+}
+```
+
+```a7
+// Current A7. C-03, C-04, C-12: narrowing. Parameters carry no interval.
+// Rejected (exit 6): "narrowing signed cast requires a range proof",
+// "narrowing unsigned cast requires a range proof" and
+// "signed-to-unsigned cast requires a non-negative proof".
+narrow :: fn(total: i64, size: u64, code: i32) {
+    a := cast(i32, total)        // C-03
+    b := cast(u32, size)         // C-04
+    c := cast(u8, code)          // C-12
+}
+```
+
+```a7
+// Current A7. C-05 to C-08: sign changes.
+// Rejected (exit 6): "unsigned-to-signed cast requires an upper-bound proof"
+// and "signed-to-unsigned cast requires a non-negative proof".
+flip :: fn(u: u64, s: i64, w: u32, offset: isize) {
+    a := cast(i64, u)            // C-05
+    b := cast(u64, s)            // C-06
+    c := cast(i32, w)            // C-07
+    d := cast(usize, offset)     // C-08
+}
+```
+
+```a7
+// Current A7. C-10, C-11, C-19: float to integer.
+// Rejected (exit 6): "float-to-int cast requires finite integral range proof".
+truncate :: fn(x: f64, y: f32) {
+    a := cast(i32, x)            // C-10
+    b := cast(u32, y)            // C-11; C-19 when bit reinterpretation is meant
+}
+```
+
+```a7
+// Current A7. C-13 to C-16, C-20, C-21: reference and function casts.
+// Rejected (exit 6), every line: "casts involving references or functions
+// are forbidden". This is the gap that 07-language-review.md section 1.2
+// reported as open; it is closed at HEAD.
+Node :: struct {
+    value: i32
+}
+Other :: struct {
+    value: i64
+}
+BinaryOp :: fn(i32, i32) i32
+UnaryOp :: fn(i32) i32
+
+forge :: fn(n: usize, p: ref Node, op: BinaryOp) {
+    a := cast(ref Node, n)       // C-13
+    b := cast(usize, p)          // C-14
+    c := cast(ref Other, p)      // C-15
+    d := cast(ref Node, p)       // C-16
+    e := cast(BinaryOp, n)       // C-20
+    f := cast(UnaryOp, op)       // C-21
+}
+```
+
+```a7
+// Proposed (Phase A). `?ref T` does not exist in current A7.
+widen_ref :: fn(p: ref Node) {
+    q: ?ref Node = p             // C-17: implicit upcast, no cast
+    r := cast(ref Node, q)       // C-18: forbidden; use match
+}
+```
+
+```a7
+// Current A7. C-22 to C-24: enum casts.
+// Rejected (exit 6), every line: "only primitive numeric casts are supported".
+Color :: enum {
+    Red
+    Green
+}
+Shade :: enum {
+    Light
+    Dark
+}
+
+convert :: fn(c: Color, n: u32) {
+    a := cast(Shade, c)          // C-22
+    b := cast(u32, c)            // C-23
+    d := cast(Color, n)          // C-24
+}
+```
+
+```a7
+// Current A7. C-25 to C-27: arrays, slices and bytes.
+// Rejected (exit 6), every line: "only primitive numeric casts are supported".
+reshape :: fn(s: []i32) {
+    arr: [4]i32 = [1, 2, 3, 4]
+    view := cast([]i32, arr)     // C-25
+    fixed := cast([4]i32, s)     // C-26
+    bytes := cast([]u8, arr)     // C-27
+}
+```
+
+```a7
+// Current A7. C-28: cast to a generic parameter.
+// Rejected (exit 6): "only primitive numeric casts are supported".
+convert_to($T, $U) :: fn(value: $T, hint: $U) $U {
+    ret cast($U, value)
+}
+```
+
+```a7
+// Proposed. A7 has no `extern` or FFI today. C-29.
+handle := foreign_open()
+file := cast(ref File, handle)
+```
+
+```a7
+// Current A7. C-30: struct construction, not a cast.
+Point :: struct {
+    x: i32
+    y: i32
+}
+main :: fn() {
+    p := Point{x: 1, y: 2}
+}
+```
 
 ## Interactions
 
-How this gap touches the other 11 and existing A7 features.
+How this gap touches the other 11 gaps and existing A7 features.
 
-- **Gap 02 nullable pointers.** C-17 and C-18 above. The nullable
-  split changes how cast classes treat reference types. Decision:
-  `cast` cannot move between non-null and nullable; only structural
-  operations (`match`, `is null`) do.
-- **Gap 03 definite assignment.** Cast doesn't read or write storage,
-  so interaction is indirect — but `bit_cast`'s output type is
-  considered written after the cast.
-- **Gap 04 NonZero division.** A literal `0` should never auto-promote
-  to `NonZero<T>` through a cast. Cast classification must reject
-  laundering a runtime zero into a `NonZero`.
-- **Gap 05 stack budget.** No direct interaction (cast doesn't allocate).
-- **Gap 06 typed arithmetic.** Cast propagates ranges. `cast(u8, x: u32)`
-  with proved `x < 256` keeps the range; otherwise the cast is
-  forbidden (`truncating_cast` returns `?T`). The range lattice must
-  understand cast as a transfer function.
-- **Gap 07 bounded indexing.** `cast(usize, x: i32)` is the common path
-  to index; needs the sign-change discipline. If `x: i32` has range
-  `[0, n)`, cast yields `usize` with range `[0, n)` — proved-safe.
-- **Gap 08 `Option<T>` / `Result<T, E>`.** `truncating_cast` and
-  `bit_cast(EnumT, u32)` return `Option<T>`; cast classification
-  drives where these surface.
-- **Gap 09 refinement-lite.** A `Bounded<T, lo, hi>` value cast to a
-  wider `Bounded<U, lo, hi>` is lossless; narrowing requires a
-  fresh range proof.
-- **Gap 10 affine ownership.** `cast(ref T, x: ref T)` doesn't move;
-  identity cast is a no-op. `cast` on a non-Copy type doesn't
-  consume — it's structurally an alias.
-- **Gap 11 finite floats.** `cast(f64, x: f64)` is a no-op; `cast(Fin<f64>, x: f64)`
-  requires the constructor (already on `Fin`, not on `cast`). `cast(int, x: Fin<f64>)`
-  is a *lossless float→int* path under the Fin restriction.
-- **Gap 12 FFI.** Casts to opaque foreign types are the one site
-  where the rules relax; the surface area is the `extern` boundary
-  only.
-- **Generics / type sets.** Casts in generic code must work against
-  each instantiation's type set. Either generic casts are
-  monomorphised and re-checked per instantiation (current A7
-  approach), or the cast is restricted to operations allowed by the
-  type-set constraint.
-- **Tagged unions.** `cast(EnumT, x: u32)` (C-24) — the integer must
-  match a known discriminant. Today's behaviour permits invalid
-  enums; the discipline rules require a `match` and an `Option`
-  return.
-- **Match.** Cast in a match arm pattern (`case cast(T, x): ...`)
-  shouldn't exist; matching already binds typed.
-- **Slices/arrays.** C-25, C-26, C-27 above.
+- **Gap 02, nullable pointers.** C-17 and C-18. The nullable split changes
+  how cast classes treat reference types. Phase A decision: `cast` cannot
+  move between non-null and nullable; only structural operations
+  (`match`, `is null`) can. Note (2026-09-16): the memory plan replaces
+  `nil` references with optionals, so this split is not the proposed
+  direction.
+- **Gap 03, definite assignment.** Cast does not read or write storage, so
+  the interaction is indirect. The output of a `bit_cast` counts as
+  written after the cast.
+- **Gap 04, NonZero division.** A literal `0` must never become a
+  `NonZero<T>` through a cast. Cast classification must reject laundering
+  a run-time zero into a `NonZero`.
+- **Gap 05, stack budget.** No direct interaction; cast does not allocate.
+- **Gap 06, typed arithmetic.** Cast propagates ranges. `cast(u8, x: u32)`
+  with a proven `x < 256` keeps the range; otherwise the cast is forbidden
+  and `truncating_cast` returns `?T`. The range lattice must treat cast as
+  a transfer function. Note (2026-09-16): `a7/safety.py:552-553` already
+  carries the interval through a cast that fits.
+- **Gap 07, bounded indexing.** `cast(usize, x: i32)` is the common path to
+  an index and needs the sign-change rule. If `x: i32` has range `[0, n)`,
+  the cast yields a `usize` with range `[0, n)`, which proves the index
+  safe.
+- **Gap 08, `Option<T>` and `Result<T, E>`.** `truncating_cast` and
+  `bit_cast(EnumT, u32)` return `Option<T>`. Cast classification decides
+  where these appear. Spelling is open under G5.
+- **Gap 09, refinement-lite.** Casting a `Bounded<T, lo, hi>` to a wider
+  `Bounded<U, lo, hi>` is lossless; narrowing needs a fresh range proof.
+- **Gap 10, affine ownership.** `cast(ref T, x: ref T)` does not move; the
+  identity cast is a no-op. `cast` on a non-Copy type does not consume; it
+  is an alias. Note (2026-09-16): the memory plan makes ownership internal
+  (ledger O2).
+- **Gap 11, finite floats.** `cast(f64, x: f64)` is a no-op.
+  `cast(Fin<f64>, x: f64)` needs the `Fin` constructor, not `cast`.
+  Phase A called `cast(int, x: Fin<f64>)` a lossless float-to-int path.
+  Note (2026-09-16): `Fin` is superseded by L16 (IEEE floats) and `int` by
+  L4. Finiteness alone does not make float-to-int lossless: the fraction
+  and the range still matter.
+- **Gap 12, FFI.** Casts to opaque foreign types are the one place where
+  the rules relax, and only at the `extern` boundary.
+- **Generics and type sets.** Casts in generic code must hold for each
+  instantiation's type set. Either casts are re-checked per instantiation
+  (the current A7 approach for generics), or a cast is limited to what the
+  type-set constraint allows.
+- **Tagged unions.** C-24: the integer must match a known discriminant.
+  Phase A permitted invalid enums; the target rules need a `match` and an
+  `Option` result.
+- **Match.** A cast inside a match pattern (`case cast(T, x): ...`) should
+  not exist; matching already binds typed values.
+- **Slices and arrays.** C-25, C-26 and C-27.
 
 ## Failure modes
 
-### False positives (programs we now reject that shouldn't be)
+### False positives (rejected programs that should compile)
 
-- C-09 `i32 → f64` widening — should always succeed, but if we
-  conservatively require an explicit `bit_cast` or `lossless_cast`,
-  users will hate writing the boilerplate.
-- C-17 implicit non-null → nullable. Forcing a `cast` here is gratuitous;
-  the upcast should be implicit.
-- C-25 array → slice. Already implicit in most contexts; should stay
-  implicit.
-- Generic code that worked with the permissive `cast` may stop
-  compiling. Mitigation: monomorphisation-time error with a clear
-  per-instantiation message.
+- C-09, `i32 → f64` widening, should always succeed. Requiring an explicit
+  `bit_cast` or `lossless_cast` adds boilerplate users will dislike.
+- C-17, non-null to nullable, should be implicit. Forcing a `cast` adds
+  nothing.
+- C-25, array to slice, is already implicit in most contexts and should
+  stay implicit.
+- Generic code that relied on the permissive `cast` may stop compiling.
+  Mitigation: a per-instantiation error with a clear message.
 
-### False negatives (programs we still admit that we shouldn't)
+### False negatives (accepted programs that should be rejected)
 
-- Composition of permitted casts. `cast(u32, cast(f32, x: ref T))`
-  — three casts each individually maybe-permitted but the chain is
-  pointer→float→int→back-to-pointer. Cast classification must be
-  closed under composition: if any intermediate step is forbidden,
-  the chain is forbidden.
-- Generic indirection. `cast($T, x: $U)` inside a generic might be
-  permitted by one instantiation and forbidden by another. The
-  type-checker must re-validate per instantiation.
-- Calls that move through opaque interfaces (`extern fn`,
-  trait/method dispatch) and re-emerge as a different pointer type.
+- Composed casts. In `cast(u32, cast(f32, x: ref T))` each step may look
+  allowed, but the chain is pointer to float to int and back. The
+  classification must be closed under composition: if any step is
+  forbidden, the chain is forbidden. Note (2026-09-16): the classifier
+  rejects the inner reference cast, so this chain fails at its first step.
+- Generic indirection. `cast($T, x: $U)` may be allowed for one
+  instantiation and forbidden for another. The type checker must
+  re-validate each instantiation.
+- Values that pass through opaque interfaces (`extern fn`, trait or method
+  dispatch) and come back as a different pointer type.
 
 ### Ergonomic costs
 
-- Adding three operator names (`cast`, `truncating_cast`, `bit_cast`)
-  is a vocabulary cost.
-- Most casts in the existing 38 examples are lossless widenings or
-  array→slice; the migration cost should be small for typical code.
-- Where users *do* need a narrowing cast, the new form returns
-  `Option<T>` which requires a `match`. This is annoying for cases
-  where the narrowing is statically safe (cast of literal `42` to
-  `u8`).
+- Three operator names (`cast`, `truncating_cast`, `bit_cast`) add
+  vocabulary.
+- Phase A counted 38 examples, and most casts in them were lossless
+  widenings or array-to-slice conversions, so migration should be small.
+  Note (2026-09-16): there are now 43 examples (000–042), and five use
+  `cast(`: 026, 029, 033, 041 and 042.
+- A needed narrowing cast returns `Option<T>` and requires a `match`. This
+  is annoying when the narrowing is statically safe, such as casting the
+  literal `42` to `u8`.
+
+```a7
+// Proposed (Phase A). `truncating_cast` does not exist.
+match truncating_cast(u8, code) {
+    case some(byte): {
+        io.println("{}", byte)
+    }
+    case none: {
+        io.println("out of range")
+    }
+}
+```
 
 ### Performance costs
 
-- None. All casts are zero-cost at runtime; the discipline is
-  compile-time only.
-- The exception is `truncating_cast` when the prover *can't*
-  discharge the range — the runtime check survives. The prover
-  should handle constant operands trivially.
+- None: casts cost nothing at run time, and the rules are compile-time
+  only.
+- The exception is `truncating_cast` when the prover cannot discharge the
+  range; then the run-time check stays. The prover should handle constant
+  operands trivially.
 
 ## Open questions
 
-Each becomes a decision in Phase C.
+Each question was to become a Phase C decision. G3 now owns them.
 
-- **Q01a.** Should `cast` (the keyword) be reserved for **only**
-  lossless widening, or should it accept implicit-upcast cases (array
-  → slice, non-null → nullable) too? Two options:
-  - Strict: `cast(T, x)` only for numeric widening; everything else
-    has its own operator or is implicit.
-  - Lenient: `cast(T, x)` covers all "always safe" conversions
-    including upcasts; only fallible/dangerous casts use other
-    operators.
-- **Q01b.** What is the exact list of fallible-cast destinations?
-  Candidate: `truncating_cast<T>(x) -> ?T` returns `none` when the
-  value doesn't fit. Or should it return a `Result<T, CastError>`
-  with a structured error?
-- **Q01c.** Is `bit_cast` allowed at all? It's needed for some
-  numeric work (e.g., extracting float bits as int for hashing),
-  but it's a footgun. Two options:
-  - Yes, restricted to same-size non-pointer types.
-  - No; provide explicit `f32_bits(x: f32) -> u32` style stdlib
-    helpers for the cases we need.
-- **Q01d.** How does `cast` interact with enum tagging? Should
-  `cast(EnumT, x: i32)` ever compile, or always require
+- **Q01a.** Is `cast` reserved for lossless widening only, or does it also
+  cover implicit upcasts (array to slice, non-null to nullable)?
+  - Strict: `cast(T, x)` only for numeric widening; everything else has
+    its own operator or is implicit.
+  - Lenient: `cast(T, x)` covers every always-safe conversion, including
+    upcasts; only fallible or dangerous casts use other operators.
+  - Note (2026-09-16): the current classifier is neither. It also admits
+    proven narrowing and int-to-float under `cast`.
+- **Q01b.** What are the fallible cast forms? Candidate:
+  `truncating_cast<T>(x) -> ?T`, which returns `none` when the value does
+  not fit. Or a `Result<T, CastError>` with a structured error?
+- **Q01c.** Is `bit_cast` allowed? Some numeric work needs it, such as
+  reading float bits as an integer for hashing, but it is a footgun.
+  - Yes, limited to same-size non-pointer types.
+  - No; provide stdlib helpers such as `f32_bits(x: f32) -> u32`.
+- **Q01d.** How does `cast` interact with enum tags? Should
+  `cast(EnumT, x: i32)` ever compile, or should it always need
   `EnumT::from_discriminant(i32) -> ?EnumT`?
-- **Q01e.** Do we need a cast that goes between two reference types
-  in the same nominal subtype lattice (when subtyping lands)? Or do
-  we use a different operator (`upcast` / `as`)?
-- **Q01f.** Migration: do we provide a one-off `legacy_cast` for
-  internal stdlib code that must do pointer punning during the
-  refactor? Or break atomically with a single PR?
-- **Q01g.** Diagnostics: when a forbidden cast is attempted, the
-  error message must propose the right replacement. Build a fix-it
-  table mapping (source, target) → suggested operator.
-- **Q01h.** Does `cast` work in a constant-evaluation context (when
-  comptime-eval is implemented)? Same rules, or more permissive?
+- **Q01e.** Is a cast needed between two reference types in one nominal
+  subtype lattice, once subtyping exists? Or does that use a separate
+  operator (`upcast` or `as`)?
+- **Q01f.** Migration: provide a one-off `legacy_cast` for internal stdlib
+  code that must pun pointers during the refactor, or break atomically in
+  one PR?
+- **Q01g.** Diagnostics: a forbidden cast must propose the right
+  replacement. Build a fix-it table mapping (source, target) to the
+  suggested operator.
+- **Q01h.** Does `cast` work in constant evaluation, once it exists? Same
+  rules, or more permissive?
+
+```a7
+// Proposed (Phase A). Neither `bit_cast` nor `f32_bits` exists. Q01c.
+bits := bit_cast(u32, x)
+same := f32_bits(x)
+```
 
 ## Source citations
 
-From the audit:
+From the Phase A audit. Line numbers describe the tree at that time;
+2026-09-16 locations follow each item.
 
-- Cast type-check: `a7/passes/type_checker.py:1800-1805` — "Cast
+- Cast type check: `a7/passes/type_checker.py:1800-1805`, "Cast
   expressions type-check the target type and operand, but no safety
-  validation on whether the cast is valid/safe."
-- Backend emission: `a7/backends/zig.py:1690-1695` — emits
-  `@as(TargetType, value)`.
-- Declared-but-unused errors:
-  - `a7/errors.py:148` — `INVALID_CAST`
-  - `a7/errors.py:149` — `UNSAFE_CAST`
-- Type assignability rules (for use by the cast classifier):
-  `a7/types.py:108-140` — `is_assignable_to`.
-- Example impact: `examples/015_types.a7`, `examples/020_operators.a7`,
-  the current example suite are the candidates to audit first
-  (each uses `cast(...)`).
-- Spec section: `docs/SPEC.md` has the existing cast definition that
-  needs replacement.
+  validation on whether the cast is valid/safe." Now `visit_cast` at
+  `type_checker.py:1876`, which records types only; validation moved to
+  `a7/safety.py:522-554` and `a7/cast_classifier.py`.
+- Backend emission: `a7/backends/zig.py:1690-1695`, emits
+  `@as(TargetType, value)`. Now `zig.py:1751-1775`.
+- Error codes Phase A called declared but unused: `a7/errors.py:148`
+  `INVALID_CAST` and `a7/errors.py:149` `UNSAFE_CAST`. Now
+  `errors.py:149-150`; `safety.py:540` raises `UNSAFE_CAST`.
+- Assignability rules for the classifier: `a7/types.py:108-140`,
+  `is_assignable_to`. Still at those lines.
+- Examples to audit: Phase A named `examples/015_types.a7` and
+  `examples/020_operators.a7`. Note (2026-09-16): neither contains
+  `cast(`; see the example count above.
+- Spec: `docs/SPEC.md` holds the cast definition to replace.
 
-## Phase C decision-input summary
+## Phase C decision inputs
 
-The Phase C document will need to answer **at least**:
+Phase C must answer at least:
 
 1. The full cast classification table (Q01a, Q01b, Q01c, Q01d).
-2. The fallible-cast return type (`?T` vs `Result<T, E>`) — Q01b.
-3. Whether `bit_cast` exists — Q01c.
-4. Migration policy — Q01f.
-5. Diagnostics table — Q01g.
-6. Comptime semantics — Q01h.
+2. The fallible cast result type, `?T` or `Result<T, E>` (Q01b).
+3. Whether `bit_cast` exists (Q01c).
+4. Migration policy (Q01f).
+5. The diagnostics table (Q01g).
+6. Constant-evaluation semantics (Q01h).
 
-All other items in the subcase table are determined by the answers
-above plus the classification rule.
+The rest of the subcase table follows from these answers and the
+classification rule.

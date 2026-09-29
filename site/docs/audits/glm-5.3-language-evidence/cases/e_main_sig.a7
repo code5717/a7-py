@@ -1,0 +1,6 @@
+io :: import "std/io"
+
+main :: fn() i32 {
+    io.println("hi")
+    ret 0
+}

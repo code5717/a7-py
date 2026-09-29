@@ -1,0 +1,14 @@
+io :: import "std/io"
+
+helper :: fn(v: ref i32) i32 {
+    ret v
+}
+
+main :: fn() {
+    io.println("start")
+    bad syntax here !!!
+}
+
+unused :: fn() {
+    ret 1
+}

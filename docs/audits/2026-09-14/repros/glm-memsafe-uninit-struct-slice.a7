@@ -1,0 +1,12 @@
+io :: import "std/io"
+
+Point :: struct {
+    x: i32
+}
+
+main :: fn() {
+    p: Point
+    v := p.x
+    s: []i32
+    io.println("done")
+}

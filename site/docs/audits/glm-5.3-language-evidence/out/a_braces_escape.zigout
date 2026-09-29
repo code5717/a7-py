@@ -1,0 +1,7 @@
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/Io/Writer.zig:717:13: error: too few arguments
+            @compileError("too few arguments");
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+referenced by:
+    __a7_stdout_print__anon_35679: a_braces_escape.zig:6:32
+    __a7_user_main: a_braces_escape.zig:15:22
+    6 reference(s) hidden; use '-freference-trace=8' to see all references

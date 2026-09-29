@@ -1,0 +1,52 @@
+== a_arr_scalar_fill : a7-exit=6 | /tmp/a7-glm53-language-audit/out/a_arr_scalar_fill.a7out:Found 1 error:
+== a_braces_escape : a7-exit=0 
+== a_braces_space : a7-exit=6 | /tmp/a7-glm53-language-audit/out/a_braces_space.a7out:Found 1 error:
+== a_math_abs_signed : a7-exit=0 
+== a_string_len : a7-exit=6 | /tmp/a7-glm53-language-audit/out/a_string_len.a7out:Found 1 error:
+== a_typeset_alias : a7-exit=7 
+== b_ellipsis_slice : a7-exit=6 | /tmp/a7-glm53-language-audit/out/b_ellipsis_slice.a7out:Found 1 error:
+== b_fn_type_no_ret : a7-exit=0 
+== b_long_if : a7-exit=0 
+== b_multi_decl : a7-exit=0 
+== b_multiline_array : a7-exit=5 | /tmp/a7-glm53-language-audit/out/b_multiline_array.a7out:error: Expected expression [line 2: col 16]
+== b_no_main : a7-exit=0 
+== b_range_for : a7-exit=5 | /tmp/a7-glm53-language-audit/out/b_range_for.a7out:error: Expected LEFT_BRACE, got DOT_DOT [line 2: col 15]
+== b_recovery_drop : a7-exit=6 | /tmp/a7-glm53-language-audit/out/b_recovery_drop.a7out:Found 2 errors:
+== b_underscore_num : a7-exit=8 | /tmp/a7-glm53-language-audit/out/b_underscore_num.a7err:Unexpected error: invalid literal for int() with base 10: '1_'
+== c_arr_to_slice : a7-exit=6 | /tmp/a7-glm53-language-audit/out/c_arr_to_slice.a7out:Found 1 error:
+== c_call_arg_u8 : a7-exit=6 | /tmp/a7-glm53-language-audit/out/c_call_arg_u8.a7out:Found 1 error:
+== c_compound_div_signed : a7-exit=0 
+== c_ifexpr_mixed : a7-exit=6 | /tmp/a7-glm53-language-audit/out/c_ifexpr_mixed.a7out:Found 1 error:
+== c_mixed_sign_cmp : a7-exit=0 
+== c_mixed_width : a7-exit=0 
+== c_neg_unsigned : a7-exit=0 
+== c_partial_struct : a7-exit=0 
+== c_return_u8 : a7-exit=6 | /tmp/a7-glm53-language-audit/out/c_return_u8.a7out:Found 1 error:
+== c_shift_neg : a7-exit=0 
+== cyc_a : a7-exit=6 | /tmp/a7-glm53-language-audit/out/cyc_a.a7out:Found 1 error:
+== cyc_b : a7-exit=6 | /tmp/a7-glm53-language-audit/out/cyc_b.a7out:Found 1 error:
+== d_call_invalidates : a7-exit=0 
+== d_del_braced_defer : a7-exit=0 
+== d_join_gap : a7-exit=0 
+== d_loop_defer_del : a7-exit=0 
+== d_loop_no_fixedpoint : a7-exit=6 | /tmp/a7-glm53-language-audit/out/d_loop_no_fixedpoint.a7out:Found 1 error:
+== d_ref_nil_call : a7-exit=0 
+== e_generic_struct_field : a7-exit=7 
+== e_keyword_fn : a7-exit=0 
+== e_main_sig : a7-exit=0 
+== e_math_fn_value : a7-exit=0 
+== e_module_struct_literal : a7-exit=6 | /tmp/a7-glm53-language-audit/out/e_module_struct_literal.a7out:Found 1 error:
+== e_nested_fn_dup : a7-exit=6 | /tmp/a7-glm53-language-audit/out/e_nested_fn_dup.a7out:Found 4 errors:
+== e_nested_fn_in_if : a7-exit=6 | /tmp/a7-glm53-language-audit/out/e_nested_fn_in_if.a7out:Found 2 errors:
+== e_string_array_default : a7-exit=0 
+== f_direct_recursion : a7-exit=6 | /tmp/a7-glm53-language-audit/out/f_direct_recursion.a7out:Found 2 errors:
+== f_false_recursion : a7-exit=0 
+== f_nested_recursion : a7-exit=6 | /tmp/a7-glm53-language-audit/out/f_nested_recursion.a7out:Found 2 errors:
+== g_cast_divisor : a7-exit=5 | /tmp/a7-glm53-language-audit/out/g_cast_divisor.a7out:error: Expected RIGHT_PAREN, got AS [line 4: col 23]
+== g_char_order : a7-exit=6 | /tmp/a7-glm53-language-audit/out/g_char_order.a7out:Found 3 errors:
+== g_const_arr_size : a7-exit=6 | /tmp/a7-glm53-language-audit/out/g_const_arr_size.a7out:Found 1 error:
+== g_guard_index : a7-exit=6 | /tmp/a7-glm53-language-audit/out/g_guard_index.a7out:Found 1 error:
+== g_match_no_else : a7-exit=0 
+== g_sqrt_f64 : a7-exit=6 | /tmp/a7-glm53-language-audit/out/g_sqrt_f64.a7out:Found 2 errors:
+== shm : a7-exit=0 
+== z_smoke : a7-exit=0 

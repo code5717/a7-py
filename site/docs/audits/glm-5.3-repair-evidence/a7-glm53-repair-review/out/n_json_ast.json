@@ -1,0 +1,709 @@
+{
+  "schema_version": "2.0",
+  "mode": "ast",
+  "status": "ok",
+  "input": "/tmp/a7-glm53-repair-review/cases/n_json_match.a7",
+  "backend": "zig",
+  "timing_ms": 0,
+  "stages": {
+    "tokenize": {
+      "ok": true,
+      "token_count": 45,
+      "tokens": [
+        {
+          "type": "IDENTIFIER",
+          "value": "io",
+          "line": 1,
+          "column": 1,
+          "length": 2
+        },
+        {
+          "type": "DECLARE_CONST",
+          "value": "::",
+          "line": 1,
+          "column": 4,
+          "length": 2
+        },
+        {
+          "type": "IMPORT",
+          "value": "import",
+          "line": 1,
+          "column": 7,
+          "length": 6
+        },
+        {
+          "type": "STRING_LITERAL",
+          "value": "\"std/io\"",
+          "line": 1,
+          "column": 14,
+          "length": 8
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 1,
+          "column": 22,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "main",
+          "line": 3,
+          "column": 1,
+          "length": 4
+        },
+        {
+          "type": "DECLARE_CONST",
+          "value": "::",
+          "line": 3,
+          "column": 6,
+          "length": 2
+        },
+        {
+          "type": "FN",
+          "value": "fn",
+          "line": 3,
+          "column": 9,
+          "length": 2
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 3,
+          "column": 11,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 3,
+          "column": 12,
+          "length": 1
+        },
+        {
+          "type": "LEFT_BRACE",
+          "value": "{",
+          "line": 3,
+          "column": 14,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 3,
+          "column": 15,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "x",
+          "line": 4,
+          "column": 5,
+          "length": 1
+        },
+        {
+          "type": "COLON",
+          "value": ":",
+          "line": 4,
+          "column": 6,
+          "length": 1
+        },
+        {
+          "type": "I32",
+          "value": "i32",
+          "line": 4,
+          "column": 8,
+          "length": 3
+        },
+        {
+          "type": "ASSIGN",
+          "value": "=",
+          "line": 4,
+          "column": 12,
+          "length": 1
+        },
+        {
+          "type": "INTEGER_LITERAL",
+          "value": "2",
+          "line": 4,
+          "column": 14,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 4,
+          "column": 15,
+          "length": 1
+        },
+        {
+          "type": "MATCH",
+          "value": "match",
+          "line": 5,
+          "column": 5,
+          "length": 5
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "x",
+          "line": 5,
+          "column": 11,
+          "length": 1
+        },
+        {
+          "type": "LEFT_BRACE",
+          "value": "{",
+          "line": 5,
+          "column": 13,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 5,
+          "column": 14,
+          "length": 1
+        },
+        {
+          "type": "CASE",
+          "value": "case",
+          "line": 6,
+          "column": 9,
+          "length": 4
+        },
+        {
+          "type": "INTEGER_LITERAL",
+          "value": "1",
+          "line": 6,
+          "column": 14,
+          "length": 1
+        },
+        {
+          "type": "COLON",
+          "value": ":",
+          "line": 6,
+          "column": 15,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "io",
+          "line": 6,
+          "column": 17,
+          "length": 2
+        },
+        {
+          "type": "DOT",
+          "value": ".",
+          "line": 6,
+          "column": 19,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "println",
+          "line": 6,
+          "column": 20,
+          "length": 7
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 6,
+          "column": 27,
+          "length": 1
+        },
+        {
+          "type": "STRING_LITERAL",
+          "value": "\"one\"",
+          "line": 6,
+          "column": 28,
+          "length": 5
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 6,
+          "column": 33,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 6,
+          "column": 34,
+          "length": 1
+        },
+        {
+          "type": "ELSE",
+          "value": "else",
+          "line": 7,
+          "column": 9,
+          "length": 4
+        },
+        {
+          "type": "COLON",
+          "value": ":",
+          "line": 7,
+          "column": 13,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "io",
+          "line": 7,
+          "column": 15,
+          "length": 2
+        },
+        {
+          "type": "DOT",
+          "value": ".",
+          "line": 7,
+          "column": 17,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "println",
+          "line": 7,
+          "column": 18,
+          "length": 7
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 7,
+          "column": 25,
+          "length": 1
+        },
+        {
+          "type": "STRING_LITERAL",
+          "value": "\"other\"",
+          "line": 7,
+          "column": 26,
+          "length": 7
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 7,
+          "column": 33,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 7,
+          "column": 34,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_BRACE",
+          "value": "}",
+          "line": 8,
+          "column": 5,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 8,
+          "column": 6,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_BRACE",
+          "value": "}",
+          "line": 9,
+          "column": 1,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 9,
+          "column": 2,
+          "length": 1
+        },
+        {
+          "type": "EOF",
+          "value": "",
+          "line": 10,
+          "column": 1,
+          "length": 0
+        }
+      ]
+    },
+    "parse": {
+      "ok": true,
+      "ast": {
+        "kind": "PROGRAM",
+        "span": {
+          "start_line": 1,
+          "start_column": 1,
+          "end_line": 3,
+          "end_column": 5,
+          "length": 1
+        },
+        "is_public": false,
+        "is_using": false,
+        "is_tagged": false,
+        "is_variadic": false,
+        "has_fallthrough": false,
+        "declarations": [
+          {
+            "kind": "IMPORT",
+            "span": {
+              "start_line": 1,
+              "start_column": 1,
+              "end_line": 1,
+              "end_column": 3,
+              "length": 2
+            },
+            "is_public": false,
+            "is_using": false,
+            "is_tagged": false,
+            "is_variadic": false,
+            "has_fallthrough": false,
+            "module_path": "std/io",
+            "alias": "io"
+          },
+          {
+            "kind": "FUNCTION",
+            "span": {
+              "start_line": 3,
+              "start_column": 1,
+              "end_line": 3,
+              "end_column": 5,
+              "length": 4
+            },
+            "name": "main",
+            "is_public": false,
+            "is_using": false,
+            "is_tagged": false,
+            "is_variadic": false,
+            "has_fallthrough": false,
+            "parameters": [],
+            "body": {
+              "kind": "BLOCK",
+              "span": {
+                "start_line": 3,
+                "start_column": 14,
+                "end_line": 9,
+                "end_column": 2,
+                "length": 1
+              },
+              "is_public": false,
+              "is_using": false,
+              "is_tagged": false,
+              "is_variadic": false,
+              "has_fallthrough": false,
+              "statements": [
+                {
+                  "kind": "VAR",
+                  "span": {
+                    "start_line": 4,
+                    "start_column": 5,
+                    "end_line": 4,
+                    "end_column": 6,
+                    "length": 1
+                  },
+                  "name": "x",
+                  "is_public": false,
+                  "is_using": false,
+                  "is_tagged": false,
+                  "is_variadic": false,
+                  "has_fallthrough": false,
+                  "value": {
+                    "kind": "LITERAL",
+                    "span": {
+                      "start_line": 4,
+                      "start_column": 14,
+                      "end_line": 4,
+                      "end_column": 15,
+                      "length": 1
+                    },
+                    "is_public": false,
+                    "is_using": false,
+                    "is_tagged": false,
+                    "is_variadic": false,
+                    "has_fallthrough": false,
+                    "raw_text": "2",
+                    "literal_kind": "INTEGER",
+                    "literal_value": 2
+                  },
+                  "explicit_type": {
+                    "kind": "TYPE_PRIMITIVE",
+                    "span": {
+                      "start_line": 4,
+                      "start_column": 8,
+                      "end_line": 4,
+                      "end_column": 11,
+                      "length": 3
+                    },
+                    "is_public": false,
+                    "is_using": false,
+                    "is_tagged": false,
+                    "is_variadic": false,
+                    "has_fallthrough": false,
+                    "type_name": "i32"
+                  }
+                },
+                {
+                  "kind": "MATCH",
+                  "span": {
+                    "start_line": 5,
+                    "start_column": 5,
+                    "end_line": 5,
+                    "end_column": 10,
+                    "length": 5
+                  },
+                  "is_public": false,
+                  "is_using": false,
+                  "is_tagged": false,
+                  "is_variadic": false,
+                  "has_fallthrough": false,
+                  "cases": [
+                    {
+                      "kind": "CASE_BRANCH",
+                      "span": {
+                        "start_line": 6,
+                        "start_column": 9,
+                        "end_line": 6,
+                        "end_column": 13,
+                        "length": 4
+                      },
+                      "is_public": false,
+                      "is_using": false,
+                      "is_tagged": false,
+                      "is_variadic": false,
+                      "has_fallthrough": false,
+                      "patterns": [
+                        {
+                          "kind": "PATTERN_LITERAL",
+                          "span": {
+                            "start_line": 6,
+                            "start_column": 14,
+                            "end_line": 6,
+                            "end_column": 15,
+                            "length": 1
+                          },
+                          "is_public": false,
+                          "is_using": false,
+                          "is_tagged": false,
+                          "is_variadic": false,
+                          "has_fallthrough": false,
+                          "literal": {
+                            "kind": "LITERAL",
+                            "span": {
+                              "start_line": 6,
+                              "start_column": 14,
+                              "end_line": 6,
+                              "end_column": 15,
+                              "length": 1
+                            },
+                            "is_public": false,
+                            "is_using": false,
+                            "is_tagged": false,
+                            "is_variadic": false,
+                            "has_fallthrough": false,
+                            "raw_text": "1",
+                            "literal_kind": "INTEGER",
+                            "literal_value": 1
+                          }
+                        }
+                      ],
+                      "statement": {
+                        "kind": "EXPRESSION_STMT",
+                        "span": {
+                          "start_line": 6,
+                          "start_column": 17,
+                          "end_line": 6,
+                          "end_column": 19,
+                          "length": 2
+                        },
+                        "is_public": false,
+                        "is_using": false,
+                        "is_tagged": false,
+                        "is_variadic": false,
+                        "has_fallthrough": false,
+                        "expression": {
+                          "kind": "CALL",
+                          "span": {
+                            "start_line": 6,
+                            "start_column": 17,
+                            "end_line": 6,
+                            "end_column": 19,
+                            "length": 2
+                          },
+                          "is_public": false,
+                          "is_using": false,
+                          "is_tagged": false,
+                          "is_variadic": false,
+                          "has_fallthrough": false,
+                          "arguments": [
+                            {
+                              "kind": "LITERAL",
+                              "span": {
+                                "start_line": 6,
+                                "start_column": 28,
+                                "end_line": 6,
+                                "end_column": 33,
+                                "length": 5
+                              },
+                              "is_public": false,
+                              "is_using": false,
+                              "is_tagged": false,
+                              "is_variadic": false,
+                              "has_fallthrough": false,
+                              "raw_text": "\"one\"",
+                              "literal_kind": "STRING",
+                              "literal_value": "one"
+                            }
+                          ],
+                          "function": {
+                            "kind": "FIELD_ACCESS",
+                            "span": {
+                              "start_line": 6,
+                              "start_column": 17,
+                              "end_line": 6,
+                              "end_column": 19,
+                              "length": 2
+                            },
+                            "is_public": false,
+                            "is_using": false,
+                            "is_tagged": false,
+                            "is_variadic": false,
+                            "has_fallthrough": false,
+                            "field": "println",
+                            "object": {
+                              "kind": "IDENTIFIER",
+                              "span": {
+                                "start_line": 6,
+                                "start_column": 17,
+                                "end_line": 6,
+                                "end_column": 19,
+                                "length": 2
+                              },
+                              "name": "io",
+                              "is_public": false,
+                              "is_using": false,
+                              "is_tagged": false,
+                              "is_variadic": false,
+                              "has_fallthrough": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "else_case": [
+                    {
+                      "kind": "EXPRESSION_STMT",
+                      "span": {
+                        "start_line": 7,
+                        "start_column": 15,
+                        "end_line": 7,
+                        "end_column": 17,
+                        "length": 2
+                      },
+                      "is_public": false,
+                      "is_using": false,
+                      "is_tagged": false,
+                      "is_variadic": false,
+                      "has_fallthrough": false,
+                      "expression": {
+                        "kind": "CALL",
+                        "span": {
+                          "start_line": 7,
+                          "start_column": 15,
+                          "end_line": 7,
+                          "end_column": 17,
+                          "length": 2
+                        },
+                        "is_public": false,
+                        "is_using": false,
+                        "is_tagged": false,
+                        "is_variadic": false,
+                        "has_fallthrough": false,
+                        "arguments": [
+                          {
+                            "kind": "LITERAL",
+                            "span": {
+                              "start_line": 7,
+                              "start_column": 26,
+                              "end_line": 7,
+                              "end_column": 33,
+                              "length": 7
+                            },
+                            "is_public": false,
+                            "is_using": false,
+                            "is_tagged": false,
+                            "is_variadic": false,
+                            "has_fallthrough": false,
+                            "raw_text": "\"other\"",
+                            "literal_kind": "STRING",
+                            "literal_value": "other"
+                          }
+                        ],
+                        "function": {
+                          "kind": "FIELD_ACCESS",
+                          "span": {
+                            "start_line": 7,
+                            "start_column": 15,
+                            "end_line": 7,
+                            "end_column": 17,
+                            "length": 2
+                          },
+                          "is_public": false,
+                          "is_using": false,
+                          "is_tagged": false,
+                          "is_variadic": false,
+                          "has_fallthrough": false,
+                          "field": "println",
+                          "object": {
+                            "kind": "IDENTIFIER",
+                            "span": {
+                              "start_line": 7,
+                              "start_column": 15,
+                              "end_line": 7,
+                              "end_column": 17,
+                              "length": 2
+                            },
+                            "name": "io",
+                            "is_public": false,
+                            "is_using": false,
+                            "is_tagged": false,
+                            "is_variadic": false,
+                            "has_fallthrough": false
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "expression": {
+                    "kind": "IDENTIFIER",
+                    "span": {
+                      "start_line": 5,
+                      "start_column": 11,
+                      "end_line": 5,
+                      "end_column": 12,
+                      "length": 1
+                    },
+                    "name": "x",
+                    "is_public": false,
+                    "is_using": false,
+                    "is_tagged": false,
+                    "is_variadic": false,
+                    "has_fallthrough": false
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "artifacts": {}
+}

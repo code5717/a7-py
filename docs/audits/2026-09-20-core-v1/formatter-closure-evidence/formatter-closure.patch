@@ -1,0 +1,172 @@
+--- a/a7/formatters/console_formatter.py
++++ b/a7/formatters/console_formatter.py
+@@ -488,56 +488,65 @@
+     def format_type(self, type_node) -> str:
+         """Format type wrappers and child types without recursive calls."""
+         parts = []
+-        stack = [(False, type_node)]
++        stack = [("visit", type_node)]
++        active = set()
+         while stack:
+-            is_text, current = stack.pop()
+-            if is_text:
++            event, current = stack.pop()
++            if event == "exit":
++                active.remove(current)
++                continue
++            if event == "text":
+                 parts.append(current)
+                 continue
+             if not current:
+                 parts.append("?")
+                 continue
++            identity = id(current)
++            if identity in active:
++                parts.append("<cycle>")
++                continue
++            active.add(identity)
++            stack.append(("exit", identity))
+             kind = getattr(getattr(current, "kind", None), "name", None)
+             children = []
+             if kind == "TYPE_ARRAY":
+                 size_node = getattr(current, "size", None)
+                 size = str(size_node.literal_value) if size_node and hasattr(size_node, "literal_value") else "?"
+                 parts.append(f"[{size}]")
+-                children = [(False, getattr(current, "element_type", None))]
++                children = [("visit", getattr(current, "element_type", None))]
+             elif kind == "TYPE_SLICE":
+                 parts.append("[]")
+-                children = [(False, getattr(current, "element_type", None))]
++                children = [("visit", getattr(current, "element_type", None))]
+             elif kind == "TYPE_POINTER":
+                 parts.append("ref ")
+-                children = [(False, getattr(current, "target_type", None))]
++                children = [("visit", getattr(current, "target_type", None))]
+             elif kind == "TYPE_PRIMITIVE":
+-                parts.append(getattr(current, "type_name", "primitive"))
++                parts.append(getattr(current, "type_name", None) or "primitive")
+             elif kind == "TYPE_IDENTIFIER":
+-                parts.append(getattr(current, "name", "identifier"))
+-            elif kind in {"TYPE_GENERIC", "TYPE_FUNCTION"}:
++                parts.append(getattr(current, "name", None) or "identifier")
++            elif kind in {"TYPE_GENERIC", "TYPE_FUNCTION", "TYPE_SET"}:
+                 generic = kind == "TYPE_GENERIC"
+-                args = getattr(current, "type_args" if generic else "parameter_types", None) or []
+-                parts.append(getattr(current, "name", "?") if generic else "fn")
++                argument_field = "type_args" if generic else "types" if kind == "TYPE_SET" else "parameter_types"
++                args = getattr(current, argument_field, None) or []
++                parts.append((getattr(current, "name", None) or "?") if generic
++                             else "@type_set" if kind == "TYPE_SET" else "fn")
+                 if args or not generic:
+                     parts.append("(")
+                     for index, arg in enumerate(args):
+                         if index:
+-                            children.append((True, ", "))
+-                        children.append((False, arg))
+-                    children.append((True, ")"))
++                            children.append(("text", ", "))
++                        children.append(("visit", arg))
++                    children.append(("text", ")"))
+                 result = getattr(current, "return_type", None)
+-                if not generic and result:
+-                    children.extend([(True, " "), (False, result)])
++                if kind == "TYPE_FUNCTION" and result:
++                    children.extend([("text", " "), ("visit", result)])
+             elif kind == "TYPE_STRUCT":
+                 parts.append(f"struct {{ {len(getattr(current, 'fields', None) or [])} fields }}")
+-            elif hasattr(current, "type_name"):
+-                parts.append(current.type_name)
+-            elif hasattr(current, "name"):
+-                parts.append(current.name)
+             else:
+-                parts.append(str(current))
++                parts.append(getattr(current, "type_name", None)
++                             or getattr(current, "name", None) or kind or str(current))
+             stack.extend(reversed(children))
+-        return "".join(parts)
++        return "".join(str(part) for part in parts)
+ 
+     def format_expression_detail(self, expr) -> str:
+         """Format expression detail for display in AST tree."""
+@@ -646,8 +655,12 @@
+     def format_statement_label(self, stmt) -> str:
+         """Format a statement label with detailed information."""
+         prefixes = []
++        seen = set()
+         while (stmt and getattr(getattr(stmt, "kind", None), "name", None) == "DEFER"
+                and getattr(stmt, "statement", None)):
++            if id(stmt) in seen:
++                return "".join(prefixes) + "[dim]<cycle>[/dim]"
++            seen.add(id(stmt))
+             prefixes.append("[blue]DEFER[/blue] → ")
+             stmt = stmt.statement
+         prefix = "".join(prefixes)
+--- /dev/null
++++ b/test/test_console_review_regressions.py
+@@ -0,0 +1,66 @@
++"""AST-only CLI display and defensive handling of malformed cyclic ASTs."""
++from pathlib import Path
++import subprocess
++import sys
++
++from a7.ast_nodes import ASTNode, NodeKind
++from a7.formatters.console_formatter import ConsoleFormatter
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def test_cli_ast_displays_type_set_without_internal_error(tmp_path):
++    source = tmp_path / 'typeset.a7'
++    source.write_text('main :: fn() { x: @type_set(i32, i64) = 5 }\n')
++    result = subprocess.run([sys.executable, str(ROOT / 'main.py'), str(source),
++                             '--mode', 'ast'], cwd=ROOT, capture_output=True, text=True)
++    assert result.returncode == 0, result.stdout + result.stderr
++    assert '@type_set(i32, i64)' in result.stdout
++    assert 'Stopping before semantic analysis' in result.stdout
++    assert 'Unexpected error' not in result.stdout
++    assert not source.with_suffix('.zig').exists()
++
++
++def test_type_cycles_terminate_without_suppressing_shared_children():
++    view = ConsoleFormatter()
++    result = subprocess.run([sys.executable, '-c', '''
++from a7.ast_nodes import ASTNode, NodeKind
++from a7.formatters.console_formatter import ConsoleFormatter
++view = ConsoleFormatter()
++wrapper = ASTNode(kind=NodeKind.TYPE_SLICE)
++wrapper.element_type = wrapper
++print(view.format_type(wrapper))
++generic = ASTNode(kind=NodeKind.TYPE_GENERIC, name='Box')
++generic.type_args = [generic]
++print(view.format_type(generic))
++'''], cwd=ROOT, capture_output=True, text=True, timeout=10)
++    assert result.returncode == 0, result.stderr
++    assert result.stdout == '[]<cycle>\nBox(<cycle>)\n'
++    leaf = ASTNode(kind=NodeKind.TYPE_PRIMITIVE, type_name='i32')
++    shared = ASTNode(kind=NodeKind.TYPE_FUNCTION, parameter_types=[leaf], return_type=leaf)
++    pair = ASTNode(kind=NodeKind.TYPE_GENERIC, name='Pair', type_args=[shared, shared])
++    assert view.format_type(pair) == 'Pair(fn(i32) i32, fn(i32) i32)'
++    assert view.format_type(ASTNode(kind=NodeKind.TYPE_PRIMITIVE)) == 'primitive'
++    assert view.format_type(ASTNode(kind=NodeKind.TYPE_IDENTIFIER)) == 'identifier'
++    assert view.format_type(ASTNode(kind=NodeKind.TYPE_SET)) == '@type_set()'
++    assert view.format_type('__inline__') == '__inline__'
++
++
++def test_defer_cycle_terminates_and_shared_tail_is_repeatable():
++    view = ConsoleFormatter()
++    result = subprocess.run([sys.executable, '-c', '''
++from a7.ast_nodes import ASTNode, NodeKind
++from a7.formatters.console_formatter import ConsoleFormatter
++first = ASTNode(kind=NodeKind.DEFER)
++second = ASTNode(kind=NodeKind.DEFER, statement=first)
++first.statement = second
++print(ConsoleFormatter().format_statement_label(first))
++'''], cwd=ROOT, capture_output=True, text=True, timeout=10)
++    assert result.returncode == 0, result.stderr
++    assert result.stdout == (
++        '[blue]DEFER[/blue] → [blue]DEFER[/blue] → [dim]<cycle>[/dim]\n')
++    tail = ASTNode(kind=NodeKind.RETURN)
++    branches = [ASTNode(kind=NodeKind.DEFER, statement=tail) for _ in range(2)]
++    for branch in branches:
++        assert view.format_statement_label(branch) == (
++            '[blue]DEFER[/blue] → [blue]RETURN[/blue] [dim](void)[/dim]')

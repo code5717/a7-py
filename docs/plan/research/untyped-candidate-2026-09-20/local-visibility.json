@@ -1,0 +1,120 @@
+{
+  "source": "io :: import \"std/io\"\n\nmain :: fn() {\nx: i32 = LATER\nLATER :: 2.0\nio.println(\"{}\", x)\n}\n",
+  "note": "Observable local forward-reference control. This is a compatibility probe, not a proposed new local rule.",
+  "candidate": {
+    "compile": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/l\nocal-visibility/candidate/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/l\nocal-visibility/candidate/main.zig (643 bytes, 4 ms)\n",
+      "stderr": ""
+    },
+    "emitted_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: i32 = LATER;\n\n    const LATER = 2.0;\n    _ = LATER;\n    __a7_stdout_print(\"{}\\n\", .{x});\n}\n",
+    "profiles": {
+      "Debug": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main.zig",
+            "-O",
+            "Debug",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main-Debug",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main.zig:15:20: error: use of undeclared identifier 'LATER'\n    const x: i32 = LATER;\n                   ^~~~~\n"
+        }
+      },
+      "ReleaseFast": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main.zig",
+            "-O",
+            "ReleaseFast",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main-ReleaseFast",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate",
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/candidate/main.zig:15:20: error: use of undeclared identifier 'LATER'\n    const x: i32 = LATER;\n                   ^~~~~\n"
+        }
+      }
+    }
+  },
+  "baseline": {
+    "compile": {
+      "command": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/baseline/main.py",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main.a7",
+        "-o",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main.zig"
+      ],
+      "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/baseline",
+      "exit_code": 0,
+      "stdout": "Compiled \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/l\nocal-visibility/baseline/main.a7 -> \n/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/l\nocal-visibility/baseline/main.zig (643 bytes, 2 ms)\n",
+      "stderr": ""
+    },
+    "emitted_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: i32 = LATER;\n\n    const LATER = 2.0;\n    _ = LATER;\n    __a7_stdout_print(\"{}\\n\", .{x});\n}\n",
+    "profiles": {
+      "Debug": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main.zig",
+            "-O",
+            "Debug",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main-Debug",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/baseline",
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main.zig:15:20: error: use of undeclared identifier 'LATER'\n    const x: i32 = LATER;\n                   ^~~~~\n"
+        }
+      },
+      "ReleaseFast": {
+        "build": {
+          "command": [
+            "/home/cx89/.local/share/mise/installs/zig/0.16.0/bin/zig",
+            "build-exe",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main.zig",
+            "-O",
+            "ReleaseFast",
+            "-femit-bin=/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main-ReleaseFast",
+            "--cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-cache",
+            "--global-cache-dir",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/zig-global-cache"
+          ],
+          "cwd": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/baseline",
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/local-visibility/baseline/main.zig:15:20: error: use of undeclared identifier 'LATER'\n    const x: i32 = LATER;\n                   ^~~~~\n"
+        }
+      }
+    }
+  }
+}

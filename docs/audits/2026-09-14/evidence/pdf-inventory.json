@@ -1,0 +1,72 @@
+[
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS.pdf",
+    "sha256": "a7cbf311b900aa8f4ab4e6fbd7d31402e69a6ec583ff428d544a7d0031065a50",
+    "extract_exit": 0,
+    "text_characters": 15321,
+    "text_pages": 12,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS.pdf\nPDF Version: 1.4\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           \nCreator:         wkhtmltopdf 0.12.6\nProducer:        Qt 5.15.17\nCreationDate:    Tue Sep 23 00:13:01 2025 +03\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           12\nEncrypted:       no\nPage size:       595 x 842 pts (A4)\nPage rot:        0\nFile size:       80524 bytes\nOptimized:       no\nPDF version:     1.4\n"
+  },
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf",
+    "sha256": "429f6bccade66542ab51738e4d89a736baa6294aad7917556812e175b93e7679",
+    "extract_exit": 0,
+    "text_characters": 3770,
+    "text_pages": 8,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          A7 Language Team\nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:17:55 2025 +03\nModDate:         Tue Sep 23 00:17:55 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           8\nEncrypted:       no\nPage size:       453.543 x 255.118 pts\nPage rot:        0\nFile size:       280829 bytes\nOptimized:       no\nPDF version:     1.5\n"
+  },
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS_compact.pdf",
+    "sha256": "9864eae5796ed7d0d94377a62e17c5a90a1a4e965f423b8a2a942ce88d45e018",
+    "extract_exit": 0,
+    "text_characters": 15709,
+    "text_pages": 9,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS_compact.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          \nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:18:15 2025 +03\nModDate:         Tue Sep 23 00:18:15 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           9\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       202275 bytes\nOptimized:       no\nPDF version:     1.5\n"
+  },
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS_dark.pdf",
+    "sha256": "f3a64e60bafa412a0032c5de467741dc3a90b99b665c63542d0ee7c8a65efe9e",
+    "extract_exit": 0,
+    "text_characters": 15493,
+    "text_pages": 10,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS_dark.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          \nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:18:08 2025 +03\nModDate:         Tue Sep 23 00:18:08 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           10\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       202539 bytes\nOptimized:       no\nPDF version:     1.5\n"
+  },
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf",
+    "sha256": "f3830699ffce769e7f806c5ff523a58fff2ac65d82fc064c6be618b8808cc725",
+    "extract_exit": 0,
+    "text_characters": 14687,
+    "text_pages": 9,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf\nPDF Version: 1.4\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           \nCreator:         wkhtmltopdf 0.12.6\nProducer:        Qt 5.15.17\nCreationDate:    Tue Sep 23 00:17:34 2025 +03\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           9\nEncrypted:       no\nPage size:       595 x 842 pts (A4)\nPage rot:        0\nFile size:       73383 bytes\nOptimized:       no\nPDF version:     1.4\n"
+  },
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS_latex.pdf",
+    "sha256": "1574acc6ec80679b881a1fb2251055bc7473c3de926eea02a9f833e0742f9865",
+    "extract_exit": 0,
+    "text_characters": 16286,
+    "text_pages": 10,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS_latex.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          \nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:15:04 2025 +03\nModDate:         Tue Sep 23 00:15:04 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           10\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       251444 bytes\nOptimized:       no\nPDF version:     1.5\n"
+  },
+  {
+    "file": "docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf",
+    "sha256": "2e0169382e0fa608f35278ef9bc854887f4045c553ca8a06a6b6d50cd395cb05",
+    "extract_exit": 0,
+    "text_characters": 15375,
+    "text_pages": 10,
+    "qpdf_exit": 0,
+    "qpdf_output": "checking docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf\nPDF Version: 1.4\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "pdfinfo": "Title:           \nCreator:         wkhtmltopdf 0.12.6\nProducer:        Qt 5.15.17\nCreationDate:    Tue Sep 23 00:15:59 2025 +03\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           10\nEncrypted:       no\nPage size:       595 x 842 pts (A4)\nPage rot:        0\nFile size:       78361 bytes\nOptimized:       no\nPDF version:     1.4\n"
+  }
+]

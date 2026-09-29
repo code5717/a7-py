@@ -1,0 +1,11 @@
+$ bun run lint && bun run build
+$ bun run scripts/lint.ts
+site-lint: ok
+$ bun run scripts/build.ts && bun run build:css
+built 9 docs into dist
+$ tailwindcss -i src/tailwind.css -o dist/assets/site.css --minify
+≈ tailwindcss v4.3.0
+
+(node:1291396) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Done in 58ms

@@ -295,7 +295,7 @@ class Tokenizer:
 
             # Handle newlines as terminators
             if self.current_char() == "\n":
-                self._add_token(TokenType.TERMINATOR, "\n")
+                self._add_token(TokenType.TERMINATOR, "\n", column=self.column)
                 self.advance()
                 continue
 
@@ -452,6 +452,7 @@ class Tokenizer:
                     self.source_lines,
                 )
 
+            self._validate_number(number_text, start_column)
             self._add_token(TokenType.INTEGER_LITERAL, number_text, start_column)
             return
 
@@ -489,6 +490,7 @@ class Tokenizer:
                     self.source_lines,
                 )
 
+            self._validate_number(number_text, start_column)
             self._add_token(TokenType.INTEGER_LITERAL, number_text, start_column)
             return
 
@@ -524,6 +526,7 @@ class Tokenizer:
                     self.source_lines,
                 )
 
+            self._validate_number(number_text, start_column)
             self._add_token(TokenType.INTEGER_LITERAL, number_text, start_column)
             return
 
@@ -577,8 +580,29 @@ class Tokenizer:
                 self.source_lines,
             )
 
+        self._validate_number(number_text, start_column, is_float)
         token_type = TokenType.FLOAT_LITERAL if is_float else TokenType.INTEGER_LITERAL
         self._add_token(token_type, number_text, start_column)
+
+    def _validate_number(self, text: str, column: int, is_float: bool = False) -> None:
+        """Reject malformed literals before AST construction converts their value."""
+        try:
+            if is_float:
+                float(text)
+            elif text.startswith(("0x", "0b", "0o")):
+                int(text, 0)
+            else:
+                int(text, 10)
+        except ValueError:
+            raise TokenizerError.from_type_and_location(
+                TokenizerErrorType.INVALID_NUMBER,
+                self.line,
+                column,
+                len(text),
+                self.filename,
+                self.source_lines,
+                f"Invalid numeric literal '{text}'",
+            ) from None
 
     def _tokenize_string(self):
         """Tokenize string literals."""
@@ -821,15 +845,26 @@ class Tokenizer:
         char = self.current_char()
         next_char = self.peek_char()
 
+        if char == "." and next_char == "." and self.peek_char(2) == ".":
+            raise TokenizerError.from_type_and_location(
+                TokenizerErrorType.UNSUPPORTED,
+                self.line,
+                self.column,
+                3,
+                self.filename,
+                self.source_lines,
+                "The '...' operator is unsupported; use '..' for slice bounds",
+            )
+
         # Three-character operators (check these first!)
         if char == "<" and next_char == "<" and self.peek_char(2) == "=":
-            self._add_token(TokenType.LEFT_SHIFT_ASSIGN, "<<=")
+            self._add_token(TokenType.LEFT_SHIFT_ASSIGN, "<<=", column=self.column)
             self.advance()
             self.advance()
             self.advance()
             return True
         elif char == ">" and next_char == ">" and self.peek_char(2) == "=":
-            self._add_token(TokenType.RIGHT_SHIFT_ASSIGN, ">>=")
+            self._add_token(TokenType.RIGHT_SHIFT_ASSIGN, ">>=", column=self.column)
             self.advance()
             self.advance()
             self.advance()
@@ -839,87 +874,87 @@ class Tokenizer:
         two_char = char + (next_char or "")
 
         if two_char == "::":
-            self._add_token(TokenType.DECLARE_CONST, "::")
+            self._add_token(TokenType.DECLARE_CONST, "::", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == ":=":
-            self._add_token(TokenType.DECLARE_VAR, ":=")
+            self._add_token(TokenType.DECLARE_VAR, ":=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "==":
-            self._add_token(TokenType.EQUAL, "==")
+            self._add_token(TokenType.EQUAL, "==", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "!=":
-            self._add_token(TokenType.NOT_EQUAL, "!=")
+            self._add_token(TokenType.NOT_EQUAL, "!=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "<=":
-            self._add_token(TokenType.LESS_EQUAL, "<=")
+            self._add_token(TokenType.LESS_EQUAL, "<=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == ">=":
-            self._add_token(TokenType.GREATER_EQUAL, ">=")
+            self._add_token(TokenType.GREATER_EQUAL, ">=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "<<":
-            self._add_token(TokenType.LEFT_SHIFT, "<<")
+            self._add_token(TokenType.LEFT_SHIFT, "<<", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == ">>":
-            self._add_token(TokenType.RIGHT_SHIFT, ">>")
+            self._add_token(TokenType.RIGHT_SHIFT, ">>", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "+=":
-            self._add_token(TokenType.PLUS_ASSIGN, "+=")
+            self._add_token(TokenType.PLUS_ASSIGN, "+=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "-=":
-            self._add_token(TokenType.MINUS_ASSIGN, "-=")
+            self._add_token(TokenType.MINUS_ASSIGN, "-=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "*=":
-            self._add_token(TokenType.MULTIPLY_ASSIGN, "*=")
+            self._add_token(TokenType.MULTIPLY_ASSIGN, "*=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "/=":
-            self._add_token(TokenType.DIVIDE_ASSIGN, "/=")
+            self._add_token(TokenType.DIVIDE_ASSIGN, "/=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "%=":
-            self._add_token(TokenType.MODULO_ASSIGN, "%=")
+            self._add_token(TokenType.MODULO_ASSIGN, "%=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "&=":
-            self._add_token(TokenType.BITWISE_AND_ASSIGN, "&=")
+            self._add_token(TokenType.BITWISE_AND_ASSIGN, "&=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "|=":
-            self._add_token(TokenType.BITWISE_OR_ASSIGN, "|=")
+            self._add_token(TokenType.BITWISE_OR_ASSIGN, "|=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "^=":
-            self._add_token(TokenType.BITWISE_XOR_ASSIGN, "^=")
+            self._add_token(TokenType.BITWISE_XOR_ASSIGN, "^=", column=self.column)
             self.advance()
             self.advance()
             return True
         elif two_char == "..":
-            self._add_token(TokenType.DOT_DOT, "..")
+            self._add_token(TokenType.DOT_DOT, "..", column=self.column)
             self.advance()
             self.advance()
             return True
@@ -952,7 +987,7 @@ class Tokenizer:
         }
 
         if char in operators:
-            self._add_token(operators[char], char)
+            self._add_token(operators[char], char, column=self.column)
             self.advance()
             return True
 

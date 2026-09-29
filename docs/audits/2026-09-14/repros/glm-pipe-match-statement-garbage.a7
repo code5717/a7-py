@@ -1,0 +1,8 @@
+// glm-pipe repro: unexpected token inside a match *statement* body.
+// Expected: parse error naming the token. Observed (2026-09-14, rev 701c679):
+// parser loops forever — `a7 match-statement-garbage.a7 --mode ast` hangs
+// (timeout kills it). Root cause: a7/parser.py parse_match_statement has no
+// else-branch for non-case/non-else tokens, unlike parse_match_expression.
+f :: fn(x: i32) {
+    match x { foo }
+}

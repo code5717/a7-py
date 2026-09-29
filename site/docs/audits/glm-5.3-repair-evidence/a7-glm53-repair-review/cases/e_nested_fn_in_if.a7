@@ -1,0 +1,11 @@
+io :: import "std/io"
+
+main :: fn() {
+    c := 1
+    if c == 1 {
+        inner :: fn() {
+            io.println("inner")
+        }
+        inner()
+    }
+}

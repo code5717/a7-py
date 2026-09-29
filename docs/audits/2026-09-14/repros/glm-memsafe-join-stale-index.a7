@@ -1,0 +1,9 @@
+main :: fn() {
+    arr: [2]i32 = [1, 2]
+    y: usize = 0
+    c := true
+    if c {
+        y = 5
+    }
+    arr[y] = 1
+}

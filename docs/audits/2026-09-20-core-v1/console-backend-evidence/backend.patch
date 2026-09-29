@@ -1,0 +1,69 @@
+--- /tmp/a7-phaseb-1c9zm08g/zig.before.py	2026-09-20 02:17:32.636132935 +0300
++++ a7/backends/zig.py	2026-09-20 02:26:54.909650638 +0300
+@@ -198,7 +198,7 @@
+         'operand', 'left', 'right', 'pointer', 'then_expr', 'else_expr',
+         'iterable', 'statement', 'patterns', 'object', 'index', 'literal',
+         'start', 'end', 'explicit_type', 'param_type', 'return_type',
+-        'target_type', 'element_type', 'parameter_types', 'type_args',
++        'target_type', 'element_type', 'size', 'parameter_types', 'type_args',
+         'type_arguments', 'fields', 'parameters', 'variants',
+     )
+ 
+@@ -705,6 +705,9 @@
+             self.output.write(f"const {self._quote_identifier(name)} = {val};\n")
+         else:
+             self.output.write(f"const {self._quote_identifier(name)} = undefined;\n")
++        if self._in_function and name not in self._used_identifiers:
++            self._write_indent()
++            self.output.write(f"_ = {self._quote_identifier(name)};\n")
+ 
+     def _visit_var(self, node: ASTNode) -> None:
+         """Visit variable declaration."""
+@@ -1419,6 +1422,8 @@
+             self._write_indent()
+             self.output.write("defer ")
+             expr_str = self._emit_expr(node.expression)
++            if not self._expression_returns_void(node.expression):
++                expr_str = "_ = " + expr_str
+             self.output.write(f"{expr_str};\n")
+ 
+     def _visit_del(self, node: ASTNode) -> None:
+@@ -1447,6 +1452,13 @@
+     def _assignment_text(self, node: ASTNode, target: str, value: str) -> str:
+         """Lower compound operations once, including nontrivial lvalue targets."""
+         op = node.operator
++        if op == AssignOp.ASSIGN and node.value and node.value.kind == NodeKind.ARRAY_INIT:
++            # Zig forwards an anonymous literal's result location into its
++            # elements. Materialize the RHS before overwriting storage it reads.
++            self._name_counter += 1
++            temp = f"__a7_array_value_{self._name_counter}"
++            value = (f"{temp}_block: {{ const {temp}: @TypeOf({target}) = {value}; "
++                     f"break :{temp}_block {temp}; }}")
+         target_type = self._type_map.get(id(node.target))
+         if getattr(node, "implicit_deref_target", False):
+             target_type = getattr(target_type, "referent_type", target_type)
+@@ -1634,6 +1646,8 @@
+                     '\\': '\\\\', "'": "\\'", '\0': '\\x00',
+                 }
+                 escaped = char_escapes.get(val, val)
++                if escaped == val and len(val) == 1 and (ord(val) < 0x20 or ord(val) == 0x7f):
++                    escaped = f"\\x{ord(val):02x}"
+                 return f"'{escaped}'"
+             return raw if raw else "'\\x00'"
+         elif lk == LiteralKind.BOOLEAN:
+@@ -2551,11 +2565,13 @@
+         if node.kind == NodeKind.EXPRESSION_STMT and node.expression:
+             if self._is_io_call(node.expression):
+                 return self._emit_io_call_expr(node.expression)
+-            return self._emit_expr(node.expression)
++            value = self._emit_expr(node.expression)
++            return value if self._expression_returns_void(node.expression) else "_ = " + value
+         elif node.kind == NodeKind.ASSIGNMENT:
+             return self._emit_statement_as_expr(node)
+         elif node.kind == NodeKind.CALL:
+-            return self._emit_expr(node)
++            value = self._emit_expr(node)
++            return value if self._expression_returns_void(node) else "_ = " + value
+         elif node.kind == NodeKind.DEL:
+             expr = node.expression or node.expr
+             if expr:

@@ -1,0 +1,11 @@
+{
+  "candidate_source_hashes_match": true,
+  "baseline_source_hashes_match": true,
+  "reviewed_changed_source_hashes_match": true,
+  "all_stated_case_expectations_pass": true,
+  "case_count": 49,
+  "valid_cases": 29,
+  "rejection_cases": 18,
+  "unqualified_probes": 2,
+  "failure_artifacts_absent": true
+}

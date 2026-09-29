@@ -1,0 +1,5 @@
+// a7-glmr repro (module A): imports module B which imports module A back.
+b :: import "./a7glmr_cycle_modb"
+pub ping :: fn(x: i32) i32 {
+    ret x
+}

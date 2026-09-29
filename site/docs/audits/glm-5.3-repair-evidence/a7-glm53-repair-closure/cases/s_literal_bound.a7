@@ -1,0 +1,8 @@
+main :: fn() {
+    arr: [3]i32 = [1, 2, 3]
+    s := arr[0..3]
+    i: usize = 2
+    if i < 2 {
+        x := s[i]
+    }
+}

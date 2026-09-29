@@ -1,0 +1,5 @@
+// a7-glmr repro (module B): the import edge back to module A.
+a :: import "./a7glmr_cycle_moda"
+pub pong :: fn(x: i32) i32 {
+    ret x
+}

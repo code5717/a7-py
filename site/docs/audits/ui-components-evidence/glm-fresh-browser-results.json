@@ -1,0 +1,174 @@
+{
+  "checks": [
+    {
+      "name": "home: exactly one article H1",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "desktop: nav rail visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop: current page marked in rail",
+      "pass": true,
+      "detail": "Overview"
+    },
+    {
+      "name": "desktop: outline present",
+      "pass": true,
+      "detail": "links=6"
+    },
+    {
+      "name": "code toolbar: language label",
+      "pass": true,
+      "detail": "A7"
+    },
+    {
+      "name": "code toolbar: copy button revealed by JS",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "code toolbar: copy status initially hidden",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "copy: success feedback",
+      "pass": true,
+      "detail": "Copied|Code copied to clipboard."
+    },
+    {
+      "name": "copy: clipboard matches code",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "permalink: visible on h2 hover",
+      "pass": true,
+      "detail": "opacity=1"
+    },
+    {
+      "name": "permalink: href targets heading id",
+      "pass": true,
+      "detail": "#a-first-program"
+    },
+    {
+      "name": "theme: explicit dark persists after reload",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "search: dialog opens focused on input",
+      "pass": true,
+      "detail": "search-input"
+    },
+    {
+      "name": "search: usize results render",
+      "pass": true,
+      "detail": "19 links; status=\"19 results.\""
+    },
+    {
+      "name": "search: matched text highlighted",
+      "pass": true,
+      "detail": "marks=13"
+    },
+    {
+      "name": "search: result shows page context",
+      "pass": true,
+      "detail": "A7 tour"
+    },
+    {
+      "name": "search: result list is independently scrollable",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "search: ArrowDown focuses a result",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "search: Escape closes and restores focus",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "search: 30 tabs stay inside dialog (no underlying focus)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "outline: bottom scroll marks last section",
+      "pass": true,
+      "detail": "Not registered yet"
+    },
+    {
+      "name": "pager: previous link present on stdlib",
+      "pass": true,
+      "detail": "/a7-py/language/builtins/"
+    },
+    {
+      "name": "pager: no underline until hover",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "copy: failure feedback shown outside code",
+      "pass": true,
+      "detail": "Copy failed. Select the code and copy it manually, or try again."
+    },
+    {
+      "name": "search: blocked index shows failure + retry",
+      "pass": true,
+      "detail": "Search could not load. Check your connection and retry, or use the documentation navigation."
+    },
+    {
+      "name": "search: retry recovers results",
+      "pass": true,
+      "detail": "23 links"
+    },
+    {
+      "name": "mobile: nav disclosure initially closed with JS",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile 390: no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile: outline disclosure visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile: copy control at least 44px",
+      "pass": true,
+      "detail": "height=44"
+    },
+    {
+      "name": "no-JS: nav, content visible; copy/search/theme hidden",
+      "pass": true,
+      "detail": "nav=true copyHidden=true searchHidden=true themeHidden=true content=true"
+    },
+    {
+      "name": "no-JS: markdown twin link works",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "320px compiler: no horizontal overflow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "320px: mobile H1 32px",
+      "pass": true,
+      "detail": "32px"
+    }
+  ]
+}

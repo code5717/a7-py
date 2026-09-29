@@ -1,0 +1,5 @@
+io :: import "std/io"
+main :: fn() { a := [1,2,3]
+ i: usize = 0
+ if true { i = 100 }
+ io.println("{}", a[i]) }

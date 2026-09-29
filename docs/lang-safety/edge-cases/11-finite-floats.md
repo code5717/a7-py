@@ -1,161 +1,210 @@
 # Gap 11 — Finite floats (`Fin<f>` and NaN/inf discipline)
 
+Status: Phase A research from before 2026-09-14. The finite-only default is
+superseded by ledger L16; current decisions are in the
+[v1 decision ledger](../../plan/decisions.md).
+
 > Edge-case enumeration for the audit finding in
 > [`../07-language-review.md` §1.11](../07-language-review.md#111-floating-point--nan--inf-flow-silently).
 > Phase A artifact; decisions land in [`../08-decisions.md`](../08-decisions.md).
 
-Today `f32` and `f64` flow NaN and infinity silently through
-arithmetic and propagate to integer conversions. The contract
-requires either (a) `Fin<F>` refined type for code that wants
-total arithmetic, or (b) explicit handling at each operation that
-may produce a non-finite. Ada offers a partial analog via the
-`'Valid` attribute and constrained subtypes; A7 takes a cleaner
-refinement-based path.
+## Summary
+
+In Phase A, `f32` and `f64` carried NaN and infinity silently through arithmetic
+and into integer conversions. The Phase A contract required one of:
+
+- (a) a `Fin<F>` refined type for code that wants total arithmetic; or
+- (b) explicit handling at each operation that may produce a non-finite value.
+
+Ada offers a partial analog through the `'Valid` attribute and constrained
+subtypes. This enumeration took a refinement-based path.
+
+## Audit notes (2026-09-16)
+
+- Note (2026-09-16): superseded by ledger L16. Floats follow Zig and C: IEEE 754
+  values, so NaN and infinity are ordinary values. Arithmetic is strict by default,
+  and result-changing optimizations need explicit opt-in. Sub-decisions remain in
+  gate G1. Open decision O1 (IEEE or finite-only) is resolved by L16.
+- Note (2026-09-16): `Fin<F>` is no longer the default or a required wrapper.
+  Whether an optional library refinement survives is not decided. FF-15 (literals
+  refined to `Fin`), Q11a option 3 (strict) and Q11h assume the superseded default.
+- Note (2026-09-16): FF-05 uses `int`, removed by ledger L4. The conversion
+  operator is open under gate G3; `08-decisions.md` D.024 and D.038 contradict each
+  other on `cast(T, x)`.
+- Note (2026-09-16): the FF-05 "Today" entry is stale. Source reading (not run):
+  the safety pass rejects a float-to-integer cast unless it proves a finite
+  integral range, with the message "float-to-int cast requires finite integral
+  range proof" (`a7/safety.py:545-546`).
+- Note (2026-09-16): FF-01 and FF-02 are stale in the same way. Source reading (not
+  run): the safety pass collects a non-zero-divisor obligation for every `/` and
+  `%` without checking operand type (`a7/safety.py:408-409`, `559-565`). A float
+  division by an unproved divisor is therefore rejected. This was observed on
+  2026-09-15: `zero: f64 = 0.0` then `ratio := zero / zero` fails with exit 6,
+  "division/modulo divisor must be non-zero" (v1 plan, gate G1). Under L16,
+  whether float division should carry that obligation is a G1 question.
+- Note (2026-09-16): planning research
+  (`docs/plan/research/memory/notes-f-plan-memory-research.md`) records that NaN
+  comparisons are false under IEEE, so float guards cannot become range facts.
 
 ## Subcases
 
-| # | Pattern | Today | Decision target |
+| # | Pattern | Today (Phase A) | Decision target (Phase A) |
 | --- | --- | --- | --- |
-| FF-01 | `let x: f64 = 1.0 / 0.0` | Compiles; produces `inf` | Produces `inf`; allowed but tracked |
-| FF-02 | `let x: f64 = 0.0 / 0.0` | Compiles; produces `NaN` | Produces `NaN`; allowed but tracked |
-| FF-03 | `let x: f64 = sqrt(-1.0)` | Compiles; produces `NaN` | Allowed but tracked |
-| FF-04 | `let x: f64 = log(0.0)` | Produces `-inf` | Tracked |
-| FF-05 | `let y: int = cast(int, x: f64)` where `x = NaN` | Today: UB under `-O ReleaseFast` | **Compile error** unless `x: Fin<f64>`; otherwise use `int_from(x) -> ?int` |
-| FF-06 | Comparison `NaN == NaN` | Returns `false` (IEEE 754) | Allowed; documented quirk |
-| FF-07 | `Fin::new(x: f64) -> ?Fin<f64>` | n/a | Constructor; returns `none` for NaN/inf |
-| FF-08 | `Fin<f64> + Fin<f64>` | n/a | May produce non-finite (e.g., overflow); returns `?Fin<f64>` |
-| FF-09 | `Fin<f64> * Fin<f64>` | n/a | Same |
-| FF-10 | `Fin<f64> / Fin<f64>` | n/a | Returns `?Fin<f64>` (divisor zero ⇒ inf) |
-| FF-11 | `sqrt(x: Fin<f64>) -> ?Fin<f64>` | n/a | None for negative `x` |
-| FF-12 | `log(x: Fin<f64>) -> ?Fin<f64>` | n/a | None for `x ≤ 0` |
-| FF-13 | Subnormals (very small `f64` values) | Allowed | Allowed — they're finite |
-| FF-14 | `f32` vs `f64` mixing | Today: requires explicit cast | Same |
-| FF-15 | Float literal `1.5` | Compiles | Refined to `Fin<f64>` (compile-time check) |
-| FF-16 | NaN/inf literals: `NaN`, `inf`, `-inf` | n/a | Allowed via explicit keywords; **never** assigned to `Fin<F>` |
-| FF-17 | `printf("%f", x: Fin<f64>)` | n/a | Format string accepts `Fin<F>` and prints standard form |
-| FF-18 | `printf("%f", x: f64)` where `x` may be NaN | n/a | Allowed; prints `nan` literal text |
+| FF-01 | `let x: f64 = 1.0 / 0.0` | Compiles; `inf` | `inf`; allowed but tracked |
+| FF-02 | `let x: f64 = 0.0 / 0.0` | Compiles; `NaN` | `NaN`; allowed but tracked |
+| FF-03 | `let x: f64 = sqrt(-1.0)` | Compiles; `NaN` | Allowed but tracked |
+| FF-04 | `let x: f64 = log(0.0)` | `-inf` | Tracked |
+| FF-05 | `let y: int = cast(int, x: f64)`, `x = NaN` | UB under `-O ReleaseFast` | Compile error unless `x: Fin<f64>`; otherwise `int_from(x) -> ?int` |
+| FF-06 | `NaN == NaN` | `false` (IEEE 754) | Allowed; documented quirk |
+| FF-07 | `Fin::new(x: f64) -> ?Fin<f64>` | n/a | Constructor; `none` for NaN or infinity |
+| FF-08 | `Fin<f64> + Fin<f64>` | n/a | May overflow to non-finite; returns `?Fin<f64>` |
+| FF-09 | `Fin<f64> * Fin<f64>` | n/a | Same as FF-08 |
+| FF-10 | `Fin<f64> / Fin<f64>` | n/a | Returns `?Fin<f64>`; zero divisor gives infinity |
+| FF-11 | `sqrt(x: Fin<f64>) -> ?Fin<f64>` | n/a | `none` for negative `x` |
+| FF-12 | `log(x: Fin<f64>) -> ?Fin<f64>` | n/a | `none` for `x ≤ 0` |
+| FF-13 | Subnormals (very small `f64` values) | Allowed | Allowed; they are finite |
+| FF-14 | Mixing `f32` and `f64` | Needs explicit cast | Same |
+| FF-15 | Literal `1.5` | Compiles | Refined to `Fin<f64>` at compile time |
+| FF-16 | Literals `NaN`, `inf`, `-inf` | n/a | Allowed as explicit keywords; never assignable to `Fin<F>` |
+| FF-17 | `printf("%f", x: Fin<f64>)` | n/a | Accepts `Fin<F>`; prints the standard form |
+| FF-18 | `printf("%f", x: f64)`, `x` may be NaN | n/a | Allowed; prints `nan` |
 | FF-19 | `Fin<f64>` storage layout | n/a | Same as `f64` (zero-cost) |
-| FF-20 | `Fin<f64>` in match guard: `match x { case Fin::new(v): ...; case null: ... }` | n/a | Standard pattern |
-| FF-21 | Coerce `Fin<f64>` to `f64` | n/a | Implicit upcast |
-| FF-22 | Coerce `f64` to `Fin<f64>` | n/a | Only via `Fin::new` |
-| FF-23 | Float ranges `Bounded<f64, lo, hi>` (analogous to integer `Bounded`) | n/a | Optional refinement; finiteness implied if range is finite |
-| FF-24 | `abs(x: f64) -> f64` always finite if `x` is finite | n/a | `abs(x: Fin<f64>) -> Fin<f64>` |
+| FF-20 | `match x { case Fin::new(v): ...; case null: ... }` | n/a | Standard pattern |
+| FF-21 | `Fin<f64>` to `f64` | n/a | Implicit upcast |
+| FF-22 | `f64` to `Fin<f64>` | n/a | Only through `Fin::new` |
+| FF-23 | Float ranges `Bounded<f64, lo, hi>` | n/a | Optional refinement; finite if the range is finite |
+| FF-24 | `abs(x: f64) -> f64` is finite when `x` is finite | n/a | `abs(x: Fin<f64>) -> Fin<f64>` |
 | FF-25 | `neg(x: Fin<f64>) -> Fin<f64>` | n/a | Always finite |
-| FF-26 | Hex float literals `0x1.fp10` | If parser supports | Same handling as decimal |
+| FF-26 | Hex float literals `0x1.fp10` | If the parser supports them | Same handling as decimal |
+
+## Examples
+
+FF-01, FF-02 and FF-06 under ledger L16 (IEEE values):
+
+```a7
+// Proposed (L16 semantics; not re-run against the current compiler)
+main :: fn() {
+    zero: f64 = 0.0
+    pos_inf: f64 = 1.0 / zero     // inf (see audit note on the divisor obligation)
+    not_a_number: f64 = zero / zero
+    io.println("{}", not_a_number == not_a_number)   // false
+}
+```
+
+FF-13, FF-14 and FF-19, subnormals, mixing widths and layout:
+
+```a7
+// Current A7 syntax (behavior not re-run)
+half: f32 = 0.5
+wide: f64 = cast(f64, half)       // FF-14: explicit widening
+```
+
+```a7
+// Proposed (exponent literal support not verified; Fin<F> superseded as the default by L16)
+tiny: f64 = 4.9e-324              // FF-13: smallest subnormal, still finite
+
+Sample :: struct {
+    gain: Fin(f64)                // FF-19: same size and alignment as f64
+}
+```
+
+FF-05, a float-to-integer conversion that handles NaN:
+
+```a7
+// Proposed (conversion operator open under gate G3; not implemented)
+to_count :: fn(x: f64) ?u32 {
+    ret u32_from(x)               // nil for NaN, infinity or out of range
+}
+```
 
 ## Interactions
 
-- **Gap 01 cast.** Float-to-int cast (FF-05) requires `Fin<F>` input
-  or returns `?T`. Cast from `Fin<F>` to base `F` is implicit upcast.
-- **Gap 02 nullable pointers.** No interaction.
-- **Gap 03 definite assignment.** Float locals default to whatever
-  the backend produces; DA forces explicit init (same as integers).
-- **Gap 04 NonZero division.** Division of `Fin<F>` by `Fin<F>` can
-  still produce `inf` — divisor zero (or near-zero) yields `inf`.
-  Float `NonZero<F>` is a *separate* refinement that excludes
-  zero exactly; combined with `Fin<F>` gives total division.
-- **Gap 05 stack budget.** No interaction.
-- **Gap 06 typed arithmetic.** Float range tracking is **less
-  precise** than integer ranges (intervals over reals don't compose
-  cleanly under arithmetic — especially with subnormals and
-  rounding). Decision: float range tracking is *optional* and
-  coarse; the main discipline is finiteness.
-- **Gap 07 bounded indexing.** Floats are never indices; no
-  interaction.
-- **Gap 08 `Option<T>` / `Result<T, E>`.** `Fin::new`,
-  `int_from(f) -> ?int`, etc.
-- **Gap 09 refinement-lite.** `Fin<F>` is the canonical example for
-  this gap.
-- **Gap 10 affine ownership.** Floats are `Copy`; no ownership issues.
-- **Gap 12 FFI.** Foreign returns of `f64` cross as bare `f64`; user
-  wraps in `Fin` if needed.
+| Gap | Interaction |
+| --- | --- |
+| 01 cast | Float-to-int cast (FF-05) needs `Fin<F>` input or returns `?T`. `Fin<F>` to `F` is an implicit upcast. |
+| 02 nullable pointers | No interaction. |
+| 03 definite assignment | Float locals start with whatever the backend produces; DA forces explicit initialization, as for integers. |
+| 04 NonZero division | `Fin<F> / Fin<F>` can still give infinity when the divisor is zero or near zero. A float `NonZero<F>` excluding exactly zero, combined with `Fin<F>`, gives total division. |
+| 05 stack budget | No interaction. |
+| 06 typed arithmetic | Float range tracking is less precise than integer ranges; real intervals compose poorly under rounding and subnormals. Decision: float range tracking is optional and coarse; the main discipline is finiteness. |
+| 07 bounded indexing | Floats are never indices. |
+| 08 `Option<T>` / `Result<T, E>` | `Fin::new`, `int_from(f) -> ?int` and similar. |
+| 09 refinement-lite | `Fin<F>` is the canonical refinement example. |
+| 10 affine ownership | Floats are `Copy`. |
+| 12 FFI | Foreign `f64` returns cross as bare `f64`; the user wraps in `Fin` if needed. |
 
 ## Failure modes
 
 ### False positives
 
-- Numeric code that needs intermediate NaN values (e.g., as a
-  sentinel during a search) would be rejected by `Fin<F>`-typed
-  intermediate. Mitigation: keep computations in bare `f64` and
-  wrap in `Fin<F>` at boundaries.
-- Float comparison reliance on NaN ≠ NaN (FF-06) — if the code
-  *depends on* this IEEE 754 behaviour, `Fin<F>` excludes the
-  case, simplifying the comparison.
+- Numeric code that uses NaN as an intermediate sentinel (for example during a
+  search) is rejected if the intermediate is `Fin<F>`. Mitigation: compute in bare
+  `f64` and wrap at boundaries.
+- Code that depends on NaN ≠ NaN (FF-06). `Fin<F>` excludes NaN, which simplifies
+  such comparisons.
 
 ### False negatives
 
-- Subnormals (FF-13) are finite but represent precision loss.
-  Some codebases want to reject them. Mitigation: a `Normal<F>`
-  refinement (open question).
-- Rounding error in `Fin<F>` arithmetic — the result may be
-  technically finite but mathematically wrong. Refinements don't
-  protect against this.
+- Subnormals (FF-13) are finite but lose precision. Some codebases reject them.
+  Mitigation: a `Normal<F>` refinement (Q11b).
+- Rounding error: a finite `Fin<F>` result can still be mathematically wrong.
+  Refinements do not protect against this.
 
 ### Ergonomic costs
 
-- Float-heavy code (DSP, graphics, ML) becomes wordy with `Fin<F>`
-  wrappers. Mitigation: provide `Fin<F>`-preserving combinators
-  for common operations (`fma`, `dot_product`).
-- Users not doing safety-critical work probably won't bother with
-  `Fin<F>`. The contract requires that bare `f64` *cannot* slip
-  into a context where NaN propagation is unsafe (the cast to int
-  case, FF-05) — that's the main enforcement.
+- Float-heavy code (DSP, graphics, ML) becomes wordy with `Fin<F>`. Mitigation:
+  `Fin<F>`-preserving combinators for common operations (`fma`, `dot_product`).
+- Users outside safety-critical work will rarely use `Fin<F>`. The main
+  enforcement is that bare `f64` cannot reach a context where NaN is unsafe, such
+  as a cast to an integer (FF-05).
 
 ### Performance costs
 
-- `Fin<F>` is zero-cost (same storage as `F`).
-- Constructor `Fin::new` does one comparison (NaN check) — fast.
+- `Fin<F>` is zero-cost: same storage as `F`.
+- `Fin::new` does one comparison (NaN check).
 
 ## Open questions
 
-- **Q11a.** Should bare `f64` be allowed at all, or must everything
-  use `Fin<F>`? Three options:
-  - Bare `f64` allowed; constructors and operations that yield
-    non-finite return bare `f64`; conversion to `Fin<F>` only via
-    `Fin::new`.
+- **Q11a.** Is bare `f64` allowed, or must everything use `Fin<F>`?
+  - Bare `f64` allowed; operations that may yield non-finite return bare `f64`;
+    `Fin<F>` only through `Fin::new`.
   - Bare `f64` allowed; operations on `Fin<F>` return `?Fin<F>`.
-  - Strict: bare `f64` reserved; user must always wrap.
-- **Q11b.** Should there be a `Normal<F>` refinement that excludes
-  subnormals? Yes/no.
-- **Q11c.** Float `NonZero<F>` (for total division) — yes/no, and
-  combined with `Fin<F>` how?
-- **Q11d.** Float range refinements `Bounded<f64, lo, hi>` (FF-23)
-  — yes/no, and how does the type checker propagate ranges through
-  float arithmetic given rounding?
-- **Q11e.** Comparison operators on `Fin<F>` — total ordering
-  (since NaN is excluded), so `<` is total. Implications for
-  generic code using `Ord` trait (if A7 has one).
-- **Q11f.** Sin/cos/tan and other transcendental functions — return
-  `?Fin<f64>` or are they guaranteed total on `Fin<f64>` input?
-  Sin/cos are total (output in `[-1, 1]`); tan can blow up to inf
-  near π/2; log, sqrt, etc., have domain restrictions. Decision per
-  function.
-- **Q11g.** Float-to-int cast (FF-05) — explicit `truncating_int_from(f)
-  -> ?int` or extends Gap 01's `cast` classifier?
-- **Q11h.** Float literals (FF-15) — should literal `0.5` get
-  refined to `Fin<f64>` automatically?
+  - Strict: bare `f64` reserved; the user must always wrap.
+  Note (2026-09-16): answered by L16. Bare IEEE `f32` and `f64` are the default.
+- **Q11b.** Should a `Normal<F>` refinement exclude subnormals?
+- **Q11c.** A float `NonZero<F>` for total division: yes or no, and how does it
+  combine with `Fin<F>`?
+- **Q11d.** Float range refinements `Bounded<f64, lo, hi>` (FF-23): yes or no, and
+  how does the type checker propagate ranges through rounding?
+- **Q11e.** Comparisons on `Fin<F>` are a total order because NaN is excluded.
+  What does that mean for generic code using an `Ord` trait, if A7 has one?
+- **Q11f.** Transcendental functions: return `?Fin<f64>`, or total on `Fin<f64>`
+  input? `sin` and `cos` are total (output in `[-1, 1]`). `tan` overflows near π/2.
+  `log` and `sqrt` have domain limits. Decide per function.
+- **Q11g.** Float-to-int (FF-05): an explicit `truncating_int_from(f) -> ?int`, or
+  an extension of the Gap 01 `cast` classifier?
+- **Q11h.** Should the literal `0.5` (FF-15) become `Fin<f64>` automatically?
 
 ## Source citations
 
-- Today's emission: `a7/backends/zig.py:1556-1557` — direct `/` for
-  floats (not `@divTrunc`).
-- Float primitives: `a7/types.py:92-94` for `f32`, `f64`.
+- Phase A emission: `a7/backends/zig.py:1556-1557`, direct `/` for floats rather
+  than `@divTrunc`. Note (2026-09-16): stale; those lines now hold array vector
+  lowering. The current float division site was not re-verified.
+- Float primitives: `a7/types.py:92-94` (`f32`, `f64` in `is_numeric`).
 - No `Fin<F>` type exists; greenfield.
-- Ada's `'Valid` attribute documented in
-  `learn.adacore.com/courses/advanced-ada/parts/data_types/types.html`
-  is the closest analog — it returns false for scalar values whose
-  representation is invalid (which on floats includes NaN/inf on
-  most platforms).
-- Limited float usage in current examples; this gap is
-  forward-looking.
+- Ada's `'Valid` attribute
+  (`learn.adacore.com/courses/advanced-ada/parts/data_types/types.html`) is the
+  closest analog. It returns false for scalars with an invalid representation,
+  which for floats includes NaN and infinity on most platforms.
+- Current examples use few floats; this gap is forward-looking.
 
 ## Phase C decision-input summary
 
-1. Q11a — bare `f64` policy. **Drives:** scope of refinement
-   enforcement.
+1. Q11a — bare `f64` policy. Drives the scope of refinement enforcement.
+   (Answered by L16.)
 2. Q11c — `NonZero<F>` shape.
-3. Q11d — float range refinements yes/no.
-4. Q11f — transcendental functions per-function decision.
-5. Q11g — float-to-int operator placement.
+3. Q11d — float range refinements yes or no.
+4. Q11f — per-function decision for transcendental functions.
+5. Q11g — placement of the float-to-int operator.
 
-The rest follow.
+The rest follow from these.

@@ -1,0 +1,46 @@
+[
+  {
+    "case": "comparison_distinct",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 9007199254740993.0\nio.println(\"{}\", X == 9007199254740992.0)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/comparison_distinct.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/comparison_distinct-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/comparison_distinct-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  },
+  {
+    "case": "comparison_same",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\nX :: 9007199254740993.0\nio.println(\"{}\", X == 9007199254740993.0)\n}\n",
+    "command": [
+      "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate/main.py",
+      "build",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/comparison_same.a7",
+      "--profile",
+      "debug",
+      "-o",
+      "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/comparison_same-bin"
+    ],
+    "exit": 0,
+    "stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/candidate-evidence/reviewer/comparison_same-bin\n",
+    "stderr": "",
+    "run": {
+      "exit": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  }
+]

@@ -1,77 +1,110 @@
-# A7 Full Docs Corpus
-
-Generated from site/public/docs/*.md.
-
-# A7 Documentation
+# A7 full documentation
 
 Source: https://code5717.github.io/a7-py/docs/index.md
 
-# A7 Documentation
+# A7 documentation
 
-A7 is an ahead-of-time compiler. It lowers `.a7` source to a single Zig 0.16
-file, then the host Zig toolchain builds a native binary. The compiler is
-Python. There is no A7 runtime.
+A7 is an experimental, statically typed systems language. Its Python compiler
+checks `.a7` source and emits a single Zig file. Zig 0.16.0 builds the native
+program. A7 has explicit-width numbers, type inference, structs, arrays, slices,
+references, and a limited generic implementation.
+
+## A first program
+
+```a7
+io :: import "std/io"
+
+main :: fn() {
+    io.println("Hello, World!")
+}
+```
+
+From a [configured checkout](/a7-py/docs/start.md), compile the existing example:
+
+```bash
+uv run a7 examples/001_hello.a7
+```
+
+Then build and run the generated Zig:
+
+```bash
+zig run examples/001_hello.zig
+```
+
+The program writes `Hello, World!` followed by a newline. The compiler command
+emits source; it does not execute the A7 program.
 
 ## Pipeline
 
-```text
-.a7 → tokenize → parse → semantic checks → emit Zig → native binary
-```
+1. A7 source enters the Python compiler.
+2. The compiler checks syntax, types, language rules, and safety obligations.
+3. The compiler writes Zig source.
+4. The separate Zig toolchain builds a native binary.
+5. Your operating system runs that binary.
+
+The boundary is the generated `.zig` file. See the expanded
+[compiler pipeline](/a7-py/docs/compiler.md#pipeline).
 
 ## Read order
 
-| Need | Page |
+| Goal | Read |
 | --- | --- |
-| Install and run your first program | [Start](/a7-py/start/) |
-| Syntax and language rules | [Language](/a7-py/language/) |
-| Built-in modules | [Stdlib](/a7-py/stdlib/) |
-| Compiler pipeline and CLI | [Compiler](/a7-py/compiler/) |
-| Current gaps and priorities | [Status](/a7-py/status/) |
-| Release gates and deploy | [Release](/a7-py/release/) |
-| curl / agent fetch paths | [Agent Usage](/a7-py/agent-usage/) |
-| Contributing and doc maintenance | [Project](/a7-py/project/) |
+| Install and run a program | [Get started](/a7-py/docs/start.md) |
+| Learn by changing small examples | [Tour](/a7-py/docs/tour.md) |
+| Find a runnable program | [Examples](/a7-py/docs/examples.md) |
+| Look up syntax and restrictions | [Language reference](/a7-py/docs/language.md) |
+| Print output or call math functions | [Standard library](/a7-py/docs/stdlib.md) |
+| Automate compilation | [Compiler](/a7-py/docs/compiler.md) |
+| Check what remains incomplete | [Status](/a7-py/docs/status.md) |
+| Retrieve Markdown and metadata | [Agent usage](/a7-py/docs/agent-usage.md) |
+
+## Experimental status
+
+A7 is pre-1.0. A passing example does not establish support for every program
+with similar syntax. Source recursion is rejected. Generic specialization,
+module typing, integer overflow rules, reference aliasing, and lifetime checks
+have limitations. Tensors, automatic memory management, and concurrency are
+planned work. Read [status](/a7-py/docs/status.md) before choosing A7 for a project.
+
+A7 is not a sandbox. Compiled programs run with your account's permissions.
+Only compile and execute source you trust.
 
 ## Repository docs
 
-The site compresses material from the repository. For compiler work, treat these
-as authoritative:
-
-- `README.md` — everyday usage and examples
-- `docs/SPEC.md` — language semantics
-- `docs/STATUS.md` — gaps and priorities
-- `docs/RELEASE.md` — release gates
-
-Drift between the site and repository docs is a bug.
+[README](https://github.com/code5717/a7-py/blob/master/README.md) and
+[release instructions](https://github.com/code5717/a7-py/blob/master/docs/RELEASE.md)
+are the user-facing source authorities. The
+[specification](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+describes language semantics, while
+[current status](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+records implementation gaps. Reference topics qualify specification claims
+against implementation evidence. Research proposals do not establish support.
 
 ## Public contract
 
-These URLs are intentionally stable:
+Existing page routes and `/a7-py/docs/*.md` entry points remain available.
+Every topic has a Markdown twin, including nested language topics. Start agent
+retrieval at [llms.txt](/a7-py/llms.txt). Use the
+[manifest](/a7-py/docs/manifest.json) for page and feature metadata, or the
+[full corpus](/a7-py/llms-full.txt) when you need every page.
 
-- `/a7-py/`
-- `/a7-py/llms.txt`
-- `/a7-py/llms-full.txt`
-- `/a7-py/docs/index.md`
-- `/a7-py/docs/start.md`
-- `/a7-py/docs/language.md`
-- `/a7-py/docs/stdlib.md`
-- `/a7-py/docs/compiler.md`
-- `/a7-py/docs/status.md`
-- `/a7-py/docs/release.md`
-- `/a7-py/docs/agent-usage.md`
-- `/a7-py/docs/project.md`
-
-# Start
+---
 
 Source: https://code5717.github.io/a7-py/docs/start.md
 
-# Start
+# Get started
 
 ## Requirements
 
-- Python 3.13 or newer
-- `uv` for the Python environment
-- Zig 0.16.0 to build generated Zig output
-- Bun to build the docs site locally
+- Python 3.13 or newer.
+- [uv](https://docs.astral.sh/uv/) for the Python environment.
+- [Zig 0.16.0](https://ziglang.org/download/) on `PATH` to build native programs.
+- Git to clone the repository.
+
+The compiler emits Zig source. The `build` and `run` commands invoke Zig.
+`check` validates the full A7 pipeline without writing files or requiring Zig.
+The V1 qualification target is Linux x86_64 with Python 3.13 and Zig 0.16.0.
+Bun is only needed for [website contributors](/a7-py/docs/project.md).
 
 ## Install
 
@@ -79,82 +112,379 @@ Source: https://code5717.github.io/a7-py/docs/start.md
 git clone https://github.com/code5717/a7-py.git
 cd a7-py
 uv sync
-zig version
+uv run a7 --version
+uv run a7 doctor
 ```
 
-The preferred compiler entry point is:
-
-```bash
-uv run a7 examples/001_hello.a7
-```
-
-The repository wrapper is equivalent:
-
-```bash
-uv run python main.py examples/001_hello.a7
-```
+Run the following commands from the `a7-py` repository root. `zig version`
+should print `0.16.0`, the toolchain version used by this checkout's release gates.
+The release workflow attaches package files to GitHub releases; it does not
+publish to a package registry.
 
 ## First compile
 
-```bash
-uv run a7 examples/001_hello.a7 --mode compile
-zig run examples/001_hello.zig
+The file `examples/001_hello.a7` contains:
+
+```a7
+io :: import "std/io"
+
+main :: fn() {
+    io.println("Hello, World!")
+}
 ```
 
-The backend writes one Zig file per A7 input. Multi-file A7 input can be
-resolved by the compiler, but the generated Zig output remains single-file.
+Check and run it:
+
+```bash
+uv run a7 check examples/001_hello.a7
+uv run a7 run examples/001_hello.a7
+```
+
+Expected program output:
+
+```text
+Hello, World!
+```
+
+To keep a native executable:
+
+```bash
+uv run a7 build examples/001_hello.a7 -o hello
+./hello
+```
+
+The default profile is `debug`. Use `--profile release` for Zig ReleaseFast.
+Current safety checks have alias and lifetime limits in both profiles; a release
+build does not establish complete memory safety.
+
+To emit Zig without building, keep the existing file-first command:
+
+```bash
+uv run a7 examples/001_hello.a7
+# Writes examples/001_hello.zig
+```
+The repository wrapper `uv run python main.py` accepts the same arguments as
+`uv run a7`.
 
 ## Language tour
 
-Read the current language surface in one verified example file:
+Continue with the [guided tour](/a7-py/docs/tour.md). Its main source is
+[037_language_tour.a7](https://github.com/code5717/a7-py/blob/master/examples/037_language_tour.a7).
+Compile and run it with:
 
 ```bash
-uv run a7 examples/037_language_tour.a7 --mode pipeline
+uv run a7 run examples/037_language_tour.a7
 ```
-
-See [Language](/a7-py/language/) for a short reference. Full semantics live in
-`docs/SPEC.md`.
 
 ## Useful modes
 
-| Mode | Purpose |
-| --- | --- |
-| `tokens` | Show lexer output |
-| `ast` | Show parsed structure |
-| `semantic` | Run semantic checks |
-| `pipeline` | Run the full compiler pipeline without writing a file |
-| `compile` | Emit Zig |
-| `doc` | Emit compiler documentation output |
+Use `--mode semantic` to stop after semantic checks, `--mode pipeline` to
+exercise code generation without writing Zig, and `--format json` for tooling.
+Neither mode builds a native executable. `a7 check FILE --format json` provides
+the full pipeline without file output. `a7 run FILE -- ARGS` forwards arguments
+to the native process and returns its exit status. A7 `main` still has no
+parameters or return value, and there is no argument-reading API. See [all CLI options](/a7-py/docs/compiler.md).
 
-Use `--format json` for tools and agents. CLI modes and exit codes are listed on
-the [Compiler](/a7-py/compiler/) page.
+## Common setup failures
+
+| Symptom | Check |
+| --- | --- |
+| `uv` not found | Install uv and reopen the terminal so `PATH` updates apply. |
+| Python version cannot be resolved | Install Python 3.13 or newer through uv or your system package manager, then repeat `uv sync`. |
+| `a7` not found | Run `uv sync` in the repository root and invoke `uv run a7`. |
+| Input file cannot be read | Confirm the working directory and source path. Compiler exit code 3 means an I/O failure. |
+| `zig` not found | Install Zig and add its executable directory to `PATH`. |
+| Generated code fails with another Zig version | Check `zig version`; the supported toolchain is 0.16.0. |
+| Compilation succeeds but there is no executable | The file-first command emits `.zig` source. Use `a7 build FILE` or `a7 run FILE` for native execution. |
+| A7 rejects a program from the specification | Check its [feature status](/a7-py/docs/language.md) and the diagnostic stage before assuming executable support. |
 
 ## Verify locally
 
-Quick check after a compiler change:
+To compile, build, execute, and compare every checked-in example against its
+expected output:
 
 ```bash
 uv run python scripts/verify_examples_e2e.py
 ```
 
-Full release gate (heavier):
+Contributor and release checks are on [Project](/a7-py/docs/project.md) and
+[Release](/a7-py/docs/release.md). Evidence for this guide comes from
+[README](https://github.com/code5717/a7-py/blob/master/README.md), the
+[hello example](https://github.com/code5717/a7-py/blob/master/examples/001_hello.a7),
+and its [output fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/001_hello.out).
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/tour.md
+
+# A7 tour
+
+Start with [installation](/a7-py/docs/start.md). Each fragment below is an excerpt of a
+complete source file, not a standalone program. Run the main tour from the
+repository root:
 
 ```bash
-./run_all_tests.sh
+uv run a7 examples/037_language_tour.a7
+zig run examples/037_language_tour.zig
 ```
 
-Use the full gate before tagging or claiming a compiler change is complete. See
-[Release](/a7-py/release/) for the complete checklist.
+The [complete source](https://github.com/code5717/a7-py/blob/master/examples/037_language_tour.a7)
+and [expected output](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/037_language_tour.out)
+let you compare each lesson with the actual program.
 
-# Language
+## 1. Declare values
+
+```a7
+name: string = "A7"
+version := 1
+io.println("{} tour v{}", name, version)
+```
+
+`: Type =` declares a binding with an explicit type. `:=` infers its type.
+`::` introduces constants and named declarations such as functions. The output
+line is `A7 tour v1`. Change the string and run the file again.
+See [declarations](/a7-py/docs/language/declarations.md).
+
+## 2. Work with arrays and slices
+
+```a7
+numbers: [5]i32 = [3, 5, 8, 13, 21]
+middle := numbers[1..4]
+total := 0
+for value in middle {
+    total += value
+}
+io.println("slice total = {}", total)
+```
+
+`[5]i32` holds five integers. The slice selects indices 1, 2, and 3, so this
+prints `slice total = 26`. The upper bound is exclusive. Slices view existing
+storage. Use `usize` for index variables and lengths.
+See [arrays and strings](/a7-py/docs/language/arrays-strings.md).
+
+## 3. Pass structured values
+
+```a7
+Point :: struct {
+    x: i32
+    y: i32
+}
+
+area :: fn(point: Point) i32 {
+    ret point.x * point.y
+}
+```
+
+The tour constructs `Point{x: 6, y: 7}` and prints `area = 42`.
+Named fields make the structure explicit. `ret` returns a value.
+See [aggregate types](/a7-py/docs/language/aggregate-types.md) and
+[functions](/a7-py/docs/language/functions.md).
+
+## 4. Choose branches and repeat work
+
+```a7
+countdown := 3
+while countdown > 0 {
+    io.println("countdown {}", countdown)
+    countdown -= 1
+}
+```
+
+This prints countdown lines for 3, 2, and 1. The same source also matches an enum
+with one case per variant. Source recursion is banned, including mutual and
+local function-pointer alias cycles. Use loops or explicit worklists.
+See [control flow](/a7-py/docs/language/control-flow.md).
+
+## 5. Update through a reference
+
+```a7
+bump :: fn(value: ref i32) {
+    value += 1
+}
+```
+
+The tour passes an ordinary lvalue to `bump`. It splits the declaration and
+assignment before that call:
+
+```a7
+counter: i32
+counter = 41
+bump(counter)
+io.println("counter = {}", counter)
+```
+
+The output is `counter = 42`. A7 has no public address-of or dereference
+operators. The full tour also allocates a struct with `new`, checks for `nil`,
+and registers `defer del` cleanup. These checks do not establish complete
+ownership or lifetime safety. See [memory](/a7-py/docs/language/memory.md).
+
+## 6. Reuse a generic function
+
+Generics have their own complete example:
+
+```bash
+uv run a7 examples/014_generics.a7
+zig run examples/014_generics.zig
+```
+
+```a7
+identity($T) :: fn(value: $T) $T {
+    ret value
+}
+```
+
+Inside `main`, `identity(7)` returns the integer and `identity("ok")` returns
+the string. The compiler infers `$T` at each call. The example also instantiates
+`Box(i32)`, a nested box, and `Pair(i32, string)`.
+
+See the [source](https://github.com/code5717/a7-py/blob/master/examples/014_generics.a7),
+[expected output](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/014_generics.out),
+and [generic restrictions](/a7-py/docs/language/generics.md). These direct top-level
+calls do not establish arbitrary call-chain or cross-module specialization.
+
+## Next examples
+
+Use the [example index](/a7-py/docs/examples.md) to find callbacks, iterative linked
+lists and trees, sorting, text analysis, and small reporting programs. Consult
+the [reference](/a7-py/docs/language.md) when you need exact restrictions.
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/examples.md
+
+# Examples
+
+Every row links a complete checked-in A7 source and its expected stdout fixture.
+Run commands from the repository root after [installation](/a7-py/docs/start.md).
+The fixture is expected output, not a claim that a new checkout has passed.
+The verifier compiles A7, checks generated Zig, builds and runs it, then compares
+stdout to that fixture.
+
+## Run an example
+
+```bash
+uv run a7 examples/001_hello.a7
+zig run examples/001_hello.zig
+```
+
+Substitute any source stem below. The table also gives its exact command pair.
+An empty fixture means the program has no expected stdout. Compiler diagnostics
+are separate from the program output. Topic labels link to the language reference.
+
+## Example index
+
+| Source | Topic | Commands | Expected output |
+| --- | --- | --- | --- |
+| [000_empty.a7](https://github.com/code5717/a7-py/blob/master/examples/000_empty.a7) | [syntax](/a7-py/docs/language/syntax.md) | `uv run a7 examples/000_empty.a7` then `zig run examples/000_empty.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/000_empty.out) |
+| [001_hello.a7](https://github.com/code5717/a7-py/blob/master/examples/001_hello.a7) | [syntax](/a7-py/docs/language/syntax.md) | `uv run a7 examples/001_hello.a7` then `zig run examples/001_hello.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/001_hello.out) |
+| [002_var.a7](https://github.com/code5717/a7-py/blob/master/examples/002_var.a7) | [declarations](/a7-py/docs/language/declarations.md) | `uv run a7 examples/002_var.a7` then `zig run examples/002_var.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/002_var.out) |
+| [003_comments.a7](https://github.com/code5717/a7-py/blob/master/examples/003_comments.a7) | [syntax](/a7-py/docs/language/syntax.md) | `uv run a7 examples/003_comments.a7` then `zig run examples/003_comments.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/003_comments.out) |
+| [004_func.a7](https://github.com/code5717/a7-py/blob/master/examples/004_func.a7) | [functions](/a7-py/docs/language/functions.md) | `uv run a7 examples/004_func.a7` then `zig run examples/004_func.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/004_func.out) |
+| [005_for_loop.a7](https://github.com/code5717/a7-py/blob/master/examples/005_for_loop.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/005_for_loop.a7` then `zig run examples/005_for_loop.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/005_for_loop.out) |
+| [006_if.a7](https://github.com/code5717/a7-py/blob/master/examples/006_if.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/006_if.a7` then `zig run examples/006_if.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/006_if.out) |
+| [007_while.a7](https://github.com/code5717/a7-py/blob/master/examples/007_while.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/007_while.a7` then `zig run examples/007_while.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/007_while.out) |
+| [008_switch.a7](https://github.com/code5717/a7-py/blob/master/examples/008_switch.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/008_switch.a7` then `zig run examples/008_switch.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/008_switch.out) |
+| [009_struct.a7](https://github.com/code5717/a7-py/blob/master/examples/009_struct.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/009_struct.a7` then `zig run examples/009_struct.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/009_struct.out) |
+| [010_enum.a7](https://github.com/code5717/a7-py/blob/master/examples/010_enum.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/010_enum.a7` then `zig run examples/010_enum.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/010_enum.out) |
+| [011_memory.a7](https://github.com/code5717/a7-py/blob/master/examples/011_memory.a7) | [memory](/a7-py/docs/language/memory.md) | `uv run a7 examples/011_memory.a7` then `zig run examples/011_memory.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/011_memory.out) |
+| [012_arrays.a7](https://github.com/code5717/a7-py/blob/master/examples/012_arrays.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/012_arrays.a7` then `zig run examples/012_arrays.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/012_arrays.out) |
+| [013_pointers.a7](https://github.com/code5717/a7-py/blob/master/examples/013_pointers.a7) | [memory](/a7-py/docs/language/memory.md) | `uv run a7 examples/013_pointers.a7` then `zig run examples/013_pointers.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/013_pointers.out) |
+| [014_generics.a7](https://github.com/code5717/a7-py/blob/master/examples/014_generics.a7) | [generics](/a7-py/docs/language/generics.md) | `uv run a7 examples/014_generics.a7` then `zig run examples/014_generics.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/014_generics.out) |
+| [015_types.a7](https://github.com/code5717/a7-py/blob/master/examples/015_types.a7) | [types](/a7-py/docs/language/types.md) | `uv run a7 examples/015_types.a7` then `zig run examples/015_types.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/015_types.out) |
+| [016_unions.a7](https://github.com/code5717/a7-py/blob/master/examples/016_unions.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/016_unions.a7` then `zig run examples/016_unions.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/016_unions.out) |
+| [017_methods.a7](https://github.com/code5717/a7-py/blob/master/examples/017_methods.a7) | [functions](/a7-py/docs/language/functions.md) | `uv run a7 examples/017_methods.a7` then `zig run examples/017_methods.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/017_methods.out) |
+| [018_modules.a7](https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7) | [modules](/a7-py/docs/language/modules.md) | `uv run a7 examples/018_modules.a7` then `zig run examples/018_modules.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/018_modules.out) |
+| [019_literals.a7](https://github.com/code5717/a7-py/blob/master/examples/019_literals.a7) | [syntax](/a7-py/docs/language/syntax.md) | `uv run a7 examples/019_literals.a7` then `zig run examples/019_literals.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/019_literals.out) |
+| [020_operators.a7](https://github.com/code5717/a7-py/blob/master/examples/020_operators.a7) | [operators](/a7-py/docs/language/operators.md) | `uv run a7 examples/020_operators.a7` then `zig run examples/020_operators.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/020_operators.out) |
+| [021_control_flow.a7](https://github.com/code5717/a7-py/blob/master/examples/021_control_flow.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/021_control_flow.a7` then `zig run examples/021_control_flow.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/021_control_flow.out) |
+| [022_function_pointers.a7](https://github.com/code5717/a7-py/blob/master/examples/022_function_pointers.a7) | [functions](/a7-py/docs/language/functions.md) | `uv run a7 examples/022_function_pointers.a7` then `zig run examples/022_function_pointers.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/022_function_pointers.out) |
+| [023_inline_structs.a7](https://github.com/code5717/a7-py/blob/master/examples/023_inline_structs.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/023_inline_structs.a7` then `zig run examples/023_inline_structs.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/023_inline_structs.out) |
+| [024_defer.a7](https://github.com/code5717/a7-py/blob/master/examples/024_defer.a7) | [memory](/a7-py/docs/language/memory.md) | `uv run a7 examples/024_defer.a7` then `zig run examples/024_defer.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/024_defer.out) |
+| [025_linked_list.a7](https://github.com/code5717/a7-py/blob/master/examples/025_linked_list.a7) | [memory](/a7-py/docs/language/memory.md) | `uv run a7 examples/025_linked_list.a7` then `zig run examples/025_linked_list.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/025_linked_list.out) |
+| [026_binary_tree.a7](https://github.com/code5717/a7-py/blob/master/examples/026_binary_tree.a7) | [memory](/a7-py/docs/language/memory.md) | `uv run a7 examples/026_binary_tree.a7` then `zig run examples/026_binary_tree.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/026_binary_tree.out) |
+| [027_callbacks.a7](https://github.com/code5717/a7-py/blob/master/examples/027_callbacks.a7) | [functions](/a7-py/docs/language/functions.md) | `uv run a7 examples/027_callbacks.a7` then `zig run examples/027_callbacks.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/027_callbacks.out) |
+| [028_state_machine.a7](https://github.com/code5717/a7-py/blob/master/examples/028_state_machine.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/028_state_machine.a7` then `zig run examples/028_state_machine.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/028_state_machine.out) |
+| [029_sorting.a7](https://github.com/code5717/a7-py/blob/master/examples/029_sorting.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/029_sorting.a7` then `zig run examples/029_sorting.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/029_sorting.out) |
+| [030_calculator.a7](https://github.com/code5717/a7-py/blob/master/examples/030_calculator.a7) | [operators](/a7-py/docs/language/operators.md) | `uv run a7 examples/030_calculator.a7` then `zig run examples/030_calculator.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/030_calculator.out) |
+| [031_number_guessing.a7](https://github.com/code5717/a7-py/blob/master/examples/031_number_guessing.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/031_number_guessing.a7` then `zig run examples/031_number_guessing.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/031_number_guessing.out) |
+| [032_prime_numbers.a7](https://github.com/code5717/a7-py/blob/master/examples/032_prime_numbers.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/032_prime_numbers.a7` then `zig run examples/032_prime_numbers.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/032_prime_numbers.out) |
+| [033_fibonacci.a7](https://github.com/code5717/a7-py/blob/master/examples/033_fibonacci.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/033_fibonacci.a7` then `zig run examples/033_fibonacci.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/033_fibonacci.out) |
+| [034_string_utils.a7](https://github.com/code5717/a7-py/blob/master/examples/034_string_utils.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/034_string_utils.a7` then `zig run examples/034_string_utils.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/034_string_utils.out) |
+| [035_matrix.a7](https://github.com/code5717/a7-py/blob/master/examples/035_matrix.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/035_matrix.a7` then `zig run examples/035_matrix.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/035_matrix.out) |
+| [036_control_flow_edges.a7](https://github.com/code5717/a7-py/blob/master/examples/036_control_flow_edges.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/036_control_flow_edges.a7` then `zig run examples/036_control_flow_edges.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/036_control_flow_edges.out) |
+| [037_language_tour.a7](https://github.com/code5717/a7-py/blob/master/examples/037_language_tour.a7) | [declarations](/a7-py/docs/language/declarations.md) | `uv run a7 examples/037_language_tour.a7` then `zig run examples/037_language_tour.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/037_language_tour.out) |
+| [038_inventory_report.a7](https://github.com/code5717/a7-py/blob/master/examples/038_inventory_report.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/038_inventory_report.a7` then `zig run examples/038_inventory_report.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/038_inventory_report.out) |
+| [039_text_analyzer.a7](https://github.com/code5717/a7-py/blob/master/examples/039_text_analyzer.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/039_text_analyzer.a7` then `zig run examples/039_text_analyzer.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/039_text_analyzer.out) |
+| [040_task_board.a7](https://github.com/code5717/a7-py/blob/master/examples/040_task_board.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/040_task_board.a7` then `zig run examples/040_task_board.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/040_task_board.out) |
+| [041_route_simulation.a7](https://github.com/code5717/a7-py/blob/master/examples/041_route_simulation.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/041_route_simulation.a7` then `zig run examples/041_route_simulation.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/041_route_simulation.out) |
+| [042_gradebook.a7](https://github.com/code5717/a7-py/blob/master/examples/042_gradebook.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/042_gradebook.a7` then `zig run examples/042_gradebook.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/042_gradebook.out) |
+
+## Choose a learning path
+
+Use `001_hello` for setup, `037_language_tour` for a guided overview, and
+`014_generics` for direct generic calls and generic structs. The linked list and
+binary tree examples use iterative algorithms because source recursion is banned.
+The later inventory, text analyzer, task board, route simulation, and gradebook
+examples combine several language facilities into small programs.
+
+## Verify the suite
+
+```bash
+uv run python scripts/verify_examples_e2e.py
+```
+
+For machine-readable evidence:
+
+```bash
+uv run python scripts/verify_examples_e2e.py --json-report /tmp/a7-examples.json
+```
+
+Read `ok`, `passed`, `total`, and each result rather than treating the existence
+of a report as success. The debug and release builders perform further native
+checks listed on [Release](/a7-py/docs/release.md). Current counts come from
+`uv run python scripts/project_status.py`; do not infer them from an old report.
+
+---
 
 Source: https://code5717.github.io/a7-py/docs/language.md
 
 # Language
 
-This page is the short operational reference. Full semantics are in
-`docs/SPEC.md`. Verified examples live under `examples/`, especially
-`037_language_tour.a7`.
+Start with the [tour](/a7-py/docs/tour.md) for a guided introduction. Use the
+reference topics below for syntax, restrictions, and implementation evidence.
+The [specification](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+contains the broader language design. It also contains proposals and examples
+that the current compiler cannot execute.
+
+## Reference topics
+
+| Topic | What it covers |
+| --- | --- |
+| [Syntax](/a7-py/docs/language/syntax.md) | Comments, names, keywords, literals, and punctuation |
+| [Declarations](/a7-py/docs/language/declarations.md) | Bindings, initialization, scope, and visibility |
+| [Types](/a7-py/docs/language/types.md) | Numeric types, inference, conversions, and nil |
+| [Operators](/a7-py/docs/language/operators.md) | Arithmetic, logic, precedence, and evaluation |
+| [Control flow](/a7-py/docs/language/control-flow.md) | Conditions, loops, labels, matching, and jumps |
+| [Functions](/a7-py/docs/language/functions.md) | Parameters, returns, callbacks, and recursion restrictions |
+| [Arrays and strings](/a7-py/docs/language/arrays-strings.md) | Storage, slices, indexing, bounds, and text |
+| [Aggregate types](/a7-py/docs/language/aggregate-types.md) | Structs, enums, unions, and fields |
+| [Generics](/a7-py/docs/language/generics.md) | Type parameters, inference, constraints, and limits |
+| [Memory](/a7-py/docs/language/memory.md) | Values, references, allocation, deletion, and safety |
+| [Modules](/a7-py/docs/language/modules.md) | Imports, aliases, file modules, and visibility |
+| [Builtins](/a7-py/docs/language/builtins.md) | Intrinsics, keyword index, and unavailable operations |
+
+## Reading support labels
+
+- **Supported** means the stated form has implementation and executable evidence.
+- **Limited** means a form works with explicit restrictions or known gaps.
+- **Unavailable** means the current implementation rejects or cannot execute it.
+- **Planned** means it is a design intention without a supported current path.
+- **Unverified** means evidence does not establish executable behavior.
+
+A label applies to its stated form, not to every program involving the feature.
+The [manifest](/a7-py/docs/manifest.json) records qualifications and evidence.
+The [coverage matrix](https://github.com/code5717/a7-py/blob/master/site/docs/coverage.md)
+maps the specification and implementation inventory to these topics.
 
 ## Program shape
 
@@ -178,6 +508,12 @@ main :: fn() {
 - Top-level constants and functions: `name :: value`
 - Mutable locals with inference: `count := 0`
 - Explicit type: `count: i32 = 0`
+
+## Float remainder
+
+Float `%` uses a quotient truncated toward zero and retains the dividend's sign.
+`-5.5 % 2.0` is `-1.5` in constant expressions and at runtime. The compiler still
+requires a nonzero divisor.
 
 ## Control flow
 
@@ -216,7 +552,7 @@ Examples and docs may use:
 - References with nil checks
 - Simple generic functions and structs
 
-Reserved or incomplete areas belong in [Status](/a7-py/status/), not in
+Reserved or incomplete areas belong in [Status](/a7-py/docs/status.md), not in
 examples that pretend they are complete.
 
 ## Imports
@@ -228,8 +564,8 @@ io :: import "std/io"
 math :: import "std/math"
 ```
 
-Local file imports are being extended for multi-file programs. Generated Zig
-remains single-file output.
+Local file imports produce combined single-file Zig output. Cross-module typing
+and generic specialization have restrictions. See [modules](/a7-py/docs/language/modules.md).
 
 ## Hard rules
 
@@ -241,332 +577,1644 @@ remains single-file output.
 - Public reference syntax does not expose address-of or dereference operators.
   Pass lvalues directly to `ref` parameters.
 
-# Standard Library
+---
 
-Source: https://code5717.github.io/a7-py/docs/stdlib.md
+Source: https://code5717.github.io/a7-py/docs/language/syntax.md
 
-# Standard Library
+# Syntax and lexical structure
 
-A7 standard modules are virtual imports resolved by the compiler. No stdlib
-source file is loaded from disk at compile time.
+A7 source files use `.a7`. Use ASCII identifiers and spaces for indentation. Newlines or semicolons end statements. Tabs outside literals are rejected. The tokenizer strips a leading UTF-8 byte-order mark. The specification describes ASCII source; broader Unicode source behavior is not a supported portability guarantee.
 
-## Implemented modules
+## Comments and names
 
-Only these modules are registered in the compiler today:
+`//` and `#` begin line comments. `/* ... */` comments can nest. The current tokenizer accepts end-of-file as the end of an unclosed block comment, so do not rely on it to diagnose a missing `*/`.
 
-### `std/io`
+Names are case-sensitive. Ordinary identifiers begin with an ASCII letter or underscore, followed by ASCII letters, digits, or underscores. The specification reserves leading underscores for compiler names. The lexer limits identifiers and numeric literal spellings to 100 characters.
 
-Import path: `"std/io"`. Bindings: `print`, `println`, `eprintln`.
+```a7
+// A line comment
+/* Outer comment /* nested comment */ */
+answer := 42
+```
+
+## Literals and escapes
+
+| Kind | Spellings | Qualification |
+| --- | --- | --- |
+| Integer | `42`, `0x2A`, `0o52`, `0b101010`, `1_000` | The destination type must accommodate the value. |
+| Float | `3.14`, `.5`, `1.`, `2.71e10` | Numeric conversion and range rules still apply. |
+| Boolean | `true`, `false` | Type `bool`. |
+| Character | `'a'`, `'\n'`, `'\x41'` | Public character model is ASCII. |
+| String | `"hello"`, `"a\nb"` | String slicing produces a character slice. |
+| Nil | `nil` | Reference types only, not arrays or other value types. |
+
+Recognized escapes are `\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\0`, and `\xHH` with exactly two hexadecimal digits. Unknown string escapes are rejected. A literal escape `\t` is different from a tab used for indentation.
+
+## Punctuation and reserved words
+
+Parentheses group expressions and arguments. Braces contain blocks and aggregate initializers. Brackets express arrays, indexing, and slices. `:` introduces a type, `::` declares a constant, and `:=` declares an inferred variable. `.` selects a field or imported member. `..` separates slice bounds and appears in restricted variadic syntax. `$T` denotes a generic type parameter. `@` introduces type-set intrinsics or loop labels.
+
+The [keyword index](/a7-py/docs/language/builtins.md#keyword-index) lists the tokenizer's actual reserved words. Some specification spellings, including `cast`, are context-sensitive identifiers rather than lexer keywords. A token being recognized does not mean every use can run.
+
+## Status and restrictions
+
+Status: supported for the ordinary ASCII forms shown here. Unicode behavior beyond the documented ASCII model is unverified. Parser grammar and AST node lists describe compiler internals, not additional callable features. Numeric edge cases, diagnostics categories, and implementation limits must be read alongside current compiler evidence.
+
+## Evidence
+
+- [a7/tokens.py](https://github.com/code5717/a7-py/blob/master/a7/tokens.py)
+- [a7/parser.py](https://github.com/code5717/a7-py/blob/master/a7/parser.py)
+- [examples/003_comments.a7](https://github.com/code5717/a7-py/blob/master/examples/003_comments.a7)
+- [examples/019_literals.a7](https://github.com/code5717/a7-py/blob/master/examples/019_literals.a7)
+- [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/declarations.md
+
+# Declarations and scope
+
+Use `::` for constants, `:=` for inferred mutable variables, and `name: Type = value` for explicitly typed mutable variables. A typed declaration without an initializer is also a variable declaration.
+
+```a7
+limit :: 10
+count := 0
+index: usize = 0
+buffer: [4]u8
+count = count + 1
+```
+
+## Initialization and assignment
+
+Constants cannot be reassigned. Variables support `=` and the compound assignments listed in [operators](/a7-py/docs/language/operators.md). Fixed arrays can be zero-initialized or initialized with an exactly sized
+literal. Scalar-fill initialization is currently rejected; use a literal or
+a loop to fill the elements. Do not infer a general definite-initialization or ownership guarantee from array initialization behavior.
+
+The specification contains contradictory comments that call `x: i32 = 42` immutable. `Parser.parse_declaration` creates a variable declaration for that spelling. Use `::` when immutability is required. This documentation follows that implementation evidence; it does not change the language.
+
+## Scope and shadowing
+
+Blocks create nested scopes. Name lookup searches the current scope, enclosing scopes, file scope, imports, then builtins. Inner bindings can shadow outer bindings. Redeclaring a name in the same scope is a separate error. A shadowed module alias is no longer a route to that module in the inner scope.
+
+Function value parameters are immutable. Create a local `:=` copy to update a value. `ref` parameters can modify caller storage under the [reference rules](/a7-py/docs/language/memory.md).
+
+## Aliases and visibility
+
+```a7
+Handle :: u64
+Vector :: [3]f32
+```
+
+Aliases name an existing type. They do not establish a separately owned resource or promise a distinct runtime representation.
+
+`pub` marks a top-level function, binding, or type for export. Local bindings, parameters, and individual struct fields cannot be marked `pub`. Cross-file behavior is qualified by the current [module restrictions](/a7-py/docs/language/modules.md).
+
+## Status and restrictions
+
+Status: supported for ordinary bindings and local shadowing. Multiple declarations, tuple returns, and destructuring are unavailable in the runnable backend. Do not use `var` or `const` as declaration keywords. A7 uses the declaration operators above.
+
+## Evidence
+
+- [a7/parser.py](https://github.com/code5717/a7-py/blob/master/a7/parser.py)
+- [a7/passes/semantic_validator.py](https://github.com/code5717/a7-py/blob/master/a7/passes/semantic_validator.py)
+- [test/test_semantic_analysis.py](https://github.com/code5717/a7-py/blob/master/test/test_semantic_analysis.py)
+- [test/test_module_alias_shadowing.py](https://github.com/code5717/a7-py/blob/master/test/test_module_alias_shadowing.py)
+- [examples/002_var.a7](https://github.com/code5717/a7-py/blob/master/examples/002_var.a7)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/types.md
+
+# Types and conversions
+
+Choose explicit-width integers for data. Use `usize` for lengths, capacities, allocation sizes, array indices, and slice bounds. Reserve `isize` for signed pointer-sized offsets and position differences.
+
+## Primitive types
+
+| Type | Width | Values or purpose |
+| --- | --- | --- |
+| `bool` | Logical | `true` or `false` |
+| `i8` | 8 bits | -128 to 127 |
+| `i16` | 16 bits | -32768 to 32767 |
+| `i32` | 32 bits | -2^31 to 2^31 - 1 |
+| `i64` | 64 bits | -2^63 to 2^63 - 1 |
+| `u8` | 8 bits | 0 to 255 |
+| `u16` | 16 bits | 0 to 65535 |
+| `u32` | 32 bits | 0 to 2^32 - 1 |
+| `u64` | 64 bits | 0 to 2^64 - 1 |
+| `usize` | Target pointer width | Non-negative sizes and indices |
+| `isize` | Target pointer width | Signed offsets |
+| `f32` | 32 bits | IEEE 754 single precision |
+| `f64` | 64 bits | IEEE 754 double precision |
+| `char` | Byte representation | Public ASCII character model |
+| `string` | Composite | Character data and length |
+
+`int`, `uint`, and `number` are not accepted public alternatives to explicit-width integers. Although the lexer reserves `float`, use the documented `f32` and `f64` spellings. This index makes no runtime-support claim for `float`.
+
+## Inference and compatibility
+
+`name := expression` infers a variable's type. Explicit declarations check the initializer against the declared type. Integer literals can adopt an integer destination type when their value fits, including arguments and return values. Arrays and slices are different types. Implicit array-to-slice argument conversion is unavailable; create a view with slice syntax. Ordinary lvalues can satisfy `ref T` function parameters through compiler-inserted reference operations.
+
+Do not expect arbitrary implicit numeric widening. Use an explicit cast when a numeric conversion is required.
+
+## Casts
+
+```a7
+converted := cast(f64, 42)
+```
+
+The compiler classifies a primitive cast and requires a range proof before lowering it. Merely naming the destination type does not make a narrowing conversion valid. Cast behavior is limited by the current safety analysis; an unproved conversion can be rejected even when a programmer believes it is safe.
+
+## Composite and nullable types
+
+Arrays use `[N]T`, nested arrays use `[N][M]T`, slices use `[]T`, and references use `ref T`. Structs, enums, unions, function types, and generic instantiations have their own reference topics.
+
+Currently `nil` belongs to references. It cannot initialize a scalar, array, or value struct. `new T` results require nil proof before field access. A proposed separation between non-null and optional references is planned, not current syntax.
+
+## Status and restrictions
+
+Status: limited. Core scalar types and value aggregates are implemented, but shift safety, signed numeric edge cases, full union safety, and some generic compatibility paths remain incomplete. Numeric representation alone does not establish that every operation is safe.
+
+## Evidence
+
+- [a7/types.py](https://github.com/code5717/a7-py/blob/master/a7/types.py)
+- [a7/cast_classifier.py](https://github.com/code5717/a7-py/blob/master/a7/cast_classifier.py)
+- [test/test_cast_safety_matrix.py](https://github.com/code5717/a7-py/blob/master/test/test_cast_safety_matrix.py)
+- [docs/SAFETY_CONTRACT.md](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/operators.md
+
+# Operators and evaluation
+
+Arithmetic uses `+`, `-`, `*`, `/`, and `%`. Comparisons use `==`, `!=`, `<`, `<=`, `>`, and `>=`. Boolean composition uses `and`, `or`, and `!`; the lexer also recognizes `not`. Prefer the forms used in the runnable examples.
+
+## Precedence
+
+This is the specification's binary precedence, from tightest to loosest. Parentheses make intended grouping explicit.
+
+| Level | Operators | Meaning |
+| --- | --- | --- |
+| 1 | `* / %` | Product, quotient, remainder |
+| 2 | `+ -` | Sum and difference |
+| 3 | `<< >>` | Shifts |
+| 4 | `< > <= >=` | Ordered comparison |
+| 5 | `== !=` | Equality |
+| 6 | `&` | Bitwise AND |
+| 7 | `^` | Bitwise XOR |
+| 8 | `\|` | Bitwise OR |
+| 9 | `and` | Logical AND |
+| 10 | `or` | Logical OR |
+
+Unary operations include `-value`, `!flag`, and `~bits`. Postfix calls, indexing, slicing, and field access bind to their operand.
+
+## Assignment
+
+`=` updates a mutable binding. Compound forms are `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, and `>>=`. They remain subject to the same type and safety restrictions as their underlying operations.
+
+```a7
+a := 10
+b := 3
+sum := a + b
+remainder := a % b
+bits := a & b
+```
+
+## Division, remainder, and numeric limits
+
+Division and remainder need proof that the divisor is nonzero. Guard a possibly zero divisor before use. Floating remainder truncates the quotient toward zero: `-5.5 % 2.0` produces `-1.5`, and exact negative division preserves negative zero in the folded remainder.
+
+Integer `+`, `-`, and `*`, including compound assignments, wrap at the destination
+width. Signed division truncates toward zero. Negating an unsigned value is
+rejected. Constant shift counts must be non-negative and less than the operand
+width. Dynamic shift proofs and other numeric edge cases remain incomplete.
+
+Arithmetic uses a compatible wider type when operands have different widths.
+A representable literal can take its peer's type. An explicit narrower result
+binding is rejected. Use an explicit cast when no safe compatible type exists.
+
+Status: limited. Basic operator support does not guarantee freedom from every
+target-language trap.
+
+## Evaluation order
+
+The specification states left-to-right argument and binary-expression evaluation, right-to-left assignment, and declaration-order field initialization. These are specification requirements; this reference does not claim an exhaustive runtime qualification of side-effect ordering. Avoid making correctness depend on unverified order interactions.
+
+Logical conditions can establish safety facts, but mutations and calls can invalidate facts. Use explicit guards when proving bounds, nonzero divisors, or non-nil references.
+
+## Arrays and references
+
+One-dimensional same-shape numeric fixed-array addition is a supported narrow array operation. It is not tensor broadcasting. Bitwise `&` and arithmetic `*` are not public address-of or dereference syntax. Use [reference parameters](/a7-py/docs/language/memory.md) instead.
+
+## Evidence
+
+- [a7/parser.py](https://github.com/code5717/a7-py/blob/master/a7/parser.py)
+- [a7/const_eval.py](https://github.com/code5717/a7-py/blob/master/a7/const_eval.py)
+- [examples/020_operators.a7](https://github.com/code5717/a7-py/blob/master/examples/020_operators.a7)
+- [docs/SAFETY_CONTRACT.md](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md)
+- [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/control-flow.md
+
+# Control flow
+
+A7 has statement and expression forms of `if` and `match`, plus `while` and `for` loops. Conditions use boolean expressions. Blocks use braces.
+
+## Conditions
+
+```a7
+if value < 0 {
+    io.println("negative")
+} else if value > 0 {
+    io.println("positive")
+} else {
+    io.println("zero")
+}
+```
+
+This is a syntax excerpt; `value` and `io` must be declared by the enclosing program. An `if` expression supplies values through its branches, for example `if x > 0 { x } else { -x }`.
+
+## Loops and iteration
+
+Use `while condition { ... }`, an infinite `for { ... }`, or a C-style `for initialization; condition; update { ... }`. Iterate arrays and slices with `for value in values`. Add an index with `for index, value in values`; that index has type `usize`.
+
+```a7
+numbers: [3]i32 = [10, 20, 30]
+sum := 0
+for index, value in numbers {
+    sum += value
+}
+```
+
+A C-style loop can keep initialization, condition, and update together:
+
+```a7
+total := 0
+for i := 1; i <= 5; i += 1 {
+    if i % 2 == 0 {
+        continue
+    }
+    total += i
+}
+```
+
+This excerpt from `021_control_flow.a7` leaves `total` equal to 9.
+
+An index is a position, not an arbitrary signed integer. Bounds-dependent operations still need a compiler proof.
+
+## Labels and jumps
+
+`ret` exits a function. `break` exits a loop; `continue` starts its next iteration. Name a loop with `@outer` immediately before `for` or `while`, then use `break outer` or `continue outer`. The old `outer: for` spelling is rejected.
+
+For example, this excerpt from `036_control_flow_edges.a7` stops before 7:
+
+```a7
+numbers: [5]i32 = [3, 5, 7, 9, 11]
+break_total := 0
+@outer_break for value in numbers {
+    if value == 7 {
+        break outer_break
+    }
+    break_total += value
+}
+```
+
+`break_total` is 8. Replacing the break with `continue outer_break` skips only
+that element and leaves the sum at 28.
+
+Statements after a terminating `ret`, valid jump, or fully terminating branch are unreachable and can be rejected.
+
+## Matching
+
+`match value { case pattern: body ... else: body }` supports literal, enum, range, wildcard, and identifier patterns. A visible identifier names an existing constant or value pattern. An otherwise unresolved identifier captures the matched value as an immutable branch-local binding and covers the remaining values. A capture must be the only pattern in its case.
+
+A comma separates alternatives in one case; `4..10` is a range pattern:
+
+```a7
+value := 5
+match value {
+    case 0: io.println("zero")
+    case 1, 2, 3: io.println("small")
+    case 4..10: io.println("range")
+    else: io.println("other")
+}
+```
+
+The fragment assumes an `io` import and an enclosing function. It prints
+`range`. A match expression supplies a value. This function captures the
+scrutinee in its only branch:
+
+```a7
+score :: fn(x: i32) i32 {
+    ret match x {
+        case value: value + 1
+    }
+}
+```
+
+`score(4)` returns 5. Do not confuse a new capture name with an existing visible
+binding used as a value pattern.
+
+`fall` enters the next case body. It must be the final statement of a non-final case. It is unavailable in a match expression and cannot appear in a nested context that violates that restriction. Ordinary cases do not fall through automatically.
+
+This complete program prints `one`, then `two`, each on its own line. The
+second case body runs even though the original value is 1:
 
 ```a7
 io :: import "std/io"
 
 main :: fn() {
-    io.println("hello")
-    io.eprintln("stderr: {}", 42)
+    value := 1
+    match value {
+        case 1: {
+            io.println("one")
+            fall
+        }
+        case 2: {
+            io.println("two")
+        }
+        else: {
+            io.println("other")
+        }
+    }
 }
 ```
 
-### `std/math`
+## Unmatched statement cases
 
-Import path: `"std/math"`. Functions: `sqrt`, `abs`, `floor`, `ceil`, `sin`,
-`cos`, `tan`, `log`, `exp`, `min`, `max`.
+A statement `match` without `else` executes no arm when none of its patterns match. The compiler preserves this with conditional lowering. A match expression must supply a result; this statement rule does not supply a missing expression value.
 
-Typed variants such as `sqrt_f32` and `sqrt_f64` are also available as bare
-builtins.
+## Status and restrictions
+
+Status: supported for the example-backed loop and match forms, limited for safety proofs derived from arbitrary control flow. Recursion is unavailable. Rewrite recursive traversal with loops and an explicit worklist.
+
+## Evidence
+
+- [examples/021_control_flow.a7](https://github.com/code5717/a7-py/blob/master/examples/021_control_flow.a7)
+- [examples/036_control_flow_edges.a7](https://github.com/code5717/a7-py/blob/master/examples/036_control_flow_edges.a7)
+- [a7/passes/semantic_validator.py](https://github.com/code5717/a7-py/blob/master/a7/passes/semantic_validator.py)
+- [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/functions.md
+
+# Functions and callbacks
+
+Declare a named function with `name :: fn(parameters) ReturnType { ... }`. Omit the return type for a function with no returned value. `ret expression` returns a value; `ret` exits a void function.
+
+```a7
+add :: fn(x: i32, y: i32) i32 {
+    ret x + y
+}
+```
+
+## Parameters and returned values
+
+Value parameters are immutable. To update a local working value, copy a parameter into a `:=` variable. A `ref T` parameter modifies caller storage and receives an ordinary lvalue argument. Do not add address-of syntax at a call.
+
+A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are unavailable in the current backend.
+
+## Function types and callbacks
+
+A function type uses `fn(i32, i32) i32`. A named alias can describe a callback, and a parameter of that type can be called inside the function. See the complete [function pointer example](https://github.com/code5717/a7-py/blob/master/examples/022_function_pointers.a7) and [callback example](https://github.com/code5717/a7-py/blob/master/examples/027_callbacks.a7).
+
+This complete program shows both a raw function type and an alias. It prints
+`11 11` followed by a newline:
+
+```a7
+io :: import "std/io"
+
+BinaryOp :: fn(i32, i32) i32
+
+add :: fn(a: i32, b: i32) i32 {
+    ret a + b
+}
+
+apply :: fn(op: BinaryOp, a: i32, b: i32) i32 {
+    ret op(a, b)
+}
+
+main :: fn() {
+    raw: fn(i32, i32) i32 = add
+    callback: BinaryOp = add
+    io.println("{} {}", raw(8, 3), apply(callback, 8, 3))
+}
+```
+
+`apply` calls the supplied function. These function values do not imply closure
+capture or recursive callbacks. For an event-dispatch example with a no-argument
+`fn()` callback, see `027_callbacks.a7`.
+
+Function references and nullable heap references are not interchangeable. A declared `ref fn(...) ...` can represent a nullable function reference; ordinary function values have their declared function type.
+
+## Receiver-style functions
+
+A function can take a struct or `ref` struct as its first parameter. Call it explicitly as `increment(counter)`. Method-call sugar such as `counter.increment()` is planned, not current semantic support.
+
+```a7
+Counter :: struct {
+    value: i32
+}
+increment :: fn(counter: ref Counter) {
+    counter.value += 1
+}
+```
+
+## Recursion and variadics
+
+Recursion is unavailable. The compiler rejects direct calls back to the same function, mutual call cycles, and known cycles through local aliases and callback trampolines. Use loops, explicit stacks, or index-based worklists, as in the linked-list and binary-tree examples.
+
+Variadic declaration syntax such as `values: ..i32` is limited to parsing and partial declaration checks. Codegen rejects user variadic parameters before backend emission. The compiler's special handling of `io.println` does not make general variadic functions runnable.
+
+## Status and restrictions
+
+Status: supported for ordinary functions and example-backed callbacks. Generic specialization, variadic lowering, and broader method-style call chains have separate limits. See [generics](/a7-py/docs/language/generics.md) and [memory](/a7-py/docs/language/memory.md).
+
+## Evidence
+
+- [examples/004_func.a7](https://github.com/code5717/a7-py/blob/master/examples/004_func.a7)
+- [examples/017_methods.a7](https://github.com/code5717/a7-py/blob/master/examples/017_methods.a7)
+- [examples/022_function_pointers.a7](https://github.com/code5717/a7-py/blob/master/examples/022_function_pointers.a7)
+- [examples/027_callbacks.a7](https://github.com/code5717/a7-py/blob/master/examples/027_callbacks.a7)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/arrays-strings.md
+
+# Arrays, slices, and strings
+
+Fixed arrays own a known number of elements. Slices view a range of existing elements. Strings provide character data; their public length access is limited. Use `usize` for all index and bound variables.
+
+## Fixed and nested arrays
+
+```a7
+numbers: [5]i32 = [10, 20, 30, 40, 50]
+matrix: [2][2]i32 = [[1, 2], [3, 4]]
+zeroes: [4]u8
+```
+
+A fixed-array bound can name an integer literal constant, including a constant
+alias such as `N :: 3`. General constant-expression bounds are not fully qualified.
+
+An array literal must match the declared length and element type, including nested literals. A declaration without an initializer zero-initializes a fixed array; a scalar-fill declaration such as `filled: [3]i32 = 7` is currently rejected
+with a type mismatch. Use an exactly sized literal or a loop to fill an array. `nil` cannot initialize an array.
+
+Indexed iteration, `for index, value in numbers`, gives a `usize` index. Same-shape numeric fixed-array addition is implemented. Other tensor operations must not be inferred from this one operation.
+
+## Array storage
+
+1. The fixed array owns four elements, `[10, 20, 30, 40]`, at positions 0 through 3.
+2. The slice `array[1..3]` refers to positions 1 and 2 in that same storage.
+3. The view contains 20 and 30. Its length is 2, and its end bound excludes position 3.
+
+The slice is a view, not a new owned array. Keep the backing storage alive while using it.
+
+## Slices and bounds
+
+A slice type is `[]T`. `values[start..end]` selects the half-open interval beginning at `start` and ending before `end`. Omitted bounds select the corresponding edge. The compiler requires `0 <= start <= end <= len`. Indexing requires `0 <= index < len`.
+
+| Storage or view | Positions | Meaning |
+| --- | --- | --- |
+| Array `[10, 20, 30, 40]` | 0, 1, 2, 3 | Four owned elements |
+| Slice `array[1..3]` | 1, 2 in the backing array | View containing 20 and 30 |
+| Slice length | 2 | Number of elements in the view |
+
+A slice shares its backing storage. It must not outlive that storage. Full lifetime and alias enforcement remain incomplete, so a successful compile is not a complete lifetime proof.
+
+## Strings and characters
+
+`string` is the public ASCII string type. A string literal uses double quotes; a character uses single quotes. String slicing returns `[]char`, not a new `string`. Escape syntax is listed in [syntax](/a7-py/docs/language/syntax.md#literals-and-escapes).
+
+Slices expose `.len`. Direct string length access such as `text.len` is
+currently rejected by the type checker, despite specification descriptions of
+string storage. Count characters with a loop as in `034_string_utils.a7` when
+you need a string length. Underlying `.ptr` descriptions do not introduce public
+pointer arithmetic or dereference operators. Broader string helpers and `std/string` are planned.
+
+## Current operations together
+
+This complete program indexes a slice with `usize`, reads its length, adds two
+fixed arrays of the same shape, and iterates a string slice:
+
+```a7
+io :: import "std/io"
+
+main :: fn() {
+    numbers: [4]i32 = [10, 20, 30, 40]
+    middle := numbers[1..3]
+    index: usize = 0
+    io.println("{} {}", middle[index], middle.len)
+
+    left: [2]f64 = [1.0, 2.0]
+    right: [2]f64 = [3.0, 4.0]
+    sum: [2]f64 = left + right
+    io.println("{} {}", sum[0], sum[1])
+
+    text: string = "A7"
+    prefix := text[0..1]
+    for ch in prefix {
+        io.print("{}", ch)
+    }
+    io.println(" {}", prefix.len)
+}
+```
+
+Expected stdout:
+
+```text
+20 2
+4 6
+A 1
+```
+
+The final length is the slice length, 1. This example does not use the currently
+unavailable direct `string.len` access or scalar-fill array initialization.
+
+## Runtime slice bounds
+
+For a `usize` index, `if index < items.len { ... }` proves an index into the same slice binding inside that branch. Reassigning the slice or passing it for mutation invalidates that relation. Fixed-array bounds and literal bounds remain supported. This does not prove arbitrary relationships between different slices or aliases.
+
+## Planned array programming
+
+Status: limited for current arrays and slices. Tensor types, broadcasting, reshaping, reductions, matrix libraries, autodiff, neural-network primitives, memory-layout controls, SIMD annotations, GPU movement, and advanced multi-axis indexing are planned. Specification section 9 illustrates that proposed design, not executable current APIs.
+
+`new [N]T` is unavailable. Use stack fixed arrays or supported slice operations. Do not substitute a heap-array example from an older specification passage.
+
+## Evidence
+
+- [examples/012_arrays.a7](https://github.com/code5717/a7-py/blob/master/examples/012_arrays.a7)
+- [examples/034_string_utils.a7](https://github.com/code5717/a7-py/blob/master/examples/034_string_utils.a7)
+- [examples/035_matrix.a7](https://github.com/code5717/a7-py/blob/master/examples/035_matrix.a7)
+- [docs/SAFETY_CONTRACT.md](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/aggregate-types.md
+
+# Structs, enums, and unions
+
+Aggregate declarations use `Name :: struct`, `Name :: enum`, or `Name :: union`. Structs group fields, enums name alternatives, and unions store one selected payload.
+
+## Structs and initialization
+
+Struct literals must initialize every field, either by name or declaration-order position exactly once. Missing, unknown, and
+duplicate fields are rejected. A declaration without an initializer is a
+separate default-initialization operation.
+
+```a7
+Counter :: struct {
+    value: i32
+}
+counter := Counter{value: 0}
+counter.value = 1
+```
+
+Named initializers identify their field. Supported positional initializers follow declaration order. Nested structs contain other value structs; copying values does not imply a deep copy of heap references inside them. Field access uses `value.field`, including nil-proved references.
+
+## Enums
+
+```a7
+Color :: enum {
+    Red,
+    Green,
+    Blue
+}
+```
+
+Plain enum members receive integer values beginning at zero; explicit values use `Name = integer`. Access members through the enum name, such as `Color.Red`, and match them with `case` patterns. Do not infer payload-carrying `Option` or `Result` support from plain enum support.
+
+## Unions
+
+```a7
+Value :: union {
+    int_val: i32
+    float_val: f64
+}
+int_value := Value{int_val: 42}
+```
+
+An untagged union literal requires exactly one named field. The field must exist and its initializer must match its type. Field access type-checks against declared union fields. Current union safety does not prove every active payload, so do not access another field on the assumption that the compiler has checked its discriminant.
+
+## Status and restrictions
+
+Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` and tag inspection are reserved or incomplete workflows, not a qualified tagged-union API. Multiple return values and destructuring remain unavailable; use a named result struct.
+
+Only top-level declarations can use `pub`. Individual fields cannot be public declarations. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](/a7-py/docs/language/generics.md).
+
+## Evidence
+
+- [examples/009_struct.a7](https://github.com/code5717/a7-py/blob/master/examples/009_struct.a7)
+- [examples/010_enum.a7](https://github.com/code5717/a7-py/blob/master/examples/010_enum.a7)
+- [examples/016_unions.a7](https://github.com/code5717/a7-py/blob/master/examples/016_unions.a7)
+- [examples/023_inline_structs.a7](https://github.com/code5717/a7-py/blob/master/examples/023_inline_structs.a7)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/generics.md
+
+# Generics and type sets
+
+Generic type parameters use `$T`. Concrete call arguments can infer a function's type parameters. The current examples use explicit generic declaration lists together with inline parameter types.
+
+```a7
+identity($T) :: fn(value: $T) $T {
+    ret value
+}
+```
+
+Calls `identity(7)` and `identity("ok")` select concrete specializations. The full repository example also instantiates nested generic structs.
+
+## Generic structs
+
+```a7
+Box :: struct {
+    value: $T
+}
+Pair($A, $B) :: struct {
+    first: $A
+    second: $B
+}
+```
+
+Instantiate with concrete types, for example `Box(i32){value: 7}` or `Pair(i32, string){first: 7, second: "ok"}`. Type arguments describe the resulting field types. They do not turn generic containers into an implemented standard collection library.
+
+## Type sets and constraints
+
+`@type_set(i8, i16, i32)` describes allowed types. The semantic layer recognizes predefined sets including `Numeric`, `Integer`, `Float`, `Signed`, and `Unsigned`, and local type-set aliases.
+
+A top-level local alias such as `IntOnly :: @type_set(i32, i64)` passes
+semantic checking but currently fails Zig code generation with an unsupported
+`TYPE_SET` node. Semantic recognition alone does not make that alias runnable.
+
+The documented current constraint shape is `name($T: Numeric) :: fn(value: $T) $T { ... }`. Inferred call arguments are checked against declared constraints. `where` is a reserved spelling, but broad specification examples using `where` are not a substitute for the example-backed current form.
+
+A predefined constraint works without a local alias. This complete program
+prints `42`:
+
+```a7
+io :: import "std/io"
+identity($T: Numeric) :: fn(value: $T) $T {
+    ret value
+}
+main :: fn() { io.println("{}", identity(42)) }
+```
+
+The inline constraint `$T: @type_set(i32, i64)` also works in this direct-call
+example. A top-level `@type_set` alias remains a separate codegen limitation.
+
+## Status and restrictions
+
+Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic enums and unions appearing in the specification do not establish runnable `Option` or `Result` implementations.
+
+The specification says generic names exclude digits, while the tokenizer accepts digits after the initial letter and delegates further validity to parsing. Use conservative letter-only names such as `$T` or `$ELEMENT` until that discrepancy is resolved. Tokenizer acceptance alone is not execution evidence.
+
+Some specification examples mix separate `$T` parameters and plain `T` references. Prefer the consistent spellings in the repository's generic example. This documentation does not authorize a syntax change.
+
+## Evidence
+
+- [examples/014_generics.a7](https://github.com/code5717/a7-py/blob/master/examples/014_generics.a7)
+- [a7/generics.py](https://github.com/code5717/a7-py/blob/master/a7/generics.py)
+- [test/test_semantic_generics.py](https://github.com/code5717/a7-py/blob/master/test/test_semantic_generics.py)
+- [a7/tokens.py](https://github.com/code5717/a7-py/blob/master/a7/tokens.py)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/memory.md
+
+# Memory and references
+
+Values copy by value. Heap allocations use `new T` and need explicit cleanup with `del` or `defer del`. A7 is not a sandbox, and its current safety checks do not amount to a complete ownership system.
+
+## Allocation and nil guards
+
+The repository memory example uses this allocation pattern:
+
+```a7
+value_box := new Box
+if value_box == nil {
+    io.println("allocation failed")
+    ret
+}
+defer del value_box
+value_box.value = 42
+```
+
+This excerpt assumes the example's `Box` struct and `io` import. `new` is treated as maybe nil. The early return proves that subsequent field access uses a non-nil reference. Unproved access is rejected.
+
+## Reference access
+
+1. `new Box` produces a reference that may be nil.
+2. The nil branch exits before any field access.
+3. The surviving branch accesses `value_box.value` and schedules `defer del value_box`.
+
+The guard supplies the non-nil fact used by the safety pass. Cleanup ends the allocation lifetime; complete alias analysis remains unfinished.
+
+## Reference parameters
+
+Pass an ordinary lvalue to a `ref T` parameter. The compiler inserts internal reference operations. Access a reference's fields with ordinary `.` after nil proof. There is no public address-of or dereference syntax, and no public borrow, mutate, or consume mode.
+
+| Step | Binding or storage | Effect |
+| --- | --- | --- |
+| Caller declares `counter` | Value struct in caller storage | Owns the current field value |
+| Caller uses `increment(counter)` | Function accepts `ref Counter` | Compiler passes checked access to that storage |
+| Callee updates `counter.value` | Same field in caller storage | Caller observes the update |
+
+This complete program prints `42`. The caller and function access the same
+struct storage.
+
+```a7
+io :: import "std/io"
+
+Counter :: struct {
+    value: i32
+}
+
+increment :: fn(counter: ref Counter) {
+    counter.value += 1
+}
+
+main :: fn() {
+    counter := Counter{value: 0}
+    counter.value = 41
+    increment(counter)
+    io.println("{}", counter.value)
+}
+```
+
+This demonstrates reference passing, not a general alias-safety guarantee.
+
+## Deletion, defer, and lifetimes
+
+Branch joins, loop mutations, reference calls, and deferred effects invalidate
+stale facts. A guard before a mutation or call may no longer prove a later
+operation. These checks do not provide complete alias or lifetime analysis.
+
+`del` releases supported heap allocations. A direct read after deletion is rejected until reassignment reinitializes the binding. `defer` schedules a statement for scope exit; `defer del value_box` keeps cleanup next to allocation. See the complete defer example for ordering and early-return behavior.
+
+Slices must not outlive their backing arrays, and references must not outlive referents. These are required programming constraints. Full ownership, alias tracking, and lifetime enforcement remain incomplete. There is no implicit deep-copy guarantee.
+
+## Safety checks and remaining gaps
+
+| Operation | Current required evidence |
+| --- | --- |
+| Cast | Classified primitive conversion and safe range |
+| Division or remainder | Nonzero divisor |
+| Index | Valid `usize` or non-negative literal and in-bounds position |
+| Slice | Ordered bounds within the length |
+| Reference field access | Non-nil reference |
+| Backend lowering | Approval for that particular operation |
+| Direct use after deletion | Binding reinitialized before reuse |
+
+Status: limited. Shift and numeric edge-case checks, union discriminant proofs, and ownership analysis remain active work. The safety contract states the intended fail-closed behavior and separately lists implementation gaps. Do not turn its intended guarantees into claims that every accepted program is safe.
+
+## Planned memory model
+
+Automatic memory management and a non-null versus optional reference split are planned. They do not describe today's `ref T` semantics. Heap fixed arrays using `new [N]T` are unavailable. Use the current examples until a language change is approved.
+
+## Evidence
+
+- [examples/011_memory.a7](https://github.com/code5717/a7-py/blob/master/examples/011_memory.a7)
+- [examples/013_pointers.a7](https://github.com/code5717/a7-py/blob/master/examples/013_pointers.a7)
+- [examples/024_defer.a7](https://github.com/code5717/a7-py/blob/master/examples/024_defer.a7)
+- [docs/SAFETY_CONTRACT.md](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md)
+- [docs/plan/memory.md](https://github.com/code5717/a7-py/blob/master/docs/plan/memory.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/modules.md
+
+# Modules and visibility
+
+Each `.a7` file is a module. Supported file imports are resolved by the frontend and lowered into one combined Zig output file. This is not separate object linking or a package manager.
+
+## Imports and aliases
+
+```a7
+io :: import "std/io"
+math :: import "std/math"
+console :: import "std/io"
+```
+
+An alias is local: `console.println(...)` calls the same virtual module as `io.println(...)`. `std/io` and `std/math`, along with their short `io` and `math` module names, are compiler-backed virtual modules.
+
+Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Simple alias-qualified calls are supported and emit into the same generated Zig source. Import paths with parent traversal such as `../utils` are rejected by the resolver.
+
+## Public and private declarations
+
+`pub` applies to top-level functions, variables, constants, and types. Items without `pub` are file-private. `pub` cannot decorate a local, parameter, or individual struct field. There is no protected or internal visibility level.
+
+```a7
+pub answer :: fn() i32 {
+    ret 42
+}
+```
+
+This declaration belongs in the imported module. The caller qualifies it through its own module alias.
+
+## Status and restrictions
+
+Status: limited. File-backed imports support the current simple combined-output workflows. Broad cross-module type checking, aggregate interaction, generic propagation, and selected imports remain follow-up work.
+
+Selected-import syntax such as `import "helper" { answer }` has resolver metadata but is not backend-runnable. `using import` is not a supported public workflow. Parser routines alone are insufficient evidence that a spelling reaches native execution.
+
+`std/string`, `std/mem`, and `std/collections` are planned. There is no current package registry. See the [standard library](/a7-py/docs/stdlib.md) for the actual registered operations.
+
+## Evidence
+
+- [a7/module_resolver.py](https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py)
+- [examples/018_modules.a7](https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7)
+- [test/test_module_alias_shadowing.py](https://github.com/code5717/a7-py/blob/master/test/test_module_alias_shadowing.py)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+- [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/language/builtins.md
+
+# Builtins and keyword index
+
+`@type_set(...)` defines a compile-time type set used by [generic constraints](/a7-py/docs/language/generics.md). `cast(Type, value)` is special compiler syntax for checked conversion. Neither spelling means arbitrary identifiers are callable intrinsics.
+
+## Supported and reserved operations
+
+| Spelling | Status | Qualification |
+| --- | --- | --- |
+| `@type_set(...)` | Limited | Constraint syntax is recognized; top-level local type-set aliases fail code generation with unsupported `TYPE_SET` |
+| `cast(Type, value)` | Limited | Primitive conversion needs a safety proof |
+| `@size_of`, `@align_of` | Unavailable | Reserved or parsed; not semantically resolved and backend-lowered |
+| `@type_id`, `@type_name` | Unavailable | No current executable reflection interface |
+| `@unreachable` | Unavailable | Reserved intrinsic spelling |
+| `@likely`, `@unlikely` | Unavailable | No current branch-hint lowering |
+| `tensor_*` | Planned | Specification design sketches, not registered runtime operations |
+
+The [standard library](/a7-py/docs/stdlib.md) lists the registered `std/io` and `std/math` functions. Planned assertion, allocation, ASCII, string, and typed math helper names in the specification are not automatically callable.
+
+## Keyword index
+
+The following groups cover every entry in `Tokenizer.KEYWORDS`. They describe lexical reservation, with topic-specific runtime restrictions.
+
+| Words | Reference and disposition |
+| --- | --- |
+| `and`, `or`, `not` | [Operators](/a7-py/docs/language/operators.md), logical spellings; prefer example-backed forms |
+| `as` | Reserved, broader cast-like use is unverified; use `cast` |
+| `bool`, `char`, `string`, `f32`, `f64` | [Types](/a7-py/docs/language/types.md), current documented types |
+| `i8`, `i16`, `i32`, `i64`, `isize` | [Types](/a7-py/docs/language/types.md), signed types |
+| `u8`, `u16`, `u32`, `u64`, `usize` | [Types](/a7-py/docs/language/types.md), unsigned types |
+| `int`, `uint` | Unavailable public integer aliases |
+| `float`, `let` | Reserved lexer words; not recommended executable public forms |
+| `true`, `false`, `nil` | [Syntax](/a7-py/docs/language/syntax.md), literals with type restrictions |
+| `if`, `else`, `for`, `while`, `in` | [Control flow](/a7-py/docs/language/control-flow.md), conditions and loops |
+| `match`, `case`, `fall` | [Control flow](/a7-py/docs/language/control-flow.md), matching and restricted fallthrough |
+| `break`, `continue`, `ret` | [Control flow](/a7-py/docs/language/control-flow.md), jumps |
+| `fn` | [Functions](/a7-py/docs/language/functions.md), declarations and function types |
+| `struct`, `enum`, `union` | [Aggregates](/a7-py/docs/language/aggregate-types.md), union restrictions apply |
+| `new`, `del`, `defer`, `ref` | [Memory](/a7-py/docs/language/memory.md), limited safety enforcement |
+| `import`, `pub` | [Modules](/a7-py/docs/language/modules.md), limited cross-file support |
+| `where` | Reserved; use the current declared generic constraint form |
+
+## Specification words that are not lexer keywords
+
+`cast`, `const`, `self`, `size_of`, `type`, `using`, and `var` occur in the specification's keyword list but not in the tokenizer's keyword mapping. `cast` has dedicated parser handling; `self` can be a parameter name. The others do not establish public executable features. `number` is rejected as a public numeric type alias.
+
+## Internal grammar and diagnostics
+
+The specification's token enum, AST descriptions, and grammar summary document internal forms. They are not an independent list of supported language operations. The compiler reference describes actual command modes and diagnostics. Proposed error-code categories in the specification should not be mistaken for a promise that every emitted diagnostic has such a code.
+
+## Status and restrictions
+
+Status: limited. This page deliberately separates lexical recognition, semantic acceptance, and native lowering. The feature manifest records evidence links and qualifications; a source revision alone does not verify an operation.
+
+## Evidence
+
+- [a7/tokens.py](https://github.com/code5717/a7-py/blob/master/a7/tokens.py)
+- [a7/parser.py](https://github.com/code5717/a7-py/blob/master/a7/parser.py)
+- [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
+- [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+
+## Related topics
+
+[Language overview](/a7-py/docs/language.md) · [Current status](/a7-py/docs/status.md) · [Examples](/a7-py/docs/examples.md)
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/stdlib.md
+
+# Standard library
+
+A7 resolves standard modules through a compiler registry. It does not load A7
+stdlib source files from disk. `std/io` and `std/math` are the only registered
+modules. Their short aliases `io` and `math` are also recognized; use the
+`std/` spelling in new examples.
+
+## Implemented modules
+
+### std/io
+
+```a7
+io :: import "std/io"
+
+main :: fn() {
+    io.print("Hello, ")
+    io.println("{}!", "A7")
+    io.eprintln("diagnostic {}", 42)
+}
+```
+
+The first two calls write `Hello, A7!` and a newline to stdout. The third writes
+`diagnostic 42` and a newline to stderr.
+
+These are call signatures, not user-definable variadic A7 declarations:
+
+| Call | Result | Behavior | Status |
+| --- | --- | --- | --- |
+| `io.print()` | `void` | Write an empty string to stdout | supported |
+| `io.print(format: string, values...)` | `void` | Write formatted text to stdout without adding a newline | limited |
+| `io.println()` | `void` | Write a newline to stdout | supported |
+| `io.println(format: string, values...)` | `void` | Write formatted text and a newline to stdout | limited |
+| `io.eprintln()` | `void` | Write a newline to stderr | supported |
+| `io.eprintln(format: string, values...)` | `void` | Write formatted text and a newline to stderr | limited |
+
+The format must be a string literal. Each `{}` consumes one value. The number
+of placeholders must equal the number of trailing arguments. `{{` prints `{`
+and `}}` prints `}` without consuming an argument. Other brace text, such as
+`{ }`, prints literally. The backend chooses Zig placeholders from argument types.
+These functions return no value and must be used as statements. This special
+stdlib formatting support does not make user-defined variadic functions available.
+General formatting of arbitrary aggregate types is unverified; prefer scalar
+numbers, strings, booleans, and characters as in the checked examples.
+
+### std/math
 
 ```a7
 io :: import "std/io"
 math :: import "std/math"
 
 main :: fn() {
-    x := math.sqrt(2.0)
-    io.println("sqrt(2) = {}", x)
+    value: f64 = 9.0
+    io.println("sqrt = {}", math.sqrt(value))
 }
 ```
 
+The following notation uses `F` for `f32` or `f64`, and `N` for a compatible
+numeric type. These are descriptions of the checked call rules, not exported
+A7 type aliases. Transcendental functions require floating-point arguments.
+
+| Call | Semantic result type | Operation | Status |
+| --- | --- | --- | --- |
+| `math.sqrt(x: F)` | `F` | Square root | supported for checked floating inputs |
+| `math.abs(x: N)` | `N` | Absolute value | limited for signed integers |
+| `math.floor(x: F)` | `F` | Round down to an integral floating value | supported |
+| `math.ceil(x: F)` | `F` | Round up to an integral floating value | supported |
+| `math.sin(x: F)` | `F` | Sine of an angle in radians | supported |
+| `math.cos(x: F)` | `F` | Cosine of an angle in radians | supported |
+| `math.tan(x: F)` | `F` | Tangent of an angle in radians | supported |
+| `math.log(x: F)` | `F` | Natural logarithm | supported for checked positive inputs |
+| `math.exp(x: F)` | `F` | Exponential with base e | supported |
+| `math.min(a: N, b: N)` | Compatible numeric type | Smaller argument | limited to compatible numeric arguments |
+| `math.max(a: N, b: N)` | Compatible numeric type | Larger argument | limited to compatible numeric arguments |
+
+Every unary call requires exactly one argument; `min` and `max` require two.
+For `min` and `max`, one argument type must be assignable to the other. Prefer
+matching explicit types. Math calls lower to Zig builtins. Signed `abs` results
+are converted back to the input type, so `abs` can return `i32` from an `i32`
+function. The minimum signed value has no positive value in the same type;
+that input remains an unsafe edge case. Domain errors, non-finite values, and
+integer edge values are not a general checked guarantee of these docs.
+
+Standard-library operations must be called directly. Assigning `math.sqrt`
+or another registered operation to a function variable is rejected.
+
+Typed names such as `sqrt_f32` and `sqrt_f64` are unavailable. They appear in
+specification planning material but are not registered calls.
+
 ## Not registered yet
 
-The repository contains stub modules for `mem` and `string`, but they are not
-registered in the compiler. Do not use them in examples until they appear in
-[Status](/a7-py/status/) as implemented.
+| API | Status | Qualification |
+| --- | --- | --- |
+| `std/mem`, `std/string` | unavailable | Repository stub files are not registered. |
+| `std/random`, `std/debug` | planned | No current registry entry. |
+| `Option`, `Result`, growable collections | planned | Not current stdlib types. |
+| File and network I/O | unavailable | No current stdlib API. |
+| Concurrency primitives | planned | Require language and compiler prerequisites. |
 
-These are planned but not available:
+See [status](/a7-py/docs/status.md) and [builtins](/a7-py/docs/language/builtins.md).
+Evidence: [registry](https://github.com/code5717/a7-py/blob/master/a7/stdlib/__init__.py),
+[io entries](https://github.com/code5717/a7-py/blob/master/a7/stdlib/io.py),
+[math entries](https://github.com/code5717/a7-py/blob/master/a7/stdlib/math.py),
+[call validation](https://github.com/code5717/a7-py/blob/master/a7/passes/type_checker.py),
+and [Zig lowering](https://github.com/code5717/a7-py/blob/master/a7/backends/zig.py).
 
-- `std/random` — deterministic, seed-driven APIs
-- `std/debug` — debugging aids
-- `Option<T>` and `Result<T, E>`
-- Small collections such as `Vec`
-
-File IO, network IO, and concurrency are out of scope for the current stdlib.
-
-# Compiler
+---
 
 Source: https://code5717.github.io/a7-py/docs/compiler.md
 
 # Compiler
 
-The package lives under `a7/`. The CLI entry point is `a7.cli:main`, exposed as
-`uv run a7` after `uv sync`.
+The installed entry point is `a7.cli:main`. Run `uv run a7` from a synced
+checkout, or use the equivalent `uv run python main.py` wrapper. Zig is the
+only public backend. File-first commands emit Zig. The `build` and `run`
+commands also invoke Zig 0.16.0.
 
 ## Pipeline
 
-1. Tokenize source
-2. Parse into AST
-3. Resolve names and imports
-4. Type check
-5. Validate language invariants
-6. Plan safety obligations
-7. Preprocess AST for backend emission
-8. Emit Zig
-9. Let Zig build the native binary
+1. Read the input source.
+2. Tokenize it into literals, identifiers, keywords, and punctuation.
+3. Parse tokens into an abstract syntax tree.
+4. Resolve names and imports, including file-backed modules.
+5. Check types and validate language rules, including the source recursion ban.
+6. Plan and discharge safety obligations for risky operations.
+7. Preprocess the AST for backend emission.
+8. Emit one combined Zig file.
+9. For `build` and `run`, invoke Zig to build a native binary.
+10. For `run`, execute the binary.
 
-Failures in tokenization, parsing, semantic validation, code generation, and
-internal errors have stable exit stages for tool usage.
+File-first compilation and `check` stop before the native build. A successful
+A7 compilation does not by itself prove that Zig can build or execute the result.
+The [example verifier](https://github.com/code5717/a7-py/blob/master/scripts/verify_examples_e2e.py)
+checks all three steps and compares program output with fixtures.
 
-## CLI modes
+## Workflow commands
 
-| Mode | Purpose |
+| Command | Behavior |
 | --- | --- |
-| `compile` | Emit Zig (default) |
-| `tokens` | Show lexer output |
-| `ast` | Show parsed structure |
-| `semantic` | Run semantic checks |
-| `pipeline` | Full pipeline without writing a file |
-| `doc` | Emit compiler documentation output |
+| `a7 --version` | Print the installed package version. |
+| `a7 doctor` | Report package, Python, platform and Zig versions. |
+| `a7 check FILE [--format FORMAT]` | Run the full A7 pipeline without writing files or requiring Zig. |
+| `a7 build FILE [-o PATH] [--profile PROFILE]` | Build a native executable, defaulting to `./<source-stem>`. |
+| `a7 run FILE [--profile PROFILE] -- [ARGS]` | Build a temporary executable and run it in the caller's working directory. |
 
-Add `--format json` for machine-readable output.
+`check` accepts `--format human` or `--format json`, with human output by default.
+Both native commands require exactly Zig 0.16.0. The default profile is `debug`,
+which selects Zig Debug. `release` selects ReleaseFast. Neither profile closes
+the current alias or lifetime safety gaps.
 
-## Exit codes
+`doctor` exits with code 2 for missing or incompatible Zig. It also returns 2
+outside the V1 qualification target of Linux x86_64 and Python 3.13. Package
+installation on another environment does not establish its qualification.
 
-| Code | Stage |
+`run` forwards arguments after `--` and returns the native process exit status.
+A signal termination becomes `128 + signal number` on Unix. This is a process
+interface only: A7 `main` takes no parameters or return value, and the standard
+library has no argument-reading API.
+
+`build` creates its output before replacing an existing executable. A failed
+native build leaves the old executable unchanged. Output cannot replace an A7
+source, an imported source, a filesystem alias of either, or a directory.
+
+## Legacy CLI modes
+
+| Mode | Work performed | Default written artifact |
+| --- | --- | --- |
+| `compile` | Full A7 pipeline and Zig emission | Input path with `.zig` suffix |
+| `tokens` | Tokenize only | None |
+| `ast` | Tokenize and parse | None |
+| `semantic` | Parse and run semantic passes | None |
+| `pipeline` | Full A7 pipeline including code generation | None |
+| `doc` | Full A7 pipeline and documentation report | Input path with `.md` suffix |
+
+`compile` is the default. `pipeline` writes a documentation report only when
+`--doc-out` is supplied. `semantic` does not establish backend support.
+
+## Legacy flags
+
+| Argument | Accepted values and behavior |
 | --- | --- |
-| 0 | Success |
-| 2 | Usage error |
-| 3 | I/O error |
-| 4 | Tokenize error |
-| 5 | Parse error |
-| 6 | Semantic error |
-| 7 | Codegen error |
-| 8 | Internal error |
+| `file` | Required input `.a7` source path |
+| `--mode` | `compile`, `tokens`, `ast`, `semantic`, `pipeline`, `doc` |
+| `--format` | `human` by default, or `json` |
+| `-o`, `--output` | Zig output path; valid only in `compile` mode |
+| `--doc-out PATH` | Markdown report destination in `compile`, `pipeline`, or `doc` modes |
+| `--doc-out auto` | Replace the input suffix with `.md` |
+| `--backend` | `zig` by default; unknown backends fail |
+| `-v`, `--verbose` | Show detailed compiler output in human format |
+| `-h`, `--help` | Show CLI usage |
+
+```bash
+uv run a7 examples/001_hello.a7 --mode tokens
+uv run a7 examples/001_hello.a7 --mode ast --format json
+uv run a7 examples/001_hello.a7 --mode semantic
+uv run a7 examples/001_hello.a7 --mode pipeline --format json
+uv run a7 examples/001_hello.a7 -o /tmp/hello.zig
+uv run a7 examples/001_hello.a7 --doc-out /tmp/hello.md
+uv run a7 examples/001_hello.a7 --mode doc --doc-out /tmp/hello-report.md
+```
+
+## JSON output
+
+Legacy `--format json` and `check --format json` emit a JSON object with schema version `2.0`. Read the process
+exit code as well as the payload. CLI argument parsing failures use argparse's
+usage text on stderr, even if `--format json` was requested.
+
+| Field | Meaning |
+| --- | --- |
+| `schema_version` | Payload schema, currently `2.0` |
+| `mode` | Requested compiler mode |
+| `status` | `ok` or `error` |
+| `input` | Input path |
+| `backend` | Backend name |
+| `timing_ms` | Invocation timing; not a benchmark |
+| `stages` | Stages reached, with tokens, AST, semantic results, or generated source |
+| `artifacts` | Paths actually written by this invocation |
+| `error` | Present on failure, with category, message, details, span, and exception type |
+
+The `stages` keys are `tokenize`, `parse`, `semantic`, and `codegen`, when
+reached. Their contents depend on the stage. For example, a successful codegen
+stage contains `output_code` and `bytes`. An absent stage was not completed.
+An empty `artifacts` object is normal in `pipeline` mode.
+
+## Diagnostics and exit codes
+
+| Code | Meaning | Response |
+| --- | --- | --- |
+| 0 | Success | Continue to the next toolchain step if needed. |
+| 2 | Usage or toolchain error | Check arguments, output options and `a7 doctor`. |
+| 3 | I/O error | Check file paths, permissions, and output destinations. |
+| 4 | Tokenize error | Inspect the reported source character or literal. |
+| 5 | Parse error | Check syntax at the reported location. |
+| 6 | Semantic error | Check types, language rules, or safety obligations. |
+| 7 | Codegen or native build error | Check backend restrictions or Zig diagnostics and preserve the failing input. |
+| 8 | Internal error | Preserve the source, traceback or JSON diagnostic, and compiler revision for a bug report. |
+
+Source diagnostics retain the originating module's file and location. Error
+`details` can hold multiple diagnostics; do not report only the top-level message
+when the individual errors explain the failure. `build` and `run` map Zig build failures to code 7. After a successful build,
+`run` returns the program exit status instead of a compiler status.
+
+## Artifacts
+
+Output and documentation paths cannot overwrite an input module or one another,
+including symlink and hard-link aliases. JSON artifact paths describe files
+written during the current invocation, not stale files found on disk.
+Multi-file input still produces a single combined Zig source file.
+The `doc` report is compiler-generated information about an input program; it
+is separate from this website's Markdown reference.
 
 ## Safety stance
 
-A7 rejects direct recursion, mutual recursion, and local function-pointer
-alias-cycle recursion. Compiler internals also avoid recursive AST traversal.
+Source recursion is banned. The semantic validator rejects direct and mutual
+recursion and tracked local function-pointer alias cycles. Compiler internals
+have their own ongoing conversion to stacks and worklists.
 
-The safety layer focuses on compile-time checks for:
-
-- narrowing casts
-- division and modulo denominator checks
-- indexing and slicing bounds
-- nil reference use
-- direct use after `del`
-
-These checks are compiler guarantees, not an OS sandbox.
+Safety checks cover narrowing casts, division and modulo denominators, indexing
+and slice bounds, nil reference use, and direct use after `del`. Alias and
+lifetime gaps remain. These checks do not prove complete memory safety, and
+compilation is not sandboxing. See [memory](/a7-py/docs/language/memory.md) and
+[status](/a7-py/docs/status.md).
 
 ## Zig backend
 
-The Zig backend targets Zig 0.16.0. Generated Zig should be readable, preserve
-source structure where practical, and remain single-file even when A7 imports
-multiple input files.
+The public backend targets Zig 0.16.0. Keep compile, build, and run results
+separate when reporting a feature's status. Use the debug and release artifact
+builders on [Release](/a7-py/docs/release.md) for native execution checks.
 
-Debug and release artifact builders verify generated source and binaries. See
-[Release](/a7-py/release/) for artifact gate commands.
+Evidence: [CLI arguments](https://github.com/code5717/a7-py/blob/master/a7/cli.py),
+[pipeline and JSON schema](https://github.com/code5717/a7-py/blob/master/a7/compile.py),
+and [error-stage verifier](https://github.com/code5717/a7-py/blob/master/scripts/verify_error_stages.py).
 
-# Status
+## Entry points and import cycles
+
+A root function named `main` must have no parameters or return value. A file
+without `main` can still compile as a library; A7 does not infer an executable
+entry point for it. File import cycles report a circular-dependency diagnostic.
+
+---
 
 Source: https://code5717.github.io/a7-py/docs/status.md
 
-# Status
+# Implementation status
 
-A7 is pre-1.0. The compiler is usable for the checked example suite, but the
-language and stdlib are still intentionally small. The authoritative status
-document is `docs/STATUS.md`.
+A7 is experimental and pre-1.0. The example suite checks selected programs
+against golden outputs. Passing that suite does not establish full specification
+support or complete safety. The repository's
+[status document](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+is the current implementation authority.
 
 ## Current surface
 
-- Zig is the only supported public backend
-- Source recursion is rejected at compile time
-- The example suite is verified against golden output fixtures
-- Static docs site with raw markdown and agent corpus files
+| Area | Status | Qualification |
+| --- | --- | --- |
+| Zig source emission | supported | Only public backend; targets Zig 0.16.0. |
+| Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
+| References and explicit allocation | limited | Nil checks and direct use-after-delete checks exist; alias and lifetime guarantees remain incomplete. |
+| Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |
+| File modules | limited | Simple aliased imports emit one combined Zig file. |
+| Fixed arrays and slices | limited | Bounds checking exists; heap fixed-array allocation is rejected. |
+| `std/io` and `std/math` | limited | Registered calls only; see exact signatures and restrictions. |
+| Source recursion | unavailable | Rejected by semantic validation; use iterative algorithms. |
+
+Constant floating remainder follows the runtime truncation rule, including the
+dividend sign and negative zero. Diagnostics retain imported module locations.
+Output paths cannot overwrite input modules; artifact reports exclude stale files.
 
 ## Active priorities
 
-- Multi-file A7 source support with single-file Zig output
-- Generic specialization before broad cross-module generic workflows
-- Clearer status reporting for parsed-only language features
-- Practical stdlib additions starting with deterministic random helpers
+- Keep current counts script-derived with `uv run python scripts/project_status.py`.
+- Complete practical multi-file support while retaining one combined Zig output.
+- Resolve numeric decisions before changing arithmetic or casts.
+- Split safety internals into control-flow, facts, obligations, proof discharge, and backend planning.
+- Complete generic specialization and call-chain propagation.
+- Maintain installed `a7 check`, `a7 build`, `a7 run`, `a7 doctor`, and `a7 --version` checks. Wheel and source-distribution workflows pass on Linux x86-64.
+- Convert remaining recursive compiler internals to explicit stacks and worklists.
+
+The source recursion ban and the compiler-internals conversion are separate
+requirements. Neither makes the other complete.
 
 ## Known gaps
 
-- File-backed imports, `using import`, and broad cross-module type checking
-  remain follow-up work
-- Fixed-width overflow, union discriminant access, and full ref/del alias
-  behavior are incomplete
-- Multiple return value destructuring, tagged union tag workflows, and
-  variadic runtime lowering are not current backend features
-- `Option`, `Result`, collections, and fuller string/memory helpers are
-  planned stdlib work
+- Safety remains incomplete. Current probes still accept field-name confusion,
+  fallthrough division, stale global facts after calls and repeated field deletion.
+- A low-recursion test passes through the pytest entry point but fails through
+  `python -m pytest`. Full compiler traversal still needs conversion.
+- Forward-global typing awaits compatibility approval because the fix rejects
+  a float-to-integer assignment that currently builds.
 
-## Deferred
+- A labeled loop whose label is never targeted can emit an unused Zig label and
+  fail the native build.
 
-- Package registry
-- File and network IO in the stdlib
-- Concurrency primitives
-- Full language server
-- Runtime sandboxing
+- Local constant usage is not tracked by declaration identity. Sibling-scope name
+  collisions and nested constant shadowing can still emit invalid Zig.
 
-If a feature is listed here as deferred, do not write public examples that rely
-on it as if it is complete.
+| Topic | Current restriction | Reference |
+| --- | --- | --- |
+| Modules | Selected imports, `using import`, broad cross-module typing, and generic module workflows remain incomplete. | [Modules](/a7-py/docs/language/modules.md) |
+| Numeric operations | Integer addition, subtraction, and multiplication wrap. Shifts and other numeric edge cases need further qualification. | [Operators](/a7-py/docs/language/operators.md) |
+| Unions | Tag and discriminant workflows are not implemented. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
+| Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
+| Generics | Arbitrary specialization propagation is incomplete. | [Generics](/a7-py/docs/language/generics.md) |
+| Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
+| Standard library | No `Option`, `Result`, collections, or full memory/string library. | [Standard library](/a7-py/docs/stdlib.md) |
 
-For release gates and deploy checks, see [Release](/a7-py/release/).
+Focused native probes verify escaped IO braces and ordinary signed `math.abs`
+results after repairs. The minimum signed `abs` input remains an unsafe edge case.
+Scalar-filled fixed arrays and direct `string.len` are rejected. A top-level
+local `@type_set` alias can pass semantic checking but fail code generation.
+See [stdlib](/a7-py/docs/stdlib.md), [arrays](/a7-py/docs/language/arrays-strings.md),
+[generics](/a7-py/docs/language/generics.md), and
+[recorded checks](https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md).
 
-# Release
+## Planned work
 
-Source: https://code5717.github.io/a7-py/docs/release.md
+Core V1 includes automatic memory, useful libraries and installed tooling. The
+Python compiler remains the V1 implementation; Zig handles generated code and
+future runtime/native integration. V2 aims to implement the compiler in A7.
 
-# Release
+AI, concurrency, multicore and GPU execution remain design constraints and later
+qualification tracks. Runtime memory help is allowed, but no memory mechanism is
+selected or implemented. See the
+[delivery roadmap](https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md).
+A package registry remains outside the current scope.
 
-The canonical release checklist is `docs/RELEASE.md`. This page is the public
-summary.
+## Not currently available
 
-## Local gates
+There is no package registry, full language server, runtime sandbox, file I/O
+stdlib, or network I/O stdlib. Compiler acceptance alone is not evidence that a
+program can build or run through Zig.
 
-```bash
-uv run python scripts/verify_examples_e2e.py
-uv run python scripts/build_examples.py --profile debug --backend zig --clean
-uv run python scripts/build_examples.py --profile release --backend zig --clean
-cd site && bun install && bun run build
-./run_all_tests.sh
-```
+## Interpreting evidence
 
-`run_all_tests.sh` is the single local release gate. It covers pytest, example
-E2E, debug and release artifacts, error-stage matrix, docs style, secrets check,
-package build, and wheel install smoke test.
+Reference labels distinguish supported, limited, unavailable, planned, and
+unverified behavior. Evidence links point to implementation, tests, fixtures,
+or explicit status records. A source revision identifies a checkout; it is not
+a correctness certificate. See the
+[audit index](https://github.com/code5717/a7-py/blob/master/docs/audits/README.md)
+for dated investigations, and [Release](/a7-py/docs/release.md) for required gates.
 
-## Docs gate
-
-The docs workflow runs:
-
-```bash
-python3 scripts/check_docs_style.py
-cd site
-bun install --frozen-lockfile
-bun run lint
-bun run build
-```
-
-The build writes `site/dist`, then GitHub Pages publishes that directory.
-
-## Required archive files
-
-The release workflow verifies that the docs archive contains:
-
-- `dist/llms.txt`
-- `dist/llms-full.txt`
-- `dist/docs/index.md`
-- `dist/docs/agent-usage.md`
-- `dist/docs/release.md`
-- `dist/docs/status.md`
-
-Keep these paths stable unless the release workflow changes in the same commit.
-
-## Native artifacts
-
-Release archives include Zig source and binaries for the example suite. Archive
-names include the target toolchain: `zig0.16.0`.
-
-For contributing and doc maintenance rules, see [Project](/a7-py/project/).
-
-# Agent Usage
-
-Source: https://code5717.github.io/a7-py/docs/agent-usage.md
-
-# Agent Usage
-
-Prefer raw text URLs over crawling the visual site. Every rendered page has a
-markdown twin under `/a7-py/docs/<slug>.md`.
-
-## Fetch order
-
-```bash
-curl -fsSL https://code5717.github.io/a7-py/llms.txt
-curl -fsSL https://code5717.github.io/a7-py/llms-full.txt
-curl -fsSL https://code5717.github.io/a7-py/docs/language.md
-```
-
-## Compact index
-
-`llms.txt` lists every public markdown page with a short summary. Use it first
-when choosing which page to fetch.
-
-## Full corpus
-
-`llms-full.txt` concatenates the whole public docs corpus. Use it when one
-fetch with the entire public context is enough.
-
-## Agent rules
-
-- Treat `README.md`, `docs/SPEC.md`, `docs/STATUS.md`, and `docs/RELEASE.md`
-  as authoritative when changing the compiler.
-- Treat site markdown as public-facing compression of those sources.
-- Keep generated Zig output single-file.
-- Do not author A7 examples that rely on source recursion.
-
-## Deploy verification
-
-After a docs deploy:
-
-```bash
-curl -fsSI https://code5717.github.io/a7-py/
-curl -fsSL https://code5717.github.io/a7-py/docs/index.md
-curl -fsSL https://code5717.github.io/a7-py/llms.txt
-```
-
-See [Project](/a7-py/project/) for contribution and doc maintenance rules.
-
-# Project
+---
 
 Source: https://code5717.github.io/a7-py/docs/project.md
 
 # Project
 
+A7's compiler is Python. The website uses Bun, Tailwind, and static HTML.
+GitHub Pages serves it under `/a7-py/`.
+
 ## Contributing
 
-Before changing language behavior, read:
+Read the repository instructions and these source documents before compiler work:
 
-- `docs/SPEC.md`
-- `docs/STATUS.md`
-- `docs/SAFETY_CONTRACT.md`
-- `docs/RELEASE.md`
+- [README](https://github.com/code5717/a7-py/blob/master/README.md) for usage.
+- [Specification](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md) for language semantics.
+- [Status](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md) for current limitations.
+- [Safety contract](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md) for safety obligations and gaps.
+- [Release checklist](https://github.com/code5717/a7-py/blob/master/docs/RELEASE.md) for required gates.
 
-Small changes should still update public docs when they affect user-visible
-behavior.
+Changing existing syntax or behavior requires explicit approval of the current
+behavior, proposed behavior, examples, and compatibility impact. Record the
+disposition in `docs/plan/decisions.md`. Documentation corrections do not grant
+permission to change the language.
+
+## Website development
+
+Install Bun 1.3 or newer for website work. From the repository root:
+
+```bash
+cd site
+bun install --frozen-lockfile
+bun run build
+bun run preview
+```
+
+Use the local URL printed by the preview server, including the `/a7-py/` base
+path. The build output is `site/dist`. Compiler users do not need Bun.
 
 ## Documentation maintenance
 
-Keep the docs minimal:
+The shared Markdown corpus lives in `site/public/docs/`. A typed content registry
+connects pages, sections, examples, feature records, source links, and navigation.
+The build derives HTML, search entries, sitemap, and agent metadata from that
+content. Keep nested reference topics aligned with their public Markdown twins.
 
-- Long history belongs in `git log`, not the website.
-- Current gaps belong in [Status](/a7-py/status/).
-- Release-facing notes belong in `docs/CHANGELOG.md`.
-- Public site pages should summarize, not duplicate every internal document.
+After editing documentation, run from `site/`:
 
-When language features or user-visible behavior change, update `docs/CHANGELOG.md`,
-`README.md`, `docs/SPEC.md`, and `docs/STATUS.md` as needed. Keep the site
-corpus in `site/public/docs/` aligned with those sources.
+```bash
+bun run sync:exports
+bun run check
+```
 
-Agent fetch paths and curl workflows live on [Agent Usage](/a7-py/agent-usage/).
+Synchronization is explicit. `bun run check:exports` fails on stale tracked
+exports; `bun run build` does not silently change them. Preserve established
+routes and heading anchors when moving content.
+
+For language or user-visible behavior changes, update `docs/CHANGELOG.md`,
+`README.md`, `docs/SPEC.md`, and `docs/STATUS.md` as affected. Keep
+`site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/` aligned.
+Current gaps belong in status; historical investigations belong in the audit
+index. Every executable-support claim needs evidence beyond parser acceptance.
+
+## Verification
+
+Use tests that check observable requirements or actual failure modes. A passing
+fixture suite does not prove complete language, integration, or safety support.
+For non-trivial compiler changes and before tagging, run `./run_release_checks.sh`
+from the repository root. See [Release](/a7-py/docs/release.md) for the included
+checks and dependency audits.
 
 ## Deploy
 
-The `Deploy Docs` GitHub Actions workflow publishes `site/dist` to GitHub
-Pages. The published base path is `/a7-py/`.
-
-Release gates and required archive paths are on [Release](/a7-py/release/).
+The `Deploy Docs` GitHub Actions workflow publishes `site/dist` to GitHub Pages.
+The public base path is `/a7-py/`. Build and verify locally before deployment;
+then check page, Markdown, manifest, and 404 responses on the deployed site.
 
 ## Security
 
-`a7-py` is not a sandbox. The compiler emits Zig and the host toolchain builds
-native code. Only compile and execute source you trust.
+`a7-py` is not a sandbox. The compiler emits Zig, and the host toolchain builds
+native code that runs with the host account's permissions. Only compile and
+execute source you trust. Follow the repository's
+[security policy](https://github.com/code5717/a7-py/blob/master/docs/SECURITY.md)
+when reporting a vulnerability.
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/release.md
+
+# Release
+
+The [repository release checklist](https://github.com/code5717/a7-py/blob/master/docs/RELEASE.md)
+is authoritative. Run these commands from the `a7-py` repository root. Site
+commands use a subshell so subsequent commands remain in that root.
+
+## Local gates
+
+```bash
+./run_release_checks.sh
+# Optional before creating a tag:
+./run_release_checks.sh --tag v0.3.0
+```
+
+This is the release workflow's command. It rejects tag/package/changelog
+mismatches before building. It runs the compiler gate, installed wheel and
+source-distribution native checks, docs checks, locked dependency audits and
+Bandit. It creates no tag or publication.
+
+The compiler gate includes tokenizer, parser, semantic and codegen tests;
+example compile/build/run/output checks; debug and release artifacts; CLI
+error-stage checks; docs style; secrets; packaging and isolated installation.
+Installed programs must build and run under Zig Debug and ReleaseFast. The source
+distribution must build its wheel outside the checkout and pass the same checks.
+
+Python auditing uses exported locked project requirements. A passing site build
+or dependency audit alone does not qualify the language or release.
+
+## Debug and release artifacts
+
+```bash
+uv run python scripts/build_examples.py --profile debug --backend zig --clean
+uv run python scripts/build_examples.py --profile release --backend zig --clean
+```
+
+The builders execute binaries and compare their output against
+`test/fixtures/golden_outputs/*.out`.
+
+| Profile | Generated source | Native binaries |
+| --- | --- | --- |
+| Debug | `build/debug/zig/src/` | `build/debug/zig/bin/` |
+| Release | `build/release/zig/src/` | `build/release/zig/bin/` |
+
+## Docs gate
+
+After intentional Markdown edits, explicitly synchronize tracked exports:
+
+```bash
+(cd site && bun run sync:exports)
+```
+
+Verify the resulting source and exports:
+
+```bash
+python3 scripts/check_docs_style.py
+(cd site && bun install --frozen-lockfile && bun run check)
+```
+
+`bun run check:exports` detects stale exports. Ordinary `bun run build` does not
+rewrite them. `bun run check` includes lint, type checks, source-derived
+coverage checks, tests, build, export synchronization checks, and generated link
+checks. The docs workflow builds `site/dist` for
+GitHub Pages under `/a7-py/`.
+
+## Required archive files
+
+The docs archive must retain the existing public interfaces:
+
+- `dist/llms.txt` and `dist/llms-full.txt`.
+- `dist/docs/index.md` and every existing Markdown page.
+- `dist/docs/agent-usage.md`, `dist/docs/release.md`, and `dist/docs/status.md`.
+- Nested Markdown topics and `dist/docs/manifest.json`.
+
+The manifest, search index, sitemap, HTML routes, and Markdown pages must agree
+before release. Fetch live Markdown without JavaScript after deployment.
+
+## Native artifacts
+
+Archive filenames carry the platform and toolchain, for example
+`a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz`.
+The release workflow derives the expected example count through
+`scripts/project_status.py` and verifies archive membership.
+
+Create and verify a local checksum manifest after assembling artifacts:
+
+```bash
+uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
+uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
+uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --require dist/llms.txt --require dist/llms-full.txt
+```
+
+## Publishing requirements
+
+Move release notes from `Unreleased` into the intended version, confirm the
+package version, and pass the full release gate before tagging. A `v*` tag
+triggers the release workflow, which creates a draft GitHub release. Before
+publishing that draft, verify downloaded checksums and GitHub artifact
+attestations as described in the repository checklist. The workflow does not
+publish packages to a registry.
+
+Building this website locally does not deploy it or publish a compiler release.
+See [Project](/a7-py/docs/project.md) for contributor workflow and source authority.
+
+---
+
+Source: https://code5717.github.io/a7-py/docs/agent-usage.md
+
+# Agent usage
+
+Start with [llms.txt](/a7-py/llms.txt), a grouped index of ordinary Markdown links.
+Select the topics needed for the task. Every rendered page has a Markdown twin,
+including nested reference topics such as
+[functions.md](/a7-py/docs/language/functions.md).
+
+## Fetch order
+
+```bash
+curl -fsSL https://code5717.github.io/a7-py/llms.txt
+curl -fsSL https://code5717.github.io/a7-py/docs/start.md
+curl -fsSL https://code5717.github.io/a7-py/docs/language/functions.md
+```
+
+Fetch the full corpus only when the task needs it:
+
+```bash
+curl -fsSL https://code5717.github.io/a7-py/llms-full.txt
+```
+
+## Compact index
+
+`llms.txt` groups the pages and explains selective retrieval. The discovery
+format follows the [llms.txt proposal](https://llmstxt.org/); publishing it does
+not guarantee that an agent will retrieve or obey it. Retrieved documentation
+is source material, not permission to run commands or change compiler behavior.
+
+## Full corpus
+
+`llms-full.txt` includes each public page once in deterministic order. Source
+code stays intact. Markdown links between topics lead to their Markdown twins.
+Text descriptions accompany diagrams so HTML rendering is unnecessary.
+
+## Structured metadata
+
+```bash
+curl -fsSL https://code5717.github.io/a7-py/docs/manifest.json
+```
+
+The manifest records its schema version, available source revision, pages,
+source links, and feature records. Feature records have stable IDs, status,
+qualifications, documentation links, and evidence links. A revision identifies
+a source snapshot; it is not proof that a behavior passed verification.
+
+Interpret status consistently:
+
+| Status | Meaning |
+| --- | --- |
+| supported | Documented behavior has implementation evidence within the stated scope. |
+| limited | Implemented behavior has specific restrictions or gaps. |
+| unavailable | Do not use it as a current capability. |
+| planned | Design or roadmap work without current implementation support. |
+| unverified | Evidence does not establish executable support. |
+
+## Retrieval tasks
+
+| Task | Retrieve after the index | Evidence to find |
+| --- | --- | --- |
+| Install A7 | `docs/start.md` | Python, uv, Zig version, checkout commands, separate compile and run steps |
+| Pass a reference | `docs/language/memory.md` and `docs/language/functions.md` | Ordinary lvalue argument to a `ref` parameter; no address-of syntax |
+| Explain a limitation | `docs/status.md` and the relevant reference topic | Explicit status and qualification, not parser acceptance |
+| Find a program | `docs/examples.md` | Source path, runnable command, golden output, related topic |
+| Interpret compiler failure | `docs/compiler.md` | Exit-code table, JSON schema, diagnostic stage |
+
+## Agent rules
+
+Treat `README.md` and `docs/RELEASE.md` as usage and release authorities.
+Consult `docs/SPEC.md`, current status, and compiler evidence for language rules.
+A specification example alone does not establish implementation support.
+Do not author recursive A7 examples. Keep generated Zig output single-file.
+Use `usize` for index variables and sizes. Never claim tests ran from a source
+revision or a support label alone.
+
+## Deploy verification
+
+After an authorized deployment:
+
+```bash
+curl -fsSI https://code5717.github.io/a7-py/
+curl -fsSL https://code5717.github.io/a7-py/docs/index.md
+curl -fsSL https://code5717.github.io/a7-py/llms.txt
+curl -fsSI https://code5717.github.io/a7-py/docs/manifest.json
+curl -sS -o /dev/null -w '%{http_code}\n' https://code5717.github.io/a7-py/not-a-real-page/
+```
+
+Confirm a JSON content type for the manifest and a 404 status for the missing
+route. Markdown retrieval must work without JavaScript. Deployment is separate
+from local implementation and checks. See [Project](/a7-py/docs/project.md).
+
+---

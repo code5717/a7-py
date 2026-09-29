@@ -1,0 +1,6 @@
+io :: import "std/io"
+
+main :: fn() {
+    x := 7
+    io.println("{{}}", x)
+}

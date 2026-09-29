@@ -1,0 +1,299 @@
+# Website Content Review — GLM-5.3-Flash (Documentation Accuracy & Completeness)
+
+Status: audit record from 2026-09-14 (baseline `701c679`). Later user decisions in the [v1 decision ledger](../../plan/decisions.md) may supersede parts of it.
+
+- **Date:** 2026-09-14
+- **Reviewer:** GLM-5.3-Flash, external and advisory. No content was modified.
+- **Scope:** accuracy and completeness of every public Markdown page
+  (`site/public/docs/*.md`, `llms.txt`, `llms-full.txt`) and of the homepage
+  code, transcript, version and feature claims in `site/scripts/build.ts`.
+- **Compared against:** `README.md`, `docs/RELEASE.md`, `docs/STATUS.md`,
+  `docs/SPEC.md` (spot checks), the CLI (`a7/cli.py`, `a7/compile.py`), the
+  stdlib registry (`a7/stdlib/`), package metadata (`pyproject.toml`),
+  workflows (`.github/workflows/`), and the existing `site/dist` and local
+  preview.
+
+## Execution limitations (recorded)
+
+| Limit | Effect |
+| --- | --- |
+| Provider request-rate failure | An earlier attempt was interrupted; this run resumed the same reviewer identity. Other review reports were not read; findings were established independently before writing. |
+| Browser capture blocked | In-app browser unavailable and local browser connection failed (per coordinator). No Playwright, MCP or browser was invoked. HTTP checks used `curl` against the local preview (`http://localhost:4173/a7-py/`, returned 200). No visual or browser verification is claimed. |
+| Zig not on PATH (`which zig` fails) | The documented `zig run examples/001_hello.zig` step was not run end to end. First native output was verified by executing the prebuilt `build/release/zig/bin/001_hello` (printed `Hello, World!`). |
+| No compile-mode run on examples | `--mode compile` writes `examples/001_hello.zig` into the shared working tree. To keep the tree unmodified, output-path behavior was verified from `a7/compile.py:151` and `a7/compile.py:848-851`. |
+| Shared `site/dist` not rebuilt (prohibited) | Staleness is documented as found. |
+| Coverage | All 9 public pages read in full; llms files compared page by page. SPEC.md was spot-checked (indexed `for`, match, defer, `::`, `:=`), not diffed sentence by sentence. SVG map text checked textually. `site/src/site.js` behavior (shortcuts, search) is out of scope. This is not a claim that all issues were found. |
+
+## Inspected files
+
+- `site/README.md`, `site/package.json`, `site/scripts/build.ts`
+- `site/public/docs/{index,start,language,stdlib,compiler,status,release,agent-usage,project}.md`
+- `site/public/{llms.txt,llms-full.txt,robots.txt,sitemap.xml,a7-system-map.svg}`
+- `site/dist/` (listing + diffs of `llms.txt`, `llms-full.txt`, `docs/`)
+- Local preview via curl: `/a7-py/`, `/a7-py/llms-full.txt`, `/a7-py/docs/index.md`
+- `README.md`, `docs/RELEASE.md`, `docs/STATUS.md`, `docs/CHANGELOG.md` (head)
+- `pyproject.toml`, `a7/cli.py`, `a7/compile.py` (modes/formats/exit codes/
+  output paths/success output), `a7/stdlib/{__init__,io,math}.py`
+- `examples/001_hello.a7`, `examples/004_func.a7`,
+  `examples/037_language_tour.a7` (grep), `test/fixtures/golden_outputs/`
+  (listing, 001 fixture), `run_all_tests.sh`
+- `.github/workflows/deploy-docs.yml`, `.github/workflows/release.yml` (grep)
+- `scripts/check_docs_style.py` (existence), `LICENSE` (existence)
+
+## Exact checks and results
+
+Verified-accurate (evidence):
+
+1. **CLI modes** `compile,tokens,ast,semantic,pipeline,doc` and default
+   `compile`: `a7/compile.py:35-41`, `a7/cli.py:23-28` — matches
+   `compiler.md` and `start.md` tables.
+2. **Exit codes** 0/2/3/4/5/6/7/8: `a7/compile.py:49-57` — matches
+   `compiler.md` table and `README.md:65`.
+3. **Stdlib claims** in `stdlib.md`: io bindings `print/println/eprintln`
+   (`a7/stdlib/io.py:10-22`); math functions
+   `sqrt,abs,floor,ceil,sin,cos,tan,log,exp,min,max`
+   (`a7/stdlib/math.py:11-23`); typed variants registered as bare builtins
+   (`a7/stdlib/math.py:33-41`); only io+math registered by default
+   (`a7/stdlib/__init__.py:45-50`); mem/string present but unregistered — all
+   match `stdlib.md` exactly.
+4. **Language claims**: `for index, value in` exists
+   (`examples/037_language_tour.a7:76`); `match`/`defer` exist (tour :92,:123);
+   C-style `for` and `*=` exist (`examples/004_func.a7:32-33`); homepage
+   sample matches `examples/004_func.a7` modulo trimming (see F7).
+5. **First native output**: `001_hello.a7` prints `Hello, World!`; prebuilt
+   release binary executes and prints `Hello, World!`; golden fixture
+   `test/fixtures/golden_outputs/001_hello.out` matches.
+6. **Default output path**: `examples/001_hello.zig` next to source
+   (`a7/compile.py:848-851`); cwd steps in `start.md` (clone → cd → uv sync)
+   and all repo-root commands in `release.md` are correct.
+7. **Example count**: `ls examples/*.a7 | wc -l` → 43; matches
+   `README.md:195`.
+8. **Agent corpus (source of truth)**: public `llms.txt` lists all 9 pages;
+   public `llms-full.txt` contains all 9 docs' bodies (frontmatter stripped),
+   generated by `site/scripts/build.ts:657-688,745-750` from the same corpus;
+   `diff site/dist/llms.txt site/public/llms.txt` → identical.
+9. **Release claims**: required archive files in `release.md` match
+   `release.yml:112-118` exactly; archive naming `zig0.16.0` matches
+   `RELEASE.md:132`; workflow name `Deploy Docs` matches
+   `deploy-docs.yml:1`; docs-gate commands match
+   `deploy-docs.yml:38-50` (one flag omission, F9); `scripts/check_docs_style.py`
+   exists.
+10. **Markdown twins**: `site/dist/docs/` contains all 9 `.md` files;
+    `index.md` "Public contract" URLs all exist under `dist/`; sitemap has
+    the same 9 URLs; robots.txt sane.
+11. **Dependency setup**: Python 3.13+ (`pyproject.toml:6`), uv, Zig 0.16.0,
+    Bun — consistent across `start.md`, `README.md`, `RELEASE.md`.
+
+## Findings
+
+### F1 — HIGH: Homepage shows "v0.16.0" as the A7 version; A7 is 0.3.0
+
+- Evidence: `site/scripts/build.ts:385`
+  (`<em class="version-pill">v0.16</em>`, rendered in the header of every
+  page), `build.ts:461` (poster meta `v0.16.0` next to "STAMP ·
+  A7-COMPILER"), `build.ts:641` (footer ticker `v0.16.0`);
+  `site/package.json:4` `"version": "0.16.0"`. Authoritative version:
+  `pyproject.toml:3` `version = "0.3.0"`; `docs/CHANGELOG.md` latest release
+  `## 0.3.0`. "0.16" is the **Zig toolchain** version, not A7's.
+- Consequence: every rendered page and the preview
+  (`curl http://localhost:4173/a7-py/` shows `v0.16`, `v0.16.0` ×2) tell
+  users and agents the compiler is v0.16.0, contradicting package metadata
+  and CHANGELOG; release-facing claims drift.
+- Suggested correction (before → after):
+  - `build.ts:385`: `<em class="version-pill">v0.16</em>` →
+    `<em class="version-pill">v0.3.0</em>` (or drop the pill; or
+    `zig 0.16 target` if the intent is the toolchain).
+  - `build.ts:461`: `<span>v0.16.0</span>` → `<span>A7 v0.3.0</span>`
+    (toolchain is already stated on the plate as `AOT / ZIG 0.16 / ...`).
+  - `build.ts:641`: `<span>v0.16.0</span>` → `<span>v0.3.0</span>`.
+  - `site/package.json:4`: `"0.16.0"` → `"0.3.0"`.
+- Acceptance criteria: no unqualified `v0.16*` string in rendered site output
+  that can be read as the A7 compiler version; any `0.16` occurrence is
+  explicitly attributed to Zig (e.g., "Zig 0.16"); A7 version strings match
+  `pyproject.toml`. Check: `grep -rn "v0.16" site/scripts/build.ts` returns
+  only Zig-attributed uses (or none).
+
+### F2 — HIGH: `site/dist` is stale vs `site/public` corpus; served corpus equality broken
+
+- Evidence: `diff site/dist/docs site/public/docs` →
+  `Files site/dist/docs/index.md and site/public/docs/index.md differ`;
+  `diff site/dist/llms-full.txt site/public/llms-full.txt` → dist is missing
+  the added index.md paragraph ("The [repository documentation index] …
+  Check current gaps before using them as compiler guidance."); live preview
+  confirms: `curl http://localhost:4173/a7-py/llms-full.txt` has 0 matches
+  for "compiler guidance", and `/a7-py/docs/index.md` has 0 matches for
+  "repository documentation index". `git status` shows
+  `site/public/docs/index.md` and `site/public/llms-full.txt` modified while
+  `site/dist` predates them.
+- Consequence: deploying the current `site/dist` publishes an `llms-full.txt`
+  that no longer equals the concatenation of `docs/*.md`, violating the
+  corpus-equality promise (`site/README.md:10`, `agent-usage.md:29-30`,
+  `index.md:50` "Drift between the site and repository docs is a bug") and
+  serving agents a page body that differs from the raw markdown twin.
+- Suggested correction: no hand edits. Before deploy (and before declaring
+  docs work done), run the documented build: `cd site && bun install &&
+  bun run build` so `dist/llms.txt`, `dist/llms-full.txt`, `dist/docs/*` and
+  rendered pages are regenerated from the updated public corpus. (This
+  reviewer did not rebuild the shared dist, per constraints.)
+- Acceptance criteria: `diff -r site/dist/docs site/public/docs` empty;
+  `diff site/dist/llms-full.txt site/public/llms-full.txt` empty; preview
+  serves `llms-full.txt` containing the current index.md body.
+
+### F3 — MEDIUM-HIGH: `compiler.md` overstates "Compiler internals also avoid recursive AST traversal"
+
+- Evidence: `site/public/docs/compiler.md:57-58` vs `README.md:140`:
+  "The parser is recursive descent, and backend statement/non-binary
+  expression generation still uses visitor-style recursive emission in some
+  paths."
+- Consequence: a safety-adjacent blanket claim contradicts the authoritative
+  README; readers could assume no recursion anywhere in the compiler,
+  including the parser.
+- Suggested correction (before → after), `compiler.md:57-58`:
+  - Before: "A7 rejects direct recursion, mutual recursion, and local
+    function-pointer alias-cycle recursion. Compiler internals also avoid
+    recursive AST traversal."
+  - After: "A7 rejects direct recursion, mutual recursion, and local
+    function-pointer alias-cycle recursion. Key AST passes (semantic,
+    preprocessing, backend binary-expression emission) use explicit stacks;
+    the parser is recursive descent and some backend emission paths still
+    recurse — see README for the precise bounds."
+- Acceptance criteria: `compiler.md` recursion wording asserts nothing that
+  `README.md:140` does not, and explicitly names parser recursion.
+
+### F4 — MEDIUM: Homepage terminal transcripts do not match real output
+
+- Evidence:
+  - Compile tab `build.ts:576-584` shows six `[compile] <stage> ok` lines.
+    Real non-verbose compile prints exactly one line:
+    `Compiled examples/001_hello.a7 -> examples/001_hello.zig (N bytes, M ms)`
+    (`a7/compile.py:545-553`); strings like `[compile]`, `name-resolve`,
+    `emit zig` are never printed by the CLI.
+  - Release tab `build.ts:587-592` shows `[pytest] passed … release gate:
+    green`. `run_all_tests.sh` prints check titles (e.g., "Examples E2E
+    Verification (compile/build/run/output):") with `PASS: <summary>`
+    (`run_all_tests.sh:31`) and a final `Summary: N/M checks passed`
+    (`run_all_tests.sh:93`); no "release gate:" string exists.
+  - Agents tab `build.ts:595-601` shows `# A7 Docs — compact index of raw
+    markdown pages` as llms.txt content, but the real file starts `# A7 Docs`
+    + `A7 lowers .a7 source to Zig 0.16 …`; and `curl …/docs/language.md`
+    really begins with YAML frontmatter `---`, not `# Language`.
+- Consequence: the homepage's §04 "Toolchain" invites copy-paste/scripting;
+  fabricated stage lines and gate output will not reproduce, and agents may
+  parse for strings that never exist.
+- Suggested correction (either):
+  - (a) Replace transcripts with captured real output: compile tab shows the
+    single `Compiled …` line plus `zig run` → `Hello, World!`; release tab
+    shows `PASS:` lines and `Summary: N/M checks passed`; agents tab shows
+    the real llms.txt head and notes the raw `.md` twin starts with
+    frontmatter; or
+  - (b) Keep the stylized panels but label them, e.g. add
+    `<figcaption>illustrative — see /a7-py/release/ for real gate output</figcaption>`
+    to the terminal figure.
+- Acceptance criteria: every transcript either matches captured real output
+  (modulo timings/paths) or is visibly labeled illustrative; grepping
+  `build.ts` for `[compile]`/`release gate:` finds only labeled or removed
+  occurrences.
+
+### F5 — MEDIUM: Homepage spine "MULTI-FILE INPUT" overstates current support
+
+- Evidence: `build.ts:501` `<span>MULTI-FILE INPUT</span>` (hero "spec
+  spine", rendered as a system fact). `README.md:164`: only "simple
+  file-backed alias imports can lower into the same generated Zig file";
+  `docs/STATUS.md:19`: "Add practical multi-file A7 support" is active
+  priority #2; `docs/STATUS.md:30-32`: selected imports, `using import`,
+  broad cross-module type checking remain follow-up work; the same site's
+  `status.md:31` lists file-backed imports as known gaps.
+- Consequence: hero-level claim contradicts the Status page served on the
+  same site and README; users may assume broad multi-file programs work.
+- Suggested correction (before → after), `build.ts:501`:
+  `<span>MULTI-FILE INPUT</span>` → `<span>SIMPLE FILE-BACKED IMPORTS</span>`
+  (or `MULTI-FILE INPUT (PARTIAL)`).
+- Acceptance criteria: homepage multi-file wording claims no more than
+  `README.md:164`/`docs/STATUS.md`; status page and homepage agree.
+
+### F6 — LOW: `status.md` (site) drift vs `docs/STATUS.md`
+
+- Evidence: `site/public/docs/status.md:27` "Practical stdlib additions
+  starting with deterministic random helpers" — `docs/STATUS.md` priorities
+  (lines 17-26) never mention random helpers (planned stdlib items there are
+  `Option`, `Result`, collections, string/memory helpers, lines 38-39);
+  `stdlib.md:57` does list `std/random` as planned, so the site is
+  internally consistent but the "priority" is not derived from the
+  authoritative list. `status.md:41-46` deferred list adds "Runtime
+  sandboxing", "Full language server", "File and network IO" not in
+  `docs/STATUS.md:41-44` deferred tracks; listing "Runtime sandboxing" as a
+  deferred track (roadmap tone) sits awkwardly with the security posture
+  ("not a sandbox", README.md:179).
+- Consequence: priorities/deferred lists that don't trace to the
+  authoritative status doc can mislead contributors about what is actually
+  planned; safety-adjacent items read as roadmap commitments.
+- Suggested correction:
+  - Align `status.md` "Active priorities" ordering/content with
+    `docs/STATUS.md:17-26`, or add the random-helpers item to
+    `docs/STATUS.md` so the compression is traceable.
+  - `status.md:46` "- Runtime sandboxing" → "- Runtime sandboxing (out of
+    scope; see Security)".
+- Acceptance criteria: each site priority/deferred item maps to a line in
+  `docs/STATUS.md` or is explicitly marked out-of-scope; no safety-adjacent
+  item reads as planned work.
+
+### F7 — LOW: Homepage code sample caption claims verbatim file, but is an adapted excerpt
+
+- Evidence: `build.ts:532` figcaption `EXAMPLES / 004_func.a7`; sample
+  (build.ts:533-554) prints `6! = {}` with `factorial(6)`, while the real
+  `examples/004_func.a7:61` prints `5! = {}` with `factorial(5)` and also
+  defines `greet/divide/max` (omitted).
+- Consequence: minor fidelity gap for a site whose language page promises
+  "Syntax from working examples"; readers diffing the sample against the
+  file will find differences.
+- Suggested correction: caption → `EXAMPLES / 004_func.a7 (excerpt,
+  adapted)`; or restore `factorial(5)` / `5! = {}` for verbatim fidelity.
+- Acceptance criteria: captions distinguish verbatim excerpts from adapted
+  ones, or samples match the referenced files.
+
+### F8 — LOW: `index.md` links to a not-yet-committed docs index
+
+- Evidence: `site/public/docs/index.md:44` links
+  `https://github.com/code5717/a7-py/blob/master/docs/README.md`;
+  `git status` shows `docs/README.md` as untracked (`??`). Branch is
+  `master`.
+- Consequence: until `docs/README.md` is committed, the GitHub link 404s for
+  site visitors.
+- Suggested correction: none to content — ensure `docs/README.md` lands on
+  `master` in the same change that publishes the updated corpus.
+- Acceptance criteria: at deploy time, the linked path exists on `master`.
+
+### F9 — INFO: `release.md` docs gate omits lint strictness flag
+
+- Evidence: `site/public/docs/release.md:36` `bun run lint` vs
+  `deploy-docs.yml:46` `bun run lint -- --max-warnings=0`.
+- Consequence: minor; locally reproducing the gate without the flag is more
+  lenient than CI.
+- Suggested correction (before → after): `release.md:36` `bun run lint` →
+  `bun run lint -- --max-warnings=0`.
+- Acceptance criteria: docs-gate block in `release.md` matches
+  `deploy-docs.yml` commands.
+
+## Summary of top findings
+
+1. **F1 (High)** — "v0.16.0" version claims across header/poster/footer
+   conflict with the real A7 version 0.3.0 (`pyproject.toml`,
+   `docs/CHANGELOG.md`).
+2. **F2 (High)** — shared `site/dist` is stale vs the updated public corpus;
+   served `llms-full.txt` ≠ concatenation of `docs/*.md` (preview-verified);
+   rebuild required before deploy.
+3. **F3 (Medium-High)** — `compiler.md` blanket "internals avoid recursive
+   AST traversal" contradicts README's precise bounds.
+4. **F4 (Medium)** — homepage terminal transcripts (compile stages, release
+   gate, agents curl output) are fabricated relative to real CLI/gate/file
+   output; label or replace.
+5. **F5 (Medium)** — hero "MULTI-FILE INPUT" overstates partial, priority-
+   tracked multi-file support.
+
+## Limitations recap
+
+See [Execution limitations](#execution-limitations-recorded). In short: advisory
+only, no content modified, shared dist not rebuilt, no browser verification
+(checks used `curl` and file inspection), and `zig run` not exercised (prebuilt
+binary used instead). Findings cover inspected files only. They are not a claim
+of completeness or acceptance.

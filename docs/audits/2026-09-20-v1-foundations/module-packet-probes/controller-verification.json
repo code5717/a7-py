@@ -1,0 +1,254 @@
+[
+  {
+    "fixture": "depth2",
+    "exit": 6,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 3 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "a.a7:2:25: Undefined type (Identifier 'b')",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/depth2/a.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 26,
+            "length": 1
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "a.a7:2:25: Cannot access field on non-struct type (Cannot access field 'v' on undefined identifier 'b')",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/depth2/a.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 26,
+            "length": 1
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "a.a7:2:25: Type is not callable (Cannot call 'b.v' (undefined identifier))",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/depth2/a.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 26,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 2,
+        "start_column": 25,
+        "end_line": 2,
+        "end_column": 26,
+        "length": 1
+      },
+      "exception_type": null
+    }
+  },
+  {
+    "fixture": "depth5",
+    "exit": 6,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 3 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "m1.a7:2:25: Undefined type (Identifier 'm2')",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/depth5/m1.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 27,
+            "length": 2
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "m1.a7:2:25: Cannot access field on non-struct type (Cannot access field 'v' on undefined identifier 'm2')",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/depth5/m1.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 27,
+            "length": 2
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "m1.a7:2:25: Type is not callable (Cannot call 'm2.v' (undefined identifier))",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/depth5/m1.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 27,
+            "length": 2
+          }
+        }
+      ],
+      "span": {
+        "start_line": 2,
+        "start_column": 25,
+        "end_line": 2,
+        "end_column": 27,
+        "length": 2
+      },
+      "exception_type": null
+    }
+  },
+  {
+    "fixture": "iso_const",
+    "exit": 6,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 2 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "a.a7:2:25: Undefined type (Identifier 'b')",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/iso_const/a.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 26,
+            "length": 1
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "a.a7:2:25: Cannot access field on non-struct type (Cannot access field 'CONST' on undefined identifier 'b')",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/iso_const/a.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 25,
+            "end_line": 2,
+            "end_column": 26,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 2,
+        "start_column": 25,
+        "end_line": 2,
+        "end_column": 26,
+        "length": 1
+      },
+      "exception_type": null
+    }
+  },
+  {
+    "fixture": "iso_type",
+    "exit": 6,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 1 error(s)",
+      "details": [
+        {
+          "type": "ParseError",
+          "message": "holder.a7:2:24: Expected IDENTIFIER, got DOT",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/iso_type/holder.a7",
+          "span": {
+            "start_line": 2,
+            "start_column": 24,
+            "end_line": 2,
+            "end_column": 25,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 2,
+        "start_column": 24,
+        "end_line": 2,
+        "end_column": 25,
+        "length": 1
+      },
+      "exception_type": null
+    }
+  },
+  {
+    "fixture": "pip18",
+    "exit": 6,
+    "error": {
+      "category": "semantic",
+      "message": "Semantic analysis failed with 2 error(s)",
+      "details": [
+        {
+          "type": "TypeCheckError",
+          "message": "main.a7:4:33: Cannot access field on non-struct type: got 'i32'",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/pip18/main.a7",
+          "span": {
+            "start_line": 4,
+            "start_column": 33,
+            "end_line": 4,
+            "end_column": 34,
+            "length": 1
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "main.a7:4:33: Type is not callable (Cannot call 'h.value' (undefined identifier))",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/pip18/main.a7",
+          "span": {
+            "start_line": 4,
+            "start_column": 33,
+            "end_line": 4,
+            "end_column": 34,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 4,
+        "start_column": 33,
+        "end_line": 4,
+        "end_column": 34,
+        "length": 1
+      },
+      "exception_type": null
+    }
+  },
+  {
+    "fixture": "mth12",
+    "exit": 5,
+    "error": {
+      "category": "parse",
+      "message": "main.a7:4:28: Expected type",
+      "details": [
+        {
+          "type": "ParseError",
+          "message": "main.a7:4:28: Expected type",
+          "file": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-delivery-2026-09-20/glm-module-probes/mth12/main.a7",
+          "span": {
+            "start_line": 4,
+            "start_column": 28,
+            "end_line": 4,
+            "end_column": 29,
+            "length": 1
+          }
+        }
+      ],
+      "span": {
+        "start_line": 4,
+        "start_column": 28,
+        "end_line": 4,
+        "end_column": 29,
+        "length": 1
+      },
+      "exception_type": null
+    }
+  }
+]

@@ -251,3 +251,38 @@ def test_usage_contract_for_output_with_non_compile_mode(stage_sources: dict[str
 
     assert result.returncode == ExitCode.USAGE
     assert "--output is only valid" in result.stderr
+
+
+def test_unexpected_parser_failure_returns_exit8_json_without_replacing_artifact(tmp_path, monkeypatch, capsys):
+    """Inject at the parser/driver boundary to test internal-error reporting.
+
+    This runs the real CLI entrypoint and JSON formatter. It does not test a
+    real parser defect or recovery from an exception inside the formatter.
+    """
+    from a7.cli import main
+    from a7.parser import Parser
+
+    source = tmp_path / "internal.a7"
+    source.write_text("main :: fn() {}\n")
+    output = tmp_path / "internal.zig"
+    output.write_text("existing artifact\n")
+
+    def parser_failure(_parser):
+        raise RuntimeError("injected parser boundary failure")
+
+    monkeypatch.setattr(Parser, "parse", parser_failure)
+    monkeypatch.setattr(sys, "argv", ["a7", str(source), "--format", "json", "-o", str(output)])
+    with pytest.raises(SystemExit) as exited:
+        main()
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert exited.value.code == ExitCode.INTERNAL
+    assert captured.err == ""
+    assert payload["status"] == "error"
+    assert payload["error"]["category"] == "internal"
+    assert payload["error"]["exception_type"] == "RuntimeError"
+    assert payload["error"]["message"] == "injected parser boundary failure"
+    assert payload["stages"]["tokenize"]["ok"] is True
+    assert "output_path" not in payload["artifacts"]
+    assert output.read_text() == "existing artifact\n"

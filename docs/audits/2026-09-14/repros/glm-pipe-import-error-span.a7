@@ -1,0 +1,10 @@
+// glm-pipe repro: import this file next to glm-pipe-import-badmod.a7 with
+//   bad :: import "glm-pipe-import-badmod"
+// The undefined-identifier error originates in the imported file (line 2,
+// col 9 of glm-pipe-import-badmod.a7) but the diagnostic reports it against
+// THIS file: wrong `file` field, and the human-rendered caret underlines a
+// region of this file's line 2.
+bad :: import "glm-pipe-import-badmod"
+main :: fn() {
+    x := bad.helper()
+}

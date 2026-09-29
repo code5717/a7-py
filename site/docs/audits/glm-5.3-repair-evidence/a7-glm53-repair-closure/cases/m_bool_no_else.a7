@@ -1,0 +1,6 @@
+main :: fn() {
+    b := true
+    match b {
+        case true: x := 1
+    }
+}

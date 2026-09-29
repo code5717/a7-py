@@ -1,0 +1,6 @@
+{
+  "a7/parser.py": "1c534ce4c102ef2e2208e91490bf64a53e4d478f946a9f564c81dbba4563ea29",
+  "a7/compile.py": "6ca3d19da3f9379f45385b4e8ca923f175db1f8def7ca3f23f2b410ddfd2561a",
+  "a7/formatters/console_formatter.py": "224e1f50ab9f7961636b9a738ec8f3f17ae900f65163c15a243a123b81c088c0",
+  "test/test_iterative_traversal.py": "8bbf88852d49b42aa14bb16bf6264076d821d1456591d3d7b866f4787b5e61fe"
+}

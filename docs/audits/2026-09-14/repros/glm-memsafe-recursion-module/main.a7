@@ -1,0 +1,12 @@
+helper :: import "./helper"
+
+task :: fn(n: i32) i32 {
+    if n <= 0 {
+        ret 0
+    }
+    ret helper.work(n - 1)
+}
+
+main :: fn() {
+    r := task(3)
+}

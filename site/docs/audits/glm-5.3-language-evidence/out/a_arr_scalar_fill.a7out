@@ -1,0 +1,15 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Type mismatch: expected '[3]i32', got 'i32' (Variable 'arr') [line 2: col
+5]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ main :: fn() {
+   2 ┃     arr: [3]i32 = 0
+     ┃     └─┘
+   3 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure the types match or use an explicit cast
+

@@ -1,0 +1,7 @@
+{
+  "source": "docs/audits/2026-09-14/repros/a7glmr_silent_drop.a7",
+  "exit_code": 0,
+  "stdout": "Compiled docs/audits/2026-09-14/repros/a7glmr_silent_drop.a7 -> \n/tmp/a7-parser-review-ab_icehc/program.zig (47 bytes, 1 ms)\n",
+  "stderr": "",
+  "emitted_zig": "fn good() void {\n    const x = 1;\n    _ = x;\n}\n"
+}

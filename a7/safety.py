@@ -8,7 +8,7 @@ operations the backend is allowed to lower.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum, auto
 import math
 from typing import Optional
@@ -61,6 +61,43 @@ UNSIGNED_RANGES = {
     "usize": (0, 2**64 - 1),
 }
 INTEGER_RANGES = {**SIGNED_RANGES, **UNSIGNED_RANGES}
+
+# Headline message for each safety obligation kind. Kinds not listed use the
+# message of their diagnostic code. Division, index and slice obligations carry
+# no diagnostic code: no existing TypeErrorType describes them, and each of the
+# near matches prints a hint about casts or index types.
+# Deferred statement kinds whose facts are left alone after the defer site.
+# `zig.py: _emit_statement_inline` lowers every other kind to `defer void;`,
+# which Zig rejects, so dropping facts for those cannot change the result of a
+# program that builds today. These four lower to real Zig: a block, a `del`
+# (`examples/011_memory.a7` builds and runs one), a call and an expression
+# statement.
+DEFER_HAVOC_EXCLUDED_KINDS = {
+    NodeKind.BLOCK,
+    NodeKind.DEL,
+    NodeKind.CALL,
+    NodeKind.EXPRESSION_STMT,
+}
+
+# Node kinds a `del` operand can be reduced through to reach the identifier
+# whose fact the `del` destroys. Assignment targets are not reduced: writing
+# through a base (`b.value = 0`, `arr[0] = 0`, `s[0:1] = ...`, `p.* = 0`)
+# cannot invalidate any fact this pass holds about the base, because every
+# fact is keyed by a plain identifier name (`FactMap.by_symbol`) and no fact
+# is derived from a field or element value. See `_deferred_assigned_symbols`.
+DEL_TARGET_BASE_ATTRS = {
+    NodeKind.FIELD_ACCESS: "object",
+    NodeKind.INDEX: "object",
+    NodeKind.SLICE: "object",
+    NodeKind.DEREF: "pointer",
+}
+
+OBLIGATION_MESSAGES = {
+    "DIVISOR_NONZERO": "Divisor not proven non-zero",
+    "INDEX_IN_BOUNDS": "Index not proven in bounds",
+    "SLICE_IN_BOUNDS": "Slice bounds not proven",
+    "REF_NON_NIL": "Reference not proven non-nil",
+}
 
 
 def categorize_type(type_: Type) -> TypeCategory:
@@ -139,6 +176,7 @@ class ValueFact:
     interval: Optional[IntegerInterval] = None
     nonzero: bool = False
     known_length: Optional[int] = None
+    upper_length_of: Optional[str] = None
     non_nil: bool = False
     maybe_nil: bool = False
     initialized: bool = True
@@ -193,7 +231,7 @@ class Obligation:
     span: Optional[SourceSpan]
     operand_type: Optional[Type]
     required_proof: str
-    diagnostic_code: TypeErrorType
+    diagnostic_code: Optional[TypeErrorType]
 
 
 @dataclass(frozen=True)
@@ -234,8 +272,14 @@ class SafetyProofPass:
         self.backend_plan = BackendPlan()
         self.errors: list[TypeCheckError] = []
         self.moved_symbols: set[str] = set()
+        self.const_facts: dict[str, ValueFact] = {}
+        self.current_stmt_span: Optional[SourceSpan] = None
         self.current_file = "<unknown>"
         self.source_lines: list[str] = []
+        self.function_deletes: dict[str, bool] = {}
+        self.symbol_types: dict[str, Type] = {}
+        self.deferred_effects: list[set[str]] = []
+        self.deferred_deletes: list[set[str]] = []
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> BackendPlan:
         self.current_file = filename
@@ -245,6 +289,12 @@ class SafetyProofPass:
         self.backend_plan = BackendPlan()
         self.facts = FactMap()
         self.moved_symbols = set()
+        self.const_facts = {}
+        self.current_stmt_span = None
+        self.function_deletes = {}
+        self.symbol_types = {}
+        self.deferred_effects = []
+        self.deferred_deletes = []
         self._visit_program(program)
         return self.backend_plan
 
@@ -253,15 +303,25 @@ class SafetyProofPass:
 
     def _error(self, obligation: Obligation, reason: str) -> None:
         self.results.append(ProofResult(False, obligation, reason))
-        self.errors.append(
-            TypeCheckError.from_type(
+        context = f"{obligation.required_proof}: {reason}"
+        headline = OBLIGATION_MESSAGES.get(obligation.kind.name)
+        if obligation.diagnostic_code is not None:
+            error = TypeCheckError.from_type(
                 obligation.diagnostic_code,
                 span=obligation.span,
                 filename=self.current_file,
                 source_lines=self.source_lines,
-                context=f"{obligation.required_proof}: {reason}",
+                custom_message=headline,
+                context=context,
             )
-        )
+        else:
+            error = TypeCheckError(
+                f"{headline} ({context})",
+                span=obligation.span,
+                filename=self.current_file,
+                source_lines=self.source_lines,
+            )
+        self.errors.append(error)
 
     def _prove(self, obligation: Obligation, reason: str) -> None:
         result = ProofResult(True, obligation, reason)
@@ -275,39 +335,240 @@ class SafetyProofPass:
         operation: str,
         operand_type: Optional[Type],
         required: str,
-        code: TypeErrorType,
+        code: Optional[TypeErrorType],
     ) -> Obligation:
-        obligation = Obligation(kind, id(node), operation, node.span, operand_type, required, code)
+        obligation = Obligation(kind, id(node), operation, self._obligation_span(node), operand_type, required, code)
         self.obligations.append(obligation)
         return obligation
 
+    def _obligation_span(self, node: ASTNode) -> Optional[SourceSpan]:
+        """Span of the operation, else of its right operand, else of the statement.
+
+        BINARY nodes have no span (PAR-04), so a division reports the divisor.
+        """
+        if node.span is not None:
+            return node.span
+        for attr in ("right", "index", "end", "operand", "expression"):
+            child = getattr(node, attr, None)
+            if isinstance(child, ASTNode) and child.span is not None:
+                return child.span
+        return self.current_stmt_span
+
     def _visit_program(self, node: ASTNode) -> None:
+        # File-scope `::` constants cannot change, so their facts are computed
+        # once and seeded into every function. File-scope `:=` variables are
+        # never seeded.
+        for decl in node.declarations or []:
+            if decl.kind == NodeKind.CONST and decl.value:
+                self.current_stmt_span = decl.span
+                fact = self._visit_expr(decl.value)
+                if decl.name:
+                    self.const_facts[decl.name] = fact
+                    self.facts.set_symbol(decl.name, fact)
+        # Unknown function values may release their reference arguments. Known
+        # bodies without deletion retain pointer identity across field writes.
+        bodies = {d.name: d for d in node.declarations or [] if d.kind == NodeKind.FUNCTION}
+        calls: dict[str, set[str]] = {}
+        for name, decl in bodies.items():
+            deletes = False
+            callees: set[str] = set()
+            stack = [decl.body] if decl.body else []
+            while stack:
+                item = stack.pop()
+                if item.kind == NodeKind.FUNCTION:
+                    continue
+                deletes |= item.kind == NodeKind.DEL
+                if item.kind == NodeKind.CALL and item.function:
+                    callee = item.function
+                    if getattr(item, "stdlib_canonical", None):
+                        pass
+                    elif callee.kind == NodeKind.IDENTIFIER:
+                        callees.add(callee.name)
+                    else:
+                        deletes = True
+                for value in vars(item).values():
+                    if isinstance(value, ASTNode):
+                        stack.append(value)
+                    elif isinstance(value, list):
+                        stack.extend(v for v in value if isinstance(v, ASTNode))
+            self.function_deletes[name] = deletes
+            calls[name] = callees
+        changed = True
+        while changed:
+            changed = False
+            for name, callees in calls.items():
+                if not self.function_deletes[name] and any(self.function_deletes.get(c, True) for c in callees):
+                    self.function_deletes[name] = True
+                    changed = True
         for decl in node.declarations or []:
             self._visit_decl(decl)
 
     def _visit_decl(self, node: ASTNode) -> None:
         if node.kind == NodeKind.FUNCTION and node.body:
-            self.facts.by_symbol = {}
+            self.moved_symbols = set()
+            self.symbol_types = {}
+            self.facts.by_symbol = dict(self.const_facts)
             for param in node.parameters or []:
                 if param.name:
                     self.facts.set_symbol(param.name, self._fact_from_type_node(param.param_type))
+                    if param.param_type and param.param_type.type_name in INTEGER_RANGES:
+                        self.symbol_types[param.name] = PrimitiveType(param.param_type.type_name)
             self._visit_stmt(node.body)
-        elif node.kind in {NodeKind.CONST, NodeKind.VAR} and node.value:
+        elif node.kind == NodeKind.VAR and node.value:
+            self.current_stmt_span = node.span
             fact = self._visit_expr(node.value)
             if node.name:
                 self.facts.set_symbol(node.name, fact)
 
+    def _deferred_assigned_symbols(self, statement: ASTNode) -> set[str]:
+        """Names whose facts a deferred statement can destroy.
+
+        Two cases:
+
+        * Plain or compound assignment to a **bare identifier** (`x = 0`,
+          `x += 1`) replaces the variable, so its fact goes. An assignment
+          whose target is a field, index, slice or dereference writes
+          *through* the base and contributes nothing: every fact this pass
+          holds is stored in `FactMap.by_symbol` under a plain identifier
+          name, and none is derived from a field or element value, so
+          `b.value = 0` cannot make `b` nil, shorten `b` or widen its
+          interval. Dropping the base there only over-rejects.
+        * `del` frees the memory the reference names, which does invalidate
+          the reference, so the operand is reduced through a field, index,
+          slice or deref base to the identifier and that identifier's fact
+          is dropped.
+
+        Nested function bodies are skipped: their assignments are their own.
+        The walk uses an explicit stack and calls no visitor, so it adds no
+        recursion.
+        """
+        names: set[str] = set()
+        stack = [statement]
+        while stack:
+            current = stack.pop()
+            if current.kind == NodeKind.FUNCTION:
+                continue
+            if current.kind == NodeKind.ASSIGNMENT:
+                target = current.target
+                if target is not None and target.kind == NodeKind.IDENTIFIER and target.name:
+                    names.add(target.name)
+            elif current.kind == NodeKind.DEL:
+                target = current.expression
+                while target is not None:
+                    if target.kind == NodeKind.IDENTIFIER:
+                        if target.name:
+                            names.add(target.name)
+                        break
+                    attr = DEL_TARGET_BASE_ATTRS.get(target.kind)
+                    if attr is None:
+                        break
+                    target = getattr(target, attr, None)
+            if current.kind == NodeKind.CALL:
+                for i, arg in enumerate(current.arguments or []):
+                    if i in getattr(current, "implicit_ref_args", set()) or isinstance(self._type(arg), ReferenceType):
+                        if arg.kind == NodeKind.IDENTIFIER:
+                            names.add(arg.name)
+            for value in vars(current).values():
+                if isinstance(value, ASTNode):
+                    stack.append(value)
+                elif isinstance(value, list):
+                    stack.extend(child for child in value if isinstance(child, ASTNode))
+        return names
+
+    def _deleted_names(self, statement: ASTNode) -> set[str]:
+        names: set[str] = set()
+        stack = [statement]
+        while stack:
+            current = stack.pop()
+            if current.kind == NodeKind.FUNCTION:
+                continue
+            if current.kind == NodeKind.DEL:
+                target = current.expression
+                while target is not None:
+                    if target.kind == NodeKind.IDENTIFIER:
+                        names.add(target.name)
+                        break
+                    attr = DEL_TARGET_BASE_ATTRS.get(target.kind)
+                    target = getattr(target, attr, None) if attr else None
+            if current.kind == NodeKind.CALL:
+                callee = current.function
+                callee_name = callee.name if callee and callee.kind == NodeKind.IDENTIFIER else None
+                signature = self._type(callee)
+                if self.function_deletes.get(callee_name, True) and isinstance(signature, FunctionType):
+                    for arg, parameter in zip(current.arguments or [], signature.param_types):
+                        if isinstance(parameter, ReferenceType) and isinstance(self._type(arg), ReferenceType) and arg.kind == NodeKind.IDENTIFIER:
+                            names.add(arg.name)
+            for value in vars(current).values():
+                if isinstance(value, ASTNode):
+                    stack.append(value)
+                elif isinstance(value, list):
+                    stack.extend(child for child in value if isinstance(child, ASTNode))
+        return names
+
+    def _invalidate_length_relations(self, name: str) -> None:
+        for key, fact in list(self.facts.by_symbol.items()):
+            if fact.upper_length_of == name:
+                self.facts.set_symbol(key, replace(fact, upper_length_of=None))
+
+    def _forget_names(self, names: set[str]) -> None:
+        for name in names:
+            self._invalidate_length_relations(name)
+            self.facts.set_symbol(name, self._default_fact_for_type(self.symbol_types.get(name)))
+
+    def _join_facts(self, left: dict[str, ValueFact], right: dict[str, ValueFact]) -> dict[str, ValueFact]:
+        joined = {}
+        for name in left.keys() & right.keys():
+            a, b = left[name], right[name]
+            interval = None
+            if a.interval and b.interval:
+                lo = min(a.interval.lower, b.interval.lower) if a.interval.lower is not None and b.interval.lower is not None else None
+                hi = max(a.interval.upper, b.interval.upper) if a.interval.upper is not None and b.interval.upper is not None else None
+                interval = IntegerInterval(lo, hi)
+            joined[name] = ValueFact(interval=interval, nonzero=a.nonzero and b.nonzero,
+                                     known_length=a.known_length if a.known_length == b.known_length else None,
+                                     upper_length_of=a.upper_length_of if a.upper_length_of == b.upper_length_of else None,
+                                     non_nil=a.non_nil and b.non_nil, maybe_nil=a.maybe_nil or b.maybe_nil,
+                                     initialized=a.initialized and b.initialized, moved=a.moved or b.moved)
+        return joined
+
     def _visit_stmt(self, node: ASTNode) -> None:
+        if node.kind != NodeKind.BLOCK and node.span is not None:
+            self.current_stmt_span = node.span
         if node.kind == NodeKind.BLOCK:
-            saved = self.facts.copy_symbols()
+            names_before = set(self.facts.by_symbol)
+            shadowed: dict[str, ValueFact] = {}
+            shadowed_moved: dict[str, bool] = {}
+            saved_types = dict(self.symbol_types)
+            self.deferred_effects.append(set())
+            self.deferred_deletes.append(set())
             for stmt in node.statements or []:
+                if stmt.kind in {NodeKind.VAR, NodeKind.CONST} and stmt.name:
+                    # Save the outer value at the declaration, after any earlier
+                    # writes in this block, rather than at block entry.
+                    shadowed[stmt.name] = self.facts.symbol(stmt.name)
+                    shadowed_moved[stmt.name] = stmt.name in self.moved_symbols
+                    self.moved_symbols.discard(stmt.name)
                 self._visit_stmt(stmt)
-                self._learn_after_stmt(stmt)
-            self.facts.restore_symbols(saved)
+            self._forget_names(self.deferred_effects.pop())
+            deleted = self.deferred_deletes.pop()
+            self.moved_symbols.update(deleted)
+            for name in list(self.facts.by_symbol):
+                if name not in names_before:
+                    self.facts.by_symbol.pop(name, None)
+                    self.moved_symbols.discard(name)
+                elif name in shadowed:
+                    self.facts.set_symbol(name, shadowed[name])
+                    if shadowed_moved[name] or name in deleted:
+                        self.moved_symbols.add(name)
+                    else:
+                        self.moved_symbols.discard(name)
+            self.symbol_types = saved_types
         elif node.kind in {NodeKind.VAR, NodeKind.CONST}:
-            fact = self._visit_expr(node.value) if node.value else ValueFact(initialized=False)
+            fact = self._visit_expr(node.value) if node.value else self._default_fact_for_type(self._type(node))
             if node.name:
+                self._invalidate_length_relations(node.name)
                 self.facts.set_symbol(node.name, fact)
+                self.symbol_types[node.name] = self._type(node) or self._type(node.value)
         elif node.kind == NodeKind.ASSIGNMENT:
             rhs = self._visit_expr(node.value) if node.value else ValueFact()
             if node.target:
@@ -324,8 +585,20 @@ class SafetyProofPass:
                         "reference must be proven non-nil before assignment through it",
                     )
                 if node.target.kind == NodeKind.IDENTIFIER and node.target.name:
-                    self.facts.set_symbol(node.target.name, rhs)
-                    self.moved_symbols.discard(node.target.name)
+                    if node.operator != AssignOp.ASSIGN:
+                        result = self._default_fact_for_type(self._type(node.target))
+                        if target_fact.interval and rhs.interval:
+                            operations = {AssignOp.ADD_ASSIGN: IntegerInterval.add, AssignOp.SUB_ASSIGN: IntegerInterval.sub, AssignOp.MUL_ASSIGN: IntegerInterval.mul}
+                            operation = operations.get(node.operator)
+                            if operation:
+                                interval = operation(target_fact.interval, rhs.interval)
+                                if self._range_fits(interval, self._type(node.target)):
+                                    result = ValueFact(interval=interval, nonzero=interval.is_nonzero())
+                        rhs = result
+                    if not getattr(node, "implicit_deref_target", False):
+                        self._invalidate_length_relations(node.target.name)
+                        self.facts.set_symbol(node.target.name, rhs)
+                        self.moved_symbols.discard(node.target.name)
             if node.operator in {AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN} and node.value:
                 self._prove_nonzero_divisor(node, node.value, node.operator.name.lower())
         elif node.kind == NodeKind.EXPRESSION_STMT and node.expression:
@@ -334,59 +607,127 @@ class SafetyProofPass:
             self._visit_expr(node.value)
         elif node.kind == NodeKind.IF_STMT:
             self._visit_expr(node.condition)
-            then_facts = self._facts_from_condition(node.condition, positive=True)
             saved = self.facts.copy_symbols()
-            self.facts.by_symbol.update(then_facts)
+            moved = set(self.moved_symbols)
+            self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=True))
             if node.then_stmt:
                 self._visit_stmt(node.then_stmt)
-            self.facts.restore_symbols(saved)
+            then_state = self.facts.copy_symbols()
+            then_moved = set(self.moved_symbols)
+            self.facts.restore_symbols(dict(saved))
+            self.moved_symbols = set(moved)
+            self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=False))
             if node.else_stmt:
                 self._visit_stmt(node.else_stmt)
-        elif node.kind == NodeKind.WHILE:
-            self._visit_expr(node.condition)
-            body_facts = self._facts_from_condition(node.condition, positive=True)
-            saved = self.facts.copy_symbols()
-            self.facts.by_symbol.update(body_facts)
-            if node.body:
-                self._visit_stmt(node.body)
-            self.facts.restore_symbols(saved)
-        elif node.kind == NodeKind.FOR:
-            saved = self.facts.copy_symbols()
+            if node.then_stmt and self._always_returns(node.then_stmt):
+                pass  # Only the else path reaches the following statement.
+            elif node.else_stmt and self._always_returns(node.else_stmt):
+                self.facts.restore_symbols(then_state)
+                self.moved_symbols = then_moved
+            else:
+                self.facts.by_symbol = self._join_facts(then_state, self.facts.by_symbol)
+                self.moved_symbols.update(then_moved)
+        elif node.kind in {NodeKind.WHILE, NodeKind.FOR}:
+            local_name = node.init.name if node.init and node.init.kind in {NodeKind.VAR, NodeKind.CONST} else None
+            outer_fact = self.facts.by_symbol.get(local_name) if local_name else None
+            outer_type = self.symbol_types.get(local_name) if local_name else None
+            outer_moved = local_name in self.moved_symbols if local_name else False
             if node.init:
                 self._visit_stmt(node.init)
+            # Invalidate before visiting the body: it represents any iteration,
+            # not just the first. Learn only facts established by its guard.
+            changed = self._deferred_assigned_symbols(node)
+            self._forget_names(changed)
+            self.moved_symbols.update(self._deleted_names(node))
             if node.condition:
                 self._visit_expr(node.condition)
+                self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=True))
             if node.body:
                 self._visit_stmt(node.body)
             if node.update:
                 self._visit_stmt(node.update)
-            self.facts.restore_symbols(saved)
+            self._forget_names(changed)
+            if local_name:
+                if outer_fact is None:
+                    self.facts.by_symbol.pop(local_name, None)
+                else:
+                    self.facts.set_symbol(local_name, outer_fact)
+                if outer_type is None:
+                    self.symbol_types.pop(local_name, None)
+                else:
+                    self.symbol_types[local_name] = outer_type
+                if outer_moved:
+                    self.moved_symbols.add(local_name)
+                else:
+                    self.moved_symbols.discard(local_name)
         elif node.kind in {NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
-            self._visit_expr(node.iterable)
+            iterable_fact = self._visit_expr(node.iterable)
+            changed = self._deferred_assigned_symbols(node)
+            self._forget_names(changed)
+            self.moved_symbols.update(self._deleted_names(node))
             saved = self.facts.copy_symbols()
             if node.index_var:
-                self.facts.set_symbol(node.index_var, ValueFact(interval=IntegerInterval(0, None), nonzero=False))
+                length = self._object_length(node.iterable, iterable_fact)
+                self.facts.set_symbol(node.index_var, ValueFact(interval=IntegerInterval(0, length - 1 if length is not None else None), nonzero=False))
+            if node.iterator:
+                # A fresh binding: its fact comes from the element type only,
+                # never from an outer variable with the same name.
+                iterable_type = self._type(node.iterable)
+                element_type = iterable_type.element_type if isinstance(iterable_type, (ArrayType, SliceType)) else None
+                self.facts.set_symbol(node.iterator, self._default_fact_for_type(element_type))
             if node.body:
                 self._visit_stmt(node.body)
             self.facts.restore_symbols(saved)
+            self._forget_names(changed)
         elif node.kind == NodeKind.MATCH:
             self._visit_expr(node.expression)
-            for case in node.cases or []:
-                for stmt in case.statements or ([] if case.statement is None else [case.statement]):
+            saved = self.facts.copy_symbols()
+            moved = set(self.moved_symbols)
+            joined = dict(saved)  # A non-exhaustive match can execute no arm.
+            all_moved = set(moved)
+            branches = [case.statements or ([] if case.statement is None else [case.statement]) for case in node.cases or []]
+            branches.append(node.else_case or [])
+            for statements in branches:
+                self.facts.restore_symbols(dict(saved))
+                self.moved_symbols = set(moved)
+                for stmt in statements:
                     self._visit_stmt(stmt)
-            for stmt in node.else_case or []:
-                self._visit_stmt(stmt)
+                joined = self._join_facts(joined, self.facts.by_symbol)
+                all_moved.update(self.moved_symbols)
+            self.facts.restore_symbols(joined)
+            self.moved_symbols = all_moved
         elif node.kind == NodeKind.DEFER:
             if node.statement:
-                if node.statement.kind == NodeKind.DEL and node.statement.expression:
-                    self._visit_expr(node.statement.expression)
-                else:
-                    self._visit_stmt(node.statement)
+                if self.deferred_effects:
+                    self.deferred_effects[-1].update(self._deferred_assigned_symbols(node.statement))
+                    self.deferred_deletes[-1].update(self._deleted_names(node.statement))
+                saved = self.facts.copy_symbols()
+                moved = set(self.moved_symbols)
+                self._visit_stmt(node.statement)
+                self.facts.restore_symbols(saved)
+                self.moved_symbols = moved
+                # Deferred writes cannot establish a fact at the defer site.
+                # Loop entry already forgets effects from previous iterations.
+                if node.statement.kind not in DEFER_HAVOC_EXCLUDED_KINDS:
+                    self._forget_names(self._deferred_assigned_symbols(node.statement))
             elif node.expression:
                 self._visit_expr(node.expression)
         elif node.kind == NodeKind.DEL and node.expression:
             self._visit_expr(node.expression)
             self._mark_deleted(node.expression)
+        elif node.kind == NodeKind.FUNCTION and node.body:
+            # A nested function starts from the file-scope constant facts, like
+            # a top-level one, and leaves the enclosing function's state intact.
+            saved = self.facts.copy_symbols()
+            saved_moved = self.moved_symbols
+            self.moved_symbols = set()
+            self.facts.by_symbol = dict(self.const_facts)
+            for param in node.parameters or []:
+                if param.name:
+                    self.facts.set_symbol(param.name, self._fact_from_type_node(param.param_type))
+            self._visit_stmt(node.body)
+            self.facts.restore_symbols(saved)
+            self.moved_symbols = saved_moved
 
     def _visit_expr(self, node: Optional[ASTNode]) -> ValueFact:
         if node is None:
@@ -443,8 +784,20 @@ class SafetyProofPass:
             self._prove_ref_non_nil(node, ptr_fact)
         elif node.kind == NodeKind.CALL:
             self._visit_expr(node.function)
-            for arg in node.arguments or []:
-                self._visit_expr(arg)
+            borrowed = getattr(node, "implicit_ref_args", set())
+            function_type = self._type(node.function)
+            callee_name = node.function.name if node.function and node.function.kind == NodeKind.IDENTIFIER else None
+            for i, arg in enumerate(node.arguments or []):
+                arg_fact = self._visit_expr(arg)
+                is_ref_parameter = isinstance(function_type, FunctionType) and i < len(function_type.param_types) and isinstance(function_type.param_types[i], ReferenceType)
+                if isinstance(self._type(arg), ReferenceType) and is_ref_parameter:
+                    self._prove_ref_non_nil_for_node(node, arg_fact, self._type(arg), "reference argument must be proven non-nil")
+                    if self.function_deletes.get(callee_name, True) and arg.kind == NodeKind.IDENTIFIER:
+                        self.facts.set_symbol(arg.name, ValueFact(maybe_nil=True))
+                        self.moved_symbols.add(arg.name)
+                elif i in borrowed and arg.kind == NodeKind.IDENTIFIER:
+                    self._invalidate_length_relations(arg.name)
+                    self.facts.set_symbol(arg.name, self._default_fact_for_type(self._type(arg)))
         elif node.kind == NodeKind.ARRAY_INIT:
             for element in node.elements or []:
                 self._visit_expr(element)
@@ -474,6 +827,8 @@ class SafetyProofPass:
         if isinstance(type_, PrimitiveType) and type_.name in INTEGER_RANGES:
             lo, hi = INTEGER_RANGES[type_.name]
             return ValueFact(interval=IntegerInterval(lo, hi), nonzero=False)
+        if isinstance(type_, ArrayType):
+            return ValueFact(known_length=type_.size)
         return ValueFact(maybe_nil=isinstance(type_, ReferenceType))
 
     def _fact_from_type_node(self, node: Optional[ASTNode]) -> ValueFact:
@@ -481,6 +836,9 @@ class SafetyProofPass:
             return ValueFact()
         if node.kind == NodeKind.TYPE_POINTER:
             return ValueFact(non_nil=True)
+        name = getattr(node, "type_name", None)
+        if name in INTEGER_RANGES:
+            return ValueFact(interval=IntegerInterval(*INTEGER_RANGES[name]))
         return ValueFact()
 
     def _literal_fact(self, node: ASTNode) -> ValueFact:
@@ -502,8 +860,6 @@ class SafetyProofPass:
 
     def _binary_fact(self, node: ASTNode, left: ValueFact, right: ValueFact) -> ValueFact:
         if not left.interval or not right.interval:
-            if node.operator == BinaryOp.DIV and left.nonzero and right.nonzero:
-                return ValueFact(nonzero=True)
             return ValueFact()
         if node.operator == BinaryOp.ADD:
             interval = left.interval.add(right.interval)
@@ -514,9 +870,10 @@ class SafetyProofPass:
         elif node.operator in {BinaryOp.DIV, BinaryOp.MOD} and right.interval and right.interval.is_nonzero():
             interval = IntegerInterval()
         else:
-            if node.operator == BinaryOp.DIV and left.nonzero and right.nonzero:
-                return ValueFact(nonzero=True)
             return ValueFact()
+        result_type = self._type(node)
+        if isinstance(result_type, PrimitiveType) and result_type.name in INTEGER_RANGES and not self._range_fits(interval, result_type):
+            return self._default_fact_for_type(result_type)
         return ValueFact(interval=interval, nonzero=interval.is_nonzero())
 
     def _cast_fact(self, node: ASTNode, source_fact: ValueFact) -> ValueFact:
@@ -551,6 +908,8 @@ class SafetyProofPass:
             self._prove(obligation, decision.reason)
         if isinstance(target_type, PrimitiveType) and target_type.name in INTEGER_RANGES and self._range_fits(source_fact.interval, target_type):
             return ValueFact(interval=source_fact.interval, nonzero=source_fact.nonzero)
+        if decision is not None and decision.allowed and source_type == target_type:
+            return source_fact
         return ValueFact()
 
     def _type_from_cast_target(self, node: ASTNode) -> Optional[Type]:
@@ -558,23 +917,27 @@ class SafetyProofPass:
 
     def _prove_nonzero_divisor(self, node: ASTNode, divisor: ASTNode, operation: str) -> None:
         fact = self.facts.node(divisor)
-        obligation = self._obligation(ObligationKind.DIVISOR_NONZERO, node, operation, self._type(divisor), "division/modulo divisor must be non-zero", TypeErrorType.UNSAFE_CAST)
+        obligation = self._obligation(ObligationKind.DIVISOR_NONZERO, node, operation, self._type(divisor), "division/modulo divisor must be non-zero", None)
         if fact.nonzero or (fact.interval and fact.interval.is_nonzero()):
             self._prove(obligation, "divisor is proven non-zero")
         else:
             self._error(obligation, "divisor may be zero")
 
     def _prove_index(self, node: ASTNode, obj: ValueFact, idx: ValueFact) -> None:
-        obligation = self._obligation(ObligationKind.INDEX_IN_BOUNDS, node, "index", self._type(node.index), "index must satisfy 0 <= index < len", TypeErrorType.INDEX_NOT_INTEGER)
+        obligation = self._obligation(ObligationKind.INDEX_IN_BOUNDS, node, "index", self._type(node.index), "index must satisfy 0 <= index < len", None)
         length = self._object_length(node.object, obj)
         interval = idx.interval
-        if length is not None and interval is not None and interval.contains(0, length - 1):
+        relative_bound = (idx.upper_length_of is not None and node.object is not None
+                          and node.object.kind == NodeKind.IDENTIFIER
+                          and idx.upper_length_of == node.object.name
+                          and interval is not None and interval.is_nonnegative())
+        if relative_bound or (length is not None and interval is not None and interval.contains(0, length - 1)):
             self._prove(obligation, "index is in bounds")
         else:
             self._error(obligation, "index bounds are not proven")
 
     def _prove_slice(self, node: ASTNode, obj: ValueFact, start: ValueFact, end: ValueFact) -> None:
-        obligation = self._obligation(ObligationKind.SLICE_IN_BOUNDS, node, "slice", self._type(node.object), "slice must satisfy 0 <= start <= end <= len", TypeErrorType.INDEX_NOT_INTEGER)
+        obligation = self._obligation(ObligationKind.SLICE_IN_BOUNDS, node, "slice", self._type(node.object), "slice must satisfy 0 <= start <= end <= len", None)
         length = self._object_length(node.object, obj)
         si = start.interval
         ei = end.interval
@@ -629,21 +992,10 @@ class SafetyProofPass:
             self._error(obligation, "reference may be nil")
 
     def _prove_integer_overflow(self, node: ASTNode, fact: ValueFact) -> None:
-        # Overflow policy is represented in the obligation model, but full
-        # range-safe arithmetic is intentionally left for a dedicated follow-up.
-        # Today the pass proves concrete casts/division/index/ref obligations
-        # and does not block existing arithmetic-heavy examples.
+        # L5 defines wrapping +, -, and *. These operations need no no-overflow
+        # obligation. Their value facts are bounded to the native result type.
+        # Division, shifts and allocation sizes are separate policies.
         return
-        result_type = self._type(node)
-        if not isinstance(result_type, PrimitiveType) or result_type.name not in INTEGER_RANGES:
-            return
-        if fact.interval is None or fact.interval.lower is None or fact.interval.upper is None:
-            return
-        obligation = self._obligation(ObligationKind.INTEGER_OVERFLOW, node, "arithmetic", result_type, "fixed-width integer arithmetic must stay in range", TypeErrorType.UNSAFE_CAST)
-        if self._range_fits(fact.interval, result_type):
-            self._prove(obligation, "integer result range fits type")
-        else:
-            self._error(obligation, "integer arithmetic overflow is not proven impossible")
 
     def _range_fits(self, interval: Optional[IntegerInterval], target_type: Optional[Type]) -> bool:
         if not isinstance(target_type, PrimitiveType) or target_type.name not in INTEGER_RANGES or interval is None:
@@ -659,13 +1011,6 @@ class SafetyProofPass:
             return False
         low, high = INTEGER_RANGES[getattr(target_type, "name", "")]
         return low <= int(value) <= high
-
-    def _learn_after_stmt(self, node: ASTNode) -> None:
-        if node.kind != NodeKind.IF_STMT or node.condition is None or node.then_stmt is None:
-            return
-        if not self._always_returns(node.then_stmt):
-            return
-        self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=False))
 
     def _always_returns(self, node: ASTNode) -> bool:
         if node.kind == NodeKind.RETURN:
@@ -685,13 +1030,27 @@ class SafetyProofPass:
         current = self.facts.symbol(name)
         interval = current.interval
         facts: dict[str, ValueFact] = {}
+        rhs = self.facts.node(condition.right).interval
         if literal is not None:
-            if positive and condition.operator in {BinaryOp.GE, BinaryOp.GT}:
-                lower = literal if condition.operator == BinaryOp.GE else literal + 1
-                facts[name] = ValueFact(interval=IntegerInterval(lower, interval.upper if interval else None), nonzero=lower > 0, non_nil=current.non_nil, maybe_nil=current.maybe_nil)
-            elif not positive and condition.operator in {BinaryOp.LT, BinaryOp.LE}:
-                lower = literal if condition.operator == BinaryOp.LT else literal + 1
-                facts[name] = ValueFact(interval=IntegerInterval(lower, interval.upper if interval else None), nonzero=lower > 0, non_nil=current.non_nil, maybe_nil=current.maybe_nil)
+            rhs = IntegerInterval.exact(literal)
+        op = condition.operator
+        if not positive:
+            op = {BinaryOp.GE: BinaryOp.LT, BinaryOp.GT: BinaryOp.LE, BinaryOp.LE: BinaryOp.GT, BinaryOp.LT: BinaryOp.GE, BinaryOp.EQ: BinaryOp.NE, BinaryOp.NE: BinaryOp.EQ}.get(op, op)
+        if rhs:
+            lo, hi = (interval.lower, interval.upper) if interval else (None, None)
+            if op in {BinaryOp.GE, BinaryOp.GT, BinaryOp.EQ} and rhs.lower is not None:
+                lower = rhs.lower + (1 if op == BinaryOp.GT else 0)
+                lo = max(lo, lower) if lo is not None else lower
+            if op in {BinaryOp.LE, BinaryOp.LT, BinaryOp.EQ} and rhs.upper is not None:
+                upper = rhs.upper - (1 if op == BinaryOp.LT else 0)
+                hi = min(hi, upper) if hi is not None else upper
+            narrowed = IntegerInterval(lo, hi)
+            facts[name] = replace(current, interval=narrowed, nonzero=current.nonzero or narrowed.is_nonzero())
+        if (op == BinaryOp.LT and condition.right and condition.right.kind == NodeKind.FIELD_ACCESS
+                and condition.right.field == "len" and condition.right.object
+                and condition.right.object.kind == NodeKind.IDENTIFIER
+                and isinstance(self._type(condition.right.object), (ArrayType, SliceType))):
+            facts[name] = replace(facts.get(name, current), upper_length_of=condition.right.object.name)
         if self._zero_literal(condition.right):
             if (positive and condition.operator == BinaryOp.NE) or (not positive and condition.operator == BinaryOp.EQ):
                 facts[name] = ValueFact(interval=interval, nonzero=True, non_nil=current.non_nil, maybe_nil=current.maybe_nil)
@@ -712,13 +1071,12 @@ class SafetyProofPass:
         return False
 
     def _int_literal(self, node: Optional[ASTNode]) -> Optional[int]:
-        if node is None:
-            return None
-        if node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER and isinstance(node.literal_value, int):
-            return node.literal_value
-        if node.kind == NodeKind.UNARY and node.operator == UnaryOp.NEG:
-            value = self._int_literal(node.operand)
-            return -value if value is not None else None
+        sign = 1
+        while node is not None and node.kind == NodeKind.UNARY and node.operator == UnaryOp.NEG:
+            sign = -sign
+            node = node.operand
+        if node is not None and node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER and isinstance(node.literal_value, int):
+            return -node.literal_value if sign < 0 else node.literal_value
         return None
 
     def _mark_deleted(self, node: ASTNode) -> None:

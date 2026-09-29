@@ -1,0 +1,11 @@
+Point :: struct {
+    x: i32
+}
+
+main :: fn() {
+    p := new Point
+    q := new Point
+    if p != nil and q != nil {
+        p.x = 1
+    }
+}

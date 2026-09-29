@@ -1,0 +1,824 @@
+{
+  "scope": "All CRITICAL/HIGH finding headings in the six durable 2026-09-16 compiler reports; original IDs retained, including duplicate root causes.",
+  "method": "Read-only documentation reconciliation. No unsafe programs, tests, or original repros executed. Historical closure is not current-state revalidation.",
+  "date": "2026-09-20",
+  "count": 49,
+  "severity_counts": {
+    "CRITICAL": 19,
+    "HIGH": 30
+  },
+  "disposition_counts": {
+    "historical_explicit_closure": 15,
+    "pending_revalidation_or_decision": 14,
+    "related_repair_pending_revalidation": 5,
+    "pending_revalidation": 10,
+    "partial_repair_pending_revalidation": 3,
+    "explicit_trigger_closure": 2
+  },
+  "findings": [
+    {
+      "id": "ZIG-1",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:95",
+      "title": "ZIG-1: a folded constant inherits a dead node's type (CRITICAL, NEW; the fix plan equates it with SAF-7)",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:101",
+        "docs/plan/execution.md:127"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:38",
+        "docs/plan/execution.md:101"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "ZIG-2",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:126",
+      "title": "ZIG-2: if-expression emitted without parentheses (CRITICAL, NEW)",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:103",
+        "docs/plan/execution.md:122"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:103"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "ZIG-3",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:154",
+      "title": "ZIG-3: untyped immutable locals emitted as Zig comptime values (HIGH, NEW)",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:204"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P-BK; routing is not an approval or implementation result.",
+      "packet_or_batch": "P-BK"
+    },
+    {
+      "id": "ZIG-4",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:179",
+      "title": "ZIG-4: `\\x80`-`\\xff` string escapes emitted as UTF-8 (HIGH, NEW)",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:200"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P-LEX; routing is not an approval or implementation result.",
+      "packet_or_batch": "P-LEX"
+    },
+    {
+      "id": "ZIG-5",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:199",
+      "title": "ZIG-5: identifiers named `io` hijacked as stdlib io (HIGH, NEW, sibling of KNOWN B14)",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:129"
+      ],
+      "related_evidence": [
+        "docs/plan/audit/open-items.md:237"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:102"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required. Residual scope-desynchronization variants remain recorded under PIP-4/PIP-5; do not infer complete family closure."
+    },
+    {
+      "id": "ZIG-6",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:216",
+      "title": "ZIG-6: struct literal fields evaluated in written order (HIGH, NEW)",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:103",
+        "docs/plan/execution.md:122"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:103"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "ZIG-7",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:231",
+      "title": "ZIG-7: shifts by a runtime amount have no safety obligation (HIGH, NEW)",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:143",
+        "docs/plan/execution.md:205"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P4 numerics; routing is not an approval or implementation result.",
+      "packet_or_batch": "P4 numerics"
+    },
+    {
+      "id": "ZIG-8",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:252",
+      "title": "ZIG-8: union field reads have no safety obligation (HIGH, NEW)",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:205"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P5 composite values; routing is not an approval or implementation result.",
+      "packet_or_batch": "P5 composite values"
+    },
+    {
+      "id": "ZIG-39",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/backend.md:273",
+      "title": "ZIG-39: redirected stdout keeps only the last print (HIGH, NEW; symptom first seen in `tmp/audit/compiler/parser.md:526` S1, planned in `docs/plan/execution.md:103` C3)",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:103",
+        "docs/plan/execution.md:122"
+      ],
+      "related_evidence": [
+        "docs/plan/audit/open-items.md:151"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:103"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "PAR-01",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/parser.md:71",
+      "title": "PAR-01 (CRITICAL, NEW): `match` statement parsing never terminates on an unexpected token",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:100",
+        "docs/plan/execution.md:123"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:35",
+        "docs/plan/execution.md:100"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "PAR-02",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/parser.md:101",
+      "title": "PAR-02 (HIGH, NEW): struct-literal detection depends on the distance to the nearest keyword within 10 tokens",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:139"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to PR-02 plus P-PAR; routing is not an approval or implementation result.",
+      "packet_or_batch": "PR-02 plus P-PAR"
+    },
+    {
+      "id": "PAR-03",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/parser.md:142",
+      "title": "PAR-03 (HIGH, KNOWN F2 and C5): recovery after the first declaration drops code and fabricates file-scope declarations",
+      "disposition": "related_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:23"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:201"
+      ],
+      "note": "Fail-closed parser recovery is independently verified for two concrete malformed-declaration programs. Map every original recovery case before full per-ID closure."
+    },
+    {
+      "id": "PAR-04",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/parser.md:160",
+      "title": "PAR-04 (HIGH, NEW; the parser-side root cause of D7's \"no line\"): BINARY nodes are created without a span",
+      "disposition": "related_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "docs/plan/execution.md:105",
+        "docs/plan/audit/open-items.md:46"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:139"
+      ],
+      "note": "C4 operand-span fallback and later diagnostic repairs are related. Complete BINARY span and every divisor diagnostic closure not explicitly mapped."
+    },
+    {
+      "id": "PAR-05",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/parser.md:186",
+      "title": "PAR-05 (HIGH, KNOWN F5, broader than recorded): the JSON formatter crashes on any match expression with `else`",
+      "disposition": "related_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:40"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:140"
+      ],
+      "note": "Independent review verifies JSON match-else in compile/ast/semantic modes. This directly addresses the symptom, but report does not identify the original PAR-05 corpus; revalidate original probe and output contract."
+    },
+    {
+      "id": "PIP-1",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:95",
+      "title": "PIP-1. CRITICAL. NEW. A local that shadows a file-module alias is miscompiled",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:104",
+        "docs/plan/execution.md:126"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:36",
+        "docs/plan/execution.md:71",
+        "docs/plan/execution.md:104"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "PIP-2",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:122",
+      "title": "PIP-2. CRITICAL. NEW. User functions named like typed math builtins are replaced",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:129"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:102"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "PIP-3",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:141",
+      "title": "PIP-3. CRITICAL. NEW (same family as KNOWN B14). A struct value named `io` is miscompiled",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:129"
+      ],
+      "related_evidence": [
+        "docs/plan/audit/open-items.md:237"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:71",
+        "docs/plan/execution.md:102"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required. Residual scope-desynchronization variants remain recorded under PIP-4/PIP-5; do not infer complete family closure."
+    },
+    {
+      "id": "PIP-4",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:158",
+      "title": "PIP-4. HIGH. NEW. `else if` desynchronizes scopes between name resolution and type checking",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:158"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review."
+    },
+    {
+      "id": "PIP-5",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:183",
+      "title": "PIP-5. HIGH. NEW. Match expressions consume match-statement scopes",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [],
+      "note": "No explicit complete per-ID closure established by this document review."
+    },
+    {
+      "id": "PIP-6",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:198",
+      "title": "PIP-6. HIGH. NEW. Intra-module calls in imported files emit undefined names",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:69"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to MOD / P-MOD; routing is not an approval or implementation result.",
+      "packet_or_batch": "MOD / P-MOD"
+    },
+    {
+      "id": "PIP-7",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:214",
+      "title": "PIP-7. HIGH. NEW. Module merge by concatenation: no visibility, leaked names, false rejections",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:66"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to MOD / P-MOD; routing is not an approval or implementation result.",
+      "packet_or_batch": "MOD / P-MOD"
+    },
+    {
+      "id": "PIP-8",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:234",
+      "title": "PIP-8. HIGH. NEW. Transitive imports are never merged",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to MOD / P-MOD; routing is not an approval or implementation result.",
+      "packet_or_batch": "MOD / P-MOD"
+    },
+    {
+      "id": "PIP-9",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:249",
+      "title": "PIP-9. HIGH. NEW. Calls through a file-module alias are not type checked",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:68"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to MOD / P-MOD; routing is not an approval or implementation result.",
+      "packet_or_batch": "MOD / P-MOD"
+    },
+    {
+      "id": "PIP-10",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:268",
+      "title": "PIP-10. HIGH. NEW. Cycle detection is dead code; import depth unbounded and recursive",
+      "disposition": "partial_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:39"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:65"
+      ],
+      "note": "Import-cycle trigger independently verified fixed. Original finding also covers unbounded recursive import depth; that portion lacks closure here."
+    },
+    {
+      "id": "PIP-11",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:286",
+      "title": "PIP-11. HIGH. KNOWN (B16 #6, #7, #8), with wider triggers",
+      "disposition": "related_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "docs/audits/2026-09-19/README.md:18",
+        "docs/plan/audit/open-items.md:46"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:65",
+        "docs/plan/execution.md:140"
+      ],
+      "note": "Durable cleanup states imported origin/internal-error repairs and passing diagnostic regressions. No complete original per-ID case mapping retained here."
+    },
+    {
+      "id": "PIP-12",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/pipeline.md:302",
+      "title": "PIP-12. HIGH. KNOWN (B16 #1-#4), with wider triggers",
+      "disposition": "explicit_trigger_closure",
+      "closure_evidence": [
+        "docs/audits/2026-09-19/glm-pipeline-review.md:9",
+        "docs/audits/2026-09-19/glm-pipeline-review.md:15"
+      ],
+      "related_evidence": [
+        "docs/audits/2026-09-19/glm-pipeline-review.md:9",
+        "docs/audits/2026-09-19/glm-pipeline-review.md:15"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:140"
+      ],
+      "note": "Independent GLM review verifies source/destination alias preservation and stale-artifact behavior, with filesystem tests and independent probes. Scope explicitly excludes hostile concurrent path replacement."
+    },
+    {
+      "id": "SAF-1",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:68",
+      "title": "SAF-1 (CRITICAL, NEW): `ref T` parameters are assumed non-nil, and no call site has to prove it",
+      "disposition": "explicit_trigger_closure",
+      "closure_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:22"
+      ],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:22"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:39",
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Latest independent reviewer explicitly identifies SAF-1 and verifies nil-argument rejection. This closes its recorded trigger; no complete ref/alias guarantee or fresh execution in this inventory."
+    },
+    {
+      "id": "SAF-2",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:89",
+      "title": "SAF-2 (CRITICAL, NEW): any field named `ptr` is treated as non-nil",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-3",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:107",
+      "title": "SAF-3 (CRITICAL, NEW): `match` statements neither scope nor join facts, and `fall` carries state the pass never sees",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-4",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:134",
+      "title": "SAF-4 (CRITICAL, NEW): the early-return rule applies the negated guard even when the `else` branch reassigns",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-5",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:152",
+      "title": "SAF-5 (CRITICAL, NEW): `a / b` is marked non-zero when both operands are merely non-zero",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-6",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:166",
+      "title": "SAF-6 (CRITICAL, NEW): facts about globals survive calls that assign the global",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-7",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:181",
+      "title": "SAF-7 (CRITICAL, NEW): folding frees nodes whose ids are then reused, so `type_map` gives new literals the type of an unrelated dead node",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:101",
+        "docs/plan/execution.md:127"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:101"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "SAF-8",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:211",
+      "title": "SAF-8 (CRITICAL, NEW): `del` of a field or other non-identifier is never recorded, so a double free builds",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-9",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:227",
+      "title": "SAF-9 (CRITICAL, NEW; same root cause as PIP-2): a user function named like a typed math builtin is replaced by the Zig builtin",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:129"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:102"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "SAF-10",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:244",
+      "title": "SAF-10 (CRITICAL, KNOWN S13 extension): integer `%` folding loses precision above 2^53",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:101",
+        "docs/plan/execution.md:127"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:101"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "SAF-11",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:258",
+      "title": "SAF-11 (CRITICAL, NEW; interacts with P3/ZIG-38 and L5): intervals are never clamped or wrapped to the operand type, and approvals trust the impossible values",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:19",
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149",
+        "docs/plan/execution.md:199"
+      ],
+      "note": "ID collision: latest review labels a join-gap trigger SAF-11; original SAF-11 concerns impossible intervals from wrapping/type bounds. Broad bounded-arithmetic repairs are related evidence, not per-ID closure."
+    },
+    {
+      "id": "SAF-26",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:287",
+      "title": "SAF-26 (CRITICAL, NEW): an un-braced `else` branch is analyzed without save/restore, so its assignment is kept on the path that skipped it",
+      "disposition": "pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-remediation.md:14"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:149"
+      ],
+      "note": "Later safety repairs cover related mechanisms, but no explicit original per-ID closure was located. Map original probes and guarded controls before reporting fixed."
+    },
+    {
+      "id": "SAF-25",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:311",
+      "title": "SAF-25 (HIGH, NEW; latent CRITICAL behind KNOWN B11): a deferred assignment is applied at the `defer` site",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:105",
+        "docs/plan/execution.md:128",
+        "docs/plan/execution.md:130"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:39",
+        "docs/plan/execution.md:132"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required. C4 had a failed iteration and a later L32 waiver; preserve that history and distinguish deferred assignment from deferred deletion."
+    },
+    {
+      "id": "SAF-24",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/safety.md:342",
+      "title": "SAF-24 (HIGH, NEW; latent CRITICAL behind KNOWN B9 capture shadowing): a for-in value variable keeps the outer variable's fact",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:105",
+        "docs/plan/execution.md:128",
+        "docs/plan/execution.md:130"
+      ],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:132"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "TOK-01",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/tokenizer.md:79",
+      "title": "TOK-01 HIGH NEW: string hex escapes `\\x80`..`\\xff` are emitted as two UTF-8 bytes",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:34",
+        "docs/plan/execution.md:200"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P-LEX; routing is not an approval or implementation result.",
+      "packet_or_batch": "P-LEX"
+    },
+    {
+      "id": "TOK-02",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/tokenizer.md:105",
+      "title": "TOK-02 HIGH NEW: malformed numeric literals split silently and compile with a different value",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:200"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P-LEX; routing is not an approval or implementation result.",
+      "packet_or_batch": "P-LEX"
+    },
+    {
+      "id": "TOK-03",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/tokenizer.md:133",
+      "title": "TOK-03 HIGH NEW: literal forms accepted by the lexer crash the literal decoder or pass as non-ASCII digits",
+      "disposition": "partial_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:24"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:138",
+        "docs/plan/execution.md:200"
+      ],
+      "note": "Numeric-separator trigger repaired. Original includes non-ASCII digits and other literal decoder forms; retain per-form revalidation."
+    },
+    {
+      "id": "TOK-04",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/tokenizer.md:163",
+      "title": "TOK-04 HIGH NEW (symptom recorded as B16 item 5 and at ledger-part1.md:145, undiagnosed there): operator and terminator columns are wrong",
+      "disposition": "related_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "docs/plan/audit/open-items.md:46",
+        "docs/audits/2026-09-19/README.md:18"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:138"
+      ],
+      "note": "Durable cleanup states operator-column repair. Original also includes terminator/newline cases; do not infer all-column closure from operator regression."
+    },
+    {
+      "id": "TOK-05",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/tokenizer.md:194",
+      "title": "TOK-05 HIGH KNOWN (F1; README \"Compiler defects for track 1\"): unclosed block comment is accepted",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:200"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to P-LEX; routing is not an approval or implementation result.",
+      "packet_or_batch": "P-LEX"
+    },
+    {
+      "id": "TYP-01",
+      "severity": "CRITICAL",
+      "source": "docs/audits/2026-09-16/compiler/types.md:42",
+      "title": "TYP-01 (CRITICAL, NEW): a symbol read before its declaration is type-checked has `UnknownType`, and `UnknownType` is assignable to every type; this lets wrongly typed programs through and causes miscompiles",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:37",
+        "docs/plan/execution.md:141",
+        "docs/plan/execution.md:203"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to T2 plus P-TYP; routing is not an approval or implementation result.",
+      "packet_or_batch": "T2 plus P-TYP"
+    },
+    {
+      "id": "TYP-02",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/types.md:94",
+      "title": "TYP-02 (HIGH, NEW; extends KNOWN MS-7 / G4): the recursion ban has several bypasses that compile and build with Zig",
+      "disposition": "partial_repair_pending_revalidation",
+      "closure_evidence": [],
+      "related_evidence": [
+        "site/docs/audits/glm-5.3-repair-review.md:26"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:203"
+      ],
+      "note": "Unused nested recursion trigger repaired, but original TYP-02 includes multiple stored/function-pointer and higher-order bypasses. No complete per-ID closure."
+    },
+    {
+      "id": "TYP-03",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/types.md:128",
+      "title": "TYP-03 (HIGH, NEW): recursion-cycle search is exponential; a 200-line valid program takes 50 s",
+      "disposition": "historical_explicit_closure",
+      "closure_evidence": [
+        "docs/plan/execution.md:107",
+        "docs/plan/execution.md:124"
+      ],
+      "related_evidence": [
+        "docs/audits/2026-09-18/language-features.md:834"
+      ],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:107"
+      ],
+      "note": "Explicit batch-to-ID closure mapping and applied/verifier record exist. No original probe was rerun for this inventory; current-state revalidation remains required."
+    },
+    {
+      "id": "TYP-04",
+      "severity": "HIGH",
+      "source": "docs/audits/2026-09-16/compiler/types.md:146",
+      "title": "TYP-04 (HIGH, NEW): SPEC 7.1 inline generic functions pass semantic analysis but fail codegen with exit 7; generic bodies are never checked per instantiation",
+      "disposition": "pending_revalidation_or_decision",
+      "closure_evidence": [],
+      "related_evidence": [],
+      "decision_or_batch_evidence": [
+        "docs/plan/execution.md:162",
+        "docs/plan/execution.md:203"
+      ],
+      "note": "No explicit complete per-ID closure established by this document review. Existing plan routes work to T7 plus P-TYP; routing is not an approval or implementation result.",
+      "packet_or_batch": "T7 plus P-TYP"
+    }
+  ],
+  "current_revalidation": {
+    "evidence": "original-probes/summary.json",
+    "checks": 45,
+    "scope": "Compiler/AST/semantic/token checks only; no native execution",
+    "summary": {
+      "compiler_hashes_unchanged": true,
+      "run_count": 45,
+      "dispositions": {
+        "PAR-02": {
+          "status": "reproduced, failure containment improved",
+          "evidence": "Six original long-condition/inline-struct shapes reject with exit 5; the short-condition control compiles. None hangs or emits partial Zig. The struct-literal context defect remains; silent dropping is repaired in these forms."
+        },
+        "PAR-03": {
+          "status": "original selected recovery failures no longer reproduce",
+          "evidence": "All eight selected original recovery/declaration cases reject with exit 5 and no Zig artifact. Typed/untyped local promotion and silent function loss do not reproduce. Valid function-type declarations still reject, which is a separate parsing limitation; no claim of full parser support."
+        },
+        "PAR-05": {
+          "status": "verified fixed for both original JSON reproductions",
+          "evidence": "Both original match-expression else probes produce valid JSON and exit 0 in compile, AST and semantic modes, six checks total. Duplicate else acceptance in p12b is unchanged and is not approved by this result. No native behavior checked."
+        },
+        "TOK-03": {
+          "status": "partially fixed; lexical contract decision remains",
+          "evidence": "All eight original malformed separator cases and superscript digit reject with exit 4, not internal exit 8. Original 0x_1, Arabic decimal 1\u0663 and fullwidth float 1.\uff15 still compile. Accepted spelling policy remains a decision; do not mark all TOK-03 closed."
+        },
+        "TOK-04": {
+          "status": "verified fixed for original reported column shapes",
+          "evidence": "Original two fixtures plus six verbatim snippets give correct operator/newline/brace columns. Explicit assertions cover + at 3, newline at 6, braces at 1, <<= at 3, .. at 2, and leading operators at 1. Closing-brace token now has column 1; the compile fails earlier at the missing-parenthesis newline, line 5 column 12. No full source-map guarantee."
+        },
+        "PIP-10": {
+          "status": "cycle fixed; deep recursion failure reproduced",
+          "evidence": "Original cyclic fixtures reject with exit 6. Original 1100-file import chain still exits 8 with RecursionError. This finding remains open for iterative loading and the depth contract."
+        }
+      },
+      "token_column_assertions": "passed",
+      "failed_runs_wrote_no_zig": true,
+      "all_final_runs_valid_json": true
+    }
+  }
+}

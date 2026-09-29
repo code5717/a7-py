@@ -1,442 +1,301 @@
-// A7 docs — typography, motion, search, shortcuts
-const base = '/a7-py'
-
-// ─────────── legacy URL fallbacks ───────────
-if (location.hash.startsWith('#/')) {
-  location.replace(base + location.hash.slice(1))
+const navigation = document.querySelector(".navigation");
+const mobileNavigation = matchMedia("(max-width: 899px)");
+function adaptNavigation() {
+  if (navigation) navigation.open = !mobileNavigation.matches;
 }
-const from = new URLSearchParams(location.search).get('from')
-if (from && location.pathname === base + '/') {
-  const clean = from.replace(/^\/+/, '')
-  const known = ['start', 'language', 'stdlib', 'compiler', 'status', 'release', 'agent-usage', 'project']
-  const first = clean.split('/')[0]
-  if (known.includes(first)) location.replace(`${base}/${first}/`)
-}
-
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-// ─────────── reading progress ───────────
-const progress = document.querySelector('.read-progress')
-if (progress) {
-  let ticking = false
-  const update = () => {
-    const max = document.documentElement.scrollHeight - innerHeight
-    const ratio = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0
-    progress.style.transform = `scaleX(${ratio})`
-    ticking = false
-  }
-  update()
-  const onScroll = () => {
-    if (ticking) return
-    requestAnimationFrame(update)
-    ticking = true
-  }
-  window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', onScroll, { passive: true })
-}
-
-// ─────────── code copy buttons ───────────
-document.querySelectorAll('pre code').forEach((code) => {
-  const pre = code.parentElement
-  if (!pre || pre.querySelector('.copy')) return
-  const button = document.createElement('button')
-  button.type = 'button'
-  button.className = 'copy'
-  button.textContent = 'copy'
-  button.setAttribute('aria-label', 'Copy code')
-  button.addEventListener('click', async () => {
+adaptNavigation();
+mobileNavigation.addEventListener("change", adaptNavigation);
+const base = "/a7-py";
+const known = [
+  "start",
+  "tour",
+  "examples",
+  "language",
+  "stdlib",
+  "compiler",
+  "status",
+  "release",
+  "agent-usage",
+  "project",
+];
+const legacy = location.hash.startsWith("#/")
+  ? location.hash.slice(2).replace(/\/$/, "")
+  : new URLSearchParams(location.search).get("from")?.replace(/^\/|\/$/g, "");
+if (known.includes(legacy)) location.replace(`${base}/${legacy}/`);
+const theme = document.querySelector(".theme-control");
+if (theme) {
+  theme.hidden = false;
+  const select = theme.querySelector("select");
+  select.value = document.documentElement.dataset.theme || "system";
+  select.addEventListener("change", () => {
+    const value = select.value;
+    if (value === "system") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = value;
     try {
-      await navigator.clipboard.writeText(code.textContent || '')
-      button.textContent = 'copied'
-      button.classList.add('is-copied')
+      if (value === "system") localStorage.removeItem("a7-theme");
+      else localStorage.setItem("a7-theme", value);
+    } catch {}
+  });
+}
+// Code controls enhance a stable, server-rendered toolbar.
+document.querySelectorAll(".code-block").forEach((block) => {
+  const code = block.querySelector("pre code");
+  const copy = block.querySelector(".copy");
+  const label = copy.querySelector("[data-copy-label]");
+  const feedback = block.querySelector(".copy-status");
+  let reset;
+  copy.hidden = false;
+  copy.addEventListener("click", async () => {
+    clearTimeout(reset);
+    try {
+      await navigator.clipboard.writeText(code.textContent);
+      label.textContent = "Copied";
+      feedback.hidden = false;
+      feedback.textContent = "Code copied to clipboard.";
+      reset = setTimeout(() => {
+        label.textContent = "Copy";
+        feedback.hidden = true;
+      }, 2500);
     } catch {
-      button.textContent = 'failed'
+      label.textContent = "Copy";
+      feedback.hidden = false;
+      feedback.textContent =
+        "Copy failed. Select the code and copy it manually, or try again.";
     }
-    setTimeout(() => {
-      button.textContent = 'copy'
-      button.classList.remove('is-copied')
-    }, 1200)
-  })
-  pre.append(button)
-})
-
-// ─────────── scroll-reveal ───────────
-if (!reduceMotion && 'IntersectionObserver' in window) {
-  const reveal = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-revealed')
-        reveal.unobserve(entry.target)
-      }
-    }
-  }, { rootMargin: '0px 0px -8% 0px', threshold: 0 })
-
-  // mark home sections and prose blocks
-  const candidates = document.querySelectorAll(
-    '.route-board, .terminal-strip, .prose > h2, .prose > h3, .prose > p, .prose > ul, .prose > ol, .prose > pre, .prose > table, .doc-pager',
+  });
+});
+// Scroll only the rail. Loading a page must not move the article viewport.
+function revealCurrentPage() {
+  if (mobileNavigation.matches || !navigation) return;
+  const current = navigation.querySelector('[aria-current="page"]');
+  if (!current) return;
+  const item = current.getBoundingClientRect(),
+    rail = navigation.getBoundingClientRect();
+  if (item.bottom > rail.bottom)
+    navigation.scrollTop += item.bottom - rail.bottom + 16;
+  else if (item.top < rail.top)
+    navigation.scrollTop -= rail.top - item.top + 16;
+}
+requestAnimationFrame(revealCurrentPage);
+mobileNavigation.addEventListener("change", () =>
+  requestAnimationFrame(revealCurrentPage),
+);
+const outlineLinks = [
+  ...document.querySelectorAll(".page-outline a, .mobile-outline a"),
+];
+const outlineHeadings = [
+  ...new Set(
+    outlineLinks
+      .map((a) => document.getElementById(a.hash.slice(1)))
+      .filter(Boolean),
+  ),
+];
+let outlineFrame = false;
+function updateOutline() {
+  outlineFrame = false;
+  const offset =
+    document.querySelector(".topbar").getBoundingClientRect().height + 32;
+  let current = outlineHeadings[0];
+  for (const heading of outlineHeadings) {
+    if (heading.getBoundingClientRect().top <= offset) current = heading;
+    else break;
+  }
+  if (
+    Math.ceil(scrollY + innerHeight) >=
+    document.documentElement.scrollHeight - 2
   )
-  candidates.forEach((el, i) => {
-    el.setAttribute('data-reveal', '')
-    el.style.setProperty('--reveal-delay', `${Math.min(i, 4) * 40}ms`)
-    reveal.observe(el)
-  })
+    current = outlineHeadings.at(-1);
+  outlineLinks.forEach((a) => {
+    if (current && a.hash === "#" + current.id)
+      a.setAttribute("aria-current", "location");
+    else a.removeAttribute("aria-current");
+  });
 }
-
-// ─────────── TOC scrollspy ───────────
-const tocEl = document.querySelector('.toc')
-if (tocEl && 'IntersectionObserver' in window) {
-  const tocLinks = Array.from(tocEl.querySelectorAll('a[href^="#"]'))
-  const map = new Map()
-  for (const a of tocLinks) {
-    const id = decodeURIComponent(a.getAttribute('href').slice(1))
-    const target = document.getElementById(id)
-    if (target) map.set(target, a)
+function scheduleOutline() {
+  if (!outlineFrame) {
+    outlineFrame = true;
+    requestAnimationFrame(updateOutline);
   }
-  let activeEl = null
-  const setActive = (el) => {
-    if (activeEl === el) return
-    activeEl = el
-    tocLinks.forEach((l) => l.classList.remove('active'))
-    map.get(el)?.classList.add('active')
-  }
-  const headings = Array.from(map.keys())
-  const spy = new IntersectionObserver((entries) => {
-    // pick the topmost intersecting heading
-    const visible = entries.filter((e) => e.isIntersecting)
-    if (visible.length) {
-      const top = visible.reduce((a, b) =>
-        a.boundingClientRect.top < b.boundingClientRect.top ? a : b,
-      )
-      setActive(top.target)
-    }
-  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 })
-  headings.forEach((h) => spy.observe(h))
 }
-
-// ─────────── modals ───────────
-function getModal(name) {
-  return document.querySelector(`[data-modal="${name}"]`)
-}
-
-let lastFocus = null
-
-function openModal(name) {
-  const modal = getModal(name)
-  if (!modal) return
-  closeAllModals(name)
-  lastFocus = document.activeElement
-  modal.setAttribute('data-open', '')
-  document.body.style.overflow = 'hidden'
-  const target =
-    modal.querySelector('[data-autofocus]') ||
-    modal.querySelector('input, textarea, select') ||
-    modal.querySelector('button, a')
-  if (!target) return
-  // Force layout flush so the focus call lands on a now-visible element
-  void modal.offsetWidth
-  target.focus({ preventScroll: true })
-  if (target instanceof HTMLInputElement) target.select?.()
-  // Retry once more in case the first attempt was lost during the display change
-  requestAnimationFrame(() => {
-    if (document.activeElement !== target) target.focus({ preventScroll: true })
-  })
-}
-
-function closeModal(name) {
-  const modal = getModal(name)
-  if (!modal || !modal.hasAttribute('data-open')) return
-  modal.removeAttribute('data-open')
-  document.body.style.overflow = ''
-  lastFocus?.focus?.()
-}
-
-function closeAllModals(except) {
-  document.querySelectorAll('[data-modal][data-open]').forEach((m) => {
-    if (m.dataset.modal !== except) {
-      m.removeAttribute('data-open')
-      document.body.style.overflow = ''
-    }
-  })
-}
-
-document.querySelectorAll('[data-modal]').forEach((modal) => {
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal(modal.dataset.modal)
-  })
-  modal.querySelectorAll('[data-modal-close]').forEach((btn) => {
-    btn.addEventListener('click', () => closeModal(modal.dataset.modal))
-  })
-})
-
-document.querySelectorAll('[data-shortcuts-open]').forEach((btn) => {
-  btn.addEventListener('click', () => openModal('shortcuts'))
-})
-document.querySelectorAll('[data-search-open]').forEach((btn) => {
-  btn.addEventListener('click', () => openModal('search'))
-})
-
-// ─────────── search ───────────
-const searchModal = getModal('search')
-const searchInput = searchModal?.querySelector('input')
-const searchList = searchModal?.querySelector('[data-search-list]')
-const searchEmpty = searchModal?.querySelector('[data-search-empty]')
-let searchIndex = null
-let searchIndexPromise = null
-let searchSelection = 0
-
-async function loadSearchIndex() {
-  if (searchIndex) return searchIndex
-  if (!searchIndexPromise) {
-    searchIndexPromise = fetch(`${base}/assets/search.json`)
-      .then((r) => r.json())
-      .catch(() => [])
-  }
-  searchIndex = await searchIndexPromise
-  return searchIndex
-}
-
-function rankSearch(items, q) {
-  if (!q) return items.slice(0, 12)
-  const needle = q.toLowerCase().trim()
-  const tokens = needle.split(/\s+/).filter(Boolean)
-  const scored = []
-  for (const item of items) {
-    const hay = `${item.title} ${item.section ?? ''} ${item.summary ?? ''}`.toLowerCase()
-    let score = 0
-    let allHit = true
-    for (const t of tokens) {
-      const idx = hay.indexOf(t)
-      if (idx === -1) { allHit = false; break }
-      score += 100 - Math.min(idx, 80)
-      if (item.title.toLowerCase().startsWith(t)) score += 80
-      if ((item.section ?? '').toLowerCase().includes(t)) score += 30
-    }
-    if (allHit) scored.push({ item, score })
-  }
-  scored.sort((a, b) => b.score - a.score)
-  return scored.slice(0, 12).map((s) => s.item)
-}
-
-function renderSearch(items) {
-  if (!searchList) return
-  searchList.innerHTML = ''
-  if (!items.length) {
-    if (searchEmpty) searchEmpty.style.display = 'block'
-    return
-  }
-  if (searchEmpty) searchEmpty.style.display = 'none'
-  items.forEach((item, i) => {
-    const a = document.createElement('a')
-    a.href = item.href
-    a.className = 'search-result'
-    a.setAttribute('role', 'option')
-    if (i === searchSelection) a.setAttribute('aria-selected', 'true')
-    a.innerHTML = `
-      <span>${escapeHtml(item.kind || 'doc')}</span>
-      <span style="flex:1;width:auto;">
-        <strong>${escapeHtml(item.title)}</strong>
-        <em>${escapeHtml(item.section || item.summary || '')}</em>
-      </span>
-    `
-    a.addEventListener('mousemove', () => {
-      searchSelection = i
-      updateSelection()
-    })
-    searchList.append(a)
-  })
-}
-
-function updateSelection() {
-  const results = searchList?.querySelectorAll('.search-result')
-  if (!results) return
-  results.forEach((r, i) => {
-    if (i === searchSelection) {
-      r.setAttribute('aria-selected', 'true')
-      r.scrollIntoView({ block: 'nearest' })
-    } else {
-      r.removeAttribute('aria-selected')
-    }
-  })
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-}
-
-async function runSearch() {
-  if (!searchInput) return
-  const items = await loadSearchIndex()
-  searchSelection = 0
-  renderSearch(rankSearch(items, searchInput.value))
-}
-
-if (searchInput) {
-  searchInput.addEventListener('input', runSearch)
-  searchInput.addEventListener('keydown', (e) => {
-    const results = searchList?.querySelectorAll('.search-result')
-    if (!results || !results.length) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      searchSelection = (searchSelection + 1) % results.length
-      updateSelection()
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      searchSelection = (searchSelection - 1 + results.length) % results.length
-      updateSelection()
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      const sel = results[searchSelection]
-      if (sel) location.assign(sel.getAttribute('href'))
-    }
-  })
-}
-
-// Preload index eagerly so the first keystroke renders immediately.
-// On slower connections we still fall back to fetching on demand.
-if ('requestIdleCallback' in window) {
-  requestIdleCallback(() => loadSearchIndex().then(() => runSearch()), { timeout: 1500 })
-} else {
-  setTimeout(() => loadSearchIndex().then(() => runSearch()), 200)
-}
-
-// ─────────── keyboard shortcuts ───────────
-const pageInfo = window.__A7_PAGE__ || { slug: 'index', prev: null, next: null }
-
-const chordToast = document.querySelector('.chord-toast')
-const chordKey = chordToast?.querySelector('[data-chord-key]')
-
-let chord = null
-let chordTimer = null
-function setChord(k) {
-  chord = k
-  document.body.classList.toggle('chord-active', !!k)
-  if (chordKey) chordKey.textContent = k ?? ''
-  clearTimeout(chordTimer)
-  if (k) chordTimer = setTimeout(() => setChord(null), 1500)
-}
-
-const NAV_KEYS = {
-  h: '',
-  s: 'start/',
-  l: 'language/',
-  b: 'stdlib/',
-  c: 'compiler/',
-  t: 'status/',
-  r: 'release/',
-  a: 'agent-usage/',
-  p: 'project/',
-}
-
-const isEditable = (el) => {
-  if (!el) return false
-  const tag = el.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable
-}
-
-document.addEventListener('keydown', (e) => {
-  // Cmd/Ctrl+K — open search even when typing elsewhere (but not inside the search input itself)
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-    e.preventDefault()
-    openModal('search')
-    return
-  }
-
-  if (e.key === 'Escape') {
-    if (searchInput && document.activeElement === searchInput && searchInput.value) {
-      searchInput.value = ''
-      runSearch()
-      return
-    }
-    closeAllModals()
-    setChord(null)
-    return
-  }
-
-  if (e.metaKey || e.ctrlKey || e.altKey) return
-  if (isEditable(e.target)) return
-
-  const k = e.key.toLowerCase()
-
-  if (chord === 'g') {
-    e.preventDefault()
-    const dest = NAV_KEYS[k]
-    if (dest !== undefined) {
-      location.assign(base + '/' + dest)
-    } else if (k === 'g') {
-      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
-    }
-    setChord(null)
-    return
-  }
-
-  if (k === 'g') {
-    e.preventDefault()
-    setChord('g')
-    return
-  }
-
-  if (e.key === '?' || (e.shiftKey && k === '/')) {
-    e.preventDefault()
-    openModal('shortcuts')
-    return
-  }
-
-  if (k === '/') {
-    e.preventDefault()
-    openModal('search')
-    return
-  }
-
-  if (k === '[' && pageInfo.prev) {
-    e.preventDefault()
-    location.assign(pageInfo.prev.href)
-    return
-  }
-  if (k === ']' && pageInfo.next) {
-    e.preventDefault()
-    location.assign(pageInfo.next.href)
-    return
-  }
-
-  if (k === 't') {
-    e.preventDefault()
-    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
-    return
-  }
-
-  if (k === 'g') {
-    setChord('g')
-  }
-})
-
-// ─────────── terminal tabs ───────────
-document.querySelectorAll('[data-tabs]').forEach((root) => {
-  const tabs = root.querySelectorAll('[data-tab]')
-  const panels = root.querySelectorAll('[data-tab-panel]')
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const name = tab.dataset.tab
-      tabs.forEach((t) => t.setAttribute('aria-selected', t === tab ? 'true' : 'false'))
-      panels.forEach((p) => {
-        const match = p.dataset.tabPanel === name
-        if (match) p.removeAttribute('hidden')
-        else p.setAttribute('hidden', '')
+addEventListener("scroll", scheduleOutline, { passive: true });
+addEventListener("resize", scheduleOutline, { passive: true });
+scheduleOutline();
+const dialog = document.getElementById("search");
+const opener = document.querySelector("[data-search-open]");
+const input = document.getElementById("search-input");
+const results = document.getElementById("search-results");
+const status = document.getElementById("search-status");
+let index,
+  request,
+  generation = 0;
+async function loadIndex() {
+  if (index) return index;
+  if (!request)
+    request = fetch(`${base}/assets/search.json`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Search unavailable");
+        const value = await response.json();
+        if (
+          !Array.isArray(value) ||
+          value.some(
+            (v) => typeof v.text !== "string" || typeof v.href !== "string",
+          )
+        )
+          throw new Error("Invalid index");
+        return (index = value);
       })
-    })
-  })
-})
-
-// ─────────── topbar shadow on scroll ───────────
-const topbar = document.querySelector('.topbar')
-if (topbar) {
-  let scrolled = false
-  const onScroll = () => {
-    const now = scrollY > 8
-    if (now !== scrolled) {
-      scrolled = now
-      topbar.style.boxShadow = now ? '0 8px 30px rgba(0,0,0,.35)' : ''
-    }
+      .finally(() => {
+        request = null;
+      });
+  return request;
+}
+function highlight(element, text, terms) {
+  const needle = terms.find((term) => text.toLowerCase().includes(term));
+  if (!needle) {
+    element.textContent = text;
+    return;
   }
-  window.addEventListener('scroll', onScroll, { passive: true })
-  onScroll()
+  const at = text.toLowerCase().indexOf(needle);
+  const mark = document.createElement("mark");
+  mark.textContent = text.slice(at, at + needle.length);
+  element.append(text.slice(0, at), mark, text.slice(at + needle.length));
+}
+async function search() {
+  const current = ++generation;
+  status.textContent = "Loading search index…";
+  results.replaceChildren();
+  try {
+    const items = await loadIndex();
+    if (current !== generation) return;
+    const query = input.value.trim().toLowerCase();
+    const terms = query.split(/\s+/).filter(Boolean);
+    const ranked = items
+      .filter((item) => query || item.level === 1)
+      .map((item) => {
+        const text =
+          `${item.title} ${item.section} ${item.text} ${item.features}`.toLowerCase();
+        return {
+          item,
+          score: terms.every((t) => text.includes(t))
+            ? terms.reduce(
+                (score, t) =>
+                  score +
+                  (item.section.toLowerCase().includes(t) ? 5 : 1) +
+                  (item.title.toLowerCase().includes(t) ? 3 : 0),
+                0,
+              ) + 1
+            : 0,
+        };
+      })
+      .filter((x) => x.score)
+      .sort((a, b) => b.score - a.score);
+    const matches = query ? ranked.slice(0, 20) : ranked;
+    status.textContent = query
+      ? ranked.length
+        ? `${matches.length < ranked.length ? matches.length + " of " : ""}${ranked.length} ${ranked.length === 1 ? "result" : "results"}.`
+        : "No matching documentation. Try another word."
+      : "Browse documentation or type to search.";
+    for (const { item } of matches) {
+      const li = document.createElement("li"),
+        a = document.createElement("a"),
+        small = document.createElement("small");
+      a.href = item.href;
+      const context = document.createElement("span");
+      context.className = "search-context";
+      context.textContent = item.title;
+      const title = document.createElement("strong");
+      highlight(title, item.section, terms);
+      a.append(context, title);
+      const plain = item.text;
+      const lower = plain.toLowerCase();
+      const excerptTerm = terms.find((term) => lower.includes(term));
+      const at = excerptTerm ? lower.indexOf(excerptTerm) : 0;
+      const start = Math.max(0, at - 45);
+      highlight(
+        small,
+        (start ? "…" : "") +
+          plain.slice(start, start + 180) +
+          (plain.length > start + 180 ? "…" : ""),
+        terms,
+      );
+      a.append(small);
+      li.append(a);
+      results.append(li);
+    }
+  } catch {
+    if (current !== generation) return;
+    status.textContent =
+      "Search could not load. Check your connection and retry, or use the documentation navigation.";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Retry search";
+    button.onclick = search;
+    const li = document.createElement("li");
+    li.append(button);
+    results.append(li);
+  }
+}
+if (dialog && typeof dialog.showModal === "function") {
+  opener.hidden = false;
+  function open() {
+    dialog.showModal();
+    input.focus();
+    search();
+  }
+  opener.addEventListener("click", open);
+  document
+    .querySelector("[data-search-close]")
+    .addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => opener.focus());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      const r = dialog.getBoundingClientRect();
+      if (
+        event.clientX < r.left ||
+        event.clientX > r.right ||
+        event.clientY < r.top ||
+        event.clientY > r.bottom
+      )
+        dialog.close();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      if (!dialog.open) open();
+    }
+  });
+  input.addEventListener("input", search);
+  dialog.addEventListener("keydown", (event) => {
+    if (
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.isComposing
+    )
+      return;
+    const inInput = event.target === input;
+    const inResults = results.contains(event.target);
+    if (!inInput && !inResults) return;
+    const links = [...results.querySelectorAll("a")],
+      i = links.indexOf(document.activeElement);
+    if (event.key === "ArrowDown" && links.length) {
+      event.preventDefault();
+      links[Math.min(i + 1, links.length - 1)].focus();
+    }
+    if (event.key === "ArrowUp" && links.length && inResults) {
+      event.preventDefault();
+      if (i <= 0) input.focus();
+      else links[i - 1].focus();
+    }
+    if (
+      event.key === "Enter" &&
+      document.activeElement === input &&
+      links.length
+    ) {
+      event.preventDefault();
+      links[0].click();
+    }
+  });
 }

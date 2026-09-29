@@ -1,0 +1,230 @@
+[
+  {
+    "name": "nested_block_return",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/nested_block_return-candidate.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/nested_block_return-Debug"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "nested_block_return",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/nested_block_return-candidate.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/nested_block_return-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "else_if_return",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/else_if_return-candidate.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/else_if_return-Debug"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "else_if_return",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/else_if_return-candidate.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/else_if_return-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "else_return",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/else_return-candidate.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/else_return-Debug"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "else_return",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/else_return-candidate.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/else_return-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "returning_branch_defer",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/returning_branch_defer-candidate.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/returning_branch_defer-Debug"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "returning_branch_defer",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/returning_branch_defer-candidate.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/returning_branch_defer-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "3\n",
+    "run_exit": 0,
+    "stdout": "3\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "continuing_defer_reguard",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/continuing_defer_reguard-candidate.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/continuing_defer_reguard-Debug"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "0\n",
+    "run_exit": 0,
+    "stdout": "0\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "continuing_defer_reguard",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/continuing_defer_reguard-candidate.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/continuing_defer_reguard-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "0\n",
+    "run_exit": 0,
+    "stdout": "0\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "continuing_nonzero_assignment",
+    "profile": "Debug",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/continuing_nonzero_assignment-candidate.zig",
+      "-O",
+      "Debug",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/continuing_nonzero_assignment-Debug"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "5\n",
+    "run_exit": 0,
+    "stdout": "5\n",
+    "stderr": "",
+    "passed": true
+  },
+  {
+    "name": "continuing_nonzero_assignment",
+    "profile": "ReleaseFast",
+    "build_command": [
+      "zig",
+      "build-exe",
+      "/tmp/a7-saf4-independent-jybswto4/continuing_nonzero_assignment-candidate.zig",
+      "-O",
+      "ReleaseFast",
+      "-femit-bin=/tmp/a7-saf4-independent-jybswto4/continuing_nonzero_assignment-ReleaseFast"
+    ],
+    "build_exit": 0,
+    "build_stderr": "",
+    "expected_stdout": "5\n",
+    "run_exit": 0,
+    "stdout": "5\n",
+    "stderr": "",
+    "passed": true
+  }
+]

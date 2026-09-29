@@ -1,0 +1,67 @@
+{
+  "index": [],
+  "project": [
+    "project",
+    "contributing",
+    "documentation-maintenance",
+    "deploy",
+    "security"
+  ],
+  "agent-usage": [
+    "agent-usage",
+    "fetch-order",
+    "compact-index",
+    "full-corpus",
+    "agent-rules",
+    "deploy-verification"
+  ],
+  "release": [
+    "release",
+    "local-gates",
+    "docs-gate",
+    "required-archive-files",
+    "native-artifacts"
+  ],
+  "status": [
+    "status",
+    "current-surface",
+    "active-priorities",
+    "known-gaps",
+    "planned-work",
+    "not-currently-available"
+  ],
+  "compiler": [
+    "compiler",
+    "pipeline",
+    "cli-modes",
+    "exit-codes",
+    "safety-stance",
+    "zig-backend"
+  ],
+  "stdlib": [
+    "standard-library",
+    "implemented-modules",
+    "std-io",
+    "std-math",
+    "not-registered-yet"
+  ],
+  "language": [
+    "language",
+    "program-shape",
+    "declarations",
+    "float-remainder",
+    "control-flow",
+    "types",
+    "imports",
+    "hard-rules"
+  ],
+  "start": [
+    "start",
+    "requirements",
+    "install",
+    "first-compile",
+    "language-tour",
+    "useful-modes",
+    "verify-locally"
+  ]
+}

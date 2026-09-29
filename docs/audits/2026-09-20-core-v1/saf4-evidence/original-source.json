@@ -1,0 +1,4 @@
+{
+  "name": "p03_early_return_else_assign",
+  "source": "// probe: compile-only\nio :: import \"std/io\"\n\nf :: fn(x: i32) i32 {\n    v := x\n    if v == 0 {\n        ret 0\n    } else {\n        v = 0\n    }\n    ret 10 / v\n}\n\nmain :: fn() {\n    io.println(\"{}\", f(3))\n}\n"
+}

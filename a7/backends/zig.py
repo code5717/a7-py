@@ -4,6 +4,8 @@ Zig code generation backend for the A7 compiler.
 Translates A7 AST nodes to valid Zig source code.
 """
 
+import math
+import re
 from io import StringIO
 from typing import Optional, Dict, Set
 
@@ -28,6 +30,7 @@ class ZigCodeGenerator(CodeGenerator):
         self._declared_structs: Set[str] = set()
         # Mutation analysis: variables that are targets of assignments
         self._mutated_vars: Set[str] = set()
+        self._mutated_declarations: Set[int] = set()
         # Used identifiers in current scope (for unused var/param detection)
         self._used_identifiers: Set[str] = set()
         # Nested function hoisting
@@ -36,12 +39,19 @@ class ZigCodeGenerator(CodeGenerator):
         # Variable shadowing prevention
         self._scope_stack: list = []  # List[Set[str]] - variable names per scope
         self._rename_map: Dict[str, str] = {}  # original -> renamed
+        self._rename_snapshots: list[dict[str, str]] = []
+        self._identifier_uses: Dict[str, int] = {}
+        self._pending_discards: list[list[tuple[str, str, int]]] = []
+        self._discard_replacements: dict[str, str] = {}
+        self._targeted_loops: Set[int] = set()
+        self._emitted_loop_labels: Set[str] = set()
         # Track if we're inside a function body
         self._in_function = False
         self._loop_label_stack: list[tuple[Optional[str], Optional[str]]] = []
         self._fall_context_stack: list[tuple[str, str]] = []
         self._name_counter = 0
         self._io_streams_needed: Set[str] = set()
+        self._global_names: Set[str] = set()
 
     @property
     def file_extension(self) -> str:
@@ -67,11 +77,18 @@ class ZigCodeGenerator(CodeGenerator):
         self._skip_nested_fn_names = set()
         self._scope_stack = []
         self._rename_map = {}
+        self._rename_snapshots = []
+        self._identifier_uses = {}
+        self._pending_discards = []
+        self._discard_replacements = {}
+        self._targeted_loops = self._collect_targeted_loops(ast)
+        self._emitted_loop_labels = set()
         self._in_function = False
         self._loop_label_stack = []
         self._fall_context_stack = []
         self._name_counter = 0
         self._io_streams_needed = set()
+        self._global_names = {d.name for d in (ast.declarations or []) if d.name}
 
         # First pass: scan for features that need preamble items
         self._scan_features(ast)
@@ -82,7 +99,9 @@ class ZigCodeGenerator(CodeGenerator):
         # Second pass: generate code
         self.visit(ast)
 
-        code = self.output.getvalue()
+        code = re.sub(r"\x00discard_\d+\x00",
+                      lambda match: self._discard_replacements[match.group()],
+                      self.output.getvalue())
         return self._normalize_output(preamble + code)
 
     def _normalize_output(self, code: str) -> str:
@@ -134,6 +153,11 @@ class ZigCodeGenerator(CodeGenerator):
                 self._needs_allocator = True
                 self._needs_std = True
 
+            # Infinity and NaN are emitted as std.math.inf / std.math.nan,
+            # so a program that has one but no io call still needs the import.
+            if self._is_nonfinite_float_literal(node):
+                self._needs_std = True
+
             if node.kind == NodeKind.CALL:
                 # Check for stdlib io print calls.
                 canonical = getattr(node, "stdlib_canonical", None)
@@ -141,12 +165,6 @@ class ZigCodeGenerator(CodeGenerator):
                     self._needs_std = True
                     field = canonical.split(".")[-1]
                     self._io_streams_needed.add("stderr" if field == "eprintln" else "stdout")
-                if node.function and node.function.kind == NodeKind.FIELD_ACCESS:
-                    obj = getattr(node.function, 'object', None)
-                    if obj and obj.kind == NodeKind.IDENTIFIER and getattr(obj, 'name', '') == 'io':
-                        self._needs_std = True
-                        field = getattr(node.function, "field", "println")
-                        self._io_streams_needed.add("stderr" if field == "eprintln" else "stdout")
 
         self._walk_ast(root, visitor)
 
@@ -163,9 +181,12 @@ class ZigCodeGenerator(CodeGenerator):
             stream_name = "stderr" if stream == "stderr" else "stdout"
             lines.append(f"fn __a7_{stream}_print(comptime fmt: []const u8, args: anytype) void {{")
             lines.append("    var __a7_stream_buf: [1024]u8 = undefined;")
+            # writerStreaming, not writer: Zig 0.16.0 File.writer starts in
+            # positional mode at offset 0, so each fresh writer overwrote
+            # earlier output when the stream is a regular file.
             lines.append(
                 f"    var __a7_writer = "
-                f"std.Io.File.{stream}().writer(__a7_io.?, &__a7_stream_buf);"
+                f"std.Io.File.{stream}().writerStreaming(__a7_io.?, &__a7_stream_buf);"
             )
             lines.append(f"    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 {stream_name} write failed\");")
             lines.append(f"    __a7_writer.interface.flush() catch @panic(\"a7 {stream_name} flush failed\");")
@@ -188,7 +209,7 @@ class ZigCodeGenerator(CodeGenerator):
         'operand', 'left', 'right', 'pointer', 'then_expr', 'else_expr',
         'iterable', 'statement', 'patterns', 'object', 'index', 'literal',
         'start', 'end', 'explicit_type', 'param_type', 'return_type',
-        'target_type', 'element_type', 'parameter_types', 'type_args',
+        'target_type', 'element_type', 'size', 'parameter_types', 'type_args',
         'type_arguments', 'fields', 'parameters', 'variants',
     )
 
@@ -217,16 +238,13 @@ class ZigCodeGenerator(CodeGenerator):
 
         def base_identifier(target: ASTNode) -> Optional[str]:
             """Resolve base identifier for assignment targets like a, a[i], or a.b."""
-            if target is None:
-                return None
-            if target.kind == NodeKind.IDENTIFIER:
-                return target.name
-            if target.kind == NodeKind.FIELD_ACCESS:
-                return base_identifier(getattr(target, 'object', None))
-            if target.kind == NodeKind.INDEX:
-                return base_identifier(getattr(target, 'object', None))
-            if target.kind == NodeKind.DEREF:
-                # Dereferencing mutates the pointee, not the pointer binding itself.
+            while target is not None:
+                if target.kind == NodeKind.IDENTIFIER:
+                    return target.name
+                if target.kind in (NodeKind.FIELD_ACCESS, NodeKind.INDEX):
+                    target = getattr(target, 'object', None)
+                    continue
+                # A dereference mutates the pointee, not the pointer binding.
                 return None
             return None
 
@@ -252,6 +270,66 @@ class ZigCodeGenerator(CodeGenerator):
 
         self._walk_ast(node, visitor)
         return mutations
+
+    def _collect_mutated_declarations(self, root: ASTNode) -> Set[int]:
+        """Resolve writes to lexical bindings, including loop initializer scopes."""
+        scopes: list[dict[str, ASTNode]] = [{}]
+        mutated: Set[int] = set()
+        stack = [("visit", root)]
+        while stack:
+            event, node = stack.pop()
+            if event == "exit":
+                scopes.pop()
+                continue
+            if event == "bind":
+                scopes[-1][node.name] = node
+                continue
+            if node.kind == NodeKind.FUNCTION:
+                continue
+            if node.kind in {NodeKind.VAR, NodeKind.CONST}:
+                if node.name:
+                    stack.append(("bind", node))
+                if node.value:
+                    stack.append(("visit", node.value))
+                continue
+            targets = []
+            if node.kind == NodeKind.ASSIGNMENT:
+                targets.append(node.target)
+            elif node.kind == NodeKind.ADDRESS_OF:
+                targets.append(node.operand)
+            elif node.kind == NodeKind.SLICE and isinstance(self._type_map.get(id(node.object)), ArrayType):
+                # A7 slices are mutable views. Borrowing an array for a slice
+                # requires mutable backing storage even without a local write.
+                targets.append(node.object)
+            elif node.kind == NodeKind.CALL:
+                targets.extend(arg for i, arg in enumerate(node.arguments or []) if i in (getattr(node, "implicit_ref_args", set()) or set()))
+            for target in targets:
+                while target is not None and target.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}:
+                    target = target.object
+                if target is not None and target.kind == NodeKind.IDENTIFIER:
+                    for scope in reversed(scopes):
+                        if target.name in scope:
+                            mutated.add(id(scope[target.name]))
+                            break
+            if node.kind in {NodeKind.BLOCK, NodeKind.FOR, NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
+                scopes.append({})
+                stack.append(("exit", node))
+            if node.kind in {NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
+                for name in (node.iterator, node.index_var):
+                    if name:
+                        scopes[-1][name] = node
+            if node.kind == NodeKind.FOR:
+                children = [n for n in (node.init, node.condition, node.body, node.update) if n is not None]
+            else:
+                children = []
+                for attr in self._AST_CHILD_ATTRS:
+                    value = getattr(node, attr, None)
+                    if isinstance(value, ASTNode):
+                        children.append(value)
+                    elif isinstance(value, list):
+                        children.extend(n for n in value if isinstance(n, ASTNode))
+            stack.extend(("visit", child) for child in reversed(children))
+        return mutated
 
     def _collect_used_identifiers(self, node: ASTNode) -> Set[str]:
         """Collect all identifier names referenced in a subtree.
@@ -283,38 +361,66 @@ class ZigCodeGenerator(CodeGenerator):
         return nested
 
     def _push_scope(self):
-        """Push a new variable scope for shadowing detection."""
+        """Save bindings so nested shadowing cannot erase an outer rename."""
         self._scope_stack.append(set())
+        self._pending_discards.append([])
+        self._rename_snapshots.append(self._rename_map.copy())
 
     def _pop_scope(self):
-        """Pop a variable scope and clean up renames."""
         if self._scope_stack:
-            scope = self._scope_stack.pop()
-            for name in scope:
-                self._rename_map.pop(name, None)
+            for marker, name, before in self._pending_discards.pop():
+                used = self._identifier_uses.get(name, 0) != before
+                self._discard_replacements[marker] = "" if used else f"_ = {self._quote_identifier(name)};"
+            self._scope_stack.pop()
+            self._rename_map = self._rename_snapshots.pop()
 
-    def _declare_var_in_scope(self, name: str) -> str:
-        """Declare a variable in current scope, renaming if it shadows an outer one."""
-        # Check if name exists in any outer scope
-        for outer_scope in self._scope_stack[:-1]:
-            if name in outer_scope:
-                # Name shadows — find a unique rename
-                suffix = 1
-                new_name = f"{name}_{suffix}"
-                all_names = set()
-                for s in self._scope_stack:
-                    all_names.update(s)
-                while new_name in all_names or new_name in self._rename_map.values():
-                    suffix += 1
-                    new_name = f"{name}_{suffix}"
-                self._rename_map[name] = new_name
-                if self._scope_stack:
-                    self._scope_stack[-1].add(name)
-                return new_name
-        # No shadow — register in current scope
+    def _pending_discard(self, name: str) -> str:
+        """Reserve a discard at the declaration, resolved before its scope is lost.
+
+        Each marker belongs to one declaration. Counts start after its initializer
+        and finish before a sibling can reuse the emitted name.
+        """
+        marker = f"\x00discard_{len(self._discard_replacements)}\x00"
+        self._discard_replacements[marker] = ""
+        self._pending_discards[-1].append((marker, name, self._identifier_uses.get(name, 0)))
+        return marker
+
+    def _use_name(self, name: str) -> str:
+        emitted = self._resolve_name(name)
+        self._identifier_uses[emitted] = self._identifier_uses.get(emitted, 0) + 1
+        return self._quote_identifier(emitted)
+
+    def _declare_var_in_scope(self, name: str, preferred: Optional[str] = None) -> str:
+        """Assign a Zig name without colliding with an active outer binding."""
+        emitted = preferred or name
+        active = set(self._rename_map.values()) | self._global_names
+        for bindings in self._rename_snapshots:
+            active.update(bindings.values())
+        if emitted in active:
+            suffix = 1
+            while f"{name}_{suffix}" in active or f"{name}_{suffix}" in self._used_identifiers:
+                suffix += 1
+            emitted = f"{name}_{suffix}"
         if self._scope_stack:
             self._scope_stack[-1].add(name)
-        return name
+        self._rename_map[name] = emitted
+        return emitted
+
+    @staticmethod
+    def _quote_identifier(name: str) -> str:
+        # A7 permits bindings whose spelling is reserved in Zig.
+        reserved = {
+            "addrspace", "align", "allowzero", "and", "anyframe", "anytype",
+            "asm", "async", "await", "break", "callconv", "catch", "comptime",
+            "const", "continue", "defer", "else", "enum", "errdefer", "error",
+            "export", "extern", "fn", "for", "if", "inline", "linksection",
+            "noalias", "noinline", "nosuspend", "opaque", "or", "orelse",
+            "packed", "pub", "resume", "return", "section", "struct",
+            "suspend", "switch", "test", "threadlocal", "try", "union",
+            "unreachable", "usingnamespace", "var", "volatile", "while",
+            "type", "undefined", "null", "not",
+        }
+        return f'@"{name}"' if name in reserved else name
 
     def _resolve_name(self, name: str) -> str:
         """Resolve a variable name through the rename map."""
@@ -403,10 +509,12 @@ class ZigCodeGenerator(CodeGenerator):
 
         # Analyze function body for mutations, used identifiers, nested functions
         saved_mutated = self._mutated_vars
+        saved_mutated_declarations = self._mutated_declarations
         saved_used = self._used_identifiers
         hoisted_names = set()
         if node.body:
             self._mutated_vars = self._collect_mutations(node.body)
+            self._mutated_declarations = self._collect_mutated_declarations(node.body)
             self._used_identifiers = self._collect_used_identifiers(node.body)
 
             # Hoist nested functions to module level
@@ -427,13 +535,15 @@ class ZigCodeGenerator(CodeGenerator):
         # Function signature
         prefix = "pub " if ((is_main and not self._io_streams_needed) or getattr(node, 'is_public', False)) else ""
         self._write_indent()
-        self.output.write(f"{prefix}fn {emitted_name}(")
+        self.output.write(f"{prefix}fn {self._quote_identifier(emitted_name)}(")
+        self._push_scope()
+        parameter_names = {p.name: self._declare_var_in_scope(p.name) for p in (node.parameters or []) if p.name}
 
         generic_params = [param.name for param in (node.generic_params or []) if param.name]
         for i, generic_name in enumerate(generic_params):
             if i > 0:
                 self.output.write(", ")
-            self.output.write(f"comptime {generic_name}: type")
+            self.output.write(f"comptime {self._quote_identifier(generic_name)}: type")
         if generic_params and (node.parameters or []):
             self.output.write(", ")
 
@@ -447,7 +557,7 @@ class ZigCodeGenerator(CodeGenerator):
             # Discard unused parameters with bare _
             if pname not in self._used_identifiers:
                 pname = "_"
-            self.output.write(f"{pname}: {ptype}")
+            self.output.write(f"{self._quote_identifier(parameter_names.get(pname, pname))}: {ptype}")
 
         self.output.write(") ")
 
@@ -480,7 +590,7 @@ class ZigCodeGenerator(CodeGenerator):
                                 break
 
                 if matching_param:
-                    self.output.write(f"@TypeOf({matching_param}) ")
+                    self.output.write(f"@TypeOf({self._quote_identifier(parameter_names.get(matching_param, matching_param))}) ")
                 else:
                     # Can't resolve generic return type — use void as fallback
                     self.output.write("void ")
@@ -493,7 +603,6 @@ class ZigCodeGenerator(CodeGenerator):
         # Body
         was_in_function = self._in_function
         self._in_function = True
-        self._push_scope()
         if node.body and not (node.body.statements or []):
             self.output.write("{}\n")
         elif node.body:
@@ -508,6 +617,7 @@ class ZigCodeGenerator(CodeGenerator):
 
         # Restore parent analysis context
         self._mutated_vars = saved_mutated
+        self._mutated_declarations = saved_mutated_declarations
         self._used_identifiers = saved_used
 
     def _visit_struct(self, node: ASTNode) -> None:
@@ -526,20 +636,20 @@ class ZigCodeGenerator(CodeGenerator):
         self._write_indent()
         if generic_params:
             # Emit as comptime generic function: fn Name(comptime T: type) type { return struct { ... }; }
-            param_list = ", ".join(f"comptime {p}: type" for p in generic_params)
-            self.output.write(f"fn {name}({param_list}) type {{\n")
+            param_list = ", ".join(f"comptime {self._quote_identifier(p)}: type" for p in generic_params)
+            self.output.write(f"fn {self._quote_identifier(name)}({param_list}) type {{\n")
             self.indent()
             self._write_indent()
             self.output.write("return struct {\n")
         else:
-            self.output.write(f"const {name} = struct {{\n")
+            self.output.write(f"const {self._quote_identifier(name)} = struct {{\n")
         self.indent()
 
         for field in (node.fields or []):
             fname = field.name or "unknown"
-            ftype = self._emit_type_node_generic(field.field_type) if field.field_type else "anytype"
+            ftype = self._emit_type_node(field.field_type, generic_env=set(generic_params)) if field.field_type else "anytype"
             self._write_indent()
-            self.output.write(f"{fname}: {ftype},\n")
+            self.output.write(f"{self._quote_identifier(fname)}: {ftype},\n")
 
         self.dedent()
         self._write_indent()
@@ -569,15 +679,6 @@ class ZigCodeGenerator(CodeGenerator):
             if n.kind == NodeKind.TYPE_SLICE and n.element_type:
                 stack.append(n.element_type)
 
-    def _emit_type_node_generic(self, node: ASTNode) -> str:
-        """Emit a type node, preserving generic parameter names (for struct fields)."""
-        if node is None:
-            return "anytype"
-        if node.kind == NodeKind.TYPE_GENERIC:
-            return node.name or "anytype"
-        # For non-generic types, use the regular emitter
-        return self._emit_type_node(node)
-
     def _visit_enum(self, node: ASTNode) -> None:
         """Visit enum declaration."""
         name = node.name or "anon"
@@ -587,18 +688,18 @@ class ZigCodeGenerator(CodeGenerator):
         )
         self._write_indent()
         if has_explicit_values:
-            self.output.write(f"const {name} = enum(i32) {{\n")
+            self.output.write(f"const {self._quote_identifier(name)} = enum(i32) {{\n")
         else:
-            self.output.write(f"const {name} = enum {{\n")
+            self.output.write(f"const {self._quote_identifier(name)} = enum {{\n")
         self.indent()
 
         for variant in (node.variants or []):
             vname = variant.name or "unknown"
             self._write_indent()
             if variant.value is not None:
-                self.output.write(f"{vname} = {self._emit_expr(variant.value)},\n")
+                self.output.write(f"{self._quote_identifier(vname)} = {self._emit_expr(variant.value)},\n")
             else:
-                self.output.write(f"{vname},\n")
+                self.output.write(f"{self._quote_identifier(vname)},\n")
 
         self.dedent()
         self._write_indent()
@@ -610,16 +711,16 @@ class ZigCodeGenerator(CodeGenerator):
         is_tagged = getattr(node, 'is_tagged', False)
         self._write_indent()
         if is_tagged:
-            self.output.write(f"const {name} = union(enum) {{\n")
+            self.output.write(f"const {self._quote_identifier(name)} = union(enum) {{\n")
         else:
-            self.output.write(f"const {name} = union {{\n")
+            self.output.write(f"const {self._quote_identifier(name)} = union {{\n")
         self.indent()
 
         for field in (node.fields or []):
             fname = field.name or "unknown"
             ftype = self._emit_type_node(field.field_type) if field.field_type else "void"
             self._write_indent()
-            self.output.write(f"{fname}: {ftype},\n")
+            self.output.write(f"{self._quote_identifier(fname)}: {ftype},\n")
 
         self.dedent()
         self._write_indent()
@@ -627,86 +728,105 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _visit_const(self, node: ASTNode) -> None:
         """Visit constant declaration."""
+        if getattr(node, 'untyped_binding', False):
+            return
         name = node.name or "unnamed"
+        val = self._emit_expr(node.value) if node.value else "undefined"
+        if self._in_function:
+            name = self._declare_var_in_scope(name)
         self._write_indent()
-
-        if node.value:
-            val = self._emit_expr(node.value)
-            self.output.write(f"const {name} = {val};\n")
-        else:
-            self.output.write(f"const {name} = undefined;\n")
+        self.output.write(f"const {self._quote_identifier(name)} = {val};\n")
+        if self._in_function:
+            self._write_indent()
+            self.output.write(self._pending_discard(name) + "\n")
 
     def _visit_var(self, node: ASTNode) -> None:
         """Visit variable declaration."""
         name = node.name or "unnamed"
 
+        # Initializers see the outer binding, before this declaration exists.
+        initial_value = None
+        if node.value:
+            initial_value = (self._emit_array_binary_expr(node.value)
+                             if self._is_array_binary_value(node.value)
+                             else self._emit_expr(node.value))
+
+        explicit_type = getattr(node, 'explicit_type', None)
+        resolved = node.resolved_type if node.resolved_type else None
+        type_node = explicit_type or resolved
+        declaration_type = self._type_map.get(id(node))
+        needs_type = explicit_type or not isinstance(declaration_type, PrimitiveType)
+        rendered_type = self._emit_type_node(type_node) if type_node and needs_type else None
+        default_value = self._default_value(explicit_type) if explicit_type and not node.value else None
+
         # Handle variable shadowing: prefer preprocessor annotation, fall back to scope analysis
         emit_name = node.emit_name if node.emit_name else name
-        if not node.emit_name and self._in_function:
-            emit_name = self._declare_var_in_scope(name)
+        if self._in_function:
+            emit_name = self._declare_var_in_scope(name, node.emit_name)
+        binding_name = emit_name
+        emit_name = self._quote_identifier(emit_name)
 
         # Determine var vs const: in Zig, only directly-reassigned vars need 'var'.
         # The preprocessor's is_mutable includes field-access mutations which
         # don't require 'var' in Zig (pointer targets can be modified via const pointer).
         # So we use the backend's own direct-assignment mutation analysis.
-        is_mutated = name in self._mutated_vars
+        is_mutated = id(node) in self._mutated_declarations
         keyword = "var" if is_mutated or not self._in_function else "const"
 
         self._write_indent()
-        explicit_type = getattr(node, 'explicit_type', None)
-        # Use preprocessor-inferred type if no explicit type
-        resolved = node.resolved_type if node.resolved_type else None
-
         if node.value and self._is_array_binary_value(node.value):
-            type_node = explicit_type or resolved
             if not type_node:
                 raise CodegenError("Zig backend: array binary initializer requires a known array type", node.span)
             if not self._in_function:
                 raise CodegenError("Zig backend: array binary initializer requires block scope", node.span)
-            zig_type = self._emit_type_node(type_node)
-            value = self._emit_array_binary_expr(node.value)
+            zig_type = rendered_type
+            value = initial_value
             self.output.write(f"{keyword} {emit_name}: {zig_type} = {value};\n")
-            is_used = node.is_used if hasattr(node, 'is_used') else (name in self._used_identifiers)
-            if self._in_function and not is_used:
+            if self._in_function:
                 self._write_indent()
-                self.output.write(f"_ = {emit_name};\n")
+                self.output.write(self._pending_discard(binding_name) + "\n")
             return
 
         if node.value:
-            val = self._emit_expr(node.value)
+            val = initial_value
             if explicit_type:
-                zig_type = self._emit_type_node(explicit_type)
+                zig_type = rendered_type
+                self.output.write(f"{keyword} {emit_name}: {zig_type} = {val};\n")
+            elif isinstance(declaration_type, PrimitiveType):
+                # Semantic analysis owns inferred scalar widths. Zig would infer
+                # comptime_int/float for literal initializers, which cannot be
+                # mutated and can disagree with A7 even for immutable bindings.
+                zig_type = self._emit_semantic_type(declaration_type)
                 self.output.write(f"{keyword} {emit_name}: {zig_type} = {val};\n")
             elif resolved:
-                zig_type = self._emit_type_node(resolved)
+                zig_type = rendered_type
                 self.output.write(f"{keyword} {emit_name}: {zig_type} = {val};\n")
             else:
                 self.output.write(f"{keyword} {emit_name} = {val};\n")
         elif explicit_type:
-            zig_type = self._emit_type_node(explicit_type)
+            zig_type = rendered_type
             self.output.write(f"{keyword} {emit_name}: {zig_type} = ")
-            self.output.write(self._default_value(explicit_type))
+            self.output.write(default_value)
             self.output.write(";\n")
         else:
             self.output.write(f"{keyword} {emit_name} = undefined;\n")
 
-        # Emit discard for unused local variables (Zig requires it)
-        is_used = node.is_used if hasattr(node, 'is_used') else (name in self._used_identifiers)
-        if self._in_function and not is_used:
+        if self._in_function:
             self._write_indent()
-            self.output.write(f"_ = {emit_name};\n")
+            self.output.write(self._pending_discard(binding_name) + "\n")
 
     def _visit_type_alias(self, node: ASTNode) -> None:
-        """Visit type alias declaration."""
+        """Visit type alias declaration, resolving its initializer first."""
         name = node.name or "unnamed"
         if node.value:
             val = self._emit_type_node(node.value)
+            if self._in_function:
+                name = self._declare_var_in_scope(name)
             self._write_indent()
-            self.output.write(f"const {name} = {val};\n")
-            # Suppress unused local constant warning if inside a function
-            if self._in_function and name not in self._used_identifiers:
+            self.output.write(f"const {self._quote_identifier(name)} = {val};\n")
+            if self._in_function:
                 self._write_indent()
-                self.output.write(f"_ = {name};\n")
+                self.output.write(self._pending_discard(name) + "\n")
 
     # === Statements ===
 
@@ -718,6 +838,7 @@ class ZigCodeGenerator(CodeGenerator):
         """Visit block and output braces + indented contents."""
         self.output.write("{\n")
         self.indent()
+        self._push_scope()
 
         for line in prelude_lines or []:
             self._write_indent()
@@ -731,6 +852,7 @@ class ZigCodeGenerator(CodeGenerator):
                     continue
             self.visit(stmt)
 
+        self._pop_scope()
         self.dedent()
         self._write_indent()
         self.output.write("}\n")
@@ -739,10 +861,12 @@ class ZigCodeGenerator(CodeGenerator):
         """Visit a block inside a switch prong (needs trailing comma)."""
         self.output.write("{\n")
         self.indent()
+        self._push_scope()
 
         for stmt in (node.statements or []):
             self.visit(stmt)
 
+        self._pop_scope()
         self.dedent()
         self._write_indent()
         self.output.write("},\n")
@@ -758,7 +882,9 @@ class ZigCodeGenerator(CodeGenerator):
         elif node.then_stmt:
             self.output.write("{\n")
             self.indent()
+            self._push_scope()
             self.visit(node.then_stmt)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
             self.output.write("}\n")
@@ -777,22 +903,13 @@ class ZigCodeGenerator(CodeGenerator):
             if node.else_stmt.kind == NodeKind.BLOCK:
                 self._visit_block_inline(node.else_stmt)
             elif node.else_stmt.kind == NodeKind.IF_STMT:
-                # else if chain - don't wrap in block
-                cond2 = self._emit_expr(node.else_stmt.condition)
-                self.output.write(f"if ({cond2}) ")
-                if node.else_stmt.then_stmt and node.else_stmt.then_stmt.kind == NodeKind.BLOCK:
-                    self._visit_block_inline(node.else_stmt.then_stmt)
-                if node.else_stmt.else_stmt:
-                    buf = self.output.getvalue()
-                    if buf.endswith("}\n"):
-                        self.output = StringIO()
-                        self.output.write(buf[:-1])
-                        self.output.write(" else ")
-                    self._visit_else_chain(node.else_stmt.else_stmt)
+                self._visit_else_chain(node.else_stmt)
             else:
                 self.output.write("{\n")
                 self.indent()
+                self._push_scope()
                 self.visit(node.else_stmt)
+                self._pop_scope()
                 self.dedent()
                 self._write_indent()
                 self.output.write("}\n")
@@ -806,6 +923,15 @@ class ZigCodeGenerator(CodeGenerator):
                 self.output.write(f"if ({cond}) ")
                 if current.then_stmt and current.then_stmt.kind == NodeKind.BLOCK:
                     self._visit_block_inline(current.then_stmt)
+                elif current.then_stmt:
+                    self.output.write("{\n")
+                    self.indent()
+                    self._push_scope()
+                    self.visit(current.then_stmt)
+                    self._pop_scope()
+                    self.dedent()
+                    self._write_indent()
+                    self.output.write("}\n")
                 if current.else_stmt:
                     buf = self.output.getvalue()
                     if buf.endswith("}\n"):
@@ -821,7 +947,9 @@ class ZigCodeGenerator(CodeGenerator):
             else:
                 self.output.write("{\n")
                 self.indent()
+                self._push_scope()
                 self.visit(current)
+                self._pop_scope()
                 self.dedent()
                 self._write_indent()
                 self.output.write("}\n")
@@ -830,7 +958,7 @@ class ZigCodeGenerator(CodeGenerator):
     def _visit_while(self, node: ASTNode) -> None:
         """Visit while statement."""
         self._write_indent()
-        emitted_label = self._loop_label_name(node.label)
+        emitted_label = self._loop_label_name(node)
         if emitted_label:
             self.output.write(f"{emitted_label}: ")
         if node.condition:
@@ -845,7 +973,9 @@ class ZigCodeGenerator(CodeGenerator):
         elif node.body:
             self.output.write("{\n")
             self.indent()
+            self._push_scope()
             self.visit(node.body)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
             self.output.write("}\n")
@@ -857,7 +987,7 @@ class ZigCodeGenerator(CodeGenerator):
 
         # Infinite loop: for { ... }
         if not node.init and not node.condition and not node.update:
-            emitted_label = self._loop_label_name(node.label)
+            emitted_label = self._loop_label_name(node)
             if emitted_label:
                 self.output.write(f"{emitted_label}: ")
             self.output.write("while (true) ")
@@ -867,7 +997,9 @@ class ZigCodeGenerator(CodeGenerator):
             elif node.body:
                 self.output.write("{\n")
                 self.indent()
+                self._push_scope()
                 self.visit(node.body)
+                self._pop_scope()
                 self.dedent()
                 self._write_indent()
                 self.output.write("}\n")
@@ -879,13 +1011,14 @@ class ZigCodeGenerator(CodeGenerator):
         self.output.write("{\n")
         self.indent()
 
+        self._push_scope()
         # Init statement
         if node.init:
             self.visit(node.init)
 
         # While with continue expression
         self._write_indent()
-        emitted_label = self._loop_label_name(node.label)
+        emitted_label = self._loop_label_name(node)
         if emitted_label:
             self.output.write(f"{emitted_label}: ")
         if node.condition:
@@ -907,11 +1040,14 @@ class ZigCodeGenerator(CodeGenerator):
         elif node.body:
             self.output.write("{\n")
             self.indent()
+            self._push_scope()
             self.visit(node.body)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
             self.output.write("}\n")
         self._loop_label_stack.pop()
+        self._pop_scope()
 
         self.dedent()
         self._write_indent()
@@ -921,11 +1057,12 @@ class ZigCodeGenerator(CodeGenerator):
         """Visit for-in loop: for val in arr → for (arr) |val|"""
         self._write_indent()
         iterable = self._emit_expr(node.iterable) if node.iterable else "undefined"
-        iter_name = node.iterator or "_"
-        emitted_label = self._loop_label_name(node.label)
-        if emitted_label:
-            self.output.write(f"{emitted_label}: ")
-        self.output.write(f"for ({iterable}) |{iter_name}| ")
+        self._push_scope()
+        iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
+        before = {iter_name: self._identifier_uses.get(iter_name, 0)}
+        emitted_label = self._loop_label_name(node)
+        outer_output = self.output
+        self.output = StringIO()
 
         self._loop_label_stack.append((node.label, emitted_label))
         if node.body and node.body.kind == NodeKind.BLOCK:
@@ -933,23 +1070,34 @@ class ZigCodeGenerator(CodeGenerator):
         elif node.body:
             self.output.write("{\n")
             self.indent()
+            self._push_scope()
             self.visit(node.body)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
             self.output.write("}\n")
         self._loop_label_stack.pop()
+        body = self.output.getvalue()
+        self.output = outer_output
+        self._pop_scope()
+        if self._identifier_uses.get(iter_name, 0) == before.get(iter_name, 0):
+            iter_name = "_"
+        if emitted_label:
+            self.output.write(f"{emitted_label}: ")
+        self.output.write(f"for ({iterable}) |{self._quote_identifier(iter_name)}| ")
+        self.output.write(body)
 
     def _visit_for_in_indexed(self, node: ASTNode) -> None:
         """Visit indexed for-in: for i, val in arr → for (arr, 0..) |val, i|"""
         self._write_indent()
         iterable = self._emit_expr(node.iterable) if node.iterable else "undefined"
-        iter_name = node.iterator or "_"
-        index_name = node.index_var or "_"
-        emitted_label = self._loop_label_name(node.label)
-        if emitted_label:
-            self.output.write(f"{emitted_label}: ")
-        # Zig: for (arr, 0..) |val, i|  (note: reversed order from A7)
-        self.output.write(f"for ({iterable}, 0..) |{iter_name}, {index_name}| ")
+        self._push_scope()
+        iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
+        index_name = self._declare_var_in_scope(node.index_var) if node.index_var else "_"
+        before = {name: self._identifier_uses.get(name, 0) for name in (iter_name, index_name)}
+        emitted_label = self._loop_label_name(node)
+        outer_output = self.output
+        self.output = StringIO()
 
         self._loop_label_stack.append((node.label, emitted_label))
         if node.body and node.body.kind == NodeKind.BLOCK:
@@ -957,18 +1105,36 @@ class ZigCodeGenerator(CodeGenerator):
         elif node.body:
             self.output.write("{\n")
             self.indent()
+            self._push_scope()
             self.visit(node.body)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
             self.output.write("}\n")
         self._loop_label_stack.pop()
+        body = self.output.getvalue()
+        self.output = outer_output
+        self._pop_scope()
+        if self._identifier_uses.get(iter_name, 0) == before.get(iter_name, 0):
+            iter_name = "_"
+        if self._identifier_uses.get(index_name, 0) == before.get(index_name, 0):
+            index_name = "_"
+        if emitted_label:
+            self.output.write(f"{emitted_label}: ")
+        if index_name == "_":
+            self.output.write(f"for ({iterable}) |{self._quote_identifier(iter_name)}| ")
+        else:
+            self.output.write(f"for ({iterable}, 0..) |{self._quote_identifier(iter_name)}, {self._quote_identifier(index_name)}| ")
+        self.output.write(body)
 
     def _visit_match(self, node: ASTNode) -> None:
         """Visit match statement → Zig switch."""
         if self._match_has_fall(node):
             self._visit_match_with_fall(node)
             return
-        if self._match_has_capture(node):
+        if self._match_has_capture(node) or not node.else_case:
+            # A statement match may handle no arm. An if-chain preserves that
+            # behavior without Zig switch exhaustiveness or redundant else arms.
             self._visit_match_as_if_chain(node)
             return
 
@@ -996,7 +1162,9 @@ class ZigCodeGenerator(CodeGenerator):
                 else:
                     self.output.write("{\n")
                     self.indent()
+                    self._push_scope()
                     self.visit(stmt)
+                    self._pop_scope()
                     self.dedent()
                     self._write_indent()
                     self.output.write("},\n")
@@ -1013,15 +1181,19 @@ class ZigCodeGenerator(CodeGenerator):
                 else:
                     self.output.write("{\n")
                     self.indent()
+                    self._push_scope()
                     self.visit(stmt)
+                    self._pop_scope()
                     self.dedent()
                     self._write_indent()
                     self.output.write("},\n")
             elif isinstance(node.else_case, list):
                 self.output.write("{\n")
                 self.indent()
+                self._push_scope()
                 for stmt in node.else_case:
                     self.visit(stmt)
+                self._pop_scope()
                 self.dedent()
                 self._write_indent()
                 self.output.write("},\n")
@@ -1049,14 +1221,17 @@ class ZigCodeGenerator(CodeGenerator):
             if emitted_unconditional:
                 continue
             condition = self._emit_match_condition_zig(scrutinee, case.patterns or [])
-            self._write_indent()
-            self.output.write("else " if emitted_branch else "")
+            if emitted_branch:
+                self.output.write(" else ")
+            else:
+                self._write_indent()
             if condition == "true":
                 self.output.write("{\n")
                 emitted_unconditional = True
             else:
                 self.output.write(f"if ({condition}) {{\n")
             self.indent()
+            self._push_scope()
             self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
             stmt = getattr(case, "statement", None)
             if stmt:
@@ -1068,21 +1243,29 @@ class ZigCodeGenerator(CodeGenerator):
             else:
                 for inner in case.statements or []:
                     self.visit(inner)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
-            self.output.write("}\n")
+            self.output.write("}")
             emitted_branch = True
 
         if node.else_case and not emitted_unconditional:
-            self._write_indent()
-            self.output.write("else " if emitted_branch else "")
+            if emitted_branch:
+                self.output.write(" else ")
+            else:
+                self._write_indent()
             self.output.write("{\n")
             self.indent()
+            self._push_scope()
             for stmt in self._else_case_statements(node.else_case):
                 self.visit(stmt)
+            self._pop_scope()
             self.dedent()
             self._write_indent()
-            self.output.write("}\n")
+            self.output.write("}")
+
+        if emitted_branch or node.else_case:
+            self.output.write("\n")
 
         self.dedent()
         self._write_indent()
@@ -1139,6 +1322,7 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             self.output.write(f"if ({fall_flag}) {{\n")
         self.indent()
+        self._push_scope()
         self._write_indent()
         self.output.write(f"{fall_flag} = false;\n")
         self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
@@ -1160,6 +1344,7 @@ class ZigCodeGenerator(CodeGenerator):
 
         self._write_indent()
         self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+        self._pop_scope()
         self.dedent()
         self._write_indent()
         self.output.write("}\n")
@@ -1174,6 +1359,7 @@ class ZigCodeGenerator(CodeGenerator):
         self._write_indent()
         self.output.write(f"if ({fall_flag}) {{\n")
         self.indent()
+        self._push_scope()
         self._write_indent()
         self.output.write(f"{fall_flag} = false;\n")
 
@@ -1182,6 +1368,7 @@ class ZigCodeGenerator(CodeGenerator):
 
         self._write_indent()
         self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+        self._pop_scope()
         self.dedent()
         self._write_indent()
         self.output.write("}\n")
@@ -1201,6 +1388,8 @@ class ZigCodeGenerator(CodeGenerator):
     def _match_has_capture(self, node: ASTNode) -> bool:
         return any(
             self._is_capture_pattern(pattern)
+            or pattern.kind == NodeKind.PATTERN_WILDCARD
+            or (pattern.kind == NodeKind.PATTERN_IDENTIFIER and pattern.name == "_")
             for case in (node.cases or [])
             for pattern in (case.patterns or [])
         )
@@ -1216,12 +1405,11 @@ class ZigCodeGenerator(CodeGenerator):
         for pattern in patterns:
             if not self._is_capture_pattern(pattern):
                 continue
-            name = pattern.name or "value"
+            name = self._declare_var_in_scope(pattern.name or "value")
             self._write_indent()
-            self.output.write(f"const {name} = {scrutinee};\n")
-            if name not in self._used_identifiers:
-                self._write_indent()
-                self.output.write(f"_ = {name};\n")
+            self.output.write(f"const {self._quote_identifier(name)} = {scrutinee};\n")
+            self._write_indent()
+            self.output.write(self._pending_discard(name) + "\n")
 
     def _case_has_direct_fall(self, case: ASTNode) -> bool:
         stmt = getattr(case, "statement", None)
@@ -1295,6 +1483,8 @@ class ZigCodeGenerator(CodeGenerator):
             self._write_indent()
             self.output.write("defer ")
             expr_str = self._emit_expr(node.expression)
+            if not self._expression_returns_void(node.expression):
+                expr_str = "_ = " + expr_str
             self.output.write(f"{expr_str};\n")
 
     def _visit_del(self, node: ASTNode) -> None:
@@ -1318,11 +1508,33 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             target = self._emit_expr(node.target) if node.target else "undefined"
         value = self._emit_expr(node.value) if node.value else "undefined"
-        zig_op = self._assign_op_to_zig(op)
+        self.output.write(self._assignment_text(node, target, value) + ";\n")
+
+    def _assignment_text(self, node: ASTNode, target: str, value: str) -> str:
+        """Lower compound operations once, including nontrivial lvalue targets."""
+        op = node.operator
+        if op == AssignOp.ASSIGN and node.value and node.value.kind == NodeKind.ARRAY_INIT:
+            # Zig forwards an anonymous literal's result location into its
+            # elements. Materialize the RHS before overwriting storage it reads.
+            self._name_counter += 1
+            temp = f"__a7_array_value_{self._name_counter}"
+            value = (f"{temp}_block: {{ const {temp}: @TypeOf({target}) = {value}; "
+                     f"break :{temp}_block {temp}; }}")
+        target_type = self._type_map.get(id(node.target))
+        if getattr(node, "implicit_deref_target", False):
+            target_type = getattr(target_type, "referent_type", target_type)
+        integral = isinstance(target_type, PrimitiveType) and target_type.is_integral()
         if op in {AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN}:
             self._require_backend_approval(node, op.name.lower())
-
-        self.output.write(f"{target} {zig_op} {value};\n")
+            if op == AssignOp.MOD_ASSIGN or integral:
+                builtin = "@rem" if op == AssignOp.MOD_ASSIGN else "@divTrunc"
+                self._name_counter += 1
+                ptr = f"__a7_compound_{self._name_counter}"
+                return f"_ = {ptr}_block: {{ const {ptr} = &{target}; {ptr}.* = {builtin}({ptr}.*, {value}); break :{ptr}_block {{}}; }}"
+        zig_op = self._assign_op_to_zig(op)
+        if integral and op in {AssignOp.ADD_ASSIGN, AssignOp.SUB_ASSIGN, AssignOp.MUL_ASSIGN}:
+            zig_op = zig_op[0] + "%="
+        return f"{target} {zig_op} {value}"
 
     def _emit_array_binary_assignment(self, target: Optional[ASTNode], value: Optional[ASTNode]) -> bool:
         """Lower fixed-array binary assignment to per-element stores."""
@@ -1376,7 +1588,7 @@ class ZigCodeGenerator(CodeGenerator):
             target_expr,
             self._emit_array_operand_expr(value.left, "Zig"),
             self._emit_array_operand_expr(value.right, "Zig"),
-            self._binary_op_to_zig(value.operator),
+            self._binary_op_to_zig(value.operator) + ("%" if result_type.element_type.is_integral() else ""),
             result_type.size,
             self._map_primitive_type(result_type.element_type.name),
         )
@@ -1477,6 +1689,12 @@ class ZigCodeGenerator(CodeGenerator):
         if lk == LiteralKind.INTEGER:
             return str(val)
         elif lk == LiteralKind.FLOAT:
+            bits = getattr(node, 'exact_float_bits', None)
+            if bits is not None:
+                width, value = bits
+                return f'@as(f{width}, @bitCast(@as(u{width}, {value})))'
+            if isinstance(val, float) and not math.isfinite(val):
+                return self._emit_nonfinite_float(node, val)
             s = str(val)
             if "." not in s and "e" not in s and "E" not in s:
                 s += ".0"
@@ -1493,6 +1711,8 @@ class ZigCodeGenerator(CodeGenerator):
                     '\\': '\\\\', "'": "\\'", '\0': '\\x00',
                 }
                 escaped = char_escapes.get(val, val)
+                if escaped == val and len(val) == 1 and (ord(val) < 0x20 or ord(val) == 0x7f):
+                    escaped = f"\\x{ord(val):02x}"
                 return f"'{escaped}'"
             return raw if raw else "'\\x00'"
         elif lk == LiteralKind.BOOLEAN:
@@ -1502,18 +1722,43 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             return str(val) if val is not None else raw
 
+    def _emit_nonfinite_float(self, node: ASTNode, val: float) -> str:
+        """Emit infinity or NaN as a typed Zig expression.
+
+        Zig has no float literal for these values: `inf` and `nan` are not
+        tokens, and a decimal literal that overflows f64 is still finite in
+        `comptime_float` (f128). `std.math.inf` and `std.math.nan` give the
+        value in the float type the node was checked at, so an expression
+        built on one is evaluated in that type and not in comptime_float.
+
+        The sign of a NaN is not preserved: IEEE 754 leaves it unspecified
+        and the hardware result of, say, `inf - inf` differs between
+        optimization levels.
+        """
+        name = self._float_type_name(node)
+        if math.isnan(val):
+            return f"std.math.nan({name})"
+        if val < 0:
+            return f"(-std.math.inf({name}))"
+        return f"std.math.inf({name})"
+
+    def _float_type_name(self, node: ASTNode) -> str:
+        """Float type the checker gave this node; f64 is the literal default."""
+        ty = self._type_map.get(id(node))
+        if isinstance(ty, PrimitiveType) and ty.name in ("f32", "f64"):
+            return ty.name
+        return "f64"
+
+    @staticmethod
+    def _is_nonfinite_float_literal(node: ASTNode) -> bool:
+        if node.kind != NodeKind.LITERAL or node.literal_kind != LiteralKind.FLOAT:
+            return False
+        val = getattr(node, 'literal_value', None)
+        return isinstance(val, float) and not math.isfinite(val)
+
     def _emit_identifier(self, node: ASTNode) -> str:
         """Emit an identifier."""
-        # Prefer preprocessor annotation, fall back to scope rename map
-        name = node.emit_name if node.emit_name else (node.name or "undefined")
-        if not node.emit_name:
-            name = self._resolve_name(name)
-        # Zig reserved words that might clash
-        zig_reserved = {"type", "error", "test", "unreachable", "undefined",
-                        "null", "and", "or", "not"}
-        if name in zig_reserved:
-            return f"@\"{name}\""
-        return name
+        return self._use_name(node.name or "undefined")
 
     def _emit_binary(self, node: ASTNode) -> str:
         """Emit a binary expression."""
@@ -1549,6 +1794,11 @@ class ZigCodeGenerator(CodeGenerator):
         zig_op = self._binary_op_to_zig(op)
 
         result_type = self._type_map.get(id(node))
+        arithmetic_type = result_type.element_type if isinstance(result_type, ArrayType) else result_type
+        if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL} and isinstance(arithmetic_type, PrimitiveType) and arithmetic_type.is_integral():
+            zig_op += "%"
+            if not isinstance(result_type, ArrayType) and node.left.kind == NodeKind.LITERAL and node.right.kind == NodeKind.LITERAL:
+                left = f"@as({self._emit_semantic_type(arithmetic_type)}, {left})"
         if isinstance(result_type, ArrayType):
             if op != BinaryOp.ADD:
                 raise CodegenError("Zig backend: unsupported array binary expression", node.span)
@@ -1608,14 +1858,6 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             return f"(-{operand})"
 
-    # A7 math functions → Zig builtins
-    _MATH_BUILTIN_MAP = {
-        'sqrt_f32': '@sqrt', 'sqrt_f64': '@sqrt',
-        'abs_f32': '@abs', 'abs_f64': '@abs',
-        'floor_f32': '@floor', 'floor_f64': '@floor',
-        'ceil_f32': '@ceil', 'ceil_f64': '@ceil',
-    }
-
     def _emit_call(self, node: ASTNode) -> str:
         """Emit a function call."""
         # Special-case io.println / io.print
@@ -1634,20 +1876,13 @@ class ZigCodeGenerator(CodeGenerator):
             if short in ('sqrt', 'abs', 'floor', 'ceil', 'sin', 'cos', 'tan',
                          'log', 'exp', 'min', 'max'):
                 args = ", ".join(self._emit_expr(a) for a in (node.arguments or []))
+                if short == "abs":
+                    result_type = self._type_map.get(id(node))
+                    if isinstance(result_type, PrimitiveType) and result_type.is_integral() and result_type.name.startswith("i"):
+                        return f"@as({self._emit_semantic_type(result_type)}, @intCast(@abs({args})))"
                 return f"@{short}({args})"
 
         func = self._emit_expr(node.function)
-
-        # Map A7 math builtins to Zig builtins
-        if func in self._MATH_BUILTIN_MAP:
-            func = self._MATH_BUILTIN_MAP[func]
-        # Also map math.sqrt etc.
-        elif func.startswith('math.'):
-            short = func.split('.', 1)[1]
-            zig_builtin = f'@{short}'
-            if short in ('sqrt', 'abs', 'floor', 'ceil', 'sin', 'cos', 'tan',
-                         'log', 'exp', 'min', 'max'):
-                func = zig_builtin
 
         args_list = []
         generic_mapping = getattr(node, "generic_mapping", None) or {}
@@ -1718,7 +1953,7 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             obj = self._emit_expr(node.object)
         field = node.field or "unknown"
-        return f"{obj}.{field}"
+        return f"{obj}.{self._quote_identifier(field)}"
 
     def _emit_address_of(self, node: ASTNode) -> str:
         """Emit internal address-of."""
@@ -1799,7 +2034,10 @@ class ZigCodeGenerator(CodeGenerator):
         cond = self._emit_expr(node.condition)
         then_val = self._emit_expr(node.then_expr)
         else_val = self._emit_expr(node.else_expr) if node.else_expr else "undefined"
-        return f"if ({cond}) {then_val} else {else_val}"
+        # Parenthesize: a bare Zig `if` expression extends its else branch over
+        # any operator that follows, so `(if c a else b) + 10` must keep the
+        # parentheses to select before the operator applies.
+        return f"(if ({cond}) {then_val} else {else_val})"
 
     def _emit_match_expr(self, node: ASTNode) -> str:
         """Emit match expression → Zig switch expression."""
@@ -1850,13 +2088,14 @@ class ZigCodeGenerator(CodeGenerator):
                 emitted_unconditional = True
             else:
                 parts.append(f"{prefix}if ({condition}) {{")
+            self._push_scope()
             for pattern in case.patterns or []:
                 if self._is_capture_pattern(pattern):
-                    name = pattern.name or "value"
-                    parts.append(f" const {name} = {scrutinee};")
-                    if name not in self._used_identifiers:
-                        parts.append(f" _ = {name};")
+                    name = self._declare_var_in_scope(pattern.name or "value")
+                    parts.append(f" const {self._quote_identifier(name)} = {scrutinee};")
+                    parts.append(" " + self._pending_discard(name))
             parts.append(f" break :{label} {self._emit_expr(case_expr)}; }}")
+            self._pop_scope()
             emitted_branch = True
 
         if not emitted_unconditional:
@@ -1869,7 +2108,7 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_struct_init(self, node: ASTNode) -> str:
         """Emit struct initialization."""
-        struct_name = node.struct_type or ""
+        struct_name = self._use_name(node.struct_type or "")
         field_inits = node.field_inits or []
         type_args = getattr(node, "type_arguments", None) or []
 
@@ -1887,7 +2126,7 @@ class ZigCodeGenerator(CodeGenerator):
                 parts.append(", ")
             val = self._emit_expr(fi.value) if fi.value else "undefined"
             if fi.name:
-                parts.append(f".{fi.name} = {val}")
+                parts.append(f".{self._quote_identifier(fi.name)} = {val}")
             else:
                 parts.append(val)
 
@@ -1922,7 +2161,7 @@ class ZigCodeGenerator(CodeGenerator):
         if kind == NodeKind.PATTERN_LITERAL:
             return self._emit_expr(node.literal) if node.literal else "0"
         elif kind == NodeKind.PATTERN_IDENTIFIER:
-            return node.name or "_"
+            return self._use_name(node.name) if node.name and node.name != "_" else "_"
         elif kind == NodeKind.PATTERN_ENUM:
             return f".{node.variant}" if node.variant else "_"
         elif kind == NodeKind.PATTERN_RANGE:
@@ -1966,7 +2205,7 @@ class ZigCodeGenerator(CodeGenerator):
                 return None
             if self._is_capture_pattern(pattern):
                 return None
-            return f"{scrutinee_expr} == {name}"
+            return f"{scrutinee_expr} == {self._use_name(name)}"
         if pattern.kind == NodeKind.PATTERN_RANGE:
             start = self._emit_pattern(pattern.start) if pattern.start else "0"
             end = self._emit_pattern(pattern.end) if pattern.end else "0"
@@ -2051,13 +2290,13 @@ class ZigCodeGenerator(CodeGenerator):
                 args = ", ".join(self._emit_type_node(p, generic_env=generic_env) for p in node.generic_params)
                 if not node.name:
                     raise CodegenError("Zig backend: generic type identifier is missing a name", node.span)
-                return f"{node.name}({args})"
+                return f"{self._use_name(node.name)}({args})"
             if not node.name:
                 raise CodegenError("Zig backend: type identifier is missing a name", node.span)
-            return node.name
+            return self._use_name(node.name)
         elif kind == NodeKind.TYPE_GENERIC:
             if node.name in generic_env:
-                return node.name
+                return self._quote_identifier(node.name)
             raise CodegenError(f"Zig backend: unresolved generic type '{node.name or '?'}'", node.span)
         elif kind == NodeKind.TYPE_FUNCTION:
             params = ", ".join(self._emit_type_node(p, generic_env=generic_env) for p in (node.parameter_types or []))
@@ -2069,7 +2308,7 @@ class ZigCodeGenerator(CodeGenerator):
             for f in fields:
                 fname = f.name or "unknown"
                 ftype = self._emit_type_node(f.field_type, generic_env=generic_env) if f.field_type else "anytype"
-                parts.append(f"\n    {fname}: {ftype},")
+                parts.append(f"\n    {self._quote_identifier(fname)}: {ftype},")
             parts.append("\n}")
             return "".join(parts)
         else:
@@ -2141,14 +2380,24 @@ class ZigCodeGenerator(CodeGenerator):
         return "undefined"
 
     def _default_value_for_elem(self, type_node: ASTNode) -> str:
-        """Default value used in array initialization."""
-        if type_node and type_node.kind == NodeKind.TYPE_PRIMITIVE:
-            name = type_node.type_name or ""
-            if name in ("f32", "f64"):
-                return "0.0"
-            elif name == "bool":
-                return "false"
-        return "0"
+        """Build nested array defaults iteratively, including strings and refs."""
+        arrays = []
+        current = type_node
+        while current is not None and current.kind == NodeKind.TYPE_ARRAY:
+            arrays.append(current)
+            current = current.element_type
+        if current is not None and current.kind == NodeKind.TYPE_PRIMITIVE:
+            name = current.type_name
+            value = {"f32": "0.0", "f64": "0.0", "bool": "false", "string": '\"\"'}.get(name, "0")
+        elif current is not None and current.kind == NodeKind.TYPE_POINTER:
+            value = "null"
+        else:
+            value = "undefined"
+        for array in reversed(arrays):
+            elem = self._emit_type_node(array.element_type)
+            size = self._emit_expr(array.size) if array.size else "0"
+            value = f"[_]{elem}{{{value}}} ** {size}"
+        return value
 
     # === I/O special-casing ===
 
@@ -2157,15 +2406,7 @@ class ZigCodeGenerator(CodeGenerator):
         if node.kind != NodeKind.CALL:
             return False
         canonical = getattr(node, "stdlib_canonical", None)
-        if canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}:
-            return True
-        func = node.function
-        if func and func.kind == NodeKind.FIELD_ACCESS:
-            obj = getattr(func, 'object', None)
-            if obj and obj.kind == NodeKind.IDENTIFIER and getattr(obj, 'name', '') == 'io':
-                field = getattr(func, 'field', '')
-                return field in ('println', 'print', 'eprintln')
-        return False
+        return canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}
 
     def _emit_io_call(self, node: ASTNode) -> None:
         """Emit an io.println/io.print call as a statement."""
@@ -2260,7 +2501,10 @@ class ZigCodeGenerator(CodeGenerator):
         i = 0
         s = fmt_str
         while i < len(s):
-            if s[i] == '{' and i + 1 < len(s) and s[i + 1] == '}':
+            if s[i:i + 2] in {'{{', '}}'}:
+                result.append(s[i:i + 2])
+                i += 2
+            elif s[i] == '{' and i + 1 < len(s) and s[i + 1] == '}':
                 if args and placeholder_idx < len(args):
                     spec = self._format_spec_for_arg(args[placeholder_idx])
                 else:
@@ -2304,11 +2548,44 @@ class ZigCodeGenerator(CodeGenerator):
         out.append('"')
         return "".join(out)
 
-    def _loop_label_name(self, label: Optional[str]) -> Optional[str]:
-        if not label:
+    def _collect_targeted_loops(self, root: ASTNode) -> Set[int]:
+        """Resolve each labeled transfer to its nearest enclosing loop identity."""
+        targeted: Set[int] = set()
+        stack = [(root, ())]
+        loop_kinds = {NodeKind.WHILE, NodeKind.FOR, NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}
+        while stack:
+            node, loops = stack.pop()
+            if node.kind == NodeKind.FUNCTION:
+                # Nested functions cannot transfer into their enclosing function.
+                if node.body:
+                    stack.append((node.body, ()))
+                continue
+            if node.kind in {NodeKind.BREAK, NodeKind.CONTINUE} and node.label:
+                for loop in reversed(loops):
+                    if loop.label == node.label:
+                        targeted.add(id(loop))
+                        break
+            if node.kind in loop_kinds:
+                loops = (*loops, node)
+            children = []
+            for attr in self._AST_CHILD_ATTRS:
+                value = getattr(node, attr, None)
+                if isinstance(value, ASTNode):
+                    children.append(value)
+                elif isinstance(value, list):
+                    children.extend(child for child in value if isinstance(child, ASTNode))
+            stack.extend((child, loops) for child in reversed(children))
+        return targeted
+
+    def _loop_label_name(self, node: ASTNode) -> Optional[str]:
+        if id(node) not in self._targeted_loops:
             return None
-        safe = label.replace("$", "_").replace(".", "_").replace("-", "_")
-        return f"a7_loop_{safe}"
+        name = "a7_loop_" + node.label
+        base = name
+        while name in self._emitted_loop_labels:
+            name = self._unique_name(base)
+        self._emitted_loop_labels.add(name)
+        return name
 
     def _resolve_loop_label(self, label: Optional[str]) -> Optional[str]:
         if label is None:
@@ -2366,13 +2643,16 @@ class ZigCodeGenerator(CodeGenerator):
     def _emit_statement_as_expr(self, node: ASTNode) -> str:
         """Emit a statement as an expression string (for while continue expressions)."""
         if node.kind == NodeKind.ASSIGNMENT:
-            target = self._emit_expr(node.target) if node.target else "_"
+            if getattr(node, "implicit_deref_target", False):
+                self._require_backend_approval(node, "deref")
+                target = self._emit_implicit_deref(node.target)
+            else:
+                target = self._emit_expr(node.target) if node.target else "_"
             value = self._emit_expr(node.value) if node.value else "0"
-            op = getattr(node, 'operator', None) or getattr(node, 'op', AssignOp.ASSIGN)
-            zig_op = self._assign_op_to_zig(op)
-            return f"{target} {zig_op} {value}"
+            return self._assignment_text(node, target, value)
         elif node.kind == NodeKind.EXPRESSION_STMT and node.expression:
-            return self._emit_expr(node.expression)
+            value = self._emit_expr(node.expression)
+            return value if self._expression_returns_void(node.expression) else "_ = " + value
         return "void"
 
     def _emit_statement_inline(self, node: ASTNode) -> str:
@@ -2380,9 +2660,13 @@ class ZigCodeGenerator(CodeGenerator):
         if node.kind == NodeKind.EXPRESSION_STMT and node.expression:
             if self._is_io_call(node.expression):
                 return self._emit_io_call_expr(node.expression)
-            return self._emit_expr(node.expression)
+            value = self._emit_expr(node.expression)
+            return value if self._expression_returns_void(node.expression) else "_ = " + value
+        elif node.kind == NodeKind.ASSIGNMENT:
+            return self._emit_statement_as_expr(node)
         elif node.kind == NodeKind.CALL:
-            return self._emit_expr(node)
+            value = self._emit_expr(node)
+            return value if self._expression_returns_void(node) else "_ = " + value
         elif node.kind == NodeKind.DEL:
             expr = node.expression or node.expr
             if expr:

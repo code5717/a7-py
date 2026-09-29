@@ -1,4 +1,10 @@
-"""Large cast-safety matrix for the first compiler safety vertical slice."""
+"""Independent cast-classification expectations and real pipeline checks.
+
+The table pins the current Phase 1 cast boundary, not a resolution of gate G3.
+The policy categories are recorded in docs/lang-safety/conversions.md under
+"What the compiler does today". Float/integer conversions require separate
+pipeline proofs; EXPLICIT_NUMERIC is not proof that every value is safe.
+"""
 
 import pytest
 
@@ -77,10 +83,35 @@ def primitive(name: str):
     return result
 
 
+# Hand-authored cells. Columns follow PRIMITIVES, including the current
+# 64-bit isize/usize target assumption. Do not generate these using the
+# classifier, its width dictionaries, or its helper predicates.
+# L = lossless; E = explicit numeric; F = forbidden without a value proof.
+NO_PROOF_POLICY = {
+    #        i8 i16 i32 i64 isize u8 u16 u32 u64 usize f32 f64 bool char string
+    "i8":    "L  L   L   L   L     F  F   F   F   F     E   E   F    F    F",
+    "i16":   "F  L   L   L   L     F  F   F   F   F     E   E   F    F    F",
+    "i32":   "F  F   L   L   L     F  F   F   F   F     E   E   F    F    F",
+    "i64":   "F  F   F   L   L     F  F   F   F   F     E   E   F    F    F",
+    "isize": "F  F   F   L   L     F  F   F   F   F     E   E   F    F    F",
+    "u8":    "F  L   L   L   L     L  L   L   L   L     E   E   F    F    F",
+    "u16":   "F  F   L   L   L     F  L   L   L   L     E   E   F    F    F",
+    "u32":   "F  F   F   L   L     F  F   L   L   L     E   E   F    F    F",
+    "u64":   "F  F   F   F   F     F  F   F   L   L     E   E   F    F    F",
+    "usize": "F  F   F   F   F     F  F   F   L   L     E   E   F    F    F",
+    "f32":   "E  E   E   E   E     E  E   E   E   E     L   L   F    F    F",
+    "f64":   "E  E   E   E   E     E  E   E   E   E     E   L   F    F    F",
+    "bool":  "F  F   F   F   F     F  F   F   F   F     F   F   F    F    F",
+    "char":  "F  F   F   F   F     F  F   F   F   F     F   F   F    F    F",
+    "string":"F  F   F   F   F     F  F   F   F   F     F   F   F    F    F",
+}
+POLICY_CLASSES = {"L": CastClass.LOSSLESS, "E": CastClass.EXPLICIT_NUMERIC, "F": CastClass.FORBIDDEN}
+
+
 def expected_without_proof(source: str, target: str) -> CastClass:
-    source_type = primitive(source)
-    target_type = primitive(target)
-    return classify_cast(source_type, target_type, source_nonnegative=False).kind
+    row = NO_PROOF_POLICY[source].split()
+    assert len(row) == len(PRIMITIVES)
+    return POLICY_CLASSES[row[PRIMITIVES.index(target)]]
 
 
 def source_literal(type_name: str) -> str:
@@ -107,43 +138,32 @@ def cast_program(source_type: str, target_type: str, *, guard: str = "") -> str:
 
 @pytest.mark.parametrize("source_type", PRIMITIVES)
 @pytest.mark.parametrize("target_type", PRIMITIVES)
-def test_classifier_all_primitive_pairs_without_nonnegative_proof(source_type: str, target_type: str):
-    """Every primitive pair has a deterministic no-proof classification."""
-    decision = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=False)
+def test_classifier_matches_independent_primitive_policy(source_type: str, target_type: str):
     expected = expected_without_proof(source_type, target_type)
-    assert decision.kind is expected
-    assert decision.reason
-
-
-@pytest.mark.parametrize("source_type", PRIMITIVES)
-@pytest.mark.parametrize("target_type", PRIMITIVES)
-def test_classifier_all_primitive_pairs_with_nonnegative_proof(source_type: str, target_type: str):
-    """The non-negative proof flag only widens the signed-to-unsigned surface."""
-    without_proof = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=False)
-    with_proof = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=True)
-
-    if source_type in SIGNED and target_type in UNSIGNED:
-        assert with_proof.kind in {CastClass.LOSSLESS, CastClass.PROVABLE_NARROWING}
-    else:
-        assert with_proof.kind is without_proof.kind
-
-
-@pytest.mark.parametrize("source_type", PRIMITIVES)
-@pytest.mark.parametrize("target_type", PRIMITIVES)
-def test_classifier_reasons_are_stable_and_nonempty(source_type: str, target_type: str):
-    """Repeated classification should not depend on mutable compiler state."""
-    first = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=False)
-    second = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=False)
-    assert first == second
-    assert first.reason.strip()
-
-
-@pytest.mark.parametrize("source_type", PRIMITIVES)
-@pytest.mark.parametrize("target_type", PRIMITIVES)
-def test_classifier_forbidden_pairs_are_not_allowed(source_type: str, target_type: str):
-    """FORBIDDEN and allowed stay in sync across the whole primitive matrix."""
     decision = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=False)
-    assert decision.allowed is (decision.kind is not CastClass.FORBIDDEN)
+    assert decision.kind is expected
+    assert decision.allowed is (expected is not CastClass.FORBIDDEN)
+
+
+@pytest.mark.parametrize("source_type", SIGNED)
+@pytest.mark.parametrize("target_type", UNSIGNED)
+def test_nonnegative_signed_cast_still_requires_range_proof(source_type: str, target_type: str):
+    # A nonnegative flag changes this classification, but does not prove that
+    # the value fits the target width. SafetyProofPass must discharge that.
+    decision = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=True)
+    assert decision.kind is CastClass.PROVABLE_NARROWING
+
+
+@pytest.mark.parametrize("source_type, target_type, expected", [
+    ("u64", "i8", CastClass.FORBIDDEN),
+    ("i64", "i8", CastClass.FORBIDDEN),
+    ("f64", "i32", CastClass.EXPLICIT_NUMERIC),
+    ("f32", "f64", CastClass.LOSSLESS),
+    ("bool", "bool", CastClass.FORBIDDEN),
+])
+def test_nonnegative_flag_does_not_authorize_unrelated_conversions(source_type, target_type, expected):
+    decision = classify_cast(primitive(source_type), primitive(target_type), source_nonnegative=True)
+    assert decision.kind is expected
 
 
 @pytest.mark.parametrize("target_type", PRIMITIVES)

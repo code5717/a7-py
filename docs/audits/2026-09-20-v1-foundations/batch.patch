@@ -1,0 +1,1428 @@
+--- a/a7/safety.py
++++ b/a7/safety.py
+@@ -1079,13 +1079,12 @@
+         return False
+ 
+     def _int_literal(self, node: Optional[ASTNode]) -> Optional[int]:
+-        if node is None:
+-            return None
+-        if node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER and isinstance(node.literal_value, int):
+-            return node.literal_value
+-        if node.kind == NodeKind.UNARY and node.operator == UnaryOp.NEG:
+-            value = self._int_literal(node.operand)
+-            return -value if value is not None else None
++        sign = 1
++        while node is not None and node.kind == NodeKind.UNARY and node.operator == UnaryOp.NEG:
++            sign = -sign
++            node = node.operand
++        if node is not None and node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER and isinstance(node.literal_value, int):
++            return -node.literal_value if sign < 0 else node.literal_value
+         return None
+ 
+     def _mark_deleted(self, node: ASTNode) -> None:
+--- a/a7/backends/zig.py
++++ b/a7/backends/zig.py
+@@ -227,16 +227,13 @@
+ 
+         def base_identifier(target: ASTNode) -> Optional[str]:
+             """Resolve base identifier for assignment targets like a, a[i], or a.b."""
+-            if target is None:
+-                return None
+-            if target.kind == NodeKind.IDENTIFIER:
+-                return target.name
+-            if target.kind == NodeKind.FIELD_ACCESS:
+-                return base_identifier(getattr(target, 'object', None))
+-            if target.kind == NodeKind.INDEX:
+-                return base_identifier(getattr(target, 'object', None))
+-            if target.kind == NodeKind.DEREF:
+-                # Dereferencing mutates the pointee, not the pointer binding itself.
++            while target is not None:
++                if target.kind == NodeKind.IDENTIFIER:
++                    return target.name
++                if target.kind in (NodeKind.FIELD_ACCESS, NodeKind.INDEX):
++                    target = getattr(target, 'object', None)
++                    continue
++                # A dereference mutates the pointee, not the pointer binding.
+                 return None
+             return None
+ 
+--- a/a7/symbol_table.py
++++ b/a7/symbol_table.py
+@@ -312,15 +312,15 @@
+             scope = self.global_scope
+ 
+         lines = []
+-        prefix = "  " * indent
+-
+-        lines.append(f"{prefix}{scope.name}:")
+-        for name, symbol in sorted(scope.symbols.items()):
+-            used = "✓" if symbol.is_used else "✗"
+-            lines.append(f"{prefix}  [{used}] {symbol}")
+-
+-        for child in scope.children:
+-            lines.append(self.dump(child, indent + 1))
++        pending = [(scope, indent)]
++        while pending:
++            current, level = pending.pop()
++            prefix = "  " * level
++            lines.append(f"{prefix}{current.name}:")
++            for name, symbol in sorted(current.symbols.items()):
++                used = "✓" if symbol.is_used else "✗"
++                lines.append(f"{prefix}  [{used}] {symbol}")
++            pending.extend((child, level + 1) for child in reversed(current.children))
+ 
+         return "\n".join(lines)
+ 
+--- a/test/norec_scan.py
++++ b/test/norec_scan.py
+@@ -40,6 +40,14 @@
+ * ``x.m`` where inference fails: edges to methods named ``m`` in the caller's
+   class, its in-package bases, and every subclass of those; any other
+   in-package method named ``m`` is recorded as an unresolved call, not an edge.
++  An untyped ``self.attribute`` receiver has no assumed relationship to its
++  owner's class; all matching methods are recorded as unresolved candidates.
++* Callable dictionaries assigned at module, class or instance scope are followed
++  through subscript and ``get`` calls. Dynamic keys conservatively reach every
++  stored value. Local callable assignments and list/queue insertion and removal
++  are followed too.
++* Lambdas have separate call-graph nodes. Creating or queuing a lambda does not
++  execute its body; invoking it, including through a callback parameter, does.
+ * ``getattr(recv, <constant prefix> ...)`` (f-string, ``+``, ``%`` or
+   ``.format`` with a constant prefix): edges to every method of the receiver's
+   class hierarchy whose name starts with the prefix. ``getattr(recv, "name")``
+@@ -56,9 +64,11 @@
+ Limits (not modelled): calls made from class bodies and module-level code
+ (they cannot be part of a cycle), operators other than ``==``/``!=``, iteration
+ protocols, descriptors other than ``@property``, ``exec``/``eval``, and
+-dispatch through dictionaries of non-constant names on objects other than
+-``self``. The MRO is a depth-first left-to-right walk of in-package bases, not
+-C3.
++dictionary construction through ``dict(...)``, dictionary mutation through item
++assignment, augmented container assignment such as ``queue += [...]``, arbitrary
++container protocols, ``functools.partial``, ``singledispatch`` registrations, and
++callable factories with inferred returns. The MRO is a depth-first left-to-right
++walk of in-package bases, not C3.
+ """
+ 
+ from __future__ import annotations
+@@ -158,7 +168,7 @@
+     cls: Optional[str]
+     self_name: Optional[str]
+     self_is_class: bool
+-    parent: Optional["_Func"]
++    parent: Optional["_Func"] = field(repr=False)
+     is_module: bool = False
+     is_method: bool = False
+     calls_params: bool = False
+@@ -233,6 +243,9 @@
+         self.unresolved: list = []
+         self.deepcopy_calls: list = []
+         self.include_unresolved = False
++        self.lambda_funcs: dict = {}
++        self.class_values: dict = {}
++        self.container_values: dict = {}
+ 
+     # ------------------------------------------------------------------ loading
+     def load(self) -> None:
+@@ -251,7 +264,15 @@
+         for mod, (display, tree, is_pkg) in self.modules.items():
+             self._collect_imports(mod, tree, is_pkg)
+             self._collect_defs(mod, display, tree)
++        self._collect_lambdas()
+         for cls in self.classes.values():
++            context = _Func(f"{cls.key}.<body>", cls.module, cls.node, cls.path,
++                            cls.node.lineno, cls.key, None, False, None)
++            context.local_defs.update(cls.methods)
++            for node in cls.node.body:
++                if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
++                    for name in _assigned_names(node):
++                        self.class_values.setdefault((cls.key, name), []).append((context, node.value))
+             for expr in cls.base_exprs:
+                 r = self._static_module(cls.module, expr)
+                 if r and r[0] == "class":
+@@ -266,6 +287,23 @@
+             self._collect_dataclass(cls)
+         for fn in self.func_list:
+             self._collect_locals(fn)
++
++    def _collect_lambdas(self) -> None:
++        pending = list(self.module_funcs.values()) + self.func_list
++        index = 0
++        while index < len(pending):
++            owner = pending[index]
++            index += 1
++            for node in self._body_nodes(owner):
++                if not isinstance(node, ast.Lambda) or id(node) in self.lambda_funcs:
++                    continue
++                qual = f"{owner.qual}.<lambda@{node.lineno}:{node.col_offset}>"
++                fn = _Func(qual, owner.module, node, owner.path, node.lineno,
++                           owner.cls, owner.self_name, owner.self_is_class, owner)
++                self.lambda_funcs[id(node)] = qual
++                self.funcs[qual] = fn
++                self.func_list.append(fn)
++                pending.append(fn)
+ 
+     def _abs_module(self, mod: str, is_pkg: bool, node: ast.ImportFrom) -> str:
+         if not node.level:
+@@ -765,6 +803,8 @@
+         node = fn.node
+         if fn.is_module:
+             roots = [n for n in node.body if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))]
++        elif isinstance(node, ast.Lambda):
++            roots = [node.body]
+         elif isinstance(node, _MergedBody):
+             roots = node.bodies()
+         else:
+@@ -773,8 +813,8 @@
+         while stack:
+             n = stack.pop()
+             yield n
+-            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+-                kids = list(n.decorator_list) + list(n.args.defaults) + [d for d in n.args.kw_defaults if d]
++            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
++                kids = list(getattr(n, "decorator_list", ())) + list(n.args.defaults) + [d for d in n.args.kw_defaults if d]
+             elif isinstance(n, ast.ClassDef):
+                 kids = list(n.decorator_list) + list(n.bases) + [k.value for k in n.keywords]
+             else:
+@@ -817,10 +857,6 @@
+                 fn.assigns.append((n.name, "unknown", None))
+             elif isinstance(n, ast.NamedExpr):
+                 self._record_target(fn, n.target, "value", n.value)
+-            elif isinstance(n, ast.Lambda):
+-                a = n.args
+-                for p in a.posonlyargs + a.args + a.kwonlyargs:
+-                    fn.assigns.append((p.arg, "unknown", None))
+             elif isinstance(n, (ast.MatchAs, ast.MatchStar)) and n.name:
+                 fn.assigns.append((n.name, "unknown", None))
+             elif isinstance(n, ast.MatchMapping) and n.rest:
+@@ -882,7 +918,7 @@
+         for q in quals:
+             fn = self.funcs[q]
+             nodes = fn.node.nodes if isinstance(fn.node, _MergedBody) else [fn.node]
+-            ann = nodes[0].returns
++            ann = getattr(nodes[0], "returns", None)
+             if ann is None:
+                 return TOP
+             out = _join_pair(out, self._ann_pair(fn.module, ann))
+@@ -1100,6 +1136,16 @@
+ 
+     # -------------------------------------------------------------- edges
+     def build_edges(self) -> None:
++        for fn in list(self.module_funcs.values()) + self.func_list:
++            for node in self._body_nodes(fn):
++                if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
++                    continue
++                method = node.func.attr
++                if method not in ("append", "appendleft", "extend", "extendleft", "insert") or not node.args:
++                    continue
++                value = node.args[-1] if method == "insert" else node.args[0]
++                for key in self._container_keys(fn, node.func.value):
++                    self.container_values.setdefault(key, []).append((fn, value))
+         for fn in self.func_list:
+             fn.calls_params = self._calls_params(fn)
+         for fn in list(self.module_funcs.values()) + self.func_list:
+@@ -1123,6 +1169,77 @@
+             inst = self._receiver_classes(fn, expr.value)
+             return self._resolve_attr(fn, expr.value, expr.attr, inst, False)
+         return set()
++
++    def _container_keys(self, fn: _Func, expr) -> list:
++        if isinstance(expr, ast.Name):
++            resolved = self._resolve_name(fn, expr.id)
++            if resolved is not None and resolved[0] == "local":
++                return [(resolved[1].qual, expr.id)]
++            if resolved is not None and resolved[0] == "var":
++                return [(resolved[1], resolved[2])]
++        if isinstance(expr, ast.Attribute):
++            classes = self._receiver_classes(fn, expr.value)
++            return [(key, expr.attr) for cls in classes or () for key in self._mro(cls)]
++        return []
++
++    def _callable_targets(self, fn: _Func, expr) -> set:
++        """Follow callable assignments and container values with an explicit worklist."""
++        out, seen = set(), set()
++        unknown_key = object()
++        pending = [(fn, expr, unknown_key)]
++        while pending:
++            context, node, selected = pending.pop()
++            key = (context.qual, id(node), selected)
++            if node is None or key in seen:
++                continue
++            seen.add(key)
++            for storage in self._container_keys(context, node):
++                pending.extend((owner, value, selected) for owner, value in self.container_values.get(storage, ()))
++            if isinstance(node, ast.Lambda):
++                qual = self.lambda_funcs.get(id(node))
++                if qual:
++                    out.add(qual)
++            elif isinstance(node, ast.Name):
++                resolved = self._resolve_name(context, node.id)
++                if resolved is not None and resolved[0] == "func":
++                    out.add(resolved[1])
++                elif resolved is not None and resolved[0] in ("local", "var"):
++                    owner = resolved[1] if resolved[0] == "local" else self.module_funcs[resolved[1]]
++                    name = node.id if resolved[0] == "local" else resolved[2]
++                    pending.extend((owner, value, selected) for target, _, value in owner.assigns if target == name)
++            elif isinstance(node, ast.Attribute):
++                out |= self._function_refs(context, node)
++                classes = self._receiver_classes(context, node.value)
++                static = self._static(context, node.value)
++                if static is not None and static[0] == "class":
++                    classes = {static[1]}
++                elif static is not None and static[0] == "module":
++                    owner = self.module_funcs[static[1]]
++                    pending.extend((owner, value, selected) for target, _, value in owner.assigns if target == node.attr)
++                for cls in classes or ():
++                    for base in self._mro(cls) + self._subclasses(cls):
++                        pending.extend((owner, value, selected) for owner, value in self.class_values.get((base, node.attr), ()))
++                        pending.extend((owner, value, selected) for key, attr, owner, _, value in self.attr_assigns
++                                       if key == base and attr == node.attr)
++            elif isinstance(node, ast.Subscript):
++                index = node.slice.value if isinstance(node.slice, ast.Constant) else unknown_key
++                pending.append((context, node.value, index))
++            elif isinstance(node, ast.Dict):
++                for key_node, value in zip(node.keys, node.values):
++                    if (selected is unknown_key or key_node is None
++                            or not isinstance(key_node, ast.Constant) or key_node.value == selected):
++                        pending.append((context, value, unknown_key if key_node is not None else selected))
++            elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
++                pending.extend((context, value, unknown_key) for value in node.elts)
++            elif isinstance(node, ast.IfExp):
++                pending.extend(((context, node.body, selected), (context, node.orelse, selected)))
++            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
++                if node.func.attr in ("pop", "popleft", "get"):
++                    index = unknown_key
++                    if node.func.attr == "get" and node.args and isinstance(node.args[0], ast.Constant):
++                        index = node.args[0].value
++                    pending.append((context, node.func.value, index))
++        return out
+ 
+     def _callback_edges(self, fn: _Func, call: ast.Call) -> None:
+         """A function that calls its parameters may call any function passed to it."""
+@@ -1139,7 +1256,7 @@
+             return
+         refs = set()
+         for arg in list(call.args) + [k.value for k in call.keywords]:
+-            refs |= self._function_refs(fn, arg.value if isinstance(arg, ast.Starred) else arg)
++            refs |= self._callable_targets(fn, arg.value if isinstance(arg, ast.Starred) else arg)
+         saved = self._line
+         for callee in callees:
+             # The call happens inside the callee; cite its definition line.
+@@ -1229,7 +1346,7 @@
+         if inst is None or inst is BOT:
+             if name not in self.methods_by_name:
+                 return set()
+-            return self._fallback_candidates(fn, name)
++            return set() if self._is_self_attr(fn, recv) else self._fallback_candidates(fn, name)
+         out = set()
+         for k in inst:
+             out |= self._virtual(k, name)
+@@ -1248,6 +1365,11 @@
+         if inst is None:
+             if name not in self.methods_by_name:
+                 return set()
++            if self._is_self_attr(fn, recv):
++                candidates = tuple(sorted(self.methods_by_name[name]))
++                if (is_call or name in self.property_names) and not fn.is_module:
++                    self.unresolved.append(Unresolved(fn.qual, name, fn.path, line, candidates))
++                return set(candidates) if self.include_unresolved else set()
+             return self._fallback(fn, name, line, record=is_call or name in self.property_names)
+         return self._resolve_attr(fn, recv, name, inst, is_call)
+ 
+@@ -1361,12 +1483,25 @@
+ 
+     def _edges_for(self, fn: _Func) -> None:
+         call_funcs = set()
++        stored_refs = set()
++        for node in self._body_nodes(fn):
++            if isinstance(node, ast.Dict):
++                values = list(node.values)
++                while values:
++                    value = values.pop()
++                    if isinstance(value, (ast.Name, ast.Attribute)):
++                        stored_refs.add(id(value))
++                    elif isinstance(value, ast.IfExp):
++                        values.extend((value.body, value.orelse))
++                    elif isinstance(value, (ast.List, ast.Tuple, ast.Set)):
++                        values.extend(value.elts)
+         for n in self._body_nodes(fn):
+             self._line = getattr(n, "lineno", fn.line)
+             if isinstance(n, ast.Call):
+                 call_funcs.add(id(n.func))
+                 self._callback_edges(fn, n)
+                 f = n.func
++                self._add(fn, self._callable_targets(fn, f))
+                 if isinstance(f, ast.Name):
+                     r = self._resolve_name(fn, f.id)
+                     if r == ("builtin", "getattr") and len(n.args) >= 2:
+@@ -1407,11 +1542,11 @@
+                 items = n.right.elts if isinstance(n.right, ast.Tuple) else [n.right]
+                 for item in items:
+                     self._add(fn, self._dunder_targets(fn, item, "__str__"))
+-            elif isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load):
++            elif isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and id(n) not in stored_refs:
+                 r = self._resolve_name(fn, n.id)
+                 if r is not None and r[0] == "func":
+                     self._add(fn, {r[1]})
+-            elif isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Load):
++            elif isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Load) and id(n) not in stored_refs:
+                 self._add(fn, self._attr_targets(fn, n.value, n.attr, id(n) in call_funcs, n.lineno))
+ 
+     # ---------------------------------------------------------------- SCCs
+--- a/test/test_no_recursion.py
++++ b/test/test_no_recursion.py
+@@ -330,6 +330,7 @@
+     result = norec_scan.scan(root)
+     assert result.groups == [], "\n".join(result.describe_group(g) for g in result.groups)
+     assert result.deepcopy_calls == []
++    assert result.dataclass_findings == []
+ 
+ 
+ # --------------------------------------------------------------------------
+@@ -393,9 +394,6 @@
+     (
+         "a7.ast_preprocessor:ASTPreprocessor._annotate_function",
+         "a7.ast_preprocessor:ASTPreprocessor._hoist_nested_functions",
+-    ),
+-    (
+-        "a7.backends.zig:ZigCodeGenerator._collect_mutations.base_identifier",
+     ),
+     (
+         "a7.backends.zig:ZigCodeGenerator._emit_address_of",
+@@ -559,16 +557,10 @@
+         "a7.safety:SafetyProofPass._always_returns",
+     ),
+     (
+-        "a7.safety:SafetyProofPass._int_literal",
+-    ),
+-    (
+         "a7.safety:SafetyProofPass._visit_expr",
+     ),
+     (
+         "a7.safety:SafetyProofPass._visit_stmt",
+-    ),
+-    (
+-        "a7.symbol_table:SymbolTable.dump",
+     ),
+     (
+         "a7.types:ArrayType.__hash__",
+@@ -711,3 +703,158 @@
+     assert not gone, "No longer recursive; delete from KNOWN_RECURSIVE_DATACLASS_METHODS:\n" + "\n".join(
+         f"- {c} __{k}__" for c, k in gone
+     )
++
++@pytest.mark.parametrize("source, expected", [
++    ("""
++        class Walker:
++            def walk(self, kind):
++                return self.handlers[kind](self, kind)
++            def block(self, kind):
++                return self.walk(kind)
++            handlers = {"block": block}
++    """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
++    ("""
++        class Walker:
++            def __init__(self):
++                self.handlers = {"block": self.block}
++            def walk(self, kind):
++                return self.handlers[kind](kind)
++            def block(self, kind):
++                return self.walk(kind)
++    """, ("pkg.m:Walker.block", "pkg.m:Walker.walk")),
++    ("""
++        def walk(kind):
++            return handlers[kind](kind)
++        def block(kind):
++            return walk(kind)
++        handlers = {"block": block}
++    """, ("pkg.m:block", "pkg.m:walk")),
++])
++def test_stored_dispatch_tables_preserve_recursive_call_edges(tmp_path, source, expected):
++    result = scan_sources(tmp_path, {"m.py": source})
++    assert result.groups == [expected]
++    assert expected[1] in result.edges[expected[0]]
++    assert expected[0] in result.edges[expected[1]]
++
++
++def test_nonrecursive_dispatch_table_stays_nonrecursive(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Walker:
++            def __init__(self):
++                self.handlers = {"leaf": self.leaf}
++            def walk(self, kind):
++                return self.handlers[kind]()
++            def leaf(self):
++                return 1
++    """})
++    assert result.groups == []
++    assert "pkg.m:Walker.leaf" in result.edges["pkg.m:Walker.walk"]
++
++
++def test_continuation_stack_does_not_call_the_scheduling_frame(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Driver:
++            def __init__(self):
++                self.work = []
++            def run(self):
++                while self.work:
++                    callback = self.work.pop()
++                    callback()
++            def step(self):
++                self.work.append(lambda: self.step())
++    """})
++    assert result.groups == []
++    callback = next(q for q in result.functions if "<lambda@" in q)
++    assert callback in result.edges["pkg.m:Driver.run"]
++    assert result.edges[callback] == {"pkg.m:Driver.step"}
++    assert callback not in result.edges.get("pkg.m:Driver.step", ())
++
++
++@pytest.mark.parametrize("body", [
++    "(lambda: self.step())()",
++    "callback = lambda: self.step(); callback()",
++    "self.callback = lambda: self.step(); self.callback()",
++    "work = [lambda: self.step()]; work.pop()()",
++])
++def test_synchronously_invoked_lambda_still_reports_recursion(tmp_path, body):
++    result = scan_sources(tmp_path, {"m.py": f"""
++        class Driver:
++            def step(self):
++                {body}
++    """})
++    callback = next(q for q in result.functions if "<lambda@" in q)
++    assert result.groups == [tuple(sorted(("pkg.m:Driver.step", callback)))]
++
++
++def test_callback_parameter_invoking_lambda_preserves_cycle(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        def invoke(callback):
++            return callback()
++        def repeat():
++            return invoke(lambda: repeat())
++    """})
++    callback = next(q for q in result.functions if "<lambda@" in q)
++    assert result.groups == [tuple(sorted(("pkg.m:invoke", "pkg.m:repeat", callback)))]
++
++
++def test_unannotated_attribute_delegation_is_unresolved_not_a_self_loop(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Worker:
++            def run(self):
++                return 1
++        class Proxy:
++            def __init__(self, worker):
++                self.worker = worker
++            def run(self):
++                return self.worker.run()
++    """})
++    assert result.groups == []
++    unresolved = [item for item in result.unresolved if item.caller == "pkg.m:Proxy.run"]
++    assert len(unresolved) == 1
++    assert unresolved[0].candidates == ("pkg.m:Proxy.run", "pkg.m:Worker.run")
++
++
++def test_unresolved_edges_retain_possible_unannotated_back_reference(tmp_path):
++    source = """
++        class Owner:
++            def __init__(self, worker):
++                self.worker = worker
++            def run(self):
++                return self.worker.run()
++    """
++    result = scan_sources(tmp_path, {"m.py": source})
++    assert result.groups == []
++    conservative = norec_scan.scan(tmp_path / "pkg", include_unresolved=True)
++    assert conservative.groups == [("pkg.m:Owner.run",)]
++
++
++def test_unresolved_edges_do_not_change_a7_recursive_groups(a7_scan):
++    conservative = norec_scan.scan(A7_ROOT, include_unresolved=True)
++    assert conservative.groups == a7_scan.groups
++
++
++@pytest.mark.parametrize("access", ["methods['leaf']()", "methods.get('leaf')()"])
++def test_constant_dictionary_key_does_not_call_other_handlers(tmp_path, access):
++    result = scan_sources(tmp_path, {"m.py": f"""
++        class Worker:
++            def run(self):
++                methods = {{"recur": self.run, "leaf": self.leaf}}
++                return {access}
++            def leaf(self):
++                return 1
++    """})
++    assert result.groups == []
++    assert result.edges["pkg.m:Worker.run"] == {"pkg.m:Worker.leaf"}
++
++
++def test_dynamic_dictionary_key_retains_all_possible_handlers(tmp_path):
++    result = scan_sources(tmp_path, {"m.py": """
++        class Worker:
++            def run(self, key):
++                methods = {"recur": self.run, "leaf": self.leaf}
++                return methods[key](key)
++            def leaf(self, key):
++                return 1
++    """})
++    assert result.groups == [("pkg.m:Worker.run",)]
++    assert result.edges["pkg.m:Worker.run"] == {"pkg.m:Worker.run", "pkg.m:Worker.leaf"}
+--- /dev/null
++++ b/test/test_iterative_helpers.py
+@@ -0,0 +1,96 @@
++"""Depth and behavior requirements for three compiler helpers.
++
++These isolated tests do not qualify deep programs through the whole compiler.
++Subprocesses set the recursion limit after imports to avoid pytest stack overhead.
++"""
++import subprocess
++import sys
++import textwrap
++from pathlib import Path
++
++import a7
++
++ROOT = Path(a7.__file__).resolve().parent.parent
++
++
++def run_at_low_limit(source):
++    result = subprocess.run(
++        [sys.executable, '-c', textwrap.dedent(source)],
++        cwd=ROOT, capture_output=True, text=True,
++    )
++    assert result.returncode == 0, result.stdout + result.stderr
++
++
++def test_integer_literal_negation_depth_and_nonliteral_boundary():
++    run_at_low_limit(r'''
++        import sys
++        from a7.ast_nodes import ASTNode, NodeKind, LiteralKind, UnaryOp
++        from a7.safety import SafetyProofPass
++        from a7.symbol_table import SymbolTable
++        proof = SafetyProofPass(SymbolTable(), {})
++        value = ASTNode(kind=NodeKind.LITERAL, literal_kind=LiteralKind.INTEGER, literal_value=17)
++        for _ in range(5000):
++            value = ASTNode(kind=NodeKind.UNARY, operator=UnaryOp.NEG, operand=value)
++        sys.setrecursionlimit(100)
++        assert proof._int_literal(value) == 17
++        value = ASTNode(kind=NodeKind.UNARY, operator=UnaryOp.NEG, operand=value)
++        assert proof._int_literal(value) == -17
++        assert proof._int_literal(ASTNode(kind=NodeKind.IDENTIFIER, name='unknown')) is None
++        assert proof._int_literal(ASTNode(kind=NodeKind.UNARY, operator=UnaryOp.NEG,
++            operand=ASTNode(kind=NodeKind.LITERAL, literal_kind=LiteralKind.FLOAT, literal_value=2.5))) is None
++        assert proof._int_literal(None) is None
++    ''')
++
++
++def test_mutation_base_depth_and_dereference_boundary():
++    run_at_low_limit(r'''
++        import sys
++        from a7.ast_nodes import ASTNode, NodeKind
++        from a7.backends.zig import ZigCodeGenerator
++        direct = ASTNode(kind=NodeKind.IDENTIFIER, name='buffer')
++        indirect = ASTNode(kind=NodeKind.DEREF,
++            operand=ASTNode(kind=NodeKind.IDENTIFIER, name='pointer'))
++        for i in range(5000):
++            kind = NodeKind.FIELD_ACCESS if i % 2 else NodeKind.INDEX
++            direct = ASTNode(kind=kind, object=direct)
++            indirect = ASTNode(kind=kind, object=indirect)
++        root = ASTNode(kind=NodeKind.BLOCK, statements=[
++            ASTNode(kind=NodeKind.ASSIGNMENT, target=direct),
++            ASTNode(kind=NodeKind.ASSIGNMENT, target=indirect),
++        ])
++        generator = ZigCodeGenerator()
++        sys.setrecursionlimit(100)
++        assert generator._collect_mutations(root) == {'buffer'}
++    ''')
++
++
++def test_scope_dump_preserves_order_indent_and_handles_deep_scopes():
++    run_at_low_limit(r'''
++        import sys
++        from a7.symbol_table import SymbolTable, Scope, Symbol, SymbolKind
++        from a7.types import I32
++        table = SymbolTable()
++        table.global_scope.define(Symbol('z', SymbolKind.VARIABLE, I32))
++        table.global_scope.define(Symbol('a', SymbolKind.VARIABLE, I32, is_used=True))
++        left = Scope('left', table.global_scope)
++        leaf = Scope('leaf', left)
++        right = Scope('right', table.global_scope)
++        sys.setrecursionlimit(100)
++        assert table.dump() == (
++            'global:\n'
++            '  [✓] Symbol(a: i32 [VARIABLE, const])\n'
++            '  [✗] Symbol(z: i32 [VARIABLE, const])\n'
++            '  left:\n'
++            '    leaf:\n'
++            '  right:'
++        )
++        assert table.dump(left, 2) == '    left:\n      leaf:'
++        current = right
++        for depth in range(1, 2001):
++            current = Scope('deep' + str(depth), current)
++        lines = table.dump(right).splitlines()
++        assert len(lines) == 2001
++        assert lines[0] == 'right:'
++        assert lines[-1] == '  ' * 2000 + 'deep2000:'
++        assert lines[1] == '  deep1:'
++    ''')
+--- a/docs/plan/execution.md
++++ b/docs/plan/execution.md
+@@ -1,6 +1,6 @@
+ # A7 execution plan
+ 
+-Status: approved by the user on 2026-09-16 as the plan of work, and updated 2026-09-17 with the correctness repair (Wave 1R and 2R) and the no-recursion rule. It is not approval of any language change; every change to A7 syntax or behavior still needs its own packet in [packets](packets/). This file mirrors the controlling session's plan.
++Status: approved by the user on 2026-09-16 as the plan of work, and updated 2026-09-17 with the correctness repair (Wave 1R and 2R) and the no-recursion rule. It is not approval of any language change; every change to A7 syntax or behavior still needs its own packet in [packets](packets/). This file mirrors the controlling session's plan. Current dispositions and delivery order are reconciled in [the V1 delivery roadmap](delivery-roadmap.md) and the 2026-09-20 update at the end of this file.
+ 
+ ## Context
+ 
+@@ -173,15 +173,20 @@
+ 
+ | Component | Recursive groups | Batch | Lane and order |
+ | --- | --- | --- | --- |
+-| `a7/types.py` | structural `equals` over array, slice, pointer, reference, function, struct, generic types | NOREC-TY: pairwise worklist comparison | S2, with T2 |
+-| `a7/symbol_table.py`, `a7/formatters/console_formatter.py`, `a7/generics.py` (`copy.deepcopy`) | `dump`, `format_statement_label`, the rest of `format_type`; deepcopy | NOREC-SMALL (generics removed by TYP-26) | F3 after X-RICH; S2 |
++| `a7/types.py` | structural `equals`, `__str__` and `__hash__` over composite types | NOREC-TY: pairwise equality worklist and iterative rendering/hashing | S2, with T2 |
++| `a7/symbol_table.py`, `a7/formatters/console_formatter.py`, `a7/generics.py` (`copy.deepcopy`) | `dump` converted 2026-09-20; `format_statement_label`, the rest of `format_type` and deepcopy remain | NOREC-SMALL (generics removed by TYP-26) | F3 after X-RICH; S2 |
+ | `a7/module_resolver.py` | `load_module` | MOD's iterative worklist | Wave 2R |
+ | `a7/ast_preprocessor.py` | `_annotate_function` and `_hoist_nested_functions` | NOREC-PRE | B, with Z2 |
+-| `a7/safety.py` | `_visit_stmt`, `_visit_expr`, `_always_returns`, `_int_literal` | SA (explicit-stack port) plus `_int_literal` loop | S1, Wave 1R-c |
++| `a7/safety.py` | `_visit_stmt`, `_visit_expr`, `_always_returns`; `_int_literal` converted 2026-09-20 | SA explicit-stack port | S1, Wave 1R-c |
+ | `a7/passes/semantic_validator.py` | `visit_statement`/`visit_defer_stmt`, exits-block pair, `_returns_on_all_paths`, call scheduling | R | S3, Wave 2R |
+ | `a7/passes/type_checker.py` | statement visitor (6), expression visitor (21), type resolution (3), range patterns (2), four self-loops | R | S2, Wave 2R after T-batches |
+-| `a7/backends/zig.py` | statement visitor (18), expression emitter (23), `_emit_semantic_type` | NOREC-BE: explicit task stack for statements (open, close, text tasks) and bottom-up rendering for expressions, keeping output byte-identical; the Wave 3 IR emitter reuses it | B, Wave 2R after Z-batches |
++| `a7/backends/zig.py` | statement visitor, expression emitter, `_emit_semantic_type`; mutation-base helper converted 2026-09-20 | NOREC-BE: explicit task stack for statements (open, close, text tasks) and bottom-up rendering for expressions, keeping output byte-identical; the Wave 3 IR emitter reuses it | B, Wave 2R after Z-batches |
+ | `a7/parser.py` | statement parser (8), expression parser (20) | NOREC-PAR: statements parsed with an explicit frame stack; expressions with operator-precedence parsing on explicit operand and operator stacks (shunting-yard with prefix, postfix, call, index, field, cast, if-, match- and struct-literal forms as stack frames); AST output must be identical on the whole 2440-program corpus (`ast_equal` diff) | F2, Wave 2R after PR-P |
++
++The compiler dataclasses also require a NOREC-DATA batch for generated equality
++and representation methods. The baseline scanner records 44 such methods.
++Disabling a generated method requires checking its callers and preserving the
++required comparison or diagnostic behavior; it is not an automatic fix.
+ 
+ - **Docs:** `CLAUDE.md` and `AGENTS.md` state the rule without exceptions and name `test/test_no_recursion.py` as its enforcement (done 2026-09-17 on the user's instruction).
+ - **Exit:** the ratchet list is empty; the deep-input test passes at recursion limit 100. This is part of the correctness-first exit.
+@@ -502,3 +507,36 @@
+ - Reusable patterns: explicit stack with actions `a7/passes/name_resolution.py:401-419`; post-order rewrite `a7/ast_preprocessor.py:114-169`; bottom-up rendering `a7/backends/zig.py:1524-1543`; fact domain `a7/safety.py:97-222`; frozen types `a7/types.py:30-545`; Debug/ReleaseFast agreement test `test/test_pipeline_native.py:59-97`
+ - Harness: `scripts/verify_examples_common.py`, `scripts/build_examples.py`, `scripts/project_status.py`, `scripts/verify_error_stages.py`, `scripts/check_no_secrets.py`, `run_all_tests.sh`, `test/test_parser_examples.py`, `test/test_error_stage_matrix.py`
+ - Plan and docs: `docs/plan/README.md`, `docs/plan/decisions.md`, `docs/plan/memory.md`, `docs/SPEC.md`, `docs/STATUS.md`, `docs/SAFETY_CONTRACT.md`, `docs/CHANGELOG.md`, `README.md`, `site/public/docs/`
++
++
++## Current reconciliation, 2026-09-20
++
++The [delivery roadmap](delivery-roadmap.md) preserves the full V1 boundary and
++controls current work order. Earlier counts and progress entries above remain
++historical evidence. The repaired working tree, not HEAD alone, is the baseline.
++The [fresh baseline gate](../audits/2026-09-20-v1-foundations/baseline-gate.log)
++passed 9/9 checks with 2,087 tests and 43 examples. Its source manifest includes
++tracked changes and untracked files.
++
++The [critical/high inventory](../audits/2026-09-20-v1-foundations/critical-high-inventory.md)
++accounts for 49 IDs from the six original compiler reports. Fifteen have explicit
++historical batch-closure mappings, two have explicit trigger-level closure, and
++32 need revalidation, fuller evidence or decisions. This is not a count of all
++later findings. The inventory preserves the conflicting uses of SAF-11.
++Passing the aggregate gate does not close an original finding by itself.
++
++NOREC-0b now models the requested dictionary dispatch and lambda calls, retains
++untyped delegation as unresolved evidence, checks generated dataclass methods in
++the scanner self-scan, and compares normal and conservative compiler scans.
++Three helper conversions replace recursion in safety integer-literal extraction,
++backend mutation-base extraction and symbol-table dumping. The scanner's known
++recursive groups shrink from 31 to 28. Deep helper tests use recursion limit 100;
++they do not qualify deep programs through the entire pipeline. Scanner dynamic
++Python limitations remain documented in `test/norec_scan.py`.
++
++See the [batch evidence](../audits/2026-09-20-v1-foundations/README.md) for final
++verification and independent review. No language contract changed in this batch.
++The memory contract, P-MOD compatibility packet and other grouped packets remain
++unapproved. Typed IR remains behind L23's correctness-first exit. Memory research
++continues through [reconciled workloads and measurement proposals](research/memory/delivery-reconciliation.md),
++without adopting the proposed ordinary/advanced distinction.
+--- a/docs/plan/README.md
++++ b/docs/plan/README.md
+@@ -555,3 +555,10 @@
+   rechecked for this plan.
+ - Package-registry work stays out of scope. Package manifests and locks are limited
+   to reproducible local builds.
++
++
++## Current delivery sequence
++
++The [V1 delivery roadmap](delivery-roadmap.md) reconciles the repaired baseline,
++compiler foundations, grouped decisions and dependency milestones. It preserves
++the full V1 scope and leaves unresolved semantics behind explicit approvals.
+--- a/docs/plan/audit/open-items.md
++++ b/docs/plan/audit/open-items.md
+@@ -241,3 +241,14 @@
+ - NEW: Zig's two backends fail in opposite directions on the same emitted file. The default backend resolves no line numbers inside `__a7_user_main` although objdump decodes them (a gdb-Zig interop failure); with `-fllvm` lines work but the A7 local has no `DW_TAG_variable` at all. A7 identifiers survive the transpile unchanged; file, line and function name are lost. `break __a7_user_main` fails because the symbol is namespaced.
+ 
+ - Incompatible with compiling through Zig, per the same audit: in-place schema migration (M25 will hand raw addresses to C) and live code replacement (needs a patch point in every function; Zig's incremental compilation is still experimental).
++
++
++## NOREC-0b disposition, 2026-09-20
++
++The dictionary dispatch, continuation/delegation, scanner representation and
++conservative-scan cases listed above now have regression tests. Three compiler
++helper cycles were removed after those checks passed. This supersedes the open
++NOREC-0b entry for those specific mechanisms, not the remaining compiler
++conversions or unmodelled Python dispatch. See [batch evidence](../../audits/2026-09-20-v1-foundations/README.md).
++The [49-ID inventory](../../audits/2026-09-20-v1-foundations/critical-high-inventory.md)
++separates original critical/high evidence from broader repair claims.
+--- /dev/null
++++ b/docs/plan/delivery-roadmap.md
+@@ -0,0 +1,132 @@
++# V1 delivery roadmap
++
++The delivery target is the full V1: a qualified compiler, consistent numeric
++semantics, automatic memory management, errors and collections, a fuller standard
++library, structured concurrency, and CPU tensor training and inference.
++Linux x86-64 is the first qualification target. Zig remains the backend.
++GPU execution, a package registry and other platform qualification are excluded.
++
++This roadmap records the user's implementation instruction of 2026-09-20.
++It does not approve unresolved language behavior. The [decision ledger](decisions.md)
++retains explicit integer widths, wrapping integer addition/subtraction/multiplication,
++immutable argument bindings and the source-recursion ban. Historical execution
++batches remain in [execution.md](execution.md); the current reconciliation below
++controls how their old status statements are read.
++
++## Source baseline and evidence
++
++HEAD is `701c67936c70ad2b0608326e23e56cc5d38c9fdb`. The repaired compiler,
++site and research include tracked modifications and untracked files. HEAD alone
++is not the implementation baseline. Preserve the complete working tree when
++creating an isolated checkout. Do not discard or commit unrelated work.
++
++The earlier 2,087-test, 43-example, nine-check result belongs to the
++[GLM remediation snapshot](../../site/docs/audits/glm-5.3-remediation.md).
++The 2,629-test result in the September 19 cleanup report belongs to another
++snapshot. Neither count is a release criterion or a substitute for a fresh run.
++Current source manifests and gate results belong in the
++[delivery evidence](../audits/2026-09-20-v1-foundations/README.md).
++
++## Current disposition of historical claims
++
++This is a reconciliation of the cited findings, not closure of every historical
++audit ID. A repaired trigger does not establish correctness of every related
++language construct. Findings without a fresh reproducer or closure evidence stay
++open in the [audit inventory](audit/open-items.md).
++
++| Historical claim or work item | Current disposition | Evidence or remaining requirement |
++| --- | --- | --- |
++| `a7/` has no uncommitted changes; worktrees can start from HEAD | Superseded | Baseline status and hashes in delivery evidence |
++| Release gate has 11 or 12 known failures | Superseded | Later repair reports and fresh delivery gate |
++| Declaration parse errors silently discard source | Verified fixed for covered regression triggers | `test/test_language_audit_parser_fixes.py` |
++| Branch, loop, call and deferred effects retain stale safety facts | Verified fixed for covered regression triggers | `test/test_audit_safety_repairs.py`; alias/lifetime analysis remains open |
++| Output aliases overwrite source; failures advertise stale artifacts | Verified fixed for covered regression triggers | `test/test_pipeline_artifacts.py` |
++| Imported diagnostics lose origin | Verified fixed for covered regression triggers | `test/test_pipeline_diagnostics.py` |
++| Keyword and loop-capture bindings generate invalid Zig | Verified fixed for covered regression triggers | `test/test_pipeline_native.py` |
++| Constant float remainder differs from runtime | Verified fixed under L33 for covered regression triggers | `test/test_constant_folding_exact.py`; native repair gate |
++| Deep programs pass at recursion limit 100 | Not established | Existing pipeline tests use shallow nesting; scanner retains recursive groups |
++| NOREC-0b dispatch omissions and false positives | Verified fixed for the listed mechanisms | Scanner before/after tests in delivery evidence; dynamic Python limitations remain |
++| File-module design can be implemented from L25-L31 alone | Awaiting a decision packet | Ledger requires compatibility approval; [P-MOD draft](packets/P-MOD-modules.md) now records measured examples and remaining scan work |
++| Typed IR and new proof/emission pipeline can replace current passes | Blocked by correctness-first exit | L23 requires critical/high closure or presented decision packets |
++| Memory revision 3 is the selected contract | Awaiting a decision | Revision 3 is explicitly proposed; copies, views and failures remain disputed |
++| Ordinary and advanced code have different memory promises | Awaiting a decision | M48 proposal is not approval |
++| CPU AI and structured concurrency are qualified | Not implemented or qualified | Contracts, compiler foundations and workload thresholds remain prerequisites |
++
++## Compiler foundation sequence
++
++1. Repair NOREC-0b scanner omissions and false positives before conversions.
++   Keep its limitations explicit. Remove confirmed recursion from compiler
++   helpers with output-preservation and deep-input tests. Never expand an
++   exception list to accommodate new recursive compiler code.
++2. Reproduce each remaining critical/high finding. Give every parser-supported
++   form executable behavior or a deliberate diagnostic. Complete module,
++   specialization, reference and diagnostic correctness within approved scope.
++3. Finish iterative parser, passes, type operations, AST handling and emission.
++   Exit requires empty recursive-group, deepcopy and generated-method lists,
++   plus deep full-pipeline programs at recursion limit 100.
++4. After L23's exit, introduce declaration identities, typed IR, explicit
++   evaluation order, CFGs and effect summaries. Run new proof and emission
++   beside the current pipeline. Compare diagnostics and native behavior across
++   supported programs before replacement.
++5. Add one optimization at a time. Verify observable behavior before accepting
++   performance measurements.
++
++## Grouped decision packets
++
++Each packet needs current behavior, proposed behavior, runnable examples,
++compatibility impact, rejected alternatives and independently stated acceptance
++tests. Record the user's disposition in the ledger before dependent changes.
++A rejected packet pauses only its dependent work and requires a revised proposal.
++
++| Packet | Contract to settle |
++| --- | --- |
++| Numerics | Signed overflow edges, negation, shifts, mixed types, casts, sizes, IEEE details and constant/runtime agreement |
++| Modules and generics | Approved file-module direction, qualified types, visibility, cycles, specialization and identities |
++| Composite values and errors | Payload matching, optionals, results, propagation, initialization, equality and recovery |
++| Source and tooling | Encoding, unfinished comments, unsupported syntax, commands, diagnostics and versioning |
++| Memory | Copying, aliasing, lifetime inference, resource cleanup, failure behavior and runtime checks |
++| Concurrency and native calls | Task lifetime, sharing, cancellation, channels, ABI ownership and cleanup |
++| CPU AI | Shapes/dtypes, differentiation, mutation, kernels, checkpoints and workload thresholds |
++| Release | Profiles, pinned toolchain, compatibility, supported environment and safety claims |
++
++## Dependency milestones
++
++| Milestone | Implementation | Acceptance |
++| --- | --- | --- |
++| Usable core | Approved numerics, modules, generics, errors, commands and minimal input/files/arguments | Multi-file calculator or VM and interactive CLI through installed tooling |
++| Automatic memory and collections | Approved ownership/effects, cleanup, strings, lists/maps, placement and reuse | Independent memory corpus and approved rewrite/cost budgets |
++| Standard library and native boundary | Recoverable text/file/path/time/random/process operations, native descriptors and generated bindings | Actual failure recovery, ABI checks and cleanup |
++| Structured concurrency | Approved tasks, joins, cancellation, channels and sharing rules | Worker pool shutdown, race, blocking and failure scenarios |
++| CPU AI | Reference kernels, reverse-mode autodiff, native numeric libraries, mixed precision and complete training state | Classifier and decoder training, checkpoint recovery and inference under approved thresholds |
++| V1 qualification | Integrated applications, docs, packaging, compatibility and security review | All criteria pass at one identified Linux x86-64 source state |
++
++Introduce replacement memory facilities before removing existing forms. Migrate
++examples only after compatibility approval and before/after behavior checks.
++Version public commands, language/library APIs, native contracts and checkpoint
++formats before release.
++
++## Memory research and qualification controls
++
++Use the [memory reconciliation](research/memory/delivery-reconciliation.md)
++before commissioning more advice. Compare static ownership and regions,
++compiler-inserted copies, uniqueness-based reuse and automatic placement.
++Reference counting and tracing are comparison baselines, not approved designs.
++Do not infer count-free reuse from Perceus or unrestricted in-place behavior
++from FP². Prototype disputed mechanisms in isolation after freezing workload
++specifications and proposed budgets.
++
++Pair unsafe programs with valid guarded controls. Exercise actual diagnostics,
++artifacts, execution and recovery. Compare constants and runtime boundary values
++across supported build profiles. Include modules/generics, cleanup/errors,
++collections/aliasing and tasks/tensors combinations.
++
++Before AI qualification, freeze recipes, data provenance, seeds, tolerances,
++quality targets and resource budgets. Keep HTML, Markdown, manifests, search,
++examples and agent exports synchronized, with stale-export checks. Complete
++responsive, keyboard, accessibility, failure-state and agent-retrieval checks.
++
++Each substantive batch receives independent verification and a GLM-5.3 review
++through OpenCode. Preserve findings and provider failures. Verify advisory
++findings locally. The final gate includes clean installation, artifact provenance
++and security review. Publish only claims supported by that identified source state.
++Use dependency milestones rather than calendar promises.
+--- /dev/null
++++ b/docs/plan/research/memory/delivery-reconciliation.md
+@@ -0,0 +1,171 @@
++# Memory research reconciliation and measurement proposal
++
++Status: draft, 2026-09-20. This is preparation for a memory decision packet,
++not a completed packet or an approved contract. No candidate has been measured
++under this protocol. Numeric budgets below are proposals. They do not qualify
++A7, approve language changes, or replace the user's memory requirements.
++
++## Decisions still open
++
++The [ledger](../../decisions.md) records the user's requirements. The
++[memory plan](../../memory.md) is revision 3 and explicitly unapproved. Its
++M48 entry reports a suggested ordinary/advanced split. This draft does not adopt
++that split. Measure the whole corpus, including resources, tasks and tensors.
++
++| Question | Existing evidence | Current disposition |
++| --- | --- | --- |
++| Reject escapes or insert copies | The [synthesis](synthesis.md) records advisors rejecting unproved escapes without hidden copies. Later plan revisions instead copy escaping values. | Compare both outcomes. Neither is consensus or approval. |
++| Can Perceus establish a count-free design | The [reuse study](reuse-languages.md) separates static drop/reuse placement from runtime uniqueness checks. | It cannot establish that result. RC remains a comparison baseline. |
++| Does FP² settle static reuse | The same study distinguishes function-definition checks from call-site sharing. It records uniqueness typing with specialization costs and Koka's runtime fallback. | A7 still needs a call-site mechanism and evidence for its restrictions. |
++| Optional copies or temporary lookup views | [Review reconciliation](review/README.md) and memory-plan section 10 record Qwen and GLM performance/consistency preferring views. M33 still proposes copies. | Keep both candidates and measure read-heavy and nested-update programs. |
++| Recoverability | Reviews disagree between extent boundaries and fallible signatures. | Specify observable recovery before choosing syntax or lifetime rules. |
++| Tensor lifetime boundaries | Reviews disagree between tensor-specific structural rules and simpler call/iteration/task boundaries. | Trace actual training state and failure paths before choosing. |
++| Stored function values | Reviews disagree over type-informed call edges and exclusion. | Resolve jointly with recursion and effect-summary rules. |
++| Simplicity | The plan acknowledges that tables, ids and move-only resources introduce concepts. No decision says L19 overrides L17 or permits exempting advanced code. | Count concepts and rewrites without exempting any workload category. |
++| C-like performance | [GLM performance](review/glm-performance.md) identifies copy fallback, retention and baseline bias. Its margins were proposals. | Freeze budgets and baseline procedures before measuring candidates. |
++
++The [fact check](functional-memory-fact-check.md) labels several claims unchecked.
++The [review index](review/README.md) records completed historical reviews of
++revision 2, followed by revision 3 changes. The security review compiled and ran
++nothing. Those reports establish questions and design risks, not current native
++safety or performance.
++
++## Primary-source check, 2026-09-20
++
++Perceus inserts reference-count operations and uses runtime uniqueness information
++for reuse. Its results do not establish a reference-count-free A7 design.
++See the [Perceus paper, sections 1 and 2](https://www.microsoft.com/en-us/research/uploads/prod/2021/06/perceus-pldi21.pdf).
++
++FP² checks function definitions, but safe destructive calls also require sharing
++information at call sites. Section 1.4 compares static uniqueness typing with the
++runtime reference-count checks used by its Koka implementation. These are distinct
++mechanisms, not evidence that arbitrary A7 programs can update in place.
++See the [FP² paper, section 1.4](https://www.microsoft.com/en-us/research/wp-content/uploads/2023/05/fbip.pdf).
++
++## Candidate comparison requirements
++
++Compare each mechanism in isolation where possible, then compare combinations.
++Do not label the proposed layer stack the selected architecture before approval.
++
++| Candidate | Evidence required |
++| --- | --- |
++| Static ownership and region inference | Accepted programs, required lifetime restrictions, release points, retained bytes, branch/loop/call behavior and rejection diagnostics. |
++| Compiler-inserted copying | Copy locations and byte counts, alias semantics, failed-allocation behavior, peak memory and proof failures that caused a copy. |
++| Static uniqueness and reuse | Definition and call-site proofs, invalidation by aliases, specialization count, generated-code size, missed reuse and runtime cost. |
++| Automatic placement and packing | Placement determinism, alignment, live-range interference, dynamic-size handling, planner bounds and cleanup of non-memory resources. |
++| Reference counting baseline | Count operations, header space, cyclic-data policy, atomic operations where required, pause/teardown distribution and adaptive reuse. Not an approved A7 mechanism. |
++| Tracing baseline | Heap reserve, collection work, pauses, peak memory, roots and resource cleanup policy. Not an approved A7 mechanism. |
++
++For every candidate, report unmodified accepted cases, rejected cases, required
++programmer rewrites, new concepts, copies, allocations, peak memory, execution
++cost and compiler cost. Do not replace a rejected case with a rewritten case in
++the aggregate result. Report both. Separate runtime allocation and checks from
++compile-time reasoning.
++
++## Workload specifications
++
++These requirements describe application behavior without prescribing A7 syntax,
++ownership, reference counts, tables, region boundaries or hidden copies. Proposed
++A7 examples belong in the later decision packet. Each workload needs a positive
++case and the stated invalid or failure case.
++
++| ID | Program and deterministic input | Independently stated outputs and invariants |
++| --- | --- | --- |
++| W1 | Grow a sequence by appending integers 0 through 9,999. Keep a logical reference to the item whose stable application key is 123. | Length 10,000, sum 49,995,000, key 123 still identifies value 123 after growth. An access to a missing key reports absence. The implementation must explain any required rewrite to preserve that application identity. |
++| W2 | Nested invoice data starts with row values `[2, 3]`. Two application paths intentionally identify the same row. Increment the first element by 5 through one path. Separately create a historical snapshot before that update. | Both live paths read `[7, 3]`; the historical snapshot reads `[2, 3]`. Preserve the distinction between shared identity and a requested snapshot. Any candidate unable to express it must report rejection or a rewrite. |
++| W3 | Build nodes 0 through 3 with edges `0→1`, `1→2`, `2→0`, `2→3`. Traverse from 0 with visited-node tracking; remove node 1 and its incident edges. | Initial traversal visits four distinct keys with sum 6. Afterwards, node 1 is absent, traversal from 0 visits only 0, and nodes 2 and 3 remain stored. Releasing the graph leaks no storage. The cycle is data, not recursive execution. |
++| W4 | A producer creates records with keys 0 through 999 and values twice their keys. It returns the records whose keys are multiples of 3. Consume them after the producer has finished. | 334 records, first key 0, last key 999, value sum 333,666. No result depends on dead producer storage. A local scratch buffer that was not returned does not remain live indefinitely. |
++| W5 | Capacity-three least-recently-used cache receives keys `A,B,C,A,D,B`; a miss loads the key's ASCII value. Repeat the pattern from an empty cache. | First pass has 5 misses and 1 hit, sum of all six returned values 397, final most-recent-first keys `B,D,A`. Occupancy never exceeds 3. A repeated fixed-size request stream reaches bounded steady-state memory. |
++| W6 | Process three records using a resource that counts opens/closes. Inject a write failure on record 2, release that attempt's resources, then retry all records into a fresh output. Also inject failure before the second acquisition completes. | The successful output contains records 1, 2, 3 exactly once. Every successful acquisition has exactly one release. Failed acquisitions are not released as if successful. Active resources return to zero on every exit; failure remains observable and retry succeeds. |
++| W7 | Worker pool handles jobs 0 through 99, each returning its square. Then test shutdown with one active job and queued jobs using deterministic scheduling barriers. | Successful run produces 100 unique results with sum 328,350. On shutdown every accepted job has exactly one terminal outcome, completed or cancelled. No job continues after shutdown returns, no queued payload leaks, and blocked waiters wake. |
++| W8 | Read source bytes `alpha\nbeta\nalpha\n`. Retain the second field past completion of the parsing function and count all words. Test invalid UTF-8 separately under the eventual encoding contract. | Retained field is `beta`; counts are `alpha=2`, `beta=1`. The retained data remains valid. The encoding case must have a specified diagnostic or byte-preserving result before execution is graded; this draft does not settle source/text encoding. |
++| W9 | Tensor-like numeric storage holds `[1,2,3,4]`. Read the middle two elements through a logical view, then update the underlying second element to 20 and read the view again. Separately compute `y=sum(x*x)` for `x=[2,3]`, retain the forward state, mutate the current application input, then request gradients of the recorded forward computation. | View reads `[2,3]`, then `[20,3]` when shared-view behavior is requested. Forward value is 13 and its recorded-input gradient is `[4,6]`. A candidate may reject unsupported mutation, but must not silently return a gradient for a different forward computation. Record the rejection and the required rewrite. |
++| W10 | Save state containing parameters `[1,2]`, optimizer step 7 and RNG state 42. Load it, and inject truncation at each field boundary plus failure during the data phase. | Valid round trip preserves every field exactly. Failed load leaves the prior usable state unchanged or explicitly invalidates it so execution cannot consume partial state. Never report success after a partial load. The choice between rollback and explicit invalidation remains a decision. |
++
++W9 is a small correctness workload, not classifier or decoder qualification.
++Both full training recipes still need independently specified data provenance,
++seeds, quality targets, tolerances, optimizer state and checkpoint behavior.
++W10 specifies state integrity without approving a checkpoint format.
++
++## Proposed measurement procedure
++
++1. Freeze workload requirements, input generators, output oracles and candidate
++   acceptance rules before implementation. An independent reviewer derives
++   expected results from these specifications. Do not copy expectations from a
++   candidate's diagnostics.
++2. Name and record the Linux x86-64 machine, CPU, RAM, kernel, power policy,
++   toolchains, flags, allocator and numeric-library versions. Pin versions and
++   record source revision plus working-tree patch. The machine is not selected
++   by this document.
++3. Have independent authors implement C or Zig baselines from the specifications,
++   without using candidate implementations as templates. Match observable
++   behavior, including identity, bounds/failure handling and numeric strictness.
++   Review baseline competitiveness. For cache, tasks and training, use two
++   independently authored baselines and record both results.
++4. Freeze the selected budgets before any performance baseline runs. Preserve
++   exploratory runs, but do not select budgets after seeing their results.
++5. Separate compilation, warmup and measurement. Propose 5 warmup runs and 30
++   measured fresh-process runs per workload/profile, alternating baseline and
++   candidate order. Record all samples, median and p95. Keep checksums outside
++   timed loops. Explain workloads too short for stable timing and scale their
++   input before the measurement series.
++6. Measure wall time, peak RSS, peak live allocated bytes, allocation count,
++   copied bytes, release time, compiler wall time, compiler peak RSS and emitted
++   code size. Record proof failures and degraded analysis. Instrumented runs
++   measure counts; separate uninstrumented runs measure time.
++7. Run native Debug and ReleaseFast correctness checks. Run allocator/sanitizer
++   checks separately and state coverage limits. Compile-only rejections and hand
++   traces do not count as native execution. Verify inferred releases and generated
++   cleanup at Python recursion limit 100 without introducing recursive analyses.
++8. For bounded request/cache/resource workloads compare N=10,000 with
++   10N=100,000 iterations using fixed per-iteration input size and bounded state.
++   Report both RSS and live allocated bytes so allocator caching cannot conceal
++   retained live values. Test cleanup after failures as well as successful exits.
++9. Hand-trace a complete classifier and decoder training step before selecting
++   copying or reuse. Include saved values, updates, views, shared parameters,
++   optimizer state, failure cleanup and checkpoint peaks. Native workload
++   qualification follows implementation and approved thresholds.
++
++## Proposed budgets, not approved
++
++These numbers make the proposed experiment falsifiable. They are starting
++proposals, not measurements or claims that the requirements are achievable.
++Ratios compare equivalent work against the independently reviewed baseline.
++
++| Measure | Proposed budget |
++| --- | --- |
++| W1-W7 median execution time | At most 1.25 times baseline; p95 at most 1.50 times baseline. |
++| W8 text processing | Median at most 1.50 times baseline; peak live allocated bytes at most 2.0 times baseline. The looser allowance needs explicit approval. |
++| W1-W7 peak live allocated bytes | At most 1.25 times baseline, allowing an additive 1 MiB floor for small cases. |
++| W1-W8 allocation count | At most 1.5 times baseline plus 16 allocations per process. Report counts even when the baseline performs zero allocations. |
++| W5/W6 steady-state retention | Peak live bytes at 10N no greater than peak at N plus 1 MiB; active resources exactly zero after each completed attempt. Report RSS growth separately, with a proposed maximum increase of 8 MiB. |
++| W9 reuse on a proven unique, fixed-size repeated update | Zero additional payload allocations after warmup. Always report copied bytes; no claim of eliminated copying without measured byte counts. |
++| W10 same-shape load peak | At most 1.30 times the equivalent baseline's peak live bytes plus 1 MiB. Shape-changing load needs a separate budget. |
++| Prototype analysis cost | On a frozen 10,000-statement corpus, at most 2.0 times compiler baseline time and peak RSS. On 100,000 statements, time and peak RSS each at most 15 times the 10,000-statement result. Report absolute values and recursion-limit-100 behavior. |
++| Simplicity | Report every memory-caused rejection and rewrite. Proposed target is zero memory-specific annotations or rewrites for W1-W8 and zero silent semantic changes for any case. A miss is a requirement conflict, not permission to recategorize the program. |
++
++Correctness, data integrity and cleanup have no tolerated failures. An unsafe
++acceptance or incorrect native result rejects that candidate implementation.
++Exceeding a proposed performance or simplicity budget, once approved, blocks that
++candidate's qualification for the affected workload. Record the miss, investigate
++it, and present a design change or explicit requirement decision. Do not loosen
++the budget retrospectively, omit the workload, or add runtime mechanisms silently.
++
++The small tensor budget does not set classifier/decoder quality or throughput
++thresholds. Those remain unmeasured and unapproved. No current result demonstrates
++the complete combination of Python-like simplicity, no tracing or counting,
++and C-like performance and memory use across this corpus.
++
++## Prerequisites and next packet
++
++Stable declaration/storage identities, typed control flow, explicit evaluation
++order, call-effect summaries and specialization evidence precede production
++release placement or copy removal. Memory-plan M29 requires adversarial checks
++for branch joins, loop back edges and call effects. A prototype must remain
++isolated until those prerequisites and the relevant contract are approved.
++
++The eventual decision packet must show current behavior, candidate behavior,
++runnable examples, measured results, rejected alternatives, compatibility impact
++and acceptance tests. Its unresolved decisions include alias/copy semantics,
++permitted runtime machinery, recovery, simplicity, budgets and migration order.
++Add replacement facilities before removing existing forms, subject to approval.
+--- a/docs/STATUS.md
++++ b/docs/STATUS.md
+@@ -34,6 +34,8 @@
+ 5. Finish generic specialization before broad cross-module generic workflows.
+ 6. Add workflow commands: `a7 check`, `a7 build`, `a7 run`, `a7 doctor`, and
+    `a7 --version`.
++7. Finish iterative compiler traversal. Three helper cycles are removed; the
++   full pipeline still contains recursion. See the [delivery roadmap](plan/delivery-roadmap.md).
+ 
+ ## Known Gaps
+ 
+--- a/docs/CHANGELOG.md
++++ b/docs/CHANGELOG.md
+@@ -4,6 +4,11 @@
+ belong in git history, not in long Markdown logs.
+ 
+ ## Unreleased
++
++- Replace recursion in integer-literal extraction, mutation-base analysis and
++  symbol-table dumps with iteration. Strengthen the internal recursion scanner
++  for dispatch dictionaries and deferred callbacks. Full compiler conversion
++  remains in progress.
+ 
+ - Reject malformed declarations without dropping source, and report malformed
+   numeric separators and unsupported ellipses as tokenizer errors.
+--- /dev/null
++++ b/docs/plan/packets/P-MOD-modules.md
+@@ -0,0 +1,323 @@
++# P-MOD: file modules and compatibility
++
++Status: draft for user decision, 2026-09-20. L25-L31 establish the file-module
++and underscore-visibility direction. They do not approve every compatibility
++change below. No module implementation changed during packet preparation.
++
++Current source fixtures, commands and results are preserved in the
++[module probe evidence](../../audits/2026-09-20-v1-foundations/module-packet-probes/results.json).
++This packet is not ready for implementation approval until its compatibility
++scan and remaining identity/initialization questions are resolved.
++
++## Approved direction and unresolved details
++
++The [ledger](../decisions.md), L25-L31, establishes these rules:
++
++- A file is a module. Access another file's names through its import alias.
++- Importing the same file twice in one file is an error, including alternate
++  spellings or aliases. Different files can import the same module.
++- Top-level `_name` is private; other top-level names are public. `__name` is
++  reserved for the compiler.
++- A local cannot reuse an import alias. Struct fields remain visible across files.
++- Resolve imports relative to the importing file. `..` cannot escape the main
++  file's folder.
++- Bare stdlib names such as `"io"` and `"math"` remain reserved for the stdlib.
++
++The [MOD design](../execution.md#module-design-mod) additionally proposes uniform
++module scopes, qualified types, iterative loading, cycle rejection and one Zig
++struct per module. This packet separates those proposals from current behavior.
++
++Here, a *bare import statement* means `import "helper"` without an alias. It is
++not the approved stdlib shorthand `io :: import "io"`.
++
++## Current behavior measured for this packet
++
++Eleven small fixtures contain only integer constants, integer-returning functions
++and printing. All native builds ran serially with Zig Debug. Seven fixtures built
++and ran. Two reached Zig and failed; two failed before Zig. Compiler Python file
++hashes remained unchanged. No ReleaseFast or corpus-wide compatibility scan ran.
++
++| Fixture | A7 exit | Zig exit | Native stdout | Proposed effect |
++| --- | --- | --- | --- | --- |
++| `public_qualified` | 0 | 0 | `7` | Preserve qualified public calls. |
++| `private_qualified` | 0 | 0 | `7` | Reject cross-file `_value` access, even if marked `pub`. |
++| `unqualified_leak` | 0 | 0 | `7` | Reject leaked `VALUE`; require `h.VALUE`. |
++| `reserved_name` | 0 | 0 | `9` | Reject the user binding `__user_value`, if reservation covers locals. |
++| `alias_local` | 0 | 0 | `9` | Reject local `h` that reuses import alias `h`. |
++| `directory_fallback` | 0 | 0 | `7` | Reject implicit `pkg/mod.a7` fallback under the recommendation below. |
++| `bare_import` | 0 | 0 | `1` | Reject alias-free import statements under the recommendation below. |
++| `named_import` | 0 | 1 | Not run | Replace generated-Zig failure with a deliberate unsupported-form diagnostic. |
++| `using_import` | 5 | Not run | Not run | Keep unsupported; provide a direct diagnostic and alias rewrite. |
++| `sibling_call` | 0 | 1 | Not run | Make a module's call to its own helper work. |
++| `duplicate_aliases` | 6 | Not run | Not run | Keep rejection; identify duplicate canonical module instead of leaked-name collisions. |
++
++Six additional compiler-only probes from the independent review were rerun by
++the controller. No native builds ran for these failing inputs. Their
++[results](../../audits/2026-09-20-v1-foundations/module-packet-probes/controller-verification.json)
++and [complete sources and outputs](../../audits/2026-09-20-v1-foundations/module-packet-probes/reviewer-source-results.tar.gz)
++record the following gaps.
++
++| Fixture | A7 exit | Current diagnostic |
++| --- | --- | --- |
++| `depth2`, `depth5` | 6 | A non-entry module's qualified call reports an undefined import alias. |
++| `iso_const` | 6 | A non-entry module's qualified constant access reports undefined `b`. |
++| `iso_type` | 6 | An imported file's qualified field type produces `Expected IDENTIFIER, got DOT`. |
++| `pip18` | 6 | A global binding reused as an import alias fails later field/type checks, without a direct alias-clash diagnostic. |
++| `mth12` | 5 | A module-qualified struct literal produces `Expected type`. |
++
++These failures establish the tested cases, not a claim that every import chain
++of length two or greater fails. Loading an unused dependency and using a name
++through that dependency are separate requirements.
++
++These are measured compatibility witnesses, not counts of all affected programs.
++The original import-cycle probe now exits 6, while the original 1,100-module chain
++still exits 8 with `RecursionError`. Separate evidence is in
++[the original-probe results](../../audits/2026-09-20-v1-foundations/original-probes/results.json).
++
++## Concrete examples
++
++Each example lists complete file contents. Current measurements refer to the
++named fixture above. Proposed sources are complete acceptance fixtures for the
++future implementation; they are not claimed to execute correctly today.
++
++### Public access and the `pub` transition
++
++Current `public_qualified`, prints `7`:
++
++```a7
++// helper.a7
++pub value :: fn() i32 { ret 7 }
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++h :: import "helper"
++main :: fn() { io.println("{}", h.value()) }
++```
++
++Proposed canonical `helper.a7`, with the same `main.a7` and output:
++
++```a7
++value :: fn() i32 { ret 7 }
++```
++
++Recommendation: retain `pub` as a redundant accepted marker for V1. It never
++changes underscore visibility. `pub _value` stays private. Do not warn on stderr
++by default or schedule removal without a separate compatibility decision.
++
++Alternative: reject every `pub` immediately. That forces needless changes to
++working public declarations. Retaining `pub` as an access-control override is
++rejected because it contradicts L27.
++
++### Private access and leaked globals
++
++Current `private_qualified`, prints `7`:
++
++```a7
++// helper.a7
++pub _value :: fn() i32 { ret 7 }
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++h :: import "helper"
++main :: fn() { io.println("{}", h._value()) }
++```
++
++Proposed: reject `h._value()` at that access with a private-declaration diagnostic.
++If cross-file access is intended, rename `_value` to `value` in both files. If it
++is internal, expose a public wrapper in `helper.a7` that calls `_value` there.
++The wrapper behavior also requires the sibling-call repair below.
++
++Current `unqualified_leak` uses these files and prints `7`:
++
++```a7
++// helper.a7
++VALUE :: 7
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++h :: import "helper"
++main :: fn() { io.println("{}", VALUE) }
++```
++
++Proposed: reject the unqualified `VALUE`; replacing it with `h.VALUE` prints `7`.
++No compatibility alias should keep imported declarations in the caller's scope.
++
++### Alias and reserved-name conflicts
++
++Current `alias_local` prints `9`:
++
++```a7
++// helper.a7
++pub value :: fn() i32 { ret 7 }
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++h :: import "helper"
++main :: fn() { h := 9; io.println("{}", h) }
++```
++
++Proposed: reject the local declaration of `h`, with both declaration locations.
++Rename the local to `count`; then the output remains `9`.
++
++Current `reserved_name` prints `9`:
++
++```a7
++io :: import "std/io"
++main :: fn() {
++    __user_value := 9
++    io.println("{}", __user_value)
++}
++```
++
++Proposed: rename the binding to `user_value`, preserving output. Recommendation:
++reject `__` names at every user declaration site, including locals, parameters,
++fields and import aliases. The ledger clearly reserves the prefix but the full
++site coverage and rejection of existing working programs need this disposition.
++Do not silently mangle user `__` names into allowed names.
++
++### Module-internal calls and qualified types
++
++Current `sibling_call` exits 0 in A7 but Zig reports an undeclared helper:
++
++```a7
++// helper.a7
++helper :: fn() i32 { ret 7 }
++pub value :: fn() i32 { ret helper() }
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++h :: import "helper"
++main :: fn() { io.println("{}", h.value()) }
++```
++
++Proposed: the same files build and print `7`; `helper()` resolves inside its own
++file. No flattened-prefix workaround belongs in A7 source.
++
++Proposed complete qualified-type fixture:
++
++```a7
++// geometry.a7
++Point :: struct { x: i32 }
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++g :: import "geometry"
++main :: fn() {
++    p: g.Point = g.Point{x: 7}
++    io.println("{}", p.x)
++}
++```
++
++Expected output is `7`. This proposed fixture has not been compile-qualified.
++Struct/enum/union identity includes its declaring module, so another file's
++`Point` is a different type even with identical fields. Imported fields remain
++visible under L29. Qualified generic types need separate instantiation evidence.
++
++### Import forms and directory lookup
++
++Current `directory_fallback` prints `7` with `pkg/mod.a7` containing the same
++`pub value` function as above and this main file:
++
++```a7
++io :: import "std/io"
++h :: import "pkg"
++main :: fn() { io.println("{}", h.value()) }
++```
++
++Recommendation: remove implicit directory fallback. Rewrite the import as
++`h :: import "pkg/mod"`, retaining an ordinary file module. This explicit-path
++rewrite is proposed and has not been run in this packet. Keeping fallback is a
++possible compatibility alternative, but makes `"pkg"` ambiguous when both
++`pkg.a7` and `pkg/mod.a7` exist. If retained, precedence must be specified.
++
++Current `bare_import` prints `1`:
++
++```a7
++// helper.a7
++pub value :: fn() i32 { ret 7 }
++```
++
++```a7
++// main.a7
++io :: import "std/io"
++import "helper"
++main :: fn() { io.println("1") }
++```
++
++Recommendation: accept only aliased file imports. Rewrite the middle line as
++`h :: import "helper"`; the program must still print `1`. Reject named imports
++such as `import "helper" { value }` and `using import "helper"` with a direct
++unsupported-form diagnostic. Their rewrite is an alias plus qualified uses.
++Keeping named imports as copied local bindings would undermine the approved
++always-qualified access rule.
++
++## Remaining decisions requested
++
++| Item | Recommendation | Compatibility impact and alternative |
++| --- | --- | --- |
++| M-PUB | Accept existing `pub` as redundant throughout V1; underscore wins. | Working public files remain accepted. Alternative is immediate removal. |
++| M-RESERVED | Reject user `__` declarations at all binding/declaration sites. | The measured local example stops compiling. Alternative is a narrower top-level-only reservation, with additional collision handling. |
++| M-FORMS | Reject bare, named and `using` file imports; require aliases. | The measured bare-import program stops compiling. Named/using examples measured here already fail before native execution. |
++| M-DIRECTORY | Remove `x/mod.a7` fallback; permit explicit `x/mod` file paths. | The measured fallback program needs its path changed. Alternative retains fallback with an explicit precedence rule. |
++| M-DEPTH | Maximum longest import chain is 32 edges; the entry file has depth 0. Check with an iterative graph algorithm and report the offending chain. | The tested two- and five-edge chains already fail qualified use in non-entry modules. A 32-edge cap could additionally reject currently accepted graphs; no complete scan identifies those graphs yet. Alternative is no semantic depth limit with separate finite resource budgets. |
++| M-BOUNDARY | Approve measured compatibility breaks from L25-L31: private cross-file access, leaked unqualified names and local alias shadowing. | Measured working programs need the explicit rewrites above. Approved direction is preserved; this records its concrete breaking effects. |
++
++Cycle rejection is already current behavior for the tested cycle. Preserve it,
++with a complete chain and relevant import spans. Imports are not re-exported;
++`a.b.value` must not expose `b` merely because `a` imports it. This rule is in the
++proposed MOD design and needs coverage in compatibility review.
++
++Proposed internal layout is one Zig struct per module, including the entry file,
++with a root `main` trampoline and deterministic discovery order. Generated names
++are not proposed as a public ABI. Keeping single-file programs flat would create
++two lowering paths. Layout is an implementation choice, but the compatibility
++scan must identify tooling that relies on current emitted names. This packet
++does not settle a native ABI or module initialization order; observable
++initializer ordering needs concrete examples before any affected change.
++
++## Acceptance and compatibility evidence still required
++
++1. Execute every proposed positive fixture through installed tooling in Debug
++   and ReleaseFast. Compare stdout, stderr and exit codes with the stated result.
++   Each negative fixture must fail before Zig output with both use and declaration
++   locations where relevant.
++2. Scan existing working examples/tests and recorded user programs before changing
++   semantics. Report programs changed by private names, `pub`, `__`, import forms,
++   local and global alias clashes, realpath duplicates, directory lookup and depth. These eleven
++   probes are not that scan. Do not treat programs that only pass A7 as working
++   unless their Zig build and defined native behavior also pass.
++3. Verify separate files can use the same private helper/type names without leaks
++   or collisions. Check cross-module calls for arity, argument/result types and
++   generic specialization. Reject interchange of same-spelled distinct types.
++4. Verify duplicate canonical imports through `./`, `..` and symlinks, plus a
++   diamond whose different importing files share one dependency. State hardlink
++   identity policy before claiming every same-file spelling is covered.
++5. Verify relative imports from nested importers, permitted `..`, and rejection
++   of paths or symlinks that escape the root folder. Preserve bare stdlib names
++   and `std/` names. Do not introduce a local-file override for `io` or `math`.
++6. Test direct and indirect cycles, chain depth 31/32/33, diamonds with different
++   path lengths, and a deep acyclic input at Python recursion limit 100. No
++   `RecursionError`, repeated module compilation or recursion scanner exception.
++7. Check semantic, compile, pipeline and doc modes use the same module graph and
++   origin information. Retain source/output alias protections for every loaded
++   file and truthful artifact reporting after failure.
++8. Compare deterministic emitted Zig under different hash seeds and checkout
++   paths. Check entry-file `main`, non-entry `main`, qualified generics and module
++   helper calls against native outputs. Do not expose internal generated names
++   as stable public contracts.
++
++Approval should record the selected M-* dispositions in the ledger. Any declined
++item pauses its dependent change. The packet does not approve memory, numeric,
++concurrency or native-ABI semantics.

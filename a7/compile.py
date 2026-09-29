@@ -83,6 +83,8 @@ class CompilationResult:
     output_path: Optional[str] = None
     doc_path: Optional[str] = None
     failure: Optional[FailureInfo] = None
+    # Sources read by this compilation, reused by native output protection.
+    input_paths: list[str] = field(default_factory=list)
 
 
 class A7Compiler:
@@ -147,8 +149,16 @@ class A7Compiler:
                     compiler_error=CompilerError(f"Expected .a7 file, got: {input_path}"),
                 )
 
-            if self.mode == CompileMode.COMPILE:
-                result.output_path = output_path or self._generate_output_path(input_path)
+            compile_output = (
+                output_path or self._generate_output_path(input_path)
+                if self.mode == CompileMode.COMPILE else None
+            )
+            doc_output = self.doc_path
+            if doc_output == "auto":
+                doc_output = str(input_file.with_suffix(".md"))
+            loaded_modules = []
+            input_files = [input_path]
+            result.input_paths = input_files
 
             try:
                 with open(input_path, "r", encoding="utf-8") as f:
@@ -242,12 +252,25 @@ class A7Compiler:
                         str(Path(__file__).parent.parent / "stdlib"),
                     ]
                 )
+                entry_errors: list[Any] = []
+                for declaration in ast.declarations or []:
+                    if declaration.kind != NodeKind.FUNCTION or declaration.name != "main":
+                        continue
+                    if declaration.parameters or declaration.return_type is not None:
+                        entry_errors.append(SemanticError(
+                            "Executable entry point main must have no parameters and no return value",
+                            span=declaration.span, filename=str(input_path), source_lines=source_lines,
+                        ))
                 import_errors: list[Any] = []
                 try:
                     loaded_modules = module_resolver.load_program_dependencies(ast, str(input_path))
-                except SemanticError as e:
+                except CompilerError as e:
                     import_errors.append(e)
                     loaded_modules = []
+                input_files.extend(
+                    module.file_path for module in module_resolver.loaded_modules.values()
+                    if not module.file_path.startswith("<")
+                )
                 backend_import_errors: list[Any] = []
                 codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
                 if not import_errors and self.mode in codegen_modes:
@@ -273,6 +296,9 @@ class A7Compiler:
                 import_ok = len(import_errors) == 0
                 backend_import_ok = len(backend_import_errors) == 0
                 backend_feature_ok = len(backend_feature_errors) == 0
+                if entry_errors:
+                    all_errors.extend(entry_errors)
+                semantic_passes.append({"name": "Entry Point", "ok": not entry_errors, "errors": len(entry_errors)})
                 semantic_passes.append(
                     {
                         "name": "Import Resolution",
@@ -381,6 +407,19 @@ class A7Compiler:
                         semantic_errors=all_errors,
                     )
 
+            # Validate every destination before opening any output file.
+            if ast is not None:
+                destinations = [path for path in (compile_output, doc_output) if path]
+                try:
+                    conflict = self._artifact_path_conflict(input_files, destinations)
+                except (OSError, RuntimeError) as error:
+                    conflict = f"Cannot validate output paths: {error}"
+                if conflict:
+                    return self._finish_with_failure(
+                        result, ExitCode.IO, "io", conflict, start,
+                        compiler_error=CompilerError(conflict),
+                    )
+
             # Stage 4: Preprocess + codegen
             target_code = None
             codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
@@ -433,13 +472,15 @@ class A7Compiler:
 
                 if self.mode == CompileMode.COMPILE:
                     try:
-                        if result.output_path is None:
+                        if compile_output is None:
                             raise CompilerError("Missing output path for compile mode")
-                        out_dir = os.path.dirname(result.output_path)
+                        out_dir = os.path.dirname(compile_output)
                         if out_dir:
                             os.makedirs(out_dir, exist_ok=True)
-                        with open(result.output_path, "w", encoding="utf-8") as f:
+                        with open(compile_output, "w", encoding="utf-8") as f:
                             f.write(target_code)
+                        result.output_path = compile_output
+                        result.codegen_result["output_path"] = compile_output
                     except Exception as e:
                         return self._finish_with_failure(
                             result,
@@ -451,10 +492,7 @@ class A7Compiler:
                         )
 
             # Optional markdown documentation output (can be combined with compile mode)
-            if self.doc_path and ast is not None:
-                doc_output = self.doc_path
-                if doc_output == "auto":
-                    doc_output = input_path.replace(".a7", ".md")
+            if doc_output and ast is not None:
                 try:
                     md_formatter = MarkdownFormatter()
                     md_content = md_formatter.format_compilation_doc(
@@ -502,6 +540,20 @@ class A7Compiler:
             if self.output_format == OutputFormat.JSON:
                 print(json.dumps(self._to_json_payload(result), indent=2))
             return result
+
+    @staticmethod
+    def _artifact_path_conflict(inputs: list[str], outputs: list[str]) -> Optional[str]:
+        """Reject path aliases, including symlinks and existing hard links."""
+        protected = [Path(name) for name in inputs]
+        for name in outputs:
+            destination = Path(name)
+            for other in protected:
+                same_path = destination.resolve() == other.resolve()
+                same_file = destination.exists() and other.exists() and destination.samefile(other)
+                if same_path or same_file:
+                    return f"Output destination conflicts with an input or another output: {name}"
+            protected.append(destination)
+        return None
 
     def _emit_success(self, result: CompilationResult) -> None:
         if self.output_format == OutputFormat.JSON:
@@ -572,27 +624,160 @@ class A7Compiler:
         return f"module_{cleaned}__"
 
     def _annotate_file_module_calls(self, node: Any, aliases: dict[str, str]) -> None:
+        """Mark `X.f(...)` as a call of `f` in the file module imported as `X`.
+
+        Stopgap for audit PIP-1 until the module redesign. The walk keeps an
+        explicit stack of scope frames and leaves `X.f(...)` unmarked when a
+        local binding named `X` is visible at that call: a parameter, a
+        for-loop variable, a match-case identifier pattern, or a local
+        declaration (VAR, CONST, type alias, nested function or type) made
+        earlier in the same or an enclosing frame. A declaration's own
+        initializer is walked before its name is bound.
+
+        Mistakes must lean one way. A missed binding marks the call and
+        silently runs the module function, so every binding form counts,
+        including identifier patterns that later resolve to comparisons.
+        An extra binding leaves the call unmarked; the type checker then
+        rejects it as an unknown module call, and if it reached codegen, Zig
+        would reject `X.f(...)` because import aliases are not Zig
+        declarations.
+        """
         if not aliases:
             return
-        stack: list[Any] = [node]
+
+        binding_decl_kinds = {
+            NodeKind.VAR,
+            NodeKind.CONST,
+            NodeKind.TYPE_ALIAS,
+            NodeKind.FUNCTION,
+            NodeKind.STRUCT,
+            NodeKind.UNION,
+            NodeKind.ENUM,
+        }
+        live_bindings: dict[str, int] = {}
+        frames: list[list[str]] = []
         seen: set[int] = set()
-        while stack:
-            value = stack.pop()
-            if isinstance(value, ASTNode):
-                node_id = id(value)
-                if node_id in seen:
-                    continue
-                seen.add(node_id)
-                if value.kind == NodeKind.CALL and value.function and value.function.kind == NodeKind.FIELD_ACCESS:
-                    obj = value.function.object
-                    if obj and obj.kind == NodeKind.IDENTIFIER and obj.name in aliases:
-                        value.file_module_call = (
-                            self._module_emit_prefix(aliases[obj.name]),
-                            value.function.field or "",
-                        )
-                stack.extend(value.__dict__.values())
-            elif isinstance(value, (list, tuple)):
-                stack.extend(value)
+        # Work items run last-in first-out: ("node", value), ("enter", None),
+        # ("exit", None) or ("bind", name). `schedule` pushes a sequence so it
+        # runs in the given order.
+        work: list[tuple[str, Any]] = [("node", node)]
+
+        def schedule(items: list[tuple[str, Any]]) -> None:
+            work.extend(reversed(items))
+
+        def child_items(value: ASTNode, skip: tuple[str, ...] = ()) -> list[tuple[str, Any]]:
+            return [
+                ("node", child)
+                for field_name, child in value.__dict__.items()
+                if field_name not in skip and isinstance(child, (ASTNode, list, tuple))
+            ]
+
+        def fields(value: ASTNode, names: tuple[str, ...]) -> list[tuple[str, Any]]:
+            return [("node", getattr(value, name, None)) for name in names]
+
+        while work:
+            op, value = work.pop()
+            if op == "enter":
+                frames.append([])
+                continue
+            if op == "exit":
+                for name in frames.pop():
+                    live_bindings[name] -= 1
+                continue
+            if op == "bind":
+                # Top-level names are not locals; only alias names matter.
+                if frames and value in aliases:
+                    frames[-1].append(value)
+                    live_bindings[value] = live_bindings.get(value, 0) + 1
+                continue
+            if isinstance(value, (list, tuple)):
+                schedule([("node", item) for item in value])
+                continue
+            if not isinstance(value, ASTNode) or id(value) in seen:
+                continue
+            seen.add(id(value))
+            kind = value.kind
+
+            if kind == NodeKind.CALL and value.function and value.function.kind == NodeKind.FIELD_ACCESS:
+                obj = value.function.object
+                if (
+                    obj
+                    and obj.kind == NodeKind.IDENTIFIER
+                    and obj.name in aliases
+                    and not live_bindings.get(obj.name)
+                ):
+                    value.file_module_call = (
+                        self._module_emit_prefix(aliases[obj.name]),
+                        value.function.field or "",
+                    )
+
+            if kind == NodeKind.FUNCTION:
+                scoped = ("generic_params", "parameters", "return_type", "body")
+                binds = [
+                    ("bind", item.name)
+                    for item in list(value.generic_params or []) + list(value.parameters or [])
+                ]
+                schedule(
+                    [("bind", value.name), *child_items(value, scoped), ("enter", None), *binds]
+                    + fields(value, scoped)
+                    + [("exit", None)]
+                )
+            elif kind in binding_decl_kinds:
+                schedule([*child_items(value), ("bind", value.name)])
+            elif kind == NodeKind.BLOCK:
+                scoped = ("statements",)
+                schedule(
+                    [*child_items(value, scoped), ("enter", None)]
+                    + fields(value, scoped)
+                    + [("exit", None)]
+                )
+            elif kind == NodeKind.IF_STMT:
+                scoped = ("then_stmt", "else_stmt")
+                schedule(
+                    [*child_items(value, scoped)]
+                    + [("enter", None), ("node", value.then_stmt), ("exit", None)]
+                    + [("enter", None), ("node", value.else_stmt), ("exit", None)]
+                )
+            elif kind == NodeKind.WHILE:
+                scoped = ("body",)
+                schedule(
+                    [*child_items(value, scoped), ("enter", None)]
+                    + fields(value, scoped)
+                    + [("exit", None)]
+                )
+            elif kind == NodeKind.FOR:
+                scoped = ("init", "condition", "update", "body")
+                schedule(
+                    [*child_items(value, scoped), ("enter", None)]
+                    + fields(value, scoped)
+                    + [("exit", None)]
+                )
+            elif kind in (NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED):
+                scoped = ("body",)
+                schedule(
+                    [*child_items(value, scoped), ("enter", None)]
+                    + [("bind", value.index_var), ("bind", value.iterator)]
+                    + fields(value, scoped)
+                    + [("exit", None)]
+                )
+            elif kind in (NodeKind.MATCH, NodeKind.MATCH_EXPR):
+                scoped = ("else_case",)
+                schedule(
+                    [*child_items(value, scoped), ("enter", None)]
+                    + fields(value, scoped)
+                    + [("exit", None)]
+                )
+            elif kind == NodeKind.CASE_BRANCH:
+                binds = [
+                    ("bind", pattern.name)
+                    for pattern in value.patterns or []
+                    if isinstance(pattern, ASTNode)
+                    and pattern.kind == NodeKind.PATTERN_IDENTIFIER
+                    and pattern.name != "_"
+                ]
+                schedule([("enter", None), *binds, *child_items(value), ("exit", None)])
+            else:
+                schedule(child_items(value))
 
     def _combined_program_for_file_modules(
         self,
@@ -796,7 +981,7 @@ class A7Compiler:
         detail: dict[str, Any] = {
             "type": type(err).__name__,
             "message": str(err),
-            "file": file_path,
+            "file": getattr(err, "filename", None) or file_path,
         }
         span = getattr(err, "span", None)
         if span is not None:

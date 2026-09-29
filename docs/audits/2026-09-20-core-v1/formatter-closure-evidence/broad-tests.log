@@ -1,0 +1,19 @@
+..............................F........................................  [100%]
+=================================== FAILURES ===================================
+___________ TestLowRecursionLimit.test_nested_expressions_10_levels ____________
+
+self = <test_iterative_traversal.TestLowRecursionLimit object at 0x7f70ff603230>
+
+    def test_nested_expressions_10_levels(self):
+        """10 levels of nested binary expressions should compile at limit=100."""
+        source = make_nested_expressions(10)
+>       assert compile_source(source) is True
+E       assert False is True
+E        +  where False = compile_source('io :: import "std/io"\n\nmain :: fn() {\n    x := ((((((((((1 + 2) + 3) + 4) + 5) + 6) + 7) + 8) + 9) + 10) + 11)\n    io.println("{}", x)\n}\n')
+
+test/test_iterative_traversal.py:258: AssertionError
+----------------------------- Captured stderr call -----------------------------
+Unexpected error: maximum recursion depth exceeded
+=========================== short test summary info ============================
+FAILED test/test_iterative_traversal.py::TestLowRecursionLimit::test_nested_expressions_10_levels
+1 failed, 70 passed in 2.47s

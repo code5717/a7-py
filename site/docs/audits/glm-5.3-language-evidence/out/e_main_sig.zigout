@@ -1,0 +1,10 @@
+e_main_sig.zig:11:19: error: value of type 'i32' ignored
+    __a7_user_main();
+    ~~~~~~~~~~~~~~^~
+e_main_sig.zig:11:19: note: all non-void values must be used
+e_main_sig.zig:11:19: note: to discard the value, assign it to '_'
+referenced by:
+    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30
+    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20
+    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38
+    2 reference(s) hidden; use '-freference-trace=5' to see all references

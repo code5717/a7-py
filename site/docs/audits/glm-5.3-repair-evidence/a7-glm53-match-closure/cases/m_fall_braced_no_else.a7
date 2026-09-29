@@ -1,0 +1,18 @@
+io :: import "std/io"
+
+main :: fn() {
+    x: i32 = 2
+    match x {
+        case 1: {
+            io.println("a")
+        }
+        case 2: {
+            io.println("b")
+            fall
+        }
+        case 3: {
+            io.println("c")
+        }
+    }
+    io.println("end")
+}

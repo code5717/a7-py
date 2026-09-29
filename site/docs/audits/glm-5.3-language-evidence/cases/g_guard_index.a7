@@ -1,0 +1,13 @@
+io :: import "std/io"
+
+get :: fn(a: [4]i32, i: usize) i32 {
+    if i < 4 {
+        ret a[i]
+    }
+    ret 0
+}
+
+main :: fn() {
+    arr: [4]i32 = [1, 2, 3, 4]
+    io.println("{}", get(arr, 2))
+}

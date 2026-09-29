@@ -1,0 +1,10 @@
+{
+  "path": "tmp/v1-core-implementation-tycajqwt/glm-review-2.jsonl",
+  "sha256": "249e6946ef8873fea046663e9e1a159cc45ba028835e8d233e11f3022d9df33c",
+  "events": 4,
+  "non_json_lines": [
+    2
+  ],
+  "error_events": 0,
+  "scope": "See review-status.md and review-disposition.md; process success is not a qualification verdict."
+}

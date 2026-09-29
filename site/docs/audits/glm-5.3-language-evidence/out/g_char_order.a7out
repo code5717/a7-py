@@ -1,0 +1,39 @@
+
+Found 3 errors:
+
+Error 1/3:
+error: Type mismatch: expected 'char', got 'i32' (Variable 'flag') [line 2: col 
+5]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ main :: fn() {
+   2 ┃     flag: char = 97
+     ┃     └──┘
+   3 ┃     other: char = 98
+   4 ┃     ok := flag < other
+   5 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure the types match or use an explicit cast
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 2/3:
+error: Type mismatch: expected 'char', got 'i32' (Variable 'other') [line 3: col
+5]
+────────────────────────────────────────────────────────────────────────────────
+   1 ┃ main :: fn() {
+   2 ┃     flag: char = 97
+   3 ┃     other: char = 98
+     ┃     └───┘
+   4 ┃     ok := flag < other
+   5 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure the types match or use an explicit cast
+
+────────────────────────────────────────────────────────────────────────────────
+
+Error 3/3:
+error: Operator requires compatible types (lt between char and char)
+hint: Ensure operand types are compatible with the operator
+

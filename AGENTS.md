@@ -16,13 +16,29 @@ not `src/`). Prefer `uv run a7` for examples that mirror end-user usage;
 use the `main.py` wrapper when working from a fresh checkout without a
 synced environment.
 
+## No recursion in compiler internals
+
+No-recursion rule for compiler internals: no function in `a7/` may call
+itself directly or through a cycle of calls, including the parser and the
+backend. Use explicit stacks and worklists. `test/test_no_recursion.py`
+(being added as batch NOREC-0) enforces this with a static call-graph scan;
+until the conversions in `docs/plan/execution.md` ("No recursion anywhere in
+the compiler") land, it holds a shrinking list of the recursive groups that
+still exist; do not add to it. A scan on 2026-09-17 found recursion in the
+parser, type checker, type equality (`a7/types.py`), semantic validator,
+safety pass, AST preprocessor, backend, module resolver, symbol table dump and
+console formatter. The pipeline is validated at Python recursion
+limit 100 (see `test/test_iterative_traversal.py`). A7 source recursion is a
+separate, banned construct (see "A7 Source Rules" below).
+
 ## Verification Commands
 
 - Debug artifact verification:
   `uv run python scripts/build_examples.py --profile debug --backend zig --clean`
 - Release artifact verification:
   `uv run python scripts/build_examples.py --profile release --backend zig --clean`
-- Full local release gate: `./run_all_tests.sh`
+- Compiler/package gate: `./run_all_tests.sh`
+- Complete local and CI release checks: `./run_release_checks.sh`
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release jobs run this
@@ -32,10 +48,12 @@ synced environment.
   then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
   `/a7-py/docs/index.md`.
 
-`run_all_tests.sh` is the single source of truth for the full gate (pytest,
+`run_all_tests.sh` is the compiler/package gate (pytest,
 parser/semantic/codegen tests, Zig example e2e, debug + release artifacts,
 error-stage matrix, docs style, secrets check, package build, and clean-venv
-wheel install smoke test).
+wheel and source-distribution native installation checks).
+`run_release_checks.sh` also checks release identity, the site, locked dependencies
+and static security findings. Release CI uses that command.
 Run it before tagging or before reporting a task as done when changes are
 non-trivial.
 
@@ -43,6 +61,44 @@ The public docs site also ships Markdown entry points for agent tooling under
 `site/public/llms.txt`, `site/public/llms-full.txt`, and `site/public/docs/`.
 Keep those files aligned with `README.md`, `docs/RELEASE.md`, and user-visible site
 navigation when docs structure changes.
+
+## Test quality
+
+- Do not write coverage illusion tests. Each test must verify an observable requirement, a real failure mode or an independently stated invariant. Do not mirror implementation logic, assert only that mocks were called or inflate test counts with equivalent cases. Use mocks only at named boundaries and state what they leave unverified. Passing unit or controlled fixture tests cannot mark integration, security enforcement, recovery or product acceptance complete. Prefer a smaller set of meaningful tests over a coverage percentage or test-count target.
+
+## Writing style
+
+Applies to answers in the terminal and to every document written into this
+repository.
+
+- Lead with the answer. State the result, then the evidence for it. Do not
+  narrate what you are about to do, recap what was just said, or close by
+  summarizing what the reader has already read.
+- Always use simple technical language in replies, questions, plans, and
+  documentation. Use short sentences and familiar words. Explain unfamiliar
+  technical terms with a small example.
+- Cut filler. No "it is worth noting", "in order to", "leverage", "robust",
+  "comprehensive", "seamless", "delve", "journey", "landscape". No praise of the
+  work, the question, or the user. Do not pad an answer to look thorough.
+- Structure only where structure exists. Use a table when there are real
+  columns, a list when there are real items, a heading when there is a real
+  section. Do not bold whole sentences or end with a call to action.
+- Match length to content. A one-line question gets a one-line answer.
+- Make every claim traceable. Attribute a fact to the file, line, command output
+  or source that establishes it. Mark inference as inference and unchecked
+  claims as unchecked. Never state an attribution you have not verified; a
+  confident sentence about which file or reviewer said something is a factual
+  claim like any other.
+- Report failures plainly, with the output. Do not hedge a verified result and
+  do not soften a real failure. Say when a step was skipped.
+
+## Language change approval
+
+- Before changing existing A7 syntax or behavior, show the user the current
+  behavior, the proposed behavior, concrete A7 examples and the compatibility
+  impact. Obtain explicit approval before implementing the change.
+- Research recommendations and accepted historical decisions do not count as
+  approval. Record each disposition in `docs/plan/decisions.md`.
 
 ## A7 Source Rules
 
@@ -67,8 +123,8 @@ navigation when docs structure changes.
 - Native release archives are named with platform/toolchain context
   (`a7-example-artifacts-linux-x86_64-zig0.16.0-<profile>.tar.gz`); keep
   any docs or scripts that reference these filenames in sync.
-- This rule applies to A7 source only. Compiler internals already use
-  iterative AST traversals; keep them that way.
+- This rule applies to A7 source only. Compiler internals follow the separate
+  no-recursion rule (no recursion anywhere in `a7/`).
 
 ## Post-Change Checklist
 

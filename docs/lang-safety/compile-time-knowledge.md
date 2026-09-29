@@ -1,13 +1,33 @@
 # Compile-Time Knowledge — The Principle Behind A7's Safety
 
-> Research notes formalising the principle the user stated:
-> "the cast is allowed because the compiler knows the number."
->
-> This document explains why A7's entire safety contract reduces
-> to a single idea: **the compiler permits an operation precisely
-> when it has accumulated enough static knowledge about the
-> operand values to discharge the operation's preconditions.**
-> Companion to `narrowing.md` and `conversions.md`.
+Status: research note, written before 2026-05-11 (Codex cited it in its first
+review), with audit notes added 2026-09-16. The principle still describes how
+the safety pass works. The numeric types, `cast` spelling and parameter modes in
+its examples are superseded or open. Current user decisions are in the
+[v1 decision ledger](../plan/decisions.md).
+
+This note formalizes a principle the user stated: "the cast is allowed because
+the compiler knows the number." It argues that A7's safety contract reduces to
+one idea: **the compiler permits an operation exactly when its static knowledge
+about the operands discharges the operation's preconditions.** Companion to
+[`narrowing.md`](./narrowing.md) and [`conversions.md`](./conversions.md).
+
+## Notes (2026-09-16)
+
+Read the examples with these changes in mind:
+
+| Topic in this note | Decision (and current compiler state where it differs) | Source |
+| --- | --- | --- |
+| `int`, `uint`, `number` | Removed. Integers have explicit widths (`i8`–`i64`, `u8`–`u64`, `isize`, `usize`); floats are `f32`/`f64`. Read `int` as a signed width such as `i64`, `uint` as `u64` or `usize`, `number` as `f64` | Ledger L3, L4 |
+| Integer `+ - *` | Decided to wrap, so they carry no overflow precondition. Not yet lowered: `u8` `x += 1` still emits plain Zig `+=`. Division, remainder, `MIN / -1`, shifts, narrowing casts and size arithmetic still need rules | L5; plan track 3; gate G3 |
+| Floats | Decided: IEEE 754 with NaN and infinity as ordinary values; the finite-only idea is withdrawn. The current compiler still rejects `0.0 / 0.0` | L16; gate G1 |
+| `cast(T, x)` spelling | Open (D.024 vs D.038) | Gate G3 |
+| `f(inout x)`, `f(borrow x)` | No parameter-mode syntax is approved; `ref` stays the working form | L6; [memory plan](../plan/memory.md) |
+| `?T`, `case some(v)`, `s.length` | Proposed syntax. Current slices spell length `.len` (`a7/passes/type_checker.py:1796`) | — |
+| Implementation | See the note under "Implementation in the A7 compiler" | `a7/safety.py` |
+
+Every A7 block below is labeled. "Proposed" blocks use syntax or types that
+current A7 does not have and show design intent only.
 
 ## The principle in one sentence
 
@@ -18,7 +38,7 @@
 > point. The cast is allowed precisely because the compiler
 > knows the value.**
 
-The corollary, equally important:
+The corollary:
 
 > **If the compiler does not have the required knowledge, the
 > program does not compile.** No runtime check is inserted; no
@@ -28,40 +48,48 @@ The corollary, equally important:
 
 ## Why this matters
 
-This principle is the unifying thread behind every decision in
-Clusters CA, CB, and the upcoming CD. Once you internalise it,
-every other safety rule in A7 follows mechanically:
+This principle links the decisions in Clusters CA and CB and the planned
+Cluster CD. Each safety rule follows from it:
 
-- **`if x >= 0` makes `cast(uint, x)` compile**: because the
-  guard adds the knowledge `x >= 0` to the compiler's view of
-  `x`, satisfying `cast(uint, ...)`'s precondition.
-- **`if i < s.length` makes `s[i]` compile**: same mechanism;
-  the guard adds the bounds knowledge.
-- **`if b != 0` makes `a / b` compile**: the guard adds the
-  non-zero knowledge.
-- **`if x == nil` followed by `ret` makes `x` usable as a
-  non-null value below**: the early-return invalidates the
-  nil case; what remains is the non-null knowledge.
-- **`match` on a tagged union narrows the binding per arm**:
-  the match arm adds the variant knowledge.
+- **`if x >= 0` makes `cast(uint, x)` compile.** The guard adds `x >= 0`, which
+  is the cast's precondition.
+- **`if i < s.length` makes `s[i]` compile.** The guard adds the bound.
+- **`if b != 0` makes `a / b` compile.** The guard adds non-zero.
+- **`if x == nil` followed by `ret` makes `x` non-null below.** The early return
+  removes the nil case.
+- **`match` on a tagged union narrows the binding in each arm.** The arm adds
+  the variant.
 
-The user writes plain control flow — `if`, `match`, early
-returns. The compiler turns each control-flow statement into a
-piece of knowledge added (or removed) from the surrounding
-context. When that knowledge is enough to discharge a
-precondition, the operation compiles. When it isn't, the
-operation doesn't compile.
+The user writes ordinary control flow: `if`, `match`, early returns. The
+compiler turns each statement into knowledge added to or removed from the
+context. When the knowledge covers a precondition, the operation compiles;
+otherwise it does not. This is a literal description of the analysis, not a
+metaphor.
 
-This is **not** a metaphor for what the compiler does — it is a
-faithful description.
+The early-return case, in current syntax:
+
+```a7
+// Current A7 syntax; not compiled for this note.
+Node :: struct {
+    value: i32
+}
+
+read_value :: fn(n: ref Node) i32 {
+    if n == nil { ret 0 }
+    ret n.value          // n is known non-nil after the early return
+}
+```
+
+Read from source, not run: the current safety pass learns "non-nil" from an
+always-returning `if n == nil` (`a7/safety.py:663-668`, `698-702`), and field
+access through a `ref` requires that fact (`a7/safety.py:425-433`).
 
 ## The mental model: type as accumulated knowledge
 
-A *type* in A7's view is **the compiler's accumulated knowledge
-about a value at a program point**. A declared type like `int`
-is the initial knowledge: "this value is a mathematical integer
-of unknown range." A narrowed type like `int with range [0,
-s.length-1]` is the knowledge after a guard.
+In this view a *type* is **the compiler's knowledge about a value at a program
+point**. A declared type such as `int` is the starting knowledge: "an integer of
+unknown range." A narrowed type such as `int with range [0, s.length-1]` is the
+knowledge after a guard.
 
 Knowledge flows through the program:
 
@@ -78,36 +106,40 @@ Knowledge flows through the program:
 | `f(inout x)` | `x`'s knowledge reset — `f` may have changed it |
 | `f(borrow x)` | **no reset** — `borrow` is read-only |
 
-Every operation in A7 is annotated with the knowledge it
-**requires** (its precondition). At each call site, the
-compiler compares required knowledge to available knowledge. If
-available ⊇ required, the operation compiles; otherwise it
-doesn't.
+> Note (2026-09-16): the `inout` and `borrow` rows describe proposed modes that
+> were not accepted (L6). Current A7 passes mutable arguments as `ref`
+> parameters.
+
+Each operation has a precondition: the knowledge it **requires**. At each use,
+the compiler compares required knowledge with available knowledge. If available
+covers required, the operation compiles; otherwise it does not.
 
 ## Three knowledge tiers for any operation
 
-For any A7 operation, the call-site knowledge falls into one of
-three tiers:
+At any use site, the available knowledge falls into one of three tiers.
 
 ### Tier 1 — Sufficient knowledge: bare emission
 
-The compiler has accumulated enough static knowledge to
-discharge the precondition. The operation compiles. The emitted
-Zig has **no runtime check**.
+The compiler can discharge the precondition. The operation compiles, and the
+emitted Zig has **no runtime check**.
 
 ```a7
+// Proposed (uses `int`/`uint`).
 x: int = 42                              // x: int with value 42
 y: uint = cast(uint, x)                  // precondition x >= 0 trivially holds;
                                           // emits @intCast(u64, 42) — no check
 ```
 
+The two-argument `@intCast(u64, 42)` is pre-0.11 Zig syntax. Zig 0.16 writes
+`@as(u64, @intCast(x))` or relies on the result type.
+
 ### Tier 2 — Insufficient but recoverable: compile error with fix-it
 
-The compiler doesn't have enough knowledge, **but** there's a
-guard the user can add that would discharge the precondition.
-The compiler emits a compile error with a fix-it suggestion.
+The compiler lacks the knowledge, but a guard the user could add would supply
+it. The compiler reports an error with a fix-it.
 
 ```a7
+// Proposed (uses `int`/`uint`).
 process :: fn(x: int) uint {
     ret cast(uint, x)                    // compile error
 }
@@ -128,18 +160,17 @@ help: add a guard so the prover can discharge the precondition:
  4 | }
 ```
 
-The fix-it tells the user exactly what knowledge the compiler
-needs. The user adds the guard; on the next compile, the
-knowledge is present; the cast compiles.
+The fix-it names the missing knowledge. Once the user adds the guard, the next
+compile has the knowledge and the cast compiles.
 
 ### Tier 3 — Insufficient and irrecoverable: hard compile error
 
-Some preconditions can never be discharged because the source
-type contains no information that could satisfy them. These are
-hard errors with no fix-it pattern — the user must change the
-algorithm.
+Some preconditions can never be discharged, because the source type holds no
+information that could satisfy them. These are hard errors with no fix-it; the
+user must change the algorithm.
 
 ```a7
+// Proposed (uses a `u` literal suffix and `ref` casts).
 p: ref T = cast(ref T, 0xDEADBEEFu)      // hard compile error
                                           // no guard can make an integer
                                           // into a valid pointer
@@ -158,52 +189,66 @@ note: there is no guard that can transform an integer into a
       one with `new T` or pass it as a parameter.
 ```
 
+> Note (2026-09-16), read from source: `a7/cast_classifier.py:40-41` forbids
+> every cast whose source or target is a reference or function type. The
+> diagnostic format above is proposed; current safety errors report the required
+> proof and a reason (`a7/safety.py:254-264`). The advice "allocate with
+> `new T`" predates the memory direction (L15, L17–L22), which moves toward no
+> explicit allocation.
+
 ## Worked examples — the knowledge for each cast
 
-For every conversion `cast(T, x)`, the table lists what the
-compiler needs to know about `x` to permit the cast, and what
-fix-it suggests when the knowledge is missing.
+For each `cast(T, x)`: what the compiler must know about `x`, and the fix-it
+when it does not.
+
+> Note (2026-09-16): the `int`/`uint`/`number` rows are superseded by L3 and L4.
+> Under explicit widths the same pattern applies: widening is free, while
+> signed-to-unsigned and narrowing need a range proof (`a7/cast_classifier.py`).
 
 | Cast | Required knowledge | Fix-it when missing |
 | --- | --- | --- |
 | `cast(int, x: int)` | none — identity | n/a |
 | `cast(int, x: uint)` | none — lossless | n/a |
 | `cast(int, n: number)` | none — defaults to trunc | n/a |
-| `cast(uint, x: int)` | `x >= 0` | `if x < 0: ... end` or `if x >= 0: cast(uint, x) ... end` |
-| `cast(uint, n: number)` | `n >= 0` (and trunc-mode) | `if n < 0: ... end` |
+| `cast(uint, x: int)` | `x >= 0` | `if x < 0 { ... }` or `if x >= 0 { cast(uint, x) ... }` |
+| `cast(uint, n: number)` | `n >= 0` (and trunc mode) | `if n < 0 { ... }` |
 | `cast(number, x: int)` | none — embedding | n/a |
 | `cast(number, x: uint)` | none — embedding | n/a |
 | `cast(string, x)` | none — format always succeeds | n/a |
 | `cast(int, s: string)` | none — but result is `?int` (data-dependent) | match on result |
 | `cast(uint, s: string)` | none — result is `?uint` | match |
-| `cast([N]T, s: []T)` | `s.length == N` | `if s.length == N: ... end` |
-| `cast(EnumT, i: int)` | `i` is a valid discriminant of `EnumT` | `match i { case <valid_discs>: ... case _: ... end }` |
+| `cast([N]T, s: []T)` | `s.length == N` | `if s.length == N { ... }` |
+| `cast(EnumT, i: int)` | `i` is a valid discriminant of `EnumT` | `match i { case <valid_discs>: { ... } else: { ... } }` |
 | `cast(i32, x: int)` | `x in [INT32_MIN, INT32_MAX]` | range guard |
 | `cast(int, x: i32)` | none — widening | n/a |
 | `cast(ref T, x: uint)` | **irrecoverable** | rewrite — use `new` or pass as parameter |
 | `cast(uint, p: ref T)` | **irrecoverable** | use `e.discriminant()` analog or rewrite |
 | `cast(EnumA, x: EnumB)` | **irrecoverable** | go through discriminants explicitly |
 
-The first column is the **precondition**; the second is the
-**knowledge needed** to satisfy it; the third is the
-**guard pattern** that would provide that knowledge.
+Column 1 is the operation, column 2 the **knowledge needed** (its precondition),
+and column 3 the **guard pattern** that supplies it.
+
+> Note (2026-09-16): `cast(int, n: number)` "defaults to trunc" and
+> `cast(string, x)` / `cast(int, s: string)` are not current behavior: the
+> classifier accepts only primitive numeric casts, and float-to-integer casts
+> are proved only for finite, integral, in-range literals
+> (`a7/safety.py:654-661`). Float-to-integer failure is an open item under G1.
 
 ## Knowledge from data-dependent sources
 
-Some values arrive in the program from sources the compiler
-fundamentally cannot see into:
+Some values come from sources the compiler cannot see into:
 
 - Strings read from stdin or files.
 - Bytes from a network socket.
 - Return values from FFI.
 - The result of an allocation (success or OOM).
 
-For these, the compiler has **no static knowledge** of the value.
-It cannot prove `x >= 0` or `i < s.length` or "this discriminant
-is valid." So the operation's return type carries the failure
-possibility explicitly:
+The compiler has **no static knowledge** of these values. It cannot prove
+`x >= 0`, `i < s.length`, or "this discriminant is valid." So the operation's
+return type carries the failure explicitly:
 
 ```a7
+// Proposed (uses `?T`, `case some(v)` and string-to-int `cast`).
 raw: ?string = read_line()               // ?string — could be nil (EOF, error)
 match raw {
     case nil: { ret 0 }
@@ -218,143 +263,148 @@ match raw {
 }
 ```
 
-These are the **data-dependent** operations from D.025. They are
-the only operations that return `?T` or `Result<T, E>` in A7
-because they're the only operations where the compiler
-genuinely cannot acquire the knowledge at compile time.
+These are the **data-dependent** operations from D.025. They are the only A7
+operations that return `?T` or `Result<T, E>`, because only for them can the
+compiler not acquire the knowledge at compile time.
+
+> Note (2026-09-16): D.025 must be restated for explicit widths (ledger
+> "Superseded material"). `Option`, `Result` and recoverable I/O are open under
+> gate G5, which also notes that the current I/O helpers panic on external
+> failures.
 
 ## Theoretical foundations
 
-This principle isn't novel — A7 is applying ideas with deep
-roots:
+A7 applies established ideas.
 
 ### Abstract interpretation (Patrick Cousot, 1977 onwards)
 
-Cousot's framework of **abstract interpretation** says: every
-static analysis is an abstraction of a program's concrete
-runtime behaviour. The abstract values are "what the analyser
-knows" about the concrete values. A type system is a particular
-abstract interpretation where the abstract values are types.
+Cousot's **abstract interpretation** treats every static analysis as an
+abstraction of the program's concrete runtime behaviour. The abstract values are
+what the analyser knows about the concrete values. A type system is an abstract
+interpretation whose abstract values are types.
 ([Wikipedia: Abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation);
 [Cousot, *Types as Abstract Interpretations*](https://www.irif.fr/~mellies/mpri/mpri-ens/articles/cousot-types-as-abstract-interpretations.pdf))
 
-A7's narrowing system is a specific abstract interpretation:
-the abstract domain is "disjunctive intervals over integers,
-plus optional-narrowing flags, plus tagged-union variant tags."
-The "knowledge" the compiler accumulates is the abstract value
-at each program point.
+A7's narrowing is one such interpretation. Its abstract domain is disjunctive
+integer intervals, plus optional-narrowing flags, plus tagged-union variant
+tags. The compiler's "knowledge" is the abstract value at each program point.
 
 ### Epistemic type theory (modal logic, S4)
 
-In modal logic, the operator `□A` means "it is known that A."
-Several authors have explored type systems with modal
-type-formers: `□T` is "a value of type T whose value is known
-at compile time." Calls a function `□(a → b) → (□a → □b)` —
-if you know the function and know the argument, you know the
-result. ([Sigfpe on S4 and partial evaluation](http://blog.sigfpe.com/2006/04/s4-and-partial-evaluation.html))
+In modal logic, `□A` means "it is known that A." Several authors have explored
+type systems with modal type formers, where `□T` is "a value of type T known at
+compile time." Function application becomes `□(a → b) → (□a → □b)`: if you know
+the function and the argument, you know the result.
+([Sigfpe on S4 and partial evaluation](http://blog.sigfpe.com/2006/04/s4-and-partial-evaluation.html))
 
-A7's compile-time knowledge framing is a practical (non-formal)
-adoption of this view: each operation's precondition is a modal
-formula the compiler must prove at compile time. The fix-its
-are the user's way of providing the missing modal evidence.
+A7 adopts this view informally. Each precondition is a modal formula the
+compiler must prove at compile time, and a fix-it is the user supplying the
+missing evidence.
 
 ### Refinement types (Liquid Haskell, F\*, ATS)
 
-[Refinement types](https://en.wikipedia.org/wiki/Refinement_type)
-attach predicates to types: `{x: int | x > 0}` is "the integers
-greater than zero." Liquid Haskell uses these with an SMT
-solver to discharge predicates automatically.
+[Refinement types](https://en.wikipedia.org/wiki/Refinement_type) attach
+predicates to types: `{x: int | x > 0}` is the integers greater than zero.
+Liquid Haskell discharges such predicates with an SMT solver.
 
-A7 takes a **lite** version of this:
+A7 takes a **lite** version:
 
-- The predicates are restricted to **disjunctive intervals**
-  (Level 2 of `narrowing.md`'s ladder), plus optional-narrowing
-  and variant-tag predicates.
-- The discharge is by **pattern recognition**, not SMT.
-- The predicates are **invisible to the user** — they exist only
-  inside the type checker.
+- Predicates are limited to **disjunctive intervals** (Level 2 of
+  `narrowing.md`'s ladder), plus optional-narrowing and variant-tag predicates.
+- Discharge is by **pattern recognition**, not SMT.
+- Predicates are **invisible to the user**; they exist only inside the compiler.
 
-The user never writes `{x: int | x > 0}`; they write plain
-`int`. The compiler infers the predicate from the control flow.
+The user never writes `{x: int | x > 0}`; they write `int`, and the compiler
+infers the predicate from control flow.
 
 ### Flow-sensitive typing (Crystal, TypeScript)
 
-[Crystal](https://crystal-lang.org/) and TypeScript pioneered
-**flow-sensitive typing** in mainstream languages: a variable's
-type changes through the program based on the control flow
-preceding it. TypeScript's
-[narrowing](https://www.typescriptlang.org/docs/handbook/2/narrowing.html)
-docs describe the same mechanism A7 uses for nullability and
-tagged-union narrowing.
+[Crystal](https://crystal-lang.org/) and TypeScript brought **flow-sensitive
+typing** to mainstream languages: a variable's type changes with the control
+flow before it. TypeScript's
+[narrowing](https://www.typescriptlang.org/docs/handbook/2/narrowing.html) docs
+describe the mechanism A7 uses for nullability and tagged unions.
 
-A7 extends flow-sensitive typing to **integer ranges** as well,
-which neither Crystal nor TypeScript does. This is the SPARK
-tier in the comparison.
+A7 also applies flow-sensitive typing to **integer ranges**, which neither
+Crystal nor TypeScript does. This is the SPARK tier in the comparison.
 
 ## What the compiler can and cannot know
 
-It's worth being explicit about the limits.
-
 ### Can know (sufficient knowledge inside one function):
 
-- Range of a value derived from literals and other range-proved
-  values: `y := x + 1` for `x: int with range [0, n)` gives
-  `y: int with range [1, n+1)`.
-- Range of a value after a comparison guard: `if x < 5:` narrows.
-- Value of a binding after `match arm`: the bound variable's
-  type per arm.
-- Non-nullness of a binding after `if x == nil { ret }`.
-- Discharge of `s.length == N` after `if s.length == N:`.
-- Variant tag after `match` on a tagged union.
+- The range of a value derived from literals and other range-proved values:
+  `y := x + 1` for `x: int with range [0, n)` gives `y: int with range [1, n+1)`.
+- The range of a value after a comparison guard: `if x < 5 { ... }` narrows.
+- The type of a binding in a `match` arm.
+- Non-nullness after `if x == nil { ret }`.
+- `s.length == N` after `if s.length == N { ... }`.
+- The variant tag after `match` on a tagged union.
 
 ### Cannot know (in v1):
 
-- Range of a value passed as a function argument unless the
-  callee's signature declares it. A7 v1 does not have
-  function-level preconditions; the receiving function sees the
-  parameter as its declared type only.
-- Range of a value returned from a function unless the
-  signature declares a refinement. A7 v1 has no refinement
-  return types in user-facing signatures (the refinement system
-  is compiler-internal per CA D.020).
-- Range across pointer dereferences (if the pointer's target
-  was mutated by another path the compiler can't see).
-- Cross-variable correlations beyond simple narrowing
-  (`if x < y` narrows `x`'s upper-bound and `y`'s lower-bound
-  individually but doesn't track "x < y" as a relation).
+- The range of a function argument, unless the callee's signature declares it.
+  A7 v1 has no function preconditions; the callee sees only the declared type.
+- The range of a function's return value, unless the signature declares a
+  refinement. A7 v1 has no user-facing refinement return types (the refinement
+  system is compiler-internal per CA D.020).
+- Ranges across pointer dereferences, if another path the compiler cannot see
+  mutated the target.
+- Cross-variable relations beyond simple narrowing. `if x < y` narrows `x`'s
+  upper bound and `y`'s lower bound separately, but does not keep "x < y" as a
+  relation.
 - Arbitrary SMT-decidable predicates.
 
-The cannot-know cases are precisely the ones that produce Tier 2
-errors. The user works around them by adding local guards.
+These limits produce the Tier 2 errors. The user works around them with local
+guards.
+
+> Note (2026-09-16), read from source, not run: the current safety pass knows
+> less than the "can know" list:
+>
+> - Guards are recognized only when an identifier is compared with an integer
+>   literal, zero or `nil` (`a7/safety.py:678-703`). `if i < s.len` against a
+>   non-literal adds no fact.
+> - Parameters start with no interval (`a7/safety.py:291-293`, `479-484`). So
+>   after `if x < 0 { ret 0 }` the fact is `[0, unbounded)`, and a
+>   signed-to-unsigned cast still fails the range check
+>   (`a7/safety.py:543`, `648-652`).
+> - C-style `for` loops add no induction facts (`a7/safety.py:353-363`).
+>   Indexed `for-in` gives the index `[0, unbounded)` (`a7/safety.py:368`).
+> - Float division uses the integer non-zero divisor proof. Plan gate G1
+>   records that `0.0 / 0.0` is rejected, which conflicts with L16.
 
 ## Implementation in the A7 compiler
 
-The principle is enforced by **one analysis pass** in the
-semantic validator:
+The plan was **one analysis pass** in the semantic validator:
 
-1. **Walk the CFG** in forward order, maintaining per-binding
-   knowledge.
-2. **At each operation site**, look up the operation's
-   precondition table entry (e.g., `cast(uint, int)` requires
-   "source >= 0").
-3. **Compare** the binding's accumulated knowledge to the
-   required precondition.
-4. **Three outcomes**:
-   - Sufficient → mark the site as "discharged"; emit bare op.
-   - Insufficient-recoverable → emit a compile error with the
-     fix-it pattern from the precondition table.
-   - Insufficient-irrecoverable → emit a hard error.
+1. **Walk the CFG** forward, keeping per-binding knowledge.
+2. **At each operation**, look up its precondition in a table (for example,
+   `cast(uint, int)` requires "source >= 0").
+3. **Compare** the binding's knowledge with the precondition.
+4. **Three outcomes:**
+   - Sufficient → mark the site "discharged"; emit the bare operation.
+   - Insufficient but recoverable → compile error with the table's fix-it.
+   - Insufficient and irrecoverable → hard error.
 
-The pass is a few hundred lines on top of the existing
-iterative-traversal infrastructure in
-`a7/passes/semantic_validator.py`. The precondition tables live
-in `a7/passes/preconditions.py` (new file).
+The estimate was a few hundred lines on top of the iterative-traversal code in
+`a7/passes/semantic_validator.py`, with precondition tables in a new
+`a7/passes/preconditions.py`.
+
+> Note (2026-09-16), checked against the source at 701c679: the analysis exists
+> as `SafetyProofPass` in `a7/safety.py`, not in `semantic_validator.py`. It
+> runs after semantic validation (`a7/compile.py:347`) and records approvals in
+> a `BackendPlan` that codegen checks before lowering (for example
+> `a7/backends/zig.py:1672`). `a7/passes/preconditions.py` does not exist. Cast
+> rules live in `a7/cast_classifier.py`; other preconditions are methods of the
+> pass. It saves and restores facts per block instead of walking a CFG. It
+> reports proof failures but does not produce fix-its or separate Tier 2 from
+> Tier 3. Codex called the "few hundred lines, one pass" estimate not credible
+> ([codex-review.md](./codex-review.md)). STATUS priority 4 is to split the pass
+> into CFG, fact, obligation, proof-discharge and backend-plan stages.
 
 ## Diagnostics — the user-visible interface
 
-Because every compile error from this system is a "you don't
-have the knowledge for this operation" error, the diagnostics
-should follow a uniform template:
+Every error from this system means "you don't have the knowledge for this
+operation," so diagnostics should share one template:
 
 ```
 error: <operation> requires <precondition>
@@ -367,42 +417,42 @@ note: at this point, <operand>'s type is <accumulated knowledge>
 note: the precondition requires <missing knowledge>
 help: add a guard that supplies the missing knowledge:
    |
-M  | if <guard>: ... end
+M  | if <guard> { ... }
 N  | <source line>
 ```
 
-The fix-it patterns are derived mechanically from the
-precondition tables; the user sees consistent messages across
-all operations.
+Fix-its come mechanically from the precondition tables, so messages stay
+consistent across operations.
 
 ## Worked examples — the principle in practice
 
 ### Example 1: trivial — knowledge from literals
 
 ```a7
+// Proposed (uses `uint`).
 q: uint = cast(uint, 42)                 // precondition x >= 0; 42 trivially >= 0
 ```
 
-Knowledge available: `42: int with value 42` ⇒ trivially `>= 0`.
-Operation compiles. Bare emission.
+Knowledge: `42: int with value 42`, so `>= 0` holds. The operation compiles to a
+bare emission.
 
 ### Example 2: knowledge from a guard
 
 ```a7
+// Proposed (uses `int`/`uint`).
 f :: fn(x: int) uint {
     if x < 0 { ret 0 }
     ret cast(uint, x)                    // precondition `x >= 0` discharged by guard
 }
 ```
 
-Inside the second `ret`, `x: int with range [0, +∞)`. The
-guard's effect: invalidating the `x < 0` case via early return
-leaves only the `x >= 0` case for the trailing code. Operation
-compiles. Bare emission.
+At the second `ret`, `x: int with range [0, +∞)`. The early return removes the
+`x < 0` case, leaving only `x >= 0`. The operation compiles to a bare emission.
 
 ### Example 3: knowledge from a loop bound
 
 ```a7
+// Proposed (uses `int` and `s.length`).
 sum :: fn(s: []int) int {
     total: int = 0
     for i := 0; i < s.length; i += 1 {
@@ -413,36 +463,56 @@ sum :: fn(s: []int) int {
 }
 ```
 
-Inside the loop body, `i: uint with range [0, s.length - 1]`,
-which is exactly `i < s.length`. Bare emission for `s[i]`.
+In the loop body, `i: uint with range [0, s.length - 1]`, which is exactly
+`i < s.length`. `s[i]` is a bare emission.
 
 ### Example 4: knowledge insufficient — recoverable
 
 ```a7
+// Proposed (uses `int`).
 divide :: fn(a: int, b: int) int {
     ret a / b                             // compile error
 }
 ```
 
-Knowledge: `b: int` (full range). Precondition: `b != 0`.
-Sufficient? No. Fix-it: `if b == 0 { ret 0 }` (or similar).
+Knowledge: `b: int` (full range). Precondition: `b != 0`. Not sufficient.
+Fix-it: `if b == 0 { ret 0 }` or similar.
+
+The fixed form, in current syntax:
+
+```a7
+// Current A7 syntax; not compiled for this note.
+divide :: fn(a: i64, b: i64) i64 {
+    if b == 0 { ret 0 }
+    ret a / b                             // b is known non-zero here
+}
+```
+
+Read from source, not run: the early return adds a non-zero fact for `b`
+(`a7/safety.py:695-697`), which the divisor proof accepts
+(`a7/safety.py:559-565`).
 
 ### Example 5: knowledge insufficient — irrecoverable
 
 ```a7
+// Proposed (uses `ref` casts and `uint`).
 load :: fn(addr: uint) int {
     p: ref int = cast(ref int, addr)     // hard error
-    ret p.val
+    ret 0
 }
 ```
 
-No knowledge about `addr` could make it a valid `ref int` —
-references can only be obtained from allocation, never from
-integer reinterpretation. Hard compile error.
+No knowledge about `addr` can make it a valid `ref int`. References come only
+from allocation, never from reinterpreting an integer. Hard compile error.
+
+(Edited 2026-09-16: the original second line was `ret p.val`. Public A7 has no
+`.val`, and the type checker rejects it (`a7/passes/type_checker.py:1784-1791`),
+so it was replaced with `ret 0`. The example's point is the forbidden cast.)
 
 ### Example 6: knowledge from a match arm
 
 ```a7
+// Proposed (uses `?int` and `case some(v)`).
 print_value :: fn(opt: ?int) {
     match opt {
         case some(v): {
@@ -456,13 +526,13 @@ print_value :: fn(opt: ?int) {
 }
 ```
 
-Inside the `case some(v):` arm, `v: int` (the inner type of
-`?int`). No `?` propagation needed; the match arm adds the
-knowledge directly.
+In the `case some(v):` arm, `v: int`, the inner type of `?int`. No `?`
+propagation is needed; the arm supplies the knowledge.
 
 ### Example 7: cross-variable correlation — current v1 limitation
 
 ```a7
+// Proposed (uses `int`, `uint` and `s.length`; `...` is a placeholder).
 f :: fn(x: int, y: int) int {
     if x < y {
         // here `x` has upper bound from `y`, but A7 v1 doesn't
@@ -482,19 +552,22 @@ f :: fn(x: int, y: int) int {
 }
 ```
 
-This is a Tier 2 case where A7 v1 conservatively gives up. The
-workaround: introduce a local intermediate variable that
-captures the relation explicitly.
+A7 v1 gives up here (Tier 2). The workaround: introduce local variables that
+state the relation directly.
 
 ```a7
+// Proposed (fragment inside the `if x < y` block above).
+        x_uint: uint = cast(uint, x)      // OK once x >= 0 is proved
         n: uint = cast(uint, y)           // OK once y >= 0 is proved
         if x_uint < n and n <= s.length {
             ret s[x_uint]                  // works
         }
 ```
 
-Future versions (Level 3 polyhedral analysis from
-`narrowing.md`) would handle the original form directly.
+(Edited 2026-09-16: added the `x_uint` declaration, which the original fragment
+used without declaring.)
+
+Level 3 polyhedral analysis (`narrowing.md`) would handle the original form.
 
 ## Comparison: how other languages express this
 
@@ -511,51 +584,51 @@ Future versions (Level 3 polyhedral analysis from
 | **Liquid Haskell** | Refinement types with SMT solver | `{x: Int \| x > 0}` discharged by Z3 |
 | **A7 (proposed)** | Compile-time knowledge via narrowing + pattern recognition | `cast(uint, x)` only compiles when `x >= 0` is known |
 
-A7 sits in a unique combination: as strict as SPARK on the
-operations it covers, as simple as Python/JS on the
-user-facing syntax, with the cost of the analysis paid by the
-compiler (not by an SMT solver and not by the user).
+The aim: as strict as SPARK on the operations it covers, as simple as Python/JS
+in syntax, with the analysis cost paid by the compiler rather than an SMT solver
+or the user.
 
 ## Limits and future extensions
 
 What this principle does **not** give A7:
 
-- It does not prove **functional correctness**. The compiler
-  proves preconditions (no division by zero, no OOB, etc.), not
-  that the function returns the right answer.
-- It does not propagate **across function boundaries** in v1.
-  A function's parameter loses any caller-side narrowing
-  information at the function entry.
-- It does not handle **all valid programs**. Some programs that
-  are obviously safe to a human (and to an SMT solver) will
-  fail to compile because the pattern recogniser missed them.
-  Workaround: refactor to a recognised pattern.
-- It does not eliminate the need for **runtime error handling**
-  for data-dependent operations (parsing, I/O, allocation).
-  Those still return `?T` / `Result<T, E>`.
+- **Functional correctness.** The compiler proves preconditions (no division by
+  zero, no out-of-bounds), not that the function returns the right answer.
+- **Propagation across function boundaries** in v1. A parameter loses the
+  caller's narrowing at function entry.
+- **Acceptance of all valid programs.** Some programs that are safe to a human
+  (or an SMT solver) fail because the pattern recognizer misses them.
+  Workaround: refactor to a recognized pattern.
+- **Freedom from runtime error handling** for data-dependent operations
+  (parsing, I/O, allocation). Those still return `?T` / `Result<T, E>`.
+
+> Note (2026-09-16): allocation failure is handled differently in the proposed
+> [memory plan](../plan/memory.md), where ordinary source never allocates
+> explicitly; not approved.
 
 Future extensions (v2+):
 
-- Function preconditions / postconditions (Ada aspect-style)
-  to propagate narrowing across calls.
-- Level 3 polyhedral analysis for cross-variable correlations.
-- Optional SMT integration for cases the pattern recogniser
-  can't handle.
-- User-written predicates (`refined int as Positive where x >
-  0`) — a controlled refinement-type addition.
+- Function preconditions and postconditions (Ada aspect style) to carry
+  narrowing across calls.
+- Level 3 polyhedral analysis for cross-variable relations.
+- Optional SMT integration for cases the pattern recognizer cannot handle.
+- User-written predicates (`refined int as Positive where x > 0`), a controlled
+  refinement-type addition.
 
 None of these are needed for v1.
 
 ## Cross-references
 
-- [`narrowing.md`](./narrowing.md) — the mechanism that
-  accumulates knowledge.
+- [`narrowing.md`](./narrowing.md) — the mechanism that accumulates knowledge.
 - [`conversions.md`](./conversions.md) — the cast catalog.
-- [`08-decisions.md`](./08-decisions.md) — the Cluster CA / CB
-  decisions that depend on this principle.
+- [`08-decisions.md`](./08-decisions.md) — the Cluster CA / CB decisions that
+  depend on this principle.
 - [`05-for-a7.md`](./05-for-a7.md) §7 — the contract paragraph.
-- [`comparative/ada.md`](./comparative/ada.md) — SPARK's
-  predicate-based version of the same idea.
+- [`comparative/ada.md`](./comparative/ada.md) — SPARK's predicate-based version
+  of the same idea.
+- [`../SAFETY_CONTRACT.md`](../SAFETY_CONTRACT.md) — what the compiler enforces
+  today.
+- [`../plan/decisions.md`](../plan/decisions.md) — current user decisions.
 
 ## Summary
 
@@ -572,5 +645,5 @@ None of these are needed for v1.
 >
 > **The cast is allowed because the compiler knows the value.**
 
-This sentence — the user's framing — is the entire safety
-contract in nine words.
+This sentence, the user's framing, states the whole safety contract in ten
+words. (Corrected 2026-09-16: the original said "nine words".)

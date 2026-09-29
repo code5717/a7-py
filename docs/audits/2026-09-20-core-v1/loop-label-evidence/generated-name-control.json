@@ -1,0 +1,27 @@
+{
+  "source": "io :: import \"std/io\"\nmain :: fn() {\n __a7_loop_1: i32 = 7\n @outer for { io.println(\"{}\", __a7_loop_1); break outer }\n}\n",
+  "results": [
+    {
+      "name": "baseline",
+      "exit": 0,
+      "stdout": "Built /tmp/a7-label-collision-088xuujz/baseline\n",
+      "stderr": "",
+      "run": {
+        "exit": 0,
+        "stdout": "7\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "candidate",
+      "exit": 0,
+      "stdout": "Built /tmp/a7-label-collision-088xuujz/candidate\n",
+      "stderr": "",
+      "run": {
+        "exit": 0,
+        "stdout": "7\n",
+        "stderr": ""
+      }
+    }
+  ]
+}

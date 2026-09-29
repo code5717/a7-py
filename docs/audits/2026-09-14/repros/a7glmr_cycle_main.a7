@@ -1,0 +1,13 @@
+// a7-glmr repro main: imports A of an A<->B import cycle.
+// ModuleResolver.load_module caches a module in loaded_modules BEFORE
+// loading its dependencies (a7/module_resolver.py:187), so the cache-hit
+// return at module_resolver.py:124 shadows the loading_stack cycle check
+// at :131. Observed: no "Circular dependency detected" error; compile
+// proceeds and only fails later on the unresolved in-module alias "b"
+// (module-side imports are stripped by the combined-program merge), with
+// spans from the module file rendered against this file's source lines.
+m :: import "./a7glmr_cycle_moda"
+io :: import "std/io"
+main :: fn() {
+    io.println("{}", m.ping(3))
+}

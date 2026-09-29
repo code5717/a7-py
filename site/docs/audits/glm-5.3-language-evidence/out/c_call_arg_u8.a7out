@@ -1,0 +1,16 @@
+
+Found 1 error:
+
+Error 1/1:
+error: Argument type mismatch: expected 'u8', got 'i32' (Argument 1) [line 6: 
+col 10]
+────────────────────────────────────────────────────────────────────────────────
+   4 ┃ 
+   5 ┃ main :: fn() {
+   6 ┃     y := f(200)
+     ┃          ▲
+   7 ┃ }
+
+────────────────────────────────────────────────────────────────────────────────
+hint: Ensure argument types match parameter types
+

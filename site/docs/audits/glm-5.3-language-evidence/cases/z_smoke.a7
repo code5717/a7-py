@@ -1,0 +1,5 @@
+io :: import "std/io"
+
+main :: fn() {
+    io.println("value: {}", 42)
+}

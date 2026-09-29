@@ -1,0 +1,9 @@
+a :: import "./b"
+
+main :: fn() {
+    x := 1
+}
+
+pub fa :: fn() i32 {
+    ret b.fb()
+}

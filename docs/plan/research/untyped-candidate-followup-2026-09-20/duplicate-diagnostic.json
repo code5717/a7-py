@@ -1,0 +1,15 @@
+{
+  "source": "BAD :: 1.0 / 0.0\nmain :: fn() {}\n",
+  "command": [
+    "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+    "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/review-candidate-2/main.py",
+    "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/diagnostic-review/global-zero.a7",
+    "-o",
+    "/home/cx89/Projects/pl-dev/a7-py/tmp/untyped-constants-next/diagnostic-review/global-zero.zig"
+  ],
+  "exit_code": 6,
+  "stdout": "\nFound 3 errors:\n\nError 1/3:\nerror: Exact constant division or remainder by zero [line 1: col 8]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 2/3:\nerror: Exact constant division or remainder by zero [line 1: col 8]\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nError 3/3:\nerror: Exact constant division or remainder by zero [line 1: col 8]\n\n",
+  "stderr": "",
+  "new_artifact": false,
+  "duplicate_count": 3
+}

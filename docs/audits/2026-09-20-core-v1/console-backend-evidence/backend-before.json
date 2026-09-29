@@ -1,0 +1,58 @@
+[
+  {
+    "name": "swap",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "2 2\n",
+    "stderr": ""
+  },
+  {
+    "name": "swap_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "2 1\n",
+    "stderr": ""
+  },
+  {
+    "name": "char_escape",
+    "a7_exit": 0,
+    "zig_exit": 1,
+    "stdout": "",
+    "stderr": "/tmp/a7-phaseb-1c9zm08g/char_escape.before.zig:15:35: error: character literal contains invalid byte: '\\x01'\n    __a7_stdout_print(\"{c}\\n\", .{'\u0001'});\n                                  ^~~~~\n"
+  },
+  {
+    "name": "char_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "A\n",
+    "stderr": ""
+  },
+  {
+    "name": "defer_nonvoid",
+    "a7_exit": 0,
+    "zig_exit": 1,
+    "stdout": "",
+    "stderr": "/tmp/a7-phaseb-1c9zm08g/defer_nonvoid.before.zig:20:12: error: value of type 'i32' ignored\n    defer f();\n          ~^~\n/tmp/a7-phaseb-1c9zm08g/defer_nonvoid.before.zig:20:12: note: all non-void values must be used\n/tmp/a7-phaseb-1c9zm08g/defer_nonvoid.before.zig:20:12: note: to discard the value, assign it to '_'\nreferenced by:\n    main: /tmp/a7-phaseb-1c9zm08g/defer_nonvoid.before.zig:11:19\n    callMain [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30\n    callMainWithArgs [inlined]: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:638:20\n    posixCallMainAndExit: /home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:590:38\n    2 reference(s) hidden; use '-freference-trace=6' to see all references\n"
+  },
+  {
+    "name": "defer_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "called\n",
+    "stderr": ""
+  },
+  {
+    "name": "unused_const",
+    "a7_exit": 0,
+    "zig_exit": 1,
+    "stdout": "",
+    "stderr": "/tmp/a7-phaseb-1c9zm08g/unused_const.before.zig:2:11: error: unused local constant\n    const answer = 42;\n          ^~~~~~\n"
+  },
+  {
+    "name": "unused_control",
+    "a7_exit": 0,
+    "zig_exit": 0,
+    "stdout": "42\n",
+    "stderr": ""
+  }
+]

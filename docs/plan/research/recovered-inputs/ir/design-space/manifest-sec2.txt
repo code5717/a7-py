@@ -1,0 +1,8 @@
+https://rustc-dev-guide.rust-lang.org/mir/construction.html | 2026-09-19 | sources/rustc-mir-construction.html | http=200 | bytes=31033
+https://rustc-dev-guide.rust-lang.org/borrow_check/type_check.html | 2026-09-19 | sources/rustc-mir-typecheck.html | http=200 | bytes=1203
+https://rustc-dev-guide.rust-lang.org/borrow_check/region_inference.html | 2026-09-19 | sources/rustc-region-inference.html | http=200 | bytes=1233
+https://rustc-dev-guide.rust-lang.org/backend/monomorph.html | 2026-09-19 | sources/rustc-monomorph.html | http=200 | bytes=27903
+https://rustc-dev-guide.rust-lang.org/appendix/background.html | 2026-09-19 | sources/rustc-background.html | http=200 | bytes=38428
+https://docs.julialang.org/en/v1/devdocs/inference/ | 2026-09-19 | sources/julia-inference.html | http=200 | bytes=28820
+https://llvm.org/docs/Passes.html | 2026-09-19 | sources/llvm-passes.html | http=200 | bytes=161469
+https://rust-lang.github.io/rfcs/1211-mir.html | 2026-09-19 | sources/rfc1211-mir.html | http=200 | bytes=61199

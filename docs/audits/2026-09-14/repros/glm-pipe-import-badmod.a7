@@ -1,0 +1,3 @@
+helper :: fn() i32 {
+    ret undefined_var
+}

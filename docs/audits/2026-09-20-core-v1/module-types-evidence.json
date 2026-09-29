@@ -1,0 +1,92 @@
+{
+  "status": "Focused verification only; full release qualification belongs to the controlling session.",
+  "baseline_archive": "tmp/v1-core-implementation-tycajqwt/baseline-source.tar.gz",
+  "baseline_file_sha256": {
+    "a7/module_resolver.py": "ff7813aa6252a5d4a8f4f4162820f9a3a4f4acc023170f6f80ec55d6e11e3de9",
+    "a7/types.py": "a2442c8246779fd6f9e916cc0184678aea70571ad577a13dca7b8bd454f3f959"
+  },
+  "candidate_file_sha256": {
+    "a7/module_resolver.py": "ba8241a7808bf12579aabda92a2d1c5d241d5e3e75ef07fa82f87c2132fd8c41",
+    "a7/types.py": "534b45fc110169115050055361141bb73b531ea8479ad5a99d4e18b4ae3dab63",
+    "test/test_iterative_module_loading.py": "dbbc6bf812c013d8c6a7d2a690b6ceb0400b1b1f87863aadc89a847eb788a837",
+    "test/test_iterative_types.py": "40e180f54c3d3e552a795f19cb2e450e8970745540aee10fe47f23ba8f758b51"
+  },
+  "checks": [
+    {
+      "command": "uv run pytest -q test/test_iterative_module_loading.py test/test_module_resolver.py test/test_no_recursion.py test/test_pipeline_diagnostics.py",
+      "result": "50 passed in 2.62s",
+      "scope": "Module-loader batch before the later type-renderer and formatter changes"
+    },
+    {
+      "command": "uv run pytest -q test/test_iterative_types.py test/test_semantic_types.py test/test_semantic_generics.py test/test_audit_type_boundaries.py",
+      "result": "133 passed in 1.86s",
+      "scope": "Final streaming renderer with concurrent repaired backend state"
+    }
+  ],
+  "module_baseline_retry": {
+    "first_attempt": "SemanticError: Module missing not found",
+    "second_attempt": "Accepted incomplete cached root",
+    "method": "Executed archived module_resolver.py in a separate Python process; same resolver reused twice."
+  },
+  "renderer_measurement": {
+    "method": "Single instrumented call per depth and implementation; tracemalloc started after constructing nested SliceType nodes; recursion limit 100; elapsed wall seconds; output checked against [] repeated depth times plus i32.",
+    "recursive_archive": [
+      {
+        "depth": 1500,
+        "error": "RecursionError",
+        "seconds": 0.000185664976015687,
+        "peak_traced_bytes": 23417
+      },
+      {
+        "depth": 5000,
+        "error": "RecursionError",
+        "seconds": 0.00013935798779129982,
+        "peak_traced_bytes": 23185
+      }
+    ],
+    "intermediate_cached_renderer": [
+      {
+        "depth": 1500,
+        "seconds": 0.01038670598063618,
+        "peak_traced_bytes": 2652628,
+        "output_length": 3003
+      },
+      {
+        "depth": 5000,
+        "seconds": 0.047155341948382556,
+        "peak_traced_bytes": 26169096,
+        "output_length": 10003
+      }
+    ],
+    "final_streaming_renderer": [
+      {
+        "depth": 1500,
+        "seconds": 0.010673001059331,
+        "peak_traced_bytes": 301872,
+        "output_length": 3003
+      },
+      {
+        "depth": 5000,
+        "seconds": 0.03435075399465859,
+        "peak_traced_bytes": 1115056,
+        "output_length": 10003
+      }
+    ],
+    "measurement_script": "import sys,time,tracemalloc,json,pathlib,types\nimport a7.types as t\nout=pathlib.Path('/tmp/a7-renderer-cost-evidence');out.mkdir(exist_ok=True)\nlabel=sys.argv[1]\nif label=='before':(out/'before-types.py').write_text(pathlib.Path('a7/types.py').read_text())\nrecords=[]\nfor depth in [1500,5000]:\n node=t.I32\n for _ in range(depth):node=t.SliceType(node)\n previous=sys.getrecursionlimit();sys.setrecursionlimit(100)\n try:\n  tracemalloc.start();started=time.perf_counter();text=str(node);elapsed=time.perf_counter()-started;_,peak=tracemalloc.get_traced_memory();tracemalloc.stop()\n finally:sys.setrecursionlimit(previous)\n assert text=='[]'*depth+'i32'\n records.append(dict(depth=depth,seconds=elapsed,peak_traced_bytes=peak,output_length=len(text)))\n(out/(label+'.json')).write_text(json.dumps(records,indent=2));print(label,json.dumps(records))\n",
+    "intermediate_source_sha256": "e558def229198caf3c35375b6538ad588ca3a5e469aa6a8a520b4fcdb7be91e2"
+  },
+  "shallow_differential": {
+    "results": {
+      "seed": 714,
+      "cases": 300,
+      "failures": []
+    },
+    "script": "import sys,types,tarfile,random,json,pathlib,tempfile\nimport a7.types as current\nroot=pathlib.Path('/home/cx89/Projects/pl-dev/a7-py');baseline=types.ModuleType('baseline_a7_types');sys.modules[baseline.__name__]=baseline\nwith tarfile.open(root/'tmp/v1-core-implementation-tycajqwt/baseline-source.tar.gz') as archive:\n exec(compile(archive.extractfile('a7/types.py').read(),'baseline/a7/types.py','exec'),baseline.__dict__)\nrng=random.Random(714)\ndef descriptor(depth):\n if not depth:return ('primitive',rng.choice(['i32','string','f64','bool']))\n tag=rng.choice(['array','slice','pointer','reference','function','struct','generic','parameter','set','named'])\n if tag=='array':return(tag,descriptor(depth-1),rng.randrange(5))\n if tag in ['slice','pointer','reference']:return(tag,descriptor(depth-1))\n if tag=='function':return(tag,[descriptor(depth-1) for _ in range(rng.randrange(3))],descriptor(depth-1) if rng.randrange(2) else None,bool(rng.randrange(2)),descriptor(depth-1) if rng.randrange(2) else None)\n if tag in ['struct','generic','set']:return(tag,[descriptor(depth-1) for _ in range(rng.randrange(3))])\n if tag=='parameter':return(tag,[descriptor(depth-1) for _ in range(rng.randrange(3))])\n return(tag,rng.choice(['Node','Tree','Table']))\ndef build(mod,d):\n tag=d[0]\n if tag=='primitive':return mod.PrimitiveType(d[1])\n if tag=='array':return mod.ArrayType(build(mod,d[1]),d[2])\n if tag in ['slice','pointer','reference']:return getattr(mod,{'slice':'SliceType','pointer':'PointerType','reference':'ReferenceType'}[tag])(build(mod,d[1]))\n if tag=='function':return mod.FunctionType([build(mod,x) for x in d[1]],build(mod,d[2]) if d[2] else None,d[3],build(mod,d[4]) if d[4] else None)\n if tag=='struct':return mod.StructType(fields=[mod.StructField('f'+str(i),build(mod,x)) for i,x in enumerate(d[1])])\n if tag=='generic':return mod.GenericInstanceType('Box',[build(mod,x) for x in d[1]])\n if tag=='set':return mod.TypeSet(frozenset(build(mod,x) for x in d[1]))\n if tag=='parameter':return mod.GenericParamType('T',mod.TypeSet(frozenset(build(mod,x) for x in d[1])))\n return mod.StructType(d[1],generic_params=['T'])\nfailures=[]\nfor i in range(300):\n d=descriptor(4);a,b=build(baseline,d),build(current,d)\n if str(a)!=str(b) or hash(a)!=hash(b) or repr(a)!=repr(b):failures.append({'case':i,'descriptor':d,'old':str(a),'new':str(b)})\nfor mod in [baseline,current]:\n deep=mod.I32\n for _ in range(1500):deep=mod.SliceType(deep)\n limit=sys.getrecursionlimit()\n try:\n  sys.setrecursionlimit(100)\n  try: result={'length':len(str(deep))}\n  except RecursionError:result={'error':'RecursionError'}\n finally:sys.setrecursionlimit(limit)\n print(mod.__name__,result)\nout=pathlib.Path(tempfile.mkdtemp(prefix='a7-type-display-evidence-'));(out/'results.json').write_text(json.dumps({'seed':714,'cases':300,'failures':failures},indent=2));print(json.dumps({'cases':300,'mismatches':len(failures),'evidence':str(out)}))\n",
+    "compared": [
+      "str",
+      "hash",
+      "generated repr"
+    ],
+    "note": "Archived classes and current classes loaded in one process; seed 714, 300 depth-4 descriptors; no production edits."
+  }
+}

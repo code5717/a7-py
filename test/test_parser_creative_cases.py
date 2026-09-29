@@ -8,6 +8,7 @@ and interesting edge cases not covered elsewhere.
 import pytest
 from a7.parser import parse_a7
 from a7.ast_nodes import NodeKind
+from a7.errors import ParseError
 
 
 class TestCreativePatterns:
@@ -665,14 +666,24 @@ class TestGenericEdgeCases:
 
         main :: fn() {
             h := Handler(i32){data: 42}
-            b := Buffer(f64, 100){size: 0}
             n := Nested(string){}
         }
         """
-        # Parse code
-        # Parse code
         result = parse_a7(code)
-        assert result.kind == NodeKind.PROGRAM
+        assert [decl.name for decl in result.declarations] == ["Handler", "Buffer", "Nested", "main"]
+        assert [field.name for field in result.declarations[0].fields] == ["data", "process", "compare"]
+        assert [stmt.name for stmt in result.declarations[-1].body.statements] == ["h", "n"]
+
+    def test_value_generic_argument_is_rejected_without_dropping_main(self):
+        # Value generics are unavailable. This formerly passed because parser
+        # recovery discarded main and the test only checked PROGRAM kind.
+        with pytest.raises(ParseError):
+            parse_a7("""
+Buffer($T, $N) :: struct { data: [$N]$T }
+main :: fn() {
+    b := Buffer(f64, 100){size: 0}
+}
+""")
 
 
 class TestStringAndLiteralEdgeCases:

@@ -1,0 +1,11 @@
+io :: import "std/io"
+
+main :: fn() {
+    arr: [3]i32 = [1, 2, 3]
+    s := arr[0..3]
+    i: usize = 0
+    while i < s.len {
+        io.println("{}", s[i])
+        i += 1
+    }
+}

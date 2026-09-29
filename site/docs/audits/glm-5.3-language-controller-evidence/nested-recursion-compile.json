@@ -1,0 +1,468 @@
+{
+  "schema_version": "2.0",
+  "mode": "compile",
+  "status": "error",
+  "input": "/tmp/a7-glm-reconcile-components/nested-recursion.a7",
+  "backend": "zig",
+  "timing_ms": 0,
+  "stages": {
+    "tokenize": {
+      "ok": true,
+      "token_count": 24,
+      "tokens": [
+        {
+          "type": "IDENTIFIER",
+          "value": "main",
+          "line": 1,
+          "column": 1,
+          "length": 4
+        },
+        {
+          "type": "DECLARE_CONST",
+          "value": "::",
+          "line": 1,
+          "column": 6,
+          "length": 2
+        },
+        {
+          "type": "FN",
+          "value": "fn",
+          "line": 1,
+          "column": 9,
+          "length": 2
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 1,
+          "column": 11,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 1,
+          "column": 12,
+          "length": 1
+        },
+        {
+          "type": "LEFT_BRACE",
+          "value": "{",
+          "line": 1,
+          "column": 14,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 1,
+          "column": 15,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "inner",
+          "line": 2,
+          "column": 5,
+          "length": 5
+        },
+        {
+          "type": "DECLARE_CONST",
+          "value": "::",
+          "line": 2,
+          "column": 11,
+          "length": 2
+        },
+        {
+          "type": "FN",
+          "value": "fn",
+          "line": 2,
+          "column": 14,
+          "length": 2
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 2,
+          "column": 16,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 2,
+          "column": 17,
+          "length": 1
+        },
+        {
+          "type": "LEFT_BRACE",
+          "value": "{",
+          "line": 2,
+          "column": 19,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "inner",
+          "line": 2,
+          "column": 21,
+          "length": 5
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 2,
+          "column": 26,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 2,
+          "column": 27,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_BRACE",
+          "value": "}",
+          "line": 2,
+          "column": 29,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 2,
+          "column": 30,
+          "length": 1
+        },
+        {
+          "type": "IDENTIFIER",
+          "value": "inner",
+          "line": 3,
+          "column": 5,
+          "length": 5
+        },
+        {
+          "type": "LEFT_PAREN",
+          "value": "(",
+          "line": 3,
+          "column": 10,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_PAREN",
+          "value": ")",
+          "line": 3,
+          "column": 11,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 3,
+          "column": 12,
+          "length": 1
+        },
+        {
+          "type": "RIGHT_BRACE",
+          "value": "}",
+          "line": 4,
+          "column": 1,
+          "length": 1
+        },
+        {
+          "type": "TERMINATOR",
+          "value": "\n",
+          "line": 4,
+          "column": 2,
+          "length": 1
+        },
+        {
+          "type": "EOF",
+          "value": "",
+          "line": 5,
+          "column": 1,
+          "length": 0
+        }
+      ]
+    },
+    "parse": {
+      "ok": true,
+      "ast": {
+        "kind": "PROGRAM",
+        "span": {
+          "start_line": 1,
+          "start_column": 1,
+          "end_line": 1,
+          "end_column": 5,
+          "length": 4
+        },
+        "is_public": false,
+        "is_using": false,
+        "is_tagged": false,
+        "is_variadic": false,
+        "has_fallthrough": false,
+        "declarations": [
+          {
+            "kind": "FUNCTION",
+            "span": {
+              "start_line": 1,
+              "start_column": 1,
+              "end_line": 1,
+              "end_column": 5,
+              "length": 4
+            },
+            "name": "main",
+            "is_public": false,
+            "is_using": false,
+            "is_tagged": false,
+            "is_variadic": false,
+            "has_fallthrough": false,
+            "parameters": [],
+            "body": {
+              "kind": "BLOCK",
+              "span": {
+                "start_line": 1,
+                "start_column": 14,
+                "end_line": 4,
+                "end_column": 2,
+                "length": 1
+              },
+              "is_public": false,
+              "is_using": false,
+              "is_tagged": false,
+              "is_variadic": false,
+              "has_fallthrough": false,
+              "statements": [
+                {
+                  "kind": "FUNCTION",
+                  "span": {
+                    "start_line": 2,
+                    "start_column": 5,
+                    "end_line": 2,
+                    "end_column": 10,
+                    "length": 5
+                  },
+                  "name": "inner",
+                  "is_public": false,
+                  "is_using": false,
+                  "is_tagged": false,
+                  "is_variadic": false,
+                  "has_fallthrough": false,
+                  "parameters": [],
+                  "body": {
+                    "kind": "BLOCK",
+                    "span": {
+                      "start_line": 2,
+                      "start_column": 19,
+                      "end_line": 2,
+                      "end_column": 30,
+                      "length": 11
+                    },
+                    "is_public": false,
+                    "is_using": false,
+                    "is_tagged": false,
+                    "is_variadic": false,
+                    "has_fallthrough": false,
+                    "statements": [
+                      {
+                        "kind": "EXPRESSION_STMT",
+                        "span": {
+                          "start_line": 2,
+                          "start_column": 21,
+                          "end_line": 2,
+                          "end_column": 26,
+                          "length": 5
+                        },
+                        "is_public": false,
+                        "is_using": false,
+                        "is_tagged": false,
+                        "is_variadic": false,
+                        "has_fallthrough": false,
+                        "expression": {
+                          "kind": "CALL",
+                          "span": {
+                            "start_line": 2,
+                            "start_column": 21,
+                            "end_line": 2,
+                            "end_column": 26,
+                            "length": 5
+                          },
+                          "is_public": false,
+                          "is_using": false,
+                          "is_tagged": false,
+                          "is_variadic": false,
+                          "has_fallthrough": false,
+                          "arguments": [],
+                          "function": {
+                            "kind": "IDENTIFIER",
+                            "span": {
+                              "start_line": 2,
+                              "start_column": 21,
+                              "end_line": 2,
+                              "end_column": 26,
+                              "length": 5
+                            },
+                            "name": "inner",
+                            "is_public": false,
+                            "is_using": false,
+                            "is_tagged": false,
+                            "is_variadic": false,
+                            "has_fallthrough": false
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "kind": "EXPRESSION_STMT",
+                  "span": {
+                    "start_line": 3,
+                    "start_column": 5,
+                    "end_line": 3,
+                    "end_column": 10,
+                    "length": 5
+                  },
+                  "is_public": false,
+                  "is_using": false,
+                  "is_tagged": false,
+                  "is_variadic": false,
+                  "has_fallthrough": false,
+                  "expression": {
+                    "kind": "CALL",
+                    "span": {
+                      "start_line": 3,
+                      "start_column": 5,
+                      "end_line": 3,
+                      "end_column": 10,
+                      "length": 5
+                    },
+                    "is_public": false,
+                    "is_using": false,
+                    "is_tagged": false,
+                    "is_variadic": false,
+                    "has_fallthrough": false,
+                    "arguments": [],
+                    "function": {
+                      "kind": "IDENTIFIER",
+                      "span": {
+                        "start_line": 3,
+                        "start_column": 5,
+                        "end_line": 3,
+                        "end_column": 10,
+                        "length": 5
+                      },
+                      "name": "inner",
+                      "is_public": false,
+                      "is_using": false,
+                      "is_tagged": false,
+                      "is_variadic": false,
+                      "has_fallthrough": false
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "semantic": {
+      "ok": false,
+      "passes": [
+        {
+          "name": "Import Resolution",
+          "ok": true,
+          "errors": 0
+        },
+        {
+          "name": "Backend Import Support",
+          "ok": true,
+          "errors": 0
+        },
+        {
+          "name": "Backend Feature Support",
+          "ok": true,
+          "errors": 0
+        },
+        {
+          "name": "Name Resolution",
+          "ok": true,
+          "errors": 0
+        },
+        {
+          "name": "Type Checking",
+          "ok": false,
+          "errors": 2
+        }
+      ],
+      "errors": [
+        {
+          "type": "TypeCheckError",
+          "message": "nested-recursion.a7:3:5: Undefined type (Identifier 'inner')",
+          "file": "/tmp/a7-glm-reconcile-components/nested-recursion.a7",
+          "span": {
+            "start_line": 3,
+            "start_column": 5,
+            "end_line": 3,
+            "end_column": 10,
+            "length": 5
+          }
+        },
+        {
+          "type": "TypeCheckError",
+          "message": "nested-recursion.a7:3:5: Type is not callable (Cannot call undefined identifier 'inner')",
+          "file": "/tmp/a7-glm-reconcile-components/nested-recursion.a7",
+          "span": {
+            "start_line": 3,
+            "start_column": 5,
+            "end_line": 3,
+            "end_column": 10,
+            "length": 5
+          }
+        }
+      ]
+    }
+  },
+  "artifacts": {},
+  "error": {
+    "category": "semantic",
+    "message": "Semantic analysis failed with 2 error(s)",
+    "details": [
+      {
+        "type": "TypeCheckError",
+        "message": "nested-recursion.a7:3:5: Undefined type (Identifier 'inner')",
+        "file": "/tmp/a7-glm-reconcile-components/nested-recursion.a7",
+        "span": {
+          "start_line": 3,
+          "start_column": 5,
+          "end_line": 3,
+          "end_column": 10,
+          "length": 5
+        }
+      },
+      {
+        "type": "TypeCheckError",
+        "message": "nested-recursion.a7:3:5: Type is not callable (Cannot call undefined identifier 'inner')",
+        "file": "/tmp/a7-glm-reconcile-components/nested-recursion.a7",
+        "span": {
+          "start_line": 3,
+          "start_column": 5,
+          "end_line": 3,
+          "end_column": 10,
+          "length": 5
+        }
+      }
+    ],
+    "span": {
+      "start_line": 3,
+      "start_column": 5,
+      "end_line": 3,
+      "end_column": 10,
+      "length": 5
+    },
+    "exception_type": null
+  }
+}

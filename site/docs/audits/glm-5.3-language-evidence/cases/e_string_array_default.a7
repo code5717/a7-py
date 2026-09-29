@@ -1,0 +1,6 @@
+io :: import "std/io"
+
+main :: fn() {
+    a: [2]string
+    io.println("{}", a[0])
+}

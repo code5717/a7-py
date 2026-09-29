@@ -1,0 +1,8 @@
+bad :: fn(x: ref i32) {
+    del x
+}
+
+main :: fn() {
+    v := 3
+    bad(v)
+}

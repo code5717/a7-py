@@ -1,0 +1,7 @@
+Counter :: struct {
+    value: i32
+}
+
+pub make :: fn() i32 {
+    ret 7
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "task": "install A7",
+    "indexTitle": "Get started",
+    "retrieved": "https://code5717.github.io/a7-py/docs/start.md",
+    "terms": {
+      "uv sync": true,
+      "git clone": true
+    },
+    "bytes": 3670
+  },
+  {
+    "task": "find reference syntax",
+    "indexTitle": "Memory and references",
+    "retrieved": "https://code5717.github.io/a7-py/docs/language/memory.md",
+    "terms": {
+      "ref": true,
+      "nil": true
+    },
+    "bytes": 4211
+  },
+  {
+    "task": "explain a limitation",
+    "indexTitle": "Generics and type sets",
+    "retrieved": "https://code5717.github.io/a7-py/docs/language/generics.md",
+    "terms": {
+      "limited": true,
+      "constraint": true
+    },
+    "bytes": 2930
+  },
+  {
+    "task": "locate an example",
+    "indexTitle": "Examples",
+    "retrieved": "https://code5717.github.io/a7-py/docs/examples.md",
+    "terms": {
+      "001_hello.a7": true
+    },
+    "bytes": 16358
+  },
+  {
+    "task": "interpret exit code",
+    "indexTitle": "Compiler",
+    "retrieved": "https://code5717.github.io/a7-py/docs/compiler.md",
+    "terms": {
+      "I/O": true,
+      "3": true
+    },
+    "bytes": 6547
+  }
+]

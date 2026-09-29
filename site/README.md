@@ -1,45 +1,57 @@
-# A7 Docs Site
+# A7 documentation site
 
-Fresh static site for <https://code5717.github.io/a7-py/>.
+The static site publishes at <https://code5717.github.io/a7-py/>. Bun runs the
+build and checks. Tailwind compiles the stylesheet. No client framework or
+server is required for deployed documentation.
 
-The site is intentionally small:
+## Content and publication
 
-- `public/docs/*.md` is the public raw markdown corpus.
-- `scripts/build.ts` renders every doc to static HTML under `dist/`.
-- `src/tailwind.css` is the Tailwind 4 design system source.
-- `llms.txt` and `llms-full.txt` are generated from the same corpus.
-- No client framework runtime, no router bundle, no generated JSON content layer.
+`public/docs/**/*.md` holds the human and agent documentation. Each document has
+frontmatter for its title, navigation group, summary, and order, followed by one
+H1. Use Markdown topic links such as `/a7-py/docs/language/functions.md`; the
+HTML renderer converts them to the corresponding page URLs.
 
-## Design System
-
-**Name:** Field Manual.
-
-**Thesis:** A7 should feel like an industrial compiler field manual: graphite
-machine shell, warm paper reading surface, rare oxide inspection ink, and dense
-monospace navigation.
-
-**Rules:**
-
-- Tailwind is the styling system. Tokens live in `@theme` inside
-  `src/tailwind.css`.
-- Use two type families only: serif for reading and display type, monospace for
-  structure, code, nav, captions, and running headers.
-- The palette is graphite shell, parchment paper, oxide red accent, and
-  calibration green. Raw Tailwind palette utilities should not define the look.
-- The docs surface is editorial, not SaaS. Use pages, rails, rules, and
-  tables before cards.
-- The first viewport must make "A7" unmistakable and show the compiler map.
-- Body copy is readable on the paper surface; navigation stays compact and
-  operational.
-- No floating dashboard cards, decorative blobs, generic gradient panels, or
-  rounded SaaS surfaces.
-
-Commands:
+`scripts/content.ts` discovers nested documents and creates the typed registry.
+It combines headings, legacy anchors, source links, examples, and records from
+`content/features.json`. The HTML build, search index, sitemap, manifest, and
+agent exports all read that registry. Markdown-it renders CommonMark with table
+support and raw HTML disabled. Code fences retain their literal source.
 
 ```bash
-bun install
-bun run build
+bun install --frozen-lockfile
+bun run sync:exports
+bun run check
 bun run preview
 ```
 
-The GitHub Pages workflow publishes `site/dist`.
+Run `sync:exports` after changing the corpus or feature metadata. It updates the
+tracked `llms.txt`, `llms-full.txt`, sitemap, and manifest. Ordinary builds write
+only `dist/`. `check:exports` detects stale tracked exports and exits nonzero.
+The documentation digest in the manifest identifies the published corpus, not
+compiler correctness or a clean Git revision.
+
+`check` runs lint, TypeScript checks, source-derived feature coverage checks,
+renderer and publication tests, preview-server security tests,
+the static build, export synchronization checks, and internal-link checks.
+The Pages workflow checks generated exports before uploading the build.
+
+The preview server binds to `127.0.0.1:4173`; set `PORT` to change it. Missing
+resources return 404. JSON has the JSON content type. GitHub Pages controls
+production HTTP headers. Deployment is a separate operation.
+
+## Design
+
+The approved minimal documentation layout uses a 240px navigation rail, a reading
+column, and a 180px outline. Native disclosures replace the rail below 900px and
+the outline below 1200px. Article prose uses Inter Variable at 17px and 1.65 line
+height. Literal code uses JetBrains Mono at 15px and 1.6 line height without
+ligatures. Both fonts are pinned dependencies, copied locally with their
+licenses. Only the prose font is preloaded.
+
+Light and dark tokens live in `src/tailwind.css`. The initial theme follows the
+system; explicit preferences apply before paint and persist when storage is
+available. Search, copy controls, and outline tracking enhance static HTML.
+Without JavaScript, content, navigation, outlines, and Markdown links still work.
+
+See [research decisions](docs/research-decisions.md),
+[coverage](docs/coverage.md), and [verification](docs/verification.md).

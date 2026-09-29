@@ -10,8 +10,10 @@ async function listFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
   for (const entry of entries) {
     const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) out.push(...await listFiles(full))
-    else if (entry.isFile()) out.push(full)
+    if (entry.isDirectory() && !['node_modules', 'dist', '.git'].includes(entry.name)) {
+      out.push(...await listFiles(full))
+    }
+    else if (entry.isFile() && /\.(?:ts|js|css|md|json|txt|html|yml)$/.test(entry.name)) out.push(full)
   }
   return out
 }

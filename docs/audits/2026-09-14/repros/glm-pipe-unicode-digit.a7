@@ -1,0 +1,6 @@
+// glm-pipe repro: superscript-two is accepted by the tokenizer as a digit
+// (str.isdigit() is Unicode-aware) but int('²') raises ValueError in the
+// parser, producing exit code 8 (internal) with no span instead of a clean
+// tokenize-stage diagnostic. Arabic-Indic digits (e.g. '٣') tokenize AND
+// int() cleanly, so they compile silently to their numeric value.
+x := ²

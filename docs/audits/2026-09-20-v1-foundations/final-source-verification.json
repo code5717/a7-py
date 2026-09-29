@@ -1,0 +1,16 @@
+{
+  "full_gate_exit": 0,
+  "checks_passed": 9,
+  "pytest_passed": 2106,
+  "changed_since_gate_start": [
+    "docs/plan/delivery-roadmap.md",
+    "docs/plan/execution.md",
+    "docs/plan/research/memory/delivery-reconciliation.md",
+    "test/norec_scan.py"
+  ],
+  "new_document": "docs/plan/packets/P-MOD-modules.md",
+  "scanner_executable_ast_unchanged": true,
+  "compiler_files_unchanged": true,
+  "site_files_unchanged": true,
+  "scope": "Gate-start manifest inputs, plus new module packet. Audit evidence excluded. Documentation and scanner module docstring changed after gate start; no executable changes."
+}

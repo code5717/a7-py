@@ -7,6 +7,7 @@ Validates semantic rules beyond type checking:
 - A7-specific rules (nil only for ref types, etc.)
 """
 
+from dataclasses import fields
 from typing import List, Optional, Set
 
 from a7.ast_nodes import ASTNode, NodeKind, LiteralKind
@@ -65,6 +66,7 @@ class SemanticValidationPass:
         self.errors = []
 
         self._validate_fall_usage(program)
+        self._validate_match_expression_coverage(program)
 
         # Visit the program
         self.visit_program(program)
@@ -329,6 +331,19 @@ class SemanticValidationPass:
 
             self._push_non_match_children(node, stack)
 
+    def _validate_match_expression_coverage(self, program: ASTNode) -> None:
+        """Every value-producing match needs a result for every input."""
+        stack = [(program, False)]
+        while stack:
+            node, _ = stack.pop()
+            if node.kind == NodeKind.MATCH_EXPR and not self._is_match_exhaustive(node):
+                self.add_error(
+                    SemanticErrorType.NON_EXHAUSTIVE_MATCH,
+                    node.span,
+                    "match expression must cover every value; add an else or wildcard branch",
+                )
+            self._push_non_match_children(node, stack)
+
     def _case_direct_statements(self, case: ASTNode) -> List[ASTNode]:
         case_stmt = getattr(case, "statement", None)
         if case_stmt is None:
@@ -499,12 +514,36 @@ class SemanticValidationPass:
             pass
 
     def _validate_no_recursion(self, program: ASTNode) -> None:
-        """Reject direct and mutual recursion between top-level functions."""
-        functions = {
-            decl.name: decl
-            for decl in program.declarations or []
-            if decl.kind == NodeKind.FUNCTION and decl.name
-        }
+        """Reject recursion in every function, including unused nested declarations.
+
+        Each statement list has its own function namespace. Keeping those lists
+        separate avoids merging unrelated nested functions that share a name.
+        """
+        work = [program]
+        validated: set[int] = set()
+        node_fields = fields(ASTNode)
+        while work:
+            node = work.pop()
+            if node.kind == NodeKind.FUNCTION and id(node) not in validated:
+                self._validate_function_group({node.name: node})
+                validated.add(id(node))
+            for field in node_fields:
+                value = getattr(node, field.name)
+                if isinstance(value, ASTNode):
+                    work.append(value)
+                elif isinstance(value, list):
+                    children = [child for child in value if isinstance(child, ASTNode)]
+                    functions = {
+                        child.name: child for child in children
+                        if child.kind == NodeKind.FUNCTION and child.name
+                    }
+                    if functions:
+                        self._validate_function_group(functions)
+                        validated.update(id(function) for function in functions.values())
+                    work.extend(reversed(children))
+
+    def _validate_function_group(self, functions: dict[str, ASTNode]) -> None:
+        """Check one lexical group with the same call and alias rules."""
         self._function_spans = {name: func.span for name, func in functions.items()}
         self._function_param_call_positions = {}
         self._function_param_invocations = {}
@@ -517,11 +556,22 @@ class SemanticValidationPass:
             for name, func in functions.items()
         }
 
+        # Functions on no cycle cannot start one: skip singleton components
+        # without a self-call. A cycle through a function stays inside its
+        # component, so each search is confined to that component.
+        component_of: dict[str, set[str]] = {}
+        for component in self._strongly_connected_components():
+            members = set(component)
+            if len(component) == 1 and component[0] not in self._function_graph[component[0]]:
+                continue
+            for member in component:
+                component_of[member] = members
+
         reported_nodes: set[str] = set()
         for name in functions:
-            if name in reported_nodes:
+            if name in reported_nodes or name not in component_of:
                 continue
-            path = self._find_recursion_path(name)
+            path = self._find_recursion_path(name, component_of[name])
             if not path:
                 continue
             reported_nodes.update(path)
@@ -531,17 +581,98 @@ class SemanticValidationPass:
                 f"Cycle: {' -> '.join(path)}",
             )
 
-    def _find_recursion_path(self, start: str) -> Optional[list[str]]:
-        stack: list[tuple[str, list[str]]] = [(start, [start])]
-        while stack:
-            current, path = stack.pop()
-            for callee in sorted(self._function_graph.get(current, set()), reverse=True):
-                if callee == start:
-                    return path + [callee]
-                if callee in path:
+    def _strongly_connected_components(self) -> list[list[str]]:
+        """Tarjan's algorithm over `_function_graph`, on an explicit stack."""
+        graph = self._function_graph
+        index: dict[str, int] = {}
+        lowlink: dict[str, int] = {}
+        on_stack: set[str] = set()
+        component_stack: list[str] = []
+        components: list[list[str]] = []
+
+        for root in graph:
+            if root in index:
+                continue
+            index[root] = lowlink[root] = len(index)
+            component_stack.append(root)
+            on_stack.add(root)
+            work = [(root, iter(sorted(graph[root])))]
+            while work:
+                node, callees = work[-1]
+                descended = False
+                for callee in callees:
+                    if callee not in graph:
+                        continue
+                    if callee not in index:
+                        index[callee] = lowlink[callee] = len(index)
+                        component_stack.append(callee)
+                        on_stack.add(callee)
+                        work.append((callee, iter(sorted(graph[callee]))))
+                        descended = True
+                        break
+                    if callee in on_stack:
+                        lowlink[node] = min(lowlink[node], index[callee])
+                if descended:
                     continue
-                stack.append((callee, path + [callee]))
-        return None
+                work.pop()
+                if work:
+                    parent = work[-1][0]
+                    lowlink[parent] = min(lowlink[parent], lowlink[node])
+                if lowlink[node] == index[node]:
+                    component: list[str] = []
+                    while True:
+                        member = component_stack.pop()
+                        on_stack.discard(member)
+                        component.append(member)
+                        if member == node:
+                            break
+                    components.append(component)
+        return components
+
+    def _find_recursion_path(self, start: str, members: set[str]) -> Optional[list[str]]:
+        """Return the first simple cycle through `start` in name-ordered DFS order.
+
+        This is the cycle an exhaustive simple-path DFS finds when it tries
+        callees in name order and closes the cycle as soon as `start` is a
+        callee of the current function. That search fully explores the
+        smallest untried callee before any larger one, so its answer is built
+        greedily: close the cycle if `start` is a callee; otherwise step to the
+        smallest callee off the path that can still reach `start` without
+        revisiting the path. Each step is one backward reachability sweep, so
+        the search is O(V * (V + E)) over the component `members`.
+        """
+        callers: dict[str, list[str]] = {member: [] for member in members}
+        for member in members:
+            for callee in self._function_graph.get(member, set()):
+                if callee in callers:
+                    callers[callee].append(member)
+
+        path = [start]
+        on_path = {start}
+        current = start
+        while True:
+            callees = self._function_graph.get(current, set())
+            if start in callees:
+                return path + [start]
+
+            # Functions off the path that reach `start` through functions off the path.
+            reaches_start: set[str] = set()
+            worklist = [caller for caller in callers[start] if caller not in on_path]
+            while worklist:
+                function = worklist.pop()
+                if function in reaches_start:
+                    continue
+                reaches_start.add(function)
+                for caller in callers[function]:
+                    if caller not in on_path and caller not in reaches_start:
+                        worklist.append(caller)
+
+            candidates = [callee for callee in callees if callee in reaches_start]
+            if not candidates:
+                return None
+            current = min(candidates)
+            path.append(current)
+            on_path.add(current)
 
     def _collect_function_calls(self, function: ASTNode, function_names: set[str]) -> set[str]:
         if function.body is None:
@@ -1198,51 +1329,71 @@ class SemanticValidationPass:
         return node.kind.name.lower()
 
     def _statement_exits_current_block(self, node: Optional[ASTNode]) -> bool:
-        """Return True when a statement prevents later statements in the same block."""
-        if node is None:
-            return False
+        """Check block termination with ordered, short-circuit work items."""
+        pending = [("visit", node)]
+        result = False
+        while pending:
+            operation, value = pending.pop()
+            if operation in ("resume_any", "resume_all"):
+                # Preserve context validation side effects: never inspect an
+                # unreachable tail or a branch after a decisive result.
+                if result == (operation == "resume_any"):
+                    continue
+                operation = "any" if operation == "resume_any" else "all"
 
-        if node.kind == NodeKind.RETURN:
-            return self.context.in_function()
+            if operation in ("any", "all"):
+                child = next(value, None)
+                if child is None:
+                    result = operation == "all"
+                else:
+                    pending.append(("resume_" + operation, value))
+                    pending.append(child)
+                continue
 
-        if node.kind == NodeKind.BREAK:
-            return self.context.validate_break(node.label)
+            if operation == "exhaustive":
+                result = self._is_match_exhaustive(value)
+                continue
 
-        if node.kind == NodeKind.CONTINUE:
-            return self.context.validate_continue(node.label)
-
-        if node.kind == NodeKind.FALL:
-            return True
-
-        if node.kind == NodeKind.BLOCK:
-            return self._block_exits_current_block(node.statements or [])
-
-        if node.kind == NodeKind.IF_STMT:
-            return (
-                node.then_stmt is not None
-                and node.else_stmt is not None
-                and self._statement_exits_current_block(node.then_stmt)
-                and self._statement_exits_current_block(node.else_stmt)
-            )
-
-        if node.kind == NodeKind.MATCH:
-            if not node.cases:
-                return False
-
-            for case in node.cases:
-                case_stmt = getattr(case, "statement", None)
-                if case_stmt is not None:
-                    if not self._statement_exits_current_block(case_stmt):
-                        return False
-                elif not self._block_exits_current_block(getattr(case, "statements", None) or []):
-                    return False
-
-            if node.else_case:
-                return self._block_exits_current_block(node.else_case)
-
-            return self._is_match_exhaustive(node)
-
-        return False
+            current = value
+            result = False
+            if current is None:
+                continue
+            if current.kind == NodeKind.RETURN:
+                result = self.context.in_function()
+            elif current.kind == NodeKind.BREAK:
+                result = self.context.validate_break(current.label)
+            elif current.kind == NodeKind.CONTINUE:
+                result = self.context.validate_continue(current.label)
+            elif current.kind == NodeKind.FALL:
+                result = True
+            elif current.kind == NodeKind.BLOCK:
+                pending.append(("any", iter(
+                    ("visit", stmt) for stmt in (current.statements or [])
+                )))
+            elif current.kind == NodeKind.IF_STMT:
+                if current.then_stmt is not None and current.else_stmt is not None:
+                    pending.append(("all", iter([
+                        ("visit", current.then_stmt), ("visit", current.else_stmt),
+                    ])))
+            elif current.kind == NodeKind.MATCH and current.cases:
+                branches = []
+                for case in current.cases:
+                    case_stmt = getattr(case, "statement", None)
+                    if case_stmt is not None:
+                        branches.append(("visit", case_stmt))
+                    else:
+                        branches.append(("any", iter(
+                            ("visit", stmt)
+                            for stmt in (getattr(case, "statements", None) or [])
+                        )))
+                if current.else_case:
+                    branches.append(("any", iter(
+                        ("visit", stmt) for stmt in current.else_case
+                    )))
+                else:
+                    branches.append(("exhaustive", current))
+                pending.append(("all", iter(branches)))
+        return result
 
     def _block_exits_current_block(self, statements: List[ASTNode]) -> bool:
         for stmt in statements:
@@ -1251,60 +1402,49 @@ class SemanticValidationPass:
         return False
 
     def _returns_on_all_paths(self, node: ASTNode) -> bool:
-        """Check if a node returns on all execution paths (iterative)."""
-        # Use an iterative approach: drill down through blocks/ifs/matches
-        current = node
-        while current is not None:
-            if current.kind == NodeKind.RETURN:
-                return True
-
-            if current.kind == NodeKind.BLOCK:
-                stmts = current.statements or []
-                if not stmts:
+        """Check return completeness without recursive branch calls."""
+        pending = [("visit", node)]
+        while pending:
+            operation, current = pending.pop()
+            if operation == "exhaustive":
+                if not self._is_match_exhaustive(current):
                     return False
-                current = stmts[-1]
                 continue
-
-            if current.kind == NodeKind.IF_STMT:
+            if current is None:
+                return False
+            if current.kind == NodeKind.RETURN:
+                continue
+            if current.kind == NodeKind.BLOCK:
+                statements = current.statements or []
+                if not statements:
+                    return False
+                pending.append(("visit", statements[-1]))
+            elif current.kind == NodeKind.IF_STMT:
                 if current.else_stmt is None:
                     return False
-                # Both branches must return — check each iteratively
-                if not self._returns_on_all_paths(current.then_stmt):
-                    return False
-                current = current.else_stmt
-                continue
-
-            if current.kind == NodeKind.MATCH:
-                # Check all case branches
+                pending.append(("visit", current.else_stmt))
+                pending.append(("visit", current.then_stmt))
+            elif current.kind == NodeKind.MATCH:
+                # Every branch must return. The fallback/coverage check runs
+                # after the case bodies, as in the original short-circuit walk.
+                if current.else_case:
+                    pending.append(("visit", current.else_case[-1]))
+                else:
+                    pending.append(("exhaustive", current))
+                branches = []
                 for case in (current.cases or []):
                     case_stmt = getattr(case, "statement", None)
-                    if case_stmt is not None:
-                        if not self._returns_on_all_paths(case_stmt):
-                            return False
-                    else:
-                        case_stmts = getattr(case, "statements", None)
-                        if case_stmts:
-                            if not self._returns_on_all_paths(case_stmts[-1]):
-                                return False
-                        else:
-                            return False
-                # Else branch, if present, must return as well.
-                if current.else_case:
-                    else_stmts = current.else_case or []
-                    if not else_stmts:
-                        return False
-                    return self._returns_on_all_paths(else_stmts[-1])
-
-                # Without else, only exhaustive bool/enum matches can be total.
-                return self._is_match_exhaustive(current)
-
-            # Any other node kind doesn't return
-            return False
-
-        return False
+                    if case_stmt is None:
+                        statements = getattr(case, "statements", None) or []
+                        case_stmt = statements[-1] if statements else None
+                    branches.append(("visit", case_stmt))
+                pending.extend(reversed(branches))
+            else:
+                return False
+        return True
 
     def _is_match_exhaustive(self, node: ASTNode) -> bool:
-        """Check whether a match statement covers all values for bool/enum scrutinees."""
+        """Check a fallback or complete bool/enum coverage."""
         if node.else_case:
             return True
 
@@ -1343,7 +1483,9 @@ class SemanticValidationPass:
         """Return True when a match pattern is a wildcard branch."""
         if pattern.kind == NodeKind.PATTERN_WILDCARD:
             return True
-        return pattern.kind == NodeKind.PATTERN_IDENTIFIER and (pattern.name or "") == "_"
+        return pattern.kind == NodeKind.PATTERN_IDENTIFIER and (
+            (pattern.name or "") == "_" or bool(getattr(pattern, "is_capture_pattern", False))
+        )
 
     def _extract_bool_pattern_value(self, pattern: ASTNode) -> Optional[bool]:
         """Extract bool literal value from a match pattern, if present."""

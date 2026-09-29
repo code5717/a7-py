@@ -1,0 +1,8 @@
+io :: import "std/io"
+
+main :: fn() {
+    a: i8 = 100
+    b: i64 = 200
+    c := a + b
+    io.println("{}", c)
+}

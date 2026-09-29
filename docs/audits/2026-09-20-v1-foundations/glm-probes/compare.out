@@ -1,0 +1,71 @@
+baseline groups: 31  candidate groups: 31
+only in baseline: []
+only in candidate: []
+baseline conservative: 31  candidate conservative: 31
+conservative only in baseline: []
+conservative only in candidate: []
+candidate: groups == conservative groups: True
+edge-count baseline: 2905  candidate: 2919  differing nodes: 20
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@499:44> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@444:48> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.enter_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@434:48> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.semantic_validator:SemanticValidationPass.visit_statement.<lambda@183:40> 
+     base-only: [] 
+     cand-only: ['a7.semantic_context:SemanticContext.exit_loop']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@507:52> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.semantic_validator:SemanticValidationPass.visit_statement.<lambda@191:40> 
+     base-only: [] 
+     cand-only: ['a7.semantic_context:SemanticContext.exit_loop']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@514:52> 
+     base-only: [] 
+     cand-only: ['a7.passes.name_resolution:NameResolutionPass._enter_match_case_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@472:40> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@453:48> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.enter_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@457:40> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@436:48> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.enter_scope']
+   a7.passes.semantic_validator:SemanticValidationPass.visit_statement.<lambda@164:40> 
+     base-only: [] 
+     cand-only: ['a7.semantic_context:SemanticContext.pop_defers_at_depth']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@442:48> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement 
+     base-only: ['a7.passes.name_resolution:NameResolutionPass._enter_match_case_scope', 'a7.symbol_table:SymbolTable.exit_scope'] 
+     cand-only: []
+   a7.passes.semantic_validator:SemanticValidationPass.visit_statement.<lambda@177:40> 
+     base-only: [] 
+     cand-only: ['a7.semantic_context:SemanticContext.exit_loop']
+   a7.passes.semantic_validator:SemanticValidationPass.visit_statement 
+     base-only: ['a7.semantic_context:SemanticContext.exit_loop', 'a7.semantic_context:SemanticContext.pop_defers_at_depth'] 
+     cand-only: []
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@492:40> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@417:40> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@451:48> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.exit_scope']
+   a7.passes.name_resolution:NameResolutionPass.visit_statement.<lambda@502:44> 
+     base-only: [] 
+     cand-only: ['a7.symbol_table:SymbolTable.enter_scope']
+baseline unresolved: 35  candidate unresolved: 35
+baseline deepcopy: 1  candidate deepcopy: 1
+baseline dataclass findings: 44  candidate dataclass findings: 44

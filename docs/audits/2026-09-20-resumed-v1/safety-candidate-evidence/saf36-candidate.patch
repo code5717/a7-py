@@ -1,0 +1,471 @@
+--- a7/safety.py	2026-09-20 02:49:06.782243844 +0300
++++ tmp/resume-safety-candidate/a7/safety.py	2026-09-20 07:12:09.140169601 +0300
+@@ -16,9 +16,10 @@
+ from a7.ast_nodes import ASTNode, AssignOp, BinaryOp, LiteralKind, NodeKind, UnaryOp
+ from a7.cast_classifier import CastClass, CastDecision, classify_cast
+ from a7.errors import SourceSpan, TypeCheckError, TypeErrorType
+-from a7.symbol_table import SymbolTable
++from a7.symbol_table import SymbolKind, SymbolTable
+ from a7.types import (
+     ArrayType,
++    EnumType,
+     FunctionType,
+     PrimitiveType,
+     ReferenceType,
+@@ -280,6 +281,14 @@
+         self.symbol_types: dict[str, Type] = {}
+         self.deferred_effects: list[set[str]] = []
+         self.deferred_deletes: list[set[str]] = []
++        # SAF-6 call-effect summaries: id(function declaration) -> set of
++        # mutable-global names that executing the function may write, or None
++        # when the effect is unbounded (indirect, module-qualified, shadowed
++        # or unknown callee). Never inferred from name text alone.
++        self.function_global_writes: dict[int, Optional[set[str]]] = {}
++        self.function_local_names: dict[int, set[str]] = {}
++        self.global_var_names: set[str] = set()
++        self.current_local_names: set[str] = set()
+ 
+     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> BackendPlan:
+         self.current_file = filename
+@@ -295,6 +304,10 @@
+         self.symbol_types = {}
+         self.deferred_effects = []
+         self.deferred_deletes = []
++        self.function_global_writes = {}
++        self.function_local_names = {}
++        self.global_var_names = set()
++        self.current_local_names = set()
+         self._visit_program(program)
+         return self.backend_plan
+ 
+@@ -400,20 +413,178 @@
+                 if not self.function_deletes[name] and any(self.function_deletes.get(c, True) for c in callees):
+                     self.function_deletes[name] = True
+                     changed = True
++        self._summarize_call_effects(node)
+         for decl in node.declarations or []:
+             self._visit_decl(decl)
+ 
++    def _summarize_call_effects(self, program: ASTNode) -> None:
++        """Compute per-function may-write sets over mutable globals (SAF-6).
++
++        Each file-scope function maps to the set of mutable-global names its
++        execution may assign or delete, expanded transitively over direct
++        calls, or to None when the effect is unbounded. Callee resolution is
++        by declaration identity: a call uses a summary only when the callee
++        is a bare identifier, no local binding of the enclosing function can
++        shadow the name, and the name resolves in the global scope to a
++        FUNCTION symbol whose declaration node has a summary. Everything
++        else (function values, module-qualified calls, shadowed or unknown
++        names) is unbounded. Stdlib calls carry `stdlib_canonical`, which the
++        type checker sets only through scoped symbol lookup, and compiler
++        stdlib cannot name a user global. The may-write sets are a monotone
++        fixpoint over a finite lattice, so the result stays sound even for a
++        call cycle that reached this pass.
++        """
++        declarations = program.declarations or []
++        self.global_var_names = {
++            decl.name for decl in declarations if decl.kind == NodeKind.VAR and decl.name
++        }
++        functions: dict[str, ASTNode] = {}
++        for decl in declarations:
++            if decl.kind == NodeKind.FUNCTION and decl.name and decl.name not in functions:
++                functions[decl.name] = decl
++        # Local binding names per function (parameters, variables, constants,
++        # nested function names, match captures). Nested functions inherit the
++        # enclosing names so a shadowed callee can never resolve to a global.
++        work = [(decl, set()) for decl in declarations if decl.kind == NodeKind.FUNCTION]
++        while work:
++            func, inherited = work.pop()
++            names = set(inherited)
++            for param in func.parameters or []:
++                if param.name:
++                    names.add(param.name)
++            nested: list[ASTNode] = []
++            stack = [func.body] if func.body else []
++            while stack:
++                item = stack.pop()
++                if item is None:
++                    continue
++                if item.kind == NodeKind.FUNCTION:
++                    if item.name:
++                        names.add(item.name)
++                    nested.append(item)
++                    continue
++                if item.kind in {NodeKind.VAR, NodeKind.CONST} and item.name:
++                    names.add(item.name)
++                elif item.kind == NodeKind.PATTERN_IDENTIFIER and item.name and item.name != "_":
++                    names.add(item.name)
++                for value in vars(item).values():
++                    if isinstance(value, ASTNode):
++                        stack.append(value)
++                    elif isinstance(value, list):
++                        stack.extend(child for child in value if isinstance(child, ASTNode))
++            self.function_local_names[id(func)] = names
++            work.extend((child, names) for child in nested)
++        # Direct writes and call edges per top-level function. Nested function
++        # bodies are not summarized: every call to a nested name is locally
++        # bound and therefore unbounded for the caller.
++        summaries: dict[int, Optional[set[str]]] = {}
++        edges: dict[int, list[int]] = {}
++        for name, decl in functions.items():
++            locals_of_func = self.function_local_names.get(id(decl), set())
++            writes: set[str] = set()
++            unbounded = False
++            callee_ids: list[int] = []
++            stack = [decl.body] if decl.body else []
++            while stack:
++                item = stack.pop()
++                if item is None:
++                    continue
++                if item.kind == NodeKind.FUNCTION:
++                    continue
++                if item.kind == NodeKind.ASSIGNMENT and item.target is not None:
++                    target = item.target
++                    if target.kind == NodeKind.IDENTIFIER and target.name in self.global_var_names:
++                        writes.add(target.name)
++                elif item.kind == NodeKind.DEL:
++                    target = item.expression
++                    while target is not None:
++                        if target.kind == NodeKind.IDENTIFIER:
++                            if target.name in self.global_var_names:
++                                writes.add(target.name)
++                            break
++                        attr = DEL_TARGET_BASE_ATTRS.get(target.kind)
++                        if attr is None:
++                            break
++                        target = getattr(target, attr, None)
++                elif item.kind == NodeKind.CALL and item.function is not None:
++                    callee = item.function
++                    if getattr(item, "stdlib_canonical", None):
++                        pass
++                    elif (
++                        callee.kind == NodeKind.IDENTIFIER
++                        and callee.name
++                        and callee.name not in locals_of_func
++                        and callee.name in functions
++                    ):
++                        callee_ids.append(id(functions[callee.name]))
++                    else:
++                        unbounded = True
++                for value in vars(item).values():
++                    if isinstance(value, ASTNode):
++                        stack.append(value)
++                    elif isinstance(value, list):
++                        stack.extend(child for child in value if isinstance(child, ASTNode))
++            summaries[id(decl)] = None if unbounded else writes
++            edges[id(decl)] = callee_ids
++        changed = True
++        while changed:
++            changed = False
++            for caller, callee_ids in edges.items():
++                current = summaries[caller]
++                if current is None:
++                    continue
++                for callee in callee_ids:
++                    target = summaries.get(callee)
++                    if target is None:
++                        summaries[caller] = None
++                        changed = True
++                        break
++                    if not target <= current:
++                        current |= target
++                        changed = True
++        self.function_global_writes = summaries
++
++    def _resolved_global_writes(self, node: ASTNode) -> Optional[set[str]]:
++        """Globals a call may write, by declaration identity, or None if unbounded."""
++        if getattr(node, "stdlib_canonical", None):
++            return set()
++        function = node.function
++        if function is None or function.kind != NodeKind.IDENTIFIER or not function.name:
++            return None
++        name = function.name
++        if name in self.current_local_names:
++            return None
++        symbol = self.symbols.global_scope.symbols.get(name)
++        if symbol is None or symbol.kind != SymbolKind.FUNCTION or symbol.node is None:
++            return None
++        writes = self.function_global_writes.get(id(symbol.node))
++        return None if writes is None else set(writes)
++
++    def _apply_call_effects(self, node: ASTNode) -> None:
++        """Drop facts for mutable globals the callee may write (SAF-6).
++
++        Runs after the callee and arguments are checked, matching evaluation
++        order: argument expressions execute before the callee body.
++        """
++        written = self._resolved_global_writes(node)
++        if written is None:
++            written = set(self.global_var_names)
++        self._forget_names({name for name in written if name in self.facts.by_symbol})
++
+     def _visit_decl(self, node: ASTNode) -> None:
+         if node.kind == NodeKind.FUNCTION and node.body:
+             self.moved_symbols = set()
+             self.symbol_types = {}
+             self.facts.by_symbol = dict(self.const_facts)
++            saved_locals = self.current_local_names
++            self.current_local_names = self.function_local_names.get(id(node), set())
+             for param in node.parameters or []:
+                 if param.name:
+                     self.facts.set_symbol(param.name, self._fact_from_type_node(param.param_type))
+                     if param.param_type and param.param_type.type_name in INTEGER_RANGES:
+                         self.symbol_types[param.name] = PrimitiveType(param.param_type.type_name)
+             self._visit_stmt(node.body)
++            self.current_local_names = saved_locals
+         elif node.kind == NodeKind.VAR and node.value:
+             self.current_stmt_span = node.span
+             fact = self._visit_expr(node.value)
+@@ -475,6 +646,36 @@
+                     stack.extend(child for child in value if isinstance(child, ASTNode))
+         return names
+ 
++    def _call_global_writes_in(self, statement: ASTNode) -> set[str]:
++        """Mutable globals written by calls inside a subtree (SAF-6).
++
++        Used where a scope exit or a loop entry must observe the callee's
++        effects: a deferred call runs before the scope's facts flow onward,
++        and a call in a loop body may run on any iteration. Unlike direct
++        assignments, these writes are not havoced at a `defer` registration
++        site, because the deferred call has not run there yet.
++        """
++        names: set[str] = set()
++        stack = [statement]
++        while stack:
++            current = stack.pop()
++            if current is None:
++                continue
++            if current.kind == NodeKind.FUNCTION:
++                continue
++            if current.kind == NodeKind.CALL:
++                written = self._resolved_global_writes(current)
++                if written is None:
++                    names |= self.global_var_names
++                else:
++                    names |= written
++            for value in vars(current).values():
++                if isinstance(value, ASTNode):
++                    stack.append(value)
++                elif isinstance(value, list):
++                    stack.extend(child for child in value if isinstance(child, ASTNode))
++        return names
++
+     def _deleted_names(self, statement: ASTNode) -> set[str]:
+         names: set[str] = set()
+         stack = [statement]
+@@ -528,7 +729,8 @@
+                                      known_length=a.known_length if a.known_length == b.known_length else None,
+                                      upper_length_of=a.upper_length_of if a.upper_length_of == b.upper_length_of else None,
+                                      non_nil=a.non_nil and b.non_nil, maybe_nil=a.maybe_nil or b.maybe_nil,
+-                                     initialized=a.initialized and b.initialized, moved=a.moved or b.moved)
++                                     initialized=a.initialized and b.initialized, moved=a.moved or b.moved,
++                                     enum_discriminant=a.enum_discriminant if a.enum_discriminant == b.enum_discriminant else None)
+         return joined
+ 
+     def _visit_stmt(self, node: ASTNode) -> None:
+@@ -636,7 +838,7 @@
+                 self._visit_stmt(node.init)
+             # Invalidate before visiting the body: it represents any iteration,
+             # not just the first. Learn only facts established by its guard.
+-            changed = self._deferred_assigned_symbols(node)
++            changed = self._deferred_assigned_symbols(node) | self._call_global_writes_in(node)
+             self._forget_names(changed)
+             self.moved_symbols.update(self._deleted_names(node))
+             if node.condition:
+@@ -662,7 +864,7 @@
+                     self.moved_symbols.discard(local_name)
+         elif node.kind in {NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
+             iterable_fact = self._visit_expr(node.iterable)
+-            changed = self._deferred_assigned_symbols(node)
++            changed = self._deferred_assigned_symbols(node) | self._call_global_writes_in(node)
+             self._forget_names(changed)
+             self.moved_symbols.update(self._deleted_names(node))
+             saved = self.facts.copy_symbols()
+@@ -680,18 +882,54 @@
+             self.facts.restore_symbols(saved)
+             self._forget_names(changed)
+         elif node.kind == NodeKind.MATCH:
+-            self._visit_expr(node.expression)
++            selector = self._visit_expr(node.expression)
+             saved = self.facts.copy_symbols()
+             moved = set(self.moved_symbols)
+             joined = dict(saved)  # A non-exhaustive match can execute no arm.
+             all_moved = set(moved)
+-            branches = [case.statements or ([] if case.statement is None else [case.statement]) for case in node.cases or []]
+-            branches.append(node.else_case or [])
+-            for statements in branches:
+-                self.facts.restore_symbols(dict(saved))
+-                self.moved_symbols = set(moved)
++            # SAF-3: carry the actual fallthrough exit state into the next
++            # case instead of resetting every arm to the pre-match facts.
++            fall_state: Optional[dict[str, ValueFact]] = None
++            fall_moved: set[str] = set()
++            unmatched = True
++            branches = [(case, case.statements or ([] if case.statement is None else [case.statement])) for case in node.cases or []]
++            branches.append((None, node.else_case or []))
++            for case, statements in branches:
++                # `possible`: this case may be entered directly. `certain`: the
++                # selector provably selects this case, so later cases cannot be
++                # entered directly anymore. Unknown relations stay possible.
++                possible = unmatched
++                certain = case is None
++                if case is not None and unmatched:
++                    possible = False
++                    for pattern in case.patterns or []:
++                        relation = self._pattern_relation(pattern, selector, node, saved)
++                        possible |= relation is not False
++                        certain |= relation is True
++                if certain:
++                    unmatched = False
++                reachable = possible or fall_state is not None
++                if possible and fall_state is not None:
++                    entry = self._join_facts(saved, fall_state)
++                    entry_moved = moved | fall_moved
++                elif fall_state is not None:
++                    entry = dict(fall_state)
++                    entry_moved = set(fall_moved)
++                else:
++                    # An impossible direct entry still receives its own checks;
++                    # only its outgoing fallthrough edge is suppressed.
++                    entry = dict(saved)
++                    entry_moved = set(moved)
++                self.facts.restore_symbols(entry)
++                self.moved_symbols = entry_moved
+                 for stmt in statements:
+                     self._visit_stmt(stmt)
++                direct = statements
++                if len(direct) == 1 and direct[0].kind == NodeKind.BLOCK:
++                    direct = direct[0].statements or []
++                falls = bool(direct) and direct[-1].kind == NodeKind.FALL
++                fall_state = self.facts.copy_symbols() if falls and reachable else None
++                fall_moved = set(self.moved_symbols) if falls and reachable else set()
+                 joined = self._join_facts(joined, self.facts.by_symbol)
+                 all_moved.update(self.moved_symbols)
+             self.facts.restore_symbols(joined)
+@@ -699,7 +937,11 @@
+         elif node.kind == NodeKind.DEFER:
+             if node.statement:
+                 if self.deferred_effects:
+-                    self.deferred_effects[-1].update(self._deferred_assigned_symbols(node.statement))
++                    # Scope exit must observe the callee's global writes too:
++                    # the deferred call runs before facts flow past the exit.
++                    self.deferred_effects[-1].update(
++                        self._deferred_assigned_symbols(node.statement) | self._call_global_writes_in(node.statement)
++                    )
+                     self.deferred_deletes[-1].update(self._deleted_names(node.statement))
+                 saved = self.facts.copy_symbols()
+                 moved = set(self.moved_symbols)
+@@ -720,14 +962,77 @@
+             # a top-level one, and leaves the enclosing function's state intact.
+             saved = self.facts.copy_symbols()
+             saved_moved = self.moved_symbols
++            saved_locals = self.current_local_names
+             self.moved_symbols = set()
+             self.facts.by_symbol = dict(self.const_facts)
++            self.current_local_names = self.function_local_names.get(id(node), set())
+             for param in node.parameters or []:
+                 if param.name:
+                     self.facts.set_symbol(param.name, self._fact_from_type_node(param.param_type))
+             self._visit_stmt(node.body)
+             self.facts.restore_symbols(saved)
+             self.moved_symbols = saved_moved
++            self.current_local_names = saved_locals
++
++    def _pattern_relation(
++        self,
++        pattern: ASTNode,
++        selector: ValueFact,
++        node: ASTNode,
++        saved: dict[str, ValueFact],
++    ) -> Optional[bool]:
++        """Relation between a case pattern and the selector value.
++
++        True when the pattern provably matches, False when it provably cannot
++        match, None when unknown. Unknown is never treated as a proven
++        impossible edge: an unknown relation leaves the case possible. The
++        selector snapshot comes from match entry because the backend
++        evaluates the scrutinee once.
++        """
++        if pattern.kind == NodeKind.PATTERN_WILDCARD:
++            return True
++        if pattern.kind == NodeKind.PATTERN_IDENTIFIER and (
++            pattern.name == "_" or getattr(pattern, "is_capture_pattern", False)
++        ):
++            return True
++        if pattern.kind == NodeKind.PATTERN_LITERAL:
++            literal = self._int_literal(pattern.literal)
++            interval = selector.interval
++            if literal is not None and interval is not None:
++                if interval.lower is not None and literal < interval.lower:
++                    return False
++                if interval.upper is not None and literal > interval.upper:
++                    return False
++                if interval.lower == interval.upper == literal:
++                    return True
++            return None
++        if pattern.kind == NodeKind.PATTERN_ENUM:
++            enum_type = self._type(node.expression)
++            enum_symbol = self.symbols.lookup(pattern.enum_type or "")
++            if (
++                isinstance(enum_type, EnumType)
++                and enum_symbol is not None
++                and enum_symbol.kind == SymbolKind.ENUM
++                and enum_symbol.type is enum_type
++                and pattern.enum_type not in saved
++                and enum_type.has_variant(pattern.variant)
++                and selector.enum_discriminant is not None
++            ):
++                return selector.enum_discriminant == f"{id(enum_type)}:{pattern.variant}"
++            return None
++        if pattern.kind == NodeKind.PATTERN_RANGE:
++            lower = self._int_literal(pattern.start.literal) if pattern.start and pattern.start.kind == NodeKind.PATTERN_LITERAL else None
++            upper = self._int_literal(pattern.end.literal) if pattern.end and pattern.end.kind == NodeKind.PATTERN_LITERAL else None
++            interval = selector.interval
++            if lower is not None and upper is not None and interval is not None:
++                if interval.upper is not None and interval.upper < lower:
++                    return False
++                if interval.lower is not None and interval.lower > upper:
++                    return False
++                if interval.lower is not None and interval.upper is not None and lower <= interval.lower <= interval.upper <= upper:
++                    return True
++            return None
++        return None
+ 
+     def _visit_expr(self, node: Optional[ASTNode]) -> ValueFact:
+         if node is None:
+@@ -765,6 +1070,23 @@
+             fact = self._slice_fact(node, obj_fact, start_fact, end_fact)
+         elif node.kind == NodeKind.FIELD_ACCESS:
+             obj = self._visit_expr(node.object)
++            # Typed enum constructor fact: `EnumName.Variant` where EnumName
++            # resolves to the ENUM symbol of this exact type and no value
++            # binding shadows the name. The token pairs the type object's
++            # identity with the variant, so equal text from another enum or a
++            # same-named value never proves a match arm unreachable.
++            enum_type = self._type(node)
++            enum_symbol = self.symbols.lookup(node.object.name) if node.object and node.object.kind == NodeKind.IDENTIFIER else None
++            if (
++                isinstance(enum_type, EnumType)
++                and self._type(node.object) is enum_type
++                and enum_symbol is not None
++                and enum_symbol.kind == SymbolKind.ENUM
++                and enum_symbol.type is enum_type
++                and node.object.name not in self.facts.by_symbol
++                and enum_type.has_variant(node.field)
++            ):
++                fact = ValueFact(enum_discriminant=f"{id(enum_type)}:{node.field}")
+             if getattr(node, "implicit_deref_object", False):
+                 self._prove_ref_non_nil_for_node(
+                     node,
+@@ -798,6 +1120,10 @@
+                 elif i in borrowed and arg.kind == NodeKind.IDENTIFIER:
+                     self._invalidate_length_relations(arg.name)
+                     self.facts.set_symbol(arg.name, self._default_fact_for_type(self._type(arg)))
++            # SAF-6: a call that may write mutable globals invalidates their
++            # facts. Applied after the argument visit: arguments evaluate
++            # before the callee body runs.
++            self._apply_call_effects(node)
+         elif node.kind == NodeKind.ARRAY_INIT:
+             for element in node.elements or []:
+                 self._visit_expr(element)

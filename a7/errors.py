@@ -3,7 +3,7 @@ Compiler error types and exception classes with Rich formatting support.
 """
 
 from typing import Optional, Tuple, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
 from rich.console import Console
@@ -40,6 +40,7 @@ class TokenizerErrorType(Enum):
     TABS_UNSUPPORTED = "tabs_unsupported"
     INVALID_ESCAPE_CHAR = "invalid_escape_char"
     NOT_CLOSED_COMMENT = "not_closed_comment"
+    INVALID_NUMBER = "invalid_number"
     INVALID_SCIENTIFIC_NOTATION = "invalid_scientific_notation"
     INVALID_HEX_NUMBER = "invalid_hex_number"
     INVALID_BINARY_NUMBER = "invalid_binary_number"
@@ -173,6 +174,7 @@ def get_tokenizer_error_message(error_type: TokenizerErrorType) -> str:
         TokenizerErrorType.TABS_UNSUPPORTED: "Tabs '\\t' are unsupported",
         TokenizerErrorType.INVALID_ESCAPE_CHAR: "Invalid escaped char",
         TokenizerErrorType.NOT_CLOSED_COMMENT: "Comment not closed",
+        TokenizerErrorType.INVALID_NUMBER: "Invalid numeric literal",
         TokenizerErrorType.INVALID_SCIENTIFIC_NOTATION: "Invalid scientific notation",
         TokenizerErrorType.INVALID_HEX_NUMBER: "Invalid hexadecimal number",
         TokenizerErrorType.INVALID_BINARY_NUMBER: "Invalid binary number",
@@ -200,6 +202,7 @@ def get_tokenizer_error_advice(error_type: TokenizerErrorType) -> str:
         TokenizerErrorType.FILE_EMPTY: "Do not compile empty files",
         TokenizerErrorType.BAD_TOKEN_AT_GLOBAL: "Do not put this token in global scope",
         TokenizerErrorType.TABS_UNSUPPORTED: "Convert the tabs to spaces",
+        TokenizerErrorType.INVALID_NUMBER: "Use digits separated by single underscores",
         TokenizerErrorType.INVALID_SCIENTIFIC_NOTATION: "Add digits after the exponent",
         TokenizerErrorType.INVALID_HEX_NUMBER: "Use valid hexadecimal digits (0-9, a-f, A-F)",
         TokenizerErrorType.INVALID_BINARY_NUMBER: "Use only binary digits (0, 1)",
@@ -442,6 +445,8 @@ class SourceSpan:
     end_line: int
     end_column: int
     length: int = 0
+    origin_file: Optional[str] = field(default=None, repr=False, compare=False)
+    origin_lines: Optional[List[str]] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         if self.length == 0:
@@ -631,8 +636,9 @@ class CompilerError(Exception):
     ):
         self.message = message
         self.span = span
-        self.filename = filename
-        self.source_lines = source_lines or []
+        self.filename = (span.origin_file if span else None) or filename
+        origin_lines = span.origin_lines if span else None
+        self.source_lines = origin_lines if origin_lines is not None else (source_lines or [])
         super().__init__(self._format_message())
 
     def _format_message(self) -> str:

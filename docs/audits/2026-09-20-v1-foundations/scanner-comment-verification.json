@@ -1,0 +1,10 @@
+{
+  "changed_after_gate_start": [
+    "test/norec_scan.py",
+    "docs/plan/execution.md",
+    "docs/plan/research/memory/delivery-reconciliation.md"
+  ],
+  "scanner_executable_ast_identical": true,
+  "reason": "GLM review requested clearer scanner limitations, current conversion status and cache oracle wording.",
+  "scope": "Header-clarification checkpoint. Final input verification records later documentation changes and additions."
+}

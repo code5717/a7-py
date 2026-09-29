@@ -1,0 +1,11 @@
+
+PARSING RESULTS
+Successfully parsed into AST
+AST Root: PROGRAM with 1 top-level declarations
+Program
+└── FUNCTION main () → void
+    ├── DEFER → RETURN (void)
+    └── BLOCK (1 stmts)
+        └── BREAK
+
+Stopping before semantic analysis and code generation

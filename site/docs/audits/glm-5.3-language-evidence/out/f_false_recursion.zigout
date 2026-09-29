@@ -1,0 +1,6 @@
+f_false_recursion.zig:22:11: error: function parameter shadows declaration of 'g'
+fn caller(g: *const fn (i32) void) void {
+          ^
+f_false_recursion.zig:18:1: note: declared here
+fn g(cb: *const fn (i32) void) void {
+^~

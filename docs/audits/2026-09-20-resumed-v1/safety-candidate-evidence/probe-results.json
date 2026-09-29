@@ -1,0 +1,904 @@
+{
+ "workdir": "/tmp/a7-saf36-candidate-q8swed00",
+ "before_main": "/home/cx89/Projects/pl-dev/a7-py/main.py",
+ "candidate_main": "/home/cx89/Projects/pl-dev/a7-py/tmp/resume-safety-candidate/main.py",
+ "probes": [
+  {
+   "name": "u_saf6_original",
+   "kind": "unsafe",
+   "source_sha256": "8d4c46eeeed1558194b6d904a05ffd4f91c33fd6cd46f0bbf04d9666445da176",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    zero_g()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_transitive",
+   "kind": "unsafe",
+   "source_sha256": "698bec11084d9dc007206db386aecda64800a26d0f64af0a7f86beb0027ad11f",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nwrap :: fn() {\n    zero_g()\n}\n\nmain :: fn() {\n    g = 5\n    wrap()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_defer_in_callee",
+   "kind": "unsafe",
+   "source_sha256": "2c32124efbeded0f2b478fea3dc26b024fc04eafcad586211a508a52ff51333e",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_late :: fn() {\n    defer {\n        g = 0\n    }\n}\n\nmain :: fn() {\n    g = 5\n    zero_late()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_if_join",
+   "kind": "unsafe",
+   "source_sha256": "dda58fcf7bed43f4e976ce46b846e05ca7b3b885d655d4bc37c2b705eedd48ba",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\nc := true\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    if c {\n        zero_g()\n    }\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_loop_use_after_call",
+   "kind": "unsafe",
+   "source_sha256": "f53bd626ab6392a1ef9d6a1bddd4aa9f05e4e12a29a66f692aab7f8cfa757c06",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    i := 0\n    while i < 2 {\n        zero_g()\n        y := 10 / g\n        io.println(\"{}\", y)\n        i += 1\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_loop_use_before_call",
+   "kind": "unsafe",
+   "source_sha256": "1f2b24a15d0341482886b96831ad2ad54517244860deeba3427634a15d8cbc11",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    i := 0\n    while i < 2 {\n        y := 10 / g\n        io.println(\"{}\", y)\n        zero_g()\n        i += 1\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_del_global",
+   "kind": "unsafe",
+   "source_sha256": "5eadd0cc945c30bb333a3ac38b66cfd46e3b7fa29b51180fea9ef06cfc6b7397",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nInner :: struct {\n    value: i32\n}\n\ngp: ref Inner = nil\n\nkill :: fn() {\n    del gp\n}\n\nmain :: fn() {\n    gp = new Inner\n    if gp != nil {\n        kill()\n        gp.value = 7\n    }\n    io.println(\"done\")\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_fnvalue_alias",
+   "kind": "unsafe",
+   "source_sha256": "35b63014ae26b9e8de284ed8fd58b5ab4da42f7df4c329bdb027ef2ac9fe124c",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    h := zero_g\n    h()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_shadow_named_pure",
+   "kind": "unsafe",
+   "source_sha256": "8dd3ad6e122e87b15139ff68535474a46ce40c68f10b5a797d962e94167115ce",
+   "source": "// probe: compile-only\n// Adversarial: a local alias named like the pure global function.\n// A name-only summary would retain g and accept an unsafe program.\nio :: import \"std/io\"\n\ng: i32 = 5\n\npure :: fn() {\n}\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    pure := zero_g\n    pure()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_after_defer_block",
+   "kind": "unsafe",
+   "source_sha256": "6b8e4871bb86bc3d1b5c1ff547b5e8651084e69346206a04adacf2beb0b0288e",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    {\n        defer {\n            zero_g()\n        }\n        io.println(\"in\")\n    }\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf6_forward_callee",
+   "kind": "unsafe",
+   "source_sha256": "8e78127db6ce04f5bf105457000ed39d914fce1fa675edee57b573fd3a552616",
+   "source": "// probe: compile-only\n// The callee is declared after the caller; summaries must still apply.\nio :: import \"std/io\"\n\ng: i32 = 5\n\nmain :: fn() {\n    g = 5\n    zero_g()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n\nzero_g :: fn() {\n    g = 0\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_original",
+   "kind": "unsafe",
+   "source_sha256": "421f1d6a3ec71259c19e6b4502169c38c2be1d0057364e69e385b7c99d4ece20",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            x = 0\n            fall\n        }\n        case 2: {\n            io.println(\"{}\", 10 / x)\n        }\n        else: {\n            io.println(\"other\")\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_defer_zero_before_fall",
+   "kind": "unsafe",
+   "source_sha256": "160e35c2b9538f736bb61e408b5ee338d822a7958999a7b5654ccd0a8958d407",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            defer {\n                x = 0\n            }\n            fall\n        }\n        case 2: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_fall_chain_zero",
+   "kind": "unsafe",
+   "source_sha256": "cf5c836ecf3902c45aa3d0b9d3307f72b8b9151214aa75a652fd3b36f1840523",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            fall\n        }\n        case 2: {\n            x = 0\n            fall\n        }\n        case 3: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_delete_fall_use",
+   "kind": "unsafe",
+   "source_sha256": "8834cbc3d08431dda616cb318c32698c27422462669295255dfc91bb280d70e9",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nInner :: struct {\n    value: i32\n}\n\nmain :: fn() {\n    x := 5\n    k := 1\n    p := new Inner\n    if p != nil {\n        match k {\n            case 1: {\n                del p\n                fall\n            }\n            case 2: {\n                io.println(\"{}\", p.value)\n            }\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_deferred_delete_fall_use",
+   "kind": "unsafe",
+   "source_sha256": "dcdb9df29bda88ae4bafd7ad165e5635109ae615312d6b51b93d144412a79254",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nInner :: struct {\n    value: i32\n}\n\nmain :: fn() {\n    x := 5\n    k := 1\n    p := new Inner\n    if p != nil {\n        match k {\n            case 1: {\n                defer {\n                    del p\n                }\n                fall\n            }\n            case 2: {\n                io.println(\"{}\", p.value)\n            }\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 2 errors:"
+   }
+  },
+  {
+   "name": "u_saf3_enum_write_global",
+   "kind": "unsafe",
+   "source_sha256": "d62cea877620aaa681ca453a5c82a633e159ce7651bb879488e01438d24a77e1",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\nk := Choice.Second\n\nset :: fn() {\n    k = Choice.First\n}\n\nmain :: fn() {\n    x := 5\n    k = Choice.Second\n    set()\n    match k {\n        case Choice.First: {\n            x = 0\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_enum_ref_call",
+   "kind": "unsafe",
+   "source_sha256": "d73fbc13870df30631558529ced5f68fcfde498f6bdc0d9a8485e21f539a063a",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\n\nflip :: fn(v: ref Choice) {\n    v = Choice.First\n}\n\nmain :: fn() {\n    x := 5\n    k := Choice.Second\n    flip(k)\n    match k {\n        case Choice.First: {\n            x = 0\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "u_saf3_enum_branch_differs",
+   "kind": "unsafe",
+   "source_sha256": "a0f6fb6efd3f98bfc99413286a3f51c09ae920ef4dba1fb673e1d8d8b94c674a",
+   "source": "// probe: compile-only\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\n\nmain :: fn() {\n    x := 5\n    c := true\n    k := Choice.Second\n    if c {\n        k = Choice.First\n    }\n    match k {\n        case Choice.First: {\n            x = 0\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   }
+  },
+  {
+   "name": "c_saf6_noop",
+   "kind": "control",
+   "source_sha256": "5d1cc1a714c5b52610abce714ac510cf3807d7844f36a03788961034717619bd",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nnoop :: fn() {\n}\n\nmain :: fn() {\n    g = 5\n    noop()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_unrelated_global",
+   "kind": "control",
+   "source_sha256": "a3125301b9d7b4cc35439f1f13f8fbbaecc4625df4377ebca99430873e649d3a",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\nh2: i32 = 7\n\nzero_other :: fn() {\n    h2 = 0\n}\n\nmain :: fn() {\n    g = 5\n    zero_other()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_transitive_pure",
+   "kind": "control",
+   "source_sha256": "48339cd04b62a1891ada988afaa870f9d12ee48005a3fd41758616162ac4e67a",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nnoop :: fn() {\n}\n\nwrap :: fn() {\n    noop()\n}\n\nmain :: fn() {\n    g = 5\n    wrap()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_stdlib_between",
+   "kind": "control",
+   "source_sha256": "62518cc0ceb0319635ef903fe5a62be647924561c822794a42f26cf3d66dbf33",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nmain :: fn() {\n    g = 5\n    io.println(\"start\")\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "start\n2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "start\n2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_call_then_reestablish",
+   "kind": "control",
+   "source_sha256": "c62e124d7c9d93007477ec1d5e36b82048b6a7f977adc632c82146212369c2b5",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    zero_g()\n    g = 5\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_loop_guard_relearned",
+   "kind": "control",
+   "source_sha256": "901217ce63d584e67a68e6be5b152a62b3bea26df3ee94451cb7bc1671e97314",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    i := 0\n    while i < 2 {\n        zero_g()\n        g = 5\n        y := 10 / g\n        io.println(\"{}\", y)\n        i += 1\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_noop_loop",
+   "kind": "control",
+   "source_sha256": "d5136dfbb6870955b6860695f2fc2891adeb15d506685c940381be005c140a6f",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nnoop :: fn() {\n}\n\nmain :: fn() {\n    g = 5\n    i := 0\n    while i < 2 {\n        noop()\n        y := 10 / g\n        io.println(\"{}\", y)\n        i += 1\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_arg_eval_order",
+   "kind": "control",
+   "source_sha256": "a7582505e5f20f18a373f3de55b9de0272298f54de77f1b844f38eef80f486cf",
+   "source": "// probe: safe control\n// The argument divides while g is still 5; the callee zeroes g only\n// after the argument is evaluated.\nio :: import \"std/io\"\n\ng: i32 = 5\n\nconsume :: fn(v: i32) i32 {\n    g = 0\n    ret v\n}\n\nmain :: fn() {\n    g = 5\n    io.println(\"{}\", consume(10 / g))\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_guard_after_call",
+   "kind": "control",
+   "source_sha256": "a2a1c6e1c5c1f07559dc923c46de63e39ac34b98905ae40ffd05b460b4da5b3c",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    zero_g()\n    if g != 0 {\n        y := 10 / g\n        io.println(\"{}\", y)\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_defer_use_before_exit",
+   "kind": "control",
+   "source_sha256": "0fc0b1004c20cf0ef905de31577768a62c2b40e0da22dde20811efb3a0941692",
+   "source": "// probe: safe control\n// The deferred call runs at function exit, after the division.\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    defer {\n        zero_g()\n    }\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf6_defer_stmt_use_before_exit",
+   "kind": "control",
+   "source_sha256": "f935fb92c7e05cb10243bfa560d8c4c92012ecd4317f8ae31c65cf0789c52eb5",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\ng: i32 = 5\n\nzero_g :: fn() {\n    g = 0\n}\n\nmain :: fn() {\n    g = 5\n    defer zero_g()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_int_unreachable_fall",
+   "kind": "control",
+   "source_sha256": "ff6764310b13d08dfdd63c30508edce9109ebfa020a49b7b63ba3f451ded91c6",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 2\n    match k {\n        case 1: {\n            x = 0\n            fall\n        }\n        case 2: {\n            io.println(\"{}\", 10 / x)\n        }\n        else: {\n            io.println(\"other\")\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_nonzero_fall",
+   "kind": "control",
+   "source_sha256": "d5acceaed07d2ea3849cb7ebe76ff99fc3eb0a6e46821b3223797972fded2b75",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            x = 3\n            fall\n        }\n        case 2: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "3\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "3\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_fresh_guard_after_fall",
+   "kind": "control",
+   "source_sha256": "7c9580caba58d7937b3929d4a52dfab83cd82f0fb986e2cb43d6f0a38856996f",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            x = 0\n            fall\n        }\n        case 2: {\n            x = 5\n            y := 10 / x\n            io.println(\"{}\", y)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_fall_chain_nonzero",
+   "kind": "control",
+   "source_sha256": "994799d26c108b20a78db42c7b8edaeaeee4954e312eab5e2c8030d5fbe5c048",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 1\n    match k {\n        case 1: {\n            fall\n        }\n        case 2: {\n            x = 3\n            fall\n        }\n        case 3: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "3\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "3\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_range_unreachable_fall",
+   "kind": "control",
+   "source_sha256": "04634cc40c7c6fe5aabedd431559c31484c02acd3cc73f4690e822a2b579db85",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nmain :: fn() {\n    x := 5\n    k := 9\n    match k {\n        case 1..5: {\n            x = 0\n            fall\n        }\n        case 6..10: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_enum_local",
+   "kind": "control",
+   "source_sha256": "d267705cbb02383b1f75e4f1b380287d98ddb159964c6ec2662f6b1e0e8b1b9a",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\n\nmain :: fn() {\n    x := 5\n    k := Choice.Second\n    match k {\n        case Choice.First: {\n            x = 0\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_enum_global_noop",
+   "kind": "control",
+   "source_sha256": "83b64897b6b2ebdf4a68b29cdaefe3662b714689c0edeb496484273b5dae6c71",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\nk := Choice.Second\n\nset :: fn() {\n}\n\nmain :: fn() {\n    x := 5\n    k = Choice.Second\n    set()\n    match k {\n        case Choice.First: {\n            x = 0\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_enum_scrutinee_reassigned",
+   "kind": "control",
+   "source_sha256": "772c2ca8e763aa7034956ab36625a5b38d5d16232d2d03ab49adfa7c77996dad",
+   "source": "// probe: safe control\n// The scrutinee is evaluated once; the body reassignment does not\n// retroactively select another case.\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\n\nmain :: fn() {\n    x := 5\n    k := Choice.First\n    match k {\n        case Choice.First: {\n            k = Choice.Second\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_enum_branch_equal",
+   "kind": "control",
+   "source_sha256": "e96a1b726761a67b82270d6e1e1db93ff5b9f9a75408acdf246793ef5f1a3d6c",
+   "source": "// probe: safe control\nio :: import \"std/io\"\n\nChoice :: enum { First, Second }\n\nmain :: fn() {\n    x := 5\n    c := true\n    k := Choice.Second\n    if c {\n        k = Choice.Second\n    }\n    match k {\n        case Choice.First: {\n            x = 0\n            fall\n        }\n        case Choice.Second: {\n            io.println(\"{}\", 10 / x)\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_after": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "c_saf3_unreachable_delete_fall",
+   "kind": "control_compile_only",
+   "source_sha256": "ed739498009245f06e8a93614a940436c6ddf2109f0b4b2dc59174b07fa03a52",
+   "source": "// probe: control, compile-only\n// Native build fails identically on the production and candidate\n// artifacts: the backend lowers `del p` inside a match case to a Zig\n// capture that shadows the outer constant. Pre-existing backend\n// limitation, unrelated to this candidate.\nio :: import \"std/io\"\n\nInner :: struct {\n    value: i32\n}\n\nmain :: fn() {\n    x := 5\n    k := 2\n    p := new Inner\n    if p != nil {\n        match k {\n            case 1: {\n                del p\n                fall\n            }\n            case 2: {\n                io.println(\"{}\", 10 / x)\n            }\n        }\n    }\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   }
+  },
+  {
+   "name": "r_fnvalue_pure",
+   "kind": "compatibility",
+   "source_sha256": "828838078fa390f68e0f29aec6d9e8e1ac06ce41276d6e18937fd0f487c06bb9",
+   "source": "// probe: compatibility\n// Works on the production compiler and prints 2 natively.\n// The candidate rejects it: a call through a local alias is an unknown\n// callee and invalidates every mutable global.\nio :: import \"std/io\"\n\ng: i32 = 5\n\nnoop :: fn() {\n}\n\nmain :: fn() {\n    g = 5\n    h := noop\n    h()\n    y := 10 / g\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 6,
+    "error": "Found 1 error:"
+   },
+   "native_before": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  },
+  {
+   "name": "r_fnvalue_no_fact_used",
+   "kind": "compatibility",
+   "source_sha256": "066cf28cd8578e6023fb30cf4dbcc836de4847cbf1c8c7d13630e44d9afac85f",
+   "source": "// probe: compatibility\n// A local alias call that does not sit between a global fact and its\n// use stays accepted by both compilers.\nio :: import \"std/io\"\n\ng: i32 = 5\n\nnoop :: fn() {\n}\n\nmain :: fn() {\n    h := noop\n    h()\n    y := 10 / 5\n    io.println(\"{}\", y)\n}\n",
+   "before": {
+    "exit": 0,
+    "error": null
+   },
+   "after": {
+    "exit": 0,
+    "error": null
+   },
+   "native_before": {
+    "Debug": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    },
+    "ReleaseFast": {
+     "build_exit": 0,
+     "run_exit": 0,
+     "stdout": "2\n",
+     "stderr": ""
+    }
+   }
+  }
+ ],
+ "failures": []
+}

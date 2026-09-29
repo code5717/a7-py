@@ -1,0 +1,10 @@
+Box :: struct { value: i32 }
+main :: fn() {
+b := new Box
+if b == nil { ret }
+i: usize = 0
+while i < 2 {
+    if b != nil { b.value = 2; del b }
+    i += 1
+}
+}

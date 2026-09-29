@@ -211,6 +211,13 @@ class JSONFormatter:
             for field in list_fields:
                 field_value = getattr(current, field, None)
                 if field_value is not None:
+                    # A statement match stores else_case as a statement list;
+                    # an expression match stores one expression node.
+                    if hasattr(field_value, "kind"):
+                        child_result = self._ast_node_shallow_dict(field_value)
+                        current_result[field] = child_result
+                        stack.append((field_value, child_result))
+                        continue
                     children = []
                     for child in field_value:
                         if hasattr(child, "kind"):

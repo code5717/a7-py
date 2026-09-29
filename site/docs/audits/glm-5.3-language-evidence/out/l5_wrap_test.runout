@@ -1,0 +1,14 @@
+thread 3728225 panic: integer overflow
+/tmp/a7-glm53-language-audit/out/l5_wrap_test.zig:16:7: 0x11d8085 in __a7_user_main (l5_wrap_test.zig)
+    x += 1;
+      ^
+/tmp/a7-glm53-language-audit/out/l5_wrap_test.zig:11:19: 0x11d7f8f in main (l5_wrap_test.zig)
+    __a7_user_main();
+                  ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:737:30: 0x11d2a53 in callMain (std.zig)
+    return wrapMain(root.main(.{
+                             ^
+/home/cx89/.local/share/mise/installs/zig/0.16.0/lib/std/start.zig:190:5: 0x11d20e1 in _start (std.zig)
+    asm volatile (switch (native_arch) {
+    ^
+timeout: the monitored command dumped core

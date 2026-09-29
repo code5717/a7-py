@@ -1,0 +1,9 @@
+Handler :: fn() i32
+
+S :: struct {
+    cb: fn()
+}
+
+main :: fn() {
+    h: Handler
+}

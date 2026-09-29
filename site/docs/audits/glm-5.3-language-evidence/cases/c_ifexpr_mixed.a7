@@ -1,0 +1,5 @@
+main :: fn() {
+    x: i64 = 5
+    c := true
+    m := if c { 1 } else { x }
+}

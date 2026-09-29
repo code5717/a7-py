@@ -1,0 +1,65 @@
+[
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS.pdf\nPDF Version: 1.4\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           \nCreator:         wkhtmltopdf 0.12.6\nProducer:        Qt 5.15.17\nCreationDate:    Tue Sep 23 00:13:01 2025 +03\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           12\nEncrypted:       no\nPage size:       595 x 842 pts (A4)\nPage rot:        0\nFile size:       80524 bytes\nOptimized:       no\nPDF version:     1.4\n",
+    "text_exit": 0,
+    "characters": 15321,
+    "opening": "             A7 Pointer Syntax Analysis\n\n\nA7 Pointer Syntax Analysis & Language\nComparison\n\nTable of Contents\n1. Current Language Implementations\n2. A7 Current Syntax\n3. Proposed A7 Alternatives\n4. Comparative Analysis\n5. Recommendations\n\n\n\nCurrent Language Implementations\n\nC\n\nint x = 42;\nint *ptr = &x;         // Address-of: & prefix\nint value = *ptr;      // Dereference: * prefix\n*ptr = 100;           // Assignment through pointer\nint **pp = &p"
+  },
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS_beamer.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          A7 Language Team\nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:17:55 2025 +03\nModDate:         Tue Sep 23 00:17:55 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           8\nEncrypted:       no\nPage size:       453.543 x 255.118 pts\nPage rot:        0\nFile size:       280829 bytes\nOptimized:       no\nPDF version:     1.5\n",
+    "text_exit": 0,
+    "characters": 3770,
+    "opening": "                   A7 Pointer Syntax Analysis\n\n                        A7 Language Team\n\n\n\n\nA7 Language Team          A7 Pointer Syntax Analysis   1/8\n\f                            Section 1\n\n       A7 Pointer Syntax Analysis & Language Comparison\n\n\n\n\nA7 Language Team         A7 Pointer Syntax Analysis       2/8\n\fTable of Contents\n\n\n\n\n 1   Current Language Implementations\n 2   A7 Current Syntax\n 3   Proposed A7 Alternatives\n 4   Comparative Analys"
+  },
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS_compact.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS_compact.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          \nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:18:15 2025 +03\nModDate:         Tue Sep 23 00:18:15 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           9\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       202275 bytes\nOptimized:       no\nPDF version:     1.5\n",
+    "text_exit": 0,
+    "characters": 15709,
+    "opening": "                                     A7 Pointer Syntax Analysis\n\n\n\nA7 Pointer Syntax Analysis & Language Comparison\nTable of Contents\n    1. Current Language Implementations\n    2. A7 Current Syntax\n    3. Proposed A7 Alternatives\n    4. Comparative Analysis\n    5. Recommendations\n\nCurrent Language Implementations\nC\n\nint x = 42;\nint *ptr = &x;             // Address-of: & prefix\nint value = *ptr;          // Dereference: * prefix\n*ptr = 100;     "
+  },
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS_dark.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS_dark.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          \nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:18:08 2025 +03\nModDate:         Tue Sep 23 00:18:08 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           10\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       202539 bytes\nOptimized:       no\nPDF version:     1.5\n",
+    "text_exit": 0,
+    "characters": 15493,
+    "opening": "                              A7 Pointer Syntax Analysis\n\n\n\nA7 Pointer Syntax Analysis & Language Comparison\nTable of Contents\n    1. Current Language Implementations\n    2. A7 Current Syntax\n    3. Proposed A7 Alternatives\n    4. Comparative Analysis\n    5. Recommendations\n\nCurrent Language Implementations\nC\n\nint x = 42;\nint *ptr = &x;             // Address-of: & prefix\nint value = *ptr;          // Dereference: * prefix\n*ptr = 100;            "
+  },
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS_html_styled.pdf\nPDF Version: 1.4\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           \nCreator:         wkhtmltopdf 0.12.6\nProducer:        Qt 5.15.17\nCreationDate:    Tue Sep 23 00:17:34 2025 +03\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           9\nEncrypted:       no\nPage size:       595 x 842 pts (A4)\nPage rot:        0\nFile size:       73383 bytes\nOptimized:       no\nPDF version:     1.4\n",
+    "text_exit": 0,
+    "characters": 14687,
+    "opening": "A7 Pointer Syntax Analysis & Language\nComparison\nTable of Contents\n    1. Current Language Implementations\n    2. A7 Current Syntax\n    3. Proposed A7 Alternatives\n    4. Comparative Analysis\n    5. Recommendations\n\n\nCurrent Language Implementations\n\nC\n\nint x = 42;\nint *ptr = &x;           // Address-of: & prefix\nint value = *ptr;        // Dereference: * prefix\n*ptr = 100;             // Assignment through pointer\nint **pp = &ptr;        // Poin"
+  },
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS_latex.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS_latex.pdf\nPDF Version: 1.5\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           A7 Pointer Syntax Analysis\nSubject:         \nKeywords:        \nAuthor:          \nCreator:         LaTeX via pandoc\nProducer:        pdfTeX-1.40.25\nCreationDate:    Tue Sep 23 00:15:04 2025 +03\nModDate:         Tue Sep 23 00:15:04 2025 +03\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           10\nEncrypted:       no\nPage size:       612 x 792 pts (letter)\nPage rot:        0\nFile size:       251444 bytes\nOptimized:       no\nPDF version:     1.5\n",
+    "text_exit": 0,
+    "characters": 16286,
+    "opening": "                                  A7 Pointer Syntax Analysis\n\n\n\nContents\nA7 Pointer Syntax Analysis & Language Comparison                                                                  1\n  Table of Contents . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   1\n  Current Language Implementations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        1\n  A7 Current Syntax . . . . ."
+  },
+  {
+    "path": "docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf",
+    "qpdf_exit": 0,
+    "qpdf": "checking docs/POINTER_SYNTAX_ANALYSIS_wkhtmltopdf_direct.pdf\nPDF Version: 1.4\nFile is not encrypted\nFile is not linearized\nNo syntax or stream encoding errors found; the file may still contain\nerrors that qpdf cannot detect\n",
+    "info": "Title:           \nCreator:         wkhtmltopdf 0.12.6\nProducer:        Qt 5.15.17\nCreationDate:    Tue Sep 23 00:15:59 2025 +03\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           10\nEncrypted:       no\nPage size:       595 x 842 pts (A4)\nPage rot:        0\nFile size:       78361 bytes\nOptimized:       no\nPDF version:     1.4\n",
+    "text_exit": 0,
+    "characters": 15375,
+    "opening": "             A7 Pointer Syntax Analysis\n\n\nA7 Pointer Syntax Analysis & Language\nComparison\n\nTable of Contents\n1. Current Language Implementations\n2. A7 Current Syntax\n3. Proposed A7 Alternatives\n4. Comparative Analysis\n5. Recommendations\n\n\nCurrent Language Implementations\n\nC\n\nint x = 42;\nint *ptr = &x;         // Address-of: & prefix\nint value = *ptr;      // Dereference: * prefix\n*ptr = 100;            // Assignment through pointer\nint **pp = &p"
+  }
+]

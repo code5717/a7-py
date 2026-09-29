@@ -1,0 +1,915 @@
+
+> build · glm-5.3
+
+→ Read docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+→ Read docs/plan/research/untyped-nonfinite-baseline-2026-09-20.md
+I'll start by verifying the arithmetic corrections in scratch Python, and check the baseline JSON evidence file exists.
+✱ Glob "docs/plan/research/untyped-nonfinite-baseline-2026-09-20.json" 1 match
+
+$ python3 - <<'EOF'
+# Point 1: growth arithmetic
+b = 333 * 2**20          # 333 bits doubled 20 times
+print("20 doublings:", b, "bits =", b/8/2**20, "MiB =", b/8/1e6, "MB")
+b30 = 333 * 2**30
+print("30 doublings:", b30/8/2**30, "GiB =", b30/8/1e9, "GB")
+
+# C5/C6 step counts, quadratic charges, C3=2^17 bits, C4=2^18 bits
+L3 = 2**17 // 64   # 2048 limbs
+L4 = 2**18 // 64   # 4096 limbs
+mul_full = L3*L3
+gcd_full = 2*mul_full
+print("full-width mul credits:", mul_full, "= 2^", mul_full.bit_length()-1)
+print("mul+reduce:", mul_full+gcd_full, "C5 allows:", 2**24/(mul_full+gcd_full))
+print("C5 mul-only steps:", 2**24/mul_full, " C6 mul-only:", 2**32/mul_full, " C6 mul+reduce:", 2**32/(mul_full+gcd_full))
+# maximal rational add+reduce: 3 products at 2048x2048 + gcd on 4096-limb inputs + linear adds
+rat = 3*mul_full + 2*(L4*L4) + 2*L4
+print("max rational add+reduce:", rat, "=", rat/2**24, "x C5,", rat/2**32, "x C6")
+# min source to exhaust C6 at 1 credit/char
+print("C6 chars at 1 credit each:", 2**32, "=", 2**32/2**30, "GiB")
+
+# Point 7: 5e-324 vs 2^-1074
+from fractions import Fraction
+f = Fraction("5e-324")
+two = Fraction(2)**-1074
+print("5e-324 == 2^-1074:", f == two, " ratio:", float(f/two))
+print("midpoint to 2^-1073:", float(Fraction(3,2)*two), " 5e-324 below it:", f < Fraction(3,2)*two)
+
+# Point 6: lexer-size literals with huge exponents
+print("len('9e-99999999999999999') =", len("9e-99999999999999999"))
+print("float('1e9999') =", float("1e9999"), " len('1e9999') =", len("1e9999"))
+
+# margins
+print("20-char, |exp|<=99 bits:", 16*3.3219 + 99*3.3219)  # ~53 + 329
+print("10^400 bits:", (10**400).bit_length(), "10^4096 bits:", (10**4096).bit_length())
+print("100-char w/ e4096 approx bits:", (int("9"*98)*10**4096).bit_length())
+
+# peak logical temporaries
+C3, C4 = 2**17, 2**18
+print("peak rational add KiB:", (4*(C3//8) + 3*(C4//8))/1024)
+EOF
+20 doublings: 349175808 bits = 41.625 MiB = 43.646976 MB
+30 doublings: 41.625 GiB = 44.694503424 GB
+full-width mul credits: 4194304 = 2^ 22
+mul+reduce: 12582912 C5 allows: 1.3333333333333333
+C5 mul-only steps: 4.0  C6 mul-only: 1024.0  C6 mul+reduce: 341.3333333333333
+max rational add+reduce: 46145536 = 2.75048828125 x C5, 0.010744094848632812 x C6
+C6 chars at 1 credit each: 4294967296 = 4.0 GiB
+5e-324 == 2^-1074: False  ratio: 1.012011266536553
+midpoint to 2^-1073: 1e-323  5e-324 below it: True
+len('9e-99999999999999999') = 20
+float('1e9999') = inf  len('1e9999') = 6
+20-char, |exp|<=99 bits: 382.01849999999996
+10^400 bits: 1329 10^4096 bits: 13607
+100-char w/ e4096 approx bits: 13933
+peak rational add KiB: 160.0
+
+Arithmetic confirmed. The JSON evidence exists. Now I'll apply the corrections section by section.
+
+**Edit 1 — Read/Ran lists (verification provenance):**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -22,9 +22,11 @@
+ L16, L33, L47), `a7/const_eval.py` (all 155 lines), `a7/tokens.py`
+ (literal tokenization and current caps, lines 505-605), `a7/ast_nodes.py`
+ (literal construction, lines 575-604), `a7/backends/zig.py` (`_emit_literal`,
+ lines 1680-1737), `pyproject.toml` (`requires-python = ">=3.13"`),
+-`test/test_no_recursion.py` header.
++`test/test_no_recursion.py` header, and — added in the correction pass — the
++[nonfinite baseline](untyped-nonfinite-baseline-2026-09-20.md) with its JSON
++evidence (F1 claims, §12).
+ 
+ Ran (closed-form arithmetic and host-fact checks only, in scratch Python, not
+ through the compiler; no pathological input was compiled, no Zig invoked, no
+ exhaustion experiment performed; no sub-agents or nested CLIs launched —
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -43,8 +43,14 @@
+ - Double-rounding witness (§10, T8): exact value `1.0000000596046448` rounds
+   to `1.0000001192092896` when converted directly to f32 with
+   round-to-nearest-ties-to-even, but to `1.0` when first rounded to f64.
+   Verified by integer-arithmetic reference implementation, not by assertion.
++- Correction-pass recomputation (same day, same scratch-Python method): 333
++  bits doubled 20 times is 41.625 MiB, not 40 GB (30 doublings reaches
++  ~44.7 GB); C5/C6 step counts recomputed from the quadratic charges (§5);
++  `5e-324` is not equal to 2^-1074 (ratio ≈ 1.012) and rounds to it (T10);
++  `float("1e9999")` is `inf` on the host path and `9e-99999999999999999` is
++  20 characters, so C2 newly rejects literals that lex today (§8).
+ 
+ Estimates marked "estimate" below (bit counts derived from sizes, expected
+ costs from CPython bigint implementation) are reasoning, not measurements.
+ 
+
+
+**Edit 2 — §1 growth arithmetic:**
+✗ Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md failed
+Error: Could not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
+Disregard that stray call — applying the real §1 edit:
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -59,9 +59,9 @@
+ From tiny source, under exact evaluation, before any caps:
+ 
+ | Attack shape | Growth | Concrete example |
+ | --- | --- | --- |
+-| Chained exact `*` (squaring) | Result bits double per step | 100-char literal (~333 bits) squared 20 times exceeds 40 GB |
++| Chained exact `*` (squaring) | Result bits double per step | 100-char literal (~333 bits) doubled 20 times is ~42 MiB; 30 times is ~44 GB |
+ | Unbounded left shift | Result bits ≈ operand bits + shift count | `1 << (1 << 30)` is 2^30 bits = 128 MiB (F2's example) |
+ | Rational accumulation | Denominator bits add per term (before reduction) | 100 additions of 3,000-bit denominators ≈ 300k bits |
+ | Huge decimal exponent in a ≤100-char literal | Exact value 10^(10^97) | `1e` + 98 nines is exactly 100 token characters |
+ | Decimal rendering | `str(int)` past 4300 digits raises `ValueError` on this host | an error path that itself crashes the diagnostic |
+
+
+**Edit 3 — §3 table rows (C5/C6 units, C7 scope, C11 hex preference):**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -103,15 +103,15 @@
+ | C1 | Numeric token length | 100 | characters | Already enforced, `a7/tokens.py:15` (`MAX_NUMBER_LENGTH`) |
+ | C2 | Decimal exponent magnitude, literal `m × 10^e` | 4096, inclusive (absolute value) | power-of-ten exponent | New check at tokenization, before any exact value is constructed |
+ | C3 | Per-value component bit length (numerator, denominator, each separately, reduced form) | 131,072 (= 2^17, 16 KiB per component) | bits | Preflight before every growth operation (§4) |
+ | C4 | Transient cross-product scratch | 262,144 (= 2^18, 32 KiB) | bits, per operation | Comparisons and rational add/sub preflight (§4) |
+-| C5 | Per-binding work budget | 2^24 | 64-bit limb operations | Charged per evaluation step (§5) |
+-| C6 | Per-compilation work budget | 2^32 | 64-bit limb operations | Accumulated across all constant evaluation |
+-| C7 | Cached exact-value memory | 16 | MiB, counted as `ceil(bits/8)` per component + 64 B per entry | Constant-value cache insert |
++| C5 | Per-binding work budget | 2^24 | 64-bit limb-op credits | Charged per evaluation step (§5) |
++| C6 | Per-compilation work budget | 2^32 | 64-bit limb-op credits | Accumulated across all constant evaluation |
++| C7 | Retained exact-value memory (stored binding values + constant-value cache) | 16 | MiB of logical payload, counted as `ceil(bits/8)` per component + 64 B per entry | Every retention point: binding finalization and cache insert (§5.1) |
+ | C8 | Constant dependency chain depth | 65,536 (= 2^16) | bindings per chain | Iterative worklist visit counter |
+ | C9 | Diagnostic value rendering | 256 | characters per value; whole diagnostic ≤ 2,048 characters | Diagnostic formatter |
+ | C10 | Rendered dependency chain | 32 | links (first 16, ellipsis, last 16 when longer) | Diagnostic formatter |
+-| C11 | Emitted numeric literal | 64 | bits for integer destinations; ≤ 32 characters for float destinations | Backend emitter |
++| C11 | Emitted numeric literal | 64 | bits for integer destinations; ≤ 32 characters for float destinations, exact hexadecimal spelling preferred (§8) | Backend emitter |
+ 
+ Rationale for the two central numbers:
+ 
+ - **C3 = 2^17 bits.** Ordinary constants are ≤ ~1,100 bits exact (§8), so the
+
+
+**Edit 4 — §3 C3/C2 rationale:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -113,19 +113,22 @@
+ | C11 | Emitted numeric literal | 64 | bits for integer destinations; ≤ 32 characters for float destinations, exact hexadecimal spelling preferred (§8) | Backend emitter |
+ 
+ Rationale for the two central numbers:
+ 
+-- **C3 = 2^17 bits.** Ordinary constants are ≤ ~1,100 bits exact (§8), so the
+-  margin is >100x. The largest legal literal under C1+C2
++- **C3 = 2^17 bits.** Hand-written constants are ≤ ~390 bits exact (§8), so
++  the margin is >300x. The largest legal literal under C1+C2
+   (100-character mantissa with exponent 4,096) is about 13,930 bits, margin
+-  ~9.4x. A 131,072-bit value costs 16 KiB of storage; one full-width
+-  multiplication costs at most 2,048² = 2^22 limb operations (quadratic
+-  overcharge; estimate, see §5).
+-- **C2 = 4096.** It must be ≥ a few hundred so F1's `1e400`-class literals
+-  keep an exact representable value (10^400 ≈ 1,329 bits under C3), keeping
+-  F1 a *semantic* fitting decision, not a resource rejection. It must be small
++  ~9.4x. A 131,072-bit value costs 16 KiB of logical storage; one full-width
++  multiplication charges 2,048² = 2^22 limb credits (quadratic overcharge;
++  estimate, see §5).
++- **C2 = 4096.** It must be ≥ a few hundred so `1e400`-class literals keep
++  an exact representable value (10^400 ≈ 1,329 bits under C3). The nonfinite
++  baseline observed that `x: f64 = 1e400` currently builds and prints `inf`,
++  so C2 keeps that question a *semantic* fitting decision for the packet
++  (§12), not a resource rejection. It must be small
+   enough that exponent-driven bit growth (~3.33 bits per power of ten) cannot
+-  approach C3 from a single literal: 4,096 × 3.33 + 333 ≈ 13,990 bits < C3.
++  approach C3 from a single literal: 4,096 powers of ten contribute ≈ 13,607
++  bits, plus ≤ 333 mantissa bits ≈ 13,940 bits < C3.
+   4,096 sits between with an order of magnitude of headroom on both sides.
+ 
+ Shift counts need no separate numeric cap: `a << k` has result bits ≈
+ bits(a) + k, so the C3 preflight on the result rejects any oversized count,
+
+
+**Edit 5 — §4 preflight table, conservative-rejection semantics, rational-add accounting:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -143,27 +143,57 @@
+ tolerates.
+ 
+ ## 4. Preflight obligations (before allocation)
+ 
+-Result bit lengths are computable from operand bit lengths in O(1). The
++Preflight computes conservative upper bounds from operand bit lengths in O(1);
++the preflight arithmetic itself is host O(1) work and is uncharged. The
+ evaluator must check, then allocate:
+ 
+ | Operation | Preflight (bits) | Notes |
+ | --- | --- | --- |
+-| Integer `+`, `-` | max(ba, bb) + 1 ≤ C3 | |
+-| Integer `*` | ba + bb ≤ C3 | Primary growth path |
++| Integer `+`, `-` | max(ba, bb) + 1 ≤ C3 | Sum can carry 1 bit past the wider operand |
++| Integer `*` | ba + bb ≤ C3 | Primary growth path; actual product has ba+bb or ba+bb−1 bits |
+ | Integer truncating `/`, `%` | none (result ≤ dividend) | Divisor zero already a semantic error |
+ | Shift `<<` | ba + k ≤ C3, k ≥ 0 | k is the exact count value |
+ | Shift `>>` | k ≥ 0 only | Result shrinks |
+-| Bitwise `& | ^` | max(ba, bb) ≤ C3 (already true of operands) | Result cannot exceed the wider operand |
+-| Rational `+`, `-` (a/b ± c/d) | ba+bd ≤ C4 and bc+bb ≤ C4 for cross products; stored results ba+bd, bb+bd ≤ C3 after reduction | Transient products may reach C4, stored values never exceed C3 |
++| Bitwise `& \| ^` | max(ba, bb) ≤ C3 (already true of operands) | Result cannot exceed the wider operand |
++| Rational `+`, `-` (a/b ± c/d) | cross products ba+bd ≤ C4 and bc+bb ≤ C4; denominator product bb+bd ≤ C4; numerator sum max(ba+bd, bc+bb) + 1 ≤ C4 | The unreduced numerator carries 1 bit past a C4 product; the unreduced fraction — the gcd inputs — is C4-scale, not C3-scale |
+ | Rational `*` | ba+bc ≤ C3, bb+bd ≤ C3 | |
+ | Rational `/` | ba+bd ≤ C3, bb+bc ≤ C3 | Divisor zero is a semantic error |
+-| Rational reduce (gcd) | none (inputs ≤ C3 bound temporaries) | Work-charged, §5 |
++| Rational reduce (gcd) | none of its own | Inputs are the unreduced add/sub results, up to C4+1 bits; their allocation was already bounded by the C4 checks above; work is charged (§5) |
+ | Comparison via cross-multiply | ba+bd ≤ C4 and bc+bb ≤ C4 | May prefilter by sign and bit length when they already decide |
+ | Negation | none | Same size |
+ | Fitting/rounding to f32/f64 | none beyond operand C3 | Integer-only arithmetic on the rational; see §8 |
+ 
++Stored-result rule for rational add/sub: after the C4-bounded temporaries
++exist, the fraction is reduced and the stored numerator and denominator must
++each satisfy ≤ C3. This one check happens after an allocation that the C4
++preflight already bounded (reduction only shrinks); it is a value check, not
++an allocation guard. Every other bound above is checked before any
++allocation.
++
++**These bounds are conservative, not exact.** A product of ba- and bb-bit
++integers has ba+bb or ba+bb−1 bits; a sum carries at most +1; a rational sum
++can cancel down to arbitrarily few bits. Exact result sizes are not computable
++in O(1) from operand sizes, so the evaluator intentionally rejects some
++operations whose final stored value would have fit:
++
++- an integer multiply with ba+bb = C3+1 whose product happens to be
++  ba+bb−1 = C3 bits;
++- `(a×b) − (a×c)` with wide operands and a tiny difference: the transient
++  products are preflighted at full width and rejected even though the stored
++  result would be small — cross-cancellation is only visible after
++  allocation, and preflight cannot see it;
++- a rational add whose unreduced cross products exceed C4 but whose reduced
++  sum is small.
++
++Conservative rejection is the chosen semantics. Preflight-before-allocation
++(§2.1) forbids computing wide temporaries to discover a small result, and
++reject-never-approximate (§2.2) forbids proceeding provisionally. Source that
++hits a conservative bound gets a located compile-time resource error, not a
++wrong value; authors must restructure (for example, factor out the common
++term before multiplying).
++
+ ## 5. Work and cost model
+ 
+ Units: 64-bit limb operations, charged as an upper bound so real cost never
+ exceeds the charge.
+
+
+**Edit 6 — §5 cost model rewrite + new §5.1 live-memory accounting:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -194,41 +194,88 @@
+ term before multiplying).
+ 
+ ## 5. Work and cost model
+ 
+-Units: 64-bit limb operations, charged as an upper bound so real cost never
+-exceeds the charge.
++Units: abstract 64-bit limb-operation **credits**. A credit count is a
++deterministic function of operand bit lengths, so budgets are reproducible
++and depend on source alone. All charges use `ceil` and a minimum of 1 credit
++per step: no evaluated step is free, so long chains of tiny operations still
++drain the budgets. The charges are *intended* to overcharge typical CPython
++bigint costs (quadratic mul versus Karatsuba, 2× product for gcd) — an
++estimate from CPython's algorithm choices, not a proven universal upper
++bound over CPython versions, and credits bound neither seconds nor RSS
++(§5.1).
+ 
+-| Step | Charge (limb ops) |
++| Step | Charge (limb-op credits) |
+ | --- | --- |
+-| Integer/rational `+`, `-`, comparison prefilter | max(bl, br) / 64 |
+-| Multiplication or division of components | (ba/64) × (bb/64), quadratic overcharge (CPython uses Karatsuba above a threshold, so this overcharges; estimate) |
+-| gcd-based reduction | 2 × product charge (overcharges Lehmer/Euclid; estimate) |
++| Integer/rational `+`, `-`, comparison prefilter | max(ceil(bl/64), ceil(br/64)), minimum 1 |
++| Multiplication or division of components | ceil(ba/64) × ceil(bb/64), quadratic overcharge (estimate, unproven as a bound) |
++| gcd-based reduction | 2 × product charge of its actual inputs — up to 2 × (C4/64)² inside a rational add (estimate) |
+ | Cross-multiply comparison | 2 × product charge |
+-| Exact→f32/f64 rounding | operand bits / 64 (linear scans only) |
++| Shift `<<` / `>>` | ceil(result bits / 64), minimum 1 |
++| Linear scan (normalization, exact→f32/f64 rounding) | ceil(operand bits / 64), minimum 1 |
++| Dependency-graph node visit | 1 per worklist pop (visits bounded by C8 and by binding count) |
++| Cache hit / binding-value reference | ceil(value bits / 64), minimum 1, charged to C6 |
+ 
+-Budgets: C5 = 2^24 limb ops per `::` binding (an initializer expression DAG)
+-— that is 8 full-width multiply+reduce steps, ~65,000 half-width ones, or
+-~16.7 million 64-bit operations. C6 = 2^32 per compilation: 256 full-width
+-steps, or 4 × 10^9 64-bit operations, which a source file cannot reach at
+-≥3 bytes per operation (would need >10 GB of source), so C6 binds only
+-wide-value chains, exactly the adversarial case. Worst-case wall clock at C6
+-is seconds (estimate: CPython bigint primitives are C loops at roughly a
+-nanosecond per limb op; unmeasured). Violations report the binding, the
+-budget and the operation that exceeded it.
++Budgets: C5 = 2^24 credits per `::` binding (an initializer expression DAG).
++At the quadratic charges that is 4 full-width (2^17-bit) multiplications, or
++one full-width multiply+gcd-reduce step (3 × 2^22 ≈ 1.26×10^7 credits, 75%
++of C5). A maximal-width rational add+reduce — whose gcd runs on 2^18-bit
++unreduced inputs (§4) — charges ≈ 4.6×10^7 credits, 2.75 × C5: such a step
++is size-legal under C3/C4 but is rejected by the per-binding work budget;
++wide rational arithmetic is C6-scale (≈ 1% of C6 per step). C6 = 2^32 per
++compilation: 1,024 full-width multiplications, or ~341 multiply+reduce
++steps. At the 1-credit minimum, each charged step corresponds to at least
++one source token (≥ 1 character) in the evaluated expression, so exhausting
++C6 requires ≥ 2^32 characters ≈ 4 GiB of source at the absolute cheapest —
++C6 binds machine-generated or wide-value files, not hand-written ones. No
++wall-clock or memory claim follows from these counts (§5.1). Violations
++report the binding, the budget and the operation that exceeded it.
+ 
+ Accounting rules:
+ 
+ - Charge only operands actually evaluated. Short-circuit `and`/`or` skip the
+   right operand; skipped work costs zero (§11 discusses semantics).
+-- Cache hits cost the same as one linear scan (bits/64) and are charged to C6,
+-  so a million references to a cached wide constant cannot loop freely.
+-- C7 (16 MiB cached exact values) is enforced at cache insert with the
+-  accounting formula in §3; exceeding it is a located resource error, not an
+-  eviction. Typical 64-bit values cost ~200 B per entry including overhead,
+-  so C7 accommodates ~80,000 ordinary cached constants, far beyond any
++- Cache hits charge one linear scan (ceil(bits/64), minimum 1) to C6, so a
++  million references to a cached wide constant cannot loop freely.
++- C7 is enforced at every retention point (binding finalization and cache
++  insert) with the §3 formula, as a located resource error, not an eviction.
++  It is **logical payload accounting**: the 64 B-per-entry term is the
++  policy's bookkeeping constant, not an observed CPython size. Real RSS per
++  entry is higher — an ordinary small entry carries roughly 200 B of CPython
++  object overhead (estimate) — so 16 MiB of logical payload is not 16 MiB of
++  process RSS and is not claimed to be (§5.1). Under the formula an ordinary
++  64-bit value costs 8 + 8 + 64 = 80 B of logical payload, so C7
++  accommodates ~200,000 ordinary retained values — far beyond any
+   hand-written file; machine-generated larger files get a clean rejection.
+ 
++### 5.1 Live memory within the evaluator scope
++
++C7 and the §4 preflights bound *logical payload* — bits of exact value
++counted by the formula — and only inside the untyped-constant evaluator:
++
++- Per-operation temporaries: every temporary is bounded by C4 + 1 bits by
++  the §4 preflights. The peak simultaneous set for a rational add is the
++  four operand components (≤ C3 each), up to three transient products
++  (≤ C4 each: both cross products and the denominator product) and the
++  numerator sum (≤ C4+1): ≈ 160 KiB of logical payload, plus gcd remainder
++  temporaries, each no larger than its inputs. A loose invariant covering
++  every operation: at most ~10 live temporaries × 32 KiB ≈ 320 KiB logical
++  per in-flight operation.
++- Worklist: resolution holds references (names, locations), not value
++  copies; each pending binding appears at most once (visit counters) and the
++  number of bindings is bounded by source tokens, so worklist payload is
++  O(bindings × small constant), independent of value sizes.
++- Retained values: all stored binding values plus cache entries share the
++  C7 total (16 MiB logical), checked at each retention point. Counting
++  bindings as well as the cache is load-bearing: without it, a
++  machine-generated file of `A :: 1 << 131000`-style bindings could retain
++  ~16 KiB per ~15 source characters across an unbounded number of bindings.
++
++These are accounting bounds on what the evaluator retains. They are not
++process bounds: whole-process RSS also contains the parser, AST, modules and
++interpreter overhead (§9), and nothing here measures or caps those.
++
+ ## 6. Dependency graph depth and no recursion
+ 
+ - Resolution must use explicit worklists/stacks, no recursion, per the
+   repository no-recursion rule and `test/test_no_recursion.py`; deep chains
+
+
+**Edit 7 — §8 margins table and compatibility conclusion:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -330,18 +330,26 @@
+ | Class | Worst exact size | Margin |
+ | --- | --- | --- |
+ | i8–i64, u8–u64, isize, usize literals | ≤ 64 bits | > 2,000x |
+ | `9007199254740993.0` (packet case) | 54 bits | > 2,000x |
+-| Ordinary human-written float literal (≤ 20 chars) | ≤ ~70 bits | > 1,800x |
+-| Any ≤ 100-char literal with |exponent| ≤ 4096 (C2 max) | ~13,930 bits | ~9.4x |
++| ≤ 20-char float literal with \|exponent\| ≤ 99 | ≤ ~390 bits | > 300x |
+ | Exact `0.1 + 0.2` chain over 100 terms of 17-digit decimals | ~5,700 bits | ~23x |
++| Any ≤ 100-char literal with \|exponent\| ≤ 4096 (C2 max) | ~13,930 bits | ~9.4x |
+ 
+-Conclusion: no ordinary f32/f64/i64 constant or reasonable exact arithmetic
+-chain approaches the caps; caps bind only adversarial constructions. C2 keeps
+-every literal that fits the lexer's existing 100-character rule exactly
+-representable under C3, so no literal that lexes today becomes
+-resource-rejected by parsing alone.
++The third row needs its exponent qualifier: 20 characters can encode an
++exponent as large as `9e-99999999999999999` (exponent −10^17+1), whose exact
++value is astronomically wide. Character count alone does not bound a literal;
++that is exactly what C2 exists to cap.
+ 
++Conclusion: hand-written constants and reasonable exact chains stay far below
++C3, but the caps are not strictly adversarial-only. The current lexer accepts
++any ≤ 100-character numeric token regardless of exponent magnitude, so
++literals such as `1e9999` (6 characters) lex today and reach the host-float
++path (`float("1e9999")` is `inf` on this host); under C2 they become located
++tokenize-time resource errors. This is an intentional compatibility change —
++some currently-lexing literals are newly rejected — and it needs the packet
++owner's sign-off together with F1 (§12).
++
+ Rounding rules (bounding, not semantics; semantics stay with the packet):
+ 
+ - Exact→f64 and exact→f32 rounding must be computed from the rational with
+   integer arithmetic in one correctly rounded step (F7). Never narrow via a
+
+
+**Edit 8 — §8 emission bullets (exact hexadecimal proposal):**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -354,16 +354,29 @@
+ - Exact→f64 and exact→f32 rounding must be computed from the rational with
+   integer arithmetic in one correctly rounded step (F7). Never narrow via a
+   host f64 (double rounding; verified witness in §10, T8). Cost is linear in
+   operand bits and charged under §5.
+-- f32 emission: emit a shortest decimal that round-trips through the f32
+-  value (bounded search over ≤ 17 candidate digit counts; ≤ 32 characters,
+-  C11). Rationale (reasoning, unmeasured): Zig float literals are
+-  `comptime_float` (f128) and coercion to f32 rounds f128→f32; double
+-  rounding through an intermediate of precision 2p+2 = 50 bits is harmless
+-  for p = 24, and f128 has 113, so a 9-significant-digit round-trip decimal
+-  is safe. Verify during implementation with the T8 harness extended to the
+-  emitted spelling.
++- f32 and f64 *emission*: the default proposal is an exact hexadecimal
++  floating literal of the already-rounded target value
++  (`0x1.<mantissa hex>p<exp>`, 6 mantissa hex digits for f32, 13 for f64;
++  ≤ 32 characters, C11). A hexadecimal literal denotes its value exactly
++  when the mantissa fits — it does by construction — so re-parsing cannot
++  re-round: not for direct f64 destinations, and not for f32 destinations
++  through Zig's `comptime_float` (f128) coercion, where an exactly
++  representable value coerces exactly. Verification is still required at
++  implementation, for both widths: confirm the exact Zig 0.16 spelling for
++  f32/f64 typed constants, and extend the T8 harness to parse each emitted
++  spelling through the same path Zig uses and compare bit patterns against
++  the direct correctly-rounded conversion.
++- A shortest round-trip *decimal* emission is only an optional readability
++  alternative, not the default. It cannot be justified by a generic
++  "intermediate precision 2p+2 makes double rounding harmless" argument:
++  arbitrary exact decimals can lie arbitrarily close to a rounding
++  midpoint, and a decimal chosen against direct f32 rounding may round
++  differently when parsed through an f128 intermediate. If decimals are
++  wanted, the selection must be verified on its own — emit, re-parse
++  through Zig's actual parse path, compare bit patterns — and that
++  verification is in addition to the hex path's, not a substitute for it.
+ - Integer destinations emit ≤ 64-bit values (≤ 20 decimal digits), always
+   under the 600-digit rule of §7.
+ 
+ ## 9. Proposed limits vs qualification vs whole-compiler sandboxing
+
+
+**Edit 9 — §9 stress-probe wording (fact, not permission policy):**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -401,12 +401,13 @@
+    rlimits or containers may be used by CI as engineering controls but are not
+    language semantics and are not proposed here.
+ 
+ No resource-exhaustion probe was run against any compiler build to produce
+-this document, and none is required to approve it: the caps are justified by
+-size arithmetic (§1, §3, §8), not by crashing measurements. Deliberately
+-stress-running a compiler past these limits remains prohibited unless
+-separately approved with safety controls.
++this document, and none was needed for the size arithmetic above (§1, §3,
++§8): the caps are justified by that arithmetic, not by crashing
++measurements. Whether maintainers later stress-run a compiler past these
++limits is an engineering decision for them; this document records the fact
++that no such run happened and sets no permission rule about future runs.
+ 
+ ## 10. Required boundary tests (small, meaningful)
+ 
+ Each test verifies an observable requirement of this policy. None needs
+
+
+**Edit 10 — §10 tests: fix T3, T10, T11; add T13/T14:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -417,9 +417,9 @@
+ | ID | Test | Verifies |
+ | --- | --- | --- |
+ | T1 | `x: i64 = 9223372036854775807` accepted, `...808` rejected; `u: u8 = 256` rejected | Ordinary integer fitting unaffected; destinations use exact values |
+ | T2 | `x: i64 = 9007199254740993.0` accepted with exact value; `f: f64 = 1e4096` parses exact; `1e4097` rejected at tokenize with location | C2 both sides; packet's host-float-loss case |
+-| T3 | With injected caps (C3 = 128 bits): `BIG :: 1 << 200` rejected with located "exceeds bit limit" naming binding and limit; `1 << 100` under the same caps accepted and fits `i64`? rejected as overflow, but *semantically*, proving the preflight distinguished resource vs fitting | Preflight before allocation; reject-never-approximate |
++| T3 | With injected caps (C3 = 128 bits): `BIG :: 1 << 200` is rejected before allocation with a located resource diagnostic naming binding, operation and limit; `X :: 1 << 100` under the same caps passes the resource preflight (101 ≤ 128) and is then rejected only as an i64 destination overflow — a *fitting* error with a distinct diagnostic | Preflight ordering; resource and fitting rejections are distinguishable (reject-never-approximate) |
+ | T4 | With injected C5 = 2^16 limb ops: a loop-free chain of wide multiplies in one `::` rejected at the budget with the operation named; a second binding in the same file still evaluates | Per-binding budget isolation; C6 accounting across bindings |
+ | T5 | Oversized value diagnostic: rendered ≤ 256 characters, contains a hex prefix, total bit length and digit-count summary, no decimal expansion, message total ≤ 2,048 characters; no `ValueError` escapes | C9, §7 |
+ | T6 | Cycle `FIRST :: SECOND`, `SECOND :: FIRST` reports both locations; a synthetic chain deeper than an injected C8 = 4 reports first/last links with depth | C8, C10, §6 |
+ | T7 | Dependency chain of depth 300 compiles with Python recursion limit 100 | No-recursion requirement, §6 |
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -424,11 +424,13 @@
+ | T6 | Cycle `FIRST :: SECOND`, `SECOND :: FIRST` reports both locations; a synthetic chain deeper than an injected C8 = 4 reports first/last links with depth | C8, C10, §6 |
+ | T7 | Dependency chain of depth 300 compiles with Python recursion limit 100 | No-recursion requirement, §6 |
+ | T8 | `x: f32 = 1.0000000596046448` materializes as `1.0000001192092896` (direct rounding), not `1.0` (via-f64) | F7 single-step rounding; verified witness, §"What was verified" |
+ | T9 | `0.1 + 0.2 == 0.3` true untyped; with `t: f64 = 0.1` the typed comparison follows IEEE operand fitting | Packet F8 boundary, unchanged by caps |
+-| T10 | `5e-324` (2^-1074) exact accept as f64 subnormal; overflow-to-infinity fitting rejection per packet | Underflow permitted, overflow rejected (semantics; policy verifies no resource rejection) |
+-| T11 | Emission: emitted integer literals ≤ 20 digits or hex; float literals ≤ 32 characters; a value needing > 600 decimal digits emits hex, never crashes `str()` | C11, §7 |
++| T10 | `5e-324`: the exact rational 5×10^-324 is *not equal* to 2^-1074 (ratio ≈ 1.012); rounded to nearest it becomes the subnormal 2^-1074 and is accepted as f64, while `1e400`-class finite overflow is rejected at fitting per the packet | Underflow-to-subnormal permitted, overflow rejected (semantics per packet; policy verifies no resource rejection occurs) |
++| T11 | Emission: integer-destination literals are ≤ 20 decimal digits (or hex); float-destination literals are ≤ 32 characters and exact-hexadecimal by default (C11, §8). Because C11 bounds emission far below the §7 600-digit guard, a >600-digit *emission* cannot occur by construction; the >600-digit hex fallback is exercised on the diagnostic path (T5), and no `str()` crash is observable on either path | C11, §7 |
+ | T12 | No CLI flag/env var changes caps; the internal policy object is the only injection path | §2.5 |
++| T13 | Production wiring, no injected policy: through the public frontend/CLI with default caps, `x: f64 = 1e4097` yields the located C2 tokenize rejection and a >100-character numeric token still yields the C1 rejection; an ordinary constants file compiles unchanged | Default caps are constructed and enforced on real paths (§2.5) |
++| T14 | Integration: the packet's compatibility corpus and repository examples with numeric constants compile with default caps enforced; a mixed file (ordinary bindings plus one C2 violation) reports exactly the violating binding and its location, and the ordinary bindings still evaluate | Caps hold end-to-end without breaking ordinary programs |
+ 
+ T3's negative control matters: the same oversized shift must be rejected for
+ the *resource* reason under tiny caps and for the *fitting* reason under
+ default caps with a narrow destination, with distinct diagnostics.
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -434,8 +434,15 @@
+ T3's negative control matters: the same oversized shift must be rejected for
+ the *resource* reason under tiny caps and for the *fitting* reason under
+ default caps with a narrow destination, with distinct diagnostics.
+ 
++Per the repository's test-quality rules, the injected-cap tests (T3, T4, T6)
++verify cap *logic* in isolation and cannot by themselves qualify enforcement:
++a policy object with tiny caps could pass its unit tests while production
++paths ignore it. T2, T13 and T14 exercise the production default wiring and
++real integration. Qualification is all of §10 through the repository gates,
++not the injected-cap subset.
++
+ ## 11. Self-review of the growth-sensitive rules
+ 
+ - **Multiplication.** Each step preflights ba + bb ≤ C3, so chained squaring
+   stops exactly at the cap; there is no operation whose result exceeds the
+
+
+**Edit 11 — §11 self-review bullets:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -444,21 +444,24 @@
+ 
+ ## 11. Self-review of the growth-sensitive rules
+ 
+ - **Multiplication.** Each step preflights ba + bb ≤ C3, so chained squaring
+-  stops exactly at the cap; there is no operation whose result exceeds the
+-  cap transiently except the §4 cross products bounded by C4. No bypass found.
+-- **Rational cross products.** Both products preflighted against C4; stored
++  stops at or before the cap (the bound is conservative, §4); there is no
++  operation whose result exceeds the cap transiently except the §4 cross
++  products bounded by C4. No bypass found.
++- **Rational cross products.** Both cross products, the denominator product
++  and the +1 carry on the numerator sum are preflighted against C4; stored
+   results against C3 after mandatory reduction (§2.3). Comparisons may
+   prefilter by sign and bit-length difference when that already decides the
+   order, avoiding cross products entirely; the prefilter is an optimization,
+   not a correctness dependency.
+ - **Cancellation.** `a×b − a×c` with near-equal products can keep *stored*
+-  values small while *transient* work stays wide. Size preflight cannot be
+-  bypassed this way (every stored value is itself capped), but repeated
+-  build-and-cancel would do max-width work at small footprint — this is
+-  exactly what the limb-op budgets C5/C6 charge, so the attack exhausts the
+-  work budget, not the host. No bypass found.
++  values small while *transient* work stays wide. A single such step beyond
++  the caps is conservatively rejected at preflight, before allocation (§4) —
++  the evaluator refuses to allocate wide temporaries in order to discover a
++  small result. Repeated within-cap build-and-cancel does max-width work at
++  small footprint, which the limb-credit budgets C5/C6 charge; that attack
++  exhausts the work budget, not the host. No bypass found.
+ - **Short-circuit.** `and`/`or` exist (`a7/ast_nodes.py:121-122`). Work
+   accounting counts only evaluated operands (§5), so skipping cannot bypass
+   budgets — it strictly reduces work. One semantics note for the packet owner,
+   not decided here: `false and (1/0 == 0)` suppresses the untyped zero-division
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -470,14 +470,16 @@
+   short-circuit semantics.
+ - **Signed zero and category rules** carry no resource impact; they are value
+   tags, not sizes.
+ 
+-Residual risks, stated plainly: the cost model over- and under-approximates
+-real CPython costs (charges are upper bounds for mul/gcd, linear for adds;
+-actual wall time is not identical to limb-op counts — the budgets bound work,
+-not seconds). The caps do not cover the areas listed in §9.3. The f32
+-emission round-trip argument (§8) is reasoning, to be confirmed by T8's
+-harness at implementation time.
++Residual risks, stated plainly: the credit model is an estimate intended to
++overcharge typical CPython costs; it is not a proven universal upper bound
++over CPython implementations, and credits bound work in abstract units, not
++seconds or bytes of RSS (§5.1). The caps do not cover the areas listed in
++§9.3. The exact-hex emission proposal (§8) rests on exactness by
++construction plus Zig's parse path; its spelling and bit-pattern equality
++are unverified until the T8 harness is extended at implementation time, for
++both f32 and f64.
+ 
+ ## 12. What this policy does not decide
+ 
+ - F1 (loss of constant-infinity routes such as `1e400` fitting or untyped
+
+
+**Edit 12 — §12 F1 baseline update:**
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -481,12 +481,23 @@
+ both f32 and f64.
+ 
+ ## 12. What this policy does not decide
+ 
+-- F1 (loss of constant-infinity routes such as `1e400` fitting or untyped
+-  `1.0/0.0`): C2 keeps `1e400` exactly representable so the question stays
+-  semantic; the rejection of finite-value overflow at fitting remains the
+-  packet's proposal to approve.
++- F1 (infinity/NaN constants): the [nonfinite
++  baseline](untyped-nonfinite-baseline-2026-09-20.md) observed that
++  `x: f64 = 1e400` currently builds and prints `inf`; that `1.0/0.0`-style
++  divisions are already rejected (exit 6) in every tested form, so no
++  zero-division route is being lost; and that inf/NaN remain reachable today
++  through typed math calls, including global `::` bindings
++  (`INF :: math.exp(1000.0)` prints `inf`; `NAN :: math.sqrt(-1.0)` behaves
++  as NaN). Those function-call routes sit outside the untyped-constant
++  evaluator and are untouched by this policy. What remains for the packet
++  owner: whether `1e400`-class literal fitting keeps today's
++  accept-as-`inf` behavior or rejects finite→inf overflow — C2 keeps such
++  literals exactly representable, so that choice stays semantic, not
++  resource-driven — plus the separate C2 compatibility change that literals
++  with |exponent| > 4,096 which lex today become tokenize-time rejections
++  (§8).
+ - G3 typed division/remainder conventions; the packet records the dependency.
+ - Any new operator (including exponentiation), typed constant syntax, or
+   runtime bignum values (L3/L4 unchanged).
+ 
+
+
+**Edit 13 — correction log at the end:**
+✗ Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md failed
+Error: Could not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
+→ Read docs/plan/research/untyped-constant-resource-policy-2026-09-20.md [offset=440]
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -511,4 +511,69 @@
+ rational values. With that adoption, F2 is resolved as a *policy* matter;
+ implementation and qualification remain open work under the packet's own
+ approval flow. No review or implementation deadlines are imposed by this
+ document.
++
++## Correction log (2026-09-20, controller pass)
++
++A controller review found factual and accounting inconsistencies; this pass
++corrects them in place. The chosen caps stay proposed and unqualified.
++
++1. Growth arithmetic fixed: 333 bits doubled 20 times is 41.625 MiB
++   (333 × 2^20 bits), not 40 GB; ~30 doublings reaches ~44.7 GB (§1).
++   C5/C6 step counts recomputed from the quadratic charges — C5: 4
++   full-width multiplications or ~1 multiply+reduce; C6: 1,024 / ~341 (§5).
++   The nanosecond-per-limb and seconds-at-C6 claims were removed; credits
++   are abstract and no wall-clock qualification is made.
++2. Preflight restated as conservative upper bounds from operand bit lengths,
++   not exact result lengths; the intentional conservative-rejection
++   semantics (including cancellation cases where a small final result is
++   rejected because its transient products are wide) is now stated
++   explicitly (§4).
++3. Rational-add accounting fixed: the numerator sum can carry 1 bit beyond a
++   C4 product; the denominator product needs its own ≤ C4 check; gcd inputs
++   during add/sub are the C4-scale unreduced fraction, not ≤ C3; all
++   simultaneous temporaries are accounted with a ≈ 160 KiB logical peak
++   (§4, §5.1), and the maximal rational add+reduce is now correctly priced
++   at ≈ 4.6×10^7 credits, above C5 (§5).
++4. Cost table now uses `ceil` and a 1-credit minimum, adds rows for shifts,
++   linear scans, dependency-graph node visits and cache hits, and no longer
++   claims universal CPython upper bounds — the overcharge framing is an
++   unproven estimate; deterministic abstract credits are separated from
++   actual RSS and time (§5, §5.1).
++5. C7 restated as logical payload accounting over *all* retained exact
++   values (stored bindings plus cache), not 16 MiB of Python RSS; the 64 B
++   formula entry and the ~200 B observed-overhead estimate are separated —
++   one is the accounting constant, the other an RSS remark (§3, §5, §5.1).
++   Live temporaries, worklist and cache aggregation are bounded explicitly
++   within evaluator scope (§5.1).
++6. Lexer compatibility corrected: the existing 100-character lexer accepts
++   exponents above 4,096 (`1e9999` lexes today and host-converts to `inf`),
++   so C2 newly rejects some literals that lex today. The claims "no literal
++   that lexes today is resource-rejected", "caps bind only adversarial", and
++   "every ordinary 20-char float is ≤ ~70 bits" were removed; §8 margins and
++   the compatibility statement were rewritten.
++7. `5e-324` rounds to 2^-1074 (ratio ≈ 1.012) and is not equal to it (T10
++   reworded). T3's ambiguous "fits i64?" branch and T11's impossible
++   >600-digit *emission* case were fixed — the hex fallback is a diagnostic
++   path, and C11 makes >600-digit emission unreachable. T13 (production
++   default-cap wiring) and T14 (corpus integration) were added; injected
++   small-limit unit tests alone cannot qualify enforcement per AGENTS.
++8. The generic "2p+2 intermediate makes double rounding harmless" claim for
++   f32 emission was removed — arbitrary exact decimals can lie arbitrarily
++   close to a midpoint. Exact hexadecimal emission is now the proposed
++   default (exact by construction for both f32 and f64, including through
++   Zig's f128 `comptime_float` coercion), with the required verification —
++   Zig spelling plus bit-pattern comparison through Zig's actual parse path —
++   stated for both widths; shortest-decimal is demoted to an option needing
++   its own verified search (§8).
++9. The invented authorization prohibition on stress-running the compiler was
++   removed; the document now records only the fact that no exhaustion probe
++   was run, and leaves future stress runs to the maintainers (§9).
++10. F1 updated from the nonfinite baseline: `x: f64 = 1e400` currently
++    builds and prints `inf`; zero-division cases are already rejected
++    (exit 6); global `INF :: math.exp(1000.0)` and `NAN :: math.sqrt(-1.0)`
++    work today and sit outside the untyped-constant evaluator (§3, §12).
++
++A full-document consistency re-read followed these edits: growth numbers,
++cap cross-references, credit counts, memory-accounting statements, test IDs
++and F1 references now agree with the corrected sections above.
+
+
+All 13 edits applied. Now the full-document consistency pass — searching for any stale claims that should have been corrected:
+✱ Grep "40 GB|40GB|8 full-width|65,000|80,000|nanosecond|seconds|~70 bits|1,800x|adversarial only|exactly at the cap|2p\+2|10 GB|1,100 bits|F1's|squared 20" in docs/plan/research/untyped-constant-resource-policy-2026-09-20.md · 34 matches
+✱ Grep "no literal that lexes|caps bind only|prohibited|remains prohibited" in docs/plan/research/untyped-constant-resource-policy-2026-09-20.md · 1 match
+All remaining matches are the correction-log's references to the removed claims — no stale instances left. Final consistency re-read of the whole document:
+→ Read docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+The re-read surfaces six residual consistency defects in the same classes the controller flagged (arithmetic claims, conservative-bound wording, credit terminology, test-intro accuracy). Fixing each:
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -75,18 +75,18 @@
+ 
+ ## 2. Design principles
+ 
+ 1. **Preflight before allocation.** Every operation that can grow a value
+-   computes its result bit length from operand bit lengths first (O(1) on bit
+-   lengths) and rejects with a located diagnostic before allocating. Never
+-   allocate-then-check.
++   computes a conservative upper bound on its result bit length from operand
++   bit lengths first (O(1) on bit lengths) and rejects with a located
++   diagnostic before allocating. Never allocate-then-check.
+ 2. **Reject, never approximate** (already required by the packet). A cap
+    violation is a located compile error naming the binding, operation and
+    limit. No silent rounding, no truncation, no fallback to host floats.
+ 3. **Canonical reduced form.** Rational values are always stored with
+    denominator > 0 and gcd(numerator, denominator) = 1. This makes bit lengths
+-   canonical minima, so preflight arithmetic is honest and comparisons cannot
+-   be inflated by non-reduced junk.
++   canonical minima, so preflight upper bounds are as tight as the operands
++   allow and comparisons cannot be inflated by non-reduced junk.
+ 4. **Power-of-two text representations internally.** Hex is linear-time and
+    exempt from the host decimal conversion cap; decimal conversion is only
+    allowed under the guard of §7.
+ 5. **Caps are compiler-internal constants.** No CLI flag, environment variable
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -62,9 +62,9 @@
+ | --- | --- | --- |
+ | Chained exact `*` (squaring) | Result bits double per step | 100-char literal (~333 bits) doubled 20 times is ~42 MiB; 30 times is ~44 GB |
+ | Unbounded left shift | Result bits ≈ operand bits + shift count | `1 << (1 << 30)` is 2^30 bits = 128 MiB (F2's example) |
+ | Rational accumulation | Denominator bits add per term (before reduction) | 100 additions of 3,000-bit denominators ≈ 300k bits |
+-| Huge decimal exponent in a ≤100-char literal | Exact value 10^(10^97) | `1e` + 98 nines is exactly 100 token characters |
++| Huge decimal exponent in a ≤100-char literal | Exact value 10^(10^98−1) | `1e` + 98 nines is exactly 100 token characters |
+ | Decimal rendering | `str(int)` past 4300 digits raises `ValueError` on this host | an error path that itself crashes the diagnostic |
+ 
+ The current lexer caps token length (`MAX_NUMBER_LENGTH = 100`,
+ `a7/tokens.py:15`), which bounds literal *spelling*, not value growth through
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -281,9 +281,10 @@
+   repository no-recursion rule and `test/test_no_recursion.py`; deep chains
+   must compile with the Python recursion limit at 100 (the packet already
+   requires this; the policy adds the numeric bound).
+ - C8 caps a single dependency chain at 65,536 bindings. A longer chain needs
+-  on the order of a megabyte of source at ≥10 bytes per link; the cap bounds
++  ≥ 65,536 links at ≥ 5 source bytes each (`A::B` is the minimal spelling) —
++  ≥ ~320 KB of source, more with real names; the cap bounds
+   resolution bookkeeping and diagnostics regardless of future refactors.
+   Exceeding it reports the first and last 16 links (C10) and the depth.
+ - Cycles report their full cycle when ≤ 32 links, else the same truncated
+   rendering, with source locations, as the packet requires.
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -411,10 +411,12 @@
+ 
+ ## 10. Required boundary tests (small, meaningful)
+ 
+ Each test verifies an observable requirement of this policy. None needs
+-values near the real caps; cap-enforcement tests use the internal test policy
+-object with injected tiny caps (production defaults are constants, §2.5).
++values near the real size caps. Tests that verify cap *logic* use the
++internal test policy object with injected tiny caps (production defaults are
++constants, §2.5); T13 and T14 additionally exercise the production defaults
++directly, because injected caps alone cannot show the real paths are wired.
+ 
+ | ID | Test | Verifies |
+ | --- | --- | --- |
+ | T1 | `x: i64 = 9223372036854775807` accepted, `...808` rejected; `u: u8 = 256` rejected | Ordinary integer fitting unaffected; destinations use exact values |
+
+
+← Edit docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+Index: /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+===================================================================
+--- /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
++++ /home/cx89/Projects/pl-dev/a7-py/docs/plan/research/untyped-constant-resource-policy-2026-09-20.md
+@@ -421,9 +421,9 @@
+ | --- | --- | --- |
+ | T1 | `x: i64 = 9223372036854775807` accepted, `...808` rejected; `u: u8 = 256` rejected | Ordinary integer fitting unaffected; destinations use exact values |
+ | T2 | `x: i64 = 9007199254740993.0` accepted with exact value; `f: f64 = 1e4096` parses exact; `1e4097` rejected at tokenize with location | C2 both sides; packet's host-float-loss case |
+ | T3 | With injected caps (C3 = 128 bits): `BIG :: 1 << 200` is rejected before allocation with a located resource diagnostic naming binding, operation and limit; `X :: 1 << 100` under the same caps passes the resource preflight (101 ≤ 128) and is then rejected only as an i64 destination overflow — a *fitting* error with a distinct diagnostic | Preflight ordering; resource and fitting rejections are distinguishable (reject-never-approximate) |
+-| T4 | With injected C5 = 2^16 limb ops: a loop-free chain of wide multiplies in one `::` rejected at the budget with the operation named; a second binding in the same file still evaluates | Per-binding budget isolation; C6 accounting across bindings |
++| T4 | With injected C5 = 2^16 limb-op credits: a loop-free chain of wide multiplies in one `::` rejected at the budget with the operation named; a second binding in the same file still evaluates | Per-binding budget isolation; C6 accounting across bindings |
+ | T5 | Oversized value diagnostic: rendered ≤ 256 characters, contains a hex prefix, total bit length and digit-count summary, no decimal expansion, message total ≤ 2,048 characters; no `ValueError` escapes | C9, §7 |
+ | T6 | Cycle `FIRST :: SECOND`, `SECOND :: FIRST` reports both locations; a synthetic chain deeper than an injected C8 = 4 reports first/last links with depth | C8, C10, §6 |
+ | T7 | Dependency chain of depth 300 compiles with Python recursion limit 100 | No-recursion requirement, §6 |
+ | T8 | `x: f32 = 1.0000000596046448` materializes as `1.0000001192092896` (direct rounding), not `1.0` (via-f64) | F7 single-step rounding; verified witness, §"What was verified" |
+
+
+All corrections applied. Checking whether the repo has a docs-style gate I should run on this file:
+$ ls scripts/ 2>/dev/null; grep -l "docs" run_all_tests.sh 2>/dev/null && grep -n "docs" run_all_tests.sh | head -20
+__pycache__
+build_examples.py
+check_docs_style.py
+check_no_secrets.py
+error_stage_common.py
+generate_release_manifest.py
+project_status.py
+verify_archive_contents.py
+verify_error_stages.py
+verify_examples_common.py
+verify_examples_e2e.py
+verify_release_manifest.py
+verify_release_version.py
+verify_wheel_install.py
+run_all_tests.sh
+65:    uv run python scripts/check_docs_style.py
+
+$ uv run python scripts/check_docs_style.py
+docs-style: ok
+
+Docs style passes. One last cross-reference check — whether other files quote this policy's now-corrected numbers (read-only; no edits outside the target doc):
+$ rg -l "untyped-constant-resource-policy" --glob '!docs/plan/research/untyped-constant-resource-policy-2026-09-20.md' . 2>/dev/null; rg -n "40 GB|8 full-width|~65,000 half-width" docs/plan/packets/P-TYP-forward-globals.md docs/plan/research/untyped-constants-glm-review-2026-09-20.md 2>/dev/null | head
+(no output)
+
+All ten controller findings are reconciled in `docs/plan/research/untyped-constant-resource-policy-2026-09-20.md` (the only file edited), verified by scratch-Python arithmetic and a full-document consistency re-read; `scripts/check_docs_style.py` passes.
+
+- **Arithmetic**: §1 now reads 20 doublings ≈ 42 MiB, 30 ≈ 44 GB; §5 recomputed C5 = 4 full-width multiplies or ~1 multiply+reduce, C6 = 1,024 / ~341, and the maximal rational add+reduce is priced at ≈ 4.6×10^7 credits (2.75×C5, stated as a consequence); nanosecond/seconds claims deleted (docs/plan/research/untyped-constant-resource-policy-2026-09-20.md:63, :219).
+- **Conservative semantics**: §4 states bounds are O(1) upper bounds and documents intentional conservative rejection for the multiply-off-by-one and `a×b − a×c` cancellation cases (:147-194).
+- **Rational accounting**: numerator carry +1, denominator product ≤ C4, gcd inputs C4-scale; §5.1 bounds all simultaneous temporaries (~160 KiB logical peak), worklist references, and retained values (:151-172, :251-276).
+- **Cost model**: `ceil` + 1-credit minimum, new shift/scan/graph-node/cache-hit rows, universal-CPython-bound claims replaced by unproven-estimate framing, abstract credits separated from RSS/time (:198-217).
+- **C7**: logical payload over bindings + cache, not Python RSS; 64 B formula vs ~200 B overhead remark separated (:109, :240-249).
+- **C2 compatibility**: `1e9999` lexes today, so C2 newly rejects existing literals — the three stale claims removed and the sign-off requirement stated (:338-350).
+- **Tests**: `5e-324` rounds to (≠) 2^-1074; T3/T11 de-ambiguated (>600-digit *emission* is unreachable under C11 — fallback is diagnostic-path); T13 production-wiring and T14 corpus-integration added with the AGENTS note that injected caps alone cannot qualify enforcement (:413-443).
+- **Emission**: 2p+2 claim removed; exact hexadecimal proposed as default for f32/f64 with required Zig-spelling + bit-pattern verification; shortest-decimal demoted to an option needing its own verified search (:354-378).
+- **§9**: stress-run prohibition removed; only the fact that no probe was run is recorded (:404-409).
+- **F1**: updated from the baseline — `1e400` currently prints `inf`, zero-div already rejected, global `INF`/`NAN` via math calls work and sit outside the evaluator (:123-127, :485-499).
+
+The correction rationale is saved in-document as "Correction log (2026-09-20, controller pass)" (:516-579); caps remain proposed and unqualified. The consistency pass also fixed same-class residual errors not individually flagged: `10^(10^97)` → `10^(10^98−1)`, C8's ≥10-bytes-per-link → ≥5 (~320 KB), and principle-1 wording ("conservative upper bound"). No other file references the corrected numbers, and no sub-agents or nested CLIs were launched.

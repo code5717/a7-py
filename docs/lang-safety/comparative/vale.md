@@ -1,53 +1,45 @@
 # Comparative: Vale
 
-> Phase B artifact in the `docs/lang-safety/` research process.
+Status: Phase B study written before 2026-09-14; dated notes mark superseded A7 points, and current decisions are in [decisions.md](../../plan/decisions.md) and the [memory plan](../../plan/memory.md).
 
-Vale's claim is **memory safety via generational references** —
-a *runtime-tinged* compile-time-mostly approach that catches UAF
-through a tiny generation check rather than a borrow checker.
-Most checks elide at compile time via ownership tracking; a few
-survive as cold-path runtime checks.
+## Summary
 
-For A7's purpose, Vale represents the **compromise design**: if
-A7's full compile-time discipline turns out to be too strict in
-practice, generational references are the most credible fallback
-that retains *most* of the compile-time guarantees.
+Vale gets memory safety from generational references. Instead of a borrow
+checker, it catches use after free with a small generation check. Ownership
+tracking removes most checks at compile time; a few remain as cold-path runtime
+checks.
 
-Vale also stands out for **Vale's "grimoire" of memory-safety
-approaches** by Verdagon (the project author), which is itself
-the best practitioner's survey of the field.
+In Phase B, Vale was the compromise design. If A7's full compile-time
+discipline proved too strict in practice, generational references were the most
+credible fallback that keeps most compile-time guarantees.
 
-Primary sources:
+Vale's author, Verdagon, also wrote the memory-safety "grimoire", the best
+practitioner's survey of the field.
 
-- [Vale home](https://vale.dev/)
-- [Vale's memory safety strategy: generational references](https://verdagon.dev/blog/generational-references)
-- [Borrow checking, RC, GC, and the Eleven Other Memory Safety Approaches](https://verdagon.dev/grimoire/grimoire)
-- [Making C++ Memory-Safe Without Borrow Checking, Reference Counting, or Tracing GC](https://verdagon.dev/blog/vale-memory-safe-cpp)
-- [Most Memory Safe Native Programming Language](https://vale.dev/memory-safe)
-
----
+> Note (2026-09-16): The memory plan adopts the generational idea in a narrower
+> form. Records in a collection that supports removal are named by
+> generation-tagged ids (`Id(T)` in a `Table(T)`), and lookup returns an optional,
+> so a stale id never reads another record and never panics (gates M1 and M5).
+> This is not Vale's whole model: ordinary values have no per-reference check.
+> See [memory.md](../../plan/memory.md) sections 2 and 6.
 
 ## How generational references work
 
-Every heap object has a small header containing a
-**generation** — an integer that increments on each free.
+Each heap object has a small header with a generation, an integer that
+increments on each free. Each reference stores the generation it saw when it was
+created.
 
-Every reference to the object includes a copy of the
-generation it observed at the time the reference was taken.
+Before a dereference:
 
-Before dereferencing:
+- If the compiler can prove the reference is still live, through ownership
+  tracking, regions or "linear style", it emits a plain load with no runtime
+  check.
+- Otherwise it emits a runtime check: load the object's current generation and
+  compare it to the reference's stored generation. A match dereferences; a
+  mismatch panics.
 
-- If the compiler can prove the reference is still live (via
-  ownership tracking, regions, or "linear style"), it emits a
-  bare load. **No runtime check.**
-- Otherwise, the compiler emits a runtime check: load the
-  object's current generation; compare to the reference's
-  remembered generation. Match ⇒ dereference; mismatch ⇒
-  panic.
-
-In practice (Vale's reports): the runtime check survives for a
-small fraction of accesses, with planned region-borrow features
-to reduce it further.
+Vale reports that the runtime check survives for a small fraction of accesses,
+and plans region borrowing to reduce it further.
 
 ```vale
 // Conceptual; not Vale's actual syntax
@@ -56,94 +48,89 @@ free(p);     // object's generation incremented
 *p           // runtime: check remembered_gen == current_gen ⇒ panic
 ```
 
-The runtime cost reported: *over 2× faster than reference
-counting; on track to match Rust for the proved-elided cases*.
+Reported cost: more than 2x faster than reference counting, and on track to
+match Rust where checks are proven away.
 
----
+## Per-gap findings
 
-## How Vale handles each gap
+| Gap | Vale |
+| --- | --- |
+| 01 Cast | Standard explicit conversions. |
+| 02 Nullable pointers | References are non-null by default; `Optional[T]` for nullable. |
+| 03 Definite assignment | Enforced statically. |
+| 04 `NonZero` division | No refinement types. Division by zero is a runtime trap. |
+| 05 Stack budget | Not addressed. |
+| 06 Typed arithmetic | Standard explicit overflow operators. |
+| 07 Bounded indexing | Claimed to be covered by the generation check, because an out-of-bounds location has no valid generation. |
+| 08 Option/Result | Standard sum types. |
+| 09 Refinement-lite | Not present. |
+| 11 Finite floats | Standard IEEE 754. |
+| 12 FFI | Standard FFI. Vale's "Fearless FFI" proposal adds supply-chain protections, which do not bear on A7's gaps. |
 
-### Gap 01 — Cast
+> Uncertain (Gap 07): a generation check validates an object reference, not an
+> index into an array, so this claim is doubtful. Verify it against Vale's
+> documentation before relying on it.
 
-Standard explicit conversions.
+### Gap 10 — Generational references for use after free
 
-### Gap 02 — Nullable pointers
+Compile-time savings come from ownership tracking that proves a reference
+cannot have been freed since it was taken. When the proof succeeds, the common
+case, no check is emitted. When it fails, on the cold path, the generation check
+is the safety net.
 
-References are non-null by default; `Optional[T]` for nullable.
+Vale also has region borrow checking. Within a scoped region it proves that no
+object is freed, which removes all generation checks in that region.
 
-### Gap 03 — Definite assignment
+## What A7 should adopt
 
-Enforced statically.
+1. The frame from Vale's grimoire: one document covering 14 approaches, useful
+   for future design discussions.
+2. Removing checks through ownership tracking. The same idea drives A7's emission
+   of `s.ptr[i]` when bounds are proved.
+3. Region borrow checking, to combine Cyclone-style regions with finer ownership
+   tracking.
+4. A runtime fallback check, but only for cases static analysis cannot prove,
+   and only if A7's contract turns out to reject real programs. Generational
+   references are the most credible compromise for that case.
 
-### Gap 04 — NonZero division
+A proposed A7 form of the generational idea, from the memory plan (syntax not
+approved; the lookup method name is illustrative):
 
-No refinement types; division by zero is a runtime trap.
+```a7
+// Proposed syntax
+Node :: struct {
+    value: i32
+    parent: ?Id(Node)
+}
 
-### Gap 05 — Stack budget
+main :: fn() {
+    nodes := Table(Node){}
+    root := nodes.insert(Node{value: 1, parent: none})
+    child := nodes.insert(Node{value: 2, parent: root})
+    nodes.remove(child)
+    found := nodes.get(child)   // none: the generation no longer matches
+}
+```
 
-Not addressed.
+> Note (2026-09-16): Items 2 and 3 predate the memory plan. Slice `.ptr` is
+> planned for removal from the public surface, and extents are inferred rather
+> than written as regions (memory plan section 3, gate M11). Item 4 is now partly
+> adopted through M5, with an optional result instead of a panic.
 
-### Gap 06 — Typed arithmetic
+## What to avoid
 
-Standard explicit overflow operators.
+1. The runtime generational check on every unproven dereference. It can panic,
+   which conflicted with A7's zero-runtime-error contract.
+2. Vale's specific syntax; A7 has its own.
 
-### Gap 07 — Bounded indexing
+> Note (2026-09-16): The memory plan still avoids per-dereference checks on
+> ordinary values. Its residual runtime work is a closed list with defined
+> outcomes, and id lookup is one entry (section 6, gate M16).
 
-Generational reference covers this *too*: an out-of-bounds
-access fails the generation check (since OOB doesn't have a
-valid generation for that location).
-
-### Gap 08 — Option/Result
-
-Standard sum types.
-
-### Gap 09 — Refinement-lite
-
-Not present.
-
-### Gap 10 — Generational references for UAF — **the headline**
-
-The compile-time savings come from Vale's **ownership tracking**
-that proves "this reference can't have been freed since we took
-it." When that proof succeeds (the common case), no runtime
-check is emitted. When the proof fails (cold path), the
-generation check is the safety net.
-
-Vale also has **region borrow checking** — a region-scoped
-discipline that proves swaths of code free-free, eliding all
-generation checks within the region.
-
-**What A7 can steal:**
-
-1. **The principle of "fallback runtime check"** — for cases
-   the static analysis genuinely can't prove. *A7's contract
-   forbids this*, but if A7's contract turns out to over-reject
-   real programs, generational references are the most credible
-   compromise.
-2. **Region borrow checking** as a way to elide checks within a
-   scoped region — overlaps with Cyclone's regions.
-
-**What A7 should not steal under the current contract:**
-
-1. **The runtime check itself.** A7's contract is no runtime
-   errors. Generational references add a per-deref check that
-   *can* panic. This is exactly what A7's design avoids.
-
-### Gap 11 — Finite floats
-
-Standard IEEE 754.
-
-### Gap 12 — FFI
-
-Standard FFI; Vale's "Fearless FFI" proposal extends with
-supply-chain protections (not relevant to A7's gaps).
-
----
-
-## Vale's grimoire — the practitioner's survey
+## Vale's grimoire
 
 [`verdagon.dev/grimoire/grimoire`](https://verdagon.dev/grimoire/grimoire)
-documents **fourteen distinct memory-safety approaches**:
+describes fourteen memory-safety approaches:
 
 1. Tracing GC
 2. Reference counting
@@ -152,61 +139,45 @@ documents **fourteen distinct memory-safety approaches**:
 5. Linear types (Austral)
 6. Capabilities (Pony)
 7. Region-based memory management (Cyclone)
-8. Higher-RAII (Vale's variant)
+8. Higher RAII (Vale's variant)
 9. Bidirectional references
 10. Hybrid generational memory (Vale's planned addition)
-11. Pure functional / immutable-only
+11. Pure functional, immutable-only
 12. Hardware tagging (MTE, CHERI)
 13. Software capabilities (Fil-C InvisiCaps)
-14. Profile-guided / runtime-monitoring approaches
+14. Profile-guided and runtime-monitoring approaches
 
-For A7, the grimoire is the best **single-page comparison** of
-the design space. A7's choice (borrow checking lite + linear
-types lite via affine ownership + region scopes) is informed by
-this taxonomy.
+For A7, the grimoire is the best single-page comparison of the design space. The
+Phase B choice (lightweight borrow checking, lightweight linear types through
+affine ownership, and region scopes) was informed by this taxonomy.
 
----
-
-## Primary sources
-
-- [Vale home](https://vale.dev/)
-- [Generational references blog](https://verdagon.dev/blog/generational-references)
-- [Memory safety grimoire](https://verdagon.dev/grimoire/grimoire)
-- [Vale C++ post](https://verdagon.dev/blog/vale-memory-safe-cpp)
-- [Vale on memory safety](https://vale.dev/memory-safe)
-- [Fearless FFI](https://verdagon.dev/blog/fearless-ffi)
-
----
-
-## What A7 can steal — consolidated
-
-1. **The conceptual frame from Vale's grimoire** — a single
-   document covering 14 approaches that A7 can lean on for
-   future design conversations.
-2. **The principle of "elide checks via ownership tracking"** —
-   the same insight that drives A7's `s.ptr[i]` emission when
-   bounds are proved.
-3. **Region borrow checking** as a way to combine
-   Cyclone-style regions with finer-grained ownership tracking.
-
-## What A7 should not steal
-
-1. **The runtime generational check** — incompatible with
-   A7's zero-runtime-error contract.
-2. **Vale's specific syntax** (A7 has its own).
+> Note (2026-09-16): The memory plan combines items 7 and 4 in a new way:
+> compiler-inferred extents, arenas and pools, plus generation-tagged ids, with no tracing
+> GC or reference counting (L15, L17).
 
 ## Vale as a fallback design
 
-If A7's strict compile-time-only contract turns out to be
-infeasible for real programs (the bet is it won't, but the
-data isn't in), generational references are the **least bad
-runtime fallback**:
+If A7's compile-time-only contract proved infeasible for real programs (the bet
+was that it would not, but the data was not in), generational references would
+be the least bad runtime fallback:
 
-- Per-deref cost is one load + comparison.
-- The check is at the dereference site, easy to understand.
-- The compile-time path elides most checks.
-- The discipline doesn't require lifetime annotations.
+- The per-dereference cost is one load and one comparison.
+- The check sits at the dereference site and is easy to understand.
+- The compile-time path removes most checks.
+- No lifetime annotations are needed.
 
-If A7 ever weakens its contract to allow some runtime safety
-checks, this is the model. But the working assumption is that
-the contract holds; Vale is not a Phase A–E target.
+If A7 ever allows some runtime safety checks, this is the model. In Phase B, the
+working assumption was that the contract holds, and Vale was not a target of
+research phases A–E.
+
+> Note (2026-09-16): "Phases A–E" here are the lang-safety research phases, not
+> the memory plan's phases A–G.
+
+## Sources
+
+- [Vale home](https://vale.dev/)
+- [Vale's memory safety strategy: generational references](https://verdagon.dev/blog/generational-references)
+- [Borrow checking, RC, GC, and the Eleven Other Memory Safety Approaches](https://verdagon.dev/grimoire/grimoire)
+- [Making C++ Memory-Safe Without Borrow Checking, Reference Counting, or Tracing GC](https://verdagon.dev/blog/vale-memory-safe-cpp)
+- [Most Memory Safe Native Programming Language](https://vale.dev/memory-safe)
+- [Fearless FFI](https://verdagon.dev/blog/fearless-ffi)

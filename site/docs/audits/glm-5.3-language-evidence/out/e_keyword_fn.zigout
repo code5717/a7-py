@@ -1,0 +1,3 @@
+e_keyword_fn.zig:14:4: error: expected '(', found 'test'
+fn test() void {
+   ^~~~

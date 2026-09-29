@@ -1,0 +1,603 @@
+[
+  {
+    "file": "a7/__init__.py",
+    "lines": 10,
+    "functions": 0,
+    "largest": []
+  },
+  {
+    "file": "a7/ast_nodes.py",
+    "lines": 641,
+    "functions": 26,
+    "largest": [
+      {
+        "name": "_unescape_literal_content",
+        "line": 536,
+        "lines": 35
+      },
+      {
+        "name": "create_literal_from_token",
+        "line": 573,
+        "lines": 34
+      },
+      {
+        "name": "get_binary_precedence",
+        "line": 609,
+        "lines": 33
+      }
+    ]
+  },
+  {
+    "file": "a7/ast_preprocessor.py",
+    "lines": 677,
+    "functions": 30,
+    "largest": [
+      {
+        "name": "_resolve_shadowing",
+        "line": 440,
+        "lines": 86
+      },
+      {
+        "name": "_fold_binary",
+        "line": 599,
+        "lines": 79
+      },
+      {
+        "name": "_transform_tree",
+        "line": 116,
+        "lines": 72
+      }
+    ]
+  },
+  {
+    "file": "a7/backends/__init__.py",
+    "lines": 30,
+    "functions": 2,
+    "largest": [
+      {
+        "name": "get_backend",
+        "line": 16,
+        "lines": 7
+      },
+      {
+        "name": "list_backends",
+        "line": 25,
+        "lines": 3
+      }
+    ]
+  },
+  {
+    "file": "a7/backends/base.py",
+    "lines": 75,
+    "functions": 10,
+    "largest": [
+      {
+        "name": "write",
+        "line": 49,
+        "lines": 11
+      },
+      {
+        "name": "reset",
+        "line": 70,
+        "lines": 6
+      },
+      {
+        "name": "__init__",
+        "line": 16,
+        "lines": 5
+      }
+    ]
+  },
+  {
+    "file": "a7/backends/zig.py",
+    "lines": 2455,
+    "functions": 122,
+    "largest": [
+      {
+        "name": "_visit_function",
+        "line": 407,
+        "lines": 123
+      },
+      {
+        "name": "_visit_match",
+        "line": 1018,
+        "lines": 68
+      },
+      {
+        "name": "_visit_var",
+        "line": 657,
+        "lines": 67
+      }
+    ]
+  },
+  {
+    "file": "a7/cast_classifier.py",
+    "lines": 83,
+    "functions": 3,
+    "largest": [
+      {
+        "name": "classify_cast",
+        "line": 35,
+        "lines": 37
+      },
+      {
+        "name": "_is_lossless_numeric_cast",
+        "line": 74,
+        "lines": 10
+      },
+      {
+        "name": "allowed",
+        "line": 26,
+        "lines": 2
+      }
+    ]
+  },
+  {
+    "file": "a7/cli.py",
+    "lines": 101,
+    "functions": 1,
+    "largest": [
+      {
+        "name": "main",
+        "line": 13,
+        "lines": 85
+      }
+    ]
+  },
+  {
+    "file": "a7/compile.py",
+    "lines": 1062,
+    "functions": 21,
+    "largest": [
+      {
+        "name": "compile_file_detailed",
+        "line": 112,
+        "lines": 416
+      },
+      {
+        "name": "_annotate_file_module_calls",
+        "line": 611,
+        "lines": 155
+      },
+      {
+        "name": "_to_json_payload",
+        "line": 901,
+        "lines": 63
+      }
+    ]
+  },
+  {
+    "file": "a7/const_eval.py",
+    "lines": 155,
+    "functions": 8,
+    "largest": [
+      {
+        "name": "fold_binary",
+        "line": 94,
+        "lines": 30
+      },
+      {
+        "name": "_fold_integer_binary",
+        "line": 126,
+        "lines": 30
+      },
+      {
+        "name": "integer_layout",
+        "line": 41,
+        "lines": 16
+      }
+    ]
+  },
+  {
+    "file": "a7/errors.py",
+    "lines": 966,
+    "functions": 32,
+    "largest": [
+      {
+        "name": "_build_source_context",
+        "line": 526,
+        "lines": 96
+      },
+      {
+        "name": "format_error",
+        "line": 463,
+        "lines": 62
+      },
+      {
+        "name": "create_error_handler",
+        "line": 854,
+        "lines": 59
+      }
+    ]
+  },
+  {
+    "file": "a7/formatters/__init__.py",
+    "lines": 11,
+    "functions": 0,
+    "largest": []
+  },
+  {
+    "file": "a7/formatters/console_formatter.py",
+    "lines": 825,
+    "functions": 22,
+    "largest": [
+      {
+        "name": "format_statement_label",
+        "line": 662,
+        "lines": 142
+      },
+      {
+        "name": "format_expression_detail",
+        "line": 558,
+        "lines": 103
+      },
+      {
+        "name": "format_type",
+        "line": 487,
+        "lines": 70
+      }
+    ]
+  },
+  {
+    "file": "a7/formatters/json_formatter.py",
+    "lines": 234,
+    "functions": 4,
+    "largest": [
+      {
+        "name": "_ast_to_dict",
+        "line": 135,
+        "lines": 100
+      },
+      {
+        "name": "_ast_node_shallow_dict",
+        "line": 70,
+        "lines": 64
+      },
+      {
+        "name": "format_compilation",
+        "line": 23,
+        "lines": 46
+      }
+    ]
+  },
+  {
+    "file": "a7/formatters/markdown_formatter.py",
+    "lines": 315,
+    "functions": 6,
+    "largest": [
+      {
+        "name": "format_compilation_doc",
+        "line": 15,
+        "lines": 177
+      },
+      {
+        "name": "_format_ast_tree",
+        "line": 193,
+        "lines": 45
+      },
+      {
+        "name": "_format_symbol_type",
+        "line": 286,
+        "lines": 30
+      }
+    ]
+  },
+  {
+    "file": "a7/generics.py",
+    "lines": 416,
+    "functions": 21,
+    "largest": [
+      {
+        "name": "instantiate_struct",
+        "line": 183,
+        "lines": 51
+      },
+      {
+        "name": "instantiate_function",
+        "line": 134,
+        "lines": 48
+      },
+      {
+        "name": "unify_types",
+        "line": 377,
+        "lines": 40
+      }
+    ]
+  },
+  {
+    "file": "a7/module_resolver.py",
+    "lines": 406,
+    "functions": 19,
+    "largest": [
+      {
+        "name": "load_module",
+        "line": 113,
+        "lines": 96
+      },
+      {
+        "name": "topological_sort",
+        "line": 347,
+        "lines": 41
+      },
+      {
+        "name": "load_program_dependencies",
+        "line": 264,
+        "lines": 35
+      }
+    ]
+  },
+  {
+    "file": "a7/parser.py",
+    "lines": 2355,
+    "functions": 61,
+    "largest": [
+      {
+        "name": "parse_type",
+        "line": 763,
+        "lines": 197
+      },
+      {
+        "name": "parse_statement",
+        "line": 982,
+        "lines": 168
+      },
+      {
+        "name": "parse_for_statement",
+        "line": 1183,
+        "lines": 152
+      }
+    ]
+  },
+  {
+    "file": "a7/passes/__init__.py",
+    "lines": 21,
+    "functions": 0,
+    "largest": []
+  },
+  {
+    "file": "a7/passes/name_resolution.py",
+    "lines": 521,
+    "functions": 18,
+    "largest": [
+      {
+        "name": "visit_statement",
+        "line": 401,
+        "lines": 114
+      },
+      {
+        "name": "visit_function_decl",
+        "line": 139,
+        "lines": 38
+      },
+      {
+        "name": "visit_struct_decl",
+        "line": 219,
+        "lines": 36
+      }
+    ]
+  },
+  {
+    "file": "a7/passes/semantic_validator.py",
+    "lines": 1481,
+    "functions": 48,
+    "largest": [
+      {
+        "name": "_schedule_parameter_call_positions",
+        "line": 963,
+        "lines": 130
+      },
+      {
+        "name": "_schedule_statement_calls",
+        "line": 683,
+        "lines": 107
+      },
+      {
+        "name": "visit_statement",
+        "line": 140,
+        "lines": 97
+      }
+    ]
+  },
+  {
+    "file": "a7/passes/type_checker.py",
+    "lines": 3104,
+    "functions": 108,
+    "largest": [
+      {
+        "name": "visit_call_expr",
+        "line": 1300,
+        "lines": 135
+      },
+      {
+        "name": "_resolve_type_leaf",
+        "line": 423,
+        "lines": 102
+      },
+      {
+        "name": "visit_field_access",
+        "line": 1759,
+        "lines": 102
+      }
+    ]
+  },
+  {
+    "file": "a7/safety.py",
+    "lines": 737,
+    "functions": 51,
+    "largest": [
+      {
+        "name": "_visit_stmt",
+        "line": 300,
+        "lines": 90
+      },
+      {
+        "name": "_visit_expr",
+        "line": 391,
+        "lines": 81
+      },
+      {
+        "name": "_cast_fact",
+        "line": 522,
+        "lines": 33
+      }
+    ]
+  },
+  {
+    "file": "a7/semantic_context.py",
+    "lines": 411,
+    "functions": 31,
+    "largest": [
+      {
+        "name": "validate_return",
+        "line": 344,
+        "lines": 34
+      },
+      {
+        "name": "dump",
+        "line": 381,
+        "lines": 27
+      },
+      {
+        "name": "validate_break",
+        "line": 302,
+        "lines": 20
+      }
+    ]
+  },
+  {
+    "file": "a7/stdlib/__init__.py",
+    "lines": 87,
+    "functions": 8,
+    "largest": [
+      {
+        "name": "resolve_call",
+        "line": 63,
+        "lines": 9
+      },
+      {
+        "name": "get_backend_mapping",
+        "line": 73,
+        "lines": 7
+      },
+      {
+        "name": "_register_defaults",
+        "line": 44,
+        "lines": 6
+      }
+    ]
+  },
+  {
+    "file": "a7/stdlib/io.py",
+    "lines": 26,
+    "functions": 1,
+    "largest": [
+      {
+        "name": "register_io_module",
+        "line": 6,
+        "lines": 21
+      }
+    ]
+  },
+  {
+    "file": "a7/stdlib/math.py",
+    "lines": 33,
+    "functions": 1,
+    "largest": [
+      {
+        "name": "register_math_module",
+        "line": 6,
+        "lines": 28
+      }
+    ]
+  },
+  {
+    "file": "a7/stdlib/mem.py",
+    "lines": 9,
+    "functions": 1,
+    "largest": [
+      {
+        "name": "register_mem_module",
+        "line": 6,
+        "lines": 4
+      }
+    ]
+  },
+  {
+    "file": "a7/stdlib/string.py",
+    "lines": 9,
+    "functions": 1,
+    "largest": [
+      {
+        "name": "register_string_module",
+        "line": 6,
+        "lines": 4
+      }
+    ]
+  },
+  {
+    "file": "a7/symbol_table.py",
+    "lines": 465,
+    "functions": 33,
+    "largest": [
+      {
+        "name": "dump",
+        "line": 300,
+        "lines": 26
+      },
+      {
+        "name": "enter_scope",
+        "line": 164,
+        "lines": 25
+      },
+      {
+        "name": "resolve_qualified_name",
+        "line": 399,
+        "lines": 21
+      }
+    ]
+  },
+  {
+    "file": "a7/tokens.py",
+    "lines": 1018,
+    "functions": 17,
+    "largest": [
+      {
+        "name": "_tokenize_number",
+        "line": 417,
+        "lines": 165
+      },
+      {
+        "name": "_try_operator",
+        "line": 819,
+        "lines": 141
+      },
+      {
+        "name": "_tokenize_char",
+        "line": 664,
+        "lines": 103
+      }
+    ]
+  },
+  {
+    "file": "a7/types.py",
+    "lines": 608,
+    "functions": 80,
+    "largest": [
+      {
+        "name": "is_assignable_to",
+        "line": 108,
+        "lines": 33
+      },
+      {
+        "name": "equals",
+        "line": 249,
+        "lines": 17
+      },
+      {
+        "name": "equals",
+        "line": 309,
+        "lines": 14
+      }
+    ]
+  }
+]

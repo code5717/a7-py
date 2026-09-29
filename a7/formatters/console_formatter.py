@@ -12,6 +12,7 @@ from rich.text import Text
 from rich.tree import Tree
 from rich.syntax import Syntax
 from rich.columns import Columns
+from rich.markup import escape
 
 
 class ConsoleFormatter:
@@ -359,7 +360,7 @@ class ConsoleFormatter:
         except:
             source_syntax = source_code
 
-        code_panel = Panel(source_syntax, title=title, border_style="blue")
+        code_panel = Panel(source_syntax, title=Text(title), border_style="blue")
         self.console.print(code_panel)
 
     def _display_tokens(self, tokens: list):
@@ -381,7 +382,7 @@ class ConsoleFormatter:
                 str(i),
                 f"{token.line}:{token.column}",
                 token.type.name,
-                repr(token.value) if token.value else "''",
+                Text(repr(token.value) if token.value else "''"),
                 str(token.length) if hasattr(token, "length") else "?",
             )
 
@@ -485,75 +486,67 @@ class ConsoleFormatter:
         return label
 
     def format_type(self, type_node) -> str:
-        """Format a type node for display (iterative for wrapper chains)."""
-        if not type_node:
-            return "?"
-
-        # Iteratively unwrap wrapper types (array/slice/pointer)
-        prefixes: list = []
-        current = type_node
-
-        while current and hasattr(current, "kind"):
-            kind = current.kind.name
+        """Format type wrappers and child types without recursive calls."""
+        parts = []
+        stack = [("visit", type_node)]
+        active = set()
+        while stack:
+            event, current = stack.pop()
+            if event == "exit":
+                active.remove(current)
+                continue
+            if event == "text":
+                parts.append(current)
+                continue
+            if not current:
+                parts.append("?")
+                continue
+            identity = id(current)
+            if identity in active:
+                parts.append("<cycle>")
+                continue
+            active.add(identity)
+            stack.append(("exit", identity))
+            kind = getattr(getattr(current, "kind", None), "name", None)
+            children = []
             if kind == "TYPE_ARRAY":
-                if hasattr(current, "size") and current.size:
-                    size = str(current.size.literal_value) if hasattr(current.size, "literal_value") else "?"
-                else:
-                    size = "?"
-                prefixes.append(f"[{size}]")
-                current = current.element_type if hasattr(current, "element_type") else None
+                size_node = getattr(current, "size", None)
+                size = str(size_node.literal_value) if size_node and hasattr(size_node, "literal_value") else "?"
+                parts.append(f"[{size}]")
+                children = [("visit", getattr(current, "element_type", None))]
             elif kind == "TYPE_SLICE":
-                prefixes.append("[]")
-                current = current.element_type if hasattr(current, "element_type") else None
+                parts.append("[]")
+                children = [("visit", getattr(current, "element_type", None))]
             elif kind == "TYPE_POINTER":
-                prefixes.append("ref ")
-                current = current.target_type if hasattr(current, "target_type") else None
-            else:
-                break  # Leaf type
-
-        # Format the leaf type
-        leaf = "?"
-        if current and hasattr(current, "kind"):
-            kind = current.kind.name
-            if kind == "TYPE_PRIMITIVE":
-                leaf = current.type_name if hasattr(current, "type_name") else "primitive"
+                parts.append("ref ")
+                children = [("visit", getattr(current, "target_type", None))]
+            elif kind == "TYPE_PRIMITIVE":
+                parts.append(getattr(current, "type_name", None) or "primitive")
             elif kind == "TYPE_IDENTIFIER":
-                leaf = current.name if hasattr(current, "name") else "identifier"
-            elif kind == "TYPE_GENERIC":
-                base_name = current.name if hasattr(current, "name") else "?"
-                if hasattr(current, "type_args") and current.type_args:
-                    args = [self.format_type(arg) for arg in current.type_args]
-                    leaf = f"{base_name}({', '.join(args)})"
-                else:
-                    leaf = base_name
-            elif kind == "TYPE_FUNCTION":
-                param_types = []
-                if hasattr(current, "parameter_types") and current.parameter_types:
-                    param_types = [self.format_type(pt) for pt in current.parameter_types]
-                params_str = ", ".join(param_types)
-                ret_type = ""
-                if hasattr(current, "return_type") and current.return_type:
-                    ret_type = " " + self.format_type(current.return_type)
-                leaf = f"fn({params_str}){ret_type}"
+                parts.append(getattr(current, "name", None) or "identifier")
+            elif kind in {"TYPE_GENERIC", "TYPE_FUNCTION", "TYPE_SET"}:
+                generic = kind == "TYPE_GENERIC"
+                argument_field = "type_args" if generic else "types" if kind == "TYPE_SET" else "parameter_types"
+                args = getattr(current, argument_field, None) or []
+                parts.append((getattr(current, "name", None) or "?") if generic
+                             else "@type_set" if kind == "TYPE_SET" else "fn")
+                if args or not generic:
+                    parts.append("(")
+                    for index, arg in enumerate(args):
+                        if index:
+                            children.append(("text", ", "))
+                        children.append(("visit", arg))
+                    children.append(("text", ")"))
+                result = getattr(current, "return_type", None)
+                if kind == "TYPE_FUNCTION" and result:
+                    children.extend([("text", " "), ("visit", result)])
             elif kind == "TYPE_STRUCT":
-                field_count = len(current.fields) if hasattr(current, "fields") and current.fields else 0
-                leaf = f"struct {{ {field_count} fields }}"
+                parts.append(f"struct {{ {len(getattr(current, 'fields', None) or [])} fields }}")
             else:
-                if hasattr(current, "type_name"):
-                    leaf = current.type_name
-                elif hasattr(current, "name"):
-                    leaf = current.name
-                else:
-                    leaf = str(current)
-        elif current:
-            if hasattr(current, "type_name"):
-                leaf = current.type_name
-            elif hasattr(current, "name"):
-                leaf = current.name
-            else:
-                leaf = str(current)
-
-        return "".join(prefixes) + leaf
+                parts.append(getattr(current, "type_name", None)
+                             or getattr(current, "name", None) or kind or str(current))
+            stack.extend(reversed(children))
+        return "".join(str(part) for part in parts)
 
     def format_expression_detail(self, expr) -> str:
         """Format expression detail for display in AST tree."""
@@ -612,7 +605,7 @@ class ConsoleFormatter:
                 val_str = str(expr.literal_value)
                 if len(val_str) > 20:
                     val_str = val_str[:20] + "..."
-                lit_val = f" [dim]{val_str}[/dim]"
+                lit_val = f" [dim]{escape(val_str)}[/dim]"
             return f"[magenta]literal[/magenta] [cyan]{lit_kind}[/cyan]{lit_val}"
 
         # Field access - show field name
@@ -661,8 +654,18 @@ class ConsoleFormatter:
 
     def format_statement_label(self, stmt) -> str:
         """Format a statement label with detailed information."""
+        prefixes = []
+        seen = set()
+        while (stmt and getattr(getattr(stmt, "kind", None), "name", None) == "DEFER"
+               and getattr(stmt, "statement", None)):
+            if id(stmt) in seen:
+                return "".join(prefixes) + "[dim]<cycle>[/dim]"
+            seen.add(id(stmt))
+            prefixes.append("[blue]DEFER[/blue] → ")
+            stmt = stmt.statement
+        prefix = "".join(prefixes)
         if not stmt or not hasattr(stmt, "kind"):
-            return "[dim]unknown[/dim]"
+            return prefix + "[dim]unknown[/dim]"
 
         kind = stmt.kind.name
         stmt_label = f"[blue]{kind}[/blue]"
@@ -782,12 +785,6 @@ class ConsoleFormatter:
             if hasattr(stmt, "label") and stmt.label:
                 stmt_label += f" [yellow]{stmt.label}[/yellow]"
 
-        # Defer statements
-        elif kind == "DEFER":
-            if hasattr(stmt, "statement") and stmt.statement:
-                deferred_detail = self.format_statement_label(stmt.statement)
-                stmt_label += f" → {deferred_detail}"
-
         # Del statements
         elif kind == "DEL":
             if hasattr(stmt, "expression") and stmt.expression:
@@ -800,7 +797,7 @@ class ConsoleFormatter:
             if hasattr(stmt, "statements") and stmt.statements:
                 stmt_label += f" [dim]({len(stmt.statements)} stmts)[/dim]"
 
-        return stmt_label
+        return prefix + stmt_label
 
     def _add_statements_to_tree(self, parent_node, statements):
         """Add statement nodes to the tree (iterative)."""

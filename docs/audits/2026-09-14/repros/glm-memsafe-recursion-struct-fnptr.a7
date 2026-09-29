@@ -1,0 +1,15 @@
+Cb :: struct {
+    f: fn(i32) i32
+}
+
+spin :: fn(n: i32) i32 {
+    s := Cb{f: spin}
+    if n <= 0 {
+        ret 0
+    }
+    ret s.f(n - 1)
+}
+
+main :: fn() {
+    r := spin(2)
+}

@@ -1,0 +1,8 @@
+io :: import "std/io"
+math :: import "std/math"
+
+main :: fn() {
+    x: i32 = -5
+    y := math.abs(x)
+    io.println("{}", y)
+}

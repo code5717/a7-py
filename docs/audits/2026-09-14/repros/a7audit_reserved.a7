@@ -1,0 +1,3 @@
+io :: import "std/io"
+main :: fn() { error := 1
+ io.println("{}", error) }

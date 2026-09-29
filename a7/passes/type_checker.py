@@ -24,6 +24,7 @@ from a7.types import (
 )
 from a7.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
 from a7.stdlib import StdlibRegistry
+from a7.exact_constants import evaluate, materialize, ExactArithmeticError, expression_span
 
 
 class TypeCheckingPass:
@@ -60,6 +61,7 @@ class TypeCheckingPass:
         self._generic_constraints: Dict[str, TypeSet] = {}
         self._nonnegative_vars: Set[str] = set()
         self.stdlib = StdlibRegistry()
+        self.exact_bindings = {}
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
         """
@@ -87,8 +89,42 @@ class TypeCheckingPass:
         # Visit the program
         self.visit_program(program)
 
+        # Only use sites acquire runtime representation. Exact bindings are erased.
+        stack = [program]
+        seen = set()
+        while stack:
+            node = stack.pop()
+            if id(node) in seen:
+                continue
+            seen.add(id(node))
+            if getattr(node, 'untyped_binding', False):
+                continue
+            exact = getattr(node, 'exact_constant', None)
+            if exact is not None and not getattr(node, 'exact_materialized', False):
+                target = self.get_type(node) or (F64 if exact[1] else I32)
+                if isinstance(target, PrimitiveType) and target.is_numeric():
+                    self._is_initializer_assignable_to(node, target, target, expression_span(node))
+            error = getattr(node, 'exact_float_error', None)
+            if error:
+                self.add_error(error, node.span)
+            for value in vars(node).values():
+                if isinstance(value, ASTNode):
+                    stack.append(value)
+                elif isinstance(value, list):
+                    stack.extend(child for child in value if isinstance(child, ASTNode))
+
         # Return the node types map for use by later passes
         return self.node_types
+
+    def _evaluate_exact(self, node, lookup, bindings):
+        if node is None or getattr(node, 'exact_failed', False):
+            return None
+        try:
+            return evaluate(node, lookup, bindings)
+        except ExactArithmeticError as error:
+            node.exact_failed = True
+            self.add_error(str(error), expression_span(node))
+            return None
 
     def add_error(self, message: str, span: Optional[SourceSpan] = None) -> None:
         """Add a type checking error (legacy - prefer add_type_error)."""
@@ -170,6 +206,65 @@ class TypeCheckingPass:
             self.errors.append(error)
             return
 
+        # Build dependencies once, then resolve in postorder without recursion.
+        globals_ = [d for d in node.declarations or [] if d.kind in {NodeKind.CONST, NodeKind.VAR}]
+        declarations = {id(d): d for d in globals_}
+        dependencies = {}
+        for decl in globals_:
+            edges = []
+            found = set()
+            stack = [decl.value] if decl.value else []
+            while stack:
+                expr = stack.pop()
+                if expr.kind == NodeKind.IDENTIFIER:
+                    symbol = self.symbols.lookup(expr.name)
+                    key = id(symbol.node) if symbol else None
+                    if key in declarations and key not in found:
+                        edges.append(key)
+                        found.add(key)
+                for value in vars(expr).values():
+                    if isinstance(value, ASTNode):
+                        stack.append(value)
+                    elif isinstance(value, list):
+                        stack.extend(child for child in value if isinstance(child, ASTNode))
+            dependencies[id(decl)] = edges
+        state = {}
+        ordered = []
+        for root in globals_:
+            if state.get(id(root)) == 2:
+                continue
+            active = []
+            positions = {}
+            work = [(id(root), False)]
+            while work:
+                key, ready = work.pop()
+                if ready:
+                    active.pop()
+                    positions.pop(key, None)
+                    state[key] = 2
+                    ordered.append(declarations[key])
+                    continue
+                if state.get(key) == 2:
+                    continue
+                if state.get(key) == 1:
+                    chain = active[positions[key]:] + [key]
+                    links = [declarations[k].name for k in chain]
+                    if len(links) > 32:
+                        links = links[:16] + ['...'] + links[-16:]
+                    self.add_error('Global value dependency cycle: ' + ' -> '.join(links), declarations[key].span)
+                    return
+                state[key] = 1
+                positions[key] = len(active)
+                active.append(key)
+                work.append((key, True))
+                work.extend((child, False) for child in reversed(dependencies[key]))
+        # Exact constants can supply lengths in signatures and aggregate types.
+        for decl in ordered:
+            if decl.kind == NodeKind.CONST and not decl.explicit_type:
+                exact = self._evaluate_exact(decl.value, self.symbols.lookup, self.exact_bindings)
+                if exact is not None:
+                    self.exact_bindings[id(decl)] = exact
+                    decl.untyped_binding = True
         # First pass: register all type declarations
         for decl in node.declarations or []:
             if decl.kind in {NodeKind.STRUCT, NodeKind.ENUM, NodeKind.UNION, NodeKind.TYPE_ALIAS}:
@@ -180,9 +275,11 @@ class TypeCheckingPass:
             if decl.kind == NodeKind.FUNCTION:
                 self.register_function_signature(decl)
 
-        # Third pass: type check all declarations (including function bodies)
-        for decl in node.declarations or []:
+        for decl in ordered:
             self.visit_declaration(decl)
+        for decl in node.declarations or []:
+            if decl.kind not in {NodeKind.CONST, NodeKind.VAR}:
+                self.visit_declaration(decl)
 
     def register_type_decl(self, node: ASTNode) -> None:
         """Register a type declaration (first pass)."""
@@ -378,9 +475,20 @@ class TypeCheckingPass:
             symbol.type = union_type
 
     def extract_int_value(self, node: ASTNode) -> Optional[int]:
-        """Extract integer value from a literal node."""
-        if node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER:
-            return node.literal_value
+        """Resolve an integer literal or immutable literal alias without recursion."""
+        current = node
+        seen: Set[int] = set()
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            literal = self._integer_literal_value(current)
+            if literal is not None:
+                return literal
+            if current.kind != NodeKind.IDENTIFIER:
+                break
+            symbol = self.symbols.lookup(current.name or "")
+            if symbol is None or symbol.kind != SymbolKind.CONSTANT or symbol.node is None:
+                break
+            current = symbol.node.value
         return None
 
     def resolve_type_node(self, node: Optional[ASTNode]) -> Type:
@@ -394,7 +502,20 @@ class TypeCheckingPass:
 
         while current is not None:
             if current.kind == NodeKind.TYPE_ARRAY:
-                size = self.extract_int_value(current.size) if current.size else 0
+                size = 0
+                if current.size is not None:
+                    exact = self._evaluate_exact(current.size, self.symbols.lookup, self.exact_bindings)
+                    if exact is not None:
+                        current.size.exact_constant = exact
+                        if self._fit_exact_usize(current.size, "Array length"):
+                            size = exact[0].numerator
+                        else:
+                            size = None
+                    else:
+                        size = self.extract_int_value(current.size)
+                        if size is None or not self._integer_literal_fits_type(size, USIZE):
+                            self.add_error("Array length must be a compile-time integral value fitting usize", current.size.span)
+                            size = None
                 wrappers.append(('array', size))
                 current = current.element_type
             elif current.kind == NodeKind.TYPE_SLICE:
@@ -631,6 +752,16 @@ class TypeCheckingPass:
     def visit_const_decl(self, node: ASTNode) -> None:
         """Visit a constant declaration."""
         const_name = node.name or "<unknown>"
+        if getattr(node, 'untyped_binding', False):
+            self.set_type(node, UNKNOWN)
+            return
+        if not node.explicit_type:
+            exact = self._evaluate_exact(node.value, self.symbols.lookup, self.exact_bindings)
+            if exact is not None:
+                self.exact_bindings[id(node)] = exact
+                node.untyped_binding = True
+                self.set_type(node, UNKNOWN)
+                return
 
         # Type check the value
         value_type = UNKNOWN
@@ -640,7 +771,7 @@ class TypeCheckingPass:
         # If explicit type given, check compatibility
         if node.explicit_type:
             explicit_type = self.resolve_type_node(node.explicit_type)
-            if not value_type.is_assignable_to(explicit_type):
+            if not self._is_initializer_assignable_to(node.value, value_type, explicit_type, node.span):
                 self.add_type_error(
                     TypeErrorType.TYPE_MISMATCH,
                     node.span,
@@ -738,6 +869,11 @@ class TypeCheckingPass:
             self.errors.append(error)
             value_type = UNKNOWN
 
+        if not node.explicit_type and node.value:
+            exact = getattr(node.value, 'exact_constant', None)
+            if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I32):
+                self.add_error("Exact constant does not fit default i32; use an explicit destination type", node.value.span)
+        self.set_type(node, value_type)
         # Update the existing symbol's type (symbol was defined during name resolution)
         existing_symbol = self.symbols.lookup(var_name)
         if existing_symbol:
@@ -859,17 +995,39 @@ class TypeCheckingPass:
                 )
 
         # Compound assignment operator type checking
-        op = getattr(node, 'op', None)
+        # Assignment nodes store the operator in `operator`, not `op`.
+        op = getattr(node, "operator", None)
         if op and op != AssignOp.ASSIGN:
             arithmetic_ops = {AssignOp.ADD_ASSIGN, AssignOp.SUB_ASSIGN, AssignOp.MUL_ASSIGN, AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN}
-            bitwise_ops = {AssignOp.AND_ASSIGN, AssignOp.OR_ASSIGN, AssignOp.XOR_ASSIGN, AssignOp.SHL_ASSIGN, AssignOp.SHR_ASSIGN}
+            bool_bitwise_ops = {AssignOp.AND_ASSIGN, AssignOp.OR_ASSIGN, AssignOp.XOR_ASSIGN}
+            bitwise_ops = bool_bitwise_ops | {AssignOp.SHL_ASSIGN, AssignOp.SHR_ASSIGN}
 
-            if op in arithmetic_ops:
-                if not self._is_numeric_compatible(effective_lhs_type):
-                    self.add_type_error(TypeErrorType.REQUIRES_NUMERIC_TYPE, node.span, got_type=str(effective_lhs_type), context=f"Operator {op.name} requires numeric type")
-            elif op in bitwise_ops:
-                if not self._is_integral_compatible(effective_lhs_type):
-                    self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, node.span, got_type=str(effective_lhs_type), context=f"Operator {op.name} requires integer type")
+            if op in arithmetic_ops or op in bitwise_ops:
+                if op in arithmetic_ops:
+                    error_type = TypeErrorType.REQUIRES_NUMERIC_TYPE
+                    requirement = "numeric"
+                else:
+                    error_type = TypeErrorType.REQUIRES_INTEGER_TYPE
+                    requirement = "integer"
+                for operand_type in (effective_lhs_type, rhs_type):
+                    # `char` lowers to Zig u8, and Zig applies &, |, ^ to bool;
+                    # those compound forms build today and stay accepted.
+                    if operand_type.equals(CHAR):
+                        continue
+                    if op in bool_bitwise_ops and operand_type.equals(BOOL):
+                        continue
+                    if op in arithmetic_ops:
+                        operand_ok = self._is_numeric_compatible(operand_type)
+                    else:
+                        operand_ok = self._is_integral_compatible(operand_type)
+                    if not operand_ok:
+                        self.add_type_error(
+                            error_type,
+                            node.span,
+                            got_type=str(operand_type),
+                            context=f"Operator {op.name} requires {requirement} type",
+                        )
+                        break
 
         # Check assignment compatibility
         if not self._is_initializer_assignable_to(
@@ -1090,7 +1248,13 @@ class TypeCheckingPass:
                 )
 
         # Validate against function return type
-        if not self.context.validate_return(return_type):
+        expected = self.context.get_function_return_type()
+        compatible_value = (
+            node.value is not None and expected is not None
+            and self._is_initializer_assignable_to(node.value, return_type, expected, node.span, context="Return value")
+        )
+        if (not compatible_value if node.value is not None and expected is not None
+                else not self.context.validate_return(return_type)):
             expected = self.context.get_function_return_type()
             if expected:
                 self.add_type_error(
@@ -1115,7 +1279,27 @@ class TypeCheckingPass:
         Returns:
             Type of the expression
         """
-        expr_type = self._visit_expression_impl(node)
+        if getattr(node, 'exact_failed', False):
+            self.set_type(node, UNKNOWN)
+            return UNKNOWN
+        if node.kind == NodeKind.BINARY and node.operator in {BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE}:
+            left = self._evaluate_exact(node.left, self.symbols.lookup, self.exact_bindings)
+            right = self._evaluate_exact(node.right, self.symbols.lookup, self.exact_bindings)
+            if left is not None and right is not None:
+                a, b = left[0], right[0]
+                comparisons = {BinaryOp.EQ: a == b, BinaryOp.NE: a != b, BinaryOp.LT: a < b, BinaryOp.LE: a <= b, BinaryOp.GT: a > b, BinaryOp.GE: a >= b}
+                node.literal_value = comparisons[node.operator]
+                node.kind = NodeKind.LITERAL
+                node.literal_kind = LiteralKind.BOOLEAN
+                node.raw_text = 'true' if node.literal_value else 'false'
+                node.left = node.right = None
+        exact = self._evaluate_exact(node, self.symbols.lookup, self.exact_bindings)
+        if exact is not None:
+            node.exact_constant = exact
+            node.span = expression_span(node)
+            expr_type = F64 if exact[1] else I32
+        else:
+            expr_type = self._visit_expression_impl(node)
         self.set_type(node, expr_type)
         return expr_type
 
@@ -1195,6 +1379,25 @@ class TypeCheckingPass:
         right_type = self.visit_expression(node.right) if node.right else UNKNOWN
 
         op = node.operator
+        left_exact = getattr(node.left, 'exact_constant', None)
+        right_exact = getattr(node.right, 'exact_constant', None)
+        numeric_ops = {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD,
+                       BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE,
+                       BinaryOp.BIT_AND, BinaryOp.BIT_OR, BinaryOp.BIT_XOR}
+        if op in numeric_ops and (left_exact is None) != (right_exact is None):
+            constant = node.left if left_exact is not None else node.right
+            concrete = right_type if left_exact is not None else left_type
+            if isinstance(concrete, PrimitiveType) and concrete.is_numeric():
+                self._is_initializer_assignable_to(constant, self.get_type(constant), concrete, constant.span)
+                if left_exact is not None:
+                    left_type = concrete
+                else:
+                    right_type = concrete
+        if op in {BinaryOp.BIT_SHL, BinaryOp.BIT_SHR}:
+            if left_exact is not None:
+                self._is_initializer_assignable_to(node.left, left_type, left_type, node.left.span)
+            if right_exact is not None:
+                self._is_initializer_assignable_to(node.right, right_type, right_type, node.right.span)
 
         # Arithmetic operators: +, -, *, /, %
         if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD}:
@@ -1219,12 +1422,27 @@ class TypeCheckingPass:
                 return left_type
             if isinstance(right_type, GenericParamType):
                 return right_type
-            # Result type is the wider of the two for concrete numeric types.
-            if left_type.is_floating():
-                return left_type
-            if right_type.is_floating():
+            # A literal takes its peer's type when representable. Otherwise use
+            # existing safe widening rules so recorded types match native values.
+            if isinstance(right_type, PrimitiveType) and self._integer_literal_value(node.left) is not None:
+                if self._integer_literal_fits_type(self._integer_literal_value(node.left), right_type):
+                    return right_type
+            if isinstance(left_type, PrimitiveType) and self._integer_literal_value(node.right) is not None:
+                if self._integer_literal_fits_type(self._integer_literal_value(node.right), left_type):
+                    return left_type
+            if self._is_float_literal(node.left) and right_type.is_floating():
                 return right_type
-            return left_type
+            if self._is_float_literal(node.right) and left_type.is_floating():
+                return left_type
+            if left_type.is_assignable_to(right_type):
+                return right_type
+            if right_type.is_assignable_to(left_type):
+                return left_type
+            self.add_type_error(
+                TypeErrorType.OPERATOR_TYPE_MISMATCH, node.span,
+                context=f"{op.name.lower()} between {left_type} and {right_type}; use an explicit cast",
+            )
+            return UNKNOWN
 
         # Comparison operators: ==, !=, <, <=, >, >=
         elif op in {BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE}:
@@ -1248,6 +1466,14 @@ class TypeCheckingPass:
             if not self._is_integral_compatible(left_type) or not self._is_integral_compatible(right_type):
                 self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, node.span)
                 return UNKNOWN
+            if op in {BinaryOp.BIT_SHL, BinaryOp.BIT_SHR}:
+                amount = self._integer_literal_value(node.right)
+                widths = {'i8': 8, 'u8': 8, 'i16': 16, 'u16': 16, 'i32': 32, 'u32': 32,
+                          'i64': 64, 'u64': 64, 'isize': 64, 'usize': 64}
+                width = widths.get(getattr(left_type, 'name', ''))
+                if amount is not None and (amount < 0 or (width is not None and amount >= width)):
+                    self.add_type_error(TypeErrorType.OPERATOR_TYPE_MISMATCH, node.span,
+                                        context=f"Shift count must be non-negative and less than {width}")
             return left_type
 
         return UNKNOWN
@@ -1259,6 +1485,10 @@ class TypeCheckingPass:
         op = node.operator
 
         if op == UnaryOp.NEG:
+            if isinstance(operand_type, PrimitiveType) and operand_type.name in {'u8', 'u16', 'u32', 'u64', 'usize'}:
+                self.add_type_error(TypeErrorType.OPERATOR_TYPE_MISMATCH, node.span,
+                                    context=f"Cannot negate unsigned type '{operand_type}'; cast to a signed type first")
+                return UNKNOWN
             if not self._is_numeric_compatible(operand_type):
                 self.add_type_error(TypeErrorType.REQUIRES_NUMERIC_TYPE, node.span)
             return operand_type
@@ -1302,6 +1532,9 @@ class TypeCheckingPass:
             )
             return UNKNOWN
 
+        # Module operations have backend lowering only at direct call sites.
+        if node.function and node.function.kind == NodeKind.FIELD_ACCESS:
+            setattr(node.function, "direct_call_target", True)
         # Get function type
         func_type = self.visit_expression(node.function) if node.function else UNKNOWN
         if node.function:
@@ -1351,7 +1584,7 @@ class TypeCheckingPass:
                 arg_types.append(self.visit_expression(arg))
 
         # Check for generic type inference
-        generic_mapping = self._infer_generic_types(func_type, arg_types)
+        generic_mapping = self._infer_generic_types(func_type, arg_types, node.arguments or [])
         if generic_mapping or func_type.generic_param_order:
             # Backend lowering can use this semantic annotation to monomorphize
             # concrete generic calls without re-running type inference.
@@ -1393,7 +1626,9 @@ class TypeCheckingPass:
                 if arg_type.is_assignable_to(param_type.referent_type) and self._is_lvalue_expression(node.arguments[i]):
                     implicit_ref_args.add(i)
                     continue
-            if not arg_type.is_assignable_to(param_type):
+            if not self._is_initializer_assignable_to(
+                node.arguments[i], arg_type, param_type, node.span, context=f"Argument {i+1}"
+            ):
                 self.add_type_error(
                     TypeErrorType.ARGUMENT_TYPE_MISMATCH,
                     node.span,
@@ -1415,7 +1650,7 @@ class TypeCheckingPass:
         """Validate stdlib module calls that lower through backend-specific emitters."""
         arg_types = [self.visit_expression(arg) for arg in (node.arguments or [])]
         function = node.function
-        module_path = getattr(module_symbol.node, "module_path", None) or module_symbol.name
+        module_path = getattr(module_symbol.node, "module_path", None) or "<unknown>"
         method_name = function.field if function and function.kind == NodeKind.FIELD_ACCESS else None
         canonical = self.stdlib.resolve_call(module_path, method_name or "")
         if canonical is None:
@@ -1438,6 +1673,10 @@ class TypeCheckingPass:
         args = node.arguments or []
         if not args:
             return
+        for arg in args[1:]:
+            exact = getattr(arg, 'exact_constant', None)
+            if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I32):
+                self.add_error("Exact constant does not fit formatting default i32; use an explicitly typed intermediate", arg.span)
         format_type = arg_types[0] if arg_types else UNKNOWN
         if not format_type.equals(STRING):
             self.add_type_error(
@@ -1518,10 +1757,9 @@ class TypeCheckingPass:
                 if fmt[index + 1] == "{":
                     index += 2
                     continue
-                end = fmt.find("}", index + 1)
-                if end != -1:
+                if fmt[index + 1] == "}":
                     count += 1
-                    index = end + 1
+                    index += 2
                     continue
             if ch == "}" and index + 1 < len(fmt) and fmt[index + 1] == "}":
                 index += 2
@@ -1578,7 +1816,7 @@ class TypeCheckingPass:
             elif isinstance(current, GenericInstanceType):
                 stack.extend(current.type_args)
 
-    def _infer_generic_types(self, func_type: FunctionType, arg_types: List[Type]) -> Dict[str, Type]:
+    def _infer_generic_types(self, func_type: FunctionType, arg_types: List[Type], arguments: Optional[List[ASTNode]] = None) -> Dict[str, Type]:
         """
         Infer generic type parameters from actual argument types.
 
@@ -1591,7 +1829,19 @@ class TypeCheckingPass:
             if existing is None or existing.equals(concrete):
                 mapping[name] = concrete
 
-        stack: List[Tuple[Type, Type]] = list(zip(func_type.param_types, arg_types))
+        # Concrete arguments establish expectations before untyped arguments
+        # supply their category defaults. Preserve the existing order within
+        # each group; no overload or specialization ranking is introduced.
+        pairs = list(zip(func_type.param_types, arg_types))
+        deferred = []
+        concrete = []
+        for index, pair in enumerate(pairs):
+            argument = arguments[index] if arguments and index < len(arguments) else None
+            if argument is not None and getattr(argument, "exact_constant", None) is not None:
+                deferred.append(pair)
+            else:
+                concrete.append(pair)
+        stack: List[Tuple[Type, Type]] = deferred + concrete
         while stack:
             param_type, arg_type = stack.pop()
             if isinstance(param_type, GenericParamType):
@@ -1714,11 +1964,28 @@ class TypeCheckingPass:
         self.add_type_error(TypeErrorType.REQUIRES_ARRAY_OR_SLICE, node.span, got_type=str(obj_type))
         return UNKNOWN
 
+    def _fit_exact_usize(self, node: ASTNode, context: str) -> bool:
+        """Fit a size use without re-entering expression or type traversal."""
+        exact = node.exact_constant
+        value = exact[0]
+        if value.denominator != 1:
+            self.add_error(f"{context} is fractional and cannot fit usize", node.span)
+            return False
+        if not self._integer_literal_fits_type(value.numerator, USIZE):
+            self.add_error(f"{context} is out of range for usize", node.span)
+            return False
+        materialize(node, exact, integer=True)
+        self.set_type(node, USIZE)
+        return True
+
     def _validate_index_bound(self, node: ASTNode, index_type: Type) -> None:
         """Require indexes and slice bounds to be usize or non-negative literals."""
+        if getattr(node, "exact_constant", None) is not None:
+            self._fit_exact_usize(node, "Index or slice bound")
+            return
         if isinstance(index_type, PrimitiveType) and index_type.name == "usize":
             return
-        if self._is_non_negative_integer_literal(node):
+        if self._is_non_negative_integer_literal(node) and self._integer_literal_fits_type(node.literal_value, USIZE):
             return
         self.add_type_error(
             TypeErrorType.INDEX_NOT_INTEGER,
@@ -1751,6 +2018,9 @@ class TypeCheckingPass:
                         node.span,
                         context=f"Stdlib module '{module_path}' has no function '{field_name}'",
                     )
+                if canonical_module and not getattr(node, "direct_call_target", False):
+                    self.add_semantic_error(SemanticErrorType.UNSUPPORTED_FEATURE, node.span,
+                                            context="Standard-library operations must be called directly; function values are unavailable")
                 # Module field access returns UNKNOWN; calls are lowered by the stdlib preprocessor.
                 return UNKNOWN
 
@@ -1982,6 +2252,10 @@ class TypeCheckingPass:
         else_type = self.visit_expression(node.else_expr) if node.else_expr else VOID
 
         if not then_type.equals(else_type):
+            if self._integer_literal_value(node.then_expr) is not None and self._is_initializer_assignable_to(node.then_expr, then_type, else_type, node.span):
+                return else_type
+            if self._integer_literal_value(node.else_expr) is not None and self._is_initializer_assignable_to(node.else_expr, else_type, then_type, node.span):
+                return then_type
             self.add_type_error(
                 TypeErrorType.IF_EXPR_TYPE_MISMATCH,
                 node.span,
@@ -2571,7 +2845,7 @@ class TypeCheckingPass:
                     endpoint_type.kind != TypeKind.UNKNOWN
                     and scrutinee_type.kind != TypeKind.UNKNOWN
                     and not self._is_initializer_assignable_to(
-                        endpoint,
+                        self._pattern_value_node(endpoint),
                         endpoint_type,
                         scrutinee_type,
                         endpoint.span,
@@ -2671,6 +2945,15 @@ class TypeCheckingPass:
             symbol = self.symbols.lookup(pattern_name)
             if symbol:
                 self.symbols.mark_used(pattern_name)
+                exact = self.exact_bindings.get(id(symbol.node)) if symbol.node else None
+                if exact is not None:
+                    # A named constant pattern is a use site. Replacing this
+                    # node must not specialize the shared declaration.
+                    pattern.kind = NodeKind.IDENTIFIER
+                    pattern.exact_constant = exact
+                    pattern_type = F64 if exact[1] else I32
+                    self.set_type(pattern, pattern_type)
+                    return pattern_type
                 return symbol.type
 
             self.add_semantic_error(
@@ -2755,10 +3038,34 @@ class TypeCheckingPass:
             else:
                 result_type = struct_type
 
+        field_inits = node.field_inits or []
+        declared_names = [field.name for field in struct_type.fields]
+        # Positional initializers use declaration order, matching normalization.
+        # Keep the parsed fields unchanged until preprocessing performs that step.
+        supplied = [field.name if field.name is not None else
+                    (declared_names[index] if index < len(declared_names) else None)
+                    for index, field in enumerate(field_inits)]
+        if len(field_inits) > len(declared_names):
+            self.add_type_error(TypeErrorType.TYPE_MISMATCH, node.span,
+                                context=f"Too many struct field initializers: expected {len(declared_names)}, got {len(field_inits)}")
+        declared = set(declared_names)
+        missing = declared - set(supplied)
+        if missing:
+            self.add_type_error(TypeErrorType.TYPE_MISMATCH, node.span,
+                                context=f"Missing struct fields: {', '.join(sorted(missing))}")
+        for name in supplied:
+            if name is not None and name not in declared:
+                self.add_type_error(TypeErrorType.NO_SUCH_FIELD, node.span,
+                                    context=f"Struct '{struct_type}' has no field '{name}'")
+        named_supplied = [name for name in supplied if name is not None]
+        if len(named_supplied) != len(set(named_supplied)):
+            self.add_type_error(TypeErrorType.TYPE_MISMATCH, node.span,
+                                context="Duplicate struct field initializer")
+
         # Type check field initializers
         if node.field_inits:
-            for field_init in node.field_inits:
-                field_name = field_init.name or ""
+            for index, field_init in enumerate(node.field_inits):
+                field_name = supplied[index] or ""
                 # Get expected field type from struct definition
                 expected_type = None
                 for field in struct_type.fields:
@@ -2886,6 +3193,24 @@ class TypeCheckingPass:
                 context,
             )
         if isinstance(expected_type, PrimitiveType):
+            exact = getattr(value_node, 'exact_constant', None)
+            if exact is not None and expected_type.name in {'f32', 'f64'}:
+                materialize(value_node, exact, width=int(expected_type.name[1:]))
+                self.set_type(value_node, expected_type)
+                # The final traversal reports value overflow at the operand.
+                # Its numeric type is valid, so do not add a type mismatch.
+                return True
+            if exact is not None and expected_type.is_integral():
+                value, floating = exact
+                if value.denominator != 1:
+                    self.add_error(f"Exact constant {value} is fractional and cannot fit {expected_type}", value_node.span)
+                    return False
+                if not self._integer_literal_fits_type(value.numerator, expected_type):
+                    self.add_error(f"Exact constant {value} is out of range for {expected_type}", value_node.span)
+                    return False
+                materialize(value_node, exact, integer=True)
+                self.set_type(value_node, expected_type)
+                return True
             literal_value = self._integer_literal_value(value_node)
             if literal_value is not None:
                 return self._integer_literal_fits_type(literal_value, expected_type)

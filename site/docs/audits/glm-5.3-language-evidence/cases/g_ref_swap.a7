@@ -1,0 +1,14 @@
+io :: import "std/io"
+
+swap :: fn(a: ref i32, b: ref i32) {
+    temp := a
+    a = b
+    b = temp
+}
+
+main :: fn() {
+    x := 1
+    y := 2
+    swap(x, y)
+    io.println("{} {}", x, y)
+}

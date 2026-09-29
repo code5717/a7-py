@@ -1,0 +1,12 @@
+io :: import "std/io"
+
+helper :: fn() i32 {
+    ret 1
+}
+
+main :: fn() {
+    c := 1
+    if c == 1 and c == 1 and c == 1 and c == 1 and c == 1 and c == 1 and c == 1 and c == 1 and c == 1 {
+        io.println("ok")
+    }
+}

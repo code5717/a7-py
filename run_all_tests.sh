@@ -46,20 +46,8 @@ echo "A7 COMPILER - COMPLETE TEST RESULTS"
 echo "============================================================"
 echo ""
 
-run_check "Parser & Tokenizer Tests:" \
-    uv run pytest test/test_parser*.py test/test_tokenizer*.py --tb=no -q
-
-run_check "Semantic Analysis Tests (All):" \
-    uv run pytest test/test_semantic*.py --tb=no -q
-
-run_check "Compiler/CLI/Backend Tests:" \
-    uv run pytest \
-    test/test_ast_preprocessor.py \
-    test/test_cli_failures.py \
-    test/test_iterative_traversal.py \
-    test/test_stdlib_registry.py \
-    test/test_codegen_zig.py \
-    --tb=no -q
+run_check "All Pytest Tests:" \
+    uv run pytest --tb=short -q
 
 run_check "Examples E2E Verification (compile/build/run/output):" \
     uv run python scripts/verify_examples_e2e.py
@@ -82,11 +70,8 @@ run_check "Secrets Check:" \
 run_check "Package Build:" \
     bash -lc 'rm -rf dist && uv build'
 
-run_check "Wheel Install Smoke Test:" \
-    uv run python scripts/verify_wheel_install.py --skip-build
-
-run_check "TOTAL (All Pytest Tests):" \
-    uv run pytest --tb=no -q
+run_check "Wheel and Source Distribution Native Verification:" \
+    uv run python scripts/verify_wheel_install.py --skip-build --verify-sdist
 
 PASSED_CHECKS=$((TOTAL_CHECKS - FAILED_CHECKS))
 echo "============================================================"

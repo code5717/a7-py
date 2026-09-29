@@ -1,0 +1,5 @@
+main :: fn() {
+    a: char = 'a'
+    b: char = 'b'
+    ok := a < b
+}

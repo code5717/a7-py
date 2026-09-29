@@ -1,0 +1,363 @@
+FFF.F.F.FFFFFFF.                                                         [100%]
+=================================== FAILURES ===================================
+___________ test_valid_a7_bindings_build_with_zig[zig-keyword-local] ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w0')
+zig = '/tmp/a7-audit-20260914/zig/zig'
+body = 'error := 1\n    io.println("{}", error)'
+
+    @pytest.mark.parametrize("body", [
+        'error := 1\n    io.println("{}", error)',
+        'a: [3]i32\n    for x in a {}',
+        'x := 9\n    a: [3]i32\n    for x in a { io.println("{}", x) }\n    io.println("{}", x)',
+    ], ids=["zig-keyword-local", "unused-loop-capture", "shadowed-loop-capture"])
+    def test_valid_a7_bindings_build_with_zig(tmp_path, zig, body):
+        output = emit(tmp_path, 'io :: import "std/io"\nmain :: fn() {\n    ' + body + '\n}\n')
+>       build(zig, tmp_path, output, "Debug")
+
+test/test_pipeline_native.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zig = '/tmp/a7-audit-20260914/zig/zig'
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w0')
+output = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w0/main.zig')
+profile = 'Debug'
+
+    def build(zig, tmp_path, output, profile):
+        binary = tmp_path / ("program-" + profile)
+        process = subprocess.run(
+            [zig, "build-exe", str(output), "-O", profile,
+             "--cache-dir", str(tmp_path / "cache"),
+             "--global-cache-dir", str(tmp_path / "global-cache"),
+             "-femit-bin=" + str(binary)],
+            capture_output=True, text=True,
+        )
+>       assert process.returncode == 0, process.stdout + process.stderr
+E       AssertionError: /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w0/main.zig:15:11: error: expected 'an identifier', found 'error'
+E             const error = 1;
+E                   ^~~~~
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/tmp/a7-audit-20260914/zig/zig', 'build-exe', '/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bind...ings_build_w0/main.zig:15:11: error: expected 'an identifier', found 'error'\n    const error = 1;\n          ^~~~~\n").returncode
+
+test/test_pipeline_native.py:45: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Compiled /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w0/main.a7 ->
+/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w0/main.zig (597 
+bytes, 1 ms)
+__________ test_valid_a7_bindings_build_with_zig[unused-loop-capture] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w1')
+zig = '/tmp/a7-audit-20260914/zig/zig', body = 'a: [3]i32\n    for x in a {}'
+
+    @pytest.mark.parametrize("body", [
+        'error := 1\n    io.println("{}", error)',
+        'a: [3]i32\n    for x in a {}',
+        'x := 9\n    a: [3]i32\n    for x in a { io.println("{}", x) }\n    io.println("{}", x)',
+    ], ids=["zig-keyword-local", "unused-loop-capture", "shadowed-loop-capture"])
+    def test_valid_a7_bindings_build_with_zig(tmp_path, zig, body):
+        output = emit(tmp_path, 'io :: import "std/io"\nmain :: fn() {\n    ' + body + '\n}\n')
+>       build(zig, tmp_path, output, "Debug")
+
+test/test_pipeline_native.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zig = '/tmp/a7-audit-20260914/zig/zig'
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w1')
+output = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w1/main.zig')
+profile = 'Debug'
+
+    def build(zig, tmp_path, output, profile):
+        binary = tmp_path / ("program-" + profile)
+        process = subprocess.run(
+            [zig, "build-exe", str(output), "-O", profile,
+             "--cache-dir", str(tmp_path / "cache"),
+             "--global-cache-dir", str(tmp_path / "global-cache"),
+             "-femit-bin=" + str(binary)],
+            capture_output=True, text=True,
+        )
+>       assert process.returncode == 0, process.stdout + process.stderr
+E       AssertionError: /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w1/main.zig:4:14: error: unused capture
+E             for (a) |x| {
+E                      ^
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/tmp/a7-audit-20260914/zig/zig', 'build-exe', '/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bind...89/pytest-6/test_valid_a7_bindings_build_w1/main.zig:4:14: error: unused capture\n    for (a) |x| {\n             ^\n').returncode
+
+test/test_pipeline_native.py:45: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Compiled /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w1/main.a7 ->
+/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w1/main.zig (86 bytes,
+1 ms)
+_________ test_valid_a7_bindings_build_with_zig[shadowed-loop-capture] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2')
+zig = '/tmp/a7-audit-20260914/zig/zig'
+body = 'x := 9\n    a: [3]i32\n    for x in a { io.println("{}", x) }\n    io.println("{}", x)'
+
+    @pytest.mark.parametrize("body", [
+        'error := 1\n    io.println("{}", error)',
+        'a: [3]i32\n    for x in a {}',
+        'x := 9\n    a: [3]i32\n    for x in a { io.println("{}", x) }\n    io.println("{}", x)',
+    ], ids=["zig-keyword-local", "unused-loop-capture", "shadowed-loop-capture"])
+    def test_valid_a7_bindings_build_with_zig(tmp_path, zig, body):
+        output = emit(tmp_path, 'io :: import "std/io"\nmain :: fn() {\n    ' + body + '\n}\n')
+>       build(zig, tmp_path, output, "Debug")
+
+test/test_pipeline_native.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zig = '/tmp/a7-audit-20260914/zig/zig'
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2')
+output = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2/main.zig')
+profile = 'Debug'
+
+    def build(zig, tmp_path, output, profile):
+        binary = tmp_path / ("program-" + profile)
+        process = subprocess.run(
+            [zig, "build-exe", str(output), "-O", profile,
+             "--cache-dir", str(tmp_path / "cache"),
+             "--global-cache-dir", str(tmp_path / "global-cache"),
+             "-femit-bin=" + str(binary)],
+            capture_output=True, text=True,
+        )
+>       assert process.returncode == 0, process.stdout + process.stderr
+E       AssertionError: /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2/main.zig:17:14: error: capture 'x' shadows local constant from outer scope
+E             for (a) |x| {
+E                      ^
+E         /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2/main.zig:15:11: note: previous declaration here
+E             const x = 9;
+E                   ^
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/tmp/a7-audit-20260914/zig/zig', 'build-exe', '/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bind...st-6/test_valid_a7_bindings_build_w2/main.zig:15:11: note: previous declaration here\n    const x = 9;\n          ^\n").returncode
+
+test/test_pipeline_native.py:45: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Compiled /tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2/main.a7 ->
+/tmp/pytest-of-cx89/pytest-6/test_valid_a7_bindings_build_w2/main.zig (689 
+bytes, 1 ms)
+______ test_large_integer_folding_preserves_exact_quotient_and_remainder _______
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_large_integer_folding_pre0')
+zig = '/tmp/a7-audit-20260914/zig/zig'
+
+    def test_large_integer_folding_preserves_exact_quotient_and_remainder(tmp_path, zig):
+        # This fits in i64 but is not exactly representable in binary64.
+        # Independently, division by one preserves n and remainder by one is zero.
+        output = emit(tmp_path, '''io :: import "std/io"
+    show :: fn(value: i64) {
+        io.println("{} {}", value / 1, value % 1)
+    }
+    main :: fn() {
+        io.println("{} {}", 9007199254740993 / 1, 9007199254740993 % 1)
+        show(9007199254740993)
+    }
+    ''')
+        observed = {}
+        for profile in ("Debug", "ReleaseFast"):
+            binary = build(zig, tmp_path, output, profile)
+            process = subprocess.run([str(binary)], capture_output=True, text=True)
+            observed[profile] = (process.returncode, process.stdout, process.stderr)
+        expected = (0, "9007199254740993 0\n9007199254740993 0\n", "")
+>       assert observed == {"Debug": expected, "ReleaseFast": expected}
+E       AssertionError: assert {'Debug': (0,...993 0\n', '')} == {'Debug': (0,...993 0\n', '')}
+E         
+E         Differing items:
+E         {'Debug': (0, '9007199254740992 1\n9007199254740993 0\n', '')} != {'Debug': (0, '9007199254740993 0\n9007199254740993 0\n', '')}
+E         {'ReleaseFast': (0, '9007199254740992 1\n9007199254740993 0\n', '')} != {'ReleaseFast': (0, '9007199254740993 0\n9007199254740993 0\n', '')}
+E         Use -v to get more diff
+
+test/test_pipeline_native.py:97: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Compiled /tmp/pytest-of-cx89/pytest-6/test_large_integer_folding_pre0/main.a7 ->
+/tmp/pytest-of-cx89/pytest-6/test_large_integer_folding_pre0/main.zig (726 
+bytes, 2 ms)
+_________ test_cli_source_diagnostic_points_to_offending_token[parse] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_cli_source_diagnostic_poi1')
+statement = '    x := )', exit_code = <ExitCode.PARSE: 5>, category = 'parse'
+needle = 'expression', column = 10
+
+    @pytest.mark.parametrize(
+        ("statement", "exit_code", "category", "needle", "column"),
+        [
+            pytest.param("    x := `", ExitCode.TOKENIZE, "tokenize", "`", 10, id="token"),
+            pytest.param("    x := )", ExitCode.PARSE, "parse", "expression", 10, id="parse"),
+            pytest.param("    unknown()", ExitCode.SEMANTIC, "semantic", "unknown", 5, id="semantic"),
+        ],
+    )
+    def test_cli_source_diagnostic_points_to_offending_token(
+        tmp_path, statement, exit_code, category, needle, column
+    ):
+        source = tmp_path / "main.a7"
+        original = f"// heading\nmain :: fn() {{\n{statement}\n}}\n"
+        source.write_text(original, encoding="utf-8")
+    
+        result, payload = run_json_compile(source)
+    
+        assert source.read_text(encoding="utf-8") == original
+        assert result.returncode == exit_code
+        assert payload["error"]["category"] == category
+        detail = next(item for item in payload["error"]["details"] if needle in item["message"])
+        assert detail["file"] == str(source)
+        assert detail["span"]["start_line"] == 3
+>       assert detail["span"]["start_column"] == column
+E       assert 9 == 10
+
+test/test_pipeline_diagnostics.py:58: AssertionError
+__________ test_missing_import_diagnostic_locates_import_declaration ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_missing_import_diagnostic0')
+
+    def test_missing_import_diagnostic_locates_import_declaration(tmp_path):
+        source = tmp_path / "main.a7"
+        source.write_text(
+            '// heading\nmissing :: import "missing/module"\nmain :: fn() {}\n',
+            encoding="utf-8",
+        )
+    
+        result, payload = run_json_compile(source)
+    
+        assert result.returncode == ExitCode.SEMANTIC
+        detail = next(item for item in payload["error"]["details"] if "missing/module" in item["message"])
+        assert detail["file"] == str(source)
+        # The importing declaration is the editable source of a missing module.
+        # Do not prescribe which token within that declaration the diagnostic uses.
+>       assert detail.get("span") is not None, "Missing import has no source location"
+E       AssertionError: Missing import has no source location
+E       assert None is not None
+E        +  where None = <built-in method get of dict object at 0x7f580dad1c00>('span')
+E        +    where <built-in method get of dict object at 0x7f580dad1c00> = {'file': '/tmp/pytest-of-cx89/pytest-6/test_missing_import_diagnostic0/main.a7', 'message': "Error loading module 'mis...pytest-6/test_missing_import_diagnostic0/stdlib', '/home/cx89/Projects/pl-dev/a7-py/stdlib']", 'type': 'SemanticError'}.get
+
+test/test_pipeline_diagnostics.py:75: AssertionError
+______ test_imported_parse_error_is_a_source_failure_with_module_location ______
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_imported_parse_error_is_a0')
+
+    def test_imported_parse_error_is_a_source_failure_with_module_location(tmp_path):
+        source = tmp_path / "main.a7"
+        module = tmp_path / "helper.a7"
+        source.write_text('helper :: import "helper"\nmain :: fn() {}\n', encoding="utf-8")
+        module.write_text('// helper header\npub work :: fn() {\n    x := )\n}\n', encoding="utf-8")
+    
+        result, payload = run_json_compile(source)
+    
+        # An import wrapper may report semantic failure; a parser source error must
+        # never become an internal compiler fault merely because it is in a module.
+>       assert result.returncode in {ExitCode.PARSE, ExitCode.SEMANTIC}
+E       assert 8 in {<ExitCode.PARSE: 5>, <ExitCode.SEMANTIC: 6>}
+E        +  where 8 = CompletedProcess(args=['/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python', '/home/cx89/Projects/pl-dev/a7-py/main.py'...Expected expression",\n    "details": [],\n    "span": null,\n    "exception_type": "ParseError"\n  }\n}\n', stderr='').returncode
+
+test/test_pipeline_diagnostics.py:90: AssertionError
+______________ test_imported_semantic_error_preserves_origin_file ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_imported_semantic_error_p0')
+
+    def test_imported_semantic_error_preserves_origin_file(tmp_path):
+        source = tmp_path / "main.a7"
+        module = tmp_path / "helper.a7"
+        source.write_text('helper :: import "helper"\nmain :: fn() {}\n', encoding="utf-8")
+        module.write_text('// helper header\npub work :: fn() {\n    unknown()\n}\n', encoding="utf-8")
+    
+        result, payload = run_json_compile(source)
+    
+        assert result.returncode == ExitCode.SEMANTIC
+        detail = next(item for item in payload["error"]["details"] if "unknown" in item["message"])
+>       assert detail["file"] == str(module)
+E       AssertionError: assert '/tmp/pytest-...or_p0/main.a7' == '/tmp/pytest-..._p0/helper.a7'
+E         
+E         Skipping 51 identical leading characters in diff, use -v to show
+E         - _error_p0/helper.a7
+E         + _error_p0/main.a7
+
+test/test_pipeline_diagnostics.py:110: AssertionError
+_____ test_cli_rejects_input_destination_without_changing_source[--output] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_cli_rejects_input_destina0')
+option = '--output'
+
+    @pytest.mark.parametrize("option", ["--output", "--doc-out"])
+    def test_cli_rejects_input_destination_without_changing_source(tmp_path, option):
+        source = tmp_path / "main.a7"
+        original = b"// Preserve this comment too.\nmain :: fn() {}\n"
+        source.write_bytes(original)
+        process, payload = cli(source, option, source)
+>       assert source.read_bytes() == original, f"{option} destroyed the A7 input"
+E       AssertionError: --output destroyed the A7 input
+E       assert b'pub fn main() void {}\n' == b'// Preserve... :: fn() {}\n'
+E         
+E         At index 0 diff: b'p' != b'/'
+E         Use -v to get more diff
+
+test/test_pipeline_artifacts.py:33: AssertionError
+____ test_cli_rejects_input_destination_without_changing_source[--doc-out] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_cli_rejects_input_destina1')
+option = '--doc-out'
+
+    @pytest.mark.parametrize("option", ["--output", "--doc-out"])
+    def test_cli_rejects_input_destination_without_changing_source(tmp_path, option):
+        source = tmp_path / "main.a7"
+        original = b"// Preserve this comment too.\nmain :: fn() {}\n"
+        source.write_bytes(original)
+        process, payload = cli(source, option, source)
+>       assert source.read_bytes() == original, f"{option} destroyed the A7 input"
+E       AssertionError: --doc-out destroyed the A7 input
+E       assert b"# Compilati... 22 bytes |\n" == b'// Preserve... :: fn() {}\n'
+E         
+E         At index 0 diff: b'#' != b'/'
+E         Use -v to get more diff
+
+test/test_pipeline_artifacts.py:33: AssertionError
+_____________ test_failed_compile_does_not_advertise_stale_output ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_failed_compile_does_not_a0')
+
+    def test_failed_compile_does_not_advertise_stale_output(tmp_path):
+        source = tmp_path / "main.a7"
+        source.write_text("main :: fn( {", encoding="utf-8")
+        output = tmp_path / "main.zig"
+        previous = b"// Previous successful build, not produced by this invocation.\n"
+        output.write_bytes(previous)
+        process, payload = cli(source, "--output", output)
+        assert process.returncode == ExitCode.PARSE
+        assert output.read_bytes() == previous
+>       assert "output_path" not in payload["artifacts"], payload["artifacts"]
+E       AssertionError: {'output_path': '/tmp/pytest-of-cx89/pytest-6/test_failed_compile_does_not_a0/main.zig'}
+E       assert 'output_path' not in {'output_path': '/tmp/pytest-of-cx89/pytest-6/test_failed_compile_does_not_a0/main.zig'}
+
+test/test_pipeline_artifacts.py:48: AssertionError
+______ test_output_write_failure_does_not_advertise_directory_as_artifact ______
+
+tmp_path = PosixPath('/tmp/pytest-of-cx89/pytest-6/test_output_write_failure_does0')
+
+    def test_output_write_failure_does_not_advertise_directory_as_artifact(tmp_path):
+        source = tmp_path / "main.a7"
+        source.write_text("main :: fn() {}\n", encoding="utf-8")
+        output = tmp_path / "destination.zig"
+        output.mkdir()
+        sentinel = output / "keep"
+        sentinel.write_bytes(b"keep")
+        process, payload = cli(source, "--output", output)
+        assert process.returncode == ExitCode.IO
+        assert sentinel.read_bytes() == b"keep"
+>       assert "output_path" not in payload["artifacts"], payload["artifacts"]
+E       AssertionError: {'output_path': '/tmp/pytest-of-cx89/pytest-6/test_output_write_failure_does0/destination.zig'}
+E       assert 'output_path' not in {'output_path': '/tmp/pytest-of-cx89/pytest-6/test_output_write_failure_does0/destination.zig'}
+
+test/test_pipeline_artifacts.py:61: AssertionError
+=========================== short test summary info ============================
+FAILED test/test_pipeline_native.py::test_valid_a7_bindings_build_with_zig[zig-keyword-local]
+FAILED test/test_pipeline_native.py::test_valid_a7_bindings_build_with_zig[unused-loop-capture]
+FAILED test/test_pipeline_native.py::test_valid_a7_bindings_build_with_zig[shadowed-loop-capture]
+FAILED test/test_pipeline_native.py::test_large_integer_folding_preserves_exact_quotient_and_remainder
+FAILED test/test_pipeline_diagnostics.py::test_cli_source_diagnostic_points_to_offending_token[parse]
+FAILED test/test_pipeline_diagnostics.py::test_missing_import_diagnostic_locates_import_declaration
+FAILED test/test_pipeline_diagnostics.py::test_imported_parse_error_is_a_source_failure_with_module_location
+FAILED test/test_pipeline_diagnostics.py::test_imported_semantic_error_preserves_origin_file
+FAILED test/test_pipeline_artifacts.py::test_cli_rejects_input_destination_without_changing_source[--output]
+FAILED test/test_pipeline_artifacts.py::test_cli_rejects_input_destination_without_changing_source[--doc-out]
+FAILED test/test_pipeline_artifacts.py::test_failed_compile_does_not_advertise_stale_output
+FAILED test/test_pipeline_artifacts.py::test_output_write_failure_does_not_advertise_directory_as_artifact
+12 failed, 4 passed in 37.75s

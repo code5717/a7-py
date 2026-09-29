@@ -1,264 +1,383 @@
 # Conversions — Research Notes for Cluster CB
 
-> Phase C research input. Companion to `narrowing.md`. Catalogs
-> the post-CA conversion surface, compares language designs,
-> and proposes A7's shape. Not itself a decision document — the
-> decisions land in `08-decisions.md` Cluster CB.
->
-> **Revision note (post-CA + Python/JS-feel pushback):**
-> Earlier drafts had every fallible conversion return `?T`.
-> The revised principle is two-category:
->
-> - **Statically resolvable** (`x.to_uint()`, `s[i]`, `a / b`):
->   return the direct type. Compile error if the prover can't
->   discharge the precondition. The user adds a guard.
-> - **Data-dependent** (`s.parse_int()`, `new T{...}`,
->   `read_line()`, `extern fn` returns): return `?T` or
->   `Result<T, E>` because failure depends on runtime input the
->   compiler can't see.
->
-> This file's worked examples and recommendation tables have
-> been updated to reflect that principle. The historical
-> "everything returns `?T`" sections are preserved in places
-> for context, marked with a callout.
+> **Status:** historical research. Phase C input for Cluster CB, written
+> before 2026-09-14 and cleaned up on 2026-09-16. Not a decision document.
+> The authoritative record is the ledger in
+> [`../plan/decisions.md`](../plan/decisions.md).
+> Companion to [`narrowing.md`](./narrowing.md). The proposed decisions were
+> drafted in [`08-decisions.md`](./08-decisions.md) Cluster CB.
 
-## The post-CA conversion surface (much smaller than the audit assumed)
+> **Note (2026-09-16): much of this file is superseded.**
+>
+> - It assumes `int`, `uint` and `number` are the primary numeric types, with
+>   bit-width types kept for FFI. Ledger L3 removes `number`. L4 keeps only
+>   explicit widths (`i8`–`i64`, `u8`–`u64`, `isize`, `usize`). The catalog must
+>   be restated for explicit widths under gate G3.
+> - It assumes `number` has no NaN or infinity. L16 adopts IEEE 754 floats as in
+>   Zig and C, so NaN and infinity are ordinary values.
+> - It cites D.003 (non-overflowing arithmetic). L5 makes `+`, `-` and `*` wrap.
+> - It uses `cast(T, x)` in its worked examples but also says `cast` is removed
+>   (D.038). D.024 and D.038 contradict each other; neither stands, and the
+>   question is open under G3.
+> - `?T`, `Option`, `Result`, `some` and `none` are not current features.
+>   [`../STATUS.md`](../STATUS.md) lists `Option` and `Result` as planned stdlib work.
+>
+> The method-style principle and proof-driven check elision remain open
+> research under G3.
 
-Cluster CA's numeric refactor (`int`/`uint`/`number` as primary
-types; bit-width types as FFI-only) collapsed most of the 30
-subcases in `edge-cases/01-cast.md`. The remaining conversion
-surface, in five categories:
+## Guiding principle
+
+Earlier drafts made every fallible conversion return `?T`. The revised
+principle, written after Cluster CA and after feedback asking for a
+Python/JS feel, has two categories.
+
+| Category | Examples | Result type | When the precondition is unproven |
+| --- | --- | --- | --- |
+| Statically resolvable | `x.to_uint()`, `s[i]`, `a / b` | the direct type `T` | compile error; the user adds a guard |
+| Data-dependent | `s.parse_int()`, `new T{...}`, `read_line()`, `extern fn` returns | `?T` or `Result<T, E>` | not applicable; failure depends on runtime input |
+
+Some sections below still show the older "everything returns `?T`" view.
+They are kept for context.
+
+> **Note (2026-09-16):** the file is not fully consistent with this
+> principle. The summary table under
+> [Compile-time and runtime checks](#compile-time-and-runtime-checks) says an
+> unproven `x.to_uint()` becomes a runtime branch. The section
+> [When narrowing cannot discharge](#when-narrowing-cannot-discharge) says it
+> does not compile. This conflict is unresolved.
+
+## What the compiler does today
+
+Verified on 2026-09-16 by reading `a7/cast_classifier.py`, `a7/safety.py`,
+`a7/backends/zig.py` and `test/test_cast_safety_matrix.py`. The compiler was
+not run for this cleanup.
+
+Current A7 has one explicit cast form, `cast(T, x)`. It covers primitive
+numeric types only. `classify_cast` sorts each cast into a class:
+
+| Source → target | Class | Needs a proof? |
+| --- | --- | --- |
+| Identical types | lossless | no |
+| Signed → wider or equal signed; unsigned → wider or equal unsigned; float → wider or equal float | lossless | no |
+| Unsigned → strictly wider signed (for example `u32` → `i64`) | lossless | no |
+| Signed → unsigned | provable narrowing | yes: value is non-negative and its known range fits the target |
+| Unsigned → signed of equal or smaller width | forbidden unless proven | yes: value range fits the target |
+| Signed → narrower signed; unsigned → narrower unsigned | forbidden unless proven | yes: value range fits the target |
+| Float → integer | explicit numeric | yes: source must be a finite, integral float literal in range |
+| Other numeric pairs (for example integer → float) | explicit numeric | no |
+| Anything involving references, functions or non-numeric primitives | forbidden | not allowed |
+
+The Zig backend emits `@as(T, @intCast(x))` for integer casts and
+`@as(T, @intFromFloat(x))` for float-to-integer casts.
+
+A guard can supply the non-negative proof, but the value also needs a known
+range. A local initialized from a literal has one. A function parameter starts
+with no range, and conditions add only lower bounds, so `if i < 0 { ret }` on a
+parameter `i: i64` does not prove `cast(usize, i)` today. The test suite checks
+the two forms below for every signed-to-unsigned pair.
+
+Current A7:
+
+```a7
+early_return :: fn() {
+    x: i64 = 7
+    if x < 0 {
+        ret
+    }
+    y := cast(usize, x)         // accepted: range [0, 7] fits usize
+}
+
+inside_branch :: fn() {
+    x: i64 = 7
+    if x >= 0 {
+        y := cast(usize, x)     // accepted: branch condition keeps x >= 0
+    }
+}
+```
+
+A signed-to-unsigned cast without a known, fitting range is rejected.
+
+## The conversion surface after Cluster CA
+
+> **Note (2026-09-16):** this catalog assumes `int`, `uint` and `number`.
+> Superseded by ledger L3/L4; restate under gate G3.
+
+Cluster CA made `int`, `uint` and `number` the primary types and limited
+bit-width types to FFI. That removed most of the 30 subcases in
+[`edge-cases/01-cast.md`](./edge-cases/01-cast.md). Seven categories remain.
 
 ### 1. Numeric conversions
 
-Across the three primary numeric types:
-
 | From | To | Always safe? | Notes |
 | --- | --- | --- | --- |
-| `int` | `int` | yes — identity | no-op |
-| `uint` | `uint` | yes — identity | no-op |
-| `number` | `number` | yes — identity | no-op |
-| `uint` | `int` | yes — widening | always; arbitrary precision |
-| `int` | `uint` | **no** — sign | `?uint`; fails when `x < 0` |
-| `int` | `number` | yes — embedding | precision-preserving |
-| `uint` | `number` | yes — embedding | same |
-| `number` | `int` | **no** — must round | three modes + fallible exact |
-| `number` | `uint` | **no** — sign + round | three modes + fallible exact |
+| `int` | `int` | yes, identity | no-op |
+| `uint` | `uint` | yes, identity | no-op |
+| `number` | `number` | yes, identity | no-op |
+| `uint` | `int` | yes, widening | always; arbitrary precision |
+| `int` | `uint` | no, sign | `?uint`; fails when `x < 0` |
+| `int` | `number` | yes, embedding | precision-preserving |
+| `uint` | `number` | yes, embedding | same |
+| `number` | `int` | no, must round | three rounding modes plus a fallible exact mode |
+| `number` | `uint` | no, sign and rounding | three rounding modes plus a fallible exact mode |
 
-Five fallible conversions; the rest are infallible.
+The original text said "five fallible conversions". The table has three
+fallible pairs; the count of five may include rounding modes.
 
 ### 2. String parsing and formatting
 
 | From | To | Always safe? |
 | --- | --- | --- |
-| `int`, `uint`, `number`, `bool` | `string` | yes (always succeeds) |
-| `string` | `int` | no — `?int` |
-| `string` | `uint` | no — `?uint` |
-| `string` | `number` | no — `?number` |
-| `string` | `bool` | no — `?bool` (`"true"` / `"false"` only) |
+| `int`, `uint`, `number`, `bool` | `string` | yes |
+| `string` | `int` | no, `?int` |
+| `string` | `uint` | no, `?uint` |
+| `string` | `number` | no, `?number` |
+| `string` | `bool` | no, `?bool` (`"true"` and `"false"` only) |
 
 ### 3. Bool conversions
 
-Forbidden in both directions to numerics. Allowed: `bool ↔
-string` via parse/format. No truthy/falsy.
+Bool never converts to or from a numeric type. There is no truthy or falsy
+value. `bool` converts to and from `string` through formatting and parsing.
+
+Proposed:
+
+```a7
+flag := true
+n := flag.to_int()              // compile error: no bool-to-numeric conversion
+m: i32 = if flag { 1 } else { 0 }   // write the mapping explicitly
+text := flag.to_string()        // "true"
+back := text.parse_bool()       // ?bool: some(true)
+```
+
+The `if` expression form in this example is illustrative, not a claim about
+current syntax.
 
 ### 4. Reference and compound conversions
 
 | From | To | Mechanism |
 | --- | --- | --- |
 | `ref T` | `?ref T` | implicit upcast (CA D.011) |
-| `?ref T` | `ref T` | `match` only (no cast keyword) |
-| `[N]T` | `[]T` | implicit upcast (array-to-slice) |
+| `?ref T` | `ref T` | `match` only; no cast keyword |
+| `[N]T` | `[]T` | implicit upcast (array to slice) |
 | `[]T` | `[N]T` | fallible `[N]T::try_from(s) -> ?[N]T` |
+
+Proposed:
+
+```a7
+buf: [4]u8 = [1, 2, 3, 4]
+view: []u8 = buf                // implicit array-to-slice
+fixed := [4]u8::try_from(view)  // ?[4]u8: none when view.len != 4
+```
 
 ### 5. FFI bit-width conversions
 
-Bit-width types are warned in non-FFI code (CA D.002). Inside
-an `extern fn`'s caller shim, bit-width types are first-class
-without warning; conversions between them use the same
-method-style as the primary types: `bw.to_int()`, `n.to_i32() ->
-?i32`, etc.
+> **Note (2026-09-16):** L4 makes explicit widths the only integer types, so
+> the "bit-width types are warned outside FFI" premise (CA D.002) no longer
+> holds.
 
-### 6. Enum-discriminant conversions
+Bit-width types were to be warned outside FFI code (CA D.002). Inside an
+`extern fn` caller shim they are allowed without warning. Conversions between
+them use the same method style as the primary types: `bw.to_int()`,
+`n.to_i32() -> ?i32`. See [FFI shims](#ffi-shims) for an example.
+
+### 6. Enum discriminant conversions
 
 | Direction | Mechanism |
 | --- | --- |
 | `EnumT` → discriminant `int` | `e.discriminant() -> int` |
 | `int` → `EnumT` | `EnumT::from_discriminant(i) -> ?EnumT` |
 
-The fallible direction returns `?EnumT` because not every `int`
-is a valid discriminant.
+The second direction is fallible because not every `int` is a valid
+discriminant. See [Enum discriminants](#enum-discriminants) for an example.
 
-### 7. The escape: `bit_cast`?
+### 7. Bit reinterpretation (`bit_cast`)
 
-A small number of operations are bit-pattern reinterpretation
-between same-size types — most commonly extracting float bits as
-an integer (for hashing, FFI shim work). The audit's Q01c asks
-whether `bit_cast` is a language operator.
+A few operations reinterpret the bits of one type as another type of the same
+size. The common case is reading float bits as an integer for hashing or FFI
+shims. The audit's Q01c asks whether `bit_cast` should be a language operator.
 
-**Recommendation**: no language operator. Provide stdlib helpers
-(`f32.bits() -> u32`, `u32.as_f32() -> f32`) only for the
-known-needed cases. The set is small and closed.
+Recommendation: no operator. The stdlib provides helpers for the known cases,
+such as `f32.bits() -> u32` and `u32.as_f32() -> f32`. The set is small and
+closed.
 
-### Surface size after categorisation
+Proposed:
+
+```a7
+x: f32 = 1.5
+raw := x.bits()                 // u32: 0x3FC00000
+y := raw.as_f32()               // f32: 1.5
+```
+
+### Surface size
 
 | Category | Count |
 | --- | --- |
-| Numeric (1) | 9 conversions, 5 fallible |
-| String parsing/formatting (2) | 8 |
+| Numeric (1) | 9 conversions, 3 fallible pairs |
+| String parsing and formatting (2) | 8 |
 | Bool (3) | 2 |
-| Reference / compound (4) | 4 |
-| FFI bit-width (5) | Inside extern shims; same as numeric |
+| Reference and compound (4) | 4 |
+| FFI bit-width (5) | inside extern shims; same as numeric |
 | Enum discriminant (6) | 2 |
 
-Total user-visible: ~25 method names across the relevant types.
-All fallible cases use `?T`. No new keywords.
+That is about 25 method names across the relevant types, with no new keywords.
+The original summary said "all fallible cases use `?T`"; the two-category
+principle above narrows that to data-dependent cases.
 
 ---
 
-## Three design styles — comparative
+## Three design styles
 
 How do production languages name and structure conversions?
 
-### Style A — Method-style
+### Style A: method style
 
-`x.to_int()`, `x.to_string()`, `s.parse_int()`. Methods on the
-source type's namespace.
+Conversions are methods on the source type: `x.to_int()`, `x.to_string()`,
+`s.parse_int()`.
 
-**Languages:**
-- **Kotlin** — `x.toInt()`, `x.toLong()`, `x.toString()`,
-  `s.toIntOrNull()` (fallible variant). The most pervasive
-  method-style design.
-- **Rust** — `x.to_string()` (via `Display`), `s.parse::<T>()`
-  (parses any `T: FromStr`). Mixed with the `as` operator.
+Languages:
 
-**Pros:**
-- Methods chain (`s.trim().parse_int()?`).
-- The source type "knows" about its conversions; namespace is
-  natural.
-- IDE autocomplete: type a dot and see all the conversions.
+- **Kotlin:** `x.toInt()`, `x.toLong()`, `x.toString()`, and the fallible
+  `s.toIntOrNull()`. The most thorough method-style design.
+- **Rust:** `x.to_string()` through `Display`, and `s.parse::<T>()` for any
+  `T: FromStr`. Rust mixes this with the `as` operator.
+
+Pros:
+
+- Methods chain: `s.trim().parse_int()?`.
+- The source type's namespace is a natural home for its conversions.
+- Typing a dot shows every conversion in IDE autocomplete.
 - No new keywords.
-- Discoverable: hover the method, see the docstring.
+- Hovering a method shows its documentation.
 
-**Cons:**
-- Verbose for one-off conversions (`x.to_int()` vs `int(x)`).
-- If a conversion is *between* two types that don't "own"
-  either side (e.g., `Bool` and a `Color` enum from different
-  modules), the method has to live somewhere.
+Cons:
 
-### Style B — Constructor-style
+- Verbose for one-off conversions: `x.to_int()` against `int(x)`.
+- A conversion between two types that own neither side, such as `Bool` and a
+  `Color` enum from different modules, still needs a home.
 
-`int(x)`, `String(x)`, `Bool("true")`. Function-call syntax
-where the type name acts as a constructor.
+### Style B: constructor style
 
-**Languages:**
-- **Python** — `int(x)`, `float(x)`, `str(x)`, `bool(x)` — the
-  canonical Pythonic style.
-- **JavaScript** — `Number(x)`, `String(x)`, `parseInt(s)` —
-  type-name-as-function for some; separate parsers for parsing.
-- **Swift** — `Int(exactly: x)`, `Int(x)`, `String(x)` —
-  initialisers (labeled, supports many overloads).
-- **Mojo** — `Int(x)`, recently `int(x)` lowercase.
+The type name acts as a function: `int(x)`, `String(x)`, `Bool("true")`.
 
-**Pros:**
-- Reads as `int(x)` — concise, familiar to Python/JS users.
-- Constructor and conversion are uniform.
-- No "method dispatch" complexity.
+Languages:
 
-**Cons:**
-- Requires types to be callable as functions (a language
-  feature most procedural languages don't naturally have).
-- Constructors with multiple signatures are confusing (`Int(x)`
-  truncates vs `Int(exactly: x)` returns optional in Swift).
-- Doesn't chain as naturally.
+- **Python:** `int(x)`, `float(x)`, `str(x)`, `bool(x)`.
+- **JavaScript:** `Number(x)`, `String(x)`, with separate parsers such as
+  `parseInt(s)`.
+- **Swift:** initializers such as `Int(exactly: x)`, `Int(x)`, `String(x)`,
+  with labels and many overloads.
+- **Mojo:** `Int(x)`. The original notes say Mojo recently moved to lowercase
+  `int(x)`; this was not re-verified on 2026-09-16.
 
-### Style C — Operator-style
+Pros:
 
-`x as int`, `@as(int, x)`, `cast(int, x)`. A dedicated operator
-or built-in.
+- `int(x)` is short and familiar to Python and JS users.
+- Construction and conversion look the same.
+- No method dispatch.
 
-**Languages:**
-- **Rust** — `x as i32` for primitive casts (always succeeds,
-  may truncate). Also `T::from(x)` / `T::try_from(x)` traits.
-- **Zig** — `@as(T, x)`, `@intCast(T, x)`, `@floatFromInt`,
-  etc. Namespaced builtins per conversion family.
-- **A7 today** — `cast(T, x)` — the unrestricted operator that
-  the audit flagged as a critical safety hole.
+Cons:
 
-**Pros:**
-- Compact syntax for the common case.
-- One operator vs many methods.
+- Types must be callable as functions, which most procedural languages do not
+  support naturally.
+- Overloaded constructors confuse: in Swift, `Int(x)` truncates a float while
+  `Int(exactly: x)` returns an optional.
+- Chains poorly.
 
-**Cons:**
-- Doesn't distinguish lossless / lossy / forbidden conversions
-  syntactically.
-- Easy to add new "supported" conversions silently.
-- Zig's `@intCast` etc. partially fixes this but at the cost of
-  ten separate builtins.
-- The audit found that A7's current `cast` is exactly the
-  ambiguous-style problem.
+### Style C: operator style
 
-### A7's choice: **Style A (method-style)** with fallible
-return types
+A dedicated operator or builtin: `x as int`, `@as(int, x)`, `cast(int, x)`.
 
-The other styles' downsides bite A7:
+Languages:
 
-- Style B (constructor-style) requires "type as function," which
-  A7 doesn't have today and which interacts awkwardly with
-  generics.
-- Style C (operator-style) is what A7 has today and is the
-  source of the audit's most urgent finding (§1.2 of
-  `07-language-review.md`).
-- Style A — methods on the source type, fallible variants
-  returning `?T` — composes with CA D.018 (existing method-call
-  surface).
+- **Rust:** `x as i32` for primitive casts. It always succeeds and may
+  truncate. Rust also has the `T::from(x)` and `T::try_from(x)` traits.
+- **Zig:** `@as`, `@intCast`, `@floatFromInt` and others, one builtin per
+  conversion family.
+- **A7 today:** `cast(T, x)`. The audit flagged the original unrestricted form
+  as a critical safety hole. The current compiler restricts it (see
+  [What the compiler does today](#what-the-compiler-does-today)).
 
-This is the recommendation. The rest of this file fills in
-details.
+Pros:
+
+- Compact for the common case.
+- One operator instead of many methods.
+
+Cons:
+
+- The syntax does not separate lossless, lossy and forbidden conversions.
+- New "supported" conversions can be added silently.
+- Zig's separate builtins partly fix this, at the cost of about ten builtins.
+- The audit found this exact ambiguity in A7's original `cast`.
+
+### Recommendation: method style with fallible return types
+
+> **Note (2026-09-16):** this recommendation was drafted as D.024. D.024 and
+> D.038 contradict each other on `cast(T, x)`; the choice is open under G3.
+
+- Style B needs types callable as functions. A7 does not have that, and it
+  interacts badly with generics.
+- Style C is what A7 had, and it caused the audit's most urgent finding
+  (§1.2 of [`07-language-review.md`](./07-language-review.md)).
+- Style A puts methods on the source type, with fallible variants returning
+  `?T`. It fits the existing method-call surface (CA D.018).
 
 ---
 
-## The `number → int` rounding policy
+## Rounding from `number` to `int`
 
-`number` (arbitrary precision real) needs to convert to `int`
-or `uint` in four different ways:
+> **Note (2026-09-16):** `number` is removed by L3, and "arbitrary precision"
+> no longer applies under L4. Under L16 a float can be NaN or infinite, and a
+> finite float can still exceed an integer type's range. Restate for `f32`/`f64`
+> and explicit-width targets under G3.
 
-| Method | Semantics | Failure |
+`number` converts to `int` or `uint` in four ways:
+
+| Method | Semantics | Examples and failure |
 | --- | --- | --- |
-| `n.to_int_trunc() -> ?int` | Round toward zero | Fails if `n` not finite-int-representable; succeeds for `3.7 → 3`, `-3.7 → -3` |
-| `n.to_int_floor() -> ?int` | Round toward `-∞` | `3.7 → 3`, `-3.7 → -4` |
-| `n.to_int_round() -> ?int` | Round to nearest (banker's rounding) | `3.7 → 4`, `3.5 → 4`, `4.5 → 4` |
-| `n.to_int_exact() -> ?int` | Only succeeds if `n` is mathematically equal to an integer | `3.0 → 3`; `3.5 → none` |
+| `n.to_int_trunc() -> ?int` | round toward zero | `3.7 → 3`, `-3.7 → -3`; fails if `n` is not finite-integer-representable |
+| `n.to_int_floor() -> ?int` | round toward `-∞` | `3.7 → 3`, `-3.7 → -4` |
+| `n.to_int_round() -> ?int` | round to nearest, ties to even (banker's rounding) | `3.7 → 4`, `3.5 → 4`, `4.5 → 4` |
+| `n.to_int_exact() -> ?int` | succeeds only if `n` equals an integer | `3.0 → 3`; `3.5 → none` |
 
-Same four for `to_uint_*`. With `number` being arbitrary
-precision, every output that *would* fit in `int` does fit (no
-range failure), so the only failure cases are:
+`to_uint_*` has the same four. Because `number` was arbitrary precision, every
+result that should fit in `int` did fit, so the only failures were:
 
-- `n` is not finite-representable as an integer (matters for
-  `_exact` only).
-- For `to_uint_*`: `n < 0`.
+- `n` is not representable as an integer (relevant to `_exact`);
+- for `to_uint_*`, `n < 0`.
 
-**Why four methods**: each rounding mode is a different
-mathematical operation. Forcing the user to pick makes the code
-self-documenting. "Default to trunc with optional mode argument"
-hides the choice; an explicit `to_int_round` is *less ambiguous*
-than a Python-style `int(x)` which truncates by default but
-silently.
+Why four methods: each rounding mode is a different operation. Making the user
+pick documents the choice. A default mode with an optional argument hides it.
+Python's `int(x)` truncates silently, which is more ambiguous than an explicit
+`to_int_round`.
+
+Proposed:
+
+```a7
+price: number = 19.5
+a := price.to_int_trunc()       // some(19)
+b := price.to_int_round()       // some(20): ties to even
+c := price.to_int_exact()       // none
+```
 
 ---
 
-## **Narrowing eliminates conversion runtime checks** (the central insight)
+## Check elision through narrowing
 
-This is the load-bearing principle for A7's performance story.
+This was the core performance argument for the design.
 
-A conversion method's signature is its **contract**:
-`to_uint() -> ?uint` says "this *might* fail." But the
-implementation is *not* required to check at runtime. If the
-narrowing analysis (see `narrowing.md`) has discharged the
-conversion's range obligation at this call site, the compiler
-emits the success branch directly.
+A conversion's signature is its contract. `to_uint() -> ?uint` says the
+conversion might fail. The implementation does not have to check at run time.
+If narrowing (see [`narrowing.md`](./narrowing.md)) has proved the range
+obligation at the call site, the compiler emits only the success path.
 
-### Worked examples
+> **Note (2026-09-16):** the examples below use `int`, `uint` and `number`
+> (L3/L4) and `cast(T, x)` (open under G3). The emitted Zig uses the pre-0.11
+> two-argument builtin form. The current backend emits
+> `@as(usize, @intCast(i))`. The emitted Zig also returns `s.ptr[idx]` where
+> the A7 source returns `some(s[idx])`.
+
+### Example: guarded index
+
+Proposed:
 
 ```a7
 process :: fn(s: []int, i: int) ?int {
@@ -275,9 +394,8 @@ process :: fn(s: []int, i: int) ?int {
 }
 ```
 
-`cast(uint, i)` returns `uint` directly per D.026; the compiler
-emits **no range check** because narrowing has proved `i >= 0`.
-The emitted Zig is:
+`cast(uint, i)` returns `uint` directly (D.026). Narrowing has proved
+`i >= 0`, so no range check is emitted. The intended Zig output:
 
 ```zig
 fn process(s: []const i64, i: i64) ?i64 {
@@ -289,11 +407,12 @@ fn process(s: []const i64, i: i64) ?i64 {
 }
 ```
 
-No `if (i < 0)` for the `.to_uint()` check; no bounds check on
-`s[idx]`. Both range obligations have been discharged
-statically.
+There is no `if (i < 0)` for the conversion and no bounds check on `s[idx]`.
+Both obligations are discharged statically.
 
-### A second example, with `number → uint`
+### Example: `number` to `uint`
+
+Proposed:
 
 ```a7
 float_to_index :: fn(f: number, n: uint) ?uint {
@@ -308,24 +427,30 @@ float_to_index :: fn(f: number, n: uint) ?uint {
 }
 ```
 
-Both the cast and the bounds are discharged by narrowing. The
-emission is a bare `@intFromFloat(usize, @floor(f))` — no NaN
-check, no negative check, no range check.
+The original claim: narrowing discharges both the cast and the bounds, so the
+emission is a bare `@intFromFloat(usize, @floor(f))` with no NaN, negative or
+range check.
 
-### Why this matters
+> **Note (2026-09-16): unsound under L16.** For NaN, both `f < 0` and
+> `f >= cast(number, n)` are false, so NaN passes the guard. `@intFromFloat`
+> on NaN is illegal behavior in Zig and unchecked in ReleaseFast. A sound
+> version needs an explicit NaN test, or a lattice that tracks NaN. See the
+> float note in [`narrowing.md`](./narrowing.md).
 
-This is what makes A7's conversions **both safe and free**.
-The fallible-method shape (`?T` return) gives the type-system
-proof; the prover-driven emission ensures the runtime cost is
-paid only when the prover cannot discharge. In typical code
-(loop-bounded conversions, post-guard conversions, literal
-conversions), the cost is zero.
+### The argument
 
-This is exactly the discipline of CA's bare arithmetic
-specialisation (D.003): the contract is "safe by default"; the
-implementation specialises when it can prove safety.
+The fallible signature (`?T`) gives the type-level proof obligation. Emission
+driven by the prover means the run-time cost is paid only when the prover
+fails. In typical code (loop-bounded, post-guard or literal conversions), the
+claim was that the cost is zero.
 
-### Without narrowing, what would the emission be?
+This mirrors CA's bare arithmetic specialization (D.003): the contract is safe
+by default, and the implementation specializes when it can prove safety.
+
+> **Note (2026-09-16):** D.003 is superseded by L4/L5. Wrapping `+ - *` needs
+> no overflow proof; division, casts, shifts and sizes still do.
+
+### Emission without narrowing
 
 ```zig
 fn process_no_narrowing(s: []const i64, i: i64) ?i64 {
@@ -339,16 +464,16 @@ fn process_no_narrowing(s: []const i64, i: i64) ?i64 {
 }
 ```
 
-Three extra branches; two of them dead. The narrowing analysis
-removes them.
+Two extra branches, both dead. Narrowing removes them.
 
 ---
 
-## What happens when narrowing CAN'T discharge
+## When narrowing cannot discharge
 
-Under the revised principle (D.025): the operation **does not
-compile**. The user adds a guard, and on the next compile the
-narrowing system discharges the precondition.
+Under the revised principle (D.025), the operation does not compile. The user
+adds a guard, and the next compile discharges the precondition.
+
+Proposed:
 
 ```a7
 process_opaque :: fn(s: []int, i: int) int {
@@ -358,7 +483,7 @@ process_opaque :: fn(s: []int, i: int) int {
 }
 ```
 
-The diagnostics tell the user exactly what guard to add:
+The diagnostic names the guard to add:
 
 ```
 error: cast(uint, int) requires `i >= 0`
@@ -371,17 +496,22 @@ help: add a guard so the prover can discharge the precondition:
  5 | }
 ```
 
-The user is **never silently given a runtime trap**; the
-compiler refuses the unsafe code and tells them how to fix it.
+The compiler never inserts a silent runtime trap. It rejects the code and
+explains the fix.
+
+Current A7 already fails closed for casts (see
+[What the compiler does today](#what-the-compiler-does-today)). Its current
+diagnostic text differs from this mockup.
 
 ---
 
-## Compile-time conversion: literals
+## Literal conversions at compile time
 
-Numeric literals get a special path. `42` is "an integer
-literal with comptime value 42." It converts to any numeric
-target whose range covers 42, **without any runtime work and
-without using any conversion method**:
+An integer literal such as `42` has a compile-time value. It converts to any
+numeric target whose range contains that value. No runtime work and no
+conversion method are needed.
+
+Proposed (original notation):
 
 ```a7
 let x: int = 42
@@ -389,22 +519,33 @@ let y: uint = 42                       ; literal fits uint range; no method need
 let z: number = 42                     ; literal converts to number losslessly
 ```
 
-For non-literal expressions involving only literals, the same
-applies: `let n: uint = 10 * 5` compiles because `10 * 5 = 50`
-fits `uint`.
+The same holds for expressions of literals only: `let n: uint = 10 * 5`
+compiles because `50` fits `uint`.
 
-This is **compile-time const folding** at the conversion site.
-Matches Zig's `comptime_int` semantics. The user writes plain
-integer literals everywhere; the compiler figures out the type
-from context.
+This is constant folding at the conversion site, matching Zig's
+`comptime_int`. Users write plain integer literals, and context picks the type.
+
+Current A7 (explicit widths):
+
+```a7
+main :: fn() {
+    small: u8 = 42
+}
+```
+
+A literal initializer of an explicit-width type is the form the ledger uses
+for its own current-behavior example (`x: u8 = 255`). Whether a folded
+expression such as `10 * 5` converts to `usize` without `cast` was not
+verified; `examples/029_sorting.a7` writes `cast(usize, 0)` explicitly.
 
 ---
 
 ## String formatting
 
-`x.to_string()` is the universal format method. Every built-in
-type provides it. For more control, `x.format(spec)` takes a
-format-spec string:
+Every built-in type provides `x.to_string()`. For more control,
+`x.format(spec)` takes a format-spec string.
+
+Proposed (original notation):
 
 ```a7
 let s1 = 42.to_string()                ; "42"
@@ -413,11 +554,9 @@ let s3 = 255.format("hex")             ; "ff"
 let s4 = 0.123.format("0.4f")          ; "0.1230"
 ```
 
-The format-spec syntax can be Python-style or Rust-style; the
-specific syntax is a stdlib detail, not a Cluster CB decision.
-
-`f"..."` interpolation (CA D.008) uses `.to_string()` on each
-interpolated value implicitly.
+The spec syntax, Python-style or Rust-style, is a stdlib detail and not a
+Cluster CB decision. `f"..."` interpolation (CA D.008) calls `.to_string()` on
+each interpolated value.
 
 ---
 
@@ -425,84 +564,105 @@ interpolated value implicitly.
 
 Four parsing methods on `string`:
 
-| Method | Return | Notes |
+| Method | Returns none when | Notes |
 | --- | --- | --- |
-| `s.parse_int() -> ?int` | none for invalid input | Decimal only by default |
-| `s.parse_uint() -> ?uint` | none for invalid or negative | Decimal only |
-| `s.parse_number() -> ?number` | none for invalid | Decimal-point or scientific notation |
-| `s.parse_bool() -> ?bool` | `"true" → some(true)`, `"false" → some(false)`, otherwise none | |
+| `s.parse_int() -> ?int` | input is invalid | decimal only by default |
+| `s.parse_uint() -> ?uint` | input is invalid or negative | decimal only |
+| `s.parse_number() -> ?number` | input is invalid | decimal point or scientific notation |
+| `s.parse_bool() -> ?bool` | input is not `"true"` or `"false"` | |
 
-For radix parsing (hex, octal, binary), additional methods:
+For other radixes:
 
-| Method | Return | Notes |
+| Method | Range | Notes |
 | --- | --- | --- |
-| `s.parse_int_radix(r: uint) -> ?int` | `r ∈ [2, 36]` | Hex via `parse_int_radix(16)` |
+| `s.parse_int_radix(r: uint) -> ?int` | `r ∈ [2, 36]` | hex via `parse_int_radix(16)` |
 
-This is the minimal v1 surface. The user can write their own
-parser for richer parsing.
+This is the minimal v1 surface. Users can write their own parsers for richer
+formats.
+
+Proposed:
+
+```a7
+port := "8080".parse_uint()               // some(8080)
+bad := "80a0".parse_uint()                // none
+mask := "ff".parse_int_radix(16)          // some(255)
+```
 
 ---
 
-## Comparison to Cluster CA's `?T` discipline
+## Fit with Cluster CA's `?T` rules
 
 Cluster CA decided:
+
 - `?T` is sugar for `Option<T>` (D.010).
-- No `unwrap()` / `expect()` (D.018).
-- `?` postfix propagation (D.017).
-- Minimal combinators: `.map()`, `.unwrap_or()` (D.019).
+- No `unwrap()` or `expect()` (D.018).
+- Postfix `?` propagates none (D.017).
+- Minimal combinators: `.map()` and `.unwrap_or()` (D.019).
 
-Conversions fit cleanly:
-- Every fallible conversion returns `?T`.
-- The user matches, propagates with `?`, or uses `.unwrap_or(default)`.
-- No new operators or keywords.
+Fallible conversions fit these rules. Each returns `?T`. The user matches,
+propagates with `?`, or supplies a default with `.unwrap_or(default)`. No new
+operators or keywords are needed.
 
-Example chaining:
+> **Note (2026-09-16):** `?T` and `Option` are not current features (STATUS.md
+> lists them as planned). D.010 is superseded for `int`/`number` optionals by
+> L4. Under the `usize` rule, lengths and indices use `usize`, not `uint`.
+
+Proposed (rewritten from the original `fn … end` notation into current block
+syntax; types unchanged):
 
 ```a7
-fn read_age(s: string) -> uint
-    return s.trim().parse_uint().unwrap_or(0)
-end
+read_age :: fn(s: string) uint {
+    ret s.trim().parse_uint().unwrap_or(0)
+}
 
-fn read_name_age(s: string) -> ?(string, uint)
-    let parts = s.split(",")
-    if parts.length != 2
-        return none
-    end
-    let name = parts[0].trim()
-    let age = parts[1].trim().parse_uint()?
-    return some((name, age))
-end
+read_name_age :: fn(s: string) ?(string, uint) {
+    parts := s.split(",")
+    if parts.length != 2 {
+        ret none
+    }
+    name := parts[0].trim()
+    age := parts[1].trim().parse_uint()?
+    ret some((name, age))
+}
 ```
 
-Reads like TypeScript with stricter types.
+The tuple return type is illustrative. Multiple return values and
+destructuring are not current backend features.
 
 ---
 
-## FFI bit-width conversions (special case)
+## FFI shims
 
-Inside an `extern fn` shim, the warning on bit-width types (CA
-D.002) is suppressed. Conversions between the FFI types and the
-primary types use the same method-style:
+Inside an `extern fn` shim, the bit-width warning (CA D.002) is suppressed.
+Conversions between FFI types and primary types use the same method style.
+
+Proposed (rewritten from the original `fn … end` notation; types unchanged):
 
 ```a7
-extern fn c_get_count() -> i32
+c_get_count :: extern fn() i32
 
-; The shim wraps the foreign call:
-fn read_count() -> ?uint
-    let raw: i32 = c_get_count()       ; FFI return type
-    return raw.to_uint()               ; ?uint; fails if raw < 0
-end
+// The shim wraps the foreign call:
+read_count :: fn() ?uint {
+    raw: i32 = c_get_count()       // FFI return type
+    ret raw.to_uint()              // ?uint; none if raw < 0
+}
 ```
 
-Inside the shim, `i32 → uint` is just another fallible numeric
-conversion. The CA D.002 warning is silenced at this site
-(scoping via the shim's attribute, exact syntax in CF).
+Inside the shim, `i32 → uint` is one more fallible numeric conversion. The
+shim's attribute silences the D.002 warning; Cluster CF owns the exact syntax.
+The `extern fn` declaration spelling above is illustrative.
+
+> **Note (2026-09-16):** under L4 `i32` is an ordinary type and `uint` does not
+> exist. The equivalent is a fallible `i32 → u32` or `i32 → usize` conversion,
+> restated under G3.
 
 ---
 
-## Enum-discriminant conversions
+## Enum discriminants
 
-Enums have a built-in discriminant relationship:
+Enums have a built-in discriminant relationship.
+
+Proposed (original notation):
 
 ```a7
 enum Color { red, green, blue }
@@ -518,31 +678,33 @@ match c2
 end
 ```
 
-The discriminant is a numeric value the user can choose
-(default: sequential from 0). `from_discriminant` is fallible
-because user input may not match a valid value.
+The user can choose discriminant values; the default is sequential from 0.
+`from_discriminant` is fallible because input may not match any value.
 
 ---
 
-## Compile-time vs. runtime semantics summary
+## Compile-time and runtime checks
 
 | Conversion | When the check happens |
 | --- | --- |
-| Literal `42 → uint` | Compile time; no code emitted |
-| `42 → uint` via `.to_uint()` | Compile time; literal recognised |
-| `x.to_uint()` where `x` is range-proved `>= 0` | Compile time; emission is bare cast |
-| `x.to_uint()` where `x` is opaque | Runtime branch; `?uint` return contract |
-| `s.parse_int()` | Runtime parse; always returns `?int` |
-| `s.to_string()` | Runtime format; always succeeds |
-| `r.bits()` (float→int reinterpret) | Compile-time eligible (no failure mode) |
+| Literal `42 → uint` | compile time; no code emitted |
+| `42 → uint` via `.to_uint()` | compile time; literal recognized |
+| `x.to_uint()` where `x` is proved `>= 0` | compile time; emission is a bare cast |
+| `x.to_uint()` where `x` is opaque | runtime branch; `?uint` return contract |
+| `s.parse_int()` | runtime parse; always returns `?int` |
+| `s.to_string()` | runtime format; always succeeds |
+| `r.bits()` (float bits as integer) | compile-time eligible; no failure mode |
 
-The compile-time / runtime split is **invisible to the user** —
-they write the same method-call regardless. The optimisation is
-purely an emission detail.
+Users write the same method call in every case. The split is an emission
+detail.
+
+> **Note (2026-09-16):** the "opaque → runtime branch" row conflicts with
+> [When narrowing cannot discharge](#when-narrowing-cannot-discharge), which
+> makes the same call a compile error. Unresolved.
 
 ---
 
-## How A7's conversions compare to other languages
+## Comparison with other languages
 
 | Language | Lossless | Lossy (truncating) | Reinterpret | Fallible |
 | --- | --- | --- | --- | --- |
@@ -551,76 +713,96 @@ purely an emission detail.
 | **Swift** | `Int(x)` (traps on overflow) | `Int(truncating: x)` | `unsafeBitCast` | `Int(exactly: x)` returns `Int?` |
 | **Kotlin** | `x.toLong()` | `x.toInt()` (truncates) | `Float.fromBits` | `s.toIntOrNull()` |
 | **Rust** | `T::from(x)` | `x as T` (truncates) | `mem::transmute` | `T::try_from(x)` returns `Result` |
-| **Ada** | `Integer(X)` (range-checked) | n/a | `Unchecked_Conversion` | range-check raises |
-| **Zig** | `@as(T, x)` (lossless only) | `@intCast(T, x)` | `@bitCast(T, x)` | n/a (traps if out-of-range) |
-| **A7 proposed** | `.to_T()` (when lossless) | `.to_T_trunc()`, `.to_T_floor()`, etc. | stdlib helpers only | `.to_T() -> ?T` for fallible |
+| **Ada** | `Integer(X)` (range-checked) | n/a | `Unchecked_Conversion` | range check raises |
+| **Zig** | `@as(T, x)` (lossless only) | `@intCast(T, x)` | `@bitCast(T, x)` | n/a (traps if out of range) |
+| **A7 proposed** | `.to_T()` (when lossless) | `.to_T_trunc()`, `.to_T_floor()`, etc. | stdlib helpers only | `.to_T() -> ?T` |
 
-A7's choice — method-style with `?T` for fallibility — is
-closest to Kotlin. The difference: A7's compiler discharges most
-fallible-conversion runtime checks via narrowing.
+> **Audit notes (2026-09-16, from language knowledge; not re-checked against
+> each language's current docs):**
+>
+> - **Swift:** integer truncation is `Int(truncatingIfNeeded: x)`.
+>   `Int(truncating:)` is an `NSNumber` initializer.
+> - **Rust:** `as` from float to integer saturates (Rust 1.45 and later).
+>   `f32::to_bits` and `f32::from_bits` reinterpret without `transmute`.
+> - **Zig:** since 0.11, cast builtins take one argument and infer the result
+>   type, as in `@as(u8, @intCast(x))`. `@intCast` is a checked conversion, not a
+>   truncating one: it panics in Debug and ReleaseSafe and is illegal behavior
+>   in ReleaseFast. Truncation is `@truncate`.
+
+A7's proposal is closest to Kotlin: method style, with `?T` for fallibility.
+The difference is that A7's compiler would discharge most fallible-conversion
+checks through narrowing.
 
 ---
 
 ## Open questions for Cluster CB
 
-Each becomes a numbered decision.
+Each was to become a numbered decision.
 
-- **Q1** Should `int(x)` constructor-style **also** exist
-  alongside `.to_int()`? My lean: no. One way to do it.
-- **Q2** Exact list of rounding methods on `number`. My lean:
-  the four documented above (`trunc`, `floor`, `round`,
-  `exact`).
-- **Q3** Format-spec syntax for `.format(spec)`. Defer; stdlib
-  detail.
-- **Q4** Should `string` provide `.bytes() -> []u8` for direct
-  byte access? My lean: yes; cheap and useful at FFI boundary.
-- **Q5** Should `bool` interpolate as `"true"` / `"false"` in
-  `f"..."` strings? My lean: yes.
-- **Q6** Generic-context conversion. `fn f<$T>(x: $T) -> ?$U`
-  where the body calls `x.to_$U()` — does this work? Depends
-  on whether the type-set constraint declares the method.
-- **Q7** Should there be an explicit `.into<T>()` polymorphic
-  conversion (Rust style)? My lean: no in v1; can be added
-  if needed.
-- **Q8** `bit_cast`-style helpers — exactly which ones in the
-  stdlib? `f32.bits()`, `f64.bits()`, `u32.as_f32()`,
-  `u64.as_f64()`. Maybe `u8 ↔ char` for ASCII work.
+- **Q1:** Should constructor-style `int(x)` exist beside `.to_int()`? Lean: no;
+  one way to do it.
+- **Q2:** Which rounding methods on `number`? Lean: `trunc`, `floor`, `round`
+  and `exact`, as above.
+- **Q3:** Format-spec syntax for `.format(spec)`. Deferred; stdlib detail.
+- **Q4:** Should `string` provide `.bytes() -> []u8` for direct byte access?
+  Lean: yes; cheap and useful at the FFI boundary.
+- **Q5:** Should `bool` interpolate as `"true"` or `"false"` in `f"..."`
+  strings? Lean: yes.
+- **Q6:** Conversion in generic code. In `fn f<$T>(x: $T) -> ?$U`, can the body
+  call `x.to_$U()`? It depends on whether the type-set constraint declares the
+  method.
+- **Q7:** Should a polymorphic `.into<T>()` exist, as in Rust? Lean: not in v1;
+  it can be added later.
+- **Q8:** Which bit-reinterpretation helpers go in the stdlib? Candidates:
+  `f32.bits()`, `f64.bits()`, `u32.as_f32()`, `u64.as_f64()`, and possibly
+  `u8 ↔ char` for ASCII work.
 
----
-
-## What's removed from the audit's plan
-
-The original `01-cast.md` proposed three operators: `cast` /
-`truncating_cast` / `bit_cast`. All three are **out** under
-Cluster CA + this proposal:
-
-- `cast` keyword removed entirely (D.038 in CB).
-- `truncating_cast` doesn't exist; truncation is explicit per
-  rounding method (`to_int_trunc()`).
-- `bit_cast` is replaced by stdlib helpers (D.034 in CB).
-
-Net language size: **fewer operators**, **same expressiveness
-via methods**, **stronger safety via the fallible-method
-discipline**.
+> **Note (2026-09-16):** Q1 and Q2 name `int` and `number` (L3/L4). Under G3
+> they become questions about explicit-width targets and `f32`/`f64` sources.
 
 ---
 
-## Cluster CB decision shape
+## Changes from the audit's plan
 
-The Cluster CB section in `08-decisions.md` will codify:
+The original [`edge-cases/01-cast.md`](./edge-cases/01-cast.md) proposed three
+operators: `cast`, `truncating_cast` and `bit_cast`. This proposal drops all
+three:
 
-- Method-style is the conversion shape (D.024).
-- Fallible conversions return `?T` (D.025).
-- The numeric method catalog (D.026–D.027).
-- String formatting and parsing (D.028–D.029).
-- Bool/numeric forbidden (D.030).
-- Array/slice/enum/FFI conversions (D.031–D.033).
-- No `bit_cast` operator (D.034).
-- Compile-time literal conversion (D.035).
-- Generic-context conversion (D.036).
-- Forbidden-conversion diagnostics (D.037).
-- `cast(T, x)` keyword removed (D.038).
-- Narrowing-driven check elision (D.039).
+- `cast` is removed (D.038 in CB).
+- `truncating_cast` does not exist; truncation is an explicit rounding method
+  (`to_int_trunc()`).
+- `bit_cast` becomes stdlib helpers (D.034 in CB).
 
-12–15 decisions. All marked PROPOSED. Cross-references back
-to CA where relevant.
+The result: fewer operators, the same expressiveness through methods, and
+stronger safety through fallible methods.
+
+> **Note (2026-09-16):** D.038 conflicts with D.024; `cast(T, x)` is open
+> under G3. Current A7 still has `cast(T, x)` with proof requirements.
+
+---
+
+## Planned Cluster CB decisions
+
+The Cluster CB section in [`08-decisions.md`](./08-decisions.md) was to codify:
+
+| Decision | Topic |
+| --- | --- |
+| D.024 | Method style is the conversion shape |
+| D.025 | Fallible conversions return `?T` |
+| D.026–D.027 | Numeric method catalog |
+| D.028–D.029 | String formatting and parsing |
+| D.030 | Bool/numeric conversion forbidden |
+| D.031–D.033 | Array, slice, enum and FFI conversions |
+| D.034 | No `bit_cast` operator |
+| D.035 | Compile-time literal conversion |
+| D.036 | Generic-context conversion |
+| D.037 | Forbidden-conversion diagnostics |
+| D.038 | `cast(T, x)` keyword removed |
+| D.039 | Narrowing-driven check elision |
+
+That is 12–15 decisions, all marked PROPOSED, with cross-references to CA.
+
+> **Note (2026-09-16):** the ledger lists D.005, D.022, D.025–D.027, D.029,
+> D.033–D.037 and D.039 as written for `int`/`uint`/`number`; they must be
+> restated for explicit widths under G3. D.024 and D.038 contradict each
+> other; neither stands.

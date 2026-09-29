@@ -4,7 +4,7 @@ AST preprocessing pass for A7.
 Simplifies and normalizes the AST before code generation.
 Runs after semantic analysis, before codegen. Sub-passes:
 
-1. Resolve stdlib calls → annotate with stdlib_canonical
+1. Count stdlib call annotations supplied by the type checker
 2. Normalize struct inits → positional → named fields
 3. Analyze mutations → set is_mutable on VAR nodes
 4. Analyze usage → set is_used on VAR/PARAMETER nodes
@@ -13,7 +13,7 @@ Runs after semantic analysis, before codegen. Sub-passes:
 7. Hoist nested functions → move to module level, set hoisted flag
 8. Fold constants → compile-time arithmetic
 
-All tree walks use explicit stacks (no recursion) to avoid Python stack overflow.
+Tree walks and nested function annotation use explicit stacks.
 """
 
 from typing import Optional, List, Set, Dict
@@ -21,6 +21,7 @@ from .ast_nodes import (
     ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp,
     create_literal, create_primitive_type, SourceSpan,
 )
+from .const_eval import fold_binary, fold_unary
 
 
 # Shared list of all AST child attribute names
@@ -80,7 +81,7 @@ class ASTPreprocessor:
 
     This pass runs after semantic analysis and before code generation.
     It does NOT modify semantic meaning, only structure and annotations.
-    All walks use iterative traversal (no recursion).
+    Nested function annotation uses a depth-first worklist.
     """
 
     def __init__(self, symbol_table=None, type_map=None, stdlib=None):
@@ -126,6 +127,16 @@ class ASTPreprocessor:
         # visited=True means children are done, process this node
         stack = [(root, None, None, None, False)]
 
+        # Nodes replaced by this pass, keyed by id. type_map is keyed by
+        # id(node): if a replaced node (or one of its children) were freed,
+        # a later new node could reuse its id and inherit its type. Every
+        # replaced node is kept alive, together with its subtree, for as
+        # long as the returned tree is alive, so no id in type_map can be
+        # reused before code generation ends. A dict is used so AST walkers
+        # that descend into ASTNode, list and tuple values do not visit the
+        # retired nodes.
+        retained: Dict[int, ASTNode] = getattr(root, '_a7_replaced_nodes', None) or {}
+
         while stack:
             node, parent, attr_name, list_idx, visited = stack[-1]
 
@@ -136,6 +147,14 @@ class ASTPreprocessor:
                 new_node = self._fold_constants(new_node)
                 self._resolve_stdlib_call(new_node)
                 self._normalize_struct_init(new_node)
+
+                if new_node is not node:
+                    retained[id(node)] = node
+                    replaced_type = self.type_map.get(id(node))
+                    if replaced_type is not None:
+                        self.type_map[id(new_node)] = replaced_type
+                    else:
+                        self.type_map.pop(id(new_node), None)
 
                 # Update parent reference if node was replaced
                 if new_node is not node and parent is not None:
@@ -152,20 +171,18 @@ class ASTPreprocessor:
                 stack[-1] = (node, parent, attr_name, list_idx, True)
 
                 # Push children in reverse order for correct processing order
-                children_to_push = []
-                for child_attr in _AST_ALL_CHILD_ATTRS:
-                    val = getattr(node, child_attr, None)
-                    if isinstance(val, ASTNode):
-                        children_to_push.append((val, node, child_attr, None, False))
-                    elif isinstance(val, list):
-                        for i, item in enumerate(val):
-                            if isinstance(item, ASTNode):
-                                children_to_push.append((item, node, child_attr, i, False))
+                children_to_push = [
+                    (child, node, attr, index, False)
+                    for attr, child, index in _iter_children(node)
+                ]
 
                 # Push in reverse so first child is processed first
                 for child in reversed(children_to_push):
                     stack.append(child)
 
+        if retained:
+            setattr(root, '_a7_replaced_nodes', retained)
+            self.replaced_nodes = retained
         return root
 
     # ================================================================
@@ -193,60 +210,36 @@ class ASTPreprocessor:
     # ================================================================
 
     def _resolve_stdlib_call(self, node: ASTNode) -> None:
-        """Annotate CALL nodes with stdlib_canonical if they match a stdlib function."""
+        """Count CALL nodes that the type checker resolved to a stdlib function.
+
+        The type checker sets `stdlib_canonical` only when the callee root
+        resolves, through scoped symbol lookup, to a MODULE symbol imported from
+        a stdlib path. Names are never matched by text here: a user function,
+        struct value or local named `io`, `math` or `sqrt_f64` stays a user call.
+        """
         if self.stdlib is None or node.kind != NodeKind.CALL:
             return
-
-        func = node.function
-        if func is None:
-            return
-
-        # module.method pattern: io.println, math.sqrt
-        if func.kind == NodeKind.FIELD_ACCESS:
-            obj = getattr(func, 'object', None)
-            field = getattr(func, 'field', '')
-            if obj and obj.kind == NodeKind.IDENTIFIER and obj.name:
-                module_name = self._resolve_module_import_path(obj.name) or obj.name
-                canonical = self.stdlib.resolve_call(module_name, field)
-                if canonical:
-                    node.stdlib_canonical = canonical
-                    self.changes_made += 1
-
-        # Bare builtin: sqrt_f32, abs_f64
-        elif func.kind == NodeKind.IDENTIFIER and func.name:
-            canonical = self.stdlib.resolve_builtin(func.name)
-            if canonical:
-                node.stdlib_canonical = canonical
-                self.changes_made += 1
-
-    def _resolve_module_import_path(self, alias: str) -> Optional[str]:
-        """Return the import path for a module alias in the semantic symbol table."""
-        if self.symbol_table is None:
-            return None
-
-        symbol = self.symbol_table.lookup(alias)
-        if symbol is None or getattr(getattr(symbol, "kind", None), "name", None) != "MODULE":
-            return None
-
-        node = getattr(symbol, "node", None)
-        return getattr(node, "module_path", None)
+        if getattr(node, "stdlib_canonical", None):
+            self.changes_made += 1
 
     # ================================================================
     # Pass 3: Normalize struct initialization
     # ================================================================
 
     def _normalize_struct_init(self, node: ASTNode) -> None:
-        """Convert positional struct inits to named field inits."""
+        """Name positional struct inits and put named inits in declaration order.
+
+        SPEC A.1 evaluates field initializers in declaration order. Zig
+        evaluates them in written order, so a literal such as `Pt{y: f(), x: g()}`
+        is reordered to `Pt{x: g(), y: f()}`. Reordering happens only when every
+        init is named, every name is a declared field, and no name repeats;
+        otherwise the literal is left for error reporting.
+        """
         if node.kind != NodeKind.STRUCT_INIT:
             return
 
         field_inits = node.field_inits or []
         if not field_inits:
-            return
-
-        # Check if any init is positional (no name)
-        has_positional = any(fi.name is None for fi in field_inits)
-        if not has_positional:
             return
 
         # Look up struct definition
@@ -263,10 +256,23 @@ class ASTPreprocessor:
         if len(field_inits) > len(field_names):
             return  # Too many inits; leave for error reporting
 
+        # Positional inits take the declared field name at their index.
         for i, fi in enumerate(field_inits):
             if fi.name is None and i < len(field_names):
                 fi.name = field_names[i]
                 self.changes_made += 1
+
+        declared_index = {name: i for i, name in enumerate(field_names)}
+        init_names = [fi.name for fi in field_inits]
+        if any(name not in declared_index for name in init_names):
+            return
+        if len(set(init_names)) != len(init_names):
+            return
+
+        ordered = sorted(field_inits, key=lambda fi: declared_index[fi.name])
+        if any(a is not b for a, b in zip(ordered, field_inits)):
+            field_inits[:] = ordered
+            self.changes_made += 1
 
     # ================================================================
     # Pass 4-8: Annotation passes (run on complete AST)
@@ -283,25 +289,37 @@ class ASTPreprocessor:
 
     def _annotate_function(self, func_node: ASTNode) -> None:
         """Annotate a function with mutation, usage, shadowing, and hoisting info."""
-        if func_node.body is None:
-            return
+        pending = [(func_node, False)]
+        while pending:
+            current, hoist = pending.pop()
+            # Mark each child immediately before annotating it, preserving the
+            # old parent-first, depth-first order, including bodyless children.
+            if hoist:
+                current.hoisted = True
+                self.changes_made += 1
+            if current.body is None:
+                continue
 
-        # Pass 4: Mutation analysis (iterative)
-        mutated = self._collect_mutations(func_node.body)
-        self._mark_mutations(func_node, mutated)
+            # Pass 4: Mutation analysis (iterative)
+            mutated = self._collect_mutations(current.body)
+            self._mark_mutations(current, mutated)
 
-        # Pass 5: Usage analysis (iterative)
-        used = self._collect_used_identifiers(func_node.body)
-        self._mark_usage(func_node, used)
+            # Pass 5: Usage analysis (iterative)
+            used = self._collect_used_identifiers(current.body)
+            self._mark_usage(current, used)
 
-        # Pass 6: Type inference for untyped mutable vars (iterative)
-        self._infer_types(func_node.body)
+            # Pass 6: Type inference for untyped mutable vars (iterative)
+            self._infer_types(current.body)
 
-        # Pass 7: Variable shadowing resolution (iterative)
-        self._resolve_shadowing(func_node)
+            # Pass 7: Variable shadowing resolution (iterative)
+            self._resolve_shadowing(current)
 
-        # Pass 8: Nested function hoisting
-        self._hoist_nested_functions(func_node)
+            # Pass 8: Only direct declarations in the function body are hoisted.
+            # Do not broaden this pass to functions inside control-flow blocks.
+            if current.body.kind == NodeKind.BLOCK:
+                for statement in reversed(current.body.statements or []):
+                    if statement.kind == NodeKind.FUNCTION:
+                        pending.append((statement, True))
 
     # ---- Pass 4: Mutation analysis (iterative) ----
 
@@ -517,25 +535,6 @@ class ASTPreprocessor:
                             if isinstance(child, ASTNode):
                                 stack.append(('visit', child))
 
-    # ---- Pass 8: Nested function hoisting ----
-
-    def _hoist_nested_functions(self, func_node: ASTNode) -> None:
-        """Find nested function declarations and mark them as hoisted."""
-        if func_node.body is None:
-            return
-
-        body = func_node.body
-        if body.kind != NodeKind.BLOCK or not body.statements:
-            return
-
-        for stmt in body.statements:
-            if stmt.kind == NodeKind.FUNCTION:
-                stmt.hoisted = True
-                self.changes_made += 1
-                # Process nested functions too (non-recursive: they go through
-                # _annotate_function which is called from _annotate_program)
-                self._annotate_function(stmt)
-
     # ================================================================
     # Pass 9: Constant folding (node-local, no recursion)
     # ================================================================
@@ -562,8 +561,10 @@ class ASTPreprocessor:
         if val is None:
             return node
 
-        if op == UnaryOp.NEG and isinstance(val, (int, float)):
-            result = -val
+        if op == UnaryOp.NEG and isinstance(val, (int, float)) and not isinstance(val, bool):
+            result = fold_unary(op, val, self.type_map.get(id(node)))
+            if result is None:
+                return node
             lk = operand.literal_kind
             self.changes_made += 1
             return ASTNode(
@@ -609,33 +610,7 @@ class ASTPreprocessor:
         )
 
         if numeric_literals:
-            result = None
-            try:
-                if op == BinaryOp.ADD:
-                    result = lval + rval
-                elif op == BinaryOp.SUB:
-                    result = lval - rval
-                elif op == BinaryOp.MUL:
-                    result = lval * rval
-                elif op == BinaryOp.DIV and rval != 0:
-                    result = int(lval / rval) if isinstance(lval, int) and isinstance(rval, int) else lval / rval
-                elif op == BinaryOp.MOD and rval != 0:
-                    if isinstance(lval, int) and isinstance(rval, int):
-                        result = lval - (int(lval / rval) * rval)
-                    else:
-                        result = lval % rval
-                elif op == BinaryOp.BIT_AND and isinstance(lval, int) and isinstance(rval, int):
-                    result = lval & rval
-                elif op == BinaryOp.BIT_OR and isinstance(lval, int) and isinstance(rval, int):
-                    result = lval | rval
-                elif op == BinaryOp.BIT_XOR and isinstance(lval, int) and isinstance(rval, int):
-                    result = lval ^ rval
-                elif op == BinaryOp.BIT_SHL and isinstance(lval, int) and isinstance(rval, int) and rval >= 0:
-                    result = lval << rval
-                elif op == BinaryOp.BIT_SHR and isinstance(lval, int) and isinstance(rval, int) and rval >= 0:
-                    result = lval >> rval
-            except (ZeroDivisionError, OverflowError):
-                return node
+            result = fold_binary(op, lval, rval, self.type_map.get(id(node)))
 
             if result is not None:
                 lk = LiteralKind.FLOAT if isinstance(result, float) else LiteralKind.INTEGER

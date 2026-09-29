@@ -1,0 +1,498 @@
+[
+  {
+    "name": "math",
+    "source": "io :: import \"std/io\"\nmath :: import \"std/math\"\nmain :: fn() {\n x: f64 = 4.0\n io.println(\"{} {} {} {} {} {} {} {} {} {} {}\", math.sqrt(x), math.abs(-4.0), math.floor(1.5), math.ceil(1.5), math.sin(0.0), math.cos(0.0), math.tan(0.0), math.log(1.0), math.exp(0.0), math.min(2, 3), math.max(2, 3))\n}\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/math.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/math.zig"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "ok",
+        "input": "/tmp/a7-docs-xvkezkef/math.a7",
+        "backend": "zig",
+        "artifacts": {
+          "output_path": "/tmp/a7-docs-xvkezkef/math.zig"
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic",
+        "codegen"
+      ],
+      "generated_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    const x: f64 = 4.0;\n    __a7_stdout_print(\"{} {} {} {} {} {} {} {} {} {} {}\\n\", .{ @sqrt(x), @abs(-4.0), @floor(1.5), @ceil(1.5), @sin(0.0), @cos(0.0), @tan(0.0), @log(1.0), @exp(0.0), @min(2, 3), @max(2, 3) });\n}\n"
+    },
+    "native": {
+      "command": [
+        "zig",
+        "run",
+        "/tmp/a7-docs-xvkezkef/math.zig"
+      ],
+      "exit": 0,
+      "stdout": "2 4 1 2 0 1 0 0 1 2 3\n",
+      "stderr": ""
+    }
+  },
+  {
+    "name": "io",
+    "source": "io :: import \"std/io\"\nmain :: fn() {\n io.print(\"Hello, \")\n io.println(\"{}!\", \"A7\")\n io.eprintln(\"diagnostic {}\", 42)\n io.print()\n io.println()\n io.eprintln()\n}\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/io.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/io.zig"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "ok",
+        "input": "/tmp/a7-docs-xvkezkef/io.a7",
+        "backend": "zig",
+        "artifacts": {
+          "output_path": "/tmp/a7-docs-xvkezkef/io.zig"
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic",
+        "codegen"
+      ],
+      "generated_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stderr_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stderr().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stderr write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stderr flush failed\");\n}\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    __a7_stdout_print(\"Hello, \", .{});\n    __a7_stdout_print(\"{s}!\\n\", .{\"A7\"});\n    __a7_stderr_print(\"diagnostic {}\\n\", .{42});\n    __a7_stdout_print(\"\", .{});\n    __a7_stdout_print(\"\\n\", .{});\n    __a7_stderr_print(\"\\n\", .{});\n}\n"
+    },
+    "native": {
+      "command": [
+        "zig",
+        "run",
+        "/tmp/a7-docs-xvkezkef/io.zig"
+      ],
+      "exit": 0,
+      "stdout": "Hello, A7!\n\n",
+      "stderr": "diagnostic 42\n\n"
+    }
+  },
+  {
+    "name": "math_integer_rejected",
+    "source": "math :: import \"std/math\"\nmain :: fn() { x := math.sqrt(4) }\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/math_integer_rejected.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/math_integer_rejected.zig"
+      ],
+      "exit": 6,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "error",
+        "input": "/tmp/a7-docs-xvkezkef/math_integer_rejected.a7",
+        "backend": "zig",
+        "artifacts": {},
+        "error": {
+          "category": "semantic",
+          "message": "Semantic analysis failed with 1 error(s)",
+          "details": [
+            {
+              "type": "TypeCheckError",
+              "message": "math_integer_rejected.a7:2:31: Argument type mismatch: expected 'f32 or f64', got 'i32' (math.sqrt argument 1)",
+              "file": "/tmp/a7-docs-xvkezkef/math_integer_rejected.a7",
+              "span": {
+                "start_line": 2,
+                "start_column": 31,
+                "end_line": 2,
+                "end_column": 32,
+                "length": 1
+              }
+            }
+          ],
+          "span": {
+            "start_line": 2,
+            "start_column": 31,
+            "end_line": 2,
+            "end_column": 32,
+            "length": 1
+          },
+          "exception_type": null
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic"
+      ]
+    }
+  },
+  {
+    "name": "format_variable_rejected",
+    "source": "io :: import \"std/io\"\nmain :: fn() { fmt := \"hello\"; io.println(fmt) }\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/format_variable_rejected.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/format_variable_rejected.zig"
+      ],
+      "exit": 6,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "error",
+        "input": "/tmp/a7-docs-xvkezkef/format_variable_rejected.a7",
+        "backend": "zig",
+        "artifacts": {},
+        "error": {
+          "category": "semantic",
+          "message": "Semantic analysis failed with 1 error(s)",
+          "details": [
+            {
+              "type": "SemanticError",
+              "message": "format_variable_rejected.a7:2:43: Unsupported feature: io format strings must be string literals",
+              "file": "/tmp/a7-docs-xvkezkef/format_variable_rejected.a7",
+              "span": {
+                "start_line": 2,
+                "start_column": 43,
+                "end_line": 2,
+                "end_column": 46,
+                "length": 3
+              }
+            }
+          ],
+          "span": {
+            "start_line": 2,
+            "start_column": 43,
+            "end_line": 2,
+            "end_column": 46,
+            "length": 3
+          },
+          "exception_type": null
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic"
+      ]
+    }
+  },
+  {
+    "name": "format_arity_rejected",
+    "source": "io :: import \"std/io\"\nmain :: fn() { io.println(\"{}\") }\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/format_arity_rejected.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/format_arity_rejected.zig"
+      ],
+      "exit": 6,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "error",
+        "input": "/tmp/a7-docs-xvkezkef/format_arity_rejected.a7",
+        "backend": "zig",
+        "artifacts": {},
+        "error": {
+          "category": "semantic",
+          "message": "Semantic analysis failed with 1 error(s)",
+          "details": [
+            {
+              "type": "TypeCheckError",
+              "message": "format_arity_rejected.a7:2:16: Wrong number of arguments (io format string expects 1 values, got 0)",
+              "file": "/tmp/a7-docs-xvkezkef/format_arity_rejected.a7",
+              "span": {
+                "start_line": 2,
+                "start_column": 16,
+                "end_line": 2,
+                "end_column": 18,
+                "length": 2
+              }
+            }
+          ],
+          "span": {
+            "start_line": 2,
+            "start_column": 16,
+            "end_line": 2,
+            "end_column": 18,
+            "length": 2
+          },
+          "exception_type": null
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic"
+      ]
+    }
+  },
+  {
+    "name": "typed_math_rejected",
+    "source": "math :: import \"std/math\"\nmain :: fn() { x := math.sqrt_f64(4.0) }\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/typed_math_rejected.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/typed_math_rejected.zig"
+      ],
+      "exit": 6,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "error",
+        "input": "/tmp/a7-docs-xvkezkef/typed_math_rejected.a7",
+        "backend": "zig",
+        "artifacts": {},
+        "error": {
+          "category": "semantic",
+          "message": "Semantic analysis failed with 2 error(s)",
+          "details": [
+            {
+              "type": "TypeCheckError",
+              "message": "typed_math_rejected.a7:2:21: Struct has no such field (Stdlib module 'std/math' has no function 'sqrt_f64')",
+              "file": "/tmp/a7-docs-xvkezkef/typed_math_rejected.a7",
+              "span": {
+                "start_line": 2,
+                "start_column": 21,
+                "end_line": 2,
+                "end_column": 25,
+                "length": 4
+              }
+            },
+            {
+              "type": "TypeCheckError",
+              "message": "typed_math_rejected.a7:2:21: Type is not callable (Unknown stdlib call 'std/math.sqrt_f64')",
+              "file": "/tmp/a7-docs-xvkezkef/typed_math_rejected.a7",
+              "span": {
+                "start_line": 2,
+                "start_column": 21,
+                "end_line": 2,
+                "end_column": 25,
+                "length": 4
+              }
+            }
+          ],
+          "span": {
+            "start_line": 2,
+            "start_column": 21,
+            "end_line": 2,
+            "end_column": 25,
+            "length": 4
+          },
+          "exception_type": null
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic"
+      ]
+    }
+  },
+  {
+    "name": "escaped_braces",
+    "source": "io :: import \"std/io\"\nmain :: fn() { io.println(\"{{}}\") }\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/escaped_braces.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/escaped_braces.zig"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "ok",
+        "input": "/tmp/a7-docs-xvkezkef/escaped_braces.a7",
+        "backend": "zig",
+        "artifacts": {
+          "output_path": "/tmp/a7-docs-xvkezkef/escaped_braces.zig"
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic",
+        "codegen"
+      ],
+      "generated_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn __a7_user_main() void {\n    __a7_stdout_print(\"{{}}\\n\", .{});\n}\n"
+    },
+    "native": {
+      "command": [
+        "zig",
+        "run",
+        "/tmp/a7-docs-xvkezkef/escaped_braces.zig"
+      ],
+      "exit": 0,
+      "stdout": "{}\n",
+      "stderr": ""
+    }
+  },
+  {
+    "name": "signed_abs",
+    "source": "io :: import \"std/io\"\nmath :: import \"std/math\"\nabsolute :: fn(x: i32) i32 { ret math.abs(x) }\nmain :: fn() { io.println(\"{}\", absolute(-4)) }\n",
+    "compile": {
+      "command": [
+        "uv",
+        "run",
+        "a7",
+        "/tmp/a7-docs-xvkezkef/signed_abs.a7",
+        "--format",
+        "json",
+        "-o",
+        "/tmp/a7-docs-xvkezkef/signed_abs.zig"
+      ],
+      "exit": 0,
+      "stderr": "",
+      "payload": {
+        "schema_version": "2.0",
+        "mode": "compile",
+        "status": "ok",
+        "input": "/tmp/a7-docs-xvkezkef/signed_abs.a7",
+        "backend": "zig",
+        "artifacts": {
+          "output_path": "/tmp/a7-docs-xvkezkef/signed_abs.zig"
+        }
+      },
+      "reached_stages": [
+        "tokenize",
+        "parse",
+        "semantic",
+        "codegen"
+      ],
+      "generated_zig": "const std = @import(\"std\");\nvar __a7_io: ?std.Io = null;\nfn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {\n    var __a7_stream_buf: [1024]u8 = undefined;\n    var __a7_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf);\n    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 stdout write failed\");\n    __a7_writer.interface.flush() catch @panic(\"a7 stdout flush failed\");\n}\npub fn main(init: std.process.Init) void {\n    __a7_io = init.io;\n    __a7_user_main();\n}\n\nfn absolute(x: i32) i32 {\n    return @as(i32, @intCast(@abs(x)));\n}\n\nfn __a7_user_main() void {\n    __a7_stdout_print(\"{}\\n\", .{absolute(-4)});\n}\n"
+    },
+    "native": {
+      "command": [
+        "zig",
+        "run",
+        "/tmp/a7-docs-xvkezkef/signed_abs.zig"
+      ],
+      "exit": 0,
+      "stdout": "4\n",
+      "stderr": ""
+    }
+  },
+  {
+    "name": "mode_tokens",
+    "exit": 0,
+    "status": "ok",
+    "schema": "2.0",
+    "stages": [
+      "tokenize"
+    ],
+    "artifacts": {}
+  },
+  {
+    "name": "mode_ast",
+    "exit": 0,
+    "status": "ok",
+    "schema": "2.0",
+    "stages": [
+      "tokenize",
+      "parse"
+    ],
+    "artifacts": {}
+  },
+  {
+    "name": "mode_semantic",
+    "exit": 0,
+    "status": "ok",
+    "schema": "2.0",
+    "stages": [
+      "tokenize",
+      "parse",
+      "semantic"
+    ],
+    "artifacts": {}
+  },
+  {
+    "name": "mode_pipeline",
+    "exit": 0,
+    "status": "ok",
+    "schema": "2.0",
+    "stages": [
+      "tokenize",
+      "parse",
+      "semantic",
+      "codegen"
+    ],
+    "artifacts": {}
+  },
+  {
+    "name": "mode_doc",
+    "exit": 0,
+    "status": "ok",
+    "schema": "2.0",
+    "stages": [
+      "tokenize",
+      "parse",
+      "semantic",
+      "codegen"
+    ],
+    "artifacts": {
+      "doc_path": "/tmp/a7-docs-xvkezkef/hello.md"
+    }
+  },
+  {
+    "name": "mode_compile",
+    "exit": 0,
+    "status": "ok",
+    "schema": "2.0",
+    "stages": [
+      "tokenize",
+      "parse",
+      "semantic",
+      "codegen"
+    ],
+    "artifacts": {
+      "output_path": "/tmp/a7-docs-xvkezkef/hello.zig"
+    }
+  }
+]

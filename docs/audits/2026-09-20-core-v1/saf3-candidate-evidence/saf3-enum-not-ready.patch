@@ -1,0 +1,142 @@
+--- a/a7/safety.py
++++ b/a7/safety.py
+@@ -16,9 +16,10 @@
+ from a7.ast_nodes import ASTNode, AssignOp, BinaryOp, LiteralKind, NodeKind, UnaryOp
+ from a7.cast_classifier import CastClass, CastDecision, classify_cast
+ from a7.errors import SourceSpan, TypeCheckError, TypeErrorType
+-from a7.symbol_table import SymbolTable
++from a7.symbol_table import SymbolKind, SymbolTable
+ from a7.types import (
+     ArrayType,
++    EnumType,
+     FunctionType,
+     PrimitiveType,
+     ReferenceType,
+@@ -528,7 +529,8 @@
+                                      known_length=a.known_length if a.known_length == b.known_length else None,
+                                      upper_length_of=a.upper_length_of if a.upper_length_of == b.upper_length_of else None,
+                                      non_nil=a.non_nil and b.non_nil, maybe_nil=a.maybe_nil or b.maybe_nil,
+-                                     initialized=a.initialized and b.initialized, moved=a.moved or b.moved)
++                                     initialized=a.initialized and b.initialized, moved=a.moved or b.moved,
++                                     enum_discriminant=a.enum_discriminant if a.enum_discriminant == b.enum_discriminant else None)
+         return joined
+ 
+     def _visit_stmt(self, node: ASTNode) -> None:
+@@ -680,18 +682,85 @@
+             self.facts.restore_symbols(saved)
+             self._forget_names(changed)
+         elif node.kind == NodeKind.MATCH:
+-            self._visit_expr(node.expression)
++            selector = self._visit_expr(node.expression)
+             saved = self.facts.copy_symbols()
+             moved = set(self.moved_symbols)
+-            joined = dict(saved)  # A non-exhaustive match can execute no arm.
++            joined = dict(saved)
+             all_moved = set(moved)
+-            branches = [case.statements or ([] if case.statement is None else [case.statement]) for case in node.cases or []]
+-            branches.append(node.else_case or [])
+-            for statements in branches:
+-                self.facts.restore_symbols(dict(saved))
+-                self.moved_symbols = set(moved)
++            fall_state = None
++            fall_moved = set()
++            unmatched = True
++            cases = list(node.cases or [])
++            branches = [(case, case.statements or ([] if case.statement is None else [case.statement])) for case in cases]
++            branches.append((None, node.else_case or []))
++            for case, statements in branches:
++                possible = unmatched
++                certain = case is None
++                if case is not None and unmatched:
++                    possible = False
++                    for pattern in case.patterns or []:
++                        relation = None
++                        if pattern.kind == NodeKind.PATTERN_WILDCARD:
++                            relation = True
++                        elif pattern.kind == NodeKind.PATTERN_IDENTIFIER and (
++                            pattern.name == "_" or getattr(pattern, "is_capture_pattern", False)
++                        ):
++                            relation = True
++                        elif pattern.kind == NodeKind.PATTERN_LITERAL:
++                            literal = self._int_literal(pattern.literal)
++                            interval = selector.interval
++                            if literal is not None and interval is not None:
++                                if interval.lower is not None and literal < interval.lower:
++                                    relation = False
++                                elif interval.upper is not None and literal > interval.upper:
++                                    relation = False
++                                elif interval.lower == interval.upper == literal:
++                                    relation = True
++                        elif pattern.kind == NodeKind.PATTERN_ENUM:
++                            enum_type = self._type(node.expression)
++                            enum_symbol = self.symbols.lookup(pattern.enum_type or "")
++                            if (isinstance(enum_type, EnumType) and enum_symbol is not None
++                                and enum_symbol.kind == SymbolKind.ENUM and enum_symbol.type is enum_type
++                                and pattern.enum_type not in saved and enum_type.has_variant(pattern.variant)
++                                and selector.enum_discriminant is not None):
++                                relation = selector.enum_discriminant == f"{id(enum_type)}:{pattern.variant}"
++                        elif pattern.kind == NodeKind.PATTERN_RANGE:
++                            lower = self._int_literal(pattern.start.literal) if pattern.start and pattern.start.kind == NodeKind.PATTERN_LITERAL else None
++                            upper = self._int_literal(pattern.end.literal) if pattern.end and pattern.end.kind == NodeKind.PATTERN_LITERAL else None
++                            interval = selector.interval
++                            if lower is not None and upper is not None and interval is not None:
++                                if interval.upper is not None and interval.upper < lower:
++                                    relation = False
++                                elif interval.lower is not None and interval.lower > upper:
++                                    relation = False
++                                elif interval.lower is not None and interval.upper is not None and lower <= interval.lower <= interval.upper <= upper:
++                                    relation = True
++                        possible |= relation is not False
++                        certain |= relation is True
++                if certain:
++                    unmatched = False
++                reachable = possible or fall_state is not None
++                if possible and fall_state is not None:
++                    entry = self._join_facts(saved, fall_state)
++                    entry_moved = moved | fall_moved
++                elif fall_state is not None:
++                    entry = dict(fall_state)
++                    entry_moved = set(fall_moved)
++                else:
++                    # Preserve checks of an unreachable body's own operations.
++                    # Only its outgoing fall edge is suppressed.
++                    entry = dict(saved)
++                    entry_moved = set(moved)
++                self.facts.restore_symbols(entry)
++                self.moved_symbols = entry_moved
+                 for stmt in statements:
+                     self._visit_stmt(stmt)
++                direct = statements
++                if len(direct) == 1 and direct[0].kind == NodeKind.BLOCK:
++                    direct = direct[0].statements or []
++                falls = bool(direct) and direct[-1].kind == NodeKind.FALL
++                fall_state = self.facts.copy_symbols() if falls and reachable else None
++                fall_moved = set(self.moved_symbols) if falls and reachable else set()
+                 joined = self._join_facts(joined, self.facts.by_symbol)
+                 all_moved.update(self.moved_symbols)
+             self.facts.restore_symbols(joined)
+@@ -765,6 +834,13 @@
+             fact = self._slice_fact(node, obj_fact, start_fact, end_fact)
+         elif node.kind == NodeKind.FIELD_ACCESS:
+             obj = self._visit_expr(node.object)
++            enum_type = self._type(node)
++            enum_symbol = self.symbols.lookup(node.object.name) if node.object and node.object.kind == NodeKind.IDENTIFIER else None
++            if (isinstance(enum_type, EnumType) and self._type(node.object) is enum_type
++                and enum_symbol is not None and enum_symbol.kind == SymbolKind.ENUM
++                and enum_symbol.type is enum_type and node.object.name not in self.facts.by_symbol
++                and enum_type.has_variant(node.field)):
++                fact = ValueFact(enum_discriminant=f"{id(enum_type)}:{node.field}")
+             if getattr(node, "implicit_deref_object", False):
+                 self._prove_ref_non_nil_for_node(
+                     node,
+@@ -783,6 +859,10 @@
+             ptr_fact = self._visit_expr(node.pointer)
+             self._prove_ref_non_nil(node, ptr_fact)
+         elif node.kind == NodeKind.CALL:
++            for name, previous in list(self.facts.by_symbol.items()):
++                symbol = self.symbols.global_scope.symbols.get(name)
++                if previous.enum_discriminant is not None and symbol is not None and symbol.kind == SymbolKind.VARIABLE:
++                    self.facts.set_symbol(name, replace(previous, enum_discriminant=None))
+             self._visit_expr(node.function)
+             borrowed = getattr(node, "implicit_ref_args", set())
+             function_type = self._type(node.function)

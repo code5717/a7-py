@@ -1,0 +1,32 @@
+{
+  "checked": 840,
+  "issues": [
+    {
+      "file": "docs/plan/research/runtime-model/sources/claim6/SOURCES.md",
+      "line": 181,
+      "target": "RTM_ALWAYS_ABORT"
+    },
+    {
+      "file": "docs/audits/2026-09-14/website-flash-seo.md",
+      "line": 191,
+      "target": "URL"
+    },
+    {
+      "file": "docs/audits/2026-09-14/security-glm-review.md",
+      "line": 200,
+      "target": "javascript:..."
+    },
+    {
+      "file": "docs/audits/2026-09-16/compiler/types.md",
+      "line": 112,
+      "target": "n - 1"
+    },
+    {
+      "file": "docs/audits/2026-09-16/compiler/types.md",
+      "line": 113,
+      "target": "n"
+    }
+  ],
+  "issues_are_examples_or_quotes": true,
+  "review_note": "All five regex matches are syntax examples or quoted text, not intended document links: RTM CPUID notation, URL placeholder, javascript example, and two array type expressions."
+}

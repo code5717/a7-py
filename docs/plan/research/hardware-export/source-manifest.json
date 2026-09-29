@@ -1,0 +1,446 @@
+{
+  "note": "Citation inventory generated 2026-09-19. Hashes identify local evidence; they do not independently verify claims. Original source URLs were not recorded in a structured manifest and are not inferred here. Downloads remain in tmp/research/hardware-export; retain them for exact quotation checks. Report line references refer to the report before the 2026-09-19 index-note insertion.",
+  "report": "docs/plan/research/hardware-export/01-software-to-hardware.md",
+  "sources": [
+    {
+      "path": "tmp/research/hardware-export/mine/calyx-flow.txt",
+      "report_lines": [
+        338,
+        343,
+        348,
+        757,
+        973
+      ],
+      "bytes": 79840,
+      "sha256": "1f35a091ea31e6241b105c55385e9829fcd200daef6ee81c391ebdc79c5b38b8",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/circt-hls.html",
+      "report_lines": [
+        222
+      ],
+      "bytes": 20322,
+      "sha256": "cf2521e8be0f8c0b4b660deba7c179a977fe9b14baa8b59b762b49862c27de17",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/circt.html",
+      "report_lines": [
+        217
+      ],
+      "bytes": 16734,
+      "sha256": "0e52068becb245195010a4ba9be83f9181af9b081fc64437fffd3a28b37c3db3",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/clash-print.txt",
+      "report_lines": [
+        246,
+        257,
+        267,
+        277,
+        766
+      ],
+      "bytes": 95600,
+      "sha256": "03cd3f1726d93a0e8f87fbfab636f38464ed1491f070c422e71fc8609c4adce0",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/dahlia-flow.txt",
+      "report_lines": [
+        321,
+        330,
+        333,
+        740,
+        750,
+        976,
+        1008
+      ],
+      "bytes": 111366,
+      "sha256": "c9b7f7963a522f389bc9605f9ddf259de5cb6b98360b8066862534ee3f799fad",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/halide-flow.txt",
+      "report_lines": [
+        297,
+        307,
+        421,
+        974
+      ],
+      "bytes": 66245,
+      "sha256": "a8484f3f22ac7a9139ae01d4e4236060beba51df1f0c7bc947335e683c3a09b1",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/halide-hls.txt",
+      "report_lines": [
+        301,
+        421
+      ],
+      "bytes": 104233,
+      "sha256": "c780d33e99bae1d09e50f8f2d21d84100e83d3e50fd5a58c1aaab346b8433783",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/mine/pp4fpgas-flow.txt",
+      "report_lines": [
+        182,
+        188
+      ],
+      "bytes": 568347,
+      "sha256": "4e3c2971794cd0601da62c3aa2fce74f317eb9f0aecde505db5d48df04d189d2",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/autodse_2009.14381.txt",
+      "report_lines": [
+        1099,
+        1140,
+        1143
+      ],
+      "bytes": 106857,
+      "sha256": "9d3a2963feaedd3394ed99d0d773270f1e3192803c6a0ee08184befb9750a972",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/autotvm_1805.08166.txt",
+      "report_lines": [
+        1124
+      ],
+      "bytes": 193220,
+      "sha256": "512d7b75fcb4afec702872881003a5a5fbedbc508cdeca3019c43e99ab48dfe7",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/aws_afi_guide.md",
+      "report_lines": [
+        1026
+      ],
+      "bytes": 7014,
+      "sha256": "0e963b9fe879523597f503df0beb6ae56d31a73da1ef86f9122583bd9099a24e",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/aws_fpga_hdk_readme.md",
+      "report_lines": [
+        1019
+      ],
+      "bytes": 26881,
+      "sha256": "278b1341b17e10cf54457dcb522cf7a6537d7cd44446b336c553e7adf4e52e0b",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/chisel_dac2012.txt",
+      "report_lines": [
+        201
+      ],
+      "bytes": 69254,
+      "sha256": "df551b1e90a230a42fc0147eaef722da0bb01ad377ad53802f2f386746f55ae6",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/choi_cong_dac2016_acm_abstract.txt",
+      "report_lines": [
+        516
+      ],
+      "bytes": 15508,
+      "sha256": "991a19030b2e58cb3ff880dfec144b394e3a79bd10509e7e57f7f2dacf43ea96",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/core-v-xif_intro.rst",
+      "report_lines": [
+        617
+      ],
+      "bytes": 4516,
+      "sha256": "0bfd80209fb5e773bda92befb9735fb090926e5dcd4d659eba795054ea37197a",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/db4hls_2101.00587.txt",
+      "report_lines": [
+        1113
+      ],
+      "bytes": 34090,
+      "sha256": "531b912c3edc748572e54898dd48eb73ac5b2c2db3386db0fc31de5b8aed189c",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/gnn_dse_2111.08848.txt",
+      "report_lines": [
+        1148,
+        1152
+      ],
+      "bytes": 102531,
+      "sha256": "85c87cf4845d9ee98d4235875ccd56d10d514b59e8cf000fa96b8f6b713efef2",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/hdlforge_2603.04646.txt",
+      "report_lines": [
+        1171
+      ],
+      "bytes": 66281,
+      "sha256": "d1260bafa666534ee70c451a0f73c0992758d74a971b2fc14da6b348a19b713b",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/herklotz_fccm21_reliability.txt",
+      "report_lines": [
+        812,
+        870,
+        881,
+        893,
+        898,
+        1052
+      ],
+      "bytes": 34340,
+      "sha256": "2cbad2fd30f15fb074a97b58ffbb370d3c5c4a63e2e0349a11fa88e418aa7271",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/hls4ml_vivado_report.py",
+      "report_lines": [
+        1201
+      ],
+      "bytes": 27863,
+      "sha256": "70d34acc6ec28998e448bc7ee55bd9fc4c746e970a881c6378d73fe7fc8ebc12",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/hlsyn_neurips_abstract.txt",
+      "report_lines": [
+        1107
+      ],
+      "bytes": 3288,
+      "sha256": "152071e7a63e3c0e10c1cbba32d85061281a165f2bc43922318e62e9effc3a10",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/legup_fpga2011.txt",
+      "report_lines": [
+        436,
+        446,
+        456,
+        474,
+        486,
+        524,
+        532,
+        533,
+        553,
+        566,
+        576,
+        579,
+        984
+      ],
+      "bytes": 44193,
+      "sha256": "a02d0cc4c2032033a98f397c99cf4d3646f6e4645ef947a52bd13fa1a9305d09",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/lift_pragma_2504.21187.txt",
+      "report_lines": [
+        1173
+      ],
+      "bytes": 59284,
+      "sha256": "824e52f8e21c25205c35cc1ef2767ded29023a98b618bd9f7356e6d1094cb70e",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/llm_dse_2505.12188.txt",
+      "report_lines": [
+        1172
+      ],
+      "bytes": 96792,
+      "sha256": "1ef099a84a85489094778d2a7ddcea72ec124df6492312a1821cfaf166a9fa4c",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/llvm_BuiltinsRISCVXCV.td",
+      "report_lines": [
+        652
+      ],
+      "bytes": 2309,
+      "sha256": "58da7f8ae7bca089a421bf2d00c17da1b1d10d2678633b5bd14409e3fce9fbe0",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/llvm_RISCVInstrFormats.td",
+      "report_lines": [
+        651
+      ],
+      "bytes": 22739,
+      "sha256": "d0156d7ead6cf79c48bb27ea021db1f2c22cf32b8be42ab4cb9f6a6fa8d62e83",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/mage_rtl_2412.07822.txt",
+      "report_lines": [
+        1170
+      ],
+      "bytes": 58364,
+      "sha256": "c3276c90a31d31d91ad7812f18e77d1b65ffaa21ff3a54149786d0b614ec4e64",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/nane_tcad2016.txt",
+      "report_lines": [
+        117,
+        957,
+        970,
+        1042
+      ],
+      "bytes": 161083,
+      "sha256": "1290cc66fd8ff9cb0cd4599d09a58ac7308ff3a0d0c92e18aa23e16ec8c19c41",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/nios2_custom_instruction_ug.txt",
+      "report_lines": [
+        636,
+        645
+      ],
+      "bytes": 137320,
+      "sha256": "071538f86bea73fe2b4bffd2b4f3b41a0233481664d0c2a4341c53c038e86616",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/riscv_insn_directive_binutils.txt",
+      "report_lines": [
+        627
+      ],
+      "bytes": 7434,
+      "sha256": "2d9aa840e38aece16cc0791a9e92d22b739fa15932850cd7f213c20c16b849e2",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/riscv_rv-32-64g_opcode_map.adoc",
+      "report_lines": [
+        603
+      ],
+      "bytes": 30582,
+      "sha256": "b999d3cc44be34f0e5dffe83e1bfe88bfe25cd74b23ea2f3abfff24ef402337b",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/rosetta_fpga2018.txt",
+      "report_lines": [
+        986
+      ],
+      "bytes": 86047,
+      "sha256": "9d7e8caf5af09997dc0845c069bf3720767d19525393a447a306598154bc04b8",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/rtlcoder_2312.08617.txt",
+      "report_lines": [
+        1169
+      ],
+      "bytes": 41226,
+      "sha256": "a5142168ec288492ccfc2546ef429e485f35946cedb00ea6acad0ef666d6cca1",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/rtllm_2308.05345.txt",
+      "report_lines": [
+        1168
+      ],
+      "bytes": 52680,
+      "sha256": "6af1473132f1db55b91005977cec63271cad09132de24ac1798738d8cbd815a6",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/s2_lahti.json",
+      "report_lines": [
+        933
+      ],
+      "bytes": 2354,
+      "sha256": "faed1715f4f451278fc880c78962b35bbe13736f4e51507c008869f5bb91875d",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/spatial_pldi18.txt",
+      "report_lines": [
+        122
+      ],
+      "bytes": 127075,
+      "sha256": "e714ee128f7200c67760423ff5faeeb96582218f4a9588004859056fd204926a",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/ug902_2019_1.txt",
+      "report_lines": [
+        96,
+        135,
+        144,
+        151,
+        158,
+        165,
+        672,
+        679,
+        704,
+        713,
+        725,
+        729,
+        786,
+        794,
+        811,
+        828,
+        835,
+        845
+      ],
+      "bytes": 1448247,
+      "sha256": "63e7c5c14c44a6b7daf4d390edb590d9e7d9a545dabde9b3399040264bae79b5",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/vericert_oopsla21.txt",
+      "report_lines": [
+        365,
+        374,
+        379,
+        385,
+        393,
+        805,
+        905,
+        971,
+        972,
+        1070,
+        1075
+      ],
+      "bytes": 132344,
+      "sha256": "da29b1ab1d1b0b7715c860039222ea0a7a4ee205a939e4e85daa9b702a47aa86",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/verilogeval_v1_2309.07544.txt",
+      "report_lines": [
+        1167
+      ],
+      "bytes": 58448,
+      "sha256": "ac1d7540a7d9a7ca59616e3fba04552b2b38d9b72eaffb5105bcdcb173cb65f0",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/vexriscv_readme.md",
+      "report_lines": [
+        540
+      ],
+      "bytes": 66511,
+      "sha256": "64ddf713ef029913545bb0bae7a60e04e9f61bbc4f20b25df3d2cbcd5a9c6ac7",
+      "source_url": null
+    },
+    {
+      "path": "tmp/research/hardware-export/raw/xilinx_ug1037_axi_reference_guide.txt",
+      "report_lines": [
+        502,
+        507
+      ],
+      "bytes": 527259,
+      "sha256": "8e73a7d5d9925e2fff9255dcad7feb6181de17b365dc4a8550382fc3be51f999",
+      "source_url": null
+    }
+  ]
+}

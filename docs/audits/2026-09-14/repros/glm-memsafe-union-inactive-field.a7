@@ -1,0 +1,14 @@
+U :: union {
+    a: i32
+    b: f64
+}
+
+pick :: fn(n: i32) f64 {
+    u := U{a: n}
+    ret u.b
+}
+
+main :: fn() {
+    v := 3
+    r := pick(v)
+}
