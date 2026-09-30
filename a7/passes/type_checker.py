@@ -59,6 +59,10 @@ class TypeCheckingPass:
         self._resolving_type_aliases: Set[str] = set()
         self._resolved_type_aliases: Set[str] = set()
         self._generic_constraints: Dict[str, TypeSet] = {}
+        # Constraints declared on struct generic parameters, keyed by struct
+        # name then parameter name. Registration resolves them once; struct
+        # instantiation checks every type argument against them.
+        self._struct_generic_constraints: Dict[str, Dict[str, TypeSet]] = {}
         self._nonnegative_vars: Set[str] = set()
         self.stdlib = StdlibRegistry()
         self.exact_bindings = {}
@@ -423,6 +427,13 @@ class TypeCheckingPass:
             # Preserve encounter order while deduplicating
             generic_params = tuple(dict.fromkeys(discovered))
         struct_type = StructType(name=struct_name, fields=tuple(fields), generic_params=generic_params)
+
+        # Struct generic parameters may declare constraints
+        # ($T: Numeric). Function call sites validate theirs; struct
+        # instantiation validates against this table.
+        constraints = self._generic_constraints_from_params(node.generic_params or [])
+        if constraints:
+            self._struct_generic_constraints[struct_name] = constraints
 
         # Update symbol
         symbol = self.symbols.lookup(struct_name)
@@ -822,6 +833,7 @@ class TypeCheckingPass:
                     node.span,
                     context=f"Variable '{var_name}'",
                 )
+                and not getattr(node.value, "exact_diagnosed", False)
             ):
                 # Generic locals may be initialized from literals before call-site substitution.
                 is_generic_relaxed = (
@@ -873,6 +885,10 @@ class TypeCheckingPass:
             exact = getattr(node.value, 'exact_constant', None)
             if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I32):
                 self.add_error("Exact constant does not fit default i32; use an explicit destination type", node.value.span)
+                # The later assignability pass would report the same value a
+                # second time as "out of range for i32". This message names the
+                # fix, so it is the one the user needs to see.
+                node.value.exact_diagnosed = True
         self.set_type(node, value_type)
         # Update the existing symbol's type (symbol was defined during name resolution)
         existing_symbol = self.symbols.lookup(var_name)
@@ -1464,19 +1480,42 @@ class TypeCheckingPass:
         # Bitwise operators: &, |, ^, <<, >>
         elif op in {BinaryOp.BIT_AND, BinaryOp.BIT_OR, BinaryOp.BIT_XOR, BinaryOp.BIT_SHL, BinaryOp.BIT_SHR}:
             if not self._is_integral_compatible(left_type) or not self._is_integral_compatible(right_type):
-                self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, node.span)
+                self.add_type_error(TypeErrorType.REQUIRES_INTEGER_TYPE, self._node_span(node))
                 return UNKNOWN
             if op in {BinaryOp.BIT_SHL, BinaryOp.BIT_SHR}:
                 amount = self._integer_literal_value(node.right)
                 widths = {'i8': 8, 'u8': 8, 'i16': 16, 'u16': 16, 'i32': 32, 'u32': 32,
                           'i64': 64, 'u64': 64, 'isize': 64, 'usize': 64}
                 width = widths.get(getattr(left_type, 'name', ''))
-                if amount is not None and (amount < 0 or (width is not None and amount >= width)):
-                    self.add_type_error(TypeErrorType.OPERATOR_TYPE_MISMATCH, node.span,
-                                        context=f"Shift count must be non-negative and less than {width}")
+                # Two integer literals are typed i32 until a destination says
+                # otherwise, so `x: i64 = 1 << 40` was rejected here against a
+                # width the source never chose. Only a *declared* left operand
+                # can fix the width; for literals the widest supported type
+                # bounds the check, and the destination's own range check
+                # rejects a value that does not fit it.
+                left_is_literal = (
+                    node.left is not None and node.left.kind == NodeKind.LITERAL
+                )
+                limit = 64 if left_is_literal else width
+                if amount is not None and (amount < 0 or (limit is not None and amount >= limit)):
+                    self.add_type_error(TypeErrorType.OPERATOR_TYPE_MISMATCH, self._node_span(node),
+                                        context=f"Shift count must be non-negative and less than {limit}")
             return left_type
 
         return UNKNOWN
+
+    def _node_span(self, node: ASTNode) -> Optional[SourceSpan]:
+        """A node's own span, or the first source operand when it has none.
+
+        Operator nodes synthesised by the preprocessor carry no parser span, and
+        `add_type_error` stores None in the JSON payload when that happens. A
+        diagnostic with no location is unusable in a compiler whose whole
+        contract is a located cause, so fall back to the nearest real span.
+        """
+        span = getattr(node, 'span', None)
+        if span is not None:
+            return span
+        return expression_span(node)
 
     def visit_unary_expr(self, node: ASTNode) -> Type:
         """Visit a unary expression."""
@@ -1535,8 +1574,21 @@ class TypeCheckingPass:
         # Module operations have backend lowering only at direct call sites.
         if node.function and node.function.kind == NodeKind.FIELD_ACCESS:
             setattr(node.function, "direct_call_target", True)
-        # Get function type
-        func_type = self.visit_expression(node.function) if node.function else UNKNOWN
+        # File-module alias calls (h.f() and bare sibling calls inside the
+        # module) resolve against the merged program's global scope, so a
+        # missing callee is rejected here, generic inference runs like any
+        # direct call, and a local sharing the callee's plain name cannot
+        # capture the lookup.
+        alias_func_type = None
+        if getattr(node, "file_module_call", None) and node.function:
+            if node.function.kind == NodeKind.IDENTIFIER:
+                callee_name = node.function.name
+            else:
+                callee_name = node.function.field or ""
+            callee_symbol = self.symbols.get_global_scope().lookup_local(callee_name)
+            if callee_symbol and isinstance(callee_symbol.type, FunctionType):
+                alias_func_type = callee_symbol.type
+        func_type = alias_func_type or (self.visit_expression(node.function) if node.function else UNKNOWN)
         if node.function:
             self.set_type(node.function, func_type)
 
@@ -1551,11 +1603,27 @@ class TypeCheckingPass:
                         if getattr(node, "file_module_call", None):
                             for arg in node.arguments or []:
                                 self.visit_expression(arg)
+                            module_name = getattr(node.function.object, 'name', '') or ''
+                            field_name = node.function.field or ''
+                            self.add_type_error(
+                                TypeErrorType.NOT_CALLABLE,
+                                node.function.span if node.function else node.span,
+                                context=(
+                                    f"Cannot call '{module_name}.{field_name}' "
+                                    "(not defined in the imported module)"
+                                ),
+                            )
                             return UNKNOWN
                         return self._visit_stdlib_module_call(node, obj_symbol)
 
             # Use the span of the function being called, not the whole call expression
             error_span = node.function.span if node.function else node.span
+
+            if getattr(node.function, 'diagnosed', False):
+                # The callee was already reported with a message that names the
+                # problem. Reporting "not callable" as well would give one
+                # mistake two located causes.
+                return UNKNOWN
 
             # Provide better context for unknown types
             if isinstance(func_type, UnknownType):
@@ -1654,6 +1722,9 @@ class TypeCheckingPass:
         method_name = function.field if function and function.kind == NodeKind.FIELD_ACCESS else None
         canonical = self.stdlib.resolve_call(module_path, method_name or "")
         if canonical is None:
+            if function is not None and getattr(function, 'diagnosed', False):
+                # The field-access pass already named the missing function.
+                return UNKNOWN
             self.add_type_error(
                 TypeErrorType.NOT_CALLABLE,
                 function.span if function else node.span,
@@ -2018,6 +2089,11 @@ class TypeCheckingPass:
                         node.span,
                         context=f"Stdlib module '{module_path}' has no function '{field_name}'",
                     )
+                    # This names the missing function. The call site would then
+                    # add "Type is not callable" for the same node, which says
+                    # less and leaves the user with two located causes for one
+                    # mistake.
+                    node.diagnosed = True
                 if canonical_module and not getattr(node, "direct_call_target", False):
                     self.add_semantic_error(SemanticErrorType.UNSUPPORTED_FEATURE, node.span,
                                             context="Standard-library operations must be called directly; function values are unavailable")
@@ -3026,6 +3102,9 @@ class TypeCheckingPass:
         if type_arg_nodes:
             original_struct_type = struct_type
             type_args = [self.resolve_type_node(arg) for arg in type_arg_nodes]
+            self._check_struct_instantiation_constraints(
+                original_struct_type, type_args, node.span
+            )
             struct_type = self._instantiate_struct_type(struct_type, type_args)
             if (
                 original_struct_type.name
@@ -3193,6 +3272,11 @@ class TypeCheckingPass:
                 context,
             )
         if isinstance(expected_type, PrimitiveType):
+            shift_error = self._shift_overflows_destination(value_node, expected_type)
+            if shift_error is not None:
+                self.add_error(shift_error, self._node_span(value_node))
+                value_node.exact_diagnosed = True
+                return False
             exact = getattr(value_node, 'exact_constant', None)
             if exact is not None and expected_type.name in {'f32', 'f64'}:
                 materialize(value_node, exact, width=int(expected_type.name[1:]))
@@ -3202,11 +3286,17 @@ class TypeCheckingPass:
                 return True
             if exact is not None and expected_type.is_integral():
                 value, floating = exact
+                if getattr(value_node, 'exact_diagnosed', False):
+                    # Already reported once, with a better message. Reporting
+                    # again here would give the same value two located causes.
+                    return False
                 if value.denominator != 1:
                     self.add_error(f"Exact constant {value} is fractional and cannot fit {expected_type}", value_node.span)
+                    value_node.exact_diagnosed = True
                     return False
                 if not self._integer_literal_fits_type(value.numerator, expected_type):
                     self.add_error(f"Exact constant {value} is out of range for {expected_type}", value_node.span)
+                    value_node.exact_diagnosed = True
                     return False
                 materialize(value_node, exact, integer=True)
                 self.set_type(value_node, expected_type)
@@ -3218,6 +3308,40 @@ class TypeCheckingPass:
                 return True
 
         return actual_type.is_assignable_to(expected_type)
+
+    def _shift_overflows_destination(
+        self, value_node: Optional[ASTNode], expected_type: Type
+    ) -> Optional[str]:
+        """Reject a literal shift whose value cannot fit the destination.
+
+        The shift-count check in `visit_binary_expr` deliberately allows a
+        literal left operand to shift by up to 64, because two literals are
+        typed i32 until a destination says otherwise. Shifts are not exact
+        constants, so `evaluate` never folds one and the usual destination range
+        check has nothing to measure. This closes that gap: `x: i32 = 1 << 40`
+        is still refused, for the right reason and with a located cause.
+        """
+        if value_node is None or value_node.kind != NodeKind.BINARY:
+            return None
+        if value_node.left is None or value_node.right is None:
+            return None
+        if value_node.operator not in {BinaryOp.BIT_SHL, BinaryOp.BIT_SHR}:
+            return None
+        if not expected_type.is_integral():
+            return None
+        base = self._integer_literal_value(value_node.left)
+        amount = self._integer_literal_value(value_node.right)
+        if base is None or amount is None or amount < 0:
+            return None
+        # A shift this wide is already reported by the shift-count check, and
+        # `base << amount` for a large amount builds an integer too big to
+        # format, which turned a located diagnostic into an internal crash.
+        if amount >= 64:
+            return None
+        value = base << amount if value_node.operator == BinaryOp.BIT_SHL else base >> amount
+        if self._integer_literal_fits_type(value, expected_type):
+            return None
+        return f"Shift result {value} does not fit {expected_type}"
 
     def _is_nil_literal(self, value_node: Optional[ASTNode]) -> bool:
         return (
@@ -3382,6 +3506,35 @@ class TypeCheckingPass:
             elif isinstance(current, StructType):
                 for field in current.fields:
                     stack.append(field.field_type)
+
+    def _check_struct_instantiation_constraints(
+        self,
+        struct_type: StructType,
+        type_args: List[Type],
+        span: Optional[SourceSpan],
+    ) -> None:
+        """Reject type arguments that violate declared struct constraints.
+
+        Generic parameters pair positionally with type arguments, matching
+        _instantiate_struct_type's mapping.
+        """
+        name = struct_type.name
+        if not name:
+            return
+        constraints = self._struct_generic_constraints.get(name)
+        if not constraints:
+            return
+        for param_name, concrete in zip(struct_type.generic_params or (), type_args):
+            constraint = constraints.get(param_name)
+            if constraint is not None and not constraint.contains(concrete):
+                self.add_semantic_error(
+                    SemanticErrorType.CONSTRAINT_VIOLATION,
+                    span,
+                    context=(
+                        f"Generic parameter '${param_name}' of {name} requires {constraint}, "
+                        f"got {concrete}"
+                    ),
+                )
 
     def _instantiate_struct_type(self, struct_type: StructType, type_args: List[Type]) -> StructType:
         """Instantiate a generic struct with concrete type arguments."""

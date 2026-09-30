@@ -1,0 +1,102 @@
+// The full match surface: single values, multiple values, ranges, enum
+// variants, `else`, and `fall`.
+//
+// 008_switch and 010_enum show a single case arm each. This file shows the
+// rest, including the one rule that is easy to get backwards: `fall` hands the
+// remaining cases to the next arm, so it is legal in any arm except the last.
+
+io :: import "std/io"
+
+Grade :: enum {
+    F,
+    D,
+    C,
+    B,
+    A,
+}
+
+describe :: fn(grade: Grade) {
+    match grade {
+        case Grade.F: {
+            io.println("F: not yet")
+        }
+        case Grade.D: {
+            io.println("D: needs work")
+        }
+        case Grade.C: {
+            io.println("C: acceptable")
+        }
+        // `fall` hands the remaining values to the next arm instead of
+        // stopping, so the B arm prints its own line and the A line for both.
+        // It is a statement, so it goes at the end of a body, and it is an
+        // error in the last arm.
+        case Grade.B: {
+            io.println("B: good")
+            fall
+        }
+        case Grade.A: {
+            io.println("A: excellent")
+        }
+    }
+}
+
+bucket :: fn(value: i32) {
+    match value {
+        case 0: {
+            io.println("{} is zero", value)
+        }
+        case 1, 2, 3: {
+            io.println("{} is small", value)
+        }
+        case 4..9: {
+            io.println("{} is in the range 4..9", value)
+        }
+        case -5..-1: {
+            io.println("{} is small and negative", value)
+        }
+        else: {
+            io.println("{} is anything else", value)
+        }
+    }
+}
+
+main :: fn() {
+    io.println("=== Match ===")
+
+    // Enum dispatch, including the `fall` that shares the last two arms.
+    describe(Grade.F)
+    describe(Grade.C)
+    describe(Grade.B)
+    describe(Grade.A)
+
+    io.println("")
+
+    // Literal, multi-value, range, negative range, and else.
+    bucket(0)
+    bucket(2)
+    bucket(6)
+    bucket(-3)
+    bucket(100)
+
+    io.println("")
+
+    // A match statement can assign through a mutable local in each arm, which
+    // is how a value is chosen when the arms are not expressions.
+    subject := -4
+    sign := 0
+    match subject {
+        case 0: {
+            sign = 0
+        }
+        case -100..-1: {
+            sign = -1
+        }
+        case 1..100: {
+            sign = 1
+        }
+        else: {
+            sign = 2
+        }
+    }
+    io.println("sign of {} = {}", subject, sign)
+}

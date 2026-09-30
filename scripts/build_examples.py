@@ -87,8 +87,18 @@ def find_examples(examples_dir: Path) -> list[Path]:
     return sorted(path for path in examples_dir.glob("*.a7") if path.is_file())
 
 
-def compile_source(example: Path, backend: str, source_path: Path) -> subprocess.CompletedProcess[str]:
-    cmd = [sys.executable, str(MAIN_PY), str(example), "--backend", backend, "-o", str(source_path)]
+def compile_source(example: Path, backend: str, profile: str, source_path: Path) -> subprocess.CompletedProcess[str]:
+    cmd = [
+        sys.executable,
+        str(MAIN_PY),
+        str(example),
+        "--backend",
+        backend,
+        "--build-profile",
+        profile,
+        "-o",
+        str(source_path),
+    ]
     return run_cmd(cmd, cwd=ROOT, timeout=60.0)
 
 
@@ -183,7 +193,7 @@ def build_example(
         binary_path=str(binary_path),
     )
 
-    compile_proc = compile_source(example, backend, source_path)
+    compile_proc = compile_source(example, backend, profile, source_path)
     if compile_proc.returncode != 0:
         result.error = f"compile failed:\n{first_error_text(compile_proc)}"
         return result

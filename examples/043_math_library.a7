@@ -1,0 +1,36 @@
+// The std/math surface: ceil, floor, round, sqrt, abs, and the trigonometric
+// and exponential functions that 018_modules and 030_calculator leave unused.
+
+io :: import "std/io"
+math :: import "std/math"
+
+main :: fn() {
+    io.println("=== Math Library ===")
+
+    // Rounding keeps a value's magnitude and changes only its fraction.
+    io.println("ceil(2.1)  = {}", math.ceil(2.1))
+    io.println("floor(2.9) = {}", math.floor(2.9))
+    io.println("abs(-4.25) = {}", math.abs(-4.25))
+
+    // Roots and powers.
+    io.println("sqrt(2)    = {}", math.sqrt(2.0))
+    io.println("sqrt(144)  = {}", math.sqrt(144.0))
+
+    // Trigonometry takes radians.
+    io.println("sin(0)     = {}", math.sin(0.0))
+    io.println("cos(0)     = {}", math.cos(0.0))
+    io.println("tan(0)     = {}", math.tan(0.0))
+
+    // Exponentials and logarithms.
+    io.println("exp(0)     = {}", math.exp(0.0))
+    io.println("log(1)     = {}", math.log(1.0))
+
+    // Bounds.
+    io.println("min(3, 7)  = {}", math.min(3.0, 7.0))
+    io.println("max(3, 7)  = {}", math.max(3.0, 7.0))
+
+    // A worked use: the hypotenuse of a 3-4-5 triangle.
+    a := 3.0
+    b := 4.0
+    io.println("hypot(3, 4) = {}", math.sqrt(a * a + b * b))
+}

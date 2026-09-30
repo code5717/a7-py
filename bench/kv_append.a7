@@ -1,0 +1,35 @@
+// KV-append bench: transformer decode-shaped access over preallocated K, V
+// and Q buffers. Append writes K and V slots sequentially (token fill), then
+// the read phase scans positions in reverse order, multiplying K[j] by Q[i]
+// and accumulating V[j]. Reverse order keeps every index provably in bounds;
+// the scan is still sequential, so treat this as an append plus backward
+// scan shape, not a scattered-attention test. Scattered pseudo-random indices are not
+// provable by the safety pass today, so this is the closest legal pattern.
+// Checksum on the final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    k: [8192]i32
+    v: [8192]i32
+    q: [8192]i32
+
+    // Append phase: sequential writes, one token slot at a time.
+    for i := cast(usize, 0); i < 8192; i += 1 {
+        k[i] = cast(i32, i) * 7 + 1
+        v[i] = cast(i32, i) * 5 - 3
+        q[i] = cast(i32, i) * 11 + 2
+    }
+
+    // Read phase: reverse-order attention-shaped walk.
+    total: i32 = 0
+    for p := 0; p < 200000; p += 1 {
+        for i := cast(usize, 0); i < 8192; i += 1 {
+            j: usize = cast(usize, 8191) - i
+            total += k[j] * q[i] + v[j]
+        }
+        total += 1
+    }
+
+    io.println("result: {}", total)
+}

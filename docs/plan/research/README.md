@@ -53,8 +53,11 @@ value above human value.
 
 Two single reports sit outside the programmes:
 [bend-for-a7.md](bend-for-a7.md) (what A7 might take from Bend 2, with the
-Bend analysis in [comparative/bend.md](../../lang-safety/comparative/bend.md))
-and [modules-odin-zig-go.md](modules-odin-zig-go.md).
+Bend analysis in [comparative/bend.md](../../lang-safety/comparative/bend.md)),
+[modules-odin-zig-go.md](modules-odin-zig-go.md), and
+[cpu-memory-dop.md](cpu-memory-dop.md) (CPU memory path, mmap weight loading,
+and data-oriented programming for model inference, with a7 gaps and phased
+proposals).
 
 ## 2026-09-14 research reports
 

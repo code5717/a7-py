@@ -45,7 +45,7 @@ def has_zig():
 ZIG_AVAILABLE = has_zig()
 
 
-def compile_a7_to_zig(source: str, filename: str = "test.a7") -> str:
+def compile_a7_to_zig(source: str, filename: str = "test.a7", profile: str = "debug") -> str:
     """Compile A7 source code to Zig string."""
     tokenizer = Tokenizer(source, filename=filename)
     tokens = tokenizer.tokenize()
@@ -89,6 +89,7 @@ def compile_a7_to_zig(source: str, filename: str = "test.a7") -> str:
         type_map=type_map,
         symbol_table=symbol_table,
         backend_plan=backend_plan,
+        profile=profile,
     )
 
 
@@ -286,7 +287,7 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
         assert 'pub fn main(init: std.process.Init) void' in zig
-        assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)' in zig
+        assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)' in zig
         assert 'fn __a7_user_main() void' in zig
         assert '__a7_stdout_print("Hello, World!\\n", .{})' in zig
 
@@ -312,7 +313,12 @@ main :: fn() {
 """
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
-        assert '__a7_stdout_print("{}\\n", .{@sqrt(9.0)})' in zig
+        # The literal is folded to its exact IEEE-754 bit pattern, so the
+        # argument is a @bitCast, not the decimal text. Assert the call shape
+        # and the folded operand; the numeric value is pinned in
+        # test_exact_constants.py.
+        assert '__a7_stdout_print("{}\\n", .{@sqrt(' in zig
+        assert '@bitCast(@as(u64, 4621256167635550208))' in zig
         assert "console.println" not in zig
         assert "mathlib.sqrt" not in zig
 
@@ -354,10 +360,13 @@ main :: fn() {
         assert run.stdout == "out:1 true\n"
         assert run.stderr == "err:\n"
         generated = output.read_text(encoding="utf-8")
-        assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
+        assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)") == 1
         assert generated.count("std.Io.File.stderr().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
         assert "std.os.linux.write" not in generated
+        # stdout flush helper body + stderr per-call flush; the main wrapper
+        # calls __a7_stdout_flush(), which is not the literal counted here.
         assert generated.count("interface.flush") == 2
+        assert generated.count("__a7_stdout_flush();") == 2
 
     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
     def test_integer_remainder_matches_truncating_division(self, tmp_path):
@@ -474,9 +483,32 @@ main :: fn() {
         assert run.stdout.strip() == "bcdef"
 
     def test_constant_declaration(self):
-        source = 'PI :: 3.14\n'
-        zig = compile_a7_to_zig(source)
-        assert 'const PI = 3.14' in zig
+        # A `::` declaration is an exact compile-time constant, so it is
+        # substituted at its use site rather than emitted as a Zig `const`.
+        # This test pins that lowering, which is what the file-level constant
+        # is for; a file with no `main` is covered separately below.
+        zig = compile_a7_to_zig("""
+io :: import "std/io"
+
+MAX :: 4
+
+main :: fn() {
+    x: i32 = MAX
+    io.println("{}", x)
+}
+""")
+        assert "const x: i32 = 4;" in zig
+        assert "MAX" not in zig
+
+    def test_file_without_main_emits_empty_translation_unit(self):
+        """Pins the current no-main behaviour so a change to it is deliberate.
+
+        A main-less file compiles to nothing and exits 0. Whether that should
+        become a located error instead is unresolved decision #2; this test
+        exists so the behaviour cannot drift silently.
+        """
+        zig = compile_a7_to_zig('PI :: 3.14\n')
+        assert zig.strip() == ""
 
     def test_variable_declaration(self):
         source = 'x := 42\n'
@@ -963,10 +995,13 @@ main :: fn() {
     }
     '''
         zig = compile_a7_to_zig(source)
-        assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)' in zig
+        assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)' in zig
         assert 'std.os.linux.write' not in zig
+        # stdout flush helper body only; the wrapper calls __a7_stdout_flush().
         assert zig.count('interface.flush') == 1
-        assert "var __a7_stdout_writer" not in zig[zig.index("pub fn main"):]
+        main_part = zig[zig.index("pub fn main"):]
+        assert '__a7_stdout_writer = std.Io.File.stdout()' in main_part
+        assert main_part.index('__a7_user_main();') < main_part.index('__a7_stdout_flush();')
         assert '"Value: {}\\n"' in zig  # typed integer placeholder stays stable
 
     @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
@@ -995,7 +1030,7 @@ main :: fn() {
         assert compiler.compile_file(str(source), str(output))
         generated = output.read_text(encoding="utf-8")
         assert generated.count("fn __a7_stdout_print") == 1
-        assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
+        assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)") == 1
         assert "std.os.linux.write" not in generated
         assert "fn helper() void {\n    __a7_stdout_print" in generated
         assert "fn helper() void {\n    defer " not in generated
@@ -1030,6 +1065,69 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         # Should produce valid (possibly empty) output
         assert isinstance(zig, str)
+
+    def test_release_nonwrap_proven_literals(self):
+        source = '''
+main :: fn() {
+    x := 5
+    y := 3
+    s := x + y
+}
+'''
+        release = compile_a7_to_zig(source, profile="release")
+        assert '(x + y)' in release
+        assert '+%' not in release
+        debug = compile_a7_to_zig(source, profile="debug")
+        assert '(x +% y)' in debug
+
+    def test_release_wrap_unproven_params(self):
+        source = '''
+add :: fn(a: i32, b: i32) i32 {
+    ret a + b
+}
+'''
+        release = compile_a7_to_zig(source, profile="release")
+        assert '(a +% b)' in release
+        debug = compile_a7_to_zig(source, profile="debug")
+        assert '(a +% b)' in debug
+
+    def test_release_nonwrap_compound_assign(self):
+        source = '''
+main :: fn() {
+    x := 10
+    x += 5
+}
+'''
+        release = compile_a7_to_zig(source, profile="release")
+        assert 'x += 5' in release
+        assert '+%=' not in release
+        debug = compile_a7_to_zig(source, profile="debug")
+        assert 'x +%= 5' in debug
+
+    def test_release_nonwrap_guarded_loop_increment(self):
+        source = '''
+main :: fn() {
+    i := 0
+    while i < 9 {
+        i += 1
+    }
+}
+'''
+        release = compile_a7_to_zig(source, profile="release")
+        assert 'i += 1' in release
+        assert '+%=' not in release
+        debug = compile_a7_to_zig(source, profile="debug")
+        assert 'i +%= 1' in debug
+
+    def test_release_nonwrap_mul_overflow_unproven(self):
+        source = '''
+main :: fn() {
+    a := 100000
+    b := a * a * a
+}
+'''
+        release = compile_a7_to_zig(source, profile="release")
+        assert '*%' in release
 
 
 # =============================================================================

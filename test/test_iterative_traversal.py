@@ -550,18 +550,23 @@ class TestDeepNestingStress:
 
     def test_deeply_nested_arithmetic(self):
         """Deeply nested arithmetic with mixed operators should compile."""
-        # Build: ((((1 + 2) * 3) - 4) + 5) ... alternating ops
+        # Build: ((((1 + 2) * 3) - 4) + 5) ... alternating ops.
+        # The operands are kept at i % 2 so the folded value stays inside i32.
+        # This test is about nesting depth, not magnitude: with the full term i
+        # the expression folds to 7512995824, the compiler correctly rejects it
+        # as an out-of-range i32 constant, and the test fails for a reason that
+        # has nothing to do with the traversal.
         ops = ["+", "*", "-", "+"]
         expr = "1"
         for i in range(2, 32):
             op = ops[(i - 2) % len(ops)]
-            expr = f"({expr} {op} {i})"
+            expr = f"({expr} {op} {i % 2})"
         source = (
             'io :: import "std/io"\n'
             "\n"
             "main :: fn() {\n"
             f"    x := {expr}\n"
-            "    io.println(\"{}\", x)\n"
+            '    io.println("{}", x)\n'
             "}\n"
         )
         assert compile_source(source) is True

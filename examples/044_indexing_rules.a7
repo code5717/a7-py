@@ -1,0 +1,59 @@
+// Indexing rules: why some subscripts compile and others do not.
+//
+// An index must be provably inside the array, and usize is the index type.
+// What counts as provable is decided before the program runs, from the source
+// alone:
+//
+//   * a literal, because it can be compared with the length;
+//   * a counter the safety pass can bound with a `while` or `for` guard.
+//
+// What is not provable is a value loaded out of memory, returned from a
+// function, or produced by a `match`: nothing in the program proves its range.
+// Those need a guard first, or one explicit `cast(usize, ...)` once the value
+// is known to fit.
+//
+// The rejected forms are collected in examples/rejected/indexing.a7 so the
+// rule is pinned by a test rather than only by this comment.
+
+io :: import "std/io"
+
+main :: fn() {
+    io.println("=== Indexing Rules ===")
+
+    values: [4]i32 = [10, 20, 30, 40]
+
+    // 1. A literal index is checked against the length at compile time.
+    io.println("values[0] = {}", values[0])
+    io.println("values[3] = {}", values[3])
+
+    // 2. A while-bounded cursor is provable: the safety pass reads the guard
+    //    and concludes the cursor stays under the length.
+    sum := 0
+    cursor: usize = 0
+    while cursor < 4 {
+        sum += values[cursor]
+        cursor += 1
+    }
+    io.println("sum = {}", sum)
+
+    // 3. A for loop over the array is provable for the same reason, and needs
+    //    no index at all.
+    product := 1
+    for value in values {
+        product *= value
+    }
+    io.println("product = {}", product)
+
+    // 4. A loop counter is inferred as i32, because 0 is an integer literal.
+    //    Casting the literal is what makes the counter a usize the safety pass
+    //    can bound, which is why 029 and 041 cast here and 005 does not.
+    total := 0
+    for i := cast(usize, 0); i < 4; i += 1 {
+        total += values[i]
+    }
+    io.println("total = {}", total)
+
+    // 5. usize is the index type, so a length or cursor reads the same way.
+    io.println("cursor = {}", cursor)
+    io.println("index type is usize: {}", cast(usize, 3))
+}

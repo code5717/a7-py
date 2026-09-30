@@ -1,0 +1,63 @@
+// How `{}` works, since the specification does not define a format language.
+//
+// A7 has positional substitution and nothing else. There are no width,
+// precision or type specifiers: `{}` takes the next argument in order, and
+// `{{` and `}}` print a literal brace. The rendering of each value is fixed
+// rather than chosen, which is why 030_calculator rounds by hand instead of
+// asking the formatter for two decimals.
+
+io :: import "std/io"
+
+Point :: struct {
+    x: i32,
+    y: i32,
+}
+
+main :: fn() {
+    io.println("=== Formatting ===")
+
+    // One placeholder per argument, in order.
+    io.println("{} + {} = {}", 2, 3, 5)
+
+    // A placeholder with no argument is an arity error at compile time, so a
+    // mismatched println never reaches the backend.
+    io.println("literal only")
+
+    // Braces are escaped, not formatted. Every unescaped `{}` is a placeholder,
+    // so a literal brace is written as a doubled one. There is no index form:
+    // `{0}` would be a placeholder too, which is why a literal brace is the
+    // only way to show one.
+    io.println("{{}} is an empty pair, not an argument")
+    io.println("a set is written {{a, b}} and has {} elements", 2)
+
+    // Scalars.
+    io.println("int   = {}", 42)
+    io.println("neg   = {}", -7)
+    io.println("float = {}", 2.5)
+    io.println("bool  = {} {}", true, false)
+
+    // char is a scalar too.
+    c := 'A'
+    io.println("char  = {}", c)
+
+    // Arrays print as a braced list, with a space after each separator.
+    numbers: [3]i32 = [1, 2, 3]
+    io.println("array = {}", numbers)
+
+    // Nested arrays keep the same rendering at each level.
+    grid: [2][2]i32 = [[1, 2], [3, 4]]
+    io.println("grid  = {}", grid)
+
+    // An array of structs prints each element in declaration order.
+    corners: [2]Point = [Point{x: 0, y: 1}, Point{x: 2, y: 3}]
+    io.println("points = {}", corners)
+
+    // nil is rendered as null, not as an address.
+    nothing: ref i32 = nil
+    io.println("ref nil = {}", nothing)
+
+    // Two values separated by a space in the format string, which is the
+    // idiomatic way to line up columns.
+    io.println("{} {} {}", "name", "count", "ratio")
+    io.println("{} {} {}", "alpha", 3, 0.25)
+}

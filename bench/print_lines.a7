@@ -1,0 +1,17 @@
+// Print throughput bench: numbered println lines with a running counter.
+// Line count tuned so the release build lands in the bench timing window
+// (native println is far faster than the ~10k lines that suffice on slower
+// targets). Counter checksum on the final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    counter: i64 = 0
+
+    for i := 0; i < 1000000; i += 1 {
+        counter += i % 7
+        io.println("line {}: {}", i, counter)
+    }
+
+    io.println("result: {}", counter)
+}

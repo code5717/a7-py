@@ -1,6 +1,10 @@
 === Control Flow Edges ===
 slice total = 21
 labeled totals = 8 28
+case body 10
+case cleanup 10
 case body 21
 case cleanup 21
+case body 0
+case cleanup 0
 after match

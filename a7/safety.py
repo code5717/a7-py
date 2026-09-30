@@ -593,6 +593,15 @@ class SafetyProofPass:
                             if operation:
                                 interval = operation(target_fact.interval, rhs.interval)
                                 if self._range_fits(interval, self._type(node.target)):
+                                    obligation = self._obligation(
+                                        ObligationKind.INTEGER_OVERFLOW,
+                                        node,
+                                        node.operator.name.lower() + "_nonwrap",
+                                        self._type(node.target),
+                                        "compound assignment result must fit the target type range",
+                                        None,
+                                    )
+                                    self._prove(obligation, "result interval fits the target type range")
                                     result = ValueFact(interval=interval, nonzero=interval.is_nonzero())
                         rhs = result
                     if not getattr(node, "implicit_deref_target", False):
@@ -992,10 +1001,39 @@ class SafetyProofPass:
             self._error(obligation, "reference may be nil")
 
     def _prove_integer_overflow(self, node: ASTNode, fact: ValueFact) -> None:
-        # L5 defines wrapping +, -, and *. These operations need no no-overflow
-        # obligation. Their value facts are bounded to the native result type.
-        # Division, shifts and allocation sizes are separate policies.
-        return
+        # Wrapping stays the default lowering. When both operand intervals are
+        # known and the raw result fits the result type, approve a non-wrapping
+        # lowering for the release backend. `fact` cannot be used here:
+        # _binary_fact clamps overflowing results to the full type range, so
+        # the raw interval is recomputed from the operand node facts.
+        result_type = self._type(node)
+        if not isinstance(result_type, PrimitiveType) or result_type.name not in INTEGER_RANGES:
+            return
+        if node.left is None or node.right is None:
+            return
+        left = self.facts.node(node.left)
+        right = self.facts.node(node.right)
+        if not left.interval or not right.interval:
+            return
+        operations = {
+            BinaryOp.ADD: IntegerInterval.add,
+            BinaryOp.SUB: IntegerInterval.sub,
+            BinaryOp.MUL: IntegerInterval.mul,
+        }
+        operation = operations.get(node.operator)
+        if operation is None:
+            return
+        interval = operation(left.interval, right.interval)
+        obligation = self._obligation(
+            ObligationKind.INTEGER_OVERFLOW,
+            node,
+            node.operator.name.lower() + "_nonwrap",
+            result_type,
+            "arithmetic result must fit the result type range",
+            None,
+        )
+        if self._range_fits(interval, result_type):
+            self._prove(obligation, "result interval fits the result type range")
 
     def _range_fits(self, interval: Optional[IntegerInterval], target_type: Optional[Type]) -> bool:
         if not isinstance(target_type, PrimitiveType) or target_type.name not in INTEGER_RANGES or interval is None:

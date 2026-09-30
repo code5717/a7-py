@@ -1,0 +1,52 @@
+{
+  "arith_loop": {
+    "release": 0.6436,
+    "output_sha256": "3326dda47f7b97997603ad83aae6d80de4907d9ab61bd6f88c1a67e20fd4e81d",
+    "zig": "0.16.0"
+  },
+  "alloc_churn": {
+    "release": 0.0049,
+    "output_sha256": "a0103e6bf604245aac9bd4f183defa432b54cced55704d009415dde0dca8b821",
+    "zig": "0.16.0"
+  },
+  "print_lines": {
+    "release": 0.031,
+    "output_sha256": "08c8ed95190d23f4eefc5aca982b38fdd43482bb198b200176698614f5c9ad3e",
+    "zig": "0.16.0"
+  },
+  "array_walk": {
+    "release": 0.3658,
+    "output_sha256": "5723ebcc7373e0552e812b701ea86f9a1f5eef4d1ad01f7876de673a246b972a",
+    "zig": "0.16.0"
+  },
+  "vector_ops": {
+    "release": 0.2772,
+    "output_sha256": "8870e0f2d35aac3a38b2e1322ae0ba57f5056c55a4c82763743c0adcbf2df299",
+    "zig": "0.16.0"
+  },
+  "sort_load": {
+    "release": 0.2865,
+    "output_sha256": "22ace0cb6223f7e295cf19bdef47ab66ff4a70f7196ecf5d94fc1b9e92a74562",
+    "zig": "0.16.0"
+  },
+  "aos_walk": {
+    "release": 0.2767,
+    "output_sha256": "5796d53e9326ced38777bc6f7a5be7644210c2ab28a5908bdfd64830b4b19ace",
+    "zig": "0.16.0"
+  },
+  "soa_walk": {
+    "release": 0.1741,
+    "output_sha256": "5796d53e9326ced38777bc6f7a5be7644210c2ab28a5908bdfd64830b4b19ace",
+    "zig": "0.16.0"
+  },
+  "stride_walk": {
+    "release": 0.1719,
+    "output_sha256": "607a808c524f18f76bd9b409a633374eb5a82364d3841927d409f843a1f7e29e",
+    "zig": "0.16.0"
+  },
+  "kv_append": {
+    "release": 0.8863,
+    "output_sha256": "31d150c547a472ca01fdad74d1ae8d9a10b2deda108c2f70c4c26d5531ec0354",
+    "zig": "0.16.0"
+  }
+}

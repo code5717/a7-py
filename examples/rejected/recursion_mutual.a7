@@ -1,0 +1,15 @@
+// REJECTED ON PURPOSE - this file must NOT compile.
+//
+// The same rule for an indirect cycle. The diagnostic names the whole path,
+// so the cycle is readable without reading every function.
+a :: fn() {
+    b()
+}
+
+b :: fn() {
+    a()
+}
+
+main :: fn() {
+    a()
+}

@@ -185,24 +185,20 @@ def _alias_calls(ast):
     return sorted(found, key=lambda call: call.span.start_line)
 
 
-def test_local_declared_after_call_in_same_block_does_not_capture_the_call(tmp_path):
-    # A7 rejects this program today in the type checker ("undefined
-    # identifier 'h'" on the first call), before and after this fix, so no
-    # binary can show which function runs. The requirement is checked on the
-    # compiler's module-call marking instead: only the second call names the
-    # local. Unverified here: the run-time result once the type checker
-    # accepts such programs.
+def test_local_declared_after_call_in_same_block_does_not_capture_the_call(tmp_path, zig):
+    # The first call runs before the local exists, so it is the module
+    # call; the second runs the local's field. Alias callees resolve in the
+    # merged program's global scope, so the program compiles and both
+    # calls run the function their position in the block selects.
     source = HEADER + """main :: fn() {
     io.println("{}", h.work())
     h := Ops{work: two}
     io.println("{}", h.work())
 }
 """
-    src = write_program(tmp_path, source)
-    rejected = run_cli([str(src), "--output", str(tmp_path / "main.zig")])
-    assert rejected.returncode == 6, rejected.stdout + rejected.stderr
+    expect_both(compile_build_run(zig, tmp_path, source), "1\n2\n")
 
-    ast = parse_a7(source, str(src))
+    ast = parse_a7(source, str(write_program(tmp_path, source)))
     A7Compiler()._annotate_file_module_calls(ast, {"h": "flat"})
     first, second = _alias_calls(ast)
     assert getattr(first, "file_module_call", None) == ("module_flat__", "work")

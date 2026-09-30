@@ -46,9 +46,12 @@ bits := a & b
 Division and remainder need proof that the divisor is nonzero. Guard a possibly zero divisor before use. Floating remainder truncates the quotient toward zero: `-5.5 % 2.0` produces `-1.5`, and exact negative division preserves negative zero in the folded remainder.
 
 Integer `+`, `-`, and `*`, including compound assignments, wrap at the destination
-width. Signed division truncates toward zero. Negating an unsigned value is
-rejected. Constant shift counts must be non-negative and less than the operand
-width. Dynamic shift proofs and other numeric edge cases remain incomplete.
+width. Release builds emit non-wrapping operators when the safety pass proves the
+result fits the type range; proven cases cannot wrap, so results are unchanged.
+`--no-nonwrap` forces wrapping in both profiles. Signed division truncates toward
+zero. Negating an unsigned value is rejected. Constant shift counts must be
+non-negative and less than the operand width. Dynamic shift proofs and other
+numeric edge cases remain incomplete.
 
 Arithmetic uses a compatible wider type when operands have different widths.
 A representable literal can take its peer's type. An explicit narrower result

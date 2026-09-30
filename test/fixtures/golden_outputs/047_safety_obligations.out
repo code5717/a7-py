@@ -1,0 +1,7 @@
+=== Safety Obligations ===
+10 / 2 = 5
+10 / 0 is undefined
+20 / field 4 = 5
+values[2] = 9
+sum = 24
+product = 504

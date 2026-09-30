@@ -1,0 +1,8 @@
+=== Indexing Rules ===
+values[0] = 10
+values[3] = 40
+sum = 100
+product = 240000
+total = 100
+cursor = 4
+index type is usize: 3

@@ -100,6 +100,22 @@ Closed later on 2026-09-19, in this session:
   2026-09-18. `pyproject.toml` now sets `testpaths = ["test"]`; a planted stray
   test in `tmp/` is no longer collected, and `uv build` still succeeds.
 
+Closed on 2026-09-30 by Wave A:
+
+- LNG-03 (KNOWN PIP-6): an imported module whose functions call each other
+  emitted "use of undeclared identifier". Bare calls now resolve through the
+  annotator and emit the module prefix. Pinned by
+  `test_sibling_call_in_imported_module_builds` and
+  `test_sibling_call_with_local_shadow_stays_local` in
+  `test/test_multi_file_modules.py`.
+- VIS-4 (generics x modules): `g.identity(5)` dropped the comptime type
+  argument or the module prefix. Alias calls now keep generic inference and
+  comptime arguments, and a call to a function the module does not define
+  exits 6 NOT_CALLABLE. Pinned by
+  `test_generic_call_through_alias_keeps_comptime_argument` and
+  `test_missing_callee_in_imported_module_is_rejected` in
+  `test/test_multi_file_modules.py`.
+
 ## Safety
 
 - P-SAF (from r1a-c4 impl, 2026-09-17): SAF-25 second step. `x := 5; { defer { x = 0 } }; 10 / x` and the `if c { defer { x = 0 } }` form are accepted, build, and divide by zero at run time. Dropping facts for variables a deferred statement assigns, at block exit (and surviving the restores at if/while/for exits), rejects them. Rejects programs that build today.

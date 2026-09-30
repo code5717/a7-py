@@ -47,6 +47,17 @@ def print_failure(result) -> None:
             print(detail["message"], file=sys.stderr)
 
 
+def _layout_report(result) -> str:
+    """Layout table from a successful pipeline result."""
+    from .layout import apply_touches, compute_struct_layouts, count_field_touches, format_report
+
+    semantic = result.semantic_results or {}
+    layouts = compute_struct_layouts(semantic.get("symbol_table"))
+    touches = count_field_touches(result.ast, semantic.get("type_map"))
+    apply_touches(layouts, touches)
+    return format_report(layouts)
+
+
 def workflow(argv: list[str]) -> int:
     command = argv[0]
     parser = argparse.ArgumentParser(prog=f"a7 {command}")
@@ -64,8 +75,11 @@ def workflow(argv: list[str]) -> int:
     parser.add_argument("file", help="A7 source file")
     if command == "check":
         parser.add_argument("--format", choices=["human", "json"], default="human")
+        parser.add_argument("--layout", action="store_true",
+                            help="Print struct memory layout (size, 64B line use, field offsets)")
     else:
         parser.add_argument("--profile", choices=["debug", "release"], default="debug")
+        parser.add_argument("--no-nonwrap", action="store_true")
         if command == "build":
             parser.add_argument("-o", "--output", help="Native executable path, defaults to ./<source-stem>")
     options = argv[1:]
@@ -78,12 +92,19 @@ def workflow(argv: list[str]) -> int:
 
     captured = io.StringIO()
     with contextlib.redirect_stdout(captured):
-        result = A7Compiler(mode=CompileMode.PIPELINE, output_format=OutputFormat.JSON).compile_file_detailed(args.file)
+        result = A7Compiler(
+            mode=CompileMode.PIPELINE,
+            output_format=OutputFormat.JSON,
+            build_profile=getattr(args, "profile", "debug"),
+            no_nonwrap=getattr(args, "no_nonwrap", False),
+        ).compile_file_detailed(args.file)
     if command == "check":
         if args.format == "json":
             print(captured.getvalue(), end="")
         elif result.ok:
             print(f"Checked {args.file}")
+            if getattr(args, "layout", False):
+                print(_layout_report(result))
         else:
             print_failure(result)
         return int(result.exit_code)
@@ -182,6 +203,19 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--build-profile",
+        choices=["debug", "release"],
+        default="debug",
+        help="Build profile passed to codegen (default: debug)",
+    )
+
+    parser.add_argument(
+        "--no-nonwrap",
+        action="store_true",
+        help="Force wrapping arithmetic even in release builds",
+    )
+
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -216,6 +250,8 @@ def main() -> None:
         mode=mode,
         output_format=output_format,
         doc_path=doc_path,
+        build_profile=args.build_profile,
+        no_nonwrap=args.no_nonwrap,
     )
     result = compiler.compile_file_detailed(str(input_path), args.output)
     sys.exit(result.exit_code)

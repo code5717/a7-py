@@ -1099,6 +1099,9 @@ if large == nil {
 }
 ```
 
+Release builds allocate through `std.heap.smp_allocator`. Debug builds allocate
+through `std.heap.page_allocator`. Allocation failure behavior is unchanged.
+
 ### 8.3 Defer Statement
 
 ```a7
@@ -1632,9 +1635,11 @@ math calls such as `math.sqrt`, `math.abs`, `math.floor`, `math.ceil`,
 callable; the list below is a planned API shape.
 
 The Zig backend lowers current `std/io` calls to generated stdout/stderr print
-helpers. The helpers flush after each call, panic on formatting or write
-failure instead of silently dropping output, and keep stdout and stderr as
-separate streams. Mixed-stream display order is not guaranteed.
+helpers. Stdout helpers buffer through one persistent writer and flush at
+program exit and before each stderr write. Stderr helpers flush after each
+call. The helpers panic on formatting or write failure instead of silently
+dropping output. Stdout and stderr remain separate streams, and stdout content
+always precedes stderr content written after it.
 
 The broader string, ASCII, memory, assertion, and allocation function list below
 is planned API shape, not current implementation:
@@ -2138,6 +2143,10 @@ Implicit array-to-slice argument conversion is not implemented. Use explicit
 slicing to create a view. Mixed-width arithmetic records the compatible wider
 result type; a narrower result binding requires an explicit checked cast.
 Integer `+`, `-`, and `*`, including compound assignments, use wrapping lowering.
+Release builds lower a proven-range integer `+`, `-`, `*`, or compound form to
+a non-wrapping operator when the safety pass proves the result fits the operand
+type. Debug builds and unproven forms keep wrapping. `--no-nonwrap` forces
+wrapping in both profiles.
 Unsigned negation is rejected. Constant shift counts must be non-negative and
 less than the operand width. Other numeric edge cases still require qualification.
 

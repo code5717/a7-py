@@ -1,0 +1,34 @@
+// SoA walk bench: the same particle integration as aos_walk.a7 on parallel
+// arrays. The hot loop touches only the x and vx streams, so every byte of
+// every fetched cache line is used. Compare medians against aos_walk in the
+// pins table. Checksum on the final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    x: [32768]i32
+    y: [32768]i32
+    vx: [32768]i32
+    vy: [32768]i32
+    hp: [32768]i32
+    tag: [32768]i32
+
+    for i := cast(usize, 0); i < 32768; i += 1 {
+        x[i] = cast(i32, i)
+        y[i] = 2
+        vx[i] = 3
+        vy[i] = 4
+        hp[i] = 100
+        tag[i] = 7
+    }
+
+    total: i32 = 0
+    for p := 0; p < 40000; p += 1 {
+        for i := cast(usize, 0); i < 32768; i += 1 {
+            x[i] = x[i] + vx[i]
+        }
+        total += x[32767]
+    }
+
+    io.println("result: {}", total)
+}

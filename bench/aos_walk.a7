@@ -1,0 +1,33 @@
+// AoS walk bench: array-of-structs particle integration. The hot loop reads
+// and writes only x and vx (8 of 24 bytes per record), so each 64B cache line
+// carries the cold y and hp fields with it. Pairs with soa_walk.a7, which
+// does identical math on parallel arrays. Checksum on the final line.
+
+io :: import "std/io"
+
+Particle :: struct {
+    x: i32
+    y: i32
+    vx: i32
+    vy: i32
+    hp: i32
+    tag: i32
+}
+
+main :: fn() {
+    parts: [32768]Particle
+
+    for i := cast(usize, 0); i < 32768; i += 1 {
+        parts[i] = Particle{x: cast(i32, i), y: 2, vx: 3, vy: 4, hp: 100, tag: 7}
+    }
+
+    total: i32 = 0
+    for p := 0; p < 40000; p += 1 {
+        for i := cast(usize, 0); i < 32768; i += 1 {
+            parts[i].x = parts[i].x + parts[i].vx
+        }
+        total += parts[32767].x
+    }
+
+    io.println("result: {}", total)
+}

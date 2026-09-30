@@ -92,12 +92,11 @@ bump :: fn(value: ref i32) {
 }
 ```
 
-The tour passes an ordinary lvalue to `bump`. It splits the declaration and
-assignment before that call:
+The tour passes an ordinary lvalue to `bump`. A declared local lowers to a
+mutable `var`, so it can be passed by reference directly:
 
 ```a7
-counter: i32
-counter = 41
+counter: i32 = 41
 bump(counter)
 io.println("counter = {}", counter)
 ```

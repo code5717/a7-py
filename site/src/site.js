@@ -45,22 +45,46 @@ document.querySelectorAll(".code-block").forEach((block) => {
   const feedback = block.querySelector(".copy-status");
   let reset;
   copy.hidden = false;
+  async function fallbackCopy(text) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.append(area);
+    area.select();
+    try {
+      document.execCommand("copy");
+      return true;
+    } catch {
+      return false;
+    } finally {
+      area.remove();
+    }
+  }
   copy.addEventListener("click", async () => {
     clearTimeout(reset);
+    const done = (ok) => {
+      if (ok) {
+        label.textContent = "Copied";
+        feedback.hidden = false;
+        feedback.textContent = "Code copied to clipboard.";
+        reset = setTimeout(() => {
+          label.textContent = "Copy";
+          feedback.hidden = true;
+        }, 2500);
+      } else {
+        label.textContent = "Copy";
+        feedback.hidden = false;
+        feedback.textContent =
+          "Copy failed. Select the code and copy it manually, or try again.";
+      }
+    };
     try {
       await navigator.clipboard.writeText(code.textContent);
-      label.textContent = "Copied";
-      feedback.hidden = false;
-      feedback.textContent = "Code copied to clipboard.";
-      reset = setTimeout(() => {
-        label.textContent = "Copy";
-        feedback.hidden = true;
-      }, 2500);
+      done(true);
     } catch {
-      label.textContent = "Copy";
-      feedback.hidden = false;
-      feedback.textContent =
-        "Copy failed. Select the code and copy it manually, or try again.";
+      done(await fallbackCopy(code.textContent));
     }
   });
 });
@@ -122,6 +146,10 @@ addEventListener("resize", scheduleOutline, { passive: true });
 scheduleOutline();
 const dialog = document.getElementById("search");
 const opener = document.querySelector("[data-search-open]");
+if (opener && /(mac|iphone|ipad)/i.test(navigator.platform || "")) {
+  const hint = opener.querySelector("kbd");
+  if (hint) hint.textContent = "⌘K";
+}
 const input = document.getElementById("search-input");
 const results = document.getElementById("search-results");
 const status = document.getElementById("search-status");
@@ -265,7 +293,11 @@ if (dialog && typeof dialog.showModal === "function") {
       if (!dialog.open) open();
     }
   });
-  input.addEventListener("input", search);
+  input.addEventListener("input", () => {
+    clearTimeout(input._debounce);
+    status.textContent = "Typing…";
+    input._debounce = setTimeout(search, 120);
+  });
   dialog.addEventListener("keydown", (event) => {
     if (
       event.altKey ||

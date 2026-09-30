@@ -1,0 +1,12 @@
+=== Worklist Traversal ===
+8 (depth 0)
+  3 (depth 1)
+  10 (depth 1)
+    1 (depth 2)
+    6 (depth 2)
+    14 (depth 2)
+    4 (depth 2)
+
+nodes = 7 total = 46 depth sum = 10
+
+breadth-first sum = 46

@@ -151,7 +151,7 @@ class TestPrimitiveTypes:
             bad: usize = -1
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "out of range for usize")
 
     def test_integer_literal_range_is_checked_for_explicit_type(self):
         """Integer literals must fit the explicitly declared type."""
@@ -160,7 +160,7 @@ class TestPrimitiveTypes:
             bad: i8 = 128
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "out of range for i8")
 
     def test_integer_variable_does_not_implicitly_convert_to_unsigned(self):
         """Signed variables require an explicit cast before unsigned assignment."""
@@ -441,7 +441,7 @@ class TestArrayAndSliceTypes:
             value := arr[-1]
         }
         """
-        assert expect_error(source, "expected usize")
+        assert expect_error(source, "out of range for usize")
 
     def test_new_heap_array_is_rejected_until_backend_model_exists(self):
         """Heap fixed arrays are fail-closed until the language defines a model."""

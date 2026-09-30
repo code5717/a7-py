@@ -27,6 +27,8 @@ class ZigCodeGenerator(CodeGenerator):
         self._type_map: Dict = {}
         self._symbol_table = None
         self._backend_plan: Optional[BackendPlan] = None
+        self._profile = "debug"
+        self._force_wrapping = False
         self._declared_structs: Set[str] = set()
         # Mutation analysis: variables that are targets of assignments
         self._mutated_vars: Set[str] = set()
@@ -62,7 +64,8 @@ class ZigCodeGenerator(CodeGenerator):
         return "Zig"
 
     def generate(self, ast: ASTNode, type_map: Optional[Dict] = None,
-                 symbol_table=None, backend_plan: Optional[BackendPlan] = None) -> str:
+                 symbol_table=None, backend_plan: Optional[BackendPlan] = None,
+                 profile: str = "debug", no_nonwrap: bool = False) -> str:
         """Generate Zig source code from an A7 AST."""
         self.reset()
         self._needs_allocator = False
@@ -70,6 +73,8 @@ class ZigCodeGenerator(CodeGenerator):
         self._type_map = type_map or {}
         self._symbol_table = symbol_table
         self._backend_plan = backend_plan
+        self._profile = profile if profile in ("debug", "release") else "debug"
+        self._force_wrapping = bool(no_nonwrap)
         self._declared_structs = set()
         self._mutated_vars = set()
         self._used_identifiers = set()
@@ -174,27 +179,41 @@ class ZigCodeGenerator(CodeGenerator):
         if self._needs_std:
             lines.append("const std = @import(\"std\");")
         if self._needs_allocator:
-            lines.append("const allocator = std.heap.page_allocator;")
+            if self._profile == "release":
+                lines.append("const allocator = std.heap.smp_allocator;")
+            else:
+                lines.append("const allocator = std.heap.page_allocator;")
         if self._io_streams_needed:
             lines.append("var __a7_io: ?std.Io = null;")
-        for stream in sorted(self._io_streams_needed):
-            stream_name = "stderr" if stream == "stderr" else "stdout"
-            lines.append(f"fn __a7_{stream}_print(comptime fmt: []const u8, args: anytype) void {{")
+        if "stdout" in self._io_streams_needed:
+            lines.append("var __a7_stdout_buf: [4096]u8 = undefined;")
+            lines.append("var __a7_stdout_writer: ?std.Io.File.Writer = null;")
+            lines.append("fn __a7_stdout_flush() void {")
+            lines.append('    __a7_stdout_writer.?.interface.flush() catch @panic("a7 stdout flush failed");')
+            lines.append("}")
+            lines.append("fn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {")
+            lines.append('    __a7_stdout_writer.?.interface.print(fmt, args) catch @panic("a7 stdout write failed");')
+            lines.append("}")
+        if "stderr" in self._io_streams_needed:
+            lines.append("fn __a7_stderr_print(comptime fmt: []const u8, args: anytype) void {")
+            if "stdout" in self._io_streams_needed:
+                lines.append("    __a7_stdout_flush();")
             lines.append("    var __a7_stream_buf: [1024]u8 = undefined;")
-            # writerStreaming, not writer: Zig 0.16.0 File.writer starts in
-            # positional mode at offset 0, so each fresh writer overwrote
-            # earlier output when the stream is a regular file.
-            lines.append(
-                f"    var __a7_writer = "
-                f"std.Io.File.{stream}().writerStreaming(__a7_io.?, &__a7_stream_buf);"
-            )
-            lines.append(f"    __a7_writer.interface.print(fmt, args) catch @panic(\"a7 {stream_name} write failed\");")
-            lines.append(f"    __a7_writer.interface.flush() catch @panic(\"a7 {stream_name} flush failed\");")
+            lines.append("    var __a7_writer = std.Io.File.stderr().writerStreaming(__a7_io.?, &__a7_stream_buf);")
+            lines.append('    __a7_writer.interface.print(fmt, args) catch @panic("a7 stderr write failed");')
+            lines.append('    __a7_writer.interface.flush() catch @panic("a7 stderr flush failed");')
             lines.append("}")
         if self._io_streams_needed:
             lines.append("pub fn main(init: std.process.Init) void {")
             lines.append("    __a7_io = init.io;")
+            if "stdout" in self._io_streams_needed:
+                # writerStreaming, not writer: Zig 0.16.0 File.writer starts
+                # in positional mode at offset 0, so each fresh writer
+                # overwrote earlier output when the stream is a regular file.
+                lines.append("    __a7_stdout_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf);")
             lines.append("    __a7_user_main();")
+            if "stdout" in self._io_streams_needed:
+                lines.append("    __a7_stdout_flush();")
             lines.append("}")
         if lines:
             lines.append("")
@@ -592,8 +611,10 @@ class ZigCodeGenerator(CodeGenerator):
                 if matching_param:
                     self.output.write(f"@TypeOf({self._quote_identifier(parameter_names.get(matching_param, matching_param))}) ")
                 else:
-                    # Can't resolve generic return type — use void as fallback
-                    self.output.write("void ")
+                    raise CodegenError(
+                        "Zig backend: cannot resolve generic return type and no parameter carries it",
+                        node.span,
+                    )
             else:
                 ret_type = self._emit_type_node(node.return_type)
                 self.output.write(f"{ret_type} ")
@@ -1533,7 +1554,8 @@ class ZigCodeGenerator(CodeGenerator):
                 return f"_ = {ptr}_block: {{ const {ptr} = &{target}; {ptr}.* = {builtin}({ptr}.*, {value}); break :{ptr}_block {{}}; }}"
         zig_op = self._assign_op_to_zig(op)
         if integral and op in {AssignOp.ADD_ASSIGN, AssignOp.SUB_ASSIGN, AssignOp.MUL_ASSIGN}:
-            zig_op = zig_op[0] + "%="
+            if self._use_wrapping(node, op):
+                zig_op = zig_op[0] + "%="
         return f"{target} {zig_op} {value}"
 
     def _emit_array_binary_assignment(self, target: Optional[ASTNode], value: Optional[ASTNode]) -> bool:
@@ -1796,9 +1818,10 @@ class ZigCodeGenerator(CodeGenerator):
         result_type = self._type_map.get(id(node))
         arithmetic_type = result_type.element_type if isinstance(result_type, ArrayType) else result_type
         if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL} and isinstance(arithmetic_type, PrimitiveType) and arithmetic_type.is_integral():
-            zig_op += "%"
-            if not isinstance(result_type, ArrayType) and node.left.kind == NodeKind.LITERAL and node.right.kind == NodeKind.LITERAL:
-                left = f"@as({self._emit_semantic_type(arithmetic_type)}, {left})"
+            if self._use_wrapping(node, op):
+                zig_op += "%"
+                if not isinstance(result_type, ArrayType) and node.left.kind == NodeKind.LITERAL and node.right.kind == NodeKind.LITERAL:
+                    left = f"@as({self._emit_semantic_type(arithmetic_type)}, {left})"
         if isinstance(result_type, ArrayType):
             if op != BinaryOp.ADD:
                 raise CodegenError("Zig backend: unsupported array binary expression", node.span)
@@ -1858,6 +1881,20 @@ class ZigCodeGenerator(CodeGenerator):
         else:
             return f"(-{operand})"
 
+    def _generic_call_args(self, node: ASTNode) -> list[str]:
+        """Emit the comptime type arguments a generic call carries, in order."""
+        generic_mapping = getattr(node, "generic_mapping", None) or {}
+        if not generic_mapping:
+            return []
+        func_type = self._type_map.get(id(node.function)) if node.function else None
+        generic_order = tuple(getattr(func_type, "generic_param_order", ()) or ())
+        ordered_names = generic_order or tuple(generic_mapping.keys())
+        return [
+            self._emit_semantic_type(generic_mapping[name])
+            for name in ordered_names
+            if name in generic_mapping
+        ]
+
     def _emit_call(self, node: ASTNode) -> str:
         """Emit a function call."""
         # Special-case io.println / io.print
@@ -1867,8 +1904,14 @@ class ZigCodeGenerator(CodeGenerator):
         file_module_call = getattr(node, "file_module_call", None)
         if file_module_call:
             prefix, field = file_module_call
-            args = ", ".join(self._emit_expr(a) for a in (node.arguments or []))
-            return f"{prefix}{field}({args})"
+            args_list = self._generic_call_args(node)
+            implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
+            for index, arg in enumerate(node.arguments or []):
+                if index in implicit_ref_args:
+                    args_list.append(f"&{self._emit_expr(arg)}")
+                else:
+                    args_list.append(self._emit_expr(arg))
+            return f"{prefix}{field}({', '.join(args_list)})"
 
         canonical = getattr(node, "stdlib_canonical", None)
         if canonical and canonical.startswith("std.math."):
@@ -1884,15 +1927,7 @@ class ZigCodeGenerator(CodeGenerator):
 
         func = self._emit_expr(node.function)
 
-        args_list = []
-        generic_mapping = getattr(node, "generic_mapping", None) or {}
-        if generic_mapping:
-            func_type = self._type_map.get(id(node.function)) if node.function else None
-            generic_order = tuple(getattr(func_type, "generic_param_order", ()) or ())
-            ordered_names = generic_order or tuple(generic_mapping.keys())
-            for name in ordered_names:
-                if name in generic_mapping:
-                    args_list.append(self._emit_semantic_type(generic_mapping[name]))
+        args_list = self._generic_call_args(node)
         implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
         for index, arg in enumerate(node.arguments or []):
             if index in implicit_ref_args:
@@ -2028,6 +2063,17 @@ class ZigCodeGenerator(CodeGenerator):
             self._backend_plan.require(node, operation)
         except KeyError as exc:
             raise CodegenError(f"Zig backend: {operation} was not approved by safety proof analysis", node.span) from exc
+
+    def _use_wrapping(self, node: ASTNode, op) -> bool:
+        """Debug always wraps. Release drops the wrapping suffix when the
+        safety pass proved the result fits the type range. --no-nonwrap keeps
+        wrapping in every profile, so a release build stays bit-identical to
+        debug regardless of which proofs happen to be discharged."""
+        if self._force_wrapping:
+            return True
+        if self._profile != "release" or self._backend_plan is None:
+            return True
+        return not self._backend_plan.is_approved(node, f"{op.name.lower()}_nonwrap")
 
     def _emit_if_expr(self, node: ASTNode) -> str:
         """Emit if expression."""

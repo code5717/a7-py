@@ -27,7 +27,7 @@ def compile_low_limit(source, output):
 def test_1100_module_chain_compiles_at_recursion_limit_100(tmp_path):
     for index in range(1100):
         dependency = f'dep{index} :: import "m{index + 1}"\n' if index < 1099 else ''
-        (tmp_path / f'm{index}.a7').write_text(dependency + f'value{index} :: {index}\n')
+        (tmp_path / f'm{index}.a7').write_text(dependency + f'step{index} :: fn() i32 {{\n    ret {index}\n}}\n')
     source = tmp_path / 'main.a7'
     source.write_text('root :: import "m0"\nmain :: fn() {}\n')
     output = tmp_path / 'main.zig'
@@ -36,9 +36,8 @@ def test_1100_module_chain_compiles_at_recursion_limit_100(tmp_path):
     assert result.returncode == 0, payload
     assert payload['status'] == 'ok'
     emitted = output.read_text()
-    assert 'value0' in emitted
+    assert 'module_m0__step0' in emitted
     # A failure at the far end proves the loader visited the entire chain.
-    # Current combined-file emission includes only direct module declarations.
     leaf = tmp_path / 'm1099.a7'
     leaf.write_text('last :: import "absent"\n')
     failure_output = tmp_path / 'failed.zig'

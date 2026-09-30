@@ -1,0 +1,48 @@
+{
+  "_comment": [
+    "Programs that must NOT compile. Each entry pairs a file under",
+    "examples/rejected/ with the exit code and a message fragment the",
+    "diagnostic must contain, so the compiler's best errors are pinned by a",
+    "test instead of only being described in prose. These files are excluded",
+    "from the examples/ glob used by the e2e gates, which require every",
+    "example to build and run; see test/test_rejected_examples.py."
+  ],
+  "cases": [
+    {
+      "file": "recursion_self.a7",
+      "exit_code": 6,
+      "message": "Recursion is not allowed",
+      "why": "Source recursion is banned; a self-call is rejected at the definition."
+    },
+    {
+      "file": "recursion_mutual.a7",
+      "exit_code": 6,
+      "message": "Recursion is not allowed",
+      "why": "An indirect cycle is the same rule, and the diagnostic names the path."
+    },
+    {
+      "file": "divisor_not_proven.a7",
+      "exit_code": 6,
+      "message": "Divisor not proven non-zero",
+      "why": "A ref parameter can write the divisor, so the guard does not survive the call."
+    },
+    {
+      "file": "heap_fixed_array.a7",
+      "exit_code": 6,
+      "message": "new",
+      "why": "`new [N]T` is fail-closed until the language defines a model for it."
+    },
+    {
+      "file": "signed_index.a7",
+      "exit_code": 6,
+      "message": "expected usize",
+      "why": "usize is the index type; an i32 subscript is refused, not converted."
+    },
+    {
+      "file": "unknown_stdlib_call.a7",
+      "exit_code": 6,
+      "message": "no function",
+      "why": "An unknown stdlib call is rejected at the call site."
+    }
+  ]
+}

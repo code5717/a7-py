@@ -42,7 +42,7 @@ that changes it drops the fact (written set). The prior experiment's
 blanket "clear mutable-global enum facts on every call" rejected the valid
 empty-function control; the summary mechanism is what resolves that
 blocker, recorded in
-[ENUM-REPORT](../../2026-09-20-core-v1/saf3-candidate-evidence/ENUM-REPORT.md).
+[ENUM-REPORT](../2026-09-20-core-v1/saf3-candidate-evidence/ENUM-REPORT.md).
 
 ## Soundness rules
 

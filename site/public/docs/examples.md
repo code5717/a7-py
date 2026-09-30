@@ -72,6 +72,25 @@ are separate from the program output. Topic labels link to the language referenc
 | [040_task_board.a7](https://github.com/code5717/a7-py/blob/master/examples/040_task_board.a7) | [aggregate types](/a7-py/docs/language/aggregate-types.md) | `uv run a7 examples/040_task_board.a7` then `zig run examples/040_task_board.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/040_task_board.out) |
 | [041_route_simulation.a7](https://github.com/code5717/a7-py/blob/master/examples/041_route_simulation.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/041_route_simulation.a7` then `zig run examples/041_route_simulation.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/041_route_simulation.out) |
 | [042_gradebook.a7](https://github.com/code5717/a7-py/blob/master/examples/042_gradebook.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/042_gradebook.a7` then `zig run examples/042_gradebook.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/042_gradebook.out) |
+| [043_math_library.a7](https://github.com/code5717/a7-py/blob/master/examples/043_math_library.a7) | [stdlib](/a7-py/docs/language/stdlib.md) | `uv run a7 examples/043_math_library.a7` then `zig run examples/043_math_library.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/043_math_library.out) |
+| [044_indexing_rules.a7](https://github.com/code5717/a7-py/blob/master/examples/044_indexing_rules.a7) | [arrays strings](/a7-py/docs/language/arrays-strings.md) | `uv run a7 examples/044_indexing_rules.a7` then `zig run examples/044_indexing_rules.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/044_indexing_rules.out) |
+| [045_formatting.a7](https://github.com/code5717/a7-py/blob/master/examples/045_formatting.a7) | [stdlib](/a7-py/docs/language/stdlib.md) | `uv run a7 examples/045_formatting.a7` then `zig run examples/045_formatting.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/045_formatting.out) |
+| [046_match_full.a7](https://github.com/code5717/a7-py/blob/master/examples/046_match_full.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/046_match_full.a7` then `zig run examples/046_match_full.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/046_match_full.out) |
+| [047_safety_obligations.a7](https://github.com/code5717/a7-py/blob/master/examples/047_safety_obligations.a7) | [safety](/a7-py/docs/language/safety.md) | `uv run a7 examples/047_safety_obligations.a7` then `zig run examples/047_safety_obligations.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/047_safety_obligations.out) |
+| [048_worklist_traversal.a7](https://github.com/code5717/a7-py/blob/master/examples/048_worklist_traversal.a7) | [control flow](/a7-py/docs/language/control-flow.md) | `uv run a7 examples/048_worklist_traversal.a7` then `zig run examples/048_worklist_traversal.zig` | [fixture](https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/048_worklist_traversal.out) |
+
+## Programs that are rejected on purpose
+
+Everything above has to compile, build, run and match its fixture. The other
+side of the contract lives in `examples/rejected/`, where each file is paired
+with the diagnostic it must produce in `examples/rejected/manifest.json`, and
+`test/test_rejected_examples.py` runs them. They cover source recursion
+(self and mutual), a divisor a `ref` parameter can change, `new [N]T`, an
+`i32` subscript, and a call to a stdlib function that does not exist.
+
+```bash
+uv run pytest test/test_rejected_examples.py
+```
 
 ## Choose a learning path
 

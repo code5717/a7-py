@@ -14,7 +14,6 @@ main :: fn() {
     io.println("=== Methods ===")
 
     c := Counter{value: 0}
-    c.value = 0
     increment(c)
     increment(c)
 

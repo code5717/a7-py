@@ -5,6 +5,39 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Resolve bare calls inside imported modules to the defining module and emit
+  the module prefix, so sibling calls build. Type-check alias calls `h.f()`
+  with generic inference and comptime arguments, and reject calls to functions
+  the module does not define with exit 6.
+- Load transitive import chains to a fixed point. Enforce struct generic
+  constraints at instantiation with exit 6, and raise a codegen error for an
+  unresolvable generic return type instead of emitting void.
+
+- Add `a7 check FILE --layout`. It prints each named struct's Zig memory
+  layout: alignment-ordered field offsets, size, 64B lines touched, line-use
+  percent, and field-access counts as a hot/cold hint. Offsets match Zig
+  0.16.0 `@offsetOf` ground truth, pinned by tests.
+- Add `aos_walk`, `soa_walk`, `stride_walk`, and `kv_append` benches. The
+  AoS/SoA pair runs identical work on identical footprints: parallel arrays
+  measure 1.59x faster than a 24-byte struct array (0.174s vs 0.277s,
+  ReleaseFast medians of five on one host). `stride_walk` measures line
+  utilization; A7 has no threads, so it is not a coherence test.
+- Add a six-program bench corpus and `scripts/bench_perf.py`. It times
+  ReleaseFast builds as the median of three runs and compares them with
+  per-host pins in `bench/pins/<host>.json`. `run_all_tests.sh` runs it
+  report-only; `--gate` exits 1 past 1.15 times the pinned median.
+
+- Release builds allocate through `std.heap.smp_allocator`. Debug builds keep
+  `std.heap.page_allocator`.
+
+- Buffer stdout print helpers in one persistent 4096-byte writer, flushed at
+  program exit and before every stderr write. Stderr keeps per-call flush, so
+  stdout content always precedes later stderr content for completed programs.
+  Release builds lower proven-range integer `+`, `-`, `*` and compound forms
+  to non-wrapping operators; debug builds and unproven cases keep wrapping.
+  Add `--no-nonwrap` to force wrapping and `--build-profile` plumbing to
+  select the build profile.
+
 - Display type-set AST nodes without crashing. Bound malformed type and defer
   cycles in console output while preserving repeated shared nodes.
 

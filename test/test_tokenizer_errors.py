@@ -159,7 +159,8 @@ class TestTokenizerErrors:
         tokenizer = Tokenizer(source, filename="test.a7")
 
         # Capture the error display output
-        console = Console(file=StringIO(), width=80, legacy_windows=False)
+        console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
 
         try:
             tokenizer.tokenize()
@@ -180,7 +181,8 @@ class TestTokenizerErrors:
         source = "§"
         tokenizer = Tokenizer(source, filename="single.a7")
 
-        console = Console(file=StringIO(), width=80, legacy_windows=False)
+        console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
 
         try:
             tokenizer.tokenize()
@@ -198,7 +200,8 @@ class TestTokenizerErrors:
         source = "line1\nline2\nerror§\nline4\nline5"
         tokenizer = Tokenizer(source, filename="small.a7")
 
-        console = Console(file=StringIO(), width=80, legacy_windows=False)
+        console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
 
         try:
             tokenizer.tokenize()
@@ -221,7 +224,8 @@ class TestTokenizerErrors:
 
         tokenizer = Tokenizer(source, filename="large.a7")
 
-        console = Console(file=StringIO(), width=80, legacy_windows=False)
+        console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
 
         try:
             tokenizer.tokenize()
@@ -282,7 +286,8 @@ class TestTokenizerErrors:
 
         for source, expected_pos in test_cases:
             tokenizer = Tokenizer(source)
-            console = Console(file=StringIO(), width=80, legacy_windows=False)
+            console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
 
             try:
                 tokenizer.tokenize()
@@ -369,7 +374,8 @@ class TestTokenizerErrors:
         tokenizer = Tokenizer(source, filename="integration_test.a7")
 
         # Test display_error function
-        console = Console(file=StringIO(), width=80, legacy_windows=False)
+        console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
 
         try:
             tokenizer.tokenize()
@@ -393,7 +399,8 @@ class TestTokenizerErrors:
             tokenizer.tokenize()
         except TokenizerError as error:
             formatter = ErrorFormatter()
-            console = Console(file=StringIO(), width=80, legacy_windows=False)
+            console = Console(file=StringIO(), width=80, legacy_windows=False,
+                          no_color=True, force_terminal=False)
             formatter.console = console
 
             # Test with different context settings

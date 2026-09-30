@@ -1,0 +1,65 @@
+// Breadth-first traversal with an explicit worklist.
+//
+// A7 rejects source recursion, so a recursive graph walk has to be written as
+// an explicit queue. 025_linked_list and 026_binary_tree do that with `next`
+// pointers; this file shows the flat form, which is the one to reach for when
+// the node set is already an array.
+//
+// The limitation worth knowing: a queue of *indices* does not compile, because
+// a subscript loaded from memory is not provably in bounds (see
+// 044_indexing_rules and examples/rejected/). So the worklist below is walked
+// with a counter the loop guard bounds, and the sibling links are looked up by
+// that same counter. The shape is the same; the proof is what differs.
+
+io :: import "std/io"
+
+Node :: struct {
+    value: i32,
+    // Level order, so a counter walks the tree without chasing pointers.
+    parent: usize,
+    depth: i32,
+}
+
+nodes: [7]Node = [
+    Node{value: 8, parent: cast(usize, 0), depth: 0},
+    Node{value: 3, parent: cast(usize, 0), depth: 1},
+    Node{value: 10, parent: cast(usize, 0), depth: 1},
+    Node{value: 1, parent: cast(usize, 1), depth: 2},
+    Node{value: 6, parent: cast(usize, 1), depth: 2},
+    Node{value: 14, parent: cast(usize, 2), depth: 2},
+    Node{value: 4, parent: cast(usize, 2), depth: 2},
+]
+
+main :: fn() {
+    io.println("=== Worklist Traversal ===")
+
+    // The worklist is the node array itself, walked in level order. The
+    // literal bound is what makes every subscript provable.
+    total := 0
+    depth_sum := 0
+    cursor: usize = 0
+    while cursor < 7 {
+        node := nodes[cursor]
+        level := 0
+        while level < node.depth {
+            io.print("  ")
+            level += 1
+        }
+        io.println("{} (depth {})", node.value, node.depth)
+        total += node.value
+        depth_sum += node.depth
+        cursor += 1
+    }
+
+    io.println("")
+    io.println("nodes = {} total = {} depth sum = {}", cursor, total, depth_sum)
+
+    // The same walk with a for loop over the array, which needs no counter and
+    // therefore no bound at all.
+    io.println("")
+    breadth := 0
+    for node in nodes {
+        breadth += node.value
+    }
+    io.println("breadth-first sum = {}", breadth)
+}

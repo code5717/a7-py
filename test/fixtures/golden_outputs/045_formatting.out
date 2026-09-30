@@ -1,0 +1,16 @@
+=== Formatting ===
+2 + 3 = 5
+literal only
+{} is an empty pair, not an argument
+a set is written {a, b} and has 2 elements
+int   = 42
+neg   = -7
+float = 2.5
+bool  = true false
+char  = A
+array = { 1, 2, 3 }
+grid  = { { 1, 2 }, { 3, 4 } }
+points = { .{ .x = 0, .y = 1 }, .{ .x = 2, .y = 3 } }
+ref nil = null
+name count ratio
+alpha 3 0.25

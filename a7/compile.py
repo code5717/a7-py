@@ -97,12 +97,16 @@ class A7Compiler:
         mode: CompileMode | str = CompileMode.COMPILE,
         output_format: OutputFormat | str = OutputFormat.HUMAN,
         doc_path: Optional[str] = None,
+        build_profile: str = "debug",
+        no_nonwrap: bool = False,
     ):
         self.backend = backend
         self.verbose = verbose
         self.mode = CompileMode(mode)
         self.output_format = OutputFormat(output_format)
         self.doc_path = doc_path
+        self.build_profile = build_profile
+        self.no_nonwrap = no_nonwrap
 
         self.json_formatter = JSONFormatter(backend=backend)
         self.console_formatter = ConsoleFormatter(mode=self.mode.value, backend=backend)
@@ -276,6 +280,27 @@ class A7Compiler:
                 if not import_errors and self.mode in codegen_modes:
                     module_aliases = self._file_module_aliases(ast, module_resolver)
                     self._annotate_file_module_calls(ast, module_aliases)
+                    # Imported modules reference their own imports the same
+                    # way the entry file does; annotate their bodies with
+                    # their own aliases so transitive calls resolve. Bare
+                    # calls of the module's own functions get the module's
+                    # emit prefix the same way, so codegen never rewrites
+                    # callee names by plain-name guesswork.
+                    for module_info in loaded_modules:
+                        if module_info.ast is None or module_resolver.is_virtual_module(module_info.path):
+                            continue
+                        own_aliases = self._file_module_aliases(module_info.ast, module_resolver)
+                        own_functions = frozenset(
+                            decl.name
+                            for decl in module_info.ast.declarations or []
+                            if decl.kind == NodeKind.FUNCTION and decl.name
+                        )
+                        self._annotate_file_module_calls(
+                            module_info.ast,
+                            own_aliases,
+                            sibling_names=own_functions,
+                            sibling_prefix=self._module_emit_prefix(module_info.path),
+                        )
                     ast = self._combined_program_for_file_modules(
                         ast,
                         loaded_modules,
@@ -440,6 +465,8 @@ class A7Compiler:
                         type_map=type_map,
                         symbol_table=symbol_table,
                         backend_plan=(result.semantic_results or {}).get("backend_plan"),
+                        profile=self.build_profile,
+                        no_nonwrap=self.no_nonwrap,
                     )
                     language_name = codegen.language_name
                     syntax = self.backend
@@ -623,7 +650,13 @@ class A7Compiler:
         cleaned = "".join(ch if ch.isalnum() else "_" for ch in module_path)
         return f"module_{cleaned}__"
 
-    def _annotate_file_module_calls(self, node: Any, aliases: dict[str, str]) -> None:
+    def _annotate_file_module_calls(
+        self,
+        node: Any,
+        aliases: dict[str, str],
+        sibling_names: frozenset[str] = frozenset(),
+        sibling_prefix: str = "",
+    ) -> None:
         """Mark `X.f(...)` as a call of `f` in the file module imported as `X`.
 
         Stopgap for audit PIP-1 until the module redesign. The walk keeps an
@@ -634,6 +667,12 @@ class A7Compiler:
         earlier in the same or an enclosing frame. A declaration's own
         initializer is walked before its name is bound.
 
+        When `sibling_names` is given, the walk is over one imported
+        module's own tree and bare `f(...)` calls whose `f` is a top-level
+        function of that module are marked with `sibling_prefix` the same
+        way, using the same live-binding rule, so a parameter or local
+        sharing the function's name keeps the call local.
+
         Mistakes must lean one way. A missed binding marks the call and
         silently runs the module function, so every binding form counts,
         including identifier patterns that later resolve to comparisons.
@@ -642,7 +681,7 @@ class A7Compiler:
         would reject `X.f(...)` because import aliases are not Zig
         declarations.
         """
-        if not aliases:
+        if not aliases and not sibling_names:
             return
 
         binding_decl_kinds = {
@@ -685,8 +724,9 @@ class A7Compiler:
                     live_bindings[name] -= 1
                 continue
             if op == "bind":
-                # Top-level names are not locals; only alias names matter.
-                if frames and value in aliases:
+                # Top-level names are not locals; only alias names and the
+                # module's own function names matter.
+                if frames and (value in aliases or value in sibling_names):
                     frames[-1].append(value)
                     live_bindings[value] = live_bindings.get(value, 0) + 1
                 continue
@@ -710,6 +750,16 @@ class A7Compiler:
                         self._module_emit_prefix(aliases[obj.name]),
                         value.function.field or "",
                     )
+
+            if (
+                sibling_names
+                and kind == NodeKind.CALL
+                and value.function
+                and value.function.kind == NodeKind.IDENTIFIER
+                and value.function.name in sibling_names
+                and not live_bindings.get(value.function.name)
+            ):
+                value.file_module_call = (sibling_prefix, value.function.name)
 
             if kind == NodeKind.FUNCTION:
                 scoped = ("generic_params", "parameters", "return_type", "body")

@@ -14,15 +14,29 @@ implementation priorities. Keep `docs/CHANGELOG.md` short and release-facing.
   artifact reports exclude stale files.
 - Source recursion is banned. Use loops, explicit stacks, queues, and
   index-based worklists.
+- `a7 check FILE --layout` reports struct memory layout (alignment-ordered
+  offsets, size, 64B line use, field-access counts), matching the emitted
+  Zig binary.
+- The bench corpus measures layout effects: the AoS/SoA pair proves
+  parallel arrays 1.59x faster than struct arrays for subset-field loops
+  (`bench/`, `scripts/bench_perf.py`).
 - The example suite is verified against golden output fixtures. Current counts:
   `uv run python scripts/project_status.py`.
+- The perf gate times the six-program `bench/` suite as median-of-3
+  ReleaseFast runs against per-host pins in `bench/pins/<host>.json`.
+  `run_all_tests.sh` runs `scripts/bench_perf.py` report-only; `--gate` exits 1
+  past 1.15 times the pinned median.
 
 Selected branch joins, loop mutations, reference calls and deferred effects now
 invalidate stale safety facts. These repairs remain incomplete. Current probes
 still accept SAF-2 field-name confusion, SAF-3 fallthrough division, SAF-6 global
 mutation across calls and SAF-8 repeated field deletion. See the
 [revalidation evidence](audits/2026-09-20-core-v1/critical-safety-after-saf4.json).
-The checks do not establish complete alias or lifetime safety.
+The SAF-3 and SAF-6 candidate fix is parked in
+[the candidate note](audits/2026-09-20-resumed-v1/safety-candidate.md) until
+the IR fact engine lands: applying it now would reject alias-call programs
+that compile today (user decision, 2026-09-30). The checks do not establish
+complete alias or lifetime safety.
 
 ## Active implementation priorities
 
@@ -51,9 +65,10 @@ The checks do not establish complete alias or lifetime safety.
   pytest entry point. See the [paired check](audits/2026-09-20-core-v1/recursion-launcher-check.md).
   Passing the gate does not qualify the full no-recursion requirement.
 
-- A labeled loop whose label is never targeted can emit an unused Zig label and
-  fail the native build. The [failure and control](audits/2026-09-20-core-v1/unused-loop-label.json)
-  remain open; the loop-update result fix does not address label emission.
+- A labeled loop whose label is never targeted no longer emits a label: the
+  fix landed with commit `ed0baff`, and the never-targeted case is pinned in
+  both profiles by the `unused-labels` case in
+  `test/test_resume_backend_bindings.py`.
 
 - Local constant usage is not yet tracked by declaration identity. Sibling-scope
   name collisions can omit required Zig discards; nested constant shadowing can
@@ -61,11 +76,13 @@ The checks do not establish complete alias or lifetime safety.
   preserves both reproducers.
 
 - File-backed imports target one combined Zig output file. Selected imports,
-  `using import`, broad cross-module type checking, and generic module workflows
-  remain follow-up work.
-- Integer `+`, `-`, and `*`, including compound forms, use wrapping lowering.
-  Shift proofs, signed absolute-value limits, union discriminant access, full
-  ref/del alias behavior, and ownership/lifetime guarantees remain incomplete.
+  `using import`, module-qualified struct literals, and bare entry-file
+  references to module functions remain follow-up work.
+- Integer `+`, `-`, and `*`, including compound forms, keep wrapping by
+  default. Release builds lower proven-range results to non-wrapping
+  operators; `--no-nonwrap` forces wrapping everywhere. Shift proofs, signed
+  absolute-value limits, union discriminant access, full ref/del alias
+  behavior, and ownership/lifetime guarantees remain incomplete.
 - Generic specialization and call-chain propagation are incomplete.
 - Multiple return values, destructuring, tagged union tag workflows, and
   variadic runtime lowering are not current backend features.

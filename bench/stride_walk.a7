@@ -1,0 +1,37 @@
+// Stride walk bench. A7 has no threads, so true cross-core coherence
+// bouncing cannot be shown here; this measures the single-threaded half of
+// the cost model instead. The strided phase touches one i32 per 64B cache
+// line (stride 16 i32s, the layout a false-sharing pad fixes at the line
+// level), the dense phase touches every element of the same array. The
+// runtime gap between the two phases in one binary is the line-waste signal.
+// Checksum on the final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    buf: [16384]i32
+
+    for i := cast(usize, 0); i < 16384; i += 1 {
+        buf[i] = cast(i32, i) * 3 + 1
+    }
+
+    // Strided: 1024 touches, one per 64B line.
+    stride_total: i32 = 0
+    for p := 0; p < 300000; p += 1 {
+        for i := cast(usize, 0); i < 1024; i += 1 {
+            stride_total += buf[i * 16]
+        }
+        buf[0] = buf[0] + 1
+    }
+
+    // Dense: 16384 touches over the same lines, full utilization.
+    dense_total: i32 = 0
+    for p := 0; p < 18750; p += 1 {
+        for i := cast(usize, 0); i < 16384; i += 1 {
+            dense_total += buf[i]
+        }
+        buf[0] = buf[0] + 1
+    }
+
+    io.println("result: {} {}", stride_total, dense_total)
+}

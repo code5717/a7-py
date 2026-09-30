@@ -63,7 +63,7 @@ behavior.
 
 ## Historical reports and artifacts
 
-The [audit index](audits/README.md) maps the September 14, 16, 18, and 19 reviews.
+The [audit index](audits/README.md) maps the dated reviews.
 Each records its own scope and verification limits. Historical passing gates do
 not override later counterexamples or establish that a finding remains unfixed.
 

@@ -1,0 +1,44 @@
+// Sort load bench: insertion sort of a fixed array, re-filled and re-sorted
+// with a shifting start value each round. The insert shifts the prefix with
+// an upward carry loop (A7 index bounds must be provable, so the classic
+// downward `j -= 1` shift is rejected by the compiler). Checksum on the
+// final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    s: [256]i32
+    chk: i64 = 0
+
+    for r := 0; r < 15000; r += 1 {
+        for j := cast(usize, 0); j < 256; j += 1 {
+            s[j] = (cast(i32, j) * 7 + r * 13) % 251 - 125
+        }
+
+        for i := cast(usize, 0); i < 256; i += 1 {
+            key := s[i]
+            insert_at: usize = i
+            for m := cast(usize, 0); m < i; m += 1 {
+                if s[m] > key {
+                    insert_at = m
+                    break
+                }
+            }
+            carry := key
+            for m := cast(usize, 0); m < i; m += 1 {
+                if m >= insert_at {
+                    tmp := s[m]
+                    s[m] = carry
+                    carry = tmp
+                }
+            }
+            s[i] = carry
+        }
+
+        for j := cast(usize, 0); j < 256; j += 1 {
+            chk += s[j]
+        }
+    }
+
+    io.println("result: {}", chk)
+}

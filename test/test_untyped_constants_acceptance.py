@@ -9,10 +9,16 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
-from test.test_constant_folding_exact import (
+# Import the shared folding helpers by module name, the way test_no_recursion.py
+# imports norec_scan. `test/` is not a package, so `from test.<mod> import ...`
+# only resolved when the launcher happened to put the repo root on sys.path;
+# under a bare `pytest` run the whole file failed to collect.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from test_constant_folding_exact import (  # noqa: E402
     ROOT, emit, expect_everywhere, run_all_profiles, zig,
 )
 
@@ -115,7 +121,7 @@ def test_generic_inference_materializes_float_default(tmp_path):
 
 def test_patterns_are_compared_after_fitting(tmp_path):
     reject(tmp_path, 'RATE :: 2.0\nmain :: fn() { x: i32 = 2; match x { '
-           'case RATE: {} case 2: {} else: {} } }', ('duplicate', 'overlap'))
+           'case RATE: {} case 2: {} else: {} } }', ('redundant', 'unreachable', 'duplicate', 'overlap'))
 
 
 # Fixed IEEE bit patterns from independently stated midpoint and range rules.

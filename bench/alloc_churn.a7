@@ -1,0 +1,29 @@
+// Allocation churn bench: new struct, field writes/reads, del per iteration.
+// 300k iterations, checksum on the final line.
+
+io :: import "std/io"
+
+Box :: struct {
+    a: i64
+    b: i64
+    c: i64
+}
+
+main :: fn() {
+    sum: i64 = 0
+
+    for i := 0; i < 300000; i += 1 {
+        bx := new Box
+        if bx == nil {
+            io.println("alloc failed")
+            ret
+        }
+        bx.a = i
+        bx.b = i * 2 - 1
+        bx.c = bx.a + bx.b
+        sum += bx.c + bx.b - bx.a
+        del bx
+    }
+
+    io.println("result: {}", sum)
+}

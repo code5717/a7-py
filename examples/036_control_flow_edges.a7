@@ -31,22 +31,27 @@ main :: fn() {
     }
     io.println("labeled totals = {} {}", break_total, continue_total)
 
-    selected := 2
-    match selected {
-        case 1: {
-            value := 10
-            defer io.println("case cleanup {}", value)
-            io.println("case body {}", value)
-        }
-        case 2: {
-            value := slice_total
-            defer io.println("case cleanup {}", value)
-            io.println("case body {}", value)
-        }
-        else: {
-            value := 0
-            defer io.println("case cleanup {}", value)
-            io.println("case body {}", value)
+    // Every case must be reachable for its defer to be interesting, so the
+    // selector is looped instead of pinned to one arm. That also shows a defer
+    // registered inside a case runs when that arm leaves.
+    selectors: [3]i32 = [1, 2, 3]
+    for selected in selectors {
+        match selected {
+            case 1: {
+                value := 10
+                defer io.println("case cleanup {}", value)
+                io.println("case body {}", value)
+            }
+            case 2: {
+                value := slice_total
+                defer io.println("case cleanup {}", value)
+                io.println("case body {}", value)
+            }
+            else: {
+                value := 0
+                defer io.println("case cleanup {}", value)
+                io.println("case body {}", value)
+            }
         }
     }
 

@@ -50,21 +50,23 @@ function page(doc: Doc) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${e(doc.title)}${doc.slug === "index" ? "" : " · A7"}</title><meta name="description" content="${e(doc.summary)}">
+<meta name="color-scheme" content="light dark"><meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171819" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="${e(doc.title)}"><meta property="og:description" content="${e(doc.summary)}"><meta property="og:type" content="website"><meta property="og:url" content="${ORIGIN + docHref(doc.slug).slice(BASE.length)}"><meta name="twitter:card" content="summary">
 <link rel="canonical" href="${ORIGIN + docHref(doc.slug).slice(BASE.length)}"><link rel="alternate" type="text/markdown" href="${BASE}/docs/${doc.slug}.md" title="Markdown"><link rel="icon" href="${BASE}/favicon.svg">
 <link rel="preload" href="${BASE}/fonts/inter-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <script>try{var t=localStorage.getItem('a7-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch{}</script>
-<link rel="stylesheet" href="${BASE}/assets/site.css"></head><body>
+<link rel="stylesheet" href="${BASE}/assets/site.css"></head><body data-slug="${e(doc.slug)}">
 <a class="skip" href="#main">Skip to content</a>
-<header class="topbar"><a class="brand" href="${BASE}/">A7 <span>Documentation</span></a><div class="tools"><button type="button" data-search-open hidden>${icon("search")}<span>Search</span><kbd>Ctrl K</kbd></button><label class="theme-control" hidden>Theme <select aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><a href="https://github.com/code5717/a7-py">GitHub</a></div></header>
+<header class="topbar"><a class="brand" href="${BASE}/">A7 <span>Documentation</span><span class="brand-tag">Experimental</span></a><div class="tools"><button type="button" data-search-open hidden>${icon("search")}<span>Search</span><kbd>Ctrl K</kbd></button><label class="theme-control" hidden>Theme <select aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><a href="https://github.com/code5717/a7-py">GitHub</a></div></header>
 <div class="shell"><aside class="sidebar"><details class="navigation" open><summary><span>Documentation navigation</span><span class="navigation-current">${e(doc.nav)}</span></summary><nav aria-label="Documentation">${navigation(doc.slug)}</nav></details></aside>
 <main id="main" tabindex="-1"><article><header class="article-meta"><span>${e(doc.group)}</span><a href="${BASE}/docs/${doc.slug}.md">Read Markdown</a></header>
 
 <details class="mobile-outline"><summary>On this page</summary><nav aria-label="Page outline">${outline}</nav></details>
 <div class="prose">${articleHtml}</div>
 <nav class="pager" aria-label="Previous and next pages">${neighbor(docs[i - 1], "Previous")}${neighbor(docs[i + 1], "Next")}</nav>
-<footer><a href="${BASE}/docs/${doc.slug}.md">Markdown</a><a href="${BASE}/llms.txt">Agent index</a><a href="${BASE}/docs/manifest.json">Manifest</a><a href="${doc.sources[0]}">Page source</a></footer></article></main>
+<footer><a href="${BASE}/docs/${doc.slug}.md">Markdown</a><a href="${BASE}/llms.txt">Agent index</a><a href="${BASE}/docs/manifest.json">Manifest</a><a href="${doc.sources[0]}">Page source</a><a href="https://github.com/code5717/a7-py">GitHub</a></footer></article></main>
 <aside class="page-outline"><nav aria-label="On this page"><h2>On this page</h2>${outline}</nav></aside></div>
-<dialog id="search" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">Search documentation</h2><button data-search-close type="button">Close</button></div><label for="search-input">Words, features, or identifiers</label><input id="search-input" type="search" autocomplete="off" aria-controls="search-results"><p id="search-status" role="status" aria-live="polite"></p><ul id="search-results" aria-label="Search results"></ul><p class="search-help"><span><kbd>↑</kbd> <kbd>↓</kbd> Navigate</span><span><kbd>Enter</kbd> Open</span><span><kbd>Esc</kbd> Close</span></p></dialog>
+<dialog id="search" aria-labelledby="search-title"><div class="search-top"><h2 id="search-title">Search documentation</h2><button data-search-close type="button">Close</button></div><label for="search-input">Words, features, or identifiers</label><input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Types, generics, exit codes…" aria-controls="search-results"><p id="search-status" role="status" aria-live="polite"></p><ul id="search-results" aria-label="Search results"></ul><p class="search-help"><span><kbd>↑</kbd> <kbd>↓</kbd> Navigate</span><span><kbd>Enter</kbd> Open</span><span><kbd>Esc</kbd> Close</span></p></dialog>
 <script src="${BASE}/assets/site.js" defer></script></body></html>`;
 }
 await rm(DIST, { recursive: true, force: true });

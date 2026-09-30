@@ -3,9 +3,9 @@
 // Read this file top-to-bottom for a compact tour of the current stable
 // language surface. Every section is runnable and verified through Zig.
 //
-// Guard rails: source recursion is rejected, `fall` is restricted to final
-// non-final match-case statements, and tagged union tag workflows are not
-// implemented.
+// Guard rails: source recursion is rejected, `fall` is allowed in any
+// non-final match arm and is an error in the last one, and tagged union tag
+// workflows are not implemented.
 
 io :: import "std/io"
 
@@ -108,10 +108,9 @@ main :: fn() {
     //
     // Ref parameters are passed with ordinary lvalue arguments. Heap
     // allocation uses new/del and field access narrows through checked refs.
-    // Split declaration and assignment here so the generated native local is
-    // mutable before it is passed by reference.
-    counter: i32
-    counter = 41
+    // A declared local lowers to a mutable `var`, so it can be passed by
+    // reference directly; the split form below is style, not a requirement.
+    counter: i32 = 41
     bump(counter)
     io.println("counter = {}", counter)
 

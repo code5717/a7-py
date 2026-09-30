@@ -265,21 +265,34 @@ class ModuleResolver:
             decl.module_path or "": decl for decl in program.declarations or []
             if decl.kind == NodeKind.IMPORT
         }
-        # Load each imported module
+        # Load each imported module and, transitively, every module they
+        # import. FIFO order keeps the combined-program merge deterministic:
+        # direct imports first, then their dependencies.
         loaded = []
-        for module_path in import_paths:
+        seen: Set[str] = set()
+        queue = list(import_paths)
+        while queue:
+            module_path = queue.pop(0)
+            if module_path in seen:
+                continue
+            seen.add(module_path)
             try:
                 module_info = self.load_module(module_path)
-                if module_info:
-                    loaded.append(module_info)
             except CompilerError as error:
                 if error.span is not None:
                     raise
-                declaration = import_declarations[module_path]
-                raise SemanticError(
-                    f"Error loading module '{module_path}': {error.message}",
-                    span=declaration.span, filename=current_path,
-                ) from error
+                declaration = import_declarations.get(module_path)
+                if declaration is not None:
+                    raise SemanticError(
+                        f"Error loading module '{module_path}': {error.message}",
+                        span=declaration.span, filename=current_path,
+                    ) from error
+                raise
+            if module_info:
+                loaded.append(module_info)
+                for transitive in module_info.dependencies:
+                    if transitive not in seen:
+                        queue.append(transitive)
 
         return loaded
 

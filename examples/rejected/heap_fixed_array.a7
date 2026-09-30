@@ -1,0 +1,9 @@
+// REJECTED ON PURPOSE - this file must NOT compile.
+//
+// `new [N]T` is rejected until the language defines a model for it. A stack
+// array `buf: [N]T` or a slice is the supported form; see 011_memory and
+// 012_arrays.
+main :: fn() {
+    buffer := new [3]i32
+    del buffer
+}

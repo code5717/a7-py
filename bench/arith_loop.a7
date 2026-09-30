@@ -1,0 +1,19 @@
+// Integer arithmetic bench: nested loops, mixed + - * on i32 locals.
+// Checksum on the final line. Iteration counts tuned for ~0.15-1.5s in
+// ReleaseFast; arithmetic wraps (two's complement) so the checksum is stable.
+
+io :: import "std/io"
+
+main :: fn() {
+    acc: i32 = 0
+
+    for o := 0; o < 500; o += 1 {
+        x: i32 = o * 1103515245 + 12345
+        for i := 0; i < 300000; i += 1 {
+            x = x * (x % 251 + 7) - x + 12345
+        }
+        acc += x
+    }
+
+    io.println("result: {}", acc)
+}

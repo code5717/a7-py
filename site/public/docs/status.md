@@ -53,15 +53,17 @@ requirements. Neither makes the other complete.
 - Forward-global typing awaits compatibility approval because the fix rejects
   a float-to-integer assignment that currently builds.
 
-- A labeled loop whose label is never targeted can emit an unused Zig label and
-  fail the native build.
+- A labeled loop whose label is never targeted no longer emits a label: the
+  fix landed with commit `ed0baff`, and the never-targeted case is pinned in
+  both profiles by the `unused-labels` case in
+  `test/test_resume_backend_bindings.py`.
 
 - Local constant usage is not tracked by declaration identity. Sibling-scope name
   collisions and nested constant shadowing can still emit invalid Zig.
 
 | Topic | Current restriction | Reference |
 | --- | --- | --- |
-| Modules | Selected imports, `using import`, broad cross-module typing, and generic module workflows remain incomplete. | [Modules](/a7-py/docs/language/modules.md) |
+| Modules | Selected imports, `using import`, module-qualified struct literals, and bare entry-file references to module functions remain incomplete. | [Modules](/a7-py/docs/language/modules.md) |
 | Numeric operations | Integer addition, subtraction, and multiplication wrap. Shifts and other numeric edge cases need further qualification. | [Operators](/a7-py/docs/language/operators.md) |
 | Unions | Tag and discriminant workflows are not implemented. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |

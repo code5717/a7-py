@@ -1,0 +1,23 @@
+// Array walk bench: fixed stack array, repeated summing passes with usize
+// index loops. buf[0] is bumped each pass so the pass sum changes and the
+// loop body cannot be fully hoisted. Checksum on the final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    buf: [4096]i32
+
+    for i := cast(usize, 0); i < 4096; i += 1 {
+        buf[i] = cast(i32, i) * 7 - 3
+    }
+
+    total: i32 = 0
+    for p := 0; p < 300000; p += 1 {
+        for i := cast(usize, 0); i < 4096; i += 1 {
+            total += buf[i]
+        }
+        buf[0] = buf[0] + 1
+    }
+
+    io.println("result: {}", total)
+}

@@ -1,0 +1,73 @@
+// The safety pass from the programmer's side: the shapes it accepts.
+//
+// The companion to examples/rejected/, which shows what is refused. The rule is
+// that a fact has to be provable from the source alone, so the shapes below
+// work:
+//
+//   * a guard that reads the divisor, immediately before the division;
+//   * a literal or a `while`-bounded counter, which bounds an index;
+//   * a comparison of the same value that the guard tests.
+//
+// What does not work is anything a call could change. `ref` parameters write
+// through, so a guard before a call does not survive it; see
+// examples/rejected/divisor_not_proven.a7.
+
+io :: import "std/io"
+
+// A divisor that is a plain local is provable, because nothing between the
+// guard and the division can change it.
+safe_ratio :: fn(numerator: i32, denominator: i32) {
+    if denominator != 0 {
+        io.println("{} / {} = {}", numerator, denominator, numerator / denominator)
+    } else {
+        io.println("{} / 0 is undefined", numerator)
+    }
+}
+
+// A field is not provable even when the guard reads the same field, because
+// the safety pass tracks locals rather than memory. This is a real limit, not
+// a style choice, so the division happens in a local instead.
+Scale :: struct {
+    divisor: i32,
+}
+
+unsafe_field_ratio :: fn(numerator: i32, scale: Scale) {
+    d := scale.divisor
+    if d != 0 {
+        io.println("{} / field {} = {}", numerator, d, numerator / d)
+    }
+}
+
+main :: fn() {
+    io.println("=== Safety Obligations ===")
+
+    // 1. A guarded divisor.
+    safe_ratio(10, 2)
+    safe_ratio(10, 0)
+
+    // 2. A struct field copied to a local, then guarded.
+    scale := Scale{divisor: 4}
+    unsafe_field_ratio(20, scale)
+
+    // 3. A literal index is checked against the length at compile time, so
+    //    there is no obligation to discharge at all.
+    values: [3]i32 = [7, 8, 9]
+    io.println("values[2] = {}", values[2])
+
+    // 4. A counter bounded by the loop guard proves the same for a computed
+    //    index.
+    sum := 0
+    i := cast(usize, 0)
+    while i < 3 {
+        sum += values[i]
+        i += 1
+    }
+    io.println("sum = {}", sum)
+
+    // 5. A `for` over the array needs no index, so it needs no proof.
+    product := 1
+    for value in values {
+        product *= value
+    }
+    io.println("product = {}", product)
+}

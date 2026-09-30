@@ -10,8 +10,27 @@ order: 0
 
 A7 is an experimental, statically typed systems language. Its Python compiler
 checks `.a7` source and emits a single Zig file. Zig 0.16.0 builds the native
-program. A7 has explicit-width numbers, type inference, structs, arrays, slices,
-references, and a limited generic implementation.
+program. Start below, then read the tour or the language reference.
+
+## Start in two minutes
+
+From a [configured checkout](/a7-py/docs/start.md), check and run the hello
+example:
+
+```bash
+uv run a7 check examples/001_hello.a7
+uv run a7 run examples/001_hello.a7
+```
+
+Expected program output:
+
+```text
+Hello, World!
+```
+
+`check` validates without writing files. `run` builds a temporary executable.
+To keep one, use `uv run a7 build examples/001_hello.a7 -o hello`. The
+file-first command `uv run a7 examples/001_hello.a7` emits Zig source only.
 
 ## A first program
 
@@ -23,20 +42,9 @@ main :: fn() {
 }
 ```
 
-From a [configured checkout](/a7-py/docs/start.md), compile the existing example:
-
-```bash
-uv run a7 examples/001_hello.a7
-```
-
-Then build and run the generated Zig:
-
-```bash
-zig run examples/001_hello.zig
-```
-
-The program writes `Hello, World!` followed by a newline. The compiler command
-emits source; it does not execute the A7 program.
+Keep editing this shape: import capabilities, declare a `main` with no
+parameters, and print. When setup fails, match the symptom in
+[Get started](/a7-py/docs/start.md#common-setup-failures) before retrying.
 
 ## Pipeline
 
@@ -51,16 +59,14 @@ The boundary is the generated `.zig` file. See the expanded
 
 ## Read order
 
-| Goal | Read |
-| --- | --- |
-| Install and run a program | [Get started](/a7-py/docs/start.md) |
-| Learn by changing small examples | [Tour](/a7-py/docs/tour.md) |
-| Find a runnable program | [Examples](/a7-py/docs/examples.md) |
-| Look up syntax and restrictions | [Language reference](/a7-py/docs/language.md) |
-| Print output or call math functions | [Standard library](/a7-py/docs/stdlib.md) |
-| Automate compilation | [Compiler](/a7-py/docs/compiler.md) |
-| Check what remains incomplete | [Status](/a7-py/docs/status.md) |
-| Retrieve Markdown and metadata | [Agent usage](/a7-py/docs/agent-usage.md) |
+- **Get started** — install, compile, and fix setup failures: [Get started](/a7-py/docs/start.md).
+- **Tour** — learn by changing small runnable excerpts: [Tour](/a7-py/docs/tour.md).
+- **Examples** — find callbacks, lists, trees, and reports: [Examples](/a7-py/docs/examples.md).
+- **Language reference** — look up syntax and restrictions: [Language reference](/a7-py/docs/language.md).
+- **Standard library** — print output or call math functions: [Standard library](/a7-py/docs/stdlib.md).
+- **Compiler** — automate compilation and read exit codes: [Compiler](/a7-py/docs/compiler.md).
+- **Status** — check what remains incomplete before choosing A7: [Status](/a7-py/docs/status.md).
+- **Agent usage** — retrieve Markdown and metadata: [Agent usage](/a7-py/docs/agent-usage.md).
 
 ## Experimental status
 
@@ -70,8 +76,8 @@ module typing, integer overflow rules, reference aliasing, and lifetime checks
 have limitations. Tensors, automatic memory management, and concurrency are
 planned work. Read [status](/a7-py/docs/status.md) before choosing A7 for a project.
 
-A7 is not a sandbox. Compiled programs run with your account's permissions.
-Only compile and execute source you trust.
+> A7 is not a sandbox. Compiled programs run with your account's permissions.
+> Only compile and execute source you trust.
 
 ## Repository docs
 

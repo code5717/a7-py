@@ -16,6 +16,16 @@ MAX_NUMBER_LENGTH = 100
 MAX_STRING_LENGTH = 2**15 - 1  # Very large but finite limit
 
 
+def _is_digit(char) -> bool:
+    """ASCII digit test for numeric literals.
+
+    `str.isdigit()` is true for the whole Unicode Nd category, so `x := ٣`
+    lexed as an integer literal and decoded to 3. A7 number syntax is ASCII,
+    so a non-ASCII digit is a lexical error like any other stray character.
+    """
+    return char is not None and "0" <= char <= "9"
+
+
 class TokenType(Enum):
     # Literals
     INTEGER_LITERAL = auto()
@@ -304,12 +314,12 @@ class Tokenizer:
                 continue
 
             # Handle numbers (including leading dot floats like .5)
-            if self.current_char() and self.current_char().isdigit():
+            if _is_digit(self.current_char()):
                 self._tokenize_number()
                 continue
 
             # Handle leading dot float literals (.5, .123, etc.)
-            if self.current_char() == "." and self.peek_char() and self.peek_char().isdigit():
+            if self.current_char() == "." and _is_digit(self.peek_char()):
                 self._tokenize_number()
                 continue
 
@@ -532,7 +542,7 @@ class Tokenizer:
 
         # Handle decimal numbers (including leading dot like .5)
         # First, consume integer part (if present)
-        while self.current_char() and (self.current_char().isdigit() or self.current_char() == "_"):
+        while self.current_char() and (_is_digit(self.current_char()) or self.current_char() == "_"):
             self.advance()
 
         # Check for decimal point (but not range operator ..)
@@ -540,7 +550,7 @@ class Tokenizer:
             is_float = True
             self.advance()  # .
             # Consume fractional part (if present - allows trailing dots like 5.)
-            while self.current_char() and (self.current_char().isdigit() or self.current_char() == "_"):
+            while self.current_char() and (_is_digit(self.current_char()) or self.current_char() == "_"):
                 self.advance()
 
         # Check for scientific notation (e or E followed by optional +/- and digits)
@@ -553,7 +563,7 @@ class Tokenizer:
                 self.advance()
 
             # Must have at least one digit after e/E (and optional +/-)
-            if not (self.current_char() and self.current_char().isdigit()):
+            if not _is_digit(self.current_char()):
                 raise TokenizerError.from_type_and_location(
                     TokenizerErrorType.INVALID_SCIENTIFIC_NOTATION,
                     self.line,
@@ -564,7 +574,7 @@ class Tokenizer:
                 )
 
             # Parse exponent digits
-            while self.current_char() and (self.current_char().isdigit() or self.current_char() == "_"):
+            while self.current_char() and (_is_digit(self.current_char()) or self.current_char() == "_"):
                 self.advance()
 
         number_text = self.source[start_pos : self.position]
@@ -631,6 +641,20 @@ class Tokenizer:
 
         self.advance()  # Closing quote
         string_text = self.source[start_pos : self.position]
+
+        # MAX_STRING_LENGTH and TokenizerErrorType.TOO_LONG_STRING were both
+        # defined but never enforced, so an unbounded string was accepted here
+        # and only failed later, far from the source position.
+        if len(string_text) > MAX_STRING_LENGTH:
+            raise TokenizerError.from_type_and_location(
+                TokenizerErrorType.TOO_LONG_STRING,
+                start_line,
+                start_column,
+                len(string_text),
+                self.filename,
+                self.source_lines,
+            )
+
         # For multi-line strings, we need to use the stored start position
         token = Token(TokenType.STRING_LITERAL, string_text, start_line, start_column)
         self.tokens.append(token)

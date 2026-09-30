@@ -151,6 +151,25 @@ controller's earlier design-only interpretation is superseded. Do not request
 this approval again. Keep implementation and release verification status separate
 from authorization.
 
+## Buffered stdout and release arithmetic, 2026-09-30
+
+L48. The user selected "C-like buffered (Recommended)" for the generated print
+helpers. Stdout calls buffer through one persistent writer and flush at
+program exit and before every stderr write. Stderr calls keep flushing after
+each call. Compatibility: pipe and file consumers see the same bytes, and the
+interleaving of stdout and stderr becomes deterministic for completed
+programs. Stdout content always precedes the stderr content written after it.
+
+L49. The user selected "Debug keeps +%, release uses +" for integer arithmetic
+lowering. When the safety pass proves that an integral `+`, `-`, `*` or
+compound assignment result fits the type range, release builds emit the plain
+Zig operator. Debug builds keep the wrapping form, so a wrong proof surfaces
+as a Debug/Release output difference that the both-profile tests catch.
+Unproven cases keep wrapping in both profiles, and `--no-nonwrap` forces
+wrapping everywhere. This refines L5: wrapping remains the language semantic,
+and non-wrap is an approved codegen optimization for proven cases. Proven
+cases cannot wrap, so observable values do not change.
+
 ## Scope limits
 
 - **L5** covers integer `+`, `-`, `*` and their compound assignments: after

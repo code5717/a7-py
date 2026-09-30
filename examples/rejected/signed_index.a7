@@ -1,0 +1,10 @@
+// REJECTED ON PURPOSE - this file must NOT compile.
+//
+// usize is the index type. An i32 subscript is refused rather than converted,
+// because converting would hide a negative index. See 044_indexing_rules for
+// the forms that are accepted and why.
+main :: fn() {
+    values: [2]i32 = [1, 2]
+    i := 1
+    x := values[i]
+}

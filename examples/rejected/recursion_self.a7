@@ -1,0 +1,14 @@
+// REJECTED ON PURPOSE - this file must NOT compile.
+//
+// Source recursion is a compile-time error. A7 has no call stack to grow, so
+// a self-call is rejected where it is written, with the cycle named.
+fact :: fn(n: i32) i32 {
+    if n <= 1 {
+        ret 1
+    }
+    ret n * fact(n - 1)
+}
+
+main :: fn() {
+    y := fact(5)
+}

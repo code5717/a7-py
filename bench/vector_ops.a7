@@ -1,0 +1,28 @@
+// Vector ops bench: fixed i32 arrays with element-wise array + in a loop.
+// b[0] and b[7] are nudged each round so the array add cannot be hoisted.
+// Checksum on the final line.
+
+io :: import "std/io"
+
+main :: fn() {
+    a: [64]i32
+    b: [64]i32
+    c: [64]i32
+
+    for i := cast(usize, 0); i < 64; i += 1 {
+        a[i] = cast(i32, i) * 3 + 1
+        b[i] = cast(i32, i) * 5 - 2
+    }
+
+    fs: i64 = 0
+    for r := 0; r < 120000000; r += 1 {
+        b[0] = b[0] + 1
+        b[7] = b[7] - 1
+        c = a + b
+        for k := cast(usize, 0); k < 64; k += 1 {
+            fs += c[k]
+        }
+    }
+
+    io.println("result: {}", fs)
+}

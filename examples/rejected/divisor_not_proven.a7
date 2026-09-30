@@ -1,0 +1,16 @@
+// REJECTED ON PURPOSE - this file must NOT compile.
+//
+// The guard `x != 0` is not enough. A `ref` parameter can write to `x`, so
+// nothing in the program proves the divisor is still non-zero at the division.
+// The safety pass drops the fact at the call and asks for a guard that holds.
+mutate :: fn(p: ref i32) {
+    p = 0
+}
+
+main :: fn() {
+    x: i32 = 4
+    if x != 0 {
+        mutate(x)
+        q := 100 / x
+    }
+}
