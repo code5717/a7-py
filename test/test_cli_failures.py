@@ -65,7 +65,7 @@ main :: fn() {
     assert not out.exists()
 
 
-def test_cli_missing_local_import_returns_semantic_error(tmp_path):
+def test_cli_missing_local_import_returns_io_error(tmp_path):
     src = tmp_path / "missing_import.a7"
     out = tmp_path / "missing_import.zig"
     src.write_text(
@@ -78,9 +78,9 @@ main :: fn() {}
 
     result = run_cli(["--format", "json", str(src), "-o", str(out)])
 
-    assert result.returncode == ExitCode.SEMANTIC
+    assert result.returncode == ExitCode.IO
     payload = json.loads(result.stdout)
-    assert payload["error"]["category"] == "semantic"
+    assert payload["error"]["category"] == "io"
     assert "module" in payload["error"]["details"][0]["message"].lower()
     assert not out.exists()
 

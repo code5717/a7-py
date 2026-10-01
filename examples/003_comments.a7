@@ -25,5 +25,5 @@ main :: fn() {
      */
 }
 
-/* Note: Multi-line comments do not need closing delimiter
- * if they extend to EOF (end of file)
+/* Note: block comments must be closed with */
+

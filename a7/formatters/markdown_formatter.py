@@ -8,6 +8,8 @@ source code, tokens, AST, semantic analysis, and generated output.
 from datetime import datetime
 from typing import Optional, List, Dict
 
+from .scope_walk import iter_scopes
+
 
 class MarkdownFormatter:
     """Generates markdown documentation of a complete compilation."""
@@ -247,27 +249,13 @@ class MarkdownFormatter:
         return symbols
 
     def _walk_scope(self, scope, symbols: list, scope_name: str, visited: set):
-        """Walk scopes to collect symbols (iterative)."""
-        if scope is None:
-            return
-
-        stack = [(scope, scope_name)]
-        while stack:
-            current, cur_name = stack.pop()
-            if current is None or id(current) in visited:
-                continue
-            visited.add(id(current))
-
+        """Walk scopes to collect symbols (iterative, see scope_walk.iter_scopes)."""
+        for current, cur_name in iter_scopes(scope, scope_name, visited):
             sym_dict = getattr(current, 'symbols', {})
             for name, sym in sym_dict.items():
                 kind_str = sym.kind.name if hasattr(sym, 'kind') and hasattr(sym.kind, 'name') else "?"
                 type_str = self._format_symbol_type(sym, scope_name)
                 symbols.append({"name": name, "kind": kind_str, "type": type_str, "scope": cur_name})
-
-            children = getattr(current, 'children', [])
-            for i, child in enumerate(reversed(children)):
-                child_name = getattr(child, 'name', f"scope_{len(children) - 1 - i}")
-                stack.append((child, child_name))
 
     def _is_unknown_symbol_type(self, sym) -> bool:
         sym_type = getattr(sym, "type", None)

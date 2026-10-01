@@ -152,7 +152,6 @@ this approval again. Keep implementation and release verification status separat
 from authorization.
 
 ## Buffered stdout and release arithmetic, 2026-09-30
-
 L48. The user selected "C-like buffered (Recommended)" for the generated print
 helpers. Stdout calls buffer through one persistent writer and flush at
 program exit and before every stderr write. Stderr calls keep flushing after
@@ -169,6 +168,61 @@ Unproven cases keep wrapping in both profiles, and `--no-nonwrap` forces
 wrapping everywhere. This refines L5: wrapping remains the language semantic,
 and non-wrap is an approved codegen optimization for proven cases. Proven
 cases cannot wrap, so observable values do not change.
+
+## Wave execution order and memory scope, 2026-10-01
+
+L50. The user selected "Interleave: C code, B research" for wave order, then
+"C then E then B" for the repair sequence: Wave C (declaration-identity
+shadowing) first, Wave E (the 15 exact-arithmetic failures) second, Wave B
+(memory prototypes) last. All work stays uncommitted until the final green
+gate; a consolidated checkpoint commit of both sessions' work starts
+implementation.
+
+L51. The user selected "Arena + RC, no tracing" for Wave B scope. Build the
+C1' arena interim-lowering prototype and an RC prototype behind a flag, and
+compare them against the delivery roadmap's seven workload shapes before
+selecting a mechanism under gates M45/M14/M2. Tracing is documented but not
+built. This records the mechanism comparison without selecting a mechanism,
+so L37 still stands.
+
+L52. The user adopted the 15 exact-arithmetic failures as repair Wave E after
+diagnosis showed they reproduce at clean HEAD and share one subsystem
+(`a7/exact_constants.py` plus its type-checker consumers). The repairs restore
+pinned contracts: IEEE f64 rounding for fold operands (L16), i32 wrap for
+i32-fitting operands, safety precedence for zero divisors. The LNG-16 no-main
+exit-code decision enters as an approval-first packet draft, and the
+-OReleaseFast safety-backstop question enters the Wave B comparison memo.
+
+L53. The bench gate adopts two fixes from diagnosis: add the report-only
+`bench_perf.py` run to `run_all_tests.sh` (the docs already claim it runs
+there), and harden the harness (more runs, trimmed median, run-to-run CV
+filter, CPU pinning) before re-pinning. The 8-27% loose pins are re-taken on
+an idle box under the fixed harness. Buffered stdout (L48) and non-wrapping
+release arithmetic (L49) are not reverted: the former is a 5x win on
+print-hot shapes, the latter costs nothing measurable on the corpus.
+
+L54. The user selected Option B ("--lib flag") for LNG-16 on 2026-10-01:
+a file with no `main :: fn()` is rejected at the Entry Point stage with
+exit 6 instead of passing check and failing late at the Zig build. Current
+behavior shown before approval: `a7 check` and `compile` both exited 0 on a
+main-less file. Only the entry file is gated (the check runs before imported
+modules merge, so libraries need no `main`); `a7 check --lib` and
+`main.py --lib` accept a main-less library file, while `build` and `run`
+still require `main` and exit 6 without it. Codegen is byte-identical:
+`--lib` only suppresses the gate. Corpus impact is zero: all 50 examples,
+all 10 benches, and all 10 safety fixtures define `main`.
+
+L55. Gate diagnosis 2026-10-01: uncommitted parser work classified
+`Name :: <bare identifier>` as TYPE_ALIAS (`_is_bare_identifier_alias`),
+which broke the HEAD-pinned v1 behavior `Alias :: N` as a CONST value alias
+(`unused-constant-keeps-effects`, both profiles, plus the same shape in
+`test_audit_type_boundaries.py`). The parser cannot tell a value from a
+named type, no corpus file uses a bare-identifier type target, and the new
+pin test was added alongside the breaking change without approval. Both
+call sites reverted to HEAD semantics (bare identifier stays CONST) and the
+pin now asserts that; named-type aliases remain follow-up work. Not LNG-16:
+the LNG-16 gate is inert when `main` exists, proven by stash isolation
+(passing at HEAD, failing in worktree, fixed by this revert).
 
 ## Scope limits
 
@@ -193,6 +247,38 @@ cases cannot wrap, so observable values do not change.
   imports are not decided by these rows.
 - **L24** does not approve any specific fix: the no-approval classes are listed in
   packet P0.1, and every fix still runs a compatibility scan.
+- **L33** covers constant-folded float remainder matching the runtime remainder
+  (quotient truncated toward zero, dividend's sign). It changes some
+  constant-expression results; it does not change syntax or divisor proof
+  requirements.
+- **L35** authorizes repairs to the reviewed compiler failures within the
+  reviewed scope (rejected crashing probes and malformed declarations,
+  wider-type mixed-width arithmetic, recovery, diagnostics, identifier
+  quoting, compound division/remainder, literal context, reported IO/type
+  mismatches), keeping existing successful non-overflowing example outputs
+  unchanged. It does not choose new syntax, a new ownership model, `ref`
+  read/write semantics, signed `abs(MIN)`, signed division overflow, or
+  planned library operations.
+- **L47** covers the P-TYP selected rules, compatibility changes and
+  documented resource limits for exact-fit untyped constants. Ordinary
+  runtime float values still require explicit conversion. The completed
+  behavior and compatibility examples need approval before further compiler
+  changes.
+- **L48** covers the generated print helpers only: stdout buffers through one
+  persistent writer, flushed at program exit and before every stderr write;
+  stderr keeps flushing after each call. Pipe and file consumers see the same
+  bytes; stdout/stderr interleaving is deterministic for completed programs.
+- **L49** covers release lowering of proven-range integral `+`, `-`, `*` and
+  compound assignments to the plain Zig operator; debug builds keep the
+  wrapping form and unproven cases keep wrapping in both profiles, with
+  `--no-nonwrap` forcing wrapping everywhere. Wrapping remains the language
+  semantic; this refines L5 as a codegen optimization for proven cases.
+- **L50–L55** record the 2026-10-01 session's wave order (C, then E, then B),
+  Wave B mechanism comparison (arena interim lowering plus flagged RC
+  prototype against seven workload shapes, tracing documented but not built),
+  Wave E exact-arithmetic repairs under pinned contracts, and bench-harness
+  fixes with re-pinning on an idle box. L51 compares mechanisms without
+  selecting one, so L37 still stands; L48 and L49 are not reverted.
 
 ## Implementation dispositions, 2026-09-20
 
@@ -246,8 +332,24 @@ entries are in `docs/lang-safety/08-decisions.md`.
 | `docs/SAFETY_CONTRACT.md:54`: range proofs for fixed-width `+`, `-`, `*` | L5. Proofs remain for division, casts, shifts and sizes |
 | Proposed D.040, D.041, D.049: parameter-mode keywords, inferred modes, no storable references | Not accepted; L6 scope limit and gate G2 (now the memory plan) |
 | `docs/lang-safety/HANDOFF.md` Q1 (bignum) and Q3 (`number`) | L3, L4. Q2 (`cast`) stays open under G3 |
+| L1, L7 as V1 release requirements (broader vision, AI, ownership, stdlib, concurrency) | L36, L37: core language, automatic memory, libraries and tools first; AI and concurrency are later delivery work |
+| L15 absolute no-collector restriction | L37 allows compiler-managed runtime tracking when static analysis is insufficient |
+| L5 plain wrapping lowering for proven-range integral `+`, `-`, `*` | L49: wrapping stays the semantic; proven cases lower to the plain operator in release |
+| Per-call stdout flushing in the generated print helpers | L48 C-like buffered stdout |
 
 ## Pending records
+
+L50–L53 are session-selected, 2026-10-01.
+
+### Gate-to-decision stub
+
+| Gate | Locking coverage | State |
+| --- | --- | --- |
+| G1 | Partial: L16 (IEEE 754 values, strict arithmetic), L33 (runtime-matching float remainder) | Open |
+| G2 | Replaced by the [memory plan](memory.md) | Open |
+| G3 | Partial: L5 (wrapping `+`, `-`, `*`), L35 (reviewed failure repairs), L47–L49 (exact-fit constants, buffered stdout, release arithmetic) | Open |
+| G4–G9 | None | Open |
+| M1–M51 | None; L51 feeds the comparison into M45/M14/M2 without selecting a mechanism | Open |
 
 Gates G1–G9 in the [v1 plan](README.md) and gates M1–M51 in the
 [memory plan](memory.md) are not decisions until the user chooses. Record each

@@ -104,6 +104,13 @@ u32        u64        union      using      usize      var        where
 while
 ```
 
+The list above is aspirational in places. `as` and `where` are lexed but no
+grammar rule consumes them: a `where` clause on generics is planned, not
+current (see §6.1 and STATUS Known Gaps). `let`, `int`, `uint`, and `float`
+are also lexed but unused. `cast`, `const`, `self`, `size_of`, `type`,
+`using`, and `var` lex as ordinary identifiers, and `not` is a keyword the
+list omits. See PAR-22 in `docs/audits/2026-09-16/compiler/parser.md`.
+
 ### 2.5 Operators and Punctuation
 
 ```
@@ -126,13 +133,23 @@ and  or   !
 $    // Generic type parameter prefix
 
 // Other
-::   :    ;    ,    ()   []   {}   ..   ...   @
+::   :    ;    ,    ()   []   {}   ..   @
 ```
+
+`...` is not a token: it lexes as `..` followed by `.`, so `0...5` splits
+into `0`, `..`, `.5`. Variadic parameters use `..` (§6.6).
 
 Float `%` is remainder with a quotient truncated toward zero. Its nonzero result
 has the dividend's sign. Constant folding follows the same rule as generated
 Zig: `-5.5 % 2.0` is `-1.5`, and exact negative division preserves negative zero.
 This does not relax the existing nonzero-divisor proof requirement.
+
+Constant folds use the runtime value rules. Integer `+`, `-`, `*` over operands
+that fit `i32` wrap to `i32` like the runtime operator; an exact integer beyond
+`i32` widens the default to `i64`. Each float operation rounds in `f64`, so
+`1e308 * 10.0` folds to infinity and `infinity - infinity` folds to NaN, and
+both print as ordinary values. An integer division or remainder by zero is not
+a fold; it stays for the divisor proof, which rejects it.
 
 ### 2.6 Literals
 
@@ -194,7 +211,7 @@ nil
 ```a7
 // ✅ Valid - nil with reference types
 ptr: ref i32 = nil
-fn_ptr: ref fn() void = nil
+fn_ptr: ref fn() = nil
 if ptr == nil { }
 
 // ❌ Invalid - nil with value types
@@ -412,17 +429,14 @@ them, then proves the operation safe before Zig codegen.
 ### 4.1 Variable Declarations
 
 ```a7
-// Immutable binding (constant)
-x: i32 = 42
+// Immutable binding (constant) - use ::
 PI :: 3.14159
 
-// Mutable binding (variable)
+// Mutable bindings (variables) - use := or name: T
 count := 0
-buffer: [1024]u8
-
-// Type can be explicit or inferred
-age: i32 = 25    // Explicit type
+age: i32 = 25    // Explicit type, initialized
 name := "John"   // Inferred as string
+buffer: [1024]u8 // Explicit type, uninitialized
 
 // Multiple declaration/destructuring syntax is planned, not current:
 // a, b, c: i32 = 1, 2, 3
@@ -431,10 +445,11 @@ name := "John"   // Inferred as string
 
 ### 4.2 Declaration Rules
 
-**A7 uses two declaration operators:**
+**One rule: `::` is immutable; `:=` and `name: T` are mutable:**
 
 - `::` - Creates immutable bindings (constants)
-- `:=` - Creates mutable bindings (variables)
+- `:=` - Creates mutable bindings with inferred type
+- `name: T [= value]` - Creates mutable bindings with explicit type
 
 ```a7
 // Constants (immutable) - use ::
@@ -443,14 +458,14 @@ MAX_BUFFER :: 1024
 VERSION :: "1.0.0"
 DOUBLE_PI :: PI * 2
 
-// Variables (mutable) - use :=
+// Variables (mutable) - use := or name: T
 count := 0
 name := "John"
 buffer: [1024]u8
 
-// Explicit typing works with both
-MAX_SIZE: i32 = 1000    // Immutable with explicit type
-counter: i32 = 0        // Mutable with explicit type (uses = not :=)
+// Explicit typing is always mutable
+MAX_SIZE: i32 = 1000    // Mutable with explicit type
+counter: i32 = 0        // Mutable with explicit type
 
 // Variables can be reassigned
 counter = counter + 1   // OK
@@ -608,6 +623,10 @@ if (x > 0 and x < 100) or (y > 0 and y < 100) {
 }
 ```
 
+Struct literals are not parsed in `if`/`while` conditions, even nested inside
+call arguments: bind the value first (`p := Pt{x: 1}`) and test the variable.
+See STATUS Known Gaps.
+
 ### 5.2 Pattern Matching
 
 ```a7
@@ -647,6 +666,10 @@ name exists, the identifier is a capture pattern: it matches the scrutinee,
 binds an immutable branch-local value with the scrutinee type, and covers all
 remaining values like `_`. A capture pattern must be the only pattern in its
 case.
+
+A statement `match` stores its `else` body as a statement list (`else_case`);
+an expression `match` stores one expression (`else_expr`). JSON output exposes
+both field names. See STATUS Known Gaps.
 
 ### 5.3 Loops
 
@@ -763,12 +786,13 @@ identity :: fn(value: $T) $T {
     ret value
 }
 
-// Generic function with type constraint
+// Planned, not current: generic function with type constraint
+// (no where-clause rule in §13; see STATUS Known Gaps)
 add :: fn($T, a: T, b: T) T where T: Numeric {
     ret a + b
 }
 
-// Multiple generic parameters
+// Planned, not current: multiple generic parameters with constraints
 convert :: fn($T, $U, value: T) U
 where
     T: Numeric,
@@ -1217,8 +1241,8 @@ scaled := a * 2.0       // Multiply all elements by 2
 
 // Complex broadcasting
 x := tensor_ones([3, 1, 4])    // Shape: [3, 1, 4]
-y := tensor_ones([2, 5, 1])    // Shape: [2, 5, 1] 
-z := x + y                     // Result shape: [3, 2, 5, 4]
+y := tensor_ones([5, 1])       // Shape: [5, 1]
+z := x + y                     // Result shape: [3, 5, 4]
 ```
 
 #### Vectorized Operations
@@ -1555,7 +1579,8 @@ console :: import "std/io"
 // Resolver-only selected import metadata; not backend-runnable yet
 import "vector" { Vec3, dot }
 
-// Planned syntax; not a current parser form
+// Planned syntax; the parser accepts it but `using` is currently dropped,
+// so it has no using semantics yet (see STATUS Known Gaps)
 // using import "vector"
 
 // Local aliases lower into the same generated Zig output for simple calls
@@ -1594,7 +1619,8 @@ Planned, not implemented as public stdlib modules yet:
 - `pub` items are exported from the file/module
 - Non-`pub` items are file-private
 - No protected/internal visibility
-- **Struct fields are always file-private** (cannot be marked `pub`)
+- **Struct fields are always file-private** (cannot be marked `pub`; the parser
+  currently accepts a `pub` field marker without effect — see STATUS Known Gaps)
 - Function parameters and local variables cannot be marked `pub`
 
 ---
@@ -1729,7 +1755,7 @@ TOKEN_NIL_LITERAL       // nil
 // Identifiers and Keywords
 TOKEN_IDENTIFIER        // user_defined_names
 TOKEN_AND               // and
-TOKEN_AS                // as
+TOKEN_AS                // as (lexed; no grammar rule consumes it)
 TOKEN_BOOL              // bool
 TOKEN_BREAK             // break
 TOKEN_CASE              // case
@@ -1776,8 +1802,15 @@ TOKEN_UNION             // union
 TOKEN_USING             // using
 TOKEN_USIZE             // usize
 TOKEN_VAR               // var
-TOKEN_WHERE             // where
+TOKEN_WHERE             // where (lexed; no grammar rule consumes it)
 TOKEN_WHILE             // while
+
+// NOTE: TOKEN_LET, TOKEN_INT, TOKEN_UINT, TOKEN_FLOAT, and TOKEN_NOT are
+// emitted by the tokenizer but have no rows here and no grammar rule consumes
+// them. TOKEN_CAST, TOKEN_CONST, TOKEN_SELF, TOKEN_SIZE_OF, TOKEN_TYPE,
+// TOKEN_USING, TOKEN_VAR, and TOKEN_QUESTION have rows here but no matching
+// token type: those words lex as identifiers, and `?` has no token.
+// See §2.4 and PAR-22.
 
 // Operators
 TOKEN_PLUS              // +
@@ -2053,6 +2086,10 @@ variant_list = variant ("," variant)*
 variant = identifier ":" type
 ```
 
+The `(tag)` marker is optional in the parser (`union()` is also accepted),
+and there is no rule for an anonymous inline union type even though §12.2
+lists `AST_TYPE_UNION`. See STATUS Known Gaps.
+
 ### 13.3 Expression Grammar
 
 ```ebnf
@@ -2083,7 +2120,6 @@ postfix_expr =
     | postfix_expr "[" expr "]"
     | postfix_expr "[" expr? ".." expr? "]"
     | postfix_expr "." identifier
-    | postfix_expr "." "val"
     | postfix_expr "(" expr_list? ")"
 
 primary_expr = 
@@ -2092,6 +2128,10 @@ primary_expr =
     | "(" expr ")"
     | "if" expr block "else" block_or_if
 ```
+
+Assignment is statement-only in the parser: `a = b = 3` is rejected even
+though the `assignment_expr` rule above suggests otherwise. See STATUS Known
+Gaps.
 
 ### 13.4 Statement Grammar
 
@@ -2270,6 +2310,10 @@ A7 supports the full ASCII character set (0-127) only. Characters outside this r
 | `\"`   | 34          | Double quote |
 | `\0`   | 0           | Null character |
 | `\xHH` | 0-127       | Hex escape (2 digits, ASCII only) |
+
+The tokenizer currently accepts only `\n`, `\t`, `\r`, `\\`, `\'`, `\"`,
+`\0`, and `\xHH`. `\b`, `\f`, `\v`, and `\a` are documented above but
+rejected with a tokenizer error (exit 4). See STATUS Known Gaps.
 
 ---
 

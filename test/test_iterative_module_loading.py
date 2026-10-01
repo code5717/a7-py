@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from a7.errors import SemanticError
+from a7.errors import ImportError as A7ImportError, SemanticError
 from a7.module_resolver import ModuleResolver
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,7 +43,7 @@ def test_1100_module_chain_compiles_at_recursion_limit_100(tmp_path):
     failure_output = tmp_path / 'failed.zig'
     failure = compile_low_limit(source, failure_output)
     diagnostic = json.loads(failure.stdout)
-    assert failure.returncode == 6, diagnostic
+    assert failure.returncode == 3, diagnostic
     assert "Module 'absent' not found" in str(diagnostic['error'])
     assert str(leaf) in str(diagnostic['error'])
     assert not failure_output.exists()
@@ -59,7 +59,8 @@ def test_dependency_failure_has_import_origin_and_no_output(tmp_path, failure):
     output = tmp_path / 'main.zig'
     result = compile_low_limit(source, output)
     payload = json.loads(result.stdout)
-    assert result.returncode == 6, payload
+    expected_exit = 3 if failure == 'missing' else 6
+    assert result.returncode == expected_exit, payload
     diagnostic = str(payload['error'])
     expected = "Module 'missing' not found" if failure == 'missing' else 'a -> b -> a'
     assert expected in diagnostic
@@ -72,7 +73,7 @@ def test_failed_load_does_not_poison_cache_and_retry_preserves_completed_modules
     (tmp_path / 'good.a7').write_text('value :: 7\n')
     resolver = ModuleResolver([str(tmp_path)])
     for _ in range(2):
-        with pytest.raises(SemanticError, match="Module 'missing' not found"):
+        with pytest.raises(A7ImportError, match="Module 'missing' not found"):
             resolver.load_module('root')
         assert 'root' not in resolver.loaded_modules
         assert resolver.module_table.get_module('root') is None

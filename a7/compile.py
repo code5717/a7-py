@@ -22,7 +22,7 @@ from rich.console import Console
 from .ast_nodes import ASTNode, NodeKind
 from .ast_preprocessor import ASTPreprocessor
 from .backends import get_backend
-from .errors import CompilerError, ParseError, SemanticError, SemanticErrorType, display_error, display_errors
+from .errors import CompilerError, ImportError as A7ImportError, ParseError, SemanticError, SemanticErrorType, TokenizerError, display_error, display_errors
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
 from .passes import NameResolutionPass, SafetyProofPass, SemanticValidationPass, TypeCheckingPass
@@ -30,6 +30,16 @@ from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
 console = Console()
+
+
+def _safe_json_dumps(payload: dict[str, Any]) -> str:
+    """Serialize a CLI JSON payload, degrading strays to str().
+
+    Formatter output is sanitized, but failure details can still carry
+    non-serializable values (exception args, AST residue). default=str
+    keeps the CLI exit path from raising inside json.dumps.
+    """
+    return json.dumps(payload, indent=2, default=str)
 
 
 class CompileMode(StrEnum):
@@ -48,6 +58,9 @@ class OutputFormat(StrEnum):
 
 class ExitCode(IntEnum):
     SUCCESS = 0
+    # Mirrors the argparse usage exit (cli.py parser.error exits 2); the
+    # --output-with-non-compile-mode contract is asserted against this
+    # member, so it is a cross-module contract, not dead code.
     USAGE = 2
     IO = 3
     TOKENIZE = 4
@@ -99,6 +112,7 @@ class A7Compiler:
         doc_path: Optional[str] = None,
         build_profile: str = "debug",
         no_nonwrap: bool = False,
+        is_library: bool = False,
     ):
         self.backend = backend
         self.verbose = verbose
@@ -107,6 +121,7 @@ class A7Compiler:
         self.doc_path = doc_path
         self.build_profile = build_profile
         self.no_nonwrap = no_nonwrap
+        self.is_library = is_library
 
         self.json_formatter = JSONFormatter(backend=backend)
         self.console_formatter = ConsoleFormatter(mode=self.mode.value, backend=backend)
@@ -183,6 +198,8 @@ class A7Compiler:
                 tokenizer = Tokenizer(source_code, filename=str(input_path))
                 tokens = tokenizer.tokenize()
                 result.tokens = tokens
+                # Token-count definition (shared with JSONFormatter): source
+                # tokens only, excluding the synthetic EOF sentinel.
                 result.stages["tokenize"] = {
                     "ok": True,
                     "token_count": len([t for t in tokens if t.type.name != "EOF"]),
@@ -215,6 +232,12 @@ class A7Compiler:
                     # error surfaced from the parser. Unexpected exceptions
                     # propagate to the outer Exception handler so they are
                     # tagged as INTERNAL rather than masquerading as parse.
+                    # The parser carries spans but not source lines, so attach
+                    # the entry file lines here for human context display.
+                    # Imported-file errors already carry their own lines and
+                    # are left untouched by the guard.
+                    if not e.source_lines:
+                        e.source_lines = source_lines
                     parse_error = e
 
                 if parse_error is not None:
@@ -257,17 +280,43 @@ class A7Compiler:
                     ]
                 )
                 entry_errors: list[Any] = []
+                has_main = False
                 for declaration in ast.declarations or []:
                     if declaration.kind != NodeKind.FUNCTION or declaration.name != "main":
                         continue
+                    has_main = True
                     if declaration.parameters or declaration.return_type is not None:
                         entry_errors.append(SemanticError(
                             "Executable entry point main must have no parameters and no return value",
                             span=declaration.span, filename=str(input_path), source_lines=source_lines,
                         ))
+                if not has_main and not self.is_library:
+                    # Only the entry file is gated: imported modules never
+                    # need their own main, and this loop runs before their
+                    # declarations are merged into the combined program.
+                    entry_errors.append(SemanticError(
+                        "No entry point: file defines no 'main :: fn()'; "
+                        "add one or check as a library with --lib",
+                        span=None, filename=str(input_path), source_lines=source_lines,
+                    ))
                 import_errors: list[Any] = []
                 try:
                     loaded_modules = module_resolver.load_program_dependencies(ast, str(input_path))
+                except TokenizerError as e:
+                    return self._finish_with_failure(
+                        result, ExitCode.TOKENIZE, "tokenize", str(e),
+                        start, compiler_error=e,
+                    )
+                except ParseError as e:
+                    return self._finish_with_failure(
+                        result, ExitCode.PARSE, "parse", str(e),
+                        start, parse_error=e,
+                    )
+                except A7ImportError as e:
+                    return self._finish_with_failure(
+                        result, ExitCode.IO, "io", str(e),
+                        start, compiler_error=e,
+                    )
                 except CompilerError as e:
                     import_errors.append(e)
                     loaded_modules = []
@@ -362,7 +411,13 @@ class A7Compiler:
                     all_errors.extend(name_resolver.errors)
 
                 if import_ok and backend_import_ok and backend_feature_ok and nr_ok:
-                    type_checker = TypeCheckingPass(symbol_table)
+                    type_checker = TypeCheckingPass(
+                        symbol_table,
+                        module_prefix_aliases={
+                            self._module_emit_prefix(path): alias
+                            for alias, path in module_aliases.items()
+                        },
+                    )
                     type_checker.source_lines = source_lines
                     type_checker.analyze(ast, str(input_path))
                     tc_ok = len(type_checker.errors) == 0
@@ -565,7 +620,7 @@ class A7Compiler:
             result.exit_code = ExitCode.INTERNAL
             result.timing_ms = int((perf_counter() - start) * 1000)
             if self.output_format == OutputFormat.JSON:
-                print(json.dumps(self._to_json_payload(result), indent=2))
+                print(_safe_json_dumps(self._to_json_payload(result)))
             return result
 
     @staticmethod
@@ -584,7 +639,7 @@ class A7Compiler:
 
     def _emit_success(self, result: CompilationResult) -> None:
         if self.output_format == OutputFormat.JSON:
-            print(json.dumps(self._to_json_payload(result), indent=2))
+            print(_safe_json_dumps(self._to_json_payload(result)))
             return
 
         if self.verbose:
@@ -757,9 +812,16 @@ class A7Compiler:
                 and value.function
                 and value.function.kind == NodeKind.IDENTIFIER
                 and value.function.name in sibling_names
-                and not live_bindings.get(value.function.name)
             ):
-                value.file_module_call = (sibling_prefix, value.function.name)
+                if live_bindings.get(value.function.name):
+                    # A nested declaration (e.g. a nested function) captures
+                    # this call, so it is not the module sibling. Mark that
+                    # so the checker does not mistake the merged top-level
+                    # sibling for the callee: nested declarations leave no
+                    # symbol for it to tell apart.
+                    value.locally_bound_call = True
+                else:
+                    value.file_module_call = (sibling_prefix, value.function.name)
 
             if kind == NodeKind.FUNCTION:
                 scoped = ("generic_params", "parameters", "return_type", "body")
@@ -841,9 +903,12 @@ class A7Compiler:
         for module_info in loaded_modules:
             if module_info.ast is None or module_resolver.is_virtual_module(module_info.path):
                 continue
-            if module_info.path in seen_paths:
+            # Key on the resolved file path, not the import spelling, so one
+            # file loaded under two spellings still merges once. Same-file
+            # double imports are rejected earlier as a compile error.
+            if module_info.file_path in seen_paths:
                 continue
-            seen_paths.add(module_info.path)
+            seen_paths.add(module_info.file_path)
             prefix = self._module_emit_prefix(module_info.path)
             for decl in module_info.ast.declarations or []:
                 if decl.kind == NodeKind.IMPORT:
@@ -947,7 +1012,7 @@ class A7Compiler:
         result.timing_ms = int((perf_counter() - start_time) * 1000)
 
         if self.output_format == OutputFormat.JSON:
-            print(json.dumps(self._to_json_payload(result), indent=2))
+            print(_safe_json_dumps(self._to_json_payload(result)))
         else:
             if semantic_errors:
                 display_errors(semantic_errors, console)

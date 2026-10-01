@@ -10,7 +10,6 @@ from a7.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, Literal
 from a7.symbol_table import SymbolTable, Symbol, SymbolKind
 from a7.semantic_context import SemanticContext
 from a7.cast_classifier import classify_cast
-from a7.generics import resolve_generic_constraint
 from a7.types import (
     Type, TypeKind,
     PrimitiveType, ArrayType, SliceType, PointerType, ReferenceType,
@@ -20,11 +19,11 @@ from a7.types import (
     BOOL, CHAR, STRING, I8, I16, I32, I64, U8, U16, U32, U64, F32, F64,
     USIZE,
     VOID, UNKNOWN, NUMERIC, INTEGER,
-    get_primitive_type, get_predefined_type_set
+    get_primitive_type, get_predefined_type_set, resolve_generic_constraint
 )
 from a7.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
 from a7.stdlib import StdlibRegistry
-from a7.exact_constants import evaluate, materialize, ExactArithmeticError, expression_span
+from a7.exact_constants import evaluate, materialize, ExactArithmeticError, expression_span, _shadow_of
 
 
 class TypeCheckingPass:
@@ -39,14 +38,19 @@ class TypeCheckingPass:
     5. Generic type constraint validation
     """
 
-    def __init__(self, symbols: SymbolTable):
+    def __init__(self, symbols: SymbolTable, module_prefix_aliases: Optional[Dict[str, str]] = None):
         """
         Initialize type checking pass.
 
         Args:
             symbols: Symbol table from name resolution pass
+            module_prefix_aliases: Maps an imported module's emit prefix
+                (e.g. "module_helper__") to the alias the entry file
+                imported it under (e.g. "h"). Used to name the qualified
+                spelling when a bare call targets a merged module function.
         """
         self.symbols = symbols
+        self.module_prefix_aliases: Dict[str, str] = dict(module_prefix_aliases or {})
         self.context = SemanticContext()
         self.errors: List[SemanticError] = []
         self.current_file: str = "<unknown>"
@@ -760,14 +764,56 @@ class TypeCheckingPass:
         finally:
             self._generic_constraints = previous_constraints
 
+    def _without_own_symbol(self, decl_node: ASTNode, action):
+        """Run action with the declaration's own symbol hidden.
+
+        A declaration's initializer sees the outer binding: `y :: y + 1`
+        inside a block reads the outer `y`, not the unfinished declaration.
+        Hiding keeps exact evaluation from resolving the name to a symbol
+        with no value yet, which used to leave a dangling bare name behind
+        for an erased outer constant.
+        """
+        name = decl_node.name or ""
+        target = None
+        probe = self.symbols.current_scope
+        while probe is not None:
+            candidate = probe.symbols.get(name) if name else None
+            if candidate is None:
+                probe = probe.parent
+                continue
+            if getattr(candidate, "node", None) is decl_node:
+                target = probe
+            break
+        if target is None:
+            return action()
+        hidden = target.symbols.pop(name)
+        try:
+            return action()
+        finally:
+            target.symbols[name] = hidden
+
     def visit_const_decl(self, node: ASTNode) -> None:
         """Visit a constant declaration."""
         const_name = node.name or "<unknown>"
         if getattr(node, 'untyped_binding', False):
             self.set_type(node, UNKNOWN)
             return
+        # Name resolution walks statements but never match-expression arms,
+        # so a const declared there has no symbol yet. Define it here the
+        # way var declarations do.
+        if node.name and self.symbols.current_scope.lookup_local(const_name) is None:
+            self.symbols.define(Symbol(
+                name=const_name,
+                kind=SymbolKind.CONSTANT,
+                type=UNKNOWN,
+                node=node,
+                is_mutable=False,
+            ))
         if not node.explicit_type:
-            exact = self._evaluate_exact(node.value, self.symbols.lookup, self.exact_bindings)
+            exact = self._without_own_symbol(
+                node,
+                lambda: self._evaluate_exact(node.value, self.symbols.lookup, self.exact_bindings),
+            )
             if exact is not None:
                 self.exact_bindings[id(node)] = exact
                 node.untyped_binding = True
@@ -777,7 +823,10 @@ class TypeCheckingPass:
         # Type check the value
         value_type = UNKNOWN
         if node.value:
-            value_type = self.visit_expression(node.value)
+            value_type = self._without_own_symbol(
+                node,
+                lambda: self.visit_expression(node.value),
+            )
 
         # If explicit type given, check compatibility
         if node.explicit_type:
@@ -805,10 +854,15 @@ class TypeCheckingPass:
         is_nil_value = (node.value and node.value.kind == NodeKind.LITERAL
                         and node.value.literal_kind == LiteralKind.NIL)
 
-        # Type check the value if present
+        # Type check the value if present. The initializer sees the outer
+        # binding: `y := y + 2` reads the outer `y`, not the unfinished
+        # declaration (same rule as const declarations).
         value_type = UNKNOWN
         if node.value:
-            value_type = self.visit_expression(node.value)
+            value_type = self._without_own_symbol(
+                node,
+                lambda: self.visit_expression(node.value),
+            )
 
         # Determine final type
         if node.explicit_type:
@@ -1302,18 +1356,48 @@ class TypeCheckingPass:
             left = self._evaluate_exact(node.left, self.symbols.lookup, self.exact_bindings)
             right = self._evaluate_exact(node.right, self.symbols.lookup, self.exact_bindings)
             if left is not None and right is not None:
-                a, b = left[0], right[0]
-                comparisons = {BinaryOp.EQ: a == b, BinaryOp.NE: a != b, BinaryOp.LT: a < b, BinaryOp.LE: a <= b, BinaryOp.GT: a > b, BinaryOp.GE: a >= b}
-                node.literal_value = comparisons[node.operator]
-                node.kind = NodeKind.LITERAL
-                node.literal_kind = LiteralKind.BOOLEAN
-                node.raw_text = 'true' if node.literal_value else 'false'
-                node.left = node.right = None
+                if left[1] or right[1]:
+                    # A float operand folds per-operation in f64: round both
+                    # sides through the recorded shadows so overflowed and
+                    # NaN operands compare the way the runtime does. A
+                    # missing shadow leaves the node unfolded.
+                    fa = _shadow_of(node.left, left)
+                    fb = _shadow_of(node.right, right)
+                    if fa is None or fb is None:
+                        pass
+                    else:
+                        comparisons = {BinaryOp.EQ: fa == fb, BinaryOp.NE: fa != fb, BinaryOp.LT: fa < fb, BinaryOp.LE: fa <= fb, BinaryOp.GT: fa > fb, BinaryOp.GE: fa >= fb}
+                        node.literal_value = comparisons[node.operator]
+                        node.kind = NodeKind.LITERAL
+                        node.literal_kind = LiteralKind.BOOLEAN
+                        node.raw_text = 'true' if node.literal_value else 'false'
+                        node.exact_materialized = True
+                        node.left = node.right = None
+                else:
+                    a, b = left[0], right[0]
+                    comparisons = {BinaryOp.EQ: a == b, BinaryOp.NE: a != b, BinaryOp.LT: a < b, BinaryOp.LE: a <= b, BinaryOp.GT: a > b, BinaryOp.GE: a >= b}
+                    node.literal_value = comparisons[node.operator]
+                    node.kind = NodeKind.LITERAL
+                    node.literal_kind = LiteralKind.BOOLEAN
+                    node.raw_text = 'true' if node.literal_value else 'false'
+                    node.exact_materialized = True
+                    node.left = node.right = None
         exact = self._evaluate_exact(node, self.symbols.lookup, self.exact_bindings)
         if exact is not None:
             node.exact_constant = exact
             node.span = expression_span(node)
-            expr_type = F64 if exact[1] else I32
+            if exact[1]:
+                expr_type = F64
+            elif (
+                exact[0].denominator == 1
+                and not self._integer_literal_fits_type(exact[0].numerator, I32)
+                and self._integer_literal_fits_type(exact[0].numerator, I64)
+            ):
+                # Beyond i32 but within i64: widen the default instead of
+                # forcing every large literal through an explicit type.
+                expr_type = I64
+            else:
+                expr_type = I32
         else:
             expr_type = self._visit_expression_impl(node)
         self.set_type(node, expr_type)
@@ -1571,6 +1655,45 @@ class TypeCheckingPass:
             )
             return UNKNOWN
 
+        # A bare call that resolves to a function merged in from an imported
+        # module is missing its alias: the declaration is emitted with the
+        # module prefix while the call site would emit the plain name, which
+        # Zig rejects. Reject here with the qualified spelling. Scoped lookup
+        # keeps this quiet when a local shadows the name, and pre-marked
+        # sibling calls inside modules never reach this branch.
+        if (
+            callee is not None
+            and callee.kind == NodeKind.IDENTIFIER
+            and not getattr(node, "file_module_call", None)
+            and not getattr(node, "locally_bound_call", None)
+            and callee.name
+            and not callee.name.startswith("@")
+        ):
+            scoped = self.symbols.lookup(callee.name)
+            if (
+                scoped is not None
+                and isinstance(scoped.type, FunctionType)
+                and getattr(getattr(scoped, "node", None), "module_emit_prefix", "")
+            ):
+                prefix = getattr(scoped.node, "module_emit_prefix", "")
+                alias = (self.module_prefix_aliases or {}).get(prefix)
+                if alias:
+                    context = (
+                        f"'{callee.name}' is defined in the module imported "
+                        f"as '{alias}'; write '{alias}.{callee.name}()'"
+                    )
+                else:
+                    context = (
+                        f"'{callee.name}' is defined in an imported module; "
+                        f"call it through the module alias"
+                    )
+                self.add_semantic_error(
+                    SemanticErrorType.UNDEFINED_IDENTIFIER,
+                    callee.span or node.span,
+                    context=context,
+                )
+                return UNKNOWN
+
         # Module operations have backend lowering only at direct call sites.
         if node.function and node.function.kind == NodeKind.FIELD_ACCESS:
             setattr(node.function, "direct_call_target", True)
@@ -1746,8 +1869,8 @@ class TypeCheckingPass:
             return
         for arg in args[1:]:
             exact = getattr(arg, 'exact_constant', None)
-            if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I32):
-                self.add_error("Exact constant does not fit formatting default i32; use an explicitly typed intermediate", arg.span)
+            if exact is not None and not exact[1] and not self._integer_literal_fits_type(exact[0].numerator, I64):
+                self.add_error("Exact constant does not fit formatting default i64; use an explicitly typed intermediate", arg.span)
         format_type = arg_types[0] if arg_types else UNKNOWN
         if not format_type.equals(STRING):
             self.add_type_error(
@@ -2038,6 +2161,9 @@ class TypeCheckingPass:
     def _fit_exact_usize(self, node: ASTNode, context: str) -> bool:
         """Fit a size use without re-entering expression or type traversal."""
         exact = node.exact_constant
+        if getattr(node, 'exact_nonfinite', None) is not None:
+            self.add_error(f"{context} is not finite and cannot fit usize", node.span)
+            return False
         value = exact[0]
         if value.denominator != 1:
             self.add_error(f"{context} is fractional and cannot fit usize", node.span)
@@ -2374,7 +2500,11 @@ class TypeCheckingPass:
 
             case_expr = getattr(case, "expression", None)
             if case_expr:
-                self._enter_matching_scope("match_case")
+                # Fresh scope, not a reused one: name resolution never
+                # descends into match expressions, so no table scope exists
+                # for these arms. Reusing one would consume a statement-arm
+                # slot and push a later match statement into the wrong scope.
+                self.symbols.enter_scope("match_case")
                 self._define_match_capture_symbols(case.patterns or [], scrutinee_type)
                 try:
                     branch_types.append(self.visit_expression(case_expr))
@@ -3289,6 +3419,10 @@ class TypeCheckingPass:
                 if getattr(value_node, 'exact_diagnosed', False):
                     # Already reported once, with a better message. Reporting
                     # again here would give the same value two located causes.
+                    return False
+                if getattr(value_node, 'exact_nonfinite', None) is not None:
+                    self.add_error(f"Non-finite constant cannot fit {expected_type}", value_node.span)
+                    value_node.exact_diagnosed = True
                     return False
                 if value.denominator != 1:
                     self.add_error(f"Exact constant {value} is fractional and cannot fit {expected_type}", value_node.span)

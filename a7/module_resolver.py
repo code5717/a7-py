@@ -10,8 +10,9 @@ from pathlib import Path
 
 from a7.ast_nodes import ASTNode, NodeKind
 from a7.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
-from a7.errors import CompilerError, SemanticError
+from a7.errors import CompilerError, ImportError as A7ImportError, ParseError, SemanticError, SemanticErrorType
 from a7.stdlib import StdlibRegistry
+from a7.tokens import TokenizerError
 from a7.types import UNKNOWN
 
 
@@ -81,6 +82,53 @@ class ModuleResolver:
         """Return True when an import is provided by the built-in stdlib registry."""
         return module_path in self.virtual_modules
 
+    def _canonical_import_key(self, module_path: str) -> str:
+        """Canonical identity for duplicate-import comparison (L26).
+
+        File modules key on the resolved absolute file path, so alternate
+        spellings (`helper` vs `./helper`), parent-relative segments and
+        symlinks compare equal. Virtual stdlib modules key on their
+        canonical registry name. Unresolvable paths fall back to the raw
+        spelling; the missing-module diagnostic reports them.
+        """
+        if self.is_virtual_module(module_path):
+            canonical = self.stdlib.canonical_module_name(module_path)
+            return f"virtual:{canonical or module_path}"
+        file_path = self.resolve_module_path(module_path)
+        if file_path is not None:
+            return f"file:{file_path}"
+        return f"unresolved:{module_path}"
+
+    @staticmethod
+    def _raise_on_duplicate_imports(
+        import_decls: list,
+        filename: str,
+        source_lines: list,
+        key_of,
+    ) -> None:
+        """Reject importing the same file twice in one file (L26).
+
+        Each file gets its own check: different files importing the same
+        module stays legal.
+        """
+        seen: dict[str, object] = {}
+        for decl in import_decls:
+            module_path = decl.module_path or ""
+            key = key_of(module_path)
+            if key in seen:
+                raise SemanticError.from_type(
+                    SemanticErrorType.IMPORT_NAME_CONFLICT,
+                    span=decl.span,
+                    filename=filename,
+                    source_lines=source_lines,
+                    context=(
+                        f"Duplicate import of '{module_path}': "
+                        "importing the same file twice in one file "
+                        "is a compile error"
+                    ),
+                )
+            seen[key] = decl
+
     def resolve_module_path(self, module_path: str) -> Optional[str]:
         """
         Resolve a module path to a file path.
@@ -136,12 +184,16 @@ class ModuleResolver:
                         continue
                     file_path = self.resolve_module_path(path)
                     if not file_path:
-                        raise SemanticError(
-                            f"Module '{path}' not found in search paths: {self.search_paths}"
+                        raise A7ImportError(
+                            f"Module '{path}' not found"
                         )
                     self.loading_stack.append(path)
                     active.add(path)
                     module_info, imports, source_lines = self._read_module(path, file_path)
+                    self._raise_on_duplicate_imports(
+                        imports, file_path, source_lines,
+                        self._canonical_import_key,
+                    )
                     self.module_table.register_module(path, module_info.symbols)
                     self.loaded_modules[path] = module_info
                     pending.append((True, path, None))
@@ -151,7 +203,17 @@ class ModuleResolver:
                 except CompilerError as error:
                     if error.span is not None or origin is None:
                         raise
+                    # Tokenize and parse failures keep their own stage and
+                    # their dependency-file span; only other failures gain
+                    # the importing declaration's span below.
+                    if isinstance(error, (TokenizerError, ParseError)):
+                        raise
                     declaration, filename, lines = origin
+                    if isinstance(error, A7ImportError):
+                        raise A7ImportError(
+                            error.message, span=declaration.span,
+                            filename=filename, source_lines=lines,
+                        ) from error
                     raise SemanticError(
                         error.message, span=declaration.span, filename=filename,
                         source_lines=lines,
@@ -175,8 +237,15 @@ class ModuleResolver:
         from a7.parser import Parser
         from a7.passes.name_resolution import NameResolutionPass
 
-        with open(file_path, "r", encoding="utf-8") as source_file:
-            source = source_file.read()
+        try:
+            with open(file_path, "r", encoding="utf-8") as source_file:
+                source = source_file.read()
+        except (OSError, UnicodeDecodeError) as exc:
+            raise A7ImportError(
+                f"Cannot read module '{module_path}': {exc}",
+            ) from exc
+        # Tokenizer and parser errors propagate unchanged so the caller
+        # keeps their original stage (tokenize 4, parse 5).
         tokens = Tokenizer(source, file_path).tokenize()
         source_lines = source.splitlines()
         ast = Parser(tokens, file_path, source_lines).parse()
@@ -261,10 +330,19 @@ class ModuleResolver:
         # Extract imports
         import_paths = self.process_imports(program)
 
-        import_declarations = {
-            decl.module_path or "": decl for decl in program.declarations or []
+        import_decls = [
+            decl for decl in program.declarations or []
             if decl.kind == NodeKind.IMPORT
-        }
+        ]
+        import_declarations = {decl.module_path or "": decl for decl in import_decls}
+        try:
+            source_lines = Path(current_path).read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            source_lines = []
+        self._raise_on_duplicate_imports(
+            import_decls, current_path, source_lines,
+            self._canonical_import_key,
+        )
         # Load each imported module and, transitively, every module they
         # import. FIFO order keeps the combined-program merge deterministic:
         # direct imports first, then their dependencies.
@@ -282,12 +360,19 @@ class ModuleResolver:
                 if error.span is not None:
                     raise
                 declaration = import_declarations.get(module_path)
-                if declaration is not None:
-                    raise SemanticError(
-                        f"Error loading module '{module_path}': {error.message}",
-                        span=declaration.span, filename=current_path,
+                if declaration is None:
+                    raise
+                if isinstance(error, A7ImportError):
+                    raise A7ImportError(
+                        error.message, span=declaration.span,
+                        filename=current_path,
                     ) from error
-                raise
+                if isinstance(error, (TokenizerError, ParseError)):
+                    raise
+                raise SemanticError(
+                    f"Error loading module '{module_path}': {error.message}",
+                    span=declaration.span, filename=current_path,
+                ) from error
             if module_info:
                 loaded.append(module_info)
                 for transitive in module_info.dependencies:

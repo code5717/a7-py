@@ -47,6 +47,8 @@ uv run a7 run examples/001_hello.a7 --profile release
 ```
 
 `check` runs the full A7 pipeline without writing files or invoking Zig.
+A file with no `main :: fn()` entry point exits 6; `check --lib` accepts a
+library file without one. Imported modules never need their own `main`.
 `build` creates a native executable, defaulting to `./<source-stem>`.
 `run` builds a temporary executable and runs it in the current working directory.
 Both require Zig 0.16.0. The default `--profile debug` uses Zig Debug;

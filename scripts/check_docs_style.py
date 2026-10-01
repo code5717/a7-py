@@ -34,7 +34,36 @@ BANNED_PHRASES = {
     "redundant structure": [
         re.compile(r"\band also\b", re.IGNORECASE),
     ],
+    "agent-slop": [
+        re.compile(r"\bit is worth noting\b", re.IGNORECASE),
+        re.compile(r"\bin order to\b", re.IGNORECASE),
+        re.compile(r"\bleverage\b", re.IGNORECASE),
+        re.compile(r"\brobust\b", re.IGNORECASE),
+        re.compile(r"\bcomprehensive\b", re.IGNORECASE),
+        re.compile(r"\bseamless\b", re.IGNORECASE),
+        re.compile(r"\bdelve\b", re.IGNORECASE),
+        re.compile(r"\bjourney\b", re.IGNORECASE),
+        re.compile(r"\blandscape\b", re.IGNORECASE),
+    ],
 }
+
+
+def _has_clean_match(pat: re.Pattern[str], line: str) -> bool:
+    """True when the pattern matches outside an identifier.
+
+    Word boundaries already exclude most snake_case hits. This guard
+    covers the rest: a match counts only when the chars on both sides
+    are not `[A-Za-z0-9_]`, so names like `robust_center` never flag.
+    """
+    for m in pat.finditer(line):
+        before = line[m.start() - 1] if m.start() > 0 else ""
+        after = line[m.end()] if m.end() < len(line) else ""
+        if before != "" and re.match(r"[A-Za-z0-9_]", before):
+            continue
+        if after != "" and re.match(r"[A-Za-z0-9_]", after):
+            continue
+        return True
+    return False
 
 def iter_doc_paths(root: Path) -> list[Path]:
     paths: set[Path] = set()
@@ -97,7 +126,11 @@ def check_file(path: Path) -> list[Finding]:
 
         for rule, patterns in BANNED_PHRASES.items():
             for pat in patterns:
-                if pat.search(line):
+                if rule == "agent-slop":
+                    matched = _has_clean_match(pat, line)
+                else:
+                    matched = bool(pat.search(line))
+                if matched:
                     findings.append(Finding(path, idx, rule, line.strip()))
                     break
 

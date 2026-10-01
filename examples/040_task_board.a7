@@ -35,9 +35,9 @@ priority_label :: fn(priority: i32) string {
     }
 }
 
-print_task :: fn(index: i32, task: Task) i32 {
+print_task :: fn(slot: i32, task: Task) i32 {
     score := risk_score(task)
-    io.println("{}: {} priority={} done={} risk={}", index, task.title, priority_label(task.priority), task.done, score)
+    io.println("{}: {} priority={} done={} risk={}", slot, task.title, priority_label(task.priority), task.done, score)
     if task.done {
         ret 0
     }

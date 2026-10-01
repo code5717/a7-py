@@ -533,3 +533,20 @@ def test_secret_scan_fails_when_repository_cannot_be_enumerated(tmp_path, monkey
     monkeypatch.setattr(scanner, "ROOT", tmp_path)
     assert scanner.main() == 2
     assert "cannot enumerate repository files" in capsys.readouterr().err
+
+
+def test_native_archive_name_pattern() -> None:
+    import re
+    import subprocess
+
+    prefix = subprocess.run(
+        [sys.executable, "scripts/project_status.py", "--field", "release_archive_prefix"],
+        cwd=ROOT, text=True, capture_output=True, timeout=10,
+    )
+    assert prefix.returncode == 0, prefix.stderr or prefix.stdout
+    assert prefix.stdout.strip() == "a7-example-artifacts-linux-x86_64-zig0.16.0"
+
+    pattern = re.compile(r"^a7-example-artifacts-linux-x86_64-zig0\.16\.0-(debug|release)\.tar\.gz$")
+    for profile in ("debug", "release"):
+        name = f"{prefix.stdout.strip()}-{profile}.tar.gz"
+        assert pattern.match(name), name

@@ -367,3 +367,44 @@ class TestErrorHandling:
         """Test parser error on unexpected tokens."""
         with pytest.raises(ParseError):
             parse_a7(":: 42")  # Missing identifier
+
+
+class TestPhase1ParserFixes:
+    """Pins for targeted parser fixes: spans, alias lookahead, for backtrack."""
+
+    def test_binary_expression_span_covers_both_operands(self):
+        """Binary nodes span from the start of the left operand to the end of the right."""
+        expr = parse_a7("result :: 1 + 2").declarations[0].value
+        assert expr.kind == NodeKind.BINARY
+        assert (expr.span.start_line, expr.span.start_column) == (
+            expr.left.span.start_line,
+            expr.left.span.start_column,
+        )
+        assert (expr.span.end_line, expr.span.end_column) == (
+            expr.right.span.end_line,
+            expr.right.span.end_column,
+        )
+
+    def test_bare_identifier_after_declare_const_is_const_alias(self):
+        """`Name :: N` is a CONST value alias even for a bare identifier.
+
+        The parser cannot tell a value from a named type, so `Alias :: N`
+        aliases the value N (v1 regression `unused-constant-keeps-effects`
+        depends on this); `x :: foo + 1` stays a CONST as well.
+        """
+        alias = parse_a7("MyInt :: UserType").declarations[0]
+        assert alias.kind == NodeKind.CONST
+        assert alias.value.kind == NodeKind.IDENTIFIER
+        assert alias.value.name == "UserType"
+
+        const_decl = parse_a7("x :: foo + 1").declarations[0]
+        assert const_decl.kind == NodeKind.CONST
+        assert const_decl.value.kind == NodeKind.BINARY
+
+    def test_c_style_for_loop_with_var_init_parses(self):
+        """C-style `for i := 0; ...` backtracks and parses init as a VAR decl."""
+        code = "main :: fn() { for i := 0; i < 10; i = i + 1 { x := 1 } }"
+        stmt = parse_a7(code).declarations[0].body.statements[0]
+        assert stmt.kind == NodeKind.FOR
+        assert stmt.init.kind == NodeKind.VAR
+        assert stmt.init.name == "i"

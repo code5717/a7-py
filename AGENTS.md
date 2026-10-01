@@ -18,35 +18,55 @@ synced environment.
 
 ## No recursion in compiler internals
 
-No-recursion rule for compiler internals: no function in `a7/` may call
-itself directly or through a cycle of calls, including the parser and the
-backend. Use explicit stacks and worklists. `test/test_no_recursion.py`
-(being added as batch NOREC-0) enforces this with a static call-graph scan;
-until the conversions in `docs/plan/execution.md` ("No recursion anywhere in
-the compiler") land, it holds a shrinking list of the recursive groups that
-still exist; do not add to it. A scan on 2026-09-17 found recursion in the
-parser, type checker, type equality (`a7/types.py`), semantic validator,
-safety pass, AST preprocessor, backend, module resolver, symbol table dump and
-console formatter. The pipeline is validated at Python recursion
-limit 100 (see `test/test_iterative_traversal.py`). A7 source recursion is a
-separate, banned construct (see "A7 Source Rules" below).
+No-recursion rule for compiler internals: no new recursion in `a7/`. No
+function may call itself directly or through a cycle of calls. Use explicit
+stacks and worklists. `test/test_no_recursion.py` holds the ratchet: a
+static call-graph scan with a shrinking allowlist of the recursive groups
+that still exist; do not add to it. The historical census from 2026-09-17
+listed the parser, type checker, type equality (`a7/types.py`), semantic
+validator, safety pass, AST preprocessor, backend, module resolver, symbol
+table dump and console formatter. Current state per `README.md`: semantic
+analysis, AST preprocessing, formatter/reporting AST walks, and backend
+binary-expression emission use explicit stacks; the parser is recursive
+descent and backend statement/non-binary expression paths still use
+visitor-style recursive emission in places. The pipeline is validated at
+Python recursion limit 100 (see `test/test_iterative_traversal.py`). A7
+source recursion is a separate, banned construct (see "A7 Source Rules"
+below).
 
 ## Verification Commands
 
+- Pytest (all): `PYTHONPATH=. uv run pytest`
+- Single test file: `PYTHONPATH=. uv run pytest test/test_tokenizer.py`
+- Targeted by keyword: `PYTHONPATH=. uv run pytest -k "generic" -v`
 - Debug artifact verification:
   `uv run python scripts/build_examples.py --profile debug --backend zig --clean`
 - Release artifact verification:
   `uv run python scripts/build_examples.py --profile release --backend zig --clean`
+- Example E2E:
+  `uv run python scripts/verify_examples_e2e.py`
+- Error-stage matrix:
+  `uv run python scripts/verify_error_stages.py --mode-set all --format both`
 - Compiler/package gate: `./run_all_tests.sh`
 - Complete local and CI release checks: `./run_release_checks.sh`
+- Gate kill switch: `A7_CHECK_TIMEOUT` (default 1200s per check, 0 disables),
+  `./run_all_tests.sh --timeout 300` for a shorter bound,
+  `./run_all_tests.sh --only pytest` or `--skip bench` to run a subset.
+  A hung check fails with `TIMEOUT` (exit 124) instead of hanging the gate.
+  To kill a running gate started in background, kill its process tree
+  (`ps aux | grep run_all_tests`, then `kill` the gate PID).
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release jobs run this
   with `--skip-build` after `uv build`)
-- Docs site build: `cd site && bun install && bun run build`
+- Docs site build: `cd site && bun install --frozen-lockfile && bun run build`
 - Agent/curl.md docs preview: `cd site && bun run build && bun run preview`
   then check `/a7-py/llms.txt`, `/a7-py/llms-full.txt`, and
   `/a7-py/docs/index.md`.
+
+Examples are verified end-to-end against the Zig backend.
+The Zig example E2E script must pass for any change to
+`examples/`, codegen, or runtime behavior.
 
 `run_all_tests.sh` is the compiler/package gate (pytest,
 parser/semantic/codegen tests, Zig example e2e, debug + release artifacts,
@@ -92,6 +112,20 @@ repository.
 - Report failures plainly, with the output. Do not hedge a verified result and
   do not soften a real failure. Say when a step was skipped.
 
+## Anti-slop
+
+- No emojis in code, docs, or terminal output unless asked or a fixture
+  requires them.
+- No boilerplate docstrings that restate a name. State the invariant or
+  delete the comment.
+- No narrator comments. A comment that only points at itself ("This", "Here",
+  "Obviously", "Clearly", "Simply", "Just", "Note that") says nothing; give
+  the reason instead.
+- No praise or hype adjectives for the work, the question, or the user.
+- Use least-privilege tool calls. Do not ask for broad allows such as
+  `Bash python3 -c *` or `Read //tmp/**` wildcards; request the narrow path
+  or command the step needs.
+
 ## Language change approval
 
 - Before changing existing A7 syntax or behavior, show the user the current
@@ -128,23 +162,34 @@ repository.
 
 ## Post-Change Checklist
 
-After making major changes (new language features, bug fixes, backend
-additions, refactors), ensure the following docs are up to date before
-committing:
+When language features, backends, or user-facing behavior change, update:
 
 1. **docs/CHANGELOG.md** — add a short release-facing entry
-2. **README.md** — update usage, feature lists, or examples if affected
-3. **docs/SPEC.md** — update if language semantics or syntax changed
-4. **docs/STATUS.md** — update current gaps, priorities, or roadmap
+2. **README.md** — usage, feature lists, examples
+3. **docs/SPEC.md** — language semantics or syntax
+4. **docs/STATUS.md** — close or open gaps and priorities
 5. **site/public/llms.txt**, **site/public/llms-full.txt**, and
-   **site/public/docs/** — update agent/curl.md entry points if site
+   **site/public/docs/** — update agent/curl.md entry points when site
    navigation, release commands, CLI behavior, or public docs structure
-   changed
+   changes; run `(cd site && bun run sync:exports)` after website content
+   edits so tracked exports stay current
 
 Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
 `docs/CHANGELOG.md`, `docs/STATUS.md`, `site/public/llms.txt`,
 `site/public/llms-full.txt`, and `site/public/docs/` — drift between them is
 treated as a bug.
+
+## Subagents
+
+Use subagents for independent workstreams. Dispatch code, tests, docs,
+scripts, examples/site, and hygiene work in parallel through subagents when
+the streams touch different files. Give each worker one file set; file sets
+must not overlap. Tell workers to read before editing and to check
+`git status --porcelain` on their files before the first edit. Each worker
+runs its own gate before reporting done: `pytest` for code and tests,
+`build_examples.py` for examples and codegen, `bun run check` for site work.
+The parent session consolidates worker results and runs the full gate for
+non-trivial changes.
 
 ## Security Caveat
 

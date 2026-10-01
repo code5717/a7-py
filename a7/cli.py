@@ -7,6 +7,7 @@ import contextlib
 import io
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,7 +16,22 @@ from pathlib import Path
 
 from .backends import list_backends
 from .compile import A7Compiler, CompileMode, OutputFormat
-from .toolchain import find_zig
+
+ZIG_VERSION = "0.16.0"
+
+
+def find_zig() -> tuple[str | None, str]:
+    executable = shutil.which("zig")
+    if executable is None:
+        return None, f"Zig {ZIG_VERSION} required: zig was not found on PATH"
+    try:
+        result = subprocess.run([executable, "version"], text=True, capture_output=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return None, f"Cannot run Zig: {exc}"
+    version = result.stdout.strip()
+    if result.returncode != 0 or version != ZIG_VERSION:
+        return None, f"Zig {ZIG_VERSION} required; found {version or result.stderr.strip() or 'unknown version'}"
+    return executable, f"Zig {version}: {executable}"
 
 
 def native_output_conflict(input_paths: list[str], destination: Path) -> bool:
@@ -60,7 +76,22 @@ def _layout_report(result) -> str:
 
 def workflow(argv: list[str]) -> int:
     command = argv[0]
-    parser = argparse.ArgumentParser(prog=f"a7 {command}")
+    parser = argparse.ArgumentParser(
+        prog=f"a7 {command}",
+        **(
+            {
+                "epilog": (
+                    "Program arguments follow '--' and are passed through to "
+                    "the built program (e.g. `a7 run prog.a7 -- --help`). "
+                    "The program's exit code is returned as-is, so it can "
+                    "collide with compiler exit codes; distinguishing them "
+                    "needs a gate packet and is intentionally unchanged."
+                )
+            }
+            if command == "run"
+            else {}
+        ),
+    )
     if command == "doctor":
         parser.parse_args(argv[1:])
         zig, message = find_zig()
@@ -77,6 +108,8 @@ def workflow(argv: list[str]) -> int:
         parser.add_argument("--format", choices=["human", "json"], default="human")
         parser.add_argument("--layout", action="store_true",
                             help="Print struct memory layout (size, 64B line use, field offsets)")
+        parser.add_argument("--lib", action="store_true",
+                            help="Check as a library: allow no 'main :: fn()' entry point")
     else:
         parser.add_argument("--profile", choices=["debug", "release"], default="debug")
         parser.add_argument("--no-nonwrap", action="store_true")
@@ -97,6 +130,7 @@ def workflow(argv: list[str]) -> int:
             output_format=OutputFormat.JSON,
             build_profile=getattr(args, "profile", "debug"),
             no_nonwrap=getattr(args, "no_nonwrap", False),
+            is_library=getattr(args, "lib", False),
         ).compile_file_detailed(args.file)
     if command == "check":
         if args.format == "json":
@@ -216,6 +250,12 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--lib",
+        action="store_true",
+        help="Compile as a library: allow no 'main :: fn()' entry point",
+    )
+
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -252,6 +292,7 @@ def main() -> None:
         doc_path=doc_path,
         build_profile=args.build_profile,
         no_nonwrap=args.no_nonwrap,
+        is_library=args.lib,
     )
     result = compiler.compile_file_detailed(str(input_path), args.output)
     sys.exit(result.exit_code)

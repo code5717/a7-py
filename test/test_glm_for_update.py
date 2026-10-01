@@ -1,6 +1,13 @@
 """A7 loop update statements discard results without changing control flow."""
+import sys
+from pathlib import Path
+
 import pytest
-from test_zig_backend_runtime import build, compile_with_cli, run_piped, zig, zig_cache
+
+# test/ is not a package, so import the shared runtime helper by path,
+# matching test_untyped_constants_acceptance.py:16-19.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from test_zig_backend_runtime import build, compile_with_cli, run_piped, zig, zig_cache  # noqa: E402,F401
 
 @pytest.mark.parametrize("profile", ["Debug", "ReleaseFast"])
 @pytest.mark.parametrize("step", [

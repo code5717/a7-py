@@ -23,16 +23,15 @@ import math
 from typing import Optional, Union
 
 from .ast_nodes import BinaryOp, UnaryOp
-from .types import PrimitiveType, Type
+from .types import INTEGER_BIT_WIDTHS, PrimitiveType, SIGNED_INTEGER_WIDTHS, Type
 
 Number = Union[int, float]
 
-# name -> (bit width, signed)
+# Alias onto the canonical a7.types tables. Values flow from the single
+# source; the old name stays so integer_layout and its callers are untouched.
 _INTEGER_LAYOUT = {
-    'i8': (8, True), 'i16': (16, True), 'i32': (32, True),
-    'i64': (64, True), 'isize': (64, True),
-    'u8': (8, False), 'u16': (16, False), 'u32': (32, False),
-    'u64': (64, False), 'usize': (64, False),
+    name: (width, name in SIGNED_INTEGER_WIDTHS)
+    for name, width in INTEGER_BIT_WIDTHS.items()
 }
 
 _DEFAULT_INTEGER_TYPE = 'i32'

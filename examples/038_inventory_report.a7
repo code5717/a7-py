@@ -26,14 +26,14 @@ apply_discount :: fn(item: ref Item, percent: i32) {
     item.price = (item.price * remaining) / 100
 }
 
-print_item :: fn(index: i32, item: Item) i32 {
+print_item :: fn(slot: i32, item: Item) i32 {
     line_value := value_of(item)
     if item.stock <= item.reorder {
-        io.println("{}: {} stock={} value={} reorder=yes", index, item.name, item.stock, line_value)
+        io.println("{}: {} stock={} value={} reorder=yes", slot, item.name, item.stock, line_value)
         ret 1
     }
 
-    io.println("{}: {} stock={} value={} reorder=no", index, item.name, item.stock, line_value)
+    io.println("{}: {} stock={} value={} reorder=no", slot, item.name, item.stock, line_value)
     ret 0
 }
 

@@ -127,7 +127,12 @@ class NameResolutionPass:
                 node=node,
                 is_mutable=False,
             )
-            self.symbols.define(module_symbol)
+            if not self.symbols.define(module_symbol):
+                self.add_error(
+                    SemanticErrorType.ALREADY_DEFINED,
+                    node.span,
+                    f"Import alias '{node.alias}'",
+                )
         elif node.is_using:
             # using import "io"
             self.modules.add_using_import(module_path)

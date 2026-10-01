@@ -90,8 +90,19 @@ def test_root_main_signature_rejected(tmp_path, declaration):
 
 
 def test_library_without_main_remains_valid(tmp_path):
-    result, _ = compile_source(tmp_path, 'answer :: fn() i32 { ret 42 }')
-    assert result.returncode == 0, result.stdout + result.stderr
+    # LNG-16 (Option B): a main-less file is rejected without --lib, and
+    # accepted as a library with it. Both directions are pinned here.
+    rejected, _ = compile_source(tmp_path, 'answer :: fn() i32 { ret 42 }')
+    assert rejected.returncode == 6, rejected.stdout + rejected.stderr
+    assert "--lib" in rejected.stdout + rejected.stderr
+    path = tmp_path / 'case.a7'
+    out = tmp_path / 'case.zig'
+    accepted = subprocess.run(
+        [sys.executable, str(ROOT / 'main.py'), '--format', 'json', '--lib', str(path), '-o', str(out)],
+        capture_output=True, text=True,
+    )
+    assert accepted.returncode == 0, accepted.stdout + accepted.stderr
+    assert out.exists()
 
 
 def test_file_import_cycle_has_specific_diagnostic(tmp_path):

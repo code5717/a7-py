@@ -12,7 +12,7 @@
 // Those need a guard first, or one explicit `cast(usize, ...)` once the value
 // is known to fit.
 //
-// The rejected forms are collected in examples/rejected/indexing.a7 so the
+// The rejected forms are collected in examples/rejected/signed_index.a7 so the
 // rule is pinned by a test rather than only by this comment.
 
 io :: import "std/io"

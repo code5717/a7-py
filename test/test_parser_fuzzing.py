@@ -13,6 +13,10 @@ from a7.tokens import Tokenizer, Token, TokenType
 from a7.errors import ParseError, TokenizerError
 from a7.ast_nodes import NodeKind
 
+# Fixed seed so fuzz runs are reproducible. Individual cases may reseed
+# via RandomCodeGenerator(seed=...) for tighter reproducibility.
+random.seed(0)
+
 
 class RandomCodeGenerator:
     """Generate random but semi-valid A7 code for fuzzing."""

@@ -395,9 +395,10 @@ class Tokenizer:
             return True
 
         if self.current_char() == "/" and self.peek_char() == "*":
-            # Multi-line comment - consume but don't add token. EOF is an
-            # accepted comment terminator (see test_003_comments) so an
-            # unterminated /* simply consumes the rest of the file.
+            # Multi-line comment - consume but don't add token. An
+            # unterminated /* is a tokenizer error (exit 4).
+            start_line = self.line
+            start_column = self.column
             self.advance()  # /
             self.advance()  # *
 
@@ -413,6 +414,15 @@ class Tokenizer:
                     depth -= 1
                 else:
                     self.advance()
+            if depth > 0:
+                raise TokenizerError.from_type_and_location(
+                    TokenizerErrorType.NOT_CLOSED_COMMENT,
+                    start_line,
+                    start_column,
+                    2,
+                    self.filename,
+                    self.source_lines,
+                )
             return True
 
         if self.current_char() == "#":

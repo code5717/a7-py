@@ -33,9 +33,9 @@ add_curve :: fn(student: ref Student, points: i32) {
     }
 }
 
-print_student :: fn(index: i32, student: Student) i32 {
+print_student :: fn(slot: i32, student: Student) i32 {
     avg := average(student)
-    io.println("{}: {} avg={} grade={}", index, student.name, avg, letter(avg))
+    io.println("{}: {} avg={} grade={}", slot, student.name, avg, letter(avg))
     ret avg
 }
 

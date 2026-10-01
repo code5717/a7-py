@@ -104,6 +104,8 @@ Still to decide:
 Compatibility: current programs keep compiling. The finite-only research promise is
 withdrawn, and documentation and proof rules for float guards change.
 
+Re-probed 2026-10-02 at HEAD (231d74e): `zero / zero` still exits 6, "Divisor not proven non-zero" at line 3 col 21, where L16 requires NaN (still open; L33 left divisor-proof requirements unchanged).
+
 ### G2. Ownership and reference surface
 
 Replaced on 2026-09-15 by the [memory plan](memory.md) (L15–L19), which makes
@@ -171,6 +173,8 @@ allocation-size arithmetic; and the D.024/D.038 `cast` contradiction.
 Recommended: typed constant evaluation that matches run time, same-type operands
 with contextual literals, proofs for narrowing and shifts, and checked size
 arithmetic.
+
+Re-probed 2026-10-02 at HEAD (231d74e): `x: u8 = 255` then `x += 1` now emits `x +%= 1` in debug and release (changed-by-L5/L35, unproven case keeps wrapping per L49); `MIN / -1` still `@divTrunc(x, -1)`, `MIN % -1` still `@rem(x, -1)`, `-MIN` still `(-x)`, `u8 << usize(8)` still `value << @intCast(count)` (still open; L35 leaves signed division overflow and abs(MIN) open).
 
 ### G4. Function values and the recursion ban
 
@@ -266,6 +270,8 @@ main :: fn() {
 
 Observed 2026-09-16: exit 0 with zero declarations and no diagnostic.
 
+Re-probed 2026-10-02 at HEAD (231d74e): unclosed `/*` still exits 0 with zero declarations and no diagnostic, in human and JSON modes (still open); file-scope bare statements (`x = 5`, `io.println("hi")`) now exit 5, "Expected declaration (constant, variable, or function)" (fixed, parser now fails compilation; `x := 5` at file scope is a valid global emitting `var x`).
+
 ### G7. Concurrency
 
 Decide structured task lifetime, cancellation, join outcomes and channel close.
@@ -326,6 +332,8 @@ main :: fn() {
 Observed 2026-09-16: compiles to Zig `x += 1`. By Zig's rules, Debug and
 ReleaseSafe builds trap on that overflow and ReleaseFast leaves it undefined. The
 program was not run.
+
+Re-probed 2026-10-02 at HEAD (231d74e): the same program now emits `x +%= 1` in both debug and release profiles (fixed; wrapping lowering landed under L5/L35, and the unproven overflow keeps wrapping per L49).
 
 ## Work tracks
 

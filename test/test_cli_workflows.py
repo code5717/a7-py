@@ -124,3 +124,42 @@ else:
     result = cli(tmp_path, 'run', source, '--', 'arg with spaces', '--profile', 'user-value', env=env)
     assert result.returncode == 23, result.stderr
     assert json.loads(result.stdout) == [str(tmp_path), ['arg with spaces', '--profile', 'user-value']]
+
+
+def library(tmp_path):
+    module = tmp_path / 'helper.a7'
+    module.write_text('pub answer :: fn() i32 {\n ret 42\n}\n')
+    return module
+
+
+def test_check_rejects_file_without_main(tmp_path):
+    result = cli(tmp_path, 'check', library(tmp_path))
+    assert result.returncode == 6, result.stdout + result.stderr
+    combined = result.stdout + result.stderr
+    assert "no 'main :: fn()'" in combined
+    assert '--lib' in combined
+
+
+def test_check_lib_accepts_file_without_main(tmp_path):
+    result = cli(tmp_path, 'check', '--lib', library(tmp_path))
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_build_and_run_reject_file_without_main(tmp_path):
+    # No Zig needed: the entry gate fails before toolchain lookup.
+    module = library(tmp_path)
+    built = cli(tmp_path, 'build', module)
+    assert built.returncode == 6, built.stdout + built.stderr
+    ran = cli(tmp_path, 'run', module)
+    assert ran.returncode == 6, ran.stdout + ran.stderr
+
+
+def test_lib_compile_emits_without_main(tmp_path):
+    module = library(tmp_path)
+    output = tmp_path / 'helper.zig'
+    rejected = cli(tmp_path, '--mode', 'compile', '--output', str(output), str(module))
+    assert rejected.returncode == 6, rejected.stdout + rejected.stderr
+    assert not output.exists()
+    accepted = cli(tmp_path, '--mode', 'compile', '--lib', '--output', str(output), str(module))
+    assert accepted.returncode == 0, accepted.stdout + accepted.stderr
+    assert 'pub fn answer' in output.read_text(encoding='utf-8')

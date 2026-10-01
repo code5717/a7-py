@@ -14,6 +14,8 @@ from rich.syntax import Syntax
 from rich.columns import Columns
 from rich.markup import escape
 
+from .scope_walk import iter_scopes
+
 
 class ConsoleFormatter:
     """Formats compilation results for Rich console display."""
@@ -229,28 +231,14 @@ class ConsoleFormatter:
         return symbols
 
     def _walk_scope(self, scope, symbols: list, scope_name: str, visited: set):
-        """Walk scopes to collect symbols (iterative)."""
-        if scope is None:
-            return
-
-        stack = [(scope, scope_name)]
-        while stack:
-            current, cur_name = stack.pop()
-            if current is None or id(current) in visited:
-                continue
-            visited.add(id(current))
-
+        """Walk scopes to collect symbols (iterative, see scope_walk.iter_scopes)."""
+        for current, cur_name in iter_scopes(scope, scope_name, visited):
             sym_dict = getattr(current, 'symbols', {})
             for name, sym in sym_dict.items():
                 kind_str = sym.kind.name if hasattr(sym, 'kind') and hasattr(sym.kind, 'name') else "?"
                 display_name = self._format_symbol_name(sym, name, cur_name)
                 type_str = self._format_symbol_type(sym, cur_name)
                 symbols.append({"name": display_name, "kind": kind_str, "type": type_str, "scope": cur_name})
-
-            children = getattr(current, 'children', [])
-            for i, child in enumerate(reversed(children)):
-                child_name = getattr(child, 'name', f"scope_{len(children) - 1 - i}")
-                stack.append((child, child_name))
 
     def _is_unknown_symbol_type(self, sym) -> bool:
         """Check whether a symbol currently has an unresolved/unknown type."""

@@ -21,9 +21,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from a7.compile import A7Compiler
 from a7.tokens import Tokenizer
 from a7.parser import Parser
-from a7.ast_nodes import ASTNode, NodeKind
+from a7.ast_nodes import ASTNode, BinaryOp, LiteralKind, NodeKind, UnaryOp
 from a7.backends.zig import ZigCodeGenerator
-from a7.errors import CodegenError
+from a7.errors import CodegenError, SourceSpan
 from a7.passes import NameResolutionPass, SafetyProofPass, TypeCheckingPass, SemanticValidationPass
 from a7.stdlib import StdlibRegistry
 
@@ -313,12 +313,12 @@ main :: fn() {
 """
         zig = compile_a7_to_zig(source)
         assert 'const std = @import("std");' in zig
-        # The literal is folded to its exact IEEE-754 bit pattern, so the
-        # argument is a @bitCast, not the decimal text. Assert the call shape
-        # and the folded operand; the numeric value is pinned in
+        # A finite literal whose decimal text round-trips to the same bits
+        # is emitted as written; only values with no faithful literal keep
+        # the @bitCast form. The numeric value is pinned in
         # test_exact_constants.py.
         assert '__a7_stdout_print("{}\\n", .{@sqrt(' in zig
-        assert '@bitCast(@as(u64, 4621256167635550208))' in zig
+        assert '@sqrt(9.0)' in zig
         assert "console.println" not in zig
         assert "mathlib.sqrt" not in zig
 
@@ -902,6 +902,125 @@ main :: fn() {
         assert 'allocator' in zig
         assert 'create' in zig or 'alloc' in zig
         assert 'destroy' in zig
+
+    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
+    def test_new_and_del_build_and_run(self, tmp_path):
+        source = tmp_path / "delcheck.a7"
+        output = tmp_path / "delcheck.zig"
+        binary = tmp_path / "delcheck"
+        source.write_text(
+            '''
+io :: import "std/io"
+Box :: struct {
+    value: i32
+}
+main :: fn() {
+    value_box := new Box
+    if value_box == nil {
+        io.println("allocation failed")
+        ret
+    }
+    value_box.value = 42
+    io.println("heap value = {}", value_box.value)
+    del value_box
+    io.println("deleted")
+}
+'''.strip(),
+            encoding="utf-8",
+        )
+        compiler = A7Compiler(verbose=False)
+        assert compiler.compile_file(str(source), str(output))
+        build = subprocess.run(
+            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert build.returncode == 0, build.stderr
+        run = subprocess.run(
+            [str(binary)],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == 0, run.stdout + run.stderr
+        assert run.stdout.splitlines() == ["heap value = 42", "deleted"]
+
+    def test_del_non_reference_reports_span(self):
+        from a7.types import PrimitiveType
+        codegen = ZigCodeGenerator()
+        target_span = SourceSpan(start_line=2, start_column=9, end_line=2, end_column=10)
+        target = ASTNode(NodeKind.IDENTIFIER, name="x", span=target_span)
+        codegen._type_map = {id(target): PrimitiveType("i32")}
+        node = ASTNode(
+            NodeKind.DEL,
+            expression=target,
+            span=SourceSpan(start_line=2, start_column=5, end_line=2, end_column=10),
+        )
+        with pytest.raises(CodegenError, match="del requires a reference type") as exc_info:
+            codegen._visit_del(node)
+        assert exc_info.value.span is target_span
+
+    def test_unsupported_pattern_reports_span(self):
+        codegen = ZigCodeGenerator()
+        span = SourceSpan(start_line=3, start_column=5, end_line=3, end_column=9)
+        with pytest.raises(CodegenError, match="unsupported match pattern") as exc_info:
+            codegen._emit_pattern(ASTNode(NodeKind.FALL, span=span))
+        assert exc_info.value.span is span
+
+    def test_negative_range_bounds_emit_as_expressions(self):
+        codegen = ZigCodeGenerator()
+        codegen._type_map = {}
+        operand = ASTNode(
+            NodeKind.LITERAL,
+            literal_kind=LiteralKind.INTEGER,
+            literal_value=5,
+            raw_text="5",
+        )
+        neg = ASTNode(NodeKind.UNARY, operator=UnaryOp.NEG, operand=operand)
+        node = ASTNode(NodeKind.PATTERN_RANGE, start=neg, end=neg)
+        assert codegen._emit_pattern(node) == "(-5)...(-5)"
+
+    def test_spanless_errors_carry_spans(self):
+        codegen = ZigCodeGenerator()
+        span = SourceSpan(start_line=4, start_column=3, end_line=4, end_column=10)
+
+        class _BogusOp:
+            name = "BOGUS"
+
+            def __hash__(self):
+                return hash("BOGUS")
+
+            def __eq__(self, other):
+                return False
+
+        with pytest.raises(CodegenError, match="unsupported binary operator") as exc_info:
+            codegen._binary_op_to_zig(_BogusOp(), span)
+        assert exc_info.value.span is span
+        with pytest.raises(CodegenError, match="missing array binary operand") as exc_info:
+            codegen._emit_array_operand_expr(None, "Zig", span)
+        assert exc_info.value.span is span
+        with pytest.raises(CodegenError, match="missing type node") as exc_info:
+            codegen._emit_type_node(None, span=span)
+        assert exc_info.value.span is span
+        with pytest.raises(CodegenError, match="missing type leaf") as exc_info:
+            codegen._emit_type_leaf(None, span=span)
+        assert exc_info.value.span is span
+
+    def test_array_binary_missing_operand_reports_binary_span(self):
+        from a7.types import ArrayType, PrimitiveType
+        codegen = ZigCodeGenerator()
+        span = SourceSpan(start_line=4, start_column=3, end_line=4, end_column=10)
+        value = ASTNode(NodeKind.BINARY, operator=BinaryOp.ADD, left=None, right=None, span=span)
+        codegen._type_map = {id(value): ArrayType(PrimitiveType("i32"), 4)}
+        target = ASTNode(NodeKind.IDENTIFIER, name="arr")
+        with pytest.raises(CodegenError, match="missing array binary operand") as exc_info:
+            codegen._emit_array_binary_assignment(target, value)
+        assert exc_info.value.span is span
+
+    def test_dead_helpers_removed(self):
+        assert not hasattr(ZigCodeGenerator, "_emit_binary")
+        assert not hasattr(ZigCodeGenerator, "_emit_array_binary_assignment_to_expr")
 
     def test_struct_init(self):
         source = '''

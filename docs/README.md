@@ -69,6 +69,7 @@ not override later counterexamples or establish that a finding remains unfixed.
 
 [Error analysis](ERROR_ANALYSIS.md) records an older 36-example compiler state.
 Its measurements are historical, not current verification results.
+[Error catalog](ERROR_CATALOG.md) lists every current diagnostic code with stage, exit, span, trigger, and fix.
 [Archive notes](archive/README.md) record earlier cleanup and the locations of
 archived tools.
 

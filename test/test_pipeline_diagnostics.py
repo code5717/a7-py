@@ -67,7 +67,8 @@ def test_missing_import_diagnostic_locates_import_declaration(tmp_path):
 
     result, payload = run_json_compile(source)
 
-    assert result.returncode == ExitCode.SEMANTIC
+    assert result.returncode == ExitCode.IO
+    assert payload["error"]["category"] == "io"
     detail = next(item for item in payload["error"]["details"] if "missing/module" in item["message"])
     assert detail["file"] == str(source)
     # The importing declaration is the editable source of a missing module.
@@ -118,7 +119,8 @@ def test_nested_missing_import_points_to_immediate_importer(tmp_path):
     source.write_text('helper :: import "helper"\nmain :: fn() {}\n')
     helper.write_text('// helper header\nmissing :: import "absent"\n')
     result, payload = run_json_compile(source)
-    assert result.returncode == ExitCode.SEMANTIC
+    assert result.returncode == ExitCode.IO
+    assert payload["error"]["category"] == "io"
     detail = next(item for item in payload["error"]["details"] if "absent" in item["message"])
     assert detail["file"] == str(helper)
     assert detail["span"]["start_line"] == 2

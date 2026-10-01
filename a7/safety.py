@@ -20,12 +20,15 @@ from a7.symbol_table import SymbolTable
 from a7.types import (
     ArrayType,
     FunctionType,
+    INTEGER_RANGES,
     PrimitiveType,
     ReferenceType,
+    SIGNED_INTEGER_WIDTHS,
     SliceType,
     Type,
     TypeKind,
     UnionType,
+    UNSIGNED_INTEGER_WIDTHS,
 )
 
 
@@ -46,21 +49,10 @@ class TypeCategory(Enum):
     OTHER = auto()
 
 
-SIGNED_RANGES = {
-    "i8": (-(2**7), 2**7 - 1),
-    "i16": (-(2**15), 2**15 - 1),
-    "i32": (-(2**31), 2**31 - 1),
-    "i64": (-(2**63), 2**63 - 1),
-    "isize": (-(2**63), 2**63 - 1),
-}
-UNSIGNED_RANGES = {
-    "u8": (0, 2**8 - 1),
-    "u16": (0, 2**16 - 1),
-    "u32": (0, 2**32 - 1),
-    "u64": (0, 2**64 - 1),
-    "usize": (0, 2**64 - 1),
-}
-INTEGER_RANGES = {**SIGNED_RANGES, **UNSIGNED_RANGES}
+# Aliases onto the canonical a7.types.INTEGER_RANGES table. Values flow from
+# the single source; the old names stay so the many uses below are untouched.
+SIGNED_RANGES = {name: INTEGER_RANGES[name] for name in SIGNED_INTEGER_WIDTHS}
+UNSIGNED_RANGES = {name: INTEGER_RANGES[name] for name in UNSIGNED_INTEGER_WIDTHS}
 
 # Headline message for each safety obligation kind. Kinds not listed use the
 # message of their diagnostic code. Division, index and slice obligations carry

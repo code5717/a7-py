@@ -37,11 +37,14 @@ checks all three steps and compares program output with fixtures.
 | --- | --- |
 | `a7 --version` | Print the installed package version. |
 | `a7 doctor` | Report package, Python, platform and Zig versions. |
-| `a7 check FILE [--format FORMAT]` | Run the full A7 pipeline without writing files or requiring Zig. |
+| `a7 check FILE [--format FORMAT] [--lib]` | Run the full A7 pipeline without writing files or requiring Zig. |
 | `a7 build FILE [-o PATH] [--profile PROFILE]` | Build a native executable, defaulting to `./<source-stem>`. |
 | `a7 run FILE [--profile PROFILE] -- [ARGS]` | Build a temporary executable and run it in the caller's working directory. |
 
 `check` accepts `--format human` or `--format json`, with human output by default.
+The entry file must define `main :: fn()`; without one, `check` exits 6 and
+names `--lib`. `check --lib` accepts a library file with no entry point.
+Imported modules never need their own `main`.
 Both native commands require exactly Zig 0.16.0. The default profile is `debug`,
 which selects Zig Debug. `release` selects ReleaseFast. Neither profile closes
 the current alias or lifetime safety gaps.

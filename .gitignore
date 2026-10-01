@@ -23,3 +23,8 @@ skills-lock.json
 
 # Local research downloads, audit logs, and disposable compiler probes
 /tmp/
+
+# Local test caches
+.pytest_cache/
+site/dist/
+site/node_modules/

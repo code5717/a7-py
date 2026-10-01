@@ -6,7 +6,8 @@ and edge cases that should be handled more robustly.
 """
 
 import pytest
-from a7.parser import parse_a7
+from a7.parser import parse_a7, Parser
+from a7.tokens import Tokenizer
 from a7.errors import ParseError
 
 
@@ -532,3 +533,44 @@ class TestErrorLocationAccuracy:
         assert exc_info.value.span is not None
         # Column should be around where the error occurs
         assert exc_info.value.span.start_column > 5
+
+
+class TestPhase1SpeculationAndMatchFixes:
+    """Pins for fatal re-raise, for-update flag restore, match error severity."""
+
+    def test_fatal_error_propagates_through_call_argument_speculation(self):
+        """Fatal errors are re-raised, not swallowed, by type-argument speculation."""
+        parser = Parser(Tokenizer("[i32]").tokenize())
+
+        def raise_fatal():
+            raise parser._fatal_error("boom", parser.current())
+
+        parser.parse_type = raise_fatal
+        with pytest.raises(ParseError) as exc_info:
+            parser._parse_call_argument()
+        assert getattr(exc_info.value, "fatal", False) is True
+
+    def test_non_fatal_error_still_falls_back_to_expression(self):
+        """Non-fatal speculation failures keep the old restore-and-retry path."""
+        parser = Parser(Tokenizer("[1]").tokenize())
+
+        def raise_soft():
+            raise ParseError.from_token("soft", parser.current())
+
+        parser.parse_type = raise_soft
+        node = parser._parse_call_argument()
+        assert node.kind.name == "ARRAY_INIT"
+
+    def test_for_update_failure_restores_struct_literal_flag(self):
+        """A failed for-update parse resets _suppress_struct_literals."""
+        parser = Parser(Tokenizer("for i := 0; i < 10; + { x := 1 }").tokenize())
+        with pytest.raises(ParseError):
+            parser.parse_for_statement()
+        assert getattr(parser, "_suppress_struct_literals", False) is False
+
+    def test_match_expression_bad_arm_error_is_fatal(self):
+        """Match expressions use the same fatal error as match statements."""
+        with pytest.raises(ParseError) as exc_info:
+            parse_a7("main :: fn() { x := match y { 1: 2 } }")
+        assert "case" in exc_info.value.message
+        assert getattr(exc_info.value, "fatal", False) is True

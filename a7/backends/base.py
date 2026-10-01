@@ -42,7 +42,13 @@ class CodeGenerator(ABC):
         pass
 
     def generic_visit(self, node: ASTNode):
-        """Default visitor that visits all children."""
+        """Default visitor that visits all children.
+
+        Iterative expectation: this loop itself does not recurse, but each
+        self.visit(child) call may recurse through backend visit overrides.
+        Backend visit methods must use explicit worklists for unbounded-depth
+        subtrees (see console_formatter.format_type for the pattern).
+        """
         for child in node.children:
             self.visit(child)
 

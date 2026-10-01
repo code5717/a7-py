@@ -4664,6 +4664,78 @@
   "title": "042_gradebook.a7"
  },
  {
+  "id": "example-043-math-library",
+  "status": "supported",
+  "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+  "topic": "examples",
+  "evidence": [
+   "https://github.com/code5717/a7-py/blob/master/examples/043_math_library.a7",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+  ],
+  "title": "043_math_library.a7"
+ },
+ {
+  "id": "example-044-indexing-rules",
+  "status": "supported",
+  "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+  "topic": "examples",
+  "evidence": [
+   "https://github.com/code5717/a7-py/blob/master/examples/044_indexing_rules.a7",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+  ],
+  "title": "044_indexing_rules.a7"
+ },
+ {
+  "id": "example-045-formatting",
+  "status": "supported",
+  "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+  "topic": "examples",
+  "evidence": [
+   "https://github.com/code5717/a7-py/blob/master/examples/045_formatting.a7",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+  ],
+  "title": "045_formatting.a7"
+ },
+ {
+  "id": "example-046-match-full",
+  "status": "supported",
+  "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+  "topic": "examples",
+  "evidence": [
+   "https://github.com/code5717/a7-py/blob/master/examples/046_match_full.a7",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+  ],
+  "title": "046_match_full.a7"
+ },
+ {
+  "id": "example-047-safety-obligations",
+  "status": "supported",
+  "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+  "topic": "examples",
+  "evidence": [
+   "https://github.com/code5717/a7-py/blob/master/examples/047_safety_obligations.a7",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+  ],
+  "title": "047_safety_obligations.a7"
+ },
+ {
+  "id": "example-048-worklist-traversal",
+  "status": "supported",
+  "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+  "topic": "examples",
+  "evidence": [
+   "https://github.com/code5717/a7-py/blob/master/examples/048_worklist_traversal.a7",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+  ],
+  "title": "048_worklist_traversal.a7"
+ },
+ {
   "id": "array-scalar-fill",
   "title": "Scalar-fill array initializer",
   "status": "unavailable",

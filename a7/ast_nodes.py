@@ -285,10 +285,26 @@ def create_identifier(name: str, span: SourceSpan = None) -> ASTNode:
     return ASTNode(kind=NodeKind.IDENTIFIER, name=name, span=span)
 
 
+def combine_spans(first: SourceSpan, second: SourceSpan) -> SourceSpan:
+    """Span covering first through second. None unless both spans exist."""
+    if first is None or second is None:
+        return None
+    return SourceSpan(
+        start_line=first.start_line,
+        start_column=first.start_column,
+        end_line=second.end_line,
+        end_column=second.end_column,
+    )
+
+
 def create_binary_expr(
     left: ASTNode, op: BinaryOp, right: ASTNode, span: SourceSpan = None
 ) -> ASTNode:
-    """Create a binary expression node."""
+    """Create a binary expression node. Span covers left through right."""
+    if span is None:
+        span = combine_spans(
+            getattr(left, "span", None), getattr(right, "span", None)
+        )
     return ASTNode(kind=NodeKind.BINARY, left=left, operator=op, right=right, span=span)
 
 

@@ -6,6 +6,7 @@ Translates A7 AST nodes to valid Zig source code.
 
 import math
 import re
+import struct
 from io import StringIO
 from typing import Optional, Dict, Set
 
@@ -13,7 +14,7 @@ from ..ast_nodes import ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp, Assig
 from ..cast_classifier import CastClass
 from ..errors import CodegenError
 from ..safety import BackendPlan
-from ..types import ArrayType, PointerType, PrimitiveType
+from ..types import ArrayType, PointerType, PrimitiveType, ReferenceType
 from .base import CodeGenerator
 
 
@@ -853,6 +854,7 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _visit_block(self, node: ASTNode) -> None:
         """Visit block statement (as a standalone statement)."""
+        self._write_indent()
         self._visit_block_inline(node)
 
     def _visit_block_inline(self, node: ASTNode, prelude_lines: Optional[list[str]] = None) -> None:
@@ -1353,6 +1355,7 @@ class ZigCodeGenerator(CodeGenerator):
         try:
             if stmt:
                 if stmt.kind == NodeKind.BLOCK:
+                    self._write_indent()
                     self._visit_block_inline(stmt)
                 else:
                     self.visit(stmt)
@@ -1513,6 +1516,9 @@ class ZigCodeGenerator(CodeGenerator):
         self._write_indent()
         expr_node = getattr(node, 'expression', None) or getattr(node, 'expr', None)
         if expr_node:
+            target_type = self._type_map.get(id(expr_node))
+            if target_type is not None and not isinstance(target_type, (ReferenceType, PointerType)):
+                raise CodegenError("Zig backend: del requires a reference type", expr_node.span or node.span)
             expr = self._emit_expr(expr_node)
             self.output.write(f"if ({expr}) |p| allocator.destroy(p);\n")
 
@@ -1568,12 +1574,6 @@ class ZigCodeGenerator(CodeGenerator):
         self._emit_array_binary_assignment_info(info)
         return True
 
-    def _emit_array_binary_assignment_to_expr(self, target_expr: str, value: ASTNode) -> None:
-        info = self._array_binary_assignment_info(target_expr, value)
-        if info is None:
-            raise CodegenError("Zig backend: expected fixed-array binary assignment", value.span)
-        self._emit_array_binary_assignment_info(info)
-
     def _emit_array_binary_assignment_info(self, info: tuple[str, str, str, str, int, str]) -> None:
         target_expr, left_expr, right_expr, op, size, elem_type = info
         self._write_indent()
@@ -1608,9 +1608,9 @@ class ZigCodeGenerator(CodeGenerator):
             raise CodegenError("Zig backend: array vector lowering requires primitive numeric elements", value.span)
         return (
             target_expr,
-            self._emit_array_operand_expr(value.left, "Zig"),
-            self._emit_array_operand_expr(value.right, "Zig"),
-            self._binary_op_to_zig(value.operator) + ("%" if result_type.element_type.is_integral() else ""),
+            self._emit_array_operand_expr(value.left, "Zig", value.span),
+            self._emit_array_operand_expr(value.right, "Zig", value.span),
+            self._binary_op_to_zig(value.operator, value.span) + ("%" if result_type.element_type.is_integral() else ""),
             result_type.size,
             self._map_primitive_type(result_type.element_type.name),
         )
@@ -1622,9 +1622,9 @@ class ZigCodeGenerator(CodeGenerator):
             and isinstance(self._type_map.get(id(value)), ArrayType)
         )
 
-    def _emit_array_operand_expr(self, node: Optional[ASTNode], backend_name: str) -> str:
+    def _emit_array_operand_expr(self, node: Optional[ASTNode], backend_name: str, span=None) -> str:
         if node is None:
-            raise CodegenError(f"{backend_name} backend: missing array binary operand")
+            raise CodegenError(f"{backend_name} backend: missing array binary operand", span)
         if node.kind not in {NodeKind.IDENTIFIER, NodeKind.FIELD_ACCESS, NodeKind.INDEX}:
             raise CodegenError(
                 f"{backend_name} backend: array binary operands must be named or indexed arrays",
@@ -1714,6 +1714,19 @@ class ZigCodeGenerator(CodeGenerator):
             bits = getattr(node, 'exact_float_bits', None)
             if bits is not None:
                 width, value = bits
+                if isinstance(val, float) and math.isfinite(val):
+                    # Emit the decimal text when it round-trips to the same
+                    # bits; keep @bitCast for values with no faithful literal.
+                    fmt = '>f' if width == 32 else '>d'
+                    try:
+                        same = struct.unpack(fmt, struct.pack(fmt, float(raw)))[0] == val
+                    except (ValueError, OverflowError):
+                        same = False
+                    if same:
+                        s = raw
+                        if "." not in s and "e" not in s and "E" not in s:
+                            s += ".0"
+                        return s
                 return f'@as(f{width}, @bitCast(@as(u{width}, {value})))'
             if isinstance(val, float) and not math.isfinite(val):
                 return self._emit_nonfinite_float(node, val)
@@ -1782,12 +1795,6 @@ class ZigCodeGenerator(CodeGenerator):
         """Emit an identifier."""
         return self._use_name(node.name or "undefined")
 
-    def _emit_binary(self, node: ASTNode) -> str:
-        """Emit a binary expression."""
-        left = self._emit_expr(node.left)
-        right = self._emit_expr(node.right)
-        return self._emit_binary_from_parts(node, left, right)
-
     def _emit_binary_iterative(self, root: ASTNode) -> str:
         """Emit nested binary expressions without using the Python call stack."""
         rendered: dict[int, str] = {}
@@ -1813,7 +1820,7 @@ class ZigCodeGenerator(CodeGenerator):
         """Render a binary node from already-rendered child expressions."""
         op = node.operator
 
-        zig_op = self._binary_op_to_zig(op)
+        zig_op = self._binary_op_to_zig(op, node.span)
 
         result_type = self._type_map.get(id(node))
         arithmetic_type = result_type.element_type if isinstance(result_type, ArrayType) else result_type
@@ -2217,7 +2224,13 @@ class ZigCodeGenerator(CodeGenerator):
         elif kind == NodeKind.PATTERN_WILDCARD:
             return "_"
         else:
-            return self._emit_expr(node)
+            try:
+                return self._emit_expr(node)
+            except CodegenError as exc:
+                raise CodegenError(
+                    f"Zig backend: unsupported match pattern '{kind.name}'",
+                    node.span,
+                ) from exc
 
     def _emit_match_condition_zig(self, scrutinee_expr: str, patterns: list[ASTNode]) -> str:
         conditions: list[str] = []
@@ -2284,10 +2297,10 @@ class ZigCodeGenerator(CodeGenerator):
                 stack.append(n.return_type)
         return False
 
-    def _emit_type_node(self, node: ASTNode, generic_env: Optional[Set[str]] = None) -> str:
+    def _emit_type_node(self, node: ASTNode, generic_env: Optional[Set[str]] = None, span=None) -> str:
         """Emit a type as a Zig type string. Iterative for linear chains."""
         if node is None:
-            raise CodegenError("Zig backend: missing type node")
+            raise CodegenError("Zig backend: missing type node", span)
 
         generic_env = generic_env or set()
         if self._type_contains_generic(node) and not generic_env:
@@ -2322,10 +2335,10 @@ class ZigCodeGenerator(CodeGenerator):
 
         raise CodegenError("Zig backend: incomplete type expression", node.span)
 
-    def _emit_type_leaf(self, node: ASTNode, generic_env: Optional[Set[str]] = None) -> str:
+    def _emit_type_leaf(self, node: ASTNode, generic_env: Optional[Set[str]] = None, span=None) -> str:
         """Emit a non-chain (leaf) type node."""
         if node is None:
-            raise CodegenError("Zig backend: missing type leaf")
+            raise CodegenError("Zig backend: missing type leaf", span)
 
         generic_env = generic_env or set()
         kind = node.kind
@@ -2643,7 +2656,7 @@ class ZigCodeGenerator(CodeGenerator):
 
     # === Helper methods ===
 
-    def _binary_op_to_zig(self, op: BinaryOp) -> str:
+    def _binary_op_to_zig(self, op: BinaryOp, span=None) -> str:
         """Convert A7 binary operator to Zig."""
         mapping = {
             BinaryOp.ADD: "+",
@@ -2666,7 +2679,7 @@ class ZigCodeGenerator(CodeGenerator):
             BinaryOp.BIT_SHR: ">>",
         }
         if op not in mapping:
-            raise CodegenError(f"Zig backend: unsupported binary operator '{op.name}'")
+            raise CodegenError(f"Zig backend: unsupported binary operator '{op.name}'", span)
         return mapping[op]
 
     def _assign_op_to_zig(self, op: AssignOp) -> str:

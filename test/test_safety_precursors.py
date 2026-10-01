@@ -497,3 +497,63 @@ def test_unproven_obligation_json_diagnostic_has_category_and_line(tmp_path, nam
     source, message, line = OBLIGATION_DIAGNOSTICS[name]
     code, payload, _ = run_cli(tmp_path, source)
     assert_rejected_at(payload, code, message, line)
+
+
+def test_returned_local_slice_is_accepted_and_zig_builds(tmp_path, zig, zig_cache):
+    """S5: returning a slice of a local stack array is accepted (KNOWN)."""
+    source = '''io :: import "std/io"
+get :: fn() []i32 {
+    buf: [4]i32 = [1, 2, 3, 4]
+    ret buf[0..2]
+}
+main :: fn() {
+    s := get()
+    io.println("{}", s.len)
+}
+'''
+    code, payload, output = run_cli(tmp_path, source)
+    assert code == ExitCode.SUCCESS, diagnostics(payload)
+    zig_check(zig, zig_cache, output)
+
+
+def test_index_into_slice_parameter_is_rejected(tmp_path):
+    """S5 pair: indexing a slice parameter is rejected without a guard."""
+    source = '''io :: import "std/io"
+first :: fn(xs: []i32) i32 {
+    i: usize = 0
+    ret xs[i]
+}
+main :: fn() {
+    io.println("{}", 1)
+}
+'''
+    code, payload, _ = run_cli(tmp_path, source)
+    assert_rejected_at(payload, code, INDEX_MESSAGE, 4)
+
+
+def test_index_use_inside_guard_condition_is_rejected(tmp_path):
+    """Short-circuit: `i < xs.len` proves later statements, not the `and`
+    right-hand side of its own condition. Both the in-condition use (line 3)
+    and the unguarded body use (line 4) are rejected."""
+    source = '''io :: import "std/io"
+get :: fn(xs: []i32, i: usize) i32 {
+    if i < xs.len and xs[i] > 0 {
+        ret xs[i]
+    }
+    ret -1
+}
+main :: fn() {
+    buf: [4]i32 = [1, 2, 3, 4]
+    s := buf[0..4]
+    io.println("{}", get(s, 2))
+}
+'''
+    code, payload, _ = run_cli(tmp_path, source)
+    assert code == ExitCode.SEMANTIC, payload
+    details = diagnostics(payload)
+    lines = sorted(
+        d.get("span", {}).get("start_line")
+        for d in details
+        if INDEX_MESSAGE in d["message"]
+    )
+    assert lines == [3, 4], details

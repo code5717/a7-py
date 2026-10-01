@@ -189,26 +189,26 @@ def get_tokenizer_error_message(error_type: TokenizerErrorType) -> str:
 def get_tokenizer_error_advice(error_type: TokenizerErrorType) -> str:
     """Get helpful advice for fixing a tokenizer error."""
     advice = {
-        TokenizerErrorType.INVALID_ESCAPE_CHAR: "Change the letter after \\",
-        TokenizerErrorType.NOT_CLOSED_COMMENT: "Close the comment with delimiter",
-        TokenizerErrorType.INVALID_CHARACTER: "Remove this character",
-        TokenizerErrorType.OUT_OF_MEMORY: "The compiler needs more memory",
+        TokenizerErrorType.INVALID_ESCAPE_CHAR: "Use one of n t r 0 \\ ' \" or \\xHH after the backslash",
+        TokenizerErrorType.NOT_CLOSED_COMMENT: "Close the /* block comment with */; nesting counts",
+        TokenizerErrorType.INVALID_CHARACTER: "Remove or replace the character at the reported column",
+        TokenizerErrorType.OUT_OF_MEMORY: "Free memory or split the input, then retry",
         TokenizerErrorType.TOO_LONG_IDENTIFIER: "Identifier must not exceed 100 characters",
         TokenizerErrorType.TOO_LONG_NUMBER: "Number must not exceed 100 digits",
-        TokenizerErrorType.TOO_LONG_STRING: "String must not exceed maximum length",
-        TokenizerErrorType.NOT_CLOSED_CHAR: "Close the char with a quote",
-        TokenizerErrorType.NOT_CLOSED_STRING: "Close the string with a double quote",
-        TokenizerErrorType.END_OF_FILE: "Needs more code for compiling",
-        TokenizerErrorType.FILE_EMPTY: "Do not compile empty files",
-        TokenizerErrorType.BAD_TOKEN_AT_GLOBAL: "Do not put this token in global scope",
+        TokenizerErrorType.TOO_LONG_STRING: "Shorten the string literal",
+        TokenizerErrorType.NOT_CLOSED_CHAR: "Close the char literal with a quote on the same line",
+        TokenizerErrorType.NOT_CLOSED_STRING: "Close the string literal with a double quote",
+        TokenizerErrorType.END_OF_FILE: "Add the missing closing token after the last line",
+        TokenizerErrorType.FILE_EMPTY: "Add source code to the file or drop it from the build",
+        TokenizerErrorType.BAD_TOKEN_AT_GLOBAL: "Move this statement inside a function body",
         TokenizerErrorType.TABS_UNSUPPORTED: "Convert the tabs to spaces",
         TokenizerErrorType.INVALID_NUMBER: "Use digits separated by single underscores",
         TokenizerErrorType.INVALID_SCIENTIFIC_NOTATION: "Add digits after the exponent",
         TokenizerErrorType.INVALID_HEX_NUMBER: "Use valid hexadecimal digits (0-9, a-f, A-F)",
         TokenizerErrorType.INVALID_BINARY_NUMBER: "Use only binary digits (0, 1)",
         TokenizerErrorType.INVALID_OCTAL_NUMBER: "Use only octal digits (0-7)",
-        TokenizerErrorType.INVALID_GENERIC_SYNTAX: "Generic types must start with '$' followed by letters and underscores only",
-        TokenizerErrorType.UNSUPPORTED: "This feature is not yet supported",
+        TokenizerErrorType.INVALID_GENERIC_SYNTAX: "Start the name with a letter after '$'; follow with letters, digits, or underscores",
+        TokenizerErrorType.UNSUPPORTED: "Rewrite without this construct; it has no support in this release",
         TokenizerErrorType.UNKNOWN: "Please report this error",
     }
     return advice.get(error_type, "Please report this error")
@@ -269,7 +269,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
     """Get helpful advice for fixing a semantic error."""
     advice = {
         # Name resolution errors
-        SemanticErrorType.UNDEFINED_IDENTIFIER: "Check the identifier name and ensure it's declared before use",
+        SemanticErrorType.UNDEFINED_IDENTIFIER: "Fix the spelling or declare the name before this line",
         SemanticErrorType.ALREADY_DEFINED: "Choose a different name or remove the previous definition",
         SemanticErrorType.DUPLICATE_PARAMETER: "Each parameter must have a unique name",
         SemanticErrorType.DUPLICATE_FIELD: "Each field must have a unique name",
@@ -277,20 +277,20 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.DUPLICATE_GENERIC_PARAM: "Each generic parameter must have a unique name",
 
         # Scope errors
-        SemanticErrorType.BREAK_OUTSIDE_LOOP: "Break can only be used inside a loop",
-        SemanticErrorType.BREAK_UNDEFINED_LABEL: "Use a label that is visible from this break statement",
-        SemanticErrorType.CONTINUE_OUTSIDE_LOOP: "Continue can only be used inside a loop",
-        SemanticErrorType.CONTINUE_UNDEFINED_LABEL: "Use a label that is visible from this continue statement",
-        SemanticErrorType.RETURN_OUTSIDE_FUNCTION: "Return can only be used inside a function",
-        SemanticErrorType.DEFER_OUTSIDE_FUNCTION: "Defer can only be used inside a function",
+        SemanticErrorType.BREAK_OUTSIDE_LOOP: "Move the break inside a loop body or remove it",
+        SemanticErrorType.BREAK_UNDEFINED_LABEL: "Define the label on an enclosing loop or drop the label",
+        SemanticErrorType.CONTINUE_OUTSIDE_LOOP: "Move the continue inside a loop body or remove it",
+        SemanticErrorType.CONTINUE_UNDEFINED_LABEL: "Define the label on an enclosing loop or drop the label",
+        SemanticErrorType.RETURN_OUTSIDE_FUNCTION: "Move the return inside a function body or remove it",
+        SemanticErrorType.DEFER_OUTSIDE_FUNCTION: "Move the defer inside a function body or remove it",
 
         # Semantic validation
         SemanticErrorType.UNREACHABLE_CODE: "Remove unreachable code or fix control flow",
         SemanticErrorType.MISSING_RETURN: "Add a return statement that covers all code paths",
         SemanticErrorType.CANNOT_ASSIGN_TO_IMMUTABLE: "Declare the binding with := if it needs to be reassigned",
-        SemanticErrorType.INVALID_DEFER_SCOPE: "Defer statements must be used carefully with scoping rules",
-        SemanticErrorType.MEMORY_LEAK: "Ensure all allocated memory is freed",
-        SemanticErrorType.DOUBLE_FREE: "Ensure memory is only freed once",
+        SemanticErrorType.INVALID_DEFER_SCOPE: "Place the defer directly in the function body it belongs to",
+        SemanticErrorType.MEMORY_LEAK: "Free the allocated value before it goes out of scope",
+        SemanticErrorType.DOUBLE_FREE: "Delete the value once; remove the second delete",
         SemanticErrorType.DELETE_NON_REFERENCE: "Only values with reference type can be deleted",
         SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Use nil only where a reference type is expected",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Add a type annotation or an initializer for this declaration",
@@ -299,8 +299,8 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.RECURSION_NOT_ALLOWED: "Rewrite the function using loops, explicit stacks, or another iterative structure",
 
         # Import errors
-        SemanticErrorType.CIRCULAR_IMPORT: "Reorganize modules to remove circular dependencies",
-        SemanticErrorType.MODULE_NOT_FOUND: "Check the module path and ensure the file exists",
+        SemanticErrorType.CIRCULAR_IMPORT: "Break the cycle: move the shared declarations into a third module",
+        SemanticErrorType.MODULE_NOT_FOUND: "Fix the module path or add the file to the search path",
         SemanticErrorType.IMPORT_NAME_CONFLICT: "Use an alias for the import or rename the conflicting definition",
         SemanticErrorType.UNSUPPORTED_IMPORT: "Use a current virtual stdlib import or keep file-backed modules in the same source file until backend linking is implemented",
 
@@ -401,12 +401,12 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
         TypeErrorType.ARGUMENT_TYPE_MISMATCH: "Ensure argument types match parameter types",
 
         # Field/member access errors
-        TypeErrorType.NO_SUCH_FIELD: "Check the field name and struct definition",
+        TypeErrorType.NO_SUCH_FIELD: "Fix the field spelling or add the field to the struct",
         TypeErrorType.FIELD_ACCESS_ON_NON_STRUCT: "Field access requires a struct type",
 
         # Index errors
         TypeErrorType.CANNOT_INDEX_TYPE: "Only arrays and slices can be indexed",
-        TypeErrorType.INDEX_NOT_INTEGER: "Use an integer type for array indexing",
+        TypeErrorType.INDEX_NOT_INTEGER: "Use a usize value for the index",
 
         # Dereference errors
         TypeErrorType.CANNOT_DEREFERENCE: "Reference use requires a proven non-nil reference",
@@ -419,12 +419,12 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
 
         # Declaration errors
         TypeErrorType.MISSING_TYPE_OR_INITIALIZER: "Add either a type annotation or an initializer",
-        TypeErrorType.UNDEFINED_TYPE: "Ensure the type is defined before use",
-        TypeErrorType.INCOMPATIBLE_TYPES: "These types cannot be used together",
+        TypeErrorType.UNDEFINED_TYPE: "Fix the spelling or import the module that defines the type",
+        TypeErrorType.INCOMPATIBLE_TYPES: "Convert one side to the other side's type with an explicit cast",
 
         # Cast errors
         TypeErrorType.INVALID_CAST: "These types cannot be cast to each other",
-        TypeErrorType.UNSAFE_CAST: "This cast may lose information or cause undefined behavior",
+        TypeErrorType.UNSAFE_CAST: "Narrow the source type first so the cast cannot lose data",
 
         # Operator errors
         TypeErrorType.OPERATOR_TYPE_MISMATCH: "Ensure operand types are compatible with the operator",

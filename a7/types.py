@@ -8,6 +8,8 @@ from dataclasses import dataclass, fields
 from typing import Optional, List, Dict, Any, Tuple
 from enum import Enum, auto
 
+from a7.ast_nodes import ASTNode, NodeKind
+
 
 class TypeKind(Enum):
     """Categories of types in A7."""
@@ -949,3 +951,82 @@ def get_predefined_type_set(name: str) -> Optional[TypeSet]:
         'Float': FLOAT,
     }
     return type_sets.get(name)
+
+
+def resolve_generic_constraint(constraint_node: Optional[ASTNode]) -> Optional[TypeSet]:
+    """
+    Resolve a generic constraint node to a TypeSet.
+
+    Args:
+        constraint_node: Constraint AST node (TYPE_SET or TYPE_IDENTIFIER)
+
+    Returns:
+        Resolved TypeSet, or None if no constraint
+    """
+    if constraint_node is None:
+        return None
+
+    # Check for predefined type set by name
+    type_set_name = getattr(constraint_node, 'type_name', None) or getattr(constraint_node, 'name', None)
+    if type_set_name:
+        predefined = get_predefined_type_set(type_set_name)
+        if predefined:
+            return predefined
+
+    # Check for inline type set
+    if constraint_node.kind == NodeKind.TYPE_SET:
+        resolved_types = []
+        for type_node in constraint_node.types or []:
+            resolved = _resolve_constraint_member_type(type_node)
+            if resolved is None:
+                return None
+            resolved_types.append(resolved)
+        return TypeSet(types=frozenset(resolved_types))
+
+    return None
+
+
+def _resolve_constraint_member_type(type_node: Optional[ASTNode]) -> Optional[Type]:
+    """Resolve a type node that appears inside an inline generic constraint set."""
+    if type_node is None:
+        return None
+
+    if type_node.kind == NodeKind.TYPE_PRIMITIVE:
+        return get_primitive_type(type_node.type_name or "")
+
+    if type_node.kind == NodeKind.TYPE_IDENTIFIER:
+        return get_primitive_type(type_node.name or type_node.type_name or "")
+
+    return None
+
+
+# Canonical integer width/range table. Single source for the duplicated
+# mappings in safety.py (SIGNED_RANGES/UNSIGNED_RANGES/INTEGER_RANGES),
+# const_eval.py (_INTEGER_LAYOUT) and cast_classifier.py
+# (_SIGNED_BITS/_UNSIGNED_BITS/_FLOAT_BITS). layout.py keeps its own
+# PRIMITIVE_LAYOUTS: different shape (size, align) plus extra
+# bool/char/string entries, so it is not rewired here.
+SIGNED_INTEGER_WIDTHS: Dict[str, int] = {
+    'i8': 8, 'i16': 16, 'i32': 32, 'isize': 64, 'i64': 64,
+}
+UNSIGNED_INTEGER_WIDTHS: Dict[str, int] = {
+    'u8': 8, 'u16': 16, 'u32': 32, 'usize': 64, 'u64': 64,
+}
+INTEGER_BIT_WIDTHS: Dict[str, int] = {
+    **SIGNED_INTEGER_WIDTHS, **UNSIGNED_INTEGER_WIDTHS,
+}
+INTEGER_RANGES: Dict[str, Tuple[int, int]] = {
+    'i8': (-(2 ** 7), 2 ** 7 - 1),
+    'i16': (-(2 ** 15), 2 ** 15 - 1),
+    'i32': (-(2 ** 31), 2 ** 31 - 1),
+    'i64': (-(2 ** 63), 2 ** 63 - 1),
+    'isize': (-(2 ** 63), 2 ** 63 - 1),
+    'u8': (0, 2 ** 8 - 1),
+    'u16': (0, 2 ** 16 - 1),
+    'u32': (0, 2 ** 32 - 1),
+    'u64': (0, 2 ** 64 - 1),
+    'usize': (0, 2 ** 64 - 1),
+}
+FLOAT_BIT_WIDTHS: Dict[str, int] = {
+    'f32': 32, 'f64': 64,
+}

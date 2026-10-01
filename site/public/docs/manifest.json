@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "445bd4cc1132f31fc03da1962fe362fc935a95d9be416fc150330964c2fc323c"
+    "value": "eda6ea03563ea739b06569d81a0f1248e9c42757c8301be9ebbba9de9bb9aaa8"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -218,6 +218,11 @@
         },
         {
           "level": 2,
+          "id": "programs-that-are-rejected-on-purpose",
+          "text": "Programs that are rejected on purpose"
+        },
+        {
+          "level": 2,
           "id": "choose-a-learning-path",
           "text": "Choose a learning path"
         },
@@ -315,7 +320,19 @@
         "https://github.com/code5717/a7-py/blob/master/examples/041_route_simulation.a7",
         "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/041_route_simulation.out",
         "https://github.com/code5717/a7-py/blob/master/examples/042_gradebook.a7",
-        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/042_gradebook.out"
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/042_gradebook.out",
+        "https://github.com/code5717/a7-py/blob/master/examples/043_math_library.a7",
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/043_math_library.out",
+        "https://github.com/code5717/a7-py/blob/master/examples/044_indexing_rules.a7",
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/044_indexing_rules.out",
+        "https://github.com/code5717/a7-py/blob/master/examples/045_formatting.a7",
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/045_formatting.out",
+        "https://github.com/code5717/a7-py/blob/master/examples/046_match_full.a7",
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/046_match_full.out",
+        "https://github.com/code5717/a7-py/blob/master/examples/047_safety_obligations.a7",
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/047_safety_obligations.out",
+        "https://github.com/code5717/a7-py/blob/master/examples/048_worklist_traversal.a7",
+        "https://github.com/code5717/a7-py/blob/master/test/fixtures/golden_outputs/048_worklist_traversal.out"
       ],
       "examples": [
         "001_hello.a7",
@@ -360,7 +377,13 @@
         "039_text_analyzer.a7",
         "040_task_board.a7",
         "041_route_simulation.a7",
-        "042_gradebook.a7"
+        "042_gradebook.a7",
+        "043_math_library.a7",
+        "044_indexing_rules.a7",
+        "045_formatting.a7",
+        "046_match_full.a7",
+        "047_safety_obligations.a7",
+        "048_worklist_traversal.a7"
       ]
     },
     {
@@ -2108,6 +2131,90 @@
         "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
       ],
       "title": "042_gradebook.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-043-math-library",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/043_math_library.a7",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+      ],
+      "title": "043_math_library.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-044-indexing-rules",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/044_indexing_rules.a7",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+      ],
+      "title": "044_indexing_rules.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-045-formatting",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/045_formatting.a7",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+      ],
+      "title": "045_formatting.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-046-match-full",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/046_match_full.a7",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+      ],
+      "title": "046_match_full.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-047-safety-obligations",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/047_safety_obligations.a7",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+      ],
+      "title": "047_safety_obligations.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-048-worklist-traversal",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/048_worklist_traversal.a7",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+      ],
+      "title": "048_worklist_traversal.a7",
       "documentationUrl": "https://code5717.github.io/a7-py/examples/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
     },

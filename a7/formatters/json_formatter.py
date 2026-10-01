@@ -5,7 +5,65 @@ Converts compilation results (tokens, AST, metadata) to JSON format.
 """
 
 from datetime import datetime
-from typing import Optional
+import json
+from typing import Any, Optional
+
+
+def _safe_scalar(value: Any) -> Any:
+    """Return scalar unchanged when JSON-serializable, else str(value)."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    try:
+        json.dumps(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return value
+
+
+def _safe_json_value(value: Any) -> Any:
+    """Return value unchanged when JSON-serializable, else str(value).
+
+    AST literal values can hold non-serializable objects (Fraction from
+    constant folding, byte blobs). The JSON payload must degrade those to
+    their string form instead of raising in json.dumps.
+
+    Iterative: explicit stack, no recursion (see no-recursion rule).
+    """
+    if isinstance(value, dict):
+        root: Any = {}
+        stack: list = [(value, root)]
+    elif isinstance(value, (list, tuple)):
+        root = []
+        stack = [(list(value), root)]
+    else:
+        return _safe_scalar(value)
+    while stack:
+        src, dst = stack.pop()
+        if isinstance(src, dict):
+            for key, item in src.items():
+                if isinstance(item, dict):
+                    child: Any = {}
+                    dst[key] = child
+                    stack.append((item, child))
+                elif isinstance(item, (list, tuple)):
+                    child = []
+                    dst[key] = child
+                    stack.append((list(item), child))
+                else:
+                    dst[key] = _safe_scalar(item)
+        else:
+            for item in src:
+                if isinstance(item, dict):
+                    child = {}
+                    dst.append(child)
+                    stack.append((item, child))
+                elif isinstance(item, (list, tuple)):
+                    child = []
+                    dst.append(child)
+                    stack.append((list(item), child))
+                else:
+                    dst.append(_safe_scalar(item))
+    return root
 
 
 class JSONFormatter:
@@ -35,13 +93,17 @@ class JSONFormatter:
         Returns:
             Dictionary with metadata, tokens, and AST
         """
-        # Convert tokens to serializable format
+        # Convert tokens to serializable format. Token-count definition:
+        # source tokens only; the synthetic EOF sentinel is excluded here
+        # and in stages["tokenize"]["token_count"] (see compile.py).
         token_list = []
         for token in tokens:
+            if token.type.name == "EOF":
+                continue
             token_list.append(
                 {
                     "type": token.type.name,
-                    "value": token.value,
+                    "value": _safe_json_value(token.value),
                     "line": token.line,
                     "column": token.column,
                     "length": token.length,
@@ -114,12 +176,12 @@ class JSONFormatter:
         for field in scalar_fields:
             value = getattr(node, field, None)
             if value is not None:
-                result[field] = value
+                result[field] = _safe_json_value(value)
 
         # Add literal information
         if hasattr(node, "literal_kind") and node.literal_kind:
             result["literal_kind"] = node.literal_kind.name
-            result["literal_value"] = node.literal_value
+            result["literal_value"] = _safe_json_value(node.literal_value)
             result["raw_text"] = node.raw_text
 
         # Add operator information
@@ -225,7 +287,7 @@ class JSONFormatter:
                             children.append(child_result)
                             stack.append((child, child_result))
                         else:
-                            children.append(child)
+                            children.append(_safe_json_value(child))
                     current_result[field] = children
 
             for field in node_fields:
@@ -236,6 +298,6 @@ class JSONFormatter:
                         current_result[field] = child_result
                         stack.append((field_value, child_result))
                     else:
-                        current_result[field] = field_value
+                        current_result[field] = _safe_json_value(field_value)
 
         return result

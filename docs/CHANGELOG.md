@@ -5,6 +5,22 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- A declaration initializer reads the outer binding, so `y :: y + 1` inside a
+  block means the outer `y` plus one. Match-expression arms use their own
+  scopes, so a later match statement no longer resolves arm bindings to an
+  outer declaration. A bare call to an imported module's function from the
+  entry file exits 6 and names the qualified spelling.
+- Integer constant folds wrap to `i32` when both operands fit, and widen the
+  default to `i64` beyond it. Float folds round each operation in `f64`, so
+  overflow folds to infinity and `infinity - infinity` folds to NaN; a finite
+  decimal that round-trips emits as written instead of a bit pattern, so a
+  folded math call prints the runtime value rather than a comptime-shortened
+  one. An integer zero divisor stays for the safety proof instead of folding.
+- A file with no `main :: fn()` entry point is rejected at the Entry Point
+  stage with exit 6 instead of passing check and failing late at the Zig
+  build. Imported modules are exempt; only the entry file needs `main`.
+  `a7 check --lib` (and `main.py --lib`) checks a library file without one;
+  `build` and `run` still require it.
 - Resolve bare calls inside imported modules to the defining module and emit
   the module prefix, so sibling calls build. Type-check alias calls `h.f()`
   with generic inference and comptime arguments, and reject calls to functions
@@ -22,8 +38,8 @@ belong in git history, not in long Markdown logs.
   measure 1.59x faster than a 24-byte struct array (0.174s vs 0.277s,
   ReleaseFast medians of five on one host). `stride_walk` measures line
   utilization; A7 has no threads, so it is not a coherence test.
-- Add a six-program bench corpus and `scripts/bench_perf.py`. It times
-  ReleaseFast builds as the median of three runs and compares them with
+- Add a ten-program bench corpus and `scripts/bench_perf.py`. It times
+  ReleaseFast builds (median of N runs, trimmed for five or more) and compares them with
   per-host pins in `bench/pins/<host>.json`. `run_all_tests.sh` runs it
   report-only; `--gate` exits 1 past 1.15 times the pinned median.
 

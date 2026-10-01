@@ -3,7 +3,16 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from a7.types import FunctionType, PrimitiveType, ReferenceType, Type, TypeKind
+from a7.types import (
+    FLOAT_BIT_WIDTHS,
+    FunctionType,
+    PrimitiveType,
+    ReferenceType,
+    SIGNED_INTEGER_WIDTHS,
+    Type,
+    TypeKind,
+    UNSIGNED_INTEGER_WIDTHS,
+)
 
 
 class CastClass(Enum):
@@ -27,9 +36,12 @@ class CastDecision:
         return self.kind is not CastClass.FORBIDDEN
 
 
-_SIGNED_BITS = {"i8": 8, "i16": 16, "i32": 32, "isize": 64, "i64": 64}
-_UNSIGNED_BITS = {"u8": 8, "u16": 16, "u32": 32, "usize": 64, "u64": 64}
-_FLOAT_BITS = {"f32": 32, "f64": 64}
+# Aliases onto the canonical a7.types width tables. Copies keep the previous
+# isolation (mutating these never touches the canonical dicts); the old
+# names stay so classify_cast is untouched.
+_SIGNED_BITS = dict(SIGNED_INTEGER_WIDTHS)
+_UNSIGNED_BITS = dict(UNSIGNED_INTEGER_WIDTHS)
+_FLOAT_BITS = dict(FLOAT_BIT_WIDTHS)
 
 
 def classify_cast(source: Type, target: Type, *, source_nonnegative: bool = False) -> CastDecision:

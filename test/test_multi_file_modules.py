@@ -100,6 +100,41 @@ def test_missing_callee_in_imported_module_is_rejected(tmp_path):
     assert "not defined in the imported module" in combined
 
 
+def test_bare_entry_call_to_module_function_is_rejected(tmp_path):
+    # The declaration is emitted with the module prefix, so a bare call
+    # would emit an undeclared Zig identifier. The checker rejects it with
+    # the qualified spelling instead.
+    write_module(tmp_path, "helper", 'pub value :: fn() i32 {\n    ret 7\n}\n')
+    (tmp_path / "main.a7").write_text(
+        'h :: import "helper"\nio :: import "std/io"\n\n'
+        'main :: fn() {\n    io.println("{}", value())\n}\n',
+        encoding="utf-8",
+    )
+    process = cli_check(tmp_path, "main")
+    assert process.returncode == 6, process.stdout + process.stderr
+    combined = " ".join((process.stdout + process.stderr).split())
+    assert "write 'h.value()'" in combined
+
+
+def test_local_shadowing_module_function_still_builds(tmp_path, zig, zig_cache):
+    # A local sharing the callee's plain name keeps the program compiling;
+    # only the qualified call reaches the module function.
+    write_module(tmp_path, "helper", 'pub value :: fn() i32 {\n    ret 7\n}\n')
+    output = compile_with_cli(tmp_path, '''
+h :: import "helper"
+io :: import "std/io"
+
+main :: fn() {
+    value := 99
+    io.println("{} {}", h.value(), value)
+}
+''')
+    for profile in PROFILES:
+        binary = build(zig, zig_cache, tmp_path, output, profile)
+        stdout, _ = run_piped(binary)
+        assert stdout == "7 99\n"
+
+
 def test_transitive_import_chain_builds(tmp_path, zig, zig_cache):
     write_module(tmp_path, "leaf", 'pub leaf_value :: fn() i32 {\n    ret 7\n}\n')
     write_module(tmp_path, "mid", '''

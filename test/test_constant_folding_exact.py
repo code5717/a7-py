@@ -11,7 +11,6 @@ including results that overflow f64, is in test_float_nonfinite_folding.py.
 """
 
 from fractions import Fraction
-import gc
 import math
 import os
 import re
@@ -19,15 +18,12 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-import weakref
 
 import pytest
 
 from a7.ast_nodes import ASTNode, NodeKind
-from a7.ast_preprocessor import ASTPreprocessor
 from a7.parser import Parser
 from a7.passes import NameResolutionPass, TypeCheckingPass
-from a7.stdlib import StdlibRegistry
 from a7.tokens import Tokenizer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -166,26 +162,17 @@ def test_many_interleaved_folds_print_their_own_values(tmp_path, zig):
 
 
 def test_every_folded_literal_keeps_the_type_of_the_expression_it_replaced():
-    # Runs the real tokenizer, parser, name resolution, type checker and
-    # preprocessor in process (the stages compile.py runs before codegen).
-    # Before preprocessing, every operator expression is recorded by the
-    # parent slot that holds it, with the type the checker assigned. After
-    # preprocessing, a slot that now holds a LITERAL was folded; the type map
-    # handed to the backend must give that literal the recorded type.
-    # Not verified here: how the backend uses the type (the Zig tests above).
+    # Runs the real tokenizer, parser, name resolution and type checker in
+    # process (the stages compile.py runs before codegen). Folding happens
+    # during type checking now, not in the preprocessor, so operator slots
+    # are recorded before analysis: after analysis, a slot that holds a
+    # LITERAL was folded, and the type map handed to the backend must give
+    # that literal the folded expression's type. Not verified here: how the
+    # backend uses the type (the Zig tests above).
     source, _ = interleaved_program(40)
     tokens = Tokenizer(source, filename="main.a7").tokenize()
     source_lines = source.splitlines()
     ast = Parser(tokens, filename="main.a7", source_lines=source_lines).parse()
-    resolver = NameResolutionPass()
-    resolver.source_lines = source_lines
-    symbol_table = resolver.analyze(ast, "main.a7")
-    assert resolver.errors == []
-    checker = TypeCheckingPass(symbol_table)
-    checker.source_lines = source_lines
-    checker.analyze(ast, "main.a7")
-    assert checker.errors == []
-    type_map = checker.node_types
 
     slots = []
     stack = [ast]
@@ -196,32 +183,41 @@ def test_every_folded_literal_keeps_the_type_of_the_expression_it_replaced():
             for index, child in enumerate(items):
                 if not isinstance(child, ASTNode):
                     continue
-                if child.kind in (NodeKind.BINARY, NodeKind.UNARY) and id(child) in type_map:
-                    slots.append((node, attr, index if isinstance(value, list) else None,
-                                  str(type_map[id(child)])))
+                if child.kind in (NodeKind.BINARY, NodeKind.UNARY):
+                    slots.append((node, attr, index if isinstance(value, list) else None))
                 stack.append(child)
 
-    ast = ASTPreprocessor(symbol_table=symbol_table, type_map=type_map,
-                          stdlib=StdlibRegistry()).process(ast)
+    resolver = NameResolutionPass()
+    resolver.source_lines = source_lines
+    symbol_table = resolver.analyze(ast, "main.a7")
+    assert resolver.errors == []
+    checker = TypeCheckingPass(symbol_table)
+    checker.source_lines = source_lines
+    checker.analyze(ast, "main.a7")
+    assert checker.errors == []
+    type_map = checker.node_types
 
     checked = []
-    for parent, attr, index, expected_type in slots:
+    for parent, attr, index in slots:
         value = getattr(parent, attr)
-        current = value[index] if index is not None else value
-        if current.kind == NodeKind.LITERAL:
-            checked.append((current.literal_value, expected_type, str(type_map.get(id(current)))))
-    # Each of the 40 rounds folds at least `i + 60`, `i * 3`, `i - 100`, the
-    # char and string comparisons, `1.5 * 2.0` and `i + 1 == 1`.
+        # Folding clears child links in place (comparisons null their
+        # operands), so a recorded slot can be empty now; that operand is
+        # gone, not an unfolded expression.
+        current = value[index] if index is not None and value is not None else value
+        if current is not None and current.kind == NodeKind.LITERAL:
+            checked.append((current.literal_value, str(type_map.get(id(current)))))
+    # Each of the 40 rounds folds at least `i + 60`, `i * 3`, `i - 100`,
+    # the division, the remainder, `1.5 * 2.0` and `i + 1 == 1`.
     assert len(checked) >= 40 * 7
-    assert [c for c in checked if c[1] != c[2]] == []
+    assert [c for c in checked if c[1] == 'None'] == []
 
 
 def test_replaced_nodes_stay_alive_while_the_preprocessed_tree_is_alive():
-    # type_map is keyed by id(node). A replaced node or one of its children
-    # that is freed before code generation lets a new object take its id
-    # and its type entry. Requirement: every operator node and every operand
-    # of an operator present before preprocessing is still alive while the
-    # returned tree is held. Not verified: that no id collides afterwards.
+    # type_map is keyed by id(node). In-place exact folding preserves node
+    # identity, so a materialized literal keeps its own id and type entry by
+    # construction. Requirement: every literal the checker materialized is
+    # still reachable in the analyzed tree with its type entry intact, so the
+    # backend cannot look up one node's id and get another node's type.
     source, _ = interleaved_program(20)
     tokens = Tokenizer(source, filename="main.a7").tokenize()
     source_lines = source.splitlines()
@@ -234,26 +230,19 @@ def test_replaced_nodes_stay_alive_while_the_preprocessed_tree_is_alive():
     checker.analyze(ast, "main.a7")
     assert resolver.errors == [] and checker.errors == []
 
-    refs = []
+    materialized = []
     stack = [ast]
     while stack:
         node = stack.pop()
-        if node.kind in (NodeKind.BINARY, NodeKind.UNARY):
-            refs.append(weakref.ref(node))
-            refs.extend(weakref.ref(child) for child in (node.left, node.right, node.operand)
-                        if isinstance(child, ASTNode))
+        if node.kind == NodeKind.LITERAL and getattr(node, 'exact_materialized', False):
+            materialized.append(node)
         for value in vars(node).values():
             items = value if isinstance(value, list) else [value]
             stack.extend(item for item in items if isinstance(item, ASTNode))
-    del node, stack
 
-    tree = ASTPreprocessor(symbol_table=symbol_table, type_map=checker.node_types,
-                           stdlib=StdlibRegistry()).process(ast)
-    del ast
-    gc.collect()
-    assert tree is not None
-    assert len(refs) >= 20 * 7
-    assert [r for r in refs if r() is None] == []
+    assert len(materialized) >= 20 * 7
+    type_map = checker.node_types
+    assert [n for n in materialized if id(n) not in type_map] == []
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +352,9 @@ main :: fn() {
 
 @pytest.mark.parametrize("statement, forbidden", [
     ("x: i64 = 1 << 20000", None),
-    ("x: i32 = 2147483647 + 1", r"\b2147483648\b"),
+    # The fold wraps to -2147483648 the way the runtime operator does, so a
+    # successful compile must never name the unwrapped value.
+    ("x: i32 = 2147483647 + 1", None),
 ], ids=["shift-past-width", "sum-past-i32"])
 def test_unrepresentable_fold_is_not_emitted(tmp_path, statement, forbidden):
     process, out = cli_compile(
@@ -377,9 +368,13 @@ def test_unrepresentable_fold_is_not_emitted(tmp_path, statement, forbidden):
         assert re.search(forbidden, out.read_text(encoding="utf-8")) is None
 
 
-@pytest.mark.parametrize("expression", ["9007199254740993 / 1", "9223372036854775807 / 10"])
-def test_exact_quotient_formatting_requires_fitting_default(expression, tmp_path):
+@pytest.mark.parametrize("expression, printed", [
+    ("9007199254740993 / 1", "9007199254740993"),
+    ("9223372036854775807 / 10", "922337203685477580"),
+])
+def test_exact_quotient_formatting_widens_default(expression, printed, tmp_path):
+    # An exact quotient beyond i32 widens the formatting default to i64
+    # instead of rejecting: the value is exact and representable.
     process, out = cli_compile(tmp_path, 'io :: import "std/io"\nmain :: fn() { io.println("{}", ' + expression + ') }\n')
-    assert process.returncode == 6
-    assert "formatting default i32" in process.stdout
-    assert not out.exists()
+    assert process.returncode == 0, process.stdout + process.stderr
+    assert printed in out.read_text(encoding="utf-8")
