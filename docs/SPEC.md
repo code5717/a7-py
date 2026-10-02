@@ -93,23 +93,38 @@ digit      = "0"..."9"              ; ASCII digits only
 
 ### 2.4 Keywords
 
+Reserved words with grammar rules:
+
 ```
-and        as         bool       break      case       cast       char
-const      continue   defer      del        else       enum       f32
-f64        fall       false      fn         for        i8         i16
-i32        i64        if         import     in         isize      match
-new        nil        or         pub        struct     ref        ret
-self       size_of    string     true       type       u8         u16
-u32        u64        union      using      usize      var        where
-while
+and        bool       break      case       char       continue   defer
+del        else       enum       f32        f64        fall       false
+fn         for        i8         i16        i32        i64        if
+import     in         isize      match      new        nil        not
+or         pub        ref        ret        string     struct     true
+u8         u16        u32        u64        union      usize      while
 ```
 
-The list above is aspirational in places. `as` and `where` are lexed but no
-grammar rule consumes them: a `where` clause on generics is planned, not
-current (see §6.1 and STATUS Known Gaps). `let`, `int`, `uint`, and `float`
-are also lexed but unused. `cast`, `const`, `self`, `size_of`, `type`,
-`using`, and `var` lex as ordinary identifiers, and `not` is a keyword the
-list omits. See PAR-22 in `docs/audits/2026-09-16/compiler/parser.md`.
+Lexed as keyword tokens but consumed by no grammar rule yet:
+
+```
+as         where
+```
+
+`as` is reserved for a future cast spelling; today only `cast(T, v)` works.
+`where` is reserved for generic constraints; the `where` clause on generics
+is planned, not current (see §6.1 and STATUS Known Gaps).
+
+Lexed but unused (kept for future use, rejected or ignored by the parser):
+
+```
+let        int        uint       float
+```
+
+Not keywords: `cast`, `const`, `self`, `size_of`, `type`, `using`, and `var`
+lex as ordinary identifiers even though older drafts of this table listed
+them. `using import "p"` and `cast(T, v)` work through identifier matching,
+not keyword tokens. `not` is a keyword (prefix negation) that older drafts
+of this table omitted. See PAR-22 in `docs/audits/2026-09-16/compiler/parser.md`.
 
 ### 2.5 Operators and Punctuation
 
@@ -2324,7 +2339,8 @@ rejected with a tokenizer error (exit 4). See STATUS Known Gaps.
 
 ## Appendix E: Implementation Status (a7-py)
 
-Status snapshot (2026-05-11):
+Historical snapshot from 2026-05-11, kept for context. Current status lives
+in `docs/STATUS.md`; gates live in `./run_all_tests.sh`:
 
 - ✅ Full compiler pipeline exists (tokenizer, parser, semantic passes, AST preprocessing, Zig backend).
 - ✅ Examples have end-to-end verification through the Zig backend.
