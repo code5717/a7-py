@@ -1001,7 +1001,7 @@ def _resolve_constraint_member_type(type_node: Optional[ASTNode]) -> Optional[Ty
 
 
 # Canonical integer width/range table. Single source for the duplicated
-# mappings in safety.py (SIGNED_RANGES/UNSIGNED_RANGES/INTEGER_RANGES),
+# mappings in passes/safety.py (SIGNED_RANGES/UNSIGNED_RANGES/INTEGER_RANGES),
 # const_eval.py (_INTEGER_LAYOUT) and cast_classifier.py
 # (_SIGNED_BITS/_UNSIGNED_BITS/_FLOAT_BITS). layout.py keeps its own
 # PRIMITIVE_LAYOUTS: different shape (size, align) plus extra

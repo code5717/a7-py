@@ -103,7 +103,7 @@ MUTANTS: list[Mutant] = [
     ),
     Mutant(
         name="safety-never-invalidates",
-        file="a7/safety.py",
+        file="a7/passes/safety.py",
         original="    def _visit_stmt(self, node: ASTNode) -> None:",
         replacement="    def _visit_stmt(self, node: ASTNode) -> None:  # MUTANT: control",
         defect=(

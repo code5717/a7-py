@@ -13,7 +13,7 @@ from typing import Optional, Dict, Set
 from ..ast_nodes import ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp, AssignOp
 from ..cast_classifier import CastClass
 from ..errors import CodegenError
-from ..safety import BackendPlan
+from ..passes.safety import BackendPlan
 from ..types import ArrayType, PointerType, PrimitiveType, ReferenceType
 from .base import CodeGenerator
 

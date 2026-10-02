@@ -399,6 +399,11 @@ Vector :: [3]f32
 Matrix :: [4][4]f32
 ```
 
+An alias whose right side is a bare user-defined name (for example
+`Handle :: MyInt`) is a constant value alias, not a type alias. Only
+primitive, `ref`, generic-parameter, and bracket type spellings form
+type aliases.
+
 ### 3.5 Reference Semantics
 
 ```a7

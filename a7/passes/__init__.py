@@ -11,7 +11,7 @@ Implements multi-pass semantic analysis:
 from .name_resolution import NameResolutionPass
 from .type_checker import TypeCheckingPass
 from .semantic_validator import SemanticValidationPass
-from a7.safety import SafetyProofPass
+from .safety import SafetyProofPass
 
 __all__ = [
     'NameResolutionPass',

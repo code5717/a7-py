@@ -534,13 +534,13 @@ KNOWN_RECURSIVE_GROUPS = {
         "a7.passes.type_checker:TypeCheckingPass.visit_while_stmt",
     ),
     (
-        "a7.safety:SafetyProofPass._always_returns",
+        "a7.passes.safety:SafetyProofPass._always_returns",
     ),
     (
-        "a7.safety:SafetyProofPass._visit_expr",
+        "a7.passes.safety:SafetyProofPass._visit_expr",
     ),
     (
-        "a7.safety:SafetyProofPass._visit_stmt",
+        "a7.passes.safety:SafetyProofPass._visit_stmt",
     ),
 }
 
@@ -554,9 +554,9 @@ KNOWN_RECURSIVE_DATACLASS_METHODS = {
     ("a7.ast_nodes:ASTNode", "repr"),
     ("a7.module_resolver:ModuleInfo", "eq"),
     ("a7.module_resolver:ModuleInfo", "repr"),
-    ("a7.safety:BackendPlan", "repr"),
-    ("a7.safety:Obligation", "repr"),
-    ("a7.safety:ProofResult", "repr"),
+    ("a7.passes.safety:BackendPlan", "repr"),
+    ("a7.passes.safety:Obligation", "repr"),
+    ("a7.passes.safety:ProofResult", "repr"),
     ("a7.semantic_context:DeferContext", "eq"),
     ("a7.semantic_context:DeferContext", "repr"),
     ("a7.semantic_context:FunctionContext", "eq"),

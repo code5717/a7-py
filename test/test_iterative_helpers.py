@@ -25,7 +25,7 @@ def test_integer_literal_negation_depth_and_nonliteral_boundary():
     run_at_low_limit(r'''
         import sys
         from a7.ast_nodes import ASTNode, NodeKind, LiteralKind, UnaryOp
-        from a7.safety import SafetyProofPass
+        from a7.passes.safety import SafetyProofPass
         from a7.symbol_table import SymbolTable
         proof = SafetyProofPass(SymbolTable(), {})
         value = ASTNode(kind=NodeKind.LITERAL, literal_kind=LiteralKind.INTEGER, literal_value=17)
