@@ -55,6 +55,9 @@ below).
   A hung check fails with `TIMEOUT` (exit 124) instead of hanging the gate.
   To kill a running gate started in background, kill its process tree
   (`ps aux | grep run_all_tests`, then `kill` the gate PID).
+- Tmpfs hygiene: Zig-heavy tests accumulate `/tmp/pytest-of-*` (22G observed,
+  wedging the suite with disk-quota errors). Clear stale dirs with
+  `rm -rf /tmp/pytest-of-*` before a full run when `/tmp` is pressured.
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release jobs run this
