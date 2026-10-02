@@ -12,6 +12,18 @@ language still lacks are in the
 [language audit checklist](audit/language-audit-checklist.md); findings with no
 owner are in [open items](audit/open-items.md).
 
+## Where things go
+
+- Todos: `delivery-roadmap.md` and `../STATUS.md` only. No TODO lists in
+  chat logs, handoffs, or scratch files.
+- Decisions: `decisions.md`, one row per choice with user words quoted.
+  Research never counts as approval.
+- Session handoffs: `HANDOFF-<date>.md` in this directory, dated and frozen
+  once written. Never back-edit a handoff; new facts go in the ledger.
+- Notes and scratch: `tmp/<topic>-YYYY-MM-DD/` directories. Never add loose
+  top-level `tmp/` files. Never move or delete a `tmp/` path cited by docs.
+- Advisory research: `research/`. It informs gates; it approves nothing.
+
 ## Summary
 
 V1 is the core language under L36-L45: a qualified Python compiler, consistent

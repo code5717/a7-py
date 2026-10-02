@@ -16,6 +16,8 @@ Use this index to find current guidance, design work, and historical evidence.
 | Understand the trust boundary and report vulnerabilities | [Security policy](SECURITY.md) |
 | Read release-facing changes | [Changelog](CHANGELOG.md) |
 | Read runnable language examples | [Examples](../examples/) |
+| Learn the pipeline and module map | [Architecture](ARCHITECTURE.md) |
+| Style the docs site | [Design system](design-system.md) |
 
 The specification includes planned language features. Read its implementation
 qualifications together with Status. A design requirement or a passing example

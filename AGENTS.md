@@ -6,6 +6,18 @@ For terminal/curl workflows, `site/public/llms.txt`,
 `site/public/llms-full.txt`, and `site/public/docs/index.md` are the
 agent-readable docs entry points derived from the authoritative docs.
 
+## Map: how agents use docs/
+
+- Language, gaps, safety, releases: `docs/SPEC.md`, `docs/STATUS.md`,
+  `docs/SAFETY_CONTRACT.md`, `docs/RELEASE.md`, `docs/CHANGELOG.md`.
+- Architecture: `docs/ARCHITECTURE.md`. Docs index: `docs/README.md`.
+- Plan, decisions, gates: `docs/plan/README.md`, `docs/plan/decisions.md`,
+  `docs/plan/delivery-roadmap.md`. Session handoffs: `docs/plan/HANDOFF-<date>.md`.
+- Todos live in the delivery roadmap and `docs/STATUS.md`, nowhere else.
+  Notes and scratch live under `tmp/<topic>-YYYY-MM-DD/`; never add loose
+  top-level `tmp/` files, and never move a `tmp/` path cited by docs.
+- This file plus `CLAUDE.md` hold only behavior rules. Detail lives in `docs/`.
+
 ## Running the Compiler
 
 - Installed CLI entrypoint (after `uv sync`): `uv run a7 <args>`
