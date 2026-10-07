@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-10-07T05:32:26.605812+00:00",
+  "candidate_manifest_sha256": "89761dc627432f00a045eccc701a97d07b110e17883fda5ef2d65b69bf5a66ce",
+  "source_sha256": "8bd434eefb9e74cc58f7a65b499e59b2f538a4595fc2bbb76697af5f64609f6d",
+  "native_checks": 112,
+  "normal_workloads": 42,
+  "invalid_grammar": 57,
+  "wrong_argc": 5,
+  "unknown_modes": 2,
+  "overflow": 1,
+  "repaired_corruption": 3,
+  "historical_corruption": 2,
+  "requested_backing_peak_bytes": {
+    "C": 196608,
+    "arena": 196608,
+    "RC": 196672
+  },
+  "final_buffer_bytes": {
+    "C": 131072,
+    "arena": 131072,
+    "RC": 131104
+  },
+  "logical_bytes": 80000,
+  "unused_capacity_bytes": 51072,
+  "initial_failure": "First Zig build failed: runtime conditional inferred comptime_int for alignment. No workloads executed. Original sources and failed records preserved.",
+  "repair": "Only explicit alignment: usize added to repaired candidate and a separate historical test mutant.",
+  "boundary": "Standalone Debug LLVM/LLD and C-O0 correctness. Historical comparison uses v1 control flow plus the typing repair. No timing, full runtime bookkeeping, RSS, stack, L38 or automatic A7 lowering qualification. External review of earlier v1 is still running.",
+  "native_results": "tmp/v1-completion-2026-10-07/memory-w1-native-prep-v2/attempt-001/results.json",
+  "native_results_sha256": "792fb4ab569fc55bb18cce452a2e00d33a001c1cc58988e074ea945f5f7ff492",
+  "independent_reconciliation": "tmp/v1-completion-2026-10-07/memory-w1-native-reconciliation/NATIVE-RECONCILIATION.md",
+  "independent_reconciliation_sha256": "5972b0fb8efc6e00e1abc932e24771de15b98b329a961d8b9147903551cf5696"
+}

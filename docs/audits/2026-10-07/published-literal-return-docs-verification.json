@@ -1,0 +1,15 @@
+{
+  "commit": "39426829ad37ec8b9eb1e23d2c842a648aa3fc5c",
+  "deploy_run": 37576447975,
+  "deploy_conclusion": "success",
+  "verified_at": "2026-10-07T05:31:36.784098+00:00",
+  "files": 61,
+  "http_status": 200,
+  "all_bytes_match": true,
+  "initial_transport_failures": 9,
+  "retry_matches": 9,
+  "expected_dist_sha256": "092ae6c4528026c0f121fff988ff20d40feaefd39107af23f125a924280c2972",
+  "initial_results_sha256": "a8bac0b3123905dde844ccfb24dc3b140760085322dc5383c3f21fc8af49edf5",
+  "retry_results_sha256": "4735c35008a662873b412d3233478fe7ac54b8b330e69e0401a01cd12d00ac29",
+  "boundary": "All 61 built documentation files checked by HTTP bytes. Rendered browser interaction remains unverified. CI status is separate from Deploy Docs."
+}

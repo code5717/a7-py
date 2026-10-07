@@ -13,6 +13,16 @@ native checks, including 24 returned-record workload cases. It establishes
 bounded Debug/C-O0 correctness. Timing, complete peak memory, L38 and production
 memory selection remain unqualified.
 
+The separate [W1 record](memory-w1-verification.json) preserves the failed first
+Zig build and the repaired retry's 112 passing native checks. Its 42 growth cases
+check actual values and failure cleanup. Controlled corruption verifies that
+validation precedes publication. These results do not qualify timing or L38.
+
+The [publication record](published-literal-return-docs-verification.json) verifies
+all 61 documentation files over HTTP against the build for `3942682`. Nine
+initial transport failures passed on retry. Rendered browser interaction remains
+unverified; successful documentation deployment does not establish CI success.
+
 ## Resumed baseline
 
 The [verification record](baseline-verification.json) records these completed

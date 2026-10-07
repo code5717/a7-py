@@ -430,9 +430,12 @@ W1 now has an independent C baseline and a repaired arena/RC growth candidate.
 The frozen runner checks 10,000 values, every growth-allocation failure and a
 logical handle across reallocations. Controlled corruption must stop publication
 and free fresh then old storage. The first native attempt stopped at a Zig
-type-instantiation error before workload execution. A typed alignment fix needs
-review and a new frozen run. The initial candidate and its
-publish-after-detection behavior are preserved as comparison artifacts. Competitive realloc and segmented alternatives remain open.
+type-instantiation error before workload execution. After the reviewed alignment
+type fix, a frozen retry passed 112 checks, including 42 growth cases and five
+corruption comparisons. Normal requested backing peaks are 196,608 bytes for
+C/arena and 196,672 for RC. This excludes unmeasured runtime storage and timing.
+The initial candidate and its publish-after-detection behavior are preserved
+as comparison artifacts. Competitive realloc and segmented alternatives remain open.
 Maintain five warmups and thirty measured samples per workload when measurement
 is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,
 must remain at most 1.10 against equivalent reviewed C under L38.

@@ -416,8 +416,10 @@ checks, including 24 workload cases. Each successful case checks all 334 returne
 records after producer cleanup. Independent and GLM reviews found no source
 blocker in this bounded fixture. Timing, complete peak memory and L38 remain
 unqualified. The first W1 native attempt stopped at a Zig type-instantiation error before
-any workload executed. Its controlled corruption test remains unexecuted; it
-must check validation before publishing new storage.
+any workload executed. After an explicit alignment type repair, the frozen retry
+passed 112 checks, including 42 growth cases and controlled corruption tests.
+The repaired program stops before publishing corrupted storage and frees each
+allocation once. Timing, complete runtime storage and L38 remain unqualified.
 The typed stdlib candidate remains isolated from the integrated compiler.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
