@@ -1394,8 +1394,15 @@ Current implementation:
 3. Known direct global reference stores retain allocation identity across calls.
    Deleting a stored allocation invalidates represented caller aliases. Unknown
    and indirect effects retain the existing incomplete fallback.
-4. `defer del value` can express manual cleanup at scope exit.
-5. Reference fields require a non-nil proof. A user field named `ptr` receives
+4. Simple direct calls preserve the selected reference or nil return when every
+   boolean argument is a literal. This covers bodies containing only blocks,
+   boolean-literal or boolean-parameter conditions, and reference-parameter or
+   nil returns, with explicit `ref`/`bool` parameter types. Other return paths
+   remain incomplete. Reference arguments use their facts captured during
+   argument evaluation. A guard on an input does not prove a separately returned
+   nil value safe to read.
+5. `defer del value` can express manual cleanup at scope exit.
+6. Reference fields require a non-nil proof. A user field named `ptr` receives
    the same check. Field guards follow assignments and known call effects.
 
 Not yet implemented:

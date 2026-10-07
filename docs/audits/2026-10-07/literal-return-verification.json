@@ -1,0 +1,48 @@
+{
+  "started_at": "2026-10-07T04:51:47.731880+00:00",
+  "checkout": "/var/tmp/a7-literal-return-full-2026-10-07-nq5d6vsm/checkout",
+  "command": [
+    "taskset",
+    "-c",
+    "0-15",
+    "env",
+    "A7_PYTEST_WORKERS=8",
+    "./run_release_checks.sh"
+  ],
+  "manifest_sha256": "86af92ebe1b17bc9b644550cee0fdf9a4e217344feca5fb0b04d7cb5476a3ece",
+  "boundary": "Exact compiler and regression-test bytes integrated after the gate. Final documentation and evidence edits checked separately. This is not full V1 qualification.",
+  "pid": 2233523,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T05:21:21.677859+00:00",
+  "log_sha256": "a29ebd019e26c3a109bde4647d10d5fd36c90c60248c088ff7700fbc911349f3",
+  "source_hashes_modes_unchanged": true,
+  "source_sha256": {
+    "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
+    "test/test_safety_literal_returns.py": "60231b4e6af7901b1a2296b7a0ebff7624b6e45e8cddb551b8d5517fbccb525a"
+  },
+  "pytest": {
+    "passed": 3772,
+    "xfailed": 1
+  },
+  "compiler_package_checks": {
+    "passed": 11,
+    "skipped": 0
+  },
+  "frozen_files": 1601,
+  "native_control_stdout": "9\n7\n7\n9\n11\n19\n",
+  "external_pairs": {
+    "new_rejections": 17,
+    "valid_acceptances": 4,
+    "unchanged_acceptances": 30,
+    "unchanged_rejections": 22
+  },
+  "remaining": "General conditional origins, callee preconditions and effectful returns remain incomplete.",
+  "final_integration_checks": {
+    "docs_style": "passed",
+    "secrets": "passed",
+    "diff_whitespace": "passed",
+    "site_check": "passed: 12 tests, 2566 assertions, 441 coverage records, 1499 local resources and 180 search targets",
+    "independent_review": "claude_sessions: qualified source/test parity and primary audit evidence matched; no scoped blocker",
+    "recorded_at": "2026-10-07T05:27:53.063957+00:00"
+  }
+}

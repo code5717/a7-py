@@ -5,7 +5,12 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
-The combined stage13 source passed the full release gate with 3,756 tests and
+- Simple direct calls with literal boolean selectors retain their selected
+  reference or nil return. Unguarded nil-result field access fails at semantic
+  exit 6. Deleting an unselected allocation preserves the selected live result.
+  Broader conditional return summaries remain incomplete.
+
+The literal-return repair passed the full release gate with 3,772 tests and
 one expected failure. All 51 examples passed in every profile. See
 [Status](STATUS.md) for source identity, other checks and remaining gaps.
 This does not qualify full V1.

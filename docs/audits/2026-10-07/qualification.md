@@ -1,10 +1,17 @@
 # Compiler repair qualification, 2026-10-07
 
-The earlier pushed checkpoint `621f70c` passed the complete release gate with
-3,374 tests and one expected failure. The current frozen manifest `04330ece`
-passed 3,602 tests with one expected failure and the native checks. Its original
-gate failed on missing Git metadata; all recovery checks passed on unchanged
-sources. Both runs are preserved below. V1 is incomplete.
+The integrated literal-return repair passed the full release gate on frozen
+manifest `86af92eb`: 3,772 tests passed, one expected failure, and all 11
+compiler/package checks passed. Site, dependency and static-security checks also
+passed. All 1,601 frozen file hashes and modes remained unchanged. The
+[verification record](literal-return-verification.json) pins the compiler,
+regression tests and gate log. Final evidence prose was checked separately.
+Earlier checkpoints and failures remain below. V1 is incomplete.
+
+The separate [W4 record](memory-w4-verification.json) covers 138 standalone
+native checks, including 24 returned-record workload cases. It establishes
+bounded Debug/C-O0 correctness. Timing, complete peak memory, L38 and production
+memory selection remain unqualified.
 
 ## Resumed baseline
 

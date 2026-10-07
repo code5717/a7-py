@@ -82,7 +82,9 @@ user fields named `ptr`. `defer` schedules a statement for scope exit;
 
 Known direct stores into global references propagate allocation identity
 through calls. Deleting the stored allocation invalidates tracked caller
-aliases. Global nil-state summaries and callee non-nil requirements remain
+aliases. Simple direct calls with literal boolean selectors preserve a selected
+reference or nil return. A nil result needs its own guard before field access.
+Broader return paths, global nil-state summaries and callee non-nil requirements remain
 incomplete. Alias tracking also has gaps for array elements, selected or joined
 field paths, nested aggregates, borrowed aggregates and direct deletion of call
 results. Accepted programs can still violate allocation lifetimes.

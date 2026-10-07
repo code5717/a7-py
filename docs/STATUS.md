@@ -122,8 +122,17 @@ Global nil-state summaries and parameter proof obligations remain incomplete;
 the unsafe nullability/branch-precision trial `68f` is excluded. Nil-origin
 trial `f521` is also excluded after a confirmed valid false-branch control
 regressed. Conditional origin relations and callee preconditions remain open.
-The integrated stage13 source retains safety `607` and passed its full release
-gate. See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
+The integrated literal-return repair selects precise return facts for simple
+direct callees and literal boolean arguments. Its frozen 1,601-file snapshot
+passed the full release gate: 3,772 tests passed, one expected failure, and
+all 11 compiler/package checks passed. Native controls passed in debug,
+release and fast profiles, including later-argument mutation of a reference.
+The external review completed 73 compile-only pairs: 17 new rejections,
+four valid acceptances, 30 unchanged acceptances and 22 unchanged rejections.
+Its first invocation failed a provider rate limit; the retry completed.
+General effectful returns and nonliteral selectors remain open. The current
+safety source is `0d8b3938`; the earlier stage13 `607` result is historical.
+See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
 for the separate array/slice/selected-value decision boundary.
 The October 4 runtime-contract
 repair defines signed minimum-value arithmetic and checks runtime shift counts;
@@ -402,8 +411,14 @@ checker accepts all 24 archived traces and rejects 710 count/layout mutations.
 The frozen sources and original execution evidence remain unchanged.
 These results do not qualify the seven required workload shapes, automatic A7
 lowering or L38. Runtime category budgets are not measured stack bounds.
-The W4 returned-record prototypes and independent C baseline are being aligned
-before native checks. No W4 timing or production memory choice is qualified.
+The W4 returned-record prototypes and independent C baseline passed 138 native
+checks, including 24 workload cases. Each successful case checks all 334 returned
+records after producer cleanup. Independent and GLM reviews found no source
+blocker in this bounded fixture. Timing, complete peak memory and L38 remain
+unqualified. The first W1 native attempt stopped at a Zig type-instantiation error before
+any workload executed. Its controlled corruption test remains unexecuted; it
+must check validation before publishing new storage.
+The typed stdlib candidate remains isolated from the integrated compiler.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence

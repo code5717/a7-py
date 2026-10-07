@@ -94,6 +94,19 @@ The null-guard trial `68f` and nil-origin trial `f521` are excluded. The former
 accepts unsafe programs; the latter rejects a confirmed valid false-branch
 control. Conditional origin relations and callee preconditions remain open.
 
+A bounded direct-call repair selects return facts for bodies containing only
+blocks, boolean-literal or boolean-parameter conditions, and reference-parameter
+or nil returns. Parameters must have explicit `ref` or `bool` types, and every
+boolean argument must be a literal. Reference facts come from ordered argument
+capture. A selected nil result needs its own guard before field access; a live
+selected allocation keeps its identity when a different allocation is deleted.
+The ordinary static proof rule also checks uses inside `if false` bodies.
+Nonliteral boolean arguments, parameter types written as aliases instead of
+explicit `ref` or `bool`, indirect calls and effectful bodies remain outside
+this repair. A reference pointee may still be a named or aliased type. The repair
+does not change nil-argument policy or generalize parameter assumptions into
+caller proofs.
+
 The one-trip proof accepts separate positive increments on alternative paths when
 every backedge crosses the loop bound without wrapping. It continues to reject
 unproven multi-trip deletion and applies deletion effects after loop exit.

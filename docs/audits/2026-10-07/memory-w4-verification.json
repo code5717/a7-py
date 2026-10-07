@@ -1,0 +1,25 @@
+{
+  "recorded_at": "2026-10-07T05:11:21.309992+00:00",
+  "candidate_manifest_sha256": "b2826421d9646ae7e2b929636943991ed9f94c3981688fe9b9d228e94dfe5604",
+  "independent_C_manifest_sha256": "57a8ce0ae77327009aa505527501fef597fb9d20a6f38c69f1c39f2b9a3e82f3",
+  "native_results": "tmp/v1-completion-2026-10-07/memory-w4-v2-native-prep/results.json",
+  "native_results_sha256": "4b297eef25688056d658923ea69212c5469a64a5f38f9bb2cdddf5b0daf81c64",
+  "native_checks": 138,
+  "workload_cases": 24,
+  "invalid_grammar": 102,
+  "wrong_argument_count": 8,
+  "invalid_mode": 2,
+  "trace_overflow": 2,
+  "source_hook_hashes_unchanged": true,
+  "independent_reconciliation": "tmp/v1-completion-2026-10-07/memory-w4-v2-native-reconciliation/NATIVE-RECONCILIATION.md",
+  "independent_reconciliation_sha256": "00caf3ff596ea2fe3de9063d1e5ba191b4c9fa3a676cbeda5fa90bea993b848f",
+  "requested_backing_peak_bytes": {
+    "C_exact": 22368,
+    "C_compact": 17024,
+    "arena_exact": 22368,
+    "arena_compact": 17024,
+    "RC_exact": 22440,
+    "RC_compact": 17072
+  },
+  "boundary": "Standalone W4 correctness on Linux x86-64, Zig0.16 Debug LLVM/LLD and GCC16.2.1 -O0. Complete runtime bookkeeping and stack/RSS are not measured. Instrumentation differs across models. No L38, optimized timing, automatic A7 lowering, all-workload or production mechanism qualification."
+}

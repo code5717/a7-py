@@ -407,6 +407,7 @@ class SafetyProofPass:
         self.allocation_place_names = {}
         self.global_origins: dict[int, str] = {}
         self.function_returns = {}
+        self.literal_return_bodies = {}
         self.function_global_effects = {}
         # True only when ordered origins describe every deletion in the body.
         self.function_direct_deletes = {}
@@ -837,6 +838,44 @@ class SafetyProofPass:
                 if not self.function_deletes[name] and any(self.function_deletes.get(c, True) for c in callees):
                     self.function_deletes[name] = True
                     changed = True
+        # These bodies only select a captured reference or nil. Validate all
+        # branches, including unselected ones, before using the selector.
+        self.literal_return_bodies = {}
+        for name, function in bodies.items():
+            parameters = function.parameters or []
+            refs = {self._key(param): index for index, param in enumerate(parameters)
+                    if param.param_type is not None and param.param_type.kind == NodeKind.TYPE_POINTER}
+            bools = {self._key(param): index for index, param in enumerate(parameters)
+                     if param.param_type is not None and param.param_type.kind == NodeKind.TYPE_PRIMITIVE
+                     and param.param_type.type_name == "bool"}
+            if len(refs) + len(bools) != len(parameters) or function.body is None:
+                continue
+            complete = True
+            pending = [function.body]
+            while pending:
+                current = pending.pop()
+                if current is None:
+                    continue
+                if current.kind == NodeKind.BLOCK:
+                    pending.extend(current.statements or [])
+                elif current.kind == NodeKind.IF_STMT:
+                    condition = current.condition
+                    if not ((condition.kind == NodeKind.IDENTIFIER and self._key(condition) in bools)
+                            or (condition.kind == NodeKind.LITERAL and condition.literal_kind == LiteralKind.BOOLEAN)):
+                        complete = False
+                        break
+                    pending.extend([current.then_stmt, current.else_stmt])
+                elif current.kind == NodeKind.RETURN:
+                    value = current.value
+                    if value is None or not ((value.kind == NodeKind.IDENTIFIER and self._key(value) in refs)
+                            or (value.kind == NodeKind.LITERAL and value.literal_kind == LiteralKind.NIL)):
+                        complete = False
+                        break
+                else:
+                    complete = False
+                    break
+            if complete:
+                self.literal_return_bodies[name] = (function.body, refs, bools)
         self._classify_exact_effects(bodies)
         for decl in node.declarations or []:
             self._visit_decl(decl)
@@ -2186,6 +2225,35 @@ class SafetyProofPass:
                 if isinstance(self._type(node), ReferenceType):
                     origins, dead = self.function_returns.get(name, (frozenset({(-1, True)}), frozenset()))
                     fact = self._call_origin_fact(node, captured, origins, global_values)
+                    selection = self.literal_return_bodies.get(name)
+                    if selection is not None:
+                        body, refs, bools = selection
+                        arguments = node.arguments or []
+                        # Syntactic literals cannot change during later actuals.
+                        # Reference facts still come from ordered call_arg capture.
+                        if all(index < len(arguments) and arguments[index].kind == NodeKind.LITERAL
+                               and arguments[index].literal_kind == LiteralKind.BOOLEAN
+                               for index in bools.values()):
+                            pending_returns = [body]
+                            while pending_returns:
+                                current = pending_returns.pop()
+                                if current is None:
+                                    continue
+                                if current.kind == NodeKind.BLOCK:
+                                    pending_returns.extend(reversed(current.statements or []))
+                                elif current.kind == NodeKind.IF_STMT:
+                                    condition = current.condition
+                                    truth = (condition.literal_value if condition.kind == NodeKind.LITERAL
+                                             else arguments[bools[self._key(condition)]].literal_value)
+                                    pending_returns.append(current.then_stmt if truth else current.else_stmt)
+                                else:
+                                    value = current.value
+                                    if value.kind == NodeKind.LITERAL:
+                                        fact = self._literal_fact(value)
+                                    else:
+                                        fact = self._call_origin_fact(node, captured,
+                                            {(refs[self._key(value)], True)}, global_values)
+                                    break
                     for origin in dead:
                         affected = self._call_origin_fact(node, captured, {(origin, True)}, global_values)
                         self._move_allocations(affected.allocations)

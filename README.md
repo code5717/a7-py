@@ -127,8 +127,10 @@ rejected. Direct reference aliases share deletion state, and guarded reference
 fields are checked. Alias and lifetime checks remain incomplete for array
 elements and fields reached through joined allocation sets. Known direct global
 reference stores now propagate allocation identity through calls, so deleting a
-stored allocation invalidates its caller aliases. Global nil-state and parameter
-proofs remain incomplete. Automatic memory management is not implemented.
+stored allocation invalidates its caller aliases. Simple direct calls with literal
+boolean selectors preserve the selected reference or nil return. Broader return,
+global nil-state and parameter proofs remain incomplete. Automatic memory
+management is not implemented.
 
 The current stdlib provides `io` and `math`. File imports share one emitted Zig
 file after per-file semantic checking. Selected imports and `using import`

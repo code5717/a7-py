@@ -134,7 +134,12 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   cover loop-head field deletion, returning cleanup, compact allocation origins,
   direct global reference stores and equivalent positive one-trip increments.
   Stage13 passed its full release gate. Trials `68f` and `f521` are excluded; the
-  latter rejects a confirmed valid false-branch control. Open:
+  latter rejects a confirmed valid false-branch control. The integrated literal-return
+  repair preserves selected allocation identity and rejects known nil results.
+  Its 1,601-file snapshot passed the full release gate: 3,772 tests passed,
+  one expected failure, all 11 compiler/package checks and the outer release
+  checks passed. Three native profiles verify the valid controls. Its external
+  review completed 73 compile-only pairs with no scoped source blocker. Open:
   reference aliases through array elements, selected/base store synchronization
   and joined-holder nil-write invalidation; global nil-state and parameter proof
   gaps; callee effects outside bounded analysis; the
@@ -145,8 +150,8 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
 - R5 Language core (L61, L62, L69). PARTIAL: the October 4 repair checkpoint
   includes statement/list parsing, type registration, `nil`, mutability,
   exact constants, inline-`$T` codegen and CLI/diagnostic repairs. Per-module
-  scopes, visibility, qualified values/types and report ownership now have a
-  combined candidate under L69. The stage9 module control passes in
+  scopes, visibility, qualified values/types and report ownership were integrated
+  and pushed in `c0f8cf7` under L69. The stage9 module control passes in
   all profiles. Stage10's full compiler gate failed only the obsolete `__`
   fixture: 3,689 passed, one failed and one expected failure remained; outer
   checks did not run. The fixture correction was independently reviewed. Stage12
@@ -203,7 +208,9 @@ signatures and open choices are in
 
 - B1 `Option`/`Result` generic unions. DONE as user-declared unions.
 - B2 Checker types stdlib calls from declared signatures, so
-  `match io.read_line(buf)` works. QUEUED behind R5.
+  `match io.read_line(buf)` works. IN PROGRESS in an isolated candidate. R5
+  module prerequisites passed. Prelude ownership, typed I/O, mutable-buffer
+  facts and literal `std/` reservation still need combined qualification.
 - B3 Phase A, no heap: `io`, `option`, `result`, `slices`, `strings`,
   `ascii`, `bytes`, `math`, `conv`, `sort`, `hash`, `random`, `time`,
   `os`, `fs`, `path`, `testing`, `json`, `yaml` (L65, L68). QUEUED
@@ -410,10 +417,22 @@ qualification, with no measured stack maximum or performance result.
 The W4 prototypes now materialize 1,000 records and return the 334 whose keys
 are divisible by three. Two explicit strategies copy into an exact-sized result
 or compact in place while retaining capacity for 1,000 records. An independently
-authored C baseline preserves both strategies. Align acquisition order, failure
-cleanup and copy counts before native verification. Check every returned value
-after producer exit and account for separate scratch storage, retained capacity,
-headers and instrumentation. No W4 native or timing result is claimed yet.
+authored C baseline preserves both strategies. The frozen candidate passed
+138 native checks, including 24 workload cases with exact independent trace
+validation. Each success checks all 334 records after producer cleanup. Requested
+backing peaks are 22,368 bytes for C/arena exact copy and 17,024 for compaction;
+RC adds 72 and 48 bytes respectively. These figures exclude unmeasured stack
+and other runtime storage. Independent and GLM reviews found no source blocker.
+Four advisory trace-checker weaknesses are rejected by the mandatory independent
+checker. No timing, complete peak-memory or L38 result is qualified.
+
+W1 now has an independent C baseline and a repaired arena/RC growth candidate.
+The frozen runner checks 10,000 values, every growth-allocation failure and a
+logical handle across reallocations. Controlled corruption must stop publication
+and free fresh then old storage. The first native attempt stopped at a Zig
+type-instantiation error before workload execution. A typed alignment fix needs
+review and a new frozen run. The initial candidate and its
+publish-after-detection behavior are preserved as comparison artifacts. Competitive realloc and segmented alternatives remain open.
 Maintain five warmups and thirty measured samples per workload when measurement
 is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,
 must remain at most 1.10 against equivalent reviewed C under L38.

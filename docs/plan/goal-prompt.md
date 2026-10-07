@@ -20,7 +20,7 @@ execution before eventual V1 publication, so this CPU continuation cannot
 establish full V1 completion.
 
 Follow the delivery roadmap's ordering. Repair confirmed critical/high compiler
-findings, finish iterative compiler traversal and preserve source-recursion
+findings, preserve iterative compiler traversal and retain source-recursion
 rejection. Use explicit stacks and worklists; do not expand the recursion
 allowlist. Reconcile original audit witnesses and paired valid controls before
 closing a finding. Passing existing tests does not override a counterexample.
