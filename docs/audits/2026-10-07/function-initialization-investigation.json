@@ -1,0 +1,18 @@
+{
+  "status": "Investigation and proposed policy only; no compiler change or approval",
+  "compiler_commit": "0d5104210bebfab9c9ed40c7800e46359ca30cd3",
+  "qualification_source_manifest_sha256": "5310e967aff6962805d768070a8a2e86a522f91030bda7d1058c5f2e2f3c5dc9",
+  "investigation_manifest_sha256": "5da3199bbc2e1a083b980c9c2c8a77ce06834e2dd5f4dcfd2a08221b37e2cb58",
+  "supplement_manifest_sha256": "c36a6606d0da36db5addb98ca0e60ea36eca913ad55a2540e05c9d85cad03100",
+  "cases": {
+    "original_paired_semantic_compile_sources": 23,
+    "additional_correlated_complementary_sources": 2,
+    "original_accepted": 21,
+    "original_existing_nil_type_rejections": 2,
+    "supplement_accepted": 2
+  },
+  "observation": "Unassigned local, field, array, heap and global function values can pass semantic analysis and emit undefined Zig function pointers. Assigned-before-use controls also pass. No unsafe program executed.",
+  "authority": "L63 says no program rejected and does not define a callable zero. Bare function types currently reject nil. Definite-assignment policy requires a new user disposition.",
+  "proposal": "docs/plan/packets/P-FN-initialization.md",
+  "boundary": "Compile-only evidence using actual Rich and pinned source imports. No native build/run, runtime failure claim, compiler implementation, nullable-function design or proof precision selected."
+}
