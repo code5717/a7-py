@@ -229,8 +229,8 @@ needs evidence at the final identified source state before publication.
 
 | Requirement | Current disposition | Required evidence |
 | --- | --- | --- |
-| Compiler correctness and iterative traversal | Repairs landed; expected failures and recursive paths remain | Close critical/high findings, execute accepted forms, reject invalid forms and run deep inputs at recursion limit 100 |
-| Modules and language contracts | L69 approved; per-module work remains | Qualified names, visibility, identity, cycles, diagnostics and approved compatibility probes |
+| Compiler correctness and iterative traversal | Iterative traversal landed with an empty recursion exception list; correctness gaps and one expected failure remain | Close critical/high findings, execute accepted forms, reject invalid forms and preserve deep inputs at recursion limit 100 |
+| Modules and language contracts | L69 approved; per-module work remains. L76 approves file-local imports; rejection of forwarded import aliases is pending | Qualified names, visibility, identity, cycles, diagnostics, direct-import and public-wrapper controls |
 | Automatic memory and collections | Arena/RC comparison approved; mechanism unselected | Shared identity, explicit copies, cycles, bounded retention and exactly-once cleanup; each workload meets L38 |
 | Stdlib and checked native integration | L68 architecture/options approved; delivery incomplete | Installed-package examples and real I/O, parsing, allocation and native failure recovery |
 | Structured concurrency | Required by L73; design unresolved | Task/channel state machines, races, cancellation, blocked-worker wakeup and shutdown cleanup |

@@ -414,6 +414,24 @@ No GPU submission is authorized by the
 the research; its proposed implementation is deferred. This disposition does
 not waive L73's GPU qualification requirement for V1 publication.
 
+## Imports stay local to their declaring file, 2026-10-07
+
+L76. The user selected "Keep imports local (Recommended)" in the
+[import forwarding proposal](packets/P-MOD-import-forwarding.md).
+If `a.a7` imports `b`, another file cannot access that import as `a.b`.
+Calls, values, types and constants reached through such a chain must fail
+with semantic exit 6. The diagnostic identifies the local import and directs
+the caller to import the dependency in its own file.
+
+Direct imports and ordinary public wrappers remain accepted. For example,
+`a.value()` remains valid when the public function in `a.a7` calls `b.value()`.
+This decision preserves ordinary struct fields, underscore privacy, local
+shadows, file identity, initialization order, bare imports, directory fallback,
+`pub` and local `__` names. It adds no syntax. The previously accepted
+`a.b.value()` emission failed native build with exit 7; the new diagnostic
+rejects it before Zig compilation. Implementation and native qualification
+remain separate from this approval.
+
 ## Scope limits
 
 - **L5** covers integer `+`, `-`, `*` and their compound assignments: after

@@ -190,6 +190,10 @@ and `test/test_safety_stale_facts.py`.
   file's import aliases, including parameters, loop bindings and match captures.
   Focused checks, native dispatch controls and the integration gate pass.
   This does not establish per-module namespace isolation or private-name checks.
+- L76 now requires import aliases to stay local to their declaring file.
+  Rejecting `a.b.value()` when `b` is an import of `a` is approved and pending
+  implementation. Direct imports and ordinary public wrappers must remain
+  accepted. See the [decision packet](plan/packets/P-MOD-import-forwarding.md).
 - An entry file must define `main :: fn()`; a file without one exits 6 at the
   Entry Point stage. Imported modules are exempt. `a7 check --lib` checks a
   library file without an entry point; `build` and `run` still require one.
