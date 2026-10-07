@@ -1,0 +1,159 @@
+{
+  "deployed_commit": "c0f8cf74203cbbb0a0ffbf0d147b47a5dd37e3ea",
+  "deploy_workflow_run": 37571103060,
+  "deployment_completed_at": "2026-10-07T04:22:40Z",
+  "rows": [
+    {
+      "path": "index.html",
+      "url": "https://code5717.github.io/a7-py/index.html",
+      "requested_at": "2026-10-07T04:23:31.205728+00:00",
+      "status": 200,
+      "bytes": 15688,
+      "sha256": "d94ac992514360adf439c75dc49740b7c4bafa379c3c4bd681118659cc1664c8",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "start/index.html",
+      "url": "https://code5717.github.io/a7-py/start/index.html",
+      "requested_at": "2026-10-07T04:23:31.695674+00:00",
+      "status": 200,
+      "bytes": 20226,
+      "sha256": "c69b493549d08c6c5965ccf657164f5062f9113769afe8f9edf3c161998ad74c",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "compiler/index.html",
+      "url": "https://code5717.github.io/a7-py/compiler/index.html",
+      "requested_at": "2026-10-07T04:23:32.155846+00:00",
+      "status": 200,
+      "bytes": 25125,
+      "sha256": "fadc7559e785bdcacc715b6ba73ba88e199a6266a7c80533ff5095f146782616",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "language/modules/index.html",
+      "url": "https://code5717.github.io/a7-py/language/modules/index.html",
+      "requested_at": "2026-10-07T04:23:32.613478+00:00",
+      "status": 200,
+      "bytes": 17487,
+      "sha256": "35a9b350809d6f19e11e9d13d7db81c7ec77ffb8bbd6c6a01d09ac4ddf1b89b9",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "status/index.html",
+      "url": "https://code5717.github.io/a7-py/status/index.html",
+      "requested_at": "2026-10-07T04:23:33.022399+00:00",
+      "status": 200,
+      "bytes": 16778,
+      "sha256": "d1c1528cc293ca321aa7449b93878654ec5147f441755776e8ed8e81c24cc634",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "release/index.html",
+      "url": "https://code5717.github.io/a7-py/release/index.html",
+      "requested_at": "2026-10-07T04:23:33.489417+00:00",
+      "status": 200,
+      "bytes": 17313,
+      "sha256": "04701f1e5b40445ec57cf0f039383e0c1b3aed611339c20bd0250ea5a44bfe30",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "llms.txt",
+      "url": "https://code5717.github.io/a7-py/llms.txt",
+      "requested_at": "2026-10-07T04:23:33.946919+00:00",
+      "status": 200,
+      "bytes": 3898,
+      "sha256": "6beebf5b82ac260bdf9135a05146badeba5f11fbb528504e3a8e0a721a94eb79",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "llms-full.txt",
+      "url": "https://code5717.github.io/a7-py/llms-full.txt",
+      "requested_at": "2026-10-07T04:23:34.401570+00:00",
+      "status": 200,
+      "bytes": 119349,
+      "sha256": "f7e0bdead7bdf7ef6c1ee03ed7a138b00387d287453da206932e75bef37e2d90",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "docs/index.md",
+      "url": "https://code5717.github.io/a7-py/docs/index.md",
+      "requested_at": "2026-10-07T04:23:35.025416+00:00",
+      "status": 200,
+      "bytes": 3861,
+      "sha256": "f7813732bb55358e415903ba71fdfe42f03ad9c7c7c89f99edad7301cebf081a",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "docs/manifest.json",
+      "url": "https://code5717.github.io/a7-py/docs/manifest.json",
+      "requested_at": "2026-10-07T04:23:35.519397+00:00",
+      "status": 200,
+      "bytes": 333622,
+      "sha256": "dc6b5cb7593ed8e0fbd25fd7e8f29ecf1c97f8071a61c2fd94c0fb523413aefe",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "docs/compiler.md",
+      "url": "https://code5717.github.io/a7-py/docs/compiler.md",
+      "requested_at": "2026-10-07T04:23:36.327503+00:00",
+      "status": 200,
+      "bytes": 9795,
+      "sha256": "4001461aa29ad24e19566c1532ba9e6dced4dd90659a406e154a918770ff291f",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "docs/language/modules.md",
+      "url": "https://code5717.github.io/a7-py/docs/language/modules.md",
+      "requested_at": "2026-10-07T04:23:36.733771+00:00",
+      "status": 200,
+      "bytes": 4862,
+      "sha256": "b3ce4c940e7cfe30f381fdafab0ae5f3f6dd01d29ff057773cc1f4932259fe26",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "sitemap.xml",
+      "url": "https://code5717.github.io/a7-py/sitemap.xml",
+      "requested_at": "2026-10-07T04:23:37.196767+00:00",
+      "status": 200,
+      "bytes": 1755,
+      "sha256": "4eec17e11db84105e538cdf7553572096887bceafdcf6c70aa4b0b83eb54bfa4",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "assets/search.json",
+      "url": "https://code5717.github.io/a7-py/assets/search.json",
+      "requested_at": "2026-10-07T04:23:37.594486+00:00",
+      "status": 200,
+      "bytes": 186878,
+      "sha256": "c6fdf7d5d28c012864cbcfc6c56f5e64b726ab7c9f55a28db6e0777b216e76f8",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "assets/site.css",
+      "url": "https://code5717.github.io/a7-py/assets/site.css",
+      "requested_at": "2026-10-07T04:23:38.335598+00:00",
+      "status": 200,
+      "bytes": 21781,
+      "sha256": "e0b3e5572f57e9b92bfd5c26a7923c7b71239cc5a81bcaba9547c2087845db29",
+      "matches_frozen_dist": true
+    },
+    {
+      "path": "assets/site.js",
+      "url": "https://code5717.github.io/a7-py/assets/site.js",
+      "requested_at": "2026-10-07T04:23:38.736057+00:00",
+      "status": 200,
+      "bytes": 10870,
+      "sha256": "e08843ef74f05f29016e3e380fc74a7ae029f88e6cf0046a14e69488774d99ff",
+      "matches_frozen_dist": true
+    }
+  ],
+  "frozen_dist_files": 61,
+  "source_report_sha256": "ee576bd9413cd9797dcaf914c167dad0c414ff31f504fbe2e1bcb197d6328af5",
+  "ci": {
+    "run": 37571103044,
+    "status": "pending",
+    "observed_at": "2026-10-07T04:23:50Z"
+  },
+  "boundary": "16 sampled HTTP resources match frozen build bytes; the remaining 45 files were not fetched. Rendered desktop/mobile, interaction, accessibility and console checks were not performed. Full V1 remains incomplete."
+}

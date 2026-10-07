@@ -400,8 +400,20 @@ retained-text behavior. The standalone foundation then passed 133 Debug checks
 with LLVM/LLD and C-O0 through one allocation shim. It covers small explicit-root
 shared and returned fixtures with failure cleanup. It is not full W1/W4 or
 seven-workload qualification. Preserve those sources and failed linker evidence.
-Next, independently review typed RC/domain lifetimes and complete per-phase
-metadata/retention accounting before extending the actual workload shapes.
+The later instrumented foundation passed 134 checks. Independent and GLM-5.3
+reviews covered typed RC/domain lifetimes and phase accounting. Review exposed
+trace-checker weaknesses; a separate strengthened checker accepts all 24
+archived traces and rejects 710 count/layout mutations. The original execution
+evidence and frozen sources remain unchanged. This is still a small fixture
+qualification, with no measured stack maximum or performance result.
+
+The W4 prototypes now materialize 1,000 records and return the 334 whose keys
+are divisible by three. Two explicit strategies copy into an exact-sized result
+or compact in place while retaining capacity for 1,000 records. An independently
+authored C baseline preserves both strategies. Align acquisition order, failure
+cleanup and copy counts before native verification. Check every returned value
+after producer exit and account for separate scratch storage, retained capacity,
+headers and instrumentation. No W4 native or timing result is claimed yet.
 Maintain five warmups and thirty measured samples per workload when measurement
 is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,
 must remain at most 1.10 against equivalent reviewed C under L38.

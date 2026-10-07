@@ -1323,12 +1323,23 @@
   "memory_foundation_v3_candidate": {
     "report": "tmp/v1-completion-2026-10-07/memory-prototype-foundation-v3/REPORT.md",
     "sha256": "981220dad7129f594af4e461c6b7d50d5d6912ea73744d69dd4043a2d8cf6e97",
-    "boundary": "Scratch instrumentation preserves v2 source. Adds bounded events for backing, payload, root/edge transfer, queue and reads. Static Python checks only; C/Zig compilation and native behavior unverified. GLM review running. Independent oracle frozen before candidate inspection. No L38 qualification.",
+    "boundary": "Standalone frozen instrumentation, reviewed and natively checked only for the small shared and returned-value fixtures. Full workloads and the production memory choice remain open.",
     "native": {
       "report": "tmp/v1-completion-2026-10-07/memory-foundation-v3-native-review/REPORT.md",
       "sha256": "cd037254dea941a36a4cc01426764961d5bec3771844a74676ca1a879132d929",
       "checks": 134,
-      "result": "24 phase/failure traces,102invalid grammar,7argument counts and1overflow passed. Source and independent oracle unchanged. Separate strengthened runner rejects missing/duplicate/reordered checkpoint events; frozen candidate oracle alone has weaker validation. GLM review remains running. Debug LLVM/LLD and C-O0 only; no L38 qualification."
+      "result": "134 native checks passed on frozen v3 with Debug LLVM/LLD and C -O0. A separately strengthened verifier replays 24 traces successfully and rejects 710 RC/layout mutations. The original executed runner, results and frozen oracle remain unchanged. The reviewer source-derived model matches all 24 traces. Full workloads, performance and L38 qualification remain unverified."
+    },
+    "external_review": {
+      "reviewer": "memory_foundation_v3",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T04:22:40.638242+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/memory-foundation-v3-glm-review/review.log",
+      "log_sha256": "6bdaa393dd2976aabaaa3b924b00ec1ee2770e6e8d6b8e1f36e2f9f65863ec98",
+      "report": "tmp/v1-completion-2026-10-07/memory-foundation-v3-glm-review/REVIEW.md",
+      "report_sha256": "7688156aa3d3872d6e2271db085fca748eec0283f85986f20849c5fb1d0be127",
+      "disposition": "No blocking source instrumentation defect found in small foundation fixtures. Three frozen-oracle weaknesses were reproduced; separate runner hardening covers read liveness, exact RC transitions and layout metadata. All 24 archived native traces pass stronger checks and match reviewer source-derived sequences. Reviewer arena scratch-order sentence is wrong: scratch free precedes consumer entry. No full-workload, performance or production mechanism qualification."
     }
   }
 }

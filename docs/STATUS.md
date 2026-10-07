@@ -394,13 +394,16 @@ Zig handles generated code and runtime/native integration. L73 also requires
 structured concurrency, CPU AI, actual GPU execution and self-hosting parity.
 These requirements remain unqualified. A package registry stays outside scope.
 
-Small standalone arena/RC foundation fixtures passed 133 Debug checks using
-LLVM/LLD and a shared C-O0 allocation shim. They cover explicit-root aliasing,
-returned values and injected backing-allocation failure. They do not qualify
-the seven required workload shapes, automatic A7 lowering or L38. Runtime
-category budgets are not measured stack bounds; full metadata and retention
-accounting remain open. The [roadmap](plan/delivery-roadmap.md) owns the next
-experiment steps.
+Small standalone arena/RC foundation fixtures passed 134 checks using Debug
+LLVM/LLD and a shared C-O0 allocation shim. The instrumented revision records
+explicit-root aliasing, returned values, metadata and allocation-failure cleanup.
+Independent review found weaknesses in its trace checker. A separate strengthened
+checker accepts all 24 archived traces and rejects 710 count/layout mutations.
+The frozen sources and original execution evidence remain unchanged.
+These results do not qualify the seven required workload shapes, automatic A7
+lowering or L38. Runtime category budgets are not measured stack bounds.
+The W4 returned-record prototypes and independent C baseline are being aligned
+before native checks. No W4 timing or production memory choice is qualified.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence
