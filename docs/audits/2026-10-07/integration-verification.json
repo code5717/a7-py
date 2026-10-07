@@ -36,5 +36,7 @@
     "site/bun.lock": "eefa755ce672f6eb2b7e8c0627d76a5760bf154e5f144149006de3e388852e1c"
   },
   "boundary": "Frozen integration checkpoint. Includes checker statement worklist, joined-child lifetime dependency repair, importer-local alias clashes and repaired stdlib fixtures. One scalar-reference expected failure and documented compiler gaps remain. Benchmarks report-only; no browser or GPU execution acceptance; V1 incomplete.",
-  "post_freeze_changes": "Qualification and review records, STATUS and roadmap documentation only; compiler, tests, scripts, site and dependencies unchanged."
+  "post_freeze_changes": "Qualification and review records, STATUS and roadmap documentation only; compiler, tests, scripts, site and dependencies unchanged.",
+  "committed_checkpoint": "621f70cbebd9f4c842ea71a1b8c47894eb5f32ab",
+  "commit_boundary": "Compiler, tests, scripts, site and dependencies match the qualified frozen snapshot. Commit includes later documentation corrections; generated research PDF remains local and untracked."
 }

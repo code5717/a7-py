@@ -119,9 +119,11 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   2026-10-04: bare `break` in a match case, same-name functions, `ref`
   lowering, native `switch` conditions, tagged-union match lowering,
   `$N` checks and emission, `read_line` reader, one `del` emitter.
-- R3 Split verified work into reviewable commits and push. IN PROGRESS:
-  the full-completion goal already authorizes this. Preserve unrelated files;
-  record the passing integration snapshot against the combined commit tip.
+- R3 Preserve and push verified checkpoints. The inherited repair batch is
+  committed and pushed as `621f70c`, with compiler/test/tooling dependencies
+  kept together. It matches the passing integration source manifest; later
+  documentation records were checked separately. Keep subsequent repairs in
+  focused commits and leave the generated research PDF local.
 - R4 Soundness (L32, L63, L64, L71, L74). PARTIAL. The 2026-10-04 repairs cover loop, defer,
   shadowing and callee-identity repairs in the safety pass; SAF-3 and
   SAF-6; defined `MIN / -1`, `-MIN`, `abs(MIN)` and checked run-time

@@ -81,6 +81,11 @@ stdlib dispatch fixtures. The live compiler, tests, scripts, site and dependency
 files match the frozen manifest. Later edits update qualification and review
 records, STATUS and the roadmap; they do not change the tested compiler.
 
+The qualified compiler checkpoint was committed and pushed as
+`621f70cbebd9f4c842ea71a1b8c47894eb5f32ab`. Its compiler, tests, scripts, site and
+dependencies match this snapshot. Later source changes need new qualification.
+The generated research PDF remains outside that commit.
+
 The remaining expected failure is scalar-reference printing, covered by the
 unapproved [scalar-read proposal](../../plan/packets/P-REF-scalar-read.md).
 The gate exercises specific valid and invalid programs. It does not establish
