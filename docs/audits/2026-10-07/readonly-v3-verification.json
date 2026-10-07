@@ -1,0 +1,82 @@
+{
+  "recorded_at": "2026-10-07T08:12:13.529121+00:00",
+  "base_commit": "b58e949cc741b3a85a0079ebb8ea979fea60a9a0",
+  "source_manifest_sha256": "cf6a985dd172021e539350363b6e7cad2727351aded36cd2b5546215bfa09a18",
+  "frozen_files": 1617,
+  "full_release_gate": {
+    "started_at": "2026-10-07T07:40:09.214034+00:00",
+    "manifest_sha256": "cf6a985dd172021e539350363b6e7cad2727351aded36cd2b5546215bfa09a18",
+    "command": [
+      "taskset",
+      "-c",
+      "0-11",
+      "env",
+      "A7_PYTEST_WORKERS=8",
+      "./run_release_checks.sh"
+    ],
+    "checkout": "/var/tmp/a7-readonly-qualification-2026-10-07-2g944dos/checkout",
+    "boundary": "Frozen readonly V3 on published B2 source: implicit-borrow and typed-environment repairs, tests, draft public docs. External delta review runs separately. Earlier passing suites did not qualify the blocked V2 candidate. No integration or V1 completion claim.",
+    "pid": 2715700,
+    "exit_code": 0,
+    "finished_at": "2026-10-07T08:08:33.908389+00:00",
+    "changed_sources": [],
+    "log_sha256": "91d0407da8684890b7e0d4e04661469b3758f4cace05abe298e9e33603211bf9"
+  },
+  "pytest": {
+    "passed": 3896,
+    "expected_failures": 1
+  },
+  "compiler_package_checks": {
+    "passed": 11,
+    "skipped": 0
+  },
+  "examples": {
+    "e2e": 51,
+    "debug": 51,
+    "release": 51,
+    "fast": 51
+  },
+  "error_stage_checks": 61,
+  "native_controls": {
+    "source_manifest_sha256": "cf6a985dd172021e539350363b6e7cad2727351aded36cd2b5546215bfa09a18",
+    "command": [
+      "taskset",
+      "-c",
+      "0-11",
+      "env",
+      "PYTHONPATH=.",
+      "uv",
+      "run",
+      "pytest",
+      "-n",
+      "3",
+      "test/test_safety_readonly_native.py",
+      "test/test_safety_readonly_borrows.py",
+      "-m",
+      "zig",
+      "-q"
+    ],
+    "started_at": "2026-10-07T07:38:03.945012+00:00",
+    "boundary": "Six valid native checks on readonlyV3+B2 source, including repaired scalarborrow guards. Not full qualification or live integration.",
+    "pid": 2713220,
+    "exit_code": 0,
+    "finished_at": "2026-10-07T07:38:31.490990+00:00",
+    "changed_sources": [],
+    "log_sha256": "71325d4a7d1b6cf5b00897c3b9da4ff9734d004989921cc78f44ffc9f6313d64"
+  },
+  "current_compiler_hashes": {
+    "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
+    "a7/passes/type_checker.py": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
+    "a7/passes/safety.py": "c51f83782921c90d085e8ba4ab913c07ef008107aa1b47620882bd3982bd2a90",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+    "a7/passes/readonly_requirements.py": "aeefd7cf1fb31ef0748f50bbc49af3b3440db2055f7444bcf3b92033afd97ed6"
+  },
+  "independent_review_manifest_sha256": "730342e97755593fcc01c52eda8a8137050dcd733c4898828f2e36a057a6de7e",
+  "integration_review_manifest_sha256": "0966d915c51373d8b03b78844de2edc7a53a4318dff7eaeaec47195a3e47db80",
+  "external_review_manifest_sha256": "c79672fbd2df58a62d3425d8df338a35dfee4a0d7238c8e8d41d73ac04e78d5a",
+  "external_explanation_correction": "Reject the report claim that only (1, True) can suppress a violation: independent cases zero_false_order_6 and initial_env_zero_false reproduce (0, False) collisions, both repaired from exit 0 to 6. The same type-tagged-key implementation fixes both; no source change is needed.",
+  "independent_counterexamples_sha256": "4f2fb7955236368eaada8d5307c56f610d0b022a3e441ced9c46d29132229ec4",
+  "minor_test_notes": "Accepted Zig identity is verified by replay outside the permanent expect_ok helper. The private-state resource probe checks a real work invariant but is coupled to evaluator internals. Neither is a reproduced compiler defect.",
+  "preserved_history": "Readonly V1 had a stale finite-loop counter false rejection. V2 repaired that but confused borrowed scalar values with nil predicates and merged integer/Boolean environments. V3 uses implicit-borrow annotations and type-tagged environment identities. The alleged missing work bound was refuted; deeper summaries still become incomplete under the existing certificate.",
+  "boundary": "Known represented nil-field reads reject with semantic exit 6. Previously accepted controls remain accepted; existing call checks still apply. Unknown actuals and incomplete summaries are not proofs. Caller-local selectors, general effects, container aliases and lifetime completeness remain open. Report-only benchmark checks do not qualify L38. No rendered browser, complete memory or full V1 acceptance claim."
+}

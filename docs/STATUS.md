@@ -11,17 +11,16 @@ self-hosting parity before publication. The [delivery roadmap](plan/delivery-roa
 records the sequence and requirement-specific evidence. Unresolved designs need
 approval before dependent changes; L69 already authorizes file-module scopes.
 
-The [October 7 qualification record](audits/2026-10-07/qualification.md)
-separates the resumed baseline from later compiler repairs. The frozen baseline
-passed 3,090 tests with 7 expected failures and the other ten compiler/package
-checks, including all 51 examples in every profile and native package installs.
-The earlier pushed checkpoint `621f70c` passed its full release gate with 3,374 tests
-and one expected failure. It includes the checker statement, joined-child and
-alias-clash edits, all 51 examples in every profile, installed packages, site
-checks and dependency/security checks. The current frozen integration,
-manifest `04330ece`, passed 3,602 tests with one expected failure and the native
-checks. Its secrets check required Git metadata recovery; that check and all
-skipped release checks then passed on unchanged sources. V1 remains incomplete.
+The current readonly-call integration matches frozen source manifest `cf6a985d`.
+Its full release gate passed 3,896 tests with one expected failure and all 11
+compiler/package checks. All 51 examples passed E2E and artifact checks in each
+profile; package installation, site and dependency/static checks passed.
+All 1,617 frozen file hashes and modes stayed unchanged. The
+[readonly verification record](audits/2026-10-07/readonly-v3-verification.json)
+separates these results from independent reviews and six native controls.
+Final evidence prose is checked separately. The
+[October 7 qualification history](audits/2026-10-07/qualification.md) preserves
+earlier checkpoints, failed runs and their recoveries. V1 remains incomplete.
 
 GPU execution is deferred under L75. The
 [Zig GPU research](research/2026-10-07-zig-gpu-support.md) separates installed
@@ -130,8 +129,13 @@ release and fast profiles, including later-argument mutation of a reference.
 The external review completed 73 compile-only pairs: 17 new rejections,
 four valid acceptances, 30 unchanged acceptances and 22 unchanged rejections.
 Its first invocation failed a provider rate limit; the retry completed.
-General effectful returns and nonliteral selectors remain open. The current
-safety source is `0d8b3938`; the earlier stage13 `607` result is historical.
+General effectful returns and nonliteral selectors remain open. That literal-return
+checkpoint used safety source `0d8b3938`; the current readonly integration uses
+`c51f8378` with readonly requirements `aeefd7cf`. It adds rejection-only call
+requirements for represented branches, defers and certified loops. The earlier
+stale-counter and borrowed-scalar failures are preserved in isolated candidates;
+their repairs passed independent review and the latest full release gate.
+General callee and container proofs remain incomplete.
 See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
 for the separate array/slice/selected-value decision boundary.
 The October 4 runtime-contract
@@ -429,17 +433,31 @@ cases exit 6 with recorded residual storage rather than claiming safe reclamatio
 Normal requested backing peaks are 48 bytes for C/arena and 144 for RC. These
 exclude unmeasured runtime storage and do not qualify timing or L38. See the
 [W2 record](audits/2026-10-07/memory-w2-verification.json).
+W3 passes 75 Debug native checks of actual node cycles, deletion,
+allocation-failure cleanup, intact-cycle abort and output failures.
+Independent trace review confirms those bounded observations. Requested
+backing peaks are 96 bytes for C/arena and 192 for RC; stack and other
+runtime storage remain unmeasured. The RC prototype clears this
+container's owned edges before releasing roots. General cycle collection,
+timing and L38 remain unqualified. See the
+[W3 record](audits/2026-10-07/memory-w3-verification.json).
+W5's independent cache models agree on both workload sizes and failure
+retry behavior. Native implementations and their memory/performance
+qualification remain pending.
 Canonical Option/Result and typed existing stdlib hooks are integrated. The frozen
 compiler/package gate passed 3,826 tests with one expected failure and all 11
 checks. The release wrapper then failed a stale generated docs manifest. After
 regeneration, site and remaining dependency/static checks passed separately;
 all compiler, test and package source bytes were unchanged. The
 [qualification record](audits/2026-10-07/stdlib-b2-verification.json) preserves
-both results. The readonly callee-summary candidate remains isolated. Its V2
-forwarded-scalar-borrow analysis rejects a valid guarded call with exit 6 where
-the baseline accepts it. A paired unsafe call remains accepted on both. That
-candidate is blocked from integration pending repair and fresh qualification;
-its passing test suites do not close these counterexamples.
+both results. Readonly V3 is now integrated after its full release gate.
+It uses implicit-borrow annotations and distinct Boolean/integer environment
+keys. These fix the isolated V2 candidate's valid-call rejection and unsafe-call
+acceptance. Independent review checks 16 sources across three snapshots; GLM
+review matches 37 matrix cases and preserves 126 prior results. Six valid native
+controls pass across all three profiles. Caller-local selectors and summaries
+outside the existing work certificate can still leave unsafe reads unresolved.
+The compiler does not treat those unresolved predicates as safety proofs.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence

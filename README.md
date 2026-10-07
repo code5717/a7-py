@@ -106,6 +106,12 @@ their defining file's identity. Import aliases remain local to the file that
 declares them. See [qualification](docs/audits/2026-10-07/qualification.md) and
 [Status](docs/STATUS.md) for the source-specific verification boundary.
 
+Represented readonly calls reject known nil field reads with semantic exit 6.
+Previously accepted guarded calls and literal-selected non-reading controls
+remain accepted. Existing call checks still apply. General callee, container
+and lifetime proofs remain incomplete; see the
+[safety contract](docs/SAFETY_CONTRACT.md).
+
 Use `usize` for sizes, lengths and indices. Use `isize` for signed pointer-sized
 offsets and position differences. A7 source recursion is rejected; use loops or
 explicit stacks. Current traversal candidates use worklists for parsing, type

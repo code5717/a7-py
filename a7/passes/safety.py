@@ -17,6 +17,7 @@ from a7.ast_nodes import ASTNode, AssignOp, BinaryOp, LiteralKind, NodeKind, Una
 from a7.cast_classifier import CastClass, CastDecision, classify_cast
 from a7.errors import SourceSpan, TypeCheckError, TypeErrorType
 from a7.symbol_table import SymbolTable
+from a7.passes.readonly_requirements import ReadonlyRequirements
 from a7.types import (
     ArrayType,
     FunctionType,
@@ -408,6 +409,7 @@ class SafetyProofPass:
         self.global_origins: dict[int, str] = {}
         self.function_returns = {}
         self.literal_return_bodies = {}
+        self.readonly_requirements = ReadonlyRequirements(self._key, self._type, set())
         self.function_global_effects = {}
         # True only when ordered origins describe every deletion in the body.
         self.function_direct_deletes = {}
@@ -876,6 +878,8 @@ class SafetyProofPass:
                     break
             if complete:
                 self.literal_return_bodies[name] = (function.body, refs, bools)
+        self.readonly_requirements = ReadonlyRequirements(self._key, self._type, self.file_variables)
+        self.readonly_requirements.build(bodies)
         self._classify_exact_effects(bodies)
         for decl in node.declarations or []:
             self._visit_decl(decl)
@@ -2259,6 +2263,24 @@ class SafetyProofPass:
                         self._move_allocations(affected.allocations)
                     self.facts.set_node(node, fact)
                 continue
+            if action == "readonly_requirements":
+                name, scalar_captures, captured = context
+                engine = self.readonly_requirements
+                if self._exact_call_name(node, captured) is not None:
+                    engine.dispositions.append((id(node), name, "existing exact replay owns requirement"))
+                    continue
+                violation, origin, disposition = engine.evaluate(name, scalar_captures)
+                engine.dispositions.append((id(node), name, disposition))
+                if violation is True:
+                    origin_span = getattr(origin, "span", None)
+                    required = "readonly callee field access must remain non-nil"
+                    if origin_span is not None:
+                        required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column})"
+                    obligation = self._obligation(ObligationKind.REF_NON_NIL, node,
+                        "readonly_call_precondition", None, required, TypeErrorType.CANNOT_DEREFERENCE)
+                    self._error(obligation, "reachable readonly callee read receives nil",
+                        "Guard the reference or avoid the callee path that reads it")
+                continue
             if action == "capture_globals":
                 context.update({key: self.facts.symbol(key) for key in self.global_origins.values()})
                 continue
@@ -2285,6 +2307,7 @@ class SafetyProofPass:
             if action == "call_start":
                 exact_name = self._exact_call_name(node)
                 captured = []
+                scalar_captures = []
                 global_values = {}
                 callee = node.function
                 name = self._key(callee) if callee and callee.kind == NodeKind.IDENTIFIER else None
@@ -2297,13 +2320,23 @@ class SafetyProofPass:
                 function_type = self._type(node.function)
                 if not exact_name and not getattr(node, "stdlib_canonical", None):
                     pending.append(("global_effects", node, (name, captured, global_values)))
+                pending.append(("readonly_requirements", node, (name, scalar_captures, captured)))
                 pending.append(("capture_globals", node, global_values))
                 for i, arg in reversed(list(enumerate(node.arguments or []))):
-                    pending.append(("call_arg", node, (i, arg, borrowed, function_type, exact_name, captured)))
+                    pending.append(("call_arg", node, (i, arg, borrowed, function_type, exact_name, captured, scalar_captures)))
                     pending.append(("visit", arg, None))
                 continue
             if action == "call_arg":
-                i, arg, borrowed, function_type, exact_name, captured = context
+                i, arg, borrowed, function_type, exact_name, captured, scalar_captures = context
+                scalar = None
+                if arg.kind == NodeKind.LITERAL:
+                    if arg.literal_kind == LiteralKind.NIL:
+                        scalar = True
+                    elif arg.literal_kind in {LiteralKind.BOOLEAN, LiteralKind.INTEGER}:
+                        scalar = arg.literal_value
+                elif i in borrowed:
+                    scalar = False
+                scalar_captures.append(scalar)
                 fact = self.facts.node(arg)
                 captured.append((replace(fact, non_nil=True) if i in borrowed else fact, self._place_key(arg) if i in borrowed else None))
                 if not exact_name:

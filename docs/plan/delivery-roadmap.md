@@ -139,12 +139,18 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   Its 1,601-file snapshot passed the full release gate: 3,772 tests passed,
   one expected failure, all 11 compiler/package checks and the outer release
   checks passed. Three native profiles verify the valid controls. Its external
-  review completed 73 compile-only pairs with no scoped source blocker. Open:
+  review completed 73 compile-only pairs with no scoped source blocker. The later
+  readonly V3 integration passes its full release gate: 3,896 tests, one expected
+  failure, all 11 compiler/package checks and the outer release checks. It repairs
+  the isolated V2 borrowed-scalar false rejection and integer/Boolean environment
+  collision. Six native controls and independent/GLM reviews pass within their
+  recorded scopes. The [readonly record](../audits/2026-10-07/readonly-v3-verification.json)
+  preserves the source identity and remaining limits. Open:
   reference aliases through array elements, selected/base store synchronization
   and joined-holder nil-write invalidation; global nil-state and parameter proof
-  gaps; callee effects outside bounded analysis; the
-  isolated readonly V2 candidate's forwarded-borrow false rejection; the type-based imprecision of the recursion
-  rule, function-pointer
+  gaps; caller-local selectors and summaries outside the work certificate;
+  callee effects outside bounded analysis; the type-based imprecision of the
+  recursion rule, function-pointer
   locals without an initializer, a `main` exit status. Ordinary heap-scalar
   reads and printing need the proposed
   [scalar-read decision](packets/P-REF-scalar-read.md).
@@ -451,8 +457,34 @@ and 144 RC; corrupt metadata leaves explicitly checked 40/144-byte residuals.
 Independent source, GLM and archived native evidence reviews passed within those
 bounds. [Verification](../audits/2026-10-07/memory-w2-verification.json) retains
 source/runner/artifact hashes. Optimized execution, full runtime accounting,
-competitive representations, timing and L38 remain open. W3 has independent
-source candidates and exact pre-source models; native qualification is pending.
+competitive representations, timing and L38 remain open.
+
+W3 now passes 75 Debug native checks: 18 normal/allocation-failure cases,
+three intact-cycle aborts, 47 invalid inputs, trace overflow and six output
+failures. Actual node pointers form the cycle and preserve the expected
+reachable and stored nodes after deletion. Requested backing peaks are
+96 bytes for C/arena and 192 for RC. After deletion they are 72, 96 and
+144 bytes; arena retains 24 dead payload bytes until teardown. These
+figures exclude unmeasured runtime storage. RC explicitly clears the
+container's owned edges before releasing roots; this is not a general
+cycle collector. Independent trace review confirms the bounded cases.
+The GLM report's incorrect output-error and arbitrary-corruption claims
+were rejected during reconciliation. The corrected C source and unchanged
+Zig source return 5 for stdout failure and 6 for trace failure. The
+[W3 verification record](../audits/2026-10-07/memory-w3-verification.json)
+retains source and evidence hashes. Optimized execution, full runtime
+accounting, timing, competitive representations and L38 remain open.
+
+W5 has two independently derived semantic models. For 10,000 individual
+cache accesses they agree on 4,999 hits, 5,001 successful misses and
+sum 661,665. At 100,000 accesses they agree on 49,999 hits, 50,001 misses
+and sum 6,616,665. The independent model checks 66 failure/retry cases.
+Primary inline and fixed-pool C baselines must use zero workload heap
+allocations. Per-miss heap storage is a separate ownership stress case.
+The native contract and inline C source are prepared. The independent
+pool source and native checks remain pending. Python model results do not
+establish actual allocation, runtime storage or speed. See the
+[preparation record](../audits/2026-10-07/memory-w5-preparation.json).
 
 Maintain five warmups and thirty measured samples per workload when measurement
 is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,
@@ -481,3 +513,14 @@ implemented compiler and distribution changes, reviews and open blockers. The
 [next correctness batch](../audits/2026-09-20-core-v1/next-correctness-batch.md)
 separates the loop-label repair, declaration identity work and fallthrough
 compatibility experiment. None of these records marks the V1 milestones done.
+
+
+### Readonly call requirements
+
+The integrated rejection-only analysis preserves previously accepted valid
+controls while rejecting represented nil reads through readonly callees.
+Readonly V3 repairs finite-loop counters, forwarded scalar borrows and
+Boolean/integer environment identities. Its full release gate and six native
+controls pass on manifest `cf6a985d`. Independent and GLM reviews retain their
+separate source scopes. Caller-local selectors, incomplete summaries,
+unsupported effects, globals, reference fields and containers remain open.

@@ -94,6 +94,17 @@ The null-guard trial `68f` and nil-origin trial `f521` are excluded. The former
 accepts unsafe programs; the latter rejects a confirmed valid false-branch
 control. Conditional origin relations and callee preconditions remain open.
 
+A rejection-only readonly-call analysis checks represented nil field reads across
+known calls, local boolean branches, LIFO defers and certified loop bodies.
+A known violating call fails with semantic exit 6. Previously accepted guarded
+calls and literal-selected non-reading controls remain accepted. Existing call
+checks still apply. Finite counted loops publish
+their proved final counter value before checking later branches. This analysis
+adds no writes, returned-reference facts or lifetime effects. Unsupported globals,
+reference fields, containers, nonliteral caller captures, effectful callees and
+resource-excluded summaries remain incomplete; an unknown predicate is not a
+safety proof. Existing effectful-call analysis retains its separate limits.
+
 A bounded direct-call repair selects return facts for bodies containing only
 blocks, boolean-literal or boolean-parameter conditions, and reference-parameter
 or nil returns. Parameters must have explicit `ref` or `bool` types, and every

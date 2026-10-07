@@ -1,0 +1,38 @@
+{
+  "status": "Source preparation only; no native W5 qualification",
+  "manifests": {
+    "semantic_contract": "dbf29f8ba4e0fd1ac987e53236ac58c3407da97522b6dd3d4180c078a24ff816",
+    "independent_model": "75840987fbde9945b0a57966b7016462791c14f0ac83f968bdbc4da73520a392",
+    "native_contract": "3c367d2d8e4039b090117a4c052b86dc7c6a1537d6218eaf3d95f2b23c57e982",
+    "inline_precode": "11858f2040413bd4aac558fbf37b438be2c97cb01fd27a5bffc6d3e0200984af",
+    "inline_source": "5a789b3c5721dc4a1c7dfdfb3489c7691f627a9c88c0c20187734571d6aa29dc"
+  },
+  "normal_model_results": {
+    "10000": {
+      "hits": 4999,
+      "loads": 5001,
+      "evictions": 4998,
+      "sum": 661665,
+      "mru": [
+        "A",
+        "C",
+        "B"
+      ]
+    },
+    "100000": {
+      "hits": 49999,
+      "loads": 50001,
+      "evictions": 49998,
+      "sum": 6616665,
+      "mru": [
+        "A",
+        "C",
+        "B"
+      ]
+    }
+  },
+  "independent_failure_retry_cases": 66,
+  "inline_source_sha256": "ab300288eca909eb3d1d5668bb7c706f6e311e108f79fa49d558284cabe4c2a9",
+  "prepared_protocol": "Canonical four-argument CLI, immediate loader-failure retry, exact numeric semantic traces, separate per-source layout records and zero workload heap baselines. Inline source is authored; independent pool preparation continues.",
+  "boundary": "Python models and static source checks only. Intended layout is not measured ABI or complete stack/runtime memory. No C build, native execution, optimized-code inspection, timing, L38 or production memory choice. Per-miss heap ownership stress remains a separate unprepared protocol."
+}

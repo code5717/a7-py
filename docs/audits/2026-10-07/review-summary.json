@@ -1,8 +1,8 @@
 {
   "recorded_at": "2026-10-06T23:38:07.463503+00:00",
-  "completed_external_reviews": 46,
+  "completed_external_reviews": 49,
   "model_counts": {
-    "zai-coding-plan/glm-5.3": 34,
+    "zai-coding-plan/glm-5.3": 37,
     "zai-coding-plan/glm-5.3-flash": 12
   },
   "reviews": [
@@ -446,17 +446,51 @@
       "manifest_sha256": "9bd90159c2a5382cc86ae8f6412f532d2bfc74dde9423eb108ce537c5dc55e50",
       "reconciliation_sha256": "8e16763f32a826e37deb0f58a8886c8562e5108f7c4f4fdcf0659be7d73a0e0c",
       "disposition": "No source/runner blocker within normal, allocation-failure, copy and named metadata/arithmetic fault scope. Source-model agreement is not native evidence. External packet omitted runner-v1/W4 dependencies; separate local supplement verifies originals without claiming reviewer inspection. Later independently audited Debug native run passed75checks. Full runtime bookkeeping, performance and production memory remain unqualified."
+    },
+    {
+      "reviewer": "readonly_callee_v2",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T07:32:43.359Z",
+      "exit_code": 0,
+      "report": "tmp/v1-completion-2026-10-07/safety-readonly-v2-glm-review/REPORT.md",
+      "report_sha256": "f811188fcee3b2004d87f9371b50587384f50d37d27f325314716ad7be6d87d2",
+      "manifest_sha256": "5ebb82b15ac47de37c90637f94060a171c4d6c4ba31a0a96448e6065f0d7001b",
+      "reconciliation_sha256": "323eb97059c5ac85e57f43438f5a33c001fd05714d637fddf142eca00606b6ad",
+      "disposition": "Blocked by independently reproduced forwarded-borrow false rejection. Original resource-cost premise is contradicted by source and bounded/deeper observations; no missing certificate established. Missing nested copied fixtures are locally hashed in separate supplement, not claimed externally inspected. Later typed-environment collision is independently reproduced and repaired in separate V3, not qualified by this V2 review."
+    },
+    {
+      "reviewer": "memory_w3_original",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T07:42:45.681Z",
+      "exit_code": 0,
+      "report": "tmp/v1-completion-2026-10-07/memory-w3-glm-review/REPORT.md",
+      "report_sha256": "07109cbd7f1b85f55151b9b6093a8dd1688e9522c8164e0c823726d88de3646b",
+      "manifest_sha256": "e585b1039aa22c76c756f61b005f51744470887ed636f05186cf02e2af1d3745",
+      "reconciliation_sha256": "33447435f8bd4011a7062ddfd2a2c93829355bf554680208937e6a57121b888d",
+      "disposition": "No blocker in 21 controlled original schedules. Reconciliation rejects the claims that Zig trace failures return 5 and every corrupt queue fails safely. Separate contract v5, C v2 and 75 independently audited native checks support stdout exit 5 and trace exit 6. Abort equivalence is limited to selector 0. Bookkeeping remains partial; timing and L38 remain unqualified."
+    },
+    {
+      "reviewer": "safety_readonly_v3_delta",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T08:02:53.539140+00:00",
+      "exit_code": 0,
+      "report": "tmp/v1-completion-2026-10-07/safety-readonly-v3-glm-review/REPORT.md",
+      "report_sha256": "da76e870901cca4a53fb937ad41b766780106cf04af0e666a4811f49e6e7e732",
+      "manifest_sha256": "c79672fbd2df58a62d3425d8df338a35dfee4a0d7238c8e8d41d73ac04e78d5a",
+      "reconciliation_sha256": "ae9012b14be264a9db809f7e570215d6f99b796c3a4933436fb5c9c32dce57c6",
+      "disposition": "No critical or major source finding. The reviewer matched 37 matrix cases and 126 prior cases with accepted Zig parity. The independently reproduced 0/False collision corrects its narrower 1/True-only explanation. Initial copied-fixture omission and later verification of 513 hashes and 43 source rows are preserved separately. Full gate and six native controls passed on the parent qualification snapshot; unknown and incomplete predicates remain unproved."
     }
   ],
   "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",
   "current_compiler_hashes": {
     "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
-    "a7/passes/type_checker.py": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
-    "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
-    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
+    "a7/passes/type_checker.py": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
+    "a7/passes/safety.py": "c51f83782921c90d085e8ba4ab913c07ef008107aa1b47620882bd3982bd2a90",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+    "a7/passes/readonly_requirements.py": "aeefd7cf1fb31ef0748f50bbc49af3b3440db2055f7444bcf3b92033afd97ed6"
   },
-  "updated_at": "2026-10-07T06:49:26.990438+00:00",
-  "current_compiler_hashes_label": "Integrated literal-return compiler source matching full manifest 86af92eb. Final evidence prose is checked separately.",
+  "updated_at": "2026-10-07T08:12:13.529121+00:00",
+  "current_compiler_hashes_label": "Readonly V3 qualification source matching manifest cf6a985d on the canonical-prelude checkpoint. Final evidence prose is checked separately.",
   "failed_followup_invocations": [
     {
       "reviewer": "safety_conditional_return_literals",
@@ -485,6 +519,15 @@
         "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
         "a7/passes/type_checker.py": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
         "a7/passes/safety.py": "607f1fdecc662a61751efdadd01c5cabc6f7a63559d28358ad9433f8b04a706d",
+        "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
+      }
+    },
+    {
+      "label": "Integrated literal-return compiler source matching full manifest 86af92eb. Final evidence prose is checked separately.",
+      "files": {
+        "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
+        "a7/passes/type_checker.py": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
+        "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
         "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
       }
     }

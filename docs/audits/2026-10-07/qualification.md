@@ -367,3 +367,55 @@ The [publication record](published-stdlib-docs-verification.json) preserves both
 attempts. A fresh computer-use inventory had no connected browser; rendered
 interaction and responsive acceptance remain unverified. The separate CI run
 was pending when the documentation deployment completed.
+
+## Readonly calls and W3 native correctness
+
+Readonly V3 is integrated from manifest `cf6a985d`, containing 1,617 files.
+`taskset -c 0-11 env A7_PYTEST_WORKERS=8 ./run_release_checks.sh` ran from
+07:40:09 to 08:08:33 UTC and exited 0. All frozen hashes and modes remained
+unchanged. The gate passed 3,896 tests with one expected failure and all 11
+compiler/package checks. All 51 examples passed E2E and each artifact profile;
+the error-stage matrix passed 61 checks. Native package installation, site,
+locked dependency and static checks passed. Ten report-only benchmarks do not
+qualify L38. Six separately recorded valid native controls passed in debug,
+release and fast profiles. Final evidence prose and its generated exports receive
+separate checks without changing the qualified compiler or tests.
+
+The analysis rejects represented nil field reads across readonly calls. It uses
+the type checker's implicit-borrow annotations and separates Boolean/integer
+environment identities. These repairs address the blocked V2 candidate's false
+rejection and suppressed violations. The independent review checked 16 sources
+on three snapshots. GLM reproduced the repairs, matched 37 matrix cases and
+preserved 126 prior outcomes with accepted Zig parity. Its claim that only the
+1/true collision can suppress a violation is incorrect: independent 0/false
+witnesses also change from exit 0 to 6. The same repaired keys cover both.
+The [verification record](readonly-v3-verification.json) preserves that correction.
+The initial review copy omitted nested fixture directories; a later supplement
+was hashed and 43 source rows were checked against the restored originals.
+This does not establish semantic inspection of every supplemental file.
+
+Previously accepted controls remain accepted; existing call checks still apply.
+Unknown caller-local selectors and summaries beyond the work certificate remain
+unproved, including reproduced unsafe acceptances. General callee effects,
+container aliases, lifetime safety and full V1 remain incomplete. The review
+digest now records 49 completed external reviews across distinct snapshots.
+GPU execution remains deferred under L75.
+
+W3's independent C and arena/RC prototypes passed 75 Debug native checks.
+Actual node pointers form a cycle, and deletion preserves the required reachable
+and stored nodes. Allocation failures and intact-cycle aborts finish with zero
+live workload allocations in the represented cases. Requested backing peaks are
+96 bytes C/arena and 192 RC. Post-deletion backing is 72, 96 and 144 bytes;
+arena retains 24 dead payload bytes until teardown. RC clears the container's
+owned edges before releasing roots. This does not establish general cycle
+collection or arbitrary corrupt-state recovery. Full runtime storage and timing
+remain unmeasured. Independent audit verified 87 command records, all 75 checks
+and their pinned sources, streams and artifacts. The
+[W3 record](memory-w3-verification.json) preserves output-error corrections and
+the limits of failed trace observation.
+
+W5 has independently reconciled semantic models, a frozen native protocol and
+an inline C source candidate. The pool baseline is being prepared independently.
+The [preparation record](memory-w5-preparation.json) contains their hashes and
+expected counts. No W5 native execution or memory/performance qualification is
+claimed. Browser rendering and final publication acceptance remain unverified.

@@ -59,6 +59,16 @@ actual project path and source imports before trusting probe output. Set the
 explicit project directory and matching PWD for isolated reviews, then verify
 the running process and recorded session directory. Preserve permission
 denials and distinguish unperformed checks from completed checks.
+Copy review packets by their exact manifested paths, including nested fixture
+directories. Rehash every entry before launch. Preserve the original envelope
+when adding a later supplement, and distinguish file availability or hashing
+from observed semantic inspection.
+
+Keep memory experiments faithful to their frozen workloads. Review competitive
+C representations independently, including zero-heap choices where appropriate.
+Separate semantic models, source checks, native correctness, optimized execution
+and full runtime accounting. L38 remains a per-workload 1.10 limit; unapproved
+additive allowances and weaker baselines cannot replace it.
 
 Reserve CPUs 16-23 on this 24-CPU machine. Use no more than eight pytest workers
 in total and one full native release gate at a time. Never use -n auto. Pin

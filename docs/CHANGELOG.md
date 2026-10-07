@@ -5,6 +5,12 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Represented readonly callees reject known nil field reads across branches,
+  defers and certified loops. Previously accepted guarded controls remain
+  accepted. Finite-loop
+  proofs use the final counter value for later branches. Unknown callee effects
+  and general reference obligations remain incomplete.
+
 - Package-owned `Option(T)` and `Result(T, E)` are available in every file.
   User declarations of those names now fail at semantic exit 6; remove equivalent
   declarations or rename custom types. Record fields and enum members remain valid.

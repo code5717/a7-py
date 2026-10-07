@@ -1,0 +1,268 @@
+{
+  "recorded_at": "2026-10-07T07:46:07.197288+00:00",
+  "started_at": "2026-10-07T07:29:04.771978+00:00",
+  "finished_at": "2026-10-07T07:29:20.039145+00:00",
+  "status": "passed bounded Debug correctness",
+  "checks_by_category": {
+    "normal_or_injected": 18,
+    "full_cycle_abort": 3,
+    "invalid_inputs": 47,
+    "trace_overflow": 1,
+    "output_failures": 6
+  },
+  "commands": 87,
+  "cpus": {
+    "launcher": "12-15",
+    "children": "0-3"
+  },
+  "source_manifests": {
+    "contract_v5": "2ae2ca784736031b12193505e278b3a087d2c3502dc445e27b76babe8bd8f9e7",
+    "c_v2": "fbb75835eda43cb32d2461eafe4ec751ccab2a52e86650fe23d875297024001f",
+    "zig": "f94a3ee4d70ebe1c5f3420b299c3000d2f4461be43a1959f55eb5a680e5dba50",
+    "runner": "fc77fd46a0af76989954228c13a8ec588f93ade32567ea384ad2cb65180d8e12"
+  },
+  "observed_success": {
+    "c-0": {
+      "exit": 0,
+      "stdout": "initial: 4 sum: 6 cycle: yes after: 1 sum: 0 missing1: absent stored: 3 sum: 5\n",
+      "accounting_events": [
+        [
+          "50",
+          "retained_state",
+          "0",
+          "96",
+          "96",
+          "0",
+          "1"
+        ],
+        [
+          "51",
+          "header_state",
+          "0",
+          "0",
+          "0",
+          "0",
+          "1"
+        ],
+        [
+          "55",
+          "delete_checked",
+          "2",
+          "1",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "59",
+          "delete_end",
+          "2",
+          "1",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "68",
+          "retained_state",
+          "0",
+          "72",
+          "72",
+          "0",
+          "2"
+        ],
+        [
+          "69",
+          "header_state",
+          "0",
+          "0",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "82",
+          "final_backing",
+          "0",
+          "0",
+          "0",
+          "96",
+          "184"
+        ]
+      ],
+      "stdout_sha256": "105e88d24c8e023be5b646abfcf49f325699dca694b9976321e8af82bea108ba",
+      "stderr_sha256": "aeee6b5717a81b36f7f4933bcd0796a9018be8735d8dd302120ef409226ee2ee"
+    },
+    "arena-0": {
+      "exit": 0,
+      "stdout": "initial: 4 sum: 6 cycle: yes after: 1 sum: 0 missing1: absent stored: 3 sum: 5\n",
+      "accounting_events": [
+        [
+          "52",
+          "retained_state",
+          "0",
+          "96",
+          "96",
+          "0",
+          "1"
+        ],
+        [
+          "53",
+          "header_state",
+          "0",
+          "0",
+          "0",
+          "0",
+          "1"
+        ],
+        [
+          "57",
+          "delete_checked",
+          "2",
+          "1",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "60",
+          "delete_end",
+          "2",
+          "1",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "69",
+          "retained_state",
+          "0",
+          "96",
+          "72",
+          "24",
+          "2"
+        ],
+        [
+          "70",
+          "header_state",
+          "0",
+          "0",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "85",
+          "final_backing",
+          "0",
+          "0",
+          "0",
+          "96",
+          "224"
+        ]
+      ],
+      "stdout_sha256": "105e88d24c8e023be5b646abfcf49f325699dca694b9976321e8af82bea108ba",
+      "stderr_sha256": "d5c5133bcfec84c3d34c1837283f0bb9975260d135c1ff0c5360090be4cf6e3b"
+    },
+    "rc-0": {
+      "exit": 0,
+      "stdout": "initial: 4 sum: 6 cycle: yes after: 1 sum: 0 missing1: absent stored: 3 sum: 5\n",
+      "accounting_events": [
+        [
+          "58",
+          "retained_state",
+          "0",
+          "192",
+          "96",
+          "0",
+          "1"
+        ],
+        [
+          "59",
+          "header_state",
+          "0",
+          "96",
+          "0",
+          "0",
+          "1"
+        ],
+        [
+          "65",
+          "delete_checked",
+          "2",
+          "1",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "72",
+          "delete_end",
+          "2",
+          "1",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "81",
+          "retained_state",
+          "0",
+          "144",
+          "72",
+          "0",
+          "2"
+        ],
+        [
+          "82",
+          "header_state",
+          "0",
+          "72",
+          "0",
+          "0",
+          "2"
+        ],
+        [
+          "110",
+          "final_backing",
+          "0",
+          "0",
+          "0",
+          "192",
+          "321"
+        ]
+      ],
+      "stdout_sha256": "105e88d24c8e023be5b646abfcf49f325699dca694b9976321e8af82bea108ba",
+      "stderr_sha256": "bf5888938d02e89f1d67961c8435e0df475195fec207c3d5ae57ccbdd002e8e3"
+    }
+  },
+  "native_independent_manifest_sha256": "c773bf864069a42567f9b661b14516ad60352128bd24fb1312b5eb30527989cc",
+  "native_independent_results_sha256": "c7c52907d39cabf534dfb2ec609b3d38699352d8a9481cd439e557ca148b4710",
+  "external_original_review_manifest_sha256": "e585b1039aa22c76c756f61b005f51744470887ed636f05186cf02e2af1d3745",
+  "external_reconciliation_sha256": "33447435f8bd4011a7062ddfd2a2c93829355bf554680208937e6a57121b888d",
+  "raw_run_sha256": "6959a8e7a279e27aab235221be149136720784948b33a5adcbdbdca262808424",
+  "raw_records_sha256": "28afa58a8c6f6d109af37ebf79cdc7c49373d148b94dcf3a947724c4be53e97b",
+  "raw_checks_sha256": "e7f297b659fbed041038e94d541b98312146db18ad604a9ae6dcf5279eccdb4f",
+  "raw_artifacts_sha256": "bd798190b5e69e4ef7d3bed5abb625826c078ce1ee55da9e9b153bf1d160e278",
+  "requested_backing": {
+    "peak": {
+      "c": 96,
+      "arena": 96,
+      "rc": 192
+    },
+    "after_node1_deletion": {
+      "c": 72,
+      "arena": 96,
+      "rc": 144
+    },
+    "arena_retained_dead_payload": 24,
+    "final": 0
+  },
+  "review_corrections": [
+    "The external report says the original Zig trace failure returns 5. Source inspection and native checks establish 6. Corrected C v2 also returns 6; stdout failure remains 5.",
+    "The report does not establish that arbitrary corrupt queue metadata fails safely. Fabricated entries within the queue capacity remain unqualified.",
+    "The abort variants are equivalent only at the contracted failure selector 0. C and Zig differ outside that test-only contract.",
+    "Some malformed traces pass the invariant checker. Mandatory exact-stream comparison rejects all 765 reviewer mutations."
+  ],
+  "boundary": "Actual typed node pointers, cycle traversal, deletion, allocation-failure cleanup and intact-cycle abort passed the represented checks. Bytes redirected to /dev/full were not observed; trace-write failure leaves no captured cleanup trace. No arbitrary-corruption recovery, optimized execution, timing, complete runtime or stack memory, RSS, sanitizer, L38 or production-mechanism claim follows."
+}
