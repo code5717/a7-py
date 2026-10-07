@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "968ec0cfb1c79253d558517297c68148c4f54ab3d0b0f5b423d5ad6b464d25e1"
+    "value": "93787d8d7a9e0976ab082943e167e397a8c5f94d50844a614797e05711311124"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -1314,6 +1314,7 @@
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/compiler.md",
         "https://github.com/code5717/a7-py/blob/master/scripts/verify_examples_e2e.py",
+        "https://github.com/code5717/a7-py/blob/master/docs/ARCHITECTURE.md",
         "https://github.com/code5717/a7-py/blob/master/a7/cli.py",
         "https://github.com/code5717/a7-py/blob/master/a7/compile.py",
         "https://github.com/code5717/a7-py/blob/master/scripts/verify_error_stages.py"

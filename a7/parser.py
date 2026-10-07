@@ -98,14 +98,10 @@ def _span_through(start: SourceSpan, end_token: Token) -> SourceSpan:
 
 
 class Parser:
-    """Recursive descent parser for A7."""
+    """Parse A7 using statement and expression worklists."""
 
-    # Nesting cap for the recursive-descent entries. Both the binary and
-    # the unary entries count, so one parenthesis level costs two; valid
-    # programs in the test suite nest at most ~101 levels (100 nested
-    # parentheses, counter ~202). Each level costs ~6 Python frames, so a
-    # trigger at 256 stays under the default limit of 1000 while over-deep
-    # input fails cleanly.
+    # Logical grammar-depth cap, independent of the Python stack. Binary and
+    # unary entries both count, so one parenthesis level consumes two entries.
     MAX_NESTING_DEPTH = 256
 
     def __init__(
@@ -619,47 +615,387 @@ class Parser:
         self, name: str, is_public: bool, name_token: Token
     ) -> ASTNode:
         """Parse function declaration after we have the name and :: fn."""
-        self.consume(TokenType.FN)
+        return self._statement_work("parse_function_decl_with_name", (name, is_public, name_token))
 
-        # Function parameters (which may include generics)
-        self.consume(TokenType.LEFT_PAREN)
-        generic_params, parameters = self.parse_mixed_parameters()
+    def _statement_work(self, action, payload):
+        # Suspended frames retain token order and unwind nesting guards on errors.
+        pending = [self._statement_steps(action, payload)]
+        result = None
+        try:
+            while pending:
+                try:
+                    action, payload = pending[-1].send(result)
+                except StopIteration as finished:
+                    pending.pop()
+                    result = finished.value
+                    continue
+                pending.append(self._statement_steps(action, payload))
+                result = None
+            return result
+        finally:
+            for frame in reversed(pending):
+                frame.close()
 
-        # Return type (optional)
-        return_type = None
-        # Only parse return type if we don't immediately see a left brace
-        # This handles functions like: fn() { ... } vs fn() i32 { ... }
-        if not self.match(TokenType.LEFT_BRACE):
-            if self.current().type in _TYPE_STARTS:
-                return_type = self.parse_type()
+    def _statement_steps(self, action, payload):
+        if action == "parse_function_decl_with_name":
+            name, is_public, name_token = payload
+            self.consume(TokenType.FN)
 
-        # Minimal where-clause between signature and body.
-        where_clause = None
-        self.skip_terminators()
-        if self.match(TokenType.WHERE):
-            where_clause = self.parse_where_clause()
+            # Function parameters (which may include generics)
+            self.consume(TokenType.LEFT_PAREN)
+            generic_params, parameters = self.parse_mixed_parameters()
+
+            # Return type (optional)
+            return_type = None
+            # Only parse return type if we don't immediately see a left brace
+            # This handles functions like: fn() { ... } vs fn() i32 { ... }
+            if not self.match(TokenType.LEFT_BRACE):
+                if self.current().type in _TYPE_STARTS:
+                    return_type = self.parse_type()
+
+            # Minimal where-clause between signature and body.
+            where_clause = None
+            self.skip_terminators()
+            if self.match(TokenType.WHERE):
+                where_clause = self.parse_where_clause()
+                self.skip_terminators()
+
+            # Function body (required)
+            if not self.match(TokenType.LEFT_BRACE):
+                raise ParseError.from_token(
+                    "Expected function body after function signature",
+                    self.current(),
+                    self.filename,
+                )
+            body = (yield ("parse_block", None))
+
+            decl = create_function_decl(
+                name=name,
+                parameters=parameters,
+                return_type=return_type,
+                body=body,
+                is_public=is_public,
+                span=create_span_from_token(name_token),
+            )
+            if where_clause is not None:
+                decl.where_clause = where_clause
+            return decl
+
+        if action == "parse_block":
+            start_token = self.consume(TokenType.LEFT_BRACE)
+            statements = []
+
             self.skip_terminators()
 
-        # Function body (required)
-        if not self.match(TokenType.LEFT_BRACE):
-            raise ParseError.from_token(
-                "Expected function body after function signature",
-                self.current(),
-                self.filename,
-            )
-        body = self.parse_block()
+            while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
+                iteration_start = self.position
+                stmt = (yield ("parse_statement", None))
+                if stmt:
+                    statements.append(stmt)
+                self._require_statement_end()
+                self.skip_terminators()
+                self._require_progress(iteration_start, "block")
 
-        decl = create_function_decl(
-            name=name,
-            parameters=parameters,
-            return_type=return_type,
-            body=body,
-            is_public=is_public,
-            span=create_span_from_token(name_token),
-        )
-        if where_clause is not None:
-            decl.where_clause = where_clause
-        return decl
+            end_token = self.consume(TokenType.RIGHT_BRACE)
+
+            return create_block(
+                statements=statements, span=create_span_from_tokens(start_token, end_token)
+            )
+
+        if action == "parse_statement":
+            self._enter_nesting()
+            try:
+                start_token = self.current()
+
+                # Loop label prefix: @outer for ... / @outer while ...
+                if self.match(TokenType.BUILTIN_ID) and self.peek().type in (
+                    TokenType.FOR,
+                    TokenType.WHILE,
+                ):
+                    label_token = self.advance()
+                    label = label_token.value[1:]
+                    loop_stmt = (yield ("parse_statement", None))
+                    loop_stmt.label = label
+                    return loop_stmt
+
+                # Return statement
+                if self.match(TokenType.RET):
+                    self.advance()
+                    value = None
+                    if not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
+                        value = self.parse_expression()
+                    return create_return_stmt(value, create_span_from_token(start_token))
+
+                # Break statement (optionally with label: break outer)
+                if self.match(TokenType.BREAK):
+                    self.advance()
+                    label = None
+                    if self.match(TokenType.IDENTIFIER) and not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
+                        label = self.advance().value
+                    return ASTNode(
+                        kind=NodeKind.BREAK, label=label, span=create_span_from_token(start_token)
+                    )
+
+                # Continue statement (optionally with label: continue outer)
+                if self.match(TokenType.CONTINUE):
+                    self.advance()
+                    label = None
+                    if self.match(TokenType.IDENTIFIER) and not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
+                        label = self.advance().value
+                    return ASTNode(
+                        kind=NodeKind.CONTINUE, label=label, span=create_span_from_token(start_token)
+                    )
+
+                # Fall statement (fallthrough in match)
+                if self.match(TokenType.FALL):
+                    self.advance()
+                    return ASTNode(
+                        kind=NodeKind.FALL, span=create_span_from_token(start_token)
+                    )
+
+                # Match statement
+                if self.match(TokenType.MATCH):
+                    return (yield ("parse_match_statement", None))
+
+                # Defer statement
+                if self.match(TokenType.DEFER):
+                    return (yield ("parse_defer_statement", None))
+
+                # Del statement
+                if self.match(TokenType.DEL):
+                    return self.parse_del_statement()
+
+                # If statement
+                if self.match(TokenType.IF):
+                    return (yield ("parse_if_statement", None))
+
+                # While statement
+                if self.match(TokenType.WHILE):
+                    return (yield ("parse_while_statement", None))
+
+                # For statement
+                if self.match(TokenType.FOR):
+                    return (yield ("parse_for_statement", None))
+
+                # Block statement
+                if self.match(TokenType.LEFT_BRACE):
+                    return (yield ("parse_block", None))
+
+                # Variable or constant declarations inside function body
+                if self.match(TokenType.IDENTIFIER):
+                    lookahead = self.peek()
+                    if lookahead.type == TokenType.DECLARE_VAR:
+                        # Simple: name := value
+                        name_token = self.advance()
+                        self.consume(TokenType.DECLARE_VAR)
+                        value = self.parse_expression()
+                        return create_var_decl(
+                            name=name_token.value,
+                            value=value,
+                            is_public=False,
+                            span=create_span_from_token(name_token),
+                        )
+                    elif lookahead.type == TokenType.COLON:
+                        # Reject the old label: spelling for loop labels.
+                        peek2 = self.peek(2)
+                        if peek2.type in (TokenType.FOR, TokenType.WHILE):
+                            raise ParseError.from_token(
+                                "Use '@label' before a loop instead of 'label:'",
+                                self.current(),
+                                self.filename,
+                                self.source_lines,
+                            )
+
+                        # Explicit type annotation: name: type = value (initialization optional)
+                        name_token = self.advance()
+                        self.consume(TokenType.COLON)
+                        explicit_type = self.parse_type()
+
+                        # Make initialization optional - allow uninitialized declarations
+                        value = None
+                        if self.match(TokenType.ASSIGN):
+                            self.advance()
+                            value = self.parse_expression()
+
+                        var_decl = create_var_decl(
+                            name=name_token.value,
+                            value=value,
+                            is_public=False,
+                            span=create_span_from_token(name_token),
+                        )
+                        var_decl.explicit_type = explicit_type
+                        return var_decl
+                    elif lookahead.type == TokenType.DECLARE_CONST:
+                        # Constant or local type declaration: name :: value|struct|enum|union|fn
+                        name_token = self.advance()
+                        self.consume(TokenType.DECLARE_CONST)
+
+                        # Check for struct/enum/union/function declarations
+                        if self.match(TokenType.STRUCT):
+                            return self.parse_struct_decl_with_name(name_token.value, False, name_token)
+                        elif self.match(TokenType.ENUM):
+                            return self.parse_enum_decl_with_name(name_token.value, False, name_token)
+                        elif self.match(TokenType.UNION):
+                            return self.parse_union_decl_with_name(name_token.value, False, name_token)
+                        elif self.match(TokenType.FN):
+                            # Check if this is a function type alias or function declaration
+                            if self._is_fn_type_alias():
+                                return self._parse_fn_type_alias(name_token.value, False, name_token)
+                            return (yield ("parse_function_decl_with_name", (name_token.value, False, name_token)))
+                        elif (
+                            self._is_type_start()
+                            or self.match(TokenType.LEFT_BRACKET)
+                        ):
+                            # Type alias: Handle :: u64, Vector :: [3]f32, etc.
+                            # A bare identifier stays a constant (see above).
+                            type_node = self.parse_type()
+                            return ASTNode(
+                                kind=NodeKind.TYPE_ALIAS,
+                                name=name_token.value,
+                                value=type_node,
+                                is_public=False,
+                                span=create_span_from_token(name_token),
+                            )
+                        else:
+                            # Regular constant declaration
+                            value = self.parse_expression()
+                            return create_const_decl(
+                                name=name_token.value,
+                                value=value,
+                                is_public=False,
+                                span=create_span_from_token(name_token),
+                            )
+
+                # Expression statement or assignment
+                return self.parse_expression_or_assignment()
+
+            finally:
+                self._exit_nesting()
+
+        if action == "parse_if_statement":
+            if_token = self.consume(TokenType.IF)
+            condition = self._parse_header_expression()
+            self._require_block_start("the if condition")
+            then_stmt = (yield ("parse_block", None))
+
+            else_stmt = None
+            if self.match(TokenType.ELSE):
+                self.advance()
+                if not self.match(TokenType.IF):
+                    self._require_block_start("'else'")
+                else_stmt = (yield ("parse_statement", None))
+
+            return ASTNode(
+                kind=NodeKind.IF_STMT,
+                condition=condition,
+                then_stmt=then_stmt,
+                else_stmt=else_stmt,
+                span=create_span_from_token(if_token),
+            )
+
+        if action == "parse_while_statement":
+            while_token = self.consume(TokenType.WHILE)
+            condition = self._parse_header_expression()
+            self._require_block_start("the while condition")
+            body = (yield ("parse_block", None))
+
+            return ASTNode(
+                kind=NodeKind.WHILE,
+                condition=condition,
+                body=body,
+                span=create_span_from_token(while_token),
+            )
+
+        if action == "parse_for_statement":
+            for_token = self.consume(TokenType.FOR)
+
+            # Simple infinite loop: for { ... }
+            if self.match(TokenType.LEFT_BRACE):
+                body = (yield ("parse_block", None))
+                return ASTNode(
+                    kind=NodeKind.FOR, body=body, span=create_span_from_token(for_token)
+                )
+
+            saved = self._header_depth
+            self._header_depth = self._depth_at[self.position]
+            try:
+                kind, header = self._parse_for_header()
+            finally:
+                self._header_depth = saved
+
+            body = (yield ("parse_block", None))
+            return ASTNode(
+                kind=kind, body=body, span=create_span_from_token(for_token), **header
+            )
+
+        if action == "parse_match_statement":
+            match_token = self.consume(TokenType.MATCH)
+            expression = self._parse_header_expression()
+
+            self.consume(TokenType.LEFT_BRACE)
+            cases = []
+            else_case = None
+
+            while not self.at_end():
+                iteration_start = self.position
+                self.skip_terminators()
+                if self.match(TokenType.RIGHT_BRACE) or self.at_end():
+                    break
+                self._check_match_arm_order(else_case is not None)
+
+                if self.match(TokenType.CASE):
+                    case_token = self.advance()
+
+                    # Parse patterns (supporting ranges, multiple values, enum access)
+                    patterns = [self.parse_pattern()]
+                    while self.match(TokenType.COMMA):
+                        self.advance()
+                        patterns.append(self.parse_pattern())
+
+                    self.consume(TokenType.COLON)
+                    body = (yield ("parse_statement", None))
+
+                    case_node = ASTNode(
+                        kind=NodeKind.CASE_BRANCH,
+                        patterns=patterns,
+                        statement=body,
+                        span=create_span_from_token(case_token),
+                    )
+                    cases.append(case_node)
+
+                elif self.match(TokenType.ELSE):
+                    self.advance()
+                    self.consume(TokenType.COLON)
+                    else_case = [(yield ("parse_statement", None))]
+
+                else:
+                    raise self._fatal_error(
+                        "Expected 'case' or 'else' in match statement",
+                        self.current(),
+                    )
+
+                self.skip_terminators()
+                self._require_progress(iteration_start, "match statement")
+
+            self.consume(TokenType.RIGHT_BRACE)
+
+            return ASTNode(
+                kind=NodeKind.MATCH,
+                expression=expression,
+                cases=cases,
+                else_case=else_case,
+                span=create_span_from_token(match_token),
+            )
+
+        if action == "parse_defer_statement":
+            defer_token = self.consume(TokenType.DEFER)
+            statement = (yield ("parse_statement", None))
+
+            return ASTNode(
+                kind=NodeKind.DEFER,
+                statement=statement,
+                span=create_span_from_token(defer_token),
+            )
 
     def parse_generic_parameters(self) -> List[ASTNode]:
         """Parse generic type parameters with optional constraints: $T, $T: Numeric, $T: @type_set(...)."""
@@ -791,23 +1127,904 @@ class Parser:
             return None
         return self.parse_where_clause()
 
+    def _expression_work(self, action, payload):
+        # Only the driver resumes child frames and unwinds nesting guards.
+        pending = [self._expression_steps(action, payload)]
+        result = None
+        failure = None
+        try:
+            while pending:
+                try:
+                    if failure is None:
+                        action, payload = pending[-1].send(result)
+                    else:
+                        error = failure
+                        failure = None
+                        action, payload = pending[-1].throw(error)
+                except StopIteration as finished:
+                    pending.pop()
+                    result = finished.value
+                    continue
+                except BaseException as error:
+                    pending.pop()
+                    if not pending:
+                        raise
+                    failure = error
+                    result = None
+                    continue
+                pending.append(self._expression_steps(action, payload))
+                result = None
+            return result
+        finally:
+            for frame in reversed(pending):
+                frame.close()
+
+    def _expression_steps(self, action, payload):
+        if action == "parse_type_set":
+            start_token = self.consume(TokenType.BUILTIN_ID)  # @type_set
+            self.consume(TokenType.LEFT_PAREN)
+
+            types = []
+            while not self.match(TokenType.RIGHT_PAREN):
+                types.append((yield ("parse_type", ())))
+                self._list_separator(TokenType.RIGHT_PAREN, "@type_set", newlines=False)
+
+            self.consume(TokenType.RIGHT_PAREN)
+
+            return ASTNode(
+                kind=NodeKind.TYPE_SET,
+                types=types,
+                span=create_span_from_token(start_token)
+            )
+
+        if action == "parse_type":
+            self._enter_nesting()
+            try:
+                start_token = self.current()
+
+                # Builtin type sets: @type_set(i32, i64, ...)
+                if self.match(TokenType.BUILTIN_ID):
+                    builtin_token = self.current()
+                    if builtin_token.value == "@type_set":
+                        return (yield ("parse_type_set", ()))
+
+                # Reference types: ref T
+                if self.match(TokenType.REF):
+                    self.advance()
+                    target_type = (yield ("parse_type", ()))
+                    return ASTNode(
+                        kind=NodeKind.TYPE_POINTER,
+                        target_type=target_type,
+                        span=create_span_from_token(start_token),
+                    )
+
+                # Array/slice types: [N]T or []T
+                if self.match(TokenType.LEFT_BRACKET):
+                    self.advance()
+                    size = None
+
+                    # Check if it's a slice (empty brackets) or array (with size)
+                    if not self.match(TokenType.RIGHT_BRACKET):
+                        size = (yield ("parse_expression", ()))
+
+                    self.consume(TokenType.RIGHT_BRACKET)
+                    element_type = (yield ("parse_type", ()))
+
+                    if size:
+                        return ASTNode(
+                            kind=NodeKind.TYPE_ARRAY,
+                            element_type=element_type,
+                            size=size,
+                            span=create_span_from_token(start_token),
+                        )
+                    else:
+                        return ASTNode(
+                            kind=NodeKind.TYPE_SLICE,
+                            element_type=element_type,
+                            span=create_span_from_token(start_token),
+                        )
+
+                # Function types: fn(params) return_type
+                if self.match(TokenType.FN):
+                    fn_token = self.advance()
+
+                    # Parse parameter types (not full parameters with names)
+                    self.consume(TokenType.LEFT_PAREN)
+                    param_types = []
+
+                    self.skip_terminators()
+                    while not self.match(TokenType.RIGHT_PAREN):
+                        # Parse just the type, no parameter name
+                        param_types.append((yield ("parse_type", ())))
+                        self._list_separator(
+                            TokenType.RIGHT_PAREN, "function type parameter list"
+                        )
+
+                    self.consume(TokenType.RIGHT_PAREN)
+
+                    # Parse return type (optional, defaults to void)
+                    return_type = None
+                    if not self.match(
+                        TokenType.TERMINATOR,
+                        TokenType.ASSIGN,
+                        TokenType.RIGHT_PAREN,
+                        TokenType.RIGHT_BRACKET,
+                        TokenType.RIGHT_BRACE,
+                        TokenType.LEFT_BRACE,
+                        TokenType.COMMA,
+                        TokenType.EOF,
+                    ):
+                        return_type = (yield ("parse_type", ()))
+
+                    return create_function_type(
+                        param_types=param_types,
+                        return_type=return_type,
+                        span=create_span_from_token(fn_token),
+                    )
+
+                # Inline struct types: struct { field: type, ... }
+                if self.match(TokenType.STRUCT):
+                    struct_token = self.advance()
+                    self.consume(TokenType.LEFT_BRACE)
+
+                    fields = []
+                    self.skip_terminators()
+
+                    while not self.match(TokenType.RIGHT_BRACE):
+                        # Parse field: name: type
+                        field_name_token = self.consume(TokenType.IDENTIFIER)
+                        self.consume(TokenType.COLON)
+                        field_type = (yield ("parse_type", ()))
+
+                        field = ASTNode(
+                            kind=NodeKind.FIELD,
+                            name=field_name_token.value,
+                            field_type=field_type,
+                            span=create_span_from_token(field_name_token),
+                        )
+                        fields.append(field)
+                        self._list_separator(
+                            TokenType.RIGHT_BRACE, "inline struct type", newline_separates=True
+                        )
+
+                    self.consume(TokenType.RIGHT_BRACE)
+
+                    return create_inline_struct_type(
+                        fields=fields,
+                        span=create_span_from_token(struct_token),
+                    )
+
+                # Generic types: $T, $TYPE, etc.
+                if self.match(TokenType.GENERIC_TYPE):
+                    generic_token = self.advance()
+                    # Remove the $ prefix for consistency
+                    type_name = generic_token.value[1:]
+                    return ASTNode(
+                        kind=NodeKind.TYPE_GENERIC,
+                        name=type_name,
+                        span=create_span_from_token(generic_token),
+                    )
+
+                # Primitive or identifier types
+                if self.match(TokenType.IDENTIFIER):
+                    type_name_token = self.advance()
+                    type_name = type_name_token.value
+
+                    # Check for generic parameters: Type(T1, T2, ...)
+                    if self.match(TokenType.LEFT_PAREN):
+                        self.advance()
+                        generic_params = []
+                        while not self.match(TokenType.RIGHT_PAREN):
+                            generic_params.append((yield ("parse_type", ())))
+                            self._list_separator(
+                                TokenType.RIGHT_PAREN, "type argument list", newlines=False
+                            )
+                        self.consume(TokenType.RIGHT_PAREN)
+
+                        # Create a generic type instantiation node
+                        return ASTNode(
+                            kind=NodeKind.TYPE_IDENTIFIER,
+                            name=type_name,
+                            generic_params=generic_params,
+                            span=create_span_from_token(type_name_token),
+                        )
+
+                    return ASTNode(
+                        kind=NodeKind.TYPE_IDENTIFIER,
+                        name=type_name,
+                        span=create_span_from_token(type_name_token),
+                    )
+
+                # Primitive types: the keyword text is the type name
+                if start_token.type in _PRIMITIVE_TYPE_TOKENS:
+                    self.advance()
+                    return create_primitive_type(
+                        start_token.value, create_span_from_token(start_token)
+                    )
+
+                raise ParseError.from_token("Expected type", self.current(), self.filename)
+
+            finally:
+                self._exit_nesting()
+
+        if action == "parse_expression":
+            return (yield ("parse_binary_expression", (0,)))
+
+        if action == "parse_binary_expression":
+            min_precedence, = payload
+            self._enter_nesting()
+            try:
+                left = (yield ("parse_unary_expression", ()))
+
+                while True:
+                    # Check if current token is a binary operator
+                    if not self.match(
+                        TokenType.PLUS,
+                        TokenType.MINUS,
+                        TokenType.MULTIPLY,
+                        TokenType.DIVIDE,
+                        TokenType.MODULO,
+                        TokenType.EQUAL,
+                        TokenType.NOT_EQUAL,
+                        TokenType.LESS_THAN,
+                        TokenType.LESS_EQUAL,
+                        TokenType.GREATER_THAN,
+                        TokenType.GREATER_EQUAL,
+                        TokenType.AND,
+                        TokenType.OR,
+                        TokenType.BITWISE_AND,
+                        TokenType.BITWISE_OR,
+                        TokenType.BITWISE_XOR,
+                        TokenType.LEFT_SHIFT,
+                        TokenType.RIGHT_SHIFT,
+                    ):
+                        break
+
+                    op_token = self.current()
+                    binary_op = token_to_binary_op(op_token.type)
+                    if not binary_op:
+                        break
+
+                    precedence = get_binary_precedence(binary_op)
+                    if precedence < min_precedence:
+                        break
+
+                    self.advance()  # Consume operator
+
+                    # Check if we're at end of input or terminator after operator
+                    if self.at_end() or self.match(TokenType.TERMINATOR, TokenType.RIGHT_PAREN,
+                                                   TokenType.RIGHT_BRACE, TokenType.RIGHT_BRACKET,
+                                                   TokenType.COMMA):
+                        raise ParseError.from_token(
+                            f"Expected expression after '{op_token.value}' operator",
+                            self.current(), self.filename
+                        )
+
+                    # Right associative operators would use precedence here,
+                    # but A7 operators are left associative
+                    right = (yield ("parse_binary_expression", (precedence + 1,)))
+
+                    left = create_binary_expr(left, binary_op, right)
+
+                return left
+
+            finally:
+                self._exit_nesting()
+
+        if action == "parse_unary_expression":
+            self._enter_nesting()
+            try:
+                start_token = self.current()
+
+                # Unary operators
+                if self.match(
+                    TokenType.MINUS,
+                    TokenType.NOT,
+                    TokenType.LOGICAL_NOT,
+                    TokenType.BITWISE_NOT,
+                ):
+                    op_token = self.advance()
+                    unary_op = token_to_unary_op(op_token.type)
+                    if unary_op:
+                        operand = (yield ("parse_unary_expression", ()))
+                        return ASTNode(
+                            kind=NodeKind.UNARY,
+                            operator=unary_op,
+                            operand=operand,
+                            span=combine_spans(
+                                create_span_from_token(start_token), operand.span
+                            ),
+                        )
+
+                return (yield ("parse_postfix_expression", ()))
+
+            finally:
+                self._exit_nesting()
+
+        if action == "parse_postfix_expression":
+            expr = (yield ("parse_primary_expression", ()))
+
+            while True:
+                if self.match(TokenType.LEFT_PAREN):
+                    if expr.kind == NodeKind.NEW_EXPR:
+                        raise ParseError.from_token(
+                            "new expressions do not take initializer arguments; use 'new T' or 'new(T)'",
+                            self.current(),
+                            self.filename,
+                            self.source_lines,
+                        )
+                    # Function call
+                    expr = (yield ("parse_call_expression", (expr,)))
+                elif self.match(TokenType.LEFT_BRACKET):
+                    # Array indexing
+                    expr = (yield ("parse_index_expression", (expr,)))
+                elif self.match(TokenType.DOT):
+                    # Field access or dereference
+                    expr = self.parse_field_or_deref_expression(expr)
+                else:
+                    break
+
+            return expr
+
+        if action == "_parse_call_argument":
+            # A type keyword, `ref`, `$T` or `fn` cannot start an expression.
+            if self._is_type_start() or self.match(TokenType.FN):
+                return (yield ("parse_type", ()))
+            # `[` opens an array type [N]T or an array literal [1, 2, 3].
+            if self.match(TokenType.LEFT_BRACKET) and self._bracket_starts_type():
+                return (yield ("parse_type", ()))
+            # An identifier is an expression here, also when it names a type
+            # such as Option(i32).
+            return (yield ("parse_expression", ()))
+
+        if action == "parse_call_expression":
+            function, = payload
+            self.consume(TokenType.LEFT_PAREN)
+            arguments = []
+            self.skip_terminators()
+
+            while not self.match(TokenType.RIGHT_PAREN):
+                arguments.append((yield ("_parse_call_argument", ())))
+                self._list_separator(TokenType.RIGHT_PAREN, "call arguments")
+
+            end_token = self.consume(TokenType.RIGHT_PAREN)
+
+            return create_call_expr(
+                function=function,
+                arguments=arguments,
+                span=_span_through(function.span, end_token),
+            )
+
+        if action == "parse_index_expression":
+            object_expr, = payload
+            self.consume(TokenType.LEFT_BRACKET)
+
+            # Check for slice notation
+            if self.match(TokenType.DOT_DOT):
+                # This is a slice [..end]
+                self.advance()
+                end = (
+                    (yield ("parse_expression", ()))
+                    if not self.match(TokenType.RIGHT_BRACKET)
+                    else None
+                )
+                end_token = self.consume(TokenType.RIGHT_BRACKET)
+
+                return ASTNode(
+                    kind=NodeKind.SLICE,
+                    object=object_expr,
+                    start=None,
+                    end=end,
+                    span=_span_through(object_expr.span, end_token),
+                )
+
+            index = (yield ("parse_expression", ()))
+
+            # Check for slice notation
+            if self.match(TokenType.DOT_DOT):
+                self.advance()
+                end = (
+                    (yield ("parse_expression", ()))
+                    if not self.match(TokenType.RIGHT_BRACKET)
+                    else None
+                )
+                end_token = self.consume(TokenType.RIGHT_BRACKET)
+
+                return ASTNode(
+                    kind=NodeKind.SLICE,
+                    object=object_expr,
+                    start=index,
+                    end=end,
+                    span=_span_through(object_expr.span, end_token),
+                )
+
+            end_token = self.consume(TokenType.RIGHT_BRACKET)
+
+            return ASTNode(
+                kind=NodeKind.INDEX,
+                object=object_expr,
+                index=index,
+                span=_span_through(object_expr.span, end_token),
+            )
+
+        if action == "parse_primary_expression":
+            start_token = self.current()
+
+            # Literals
+            if self.match(
+                TokenType.INTEGER_LITERAL,
+                TokenType.FLOAT_LITERAL,
+                TokenType.CHAR_LITERAL,
+                TokenType.STRING_LITERAL,
+                TokenType.TRUE_LITERAL,
+                TokenType.FALSE_LITERAL,
+                TokenType.NIL_LITERAL,
+            ):
+                return create_literal_from_token(self.advance())
+
+            # Inline struct type with initialization: struct { x: i32 } { x: 42 }
+            if self.match(TokenType.STRUCT):
+                struct_type = (yield ("parse_type", ()))  # Parses struct { fields... }
+                # If followed by { it's a struct literal initialization
+                if self.match(TokenType.LEFT_BRACE):
+                    return (yield ("_parse_inline_struct_init", (struct_type,)))
+                return struct_type
+
+            # Generic type parameters used in expression context (e.g., [$N]$T array sizes)
+            if self.match(TokenType.GENERIC_TYPE):
+                token = self.advance()
+                name = token.value[1:]  # Remove '$' prefix
+                return create_identifier(name, create_span_from_token(token))
+
+            # New expression: new Type or new [size]Type
+            if self.match(TokenType.NEW):
+                return (yield ("parse_new_expression", ()))
+
+            # Array literals: [1, 2, 3]
+            if self.match(TokenType.LEFT_BRACKET):
+                return (yield ("parse_array_literal", ()))
+
+            # Builtin intrinsics: @size_of(T), @align_of(T), etc.
+            if self.match(TokenType.BUILTIN_ID):
+                return (yield ("parse_builtin_intrinsic", ()))
+
+            # Identifiers, cast expressions, or struct literals
+            if self.match(TokenType.IDENTIFIER):
+                name = self.advance().value
+
+                # Check for cast expression: cast(type, expr)
+                if name == "cast" and self.match(TokenType.LEFT_PAREN):
+                    return (yield ("parse_cast_expression", (start_token,)))
+
+                # Generic struct literal instantiation: Pair(i32, string){...}.
+                # Tried only when a `{` follows the matching `)` and a struct
+                # literal may start there; a failed try is not repeated.
+                saved_position = self.position
+                close = self._close_at.get(saved_position)
+                if (
+                    self.match(TokenType.LEFT_PAREN)
+                    and close is not None
+                    and self.tokens[close + 1].type == TokenType.LEFT_BRACE
+                    and self._should_parse_struct_literal()
+                    and saved_position not in self._not_generic_literal
+                ):
+                    type_args = []
+                    self.advance()  # consume '('
+                    try:
+                        while not self.match(TokenType.RIGHT_PAREN):
+                            type_args.append((yield ("parse_type", ())))
+                            self._list_separator(
+                                TokenType.RIGHT_PAREN, "type argument list", newlines=False
+                            )
+                        self.advance()  # consume ')'
+                        struct_literal = (yield ("parse_struct_literal", (name, create_span_from_token(start_token))))
+                        struct_literal.type_arguments = type_args
+                        return struct_literal
+                    except ParseError as e:
+                        if getattr(e, "fatal", False):
+                            raise
+                        # Not a generic struct literal: parse it as a call.
+                        self._not_generic_literal.add(saved_position)
+                        self.position = saved_position
+
+                # Check for struct literal: Person{...}
+                # Only parse as struct literal if we're in an appropriate context
+                # (not in a statement context where { would start a block)
+                if self.match(TokenType.LEFT_BRACE) and self._should_parse_struct_literal():
+                    return (yield ("parse_struct_literal", (name, create_span_from_token(start_token))))
+                else:
+                    return create_identifier(name, create_span_from_token(start_token))
+
+            # Parenthesized expressions
+            if self.match(TokenType.LEFT_PAREN):
+                self.advance()
+                expr = (yield ("parse_expression", ()))
+                end_token = self.consume(TokenType.RIGHT_PAREN)
+                expr.span = create_span_from_tokens(start_token, end_token)
+                return expr
+
+            # If expressions
+            if self.match(TokenType.IF):
+                return (yield ("parse_if_expression", ()))
+
+            # Match expressions (match used in expression context)
+            if self.match(TokenType.MATCH):
+                return (yield ("parse_match_expression", ()))
+
+            raise ParseError.from_token(
+                "Expected expression", self.current(), self.filename, self.source_lines
+            )
+
+        if action == "parse_cast_expression":
+            start_token, = payload
+            self.advance()  # consume '('
+
+            # Parse the target type
+            target_type = (yield ("parse_type", ()))
+
+            # Expect comma
+            self.consume(TokenType.COMMA, "Expected ',' after type in cast expression")
+
+            # Parse the expression to cast
+            expression = (yield ("parse_expression", ()))
+
+            # Expect closing paren
+            end_token = self.consume(TokenType.RIGHT_PAREN, "Expected ')' after cast expression")
+
+            return create_cast_expr(
+                target_type=target_type,
+                expression=expression,
+                span=create_span_from_tokens(start_token, end_token),
+            )
+
+        if action == "parse_builtin_intrinsic":
+            # @type_set(...) is both a type and value-level construct in tests.
+            # Reuse dedicated parser to produce a TYPE_SET AST node.
+            if self.match(TokenType.BUILTIN_ID) and self.current().value == "@type_set":
+                return (yield ("parse_type_set", ()))
+
+            builtin_token = self.consume(TokenType.BUILTIN_ID)
+            builtin_name = builtin_token.value  # Includes '@' prefix
+
+            # Parse arguments
+            self.consume(TokenType.LEFT_PAREN)
+            arguments = []
+
+            # Some builtins take types, some take expressions
+            # For simplicity, we'll parse types for size_of, align_of, type_id
+            # and expressions for others
+
+            if not self.match(TokenType.RIGHT_PAREN):
+                # Check if this is a type-taking builtin
+                if builtin_name in ("@size_of", "@align_of", "@type_id", "@type_name"):
+                    # Parse type arguments
+                    arguments.append((yield ("parse_type", ())))
+                    while self.match(TokenType.COMMA):
+                        self.advance()
+                        arguments.append((yield ("parse_type", ())))
+                else:
+                    # Parse expression arguments
+                    arguments.append((yield ("parse_expression", ())))
+                    while self.match(TokenType.COMMA):
+                        self.advance()
+                        arguments.append((yield ("parse_expression", ())))
+
+            end_token = self.consume(TokenType.RIGHT_PAREN)
+
+            return ASTNode(
+                kind=NodeKind.CALL,
+                function=create_identifier(builtin_name, create_span_from_token(builtin_token)),
+                arguments=arguments,
+                span=create_span_from_tokens(builtin_token, end_token),
+            )
+
+        if action == "parse_new_expression":
+            new_token = self.consume(TokenType.NEW)
+
+            # Support optional parenthesized syntax: new(Type) or new([size]Type)
+            has_parens = False
+            if self.match(TokenType.LEFT_PAREN):
+                has_parens = True
+                self.advance()
+
+            # Parse the type (which may include array dimensions)
+            type_node = (yield ("parse_type", ()))
+
+            if has_parens:
+                self.consume(TokenType.RIGHT_PAREN, "Expected ')' after type in new expression")
+
+            return create_new_expr(
+                type_node=type_node,
+                span=create_span_from_token(new_token)
+            )
+
+        if action == "parse_if_expression":
+            self._enter_nesting()
+            try:
+                if_token = self.consume(TokenType.IF)
+                saved = self._header_depth
+                self._header_depth = self._depth_at[self.position]
+                try:
+                    condition = (yield ("parse_expression", ()))
+                finally:
+                    self._header_depth = saved
+                self.consume(TokenType.LEFT_BRACE)
+                self.skip_terminators()
+                then_expr = (yield ("parse_expression", ()))
+                self.skip_terminators()
+                self.consume(TokenType.RIGHT_BRACE)
+
+                # An if expression yields a value on every path.
+                if not self.match(TokenType.ELSE):
+                    raise ParseError.from_token(
+                        "An if expression needs an 'else' branch",
+                        self.current(),
+                        self.filename,
+                        self.source_lines,
+                    )
+                self.advance()
+                if self.match(TokenType.IF):
+                    # else if — recursively parse another if expression
+                    else_expr = (yield ("parse_if_expression", ()))
+                else:
+                    self.consume(TokenType.LEFT_BRACE)
+                    self.skip_terminators()
+                    else_expr = (yield ("parse_expression", ()))
+                    self.skip_terminators()
+                    self.consume(TokenType.RIGHT_BRACE)
+
+                return ASTNode(
+                    kind=NodeKind.IF_EXPR,
+                    condition=condition,
+                    then_expr=then_expr,
+                    else_expr=else_expr,
+                    span=create_span_from_token(if_token),
+                )
+
+            finally:
+                self._exit_nesting()
+
+        if action == "parse_match_expression":
+            match_token = self.consume(TokenType.MATCH)
+            saved = self._header_depth
+            self._header_depth = self._depth_at[self.position]
+            try:
+                expression = (yield ("parse_expression", ()))
+            finally:
+                self._header_depth = saved
+
+            self.consume(TokenType.LEFT_BRACE)
+            cases = []
+            else_case = None
+
+            while not self.at_end():
+                iteration_start = self.position
+                self.skip_terminators()
+                if self.match(TokenType.RIGHT_BRACE) or self.at_end():
+                    break
+                self._check_match_arm_order(else_case is not None)
+
+                if self.match(TokenType.CASE):
+                    case_token = self.advance()
+
+                    patterns = [(yield ("parse_pattern", ()))]
+                    while self.match(TokenType.COMMA):
+                        self.advance()
+                        patterns.append((yield ("parse_pattern", ())))
+
+                    self.consume(TokenType.COLON)
+                    # In expression context, parse an expression (not a statement)
+                    value = (yield ("parse_expression", ()))
+
+                    case_node = ASTNode(
+                        kind=NodeKind.CASE_BRANCH,
+                        patterns=patterns,
+                        expression=value,
+                        span=create_span_from_token(case_token),
+                    )
+                    cases.append(case_node)
+
+                elif self.match(TokenType.ELSE):
+                    self.advance()
+                    self.consume(TokenType.COLON)
+                    else_case = (yield ("parse_expression", ()))
+
+                else:
+                    raise self._fatal_error(
+                        "Expected 'case' or 'else' in match expression",
+                        self.current(),
+                    )
+
+                self.skip_terminators()
+                self._require_progress(iteration_start, "match expression")
+
+            self.consume(TokenType.RIGHT_BRACE)
+
+            return ASTNode(
+                kind=NodeKind.MATCH_EXPR,
+                expression=expression,
+                cases=cases,
+                else_case=else_case,
+                span=create_span_from_token(match_token),
+            )
+
+        if action == "parse_array_literal":
+            start_token = self.consume(TokenType.LEFT_BRACKET)
+            elements = []
+            self.skip_terminators()
+
+            while not self.match(TokenType.RIGHT_BRACKET):
+                elements.append((yield ("parse_expression", ())))
+                self._list_separator(TokenType.RIGHT_BRACKET, "array literal")
+
+            self.consume(TokenType.RIGHT_BRACKET)
+
+            return ASTNode(
+                kind=NodeKind.ARRAY_INIT,
+                elements=elements,
+                span=create_span_from_token(start_token),
+            )
+
+        if action == "parse_struct_literal":
+            struct_name, span = payload
+            self.consume(TokenType.LEFT_BRACE)
+            field_inits = []
+
+            # Skip terminators after opening brace
+            self.skip_terminators()
+
+            # Named (`field: value`) or positional (`value`); the first item decides.
+            is_named = self.match(TokenType.IDENTIFIER) and self.peek().type == TokenType.COLON
+
+            while not self.match(TokenType.RIGHT_BRACE):
+                if is_named:
+                    field_name_token = self.consume(TokenType.IDENTIFIER)
+                    self.consume(TokenType.COLON)
+                    field_value = (yield ("parse_expression", ()))
+                    field_name = field_name_token.value
+                    field_span = create_span_from_token(field_name_token)
+                else:
+                    field_value = (yield ("parse_expression", ()))
+                    field_name = None
+                    field_span = field_value.span
+                field_inits.append(
+                    ASTNode(
+                        kind=NodeKind.FIELD_INIT,
+                        name=field_name,
+                        value=field_value,
+                        span=field_span,
+                    )
+                )
+                self._list_separator(TokenType.RIGHT_BRACE, "struct literal")
+
+            self.consume(TokenType.RIGHT_BRACE)
+
+            return ASTNode(
+                kind=NodeKind.STRUCT_INIT,
+                struct_type=struct_name,
+                field_inits=field_inits,
+                span=span,
+            )
+
+        if action == "_parse_inline_struct_init":
+            struct_type, = payload
+            init = (yield ("parse_struct_literal", ("__inline__", struct_type.span)))
+            init.inline_type = struct_type
+            return init
+
+        if action == "parse_pattern":
+            start_token = self.current()
+
+            # Parse the first part of the pattern
+            pattern = (yield ("parse_primary_pattern", ()))
+
+            # Check for range pattern: expr..expr
+            if self.match(TokenType.DOT_DOT):
+                self.advance()  # consume '..'
+                end_pattern = (yield ("parse_primary_pattern", ()))
+
+                return ASTNode(
+                    kind=NodeKind.PATTERN_RANGE,
+                    start=pattern,
+                    end=end_pattern,
+                    span=create_span_from_token(start_token),
+                )
+
+            return pattern
+
+        if action == "parse_primary_pattern":
+            start_token = self.current()
+
+            # Literals
+            if self.match(
+                TokenType.INTEGER_LITERAL,
+                TokenType.FLOAT_LITERAL,
+                TokenType.CHAR_LITERAL,
+                TokenType.STRING_LITERAL,
+                TokenType.TRUE_LITERAL,
+                TokenType.FALSE_LITERAL,
+                TokenType.NIL_LITERAL,
+            ):
+                return ASTNode(
+                    kind=NodeKind.PATTERN_LITERAL,
+                    literal=create_literal_from_token(self.advance()),
+                    span=create_span_from_token(start_token),
+                )
+
+            # Leading-dot tag patterns for tagged unions: `.tag` tests the tag
+            # without binding; `.tag(name)` tests and binds the payload by value.
+            # There is no `.tag(_)` placeholder form; omit the binding instead.
+            if self.match(TokenType.DOT):
+                self.advance()  # consume '.'
+                if not self.match(TokenType.IDENTIFIER):
+                    raise ParseError.from_token(
+                        "Expected a tag name after '.' in pattern",
+                        self.current(), self.filename
+                    )
+                tag_identifier = self.advance()
+                binding: Optional[str] = None
+                if self.match(TokenType.LEFT_PAREN):
+                    self.advance()  # consume '('
+                    if not self.match(TokenType.IDENTIFIER):
+                        raise ParseError.from_token(
+                            "Expected a binding name in '.tag(name)' pattern",
+                            self.current(), self.filename
+                        )
+                    binding_identifier = self.advance()
+                    if binding_identifier.value == "_":
+                        raise ParseError.from_token(
+                            "No '.tag(_)' form: write bare '.tag' to test without binding",
+                            binding_identifier, self.filename
+                        )
+                    binding = binding_identifier.value
+                    self.consume(TokenType.RIGHT_PAREN)
+                return ASTNode(
+                    kind=NodeKind.PATTERN_ENUM,
+                    enum_type="",
+                    variant=tag_identifier.value,
+                    name=binding,
+                    span=create_span_from_token(start_token),
+                )
+
+            # Identifiers and enum access patterns
+            if self.match(TokenType.IDENTIFIER):
+                first_identifier = self.advance()
+
+                # Check for enum access: EnumType.Variant
+                if self.match(TokenType.DOT):
+                    self.advance()  # consume '.'
+                    if not self.match(TokenType.IDENTIFIER):
+                        raise ParseError.from_token(
+                            "Expected identifier after '.' in pattern",
+                            self.current(), self.filename
+                        )
+                    variant_identifier = self.advance()
+
+                    return ASTNode(
+                        kind=NodeKind.PATTERN_ENUM,
+                        enum_type=first_identifier.value,
+                        variant=variant_identifier.value,
+                        span=create_span_from_token(start_token),
+                    )
+                else:
+                    if first_identifier.value == "_":
+                        return ASTNode(
+                            kind=NodeKind.PATTERN_WILDCARD,
+                            span=create_span_from_token(start_token),
+                        )
+                    # Simple identifier pattern
+                    return ASTNode(
+                        kind=NodeKind.PATTERN_IDENTIFIER,
+                        name=first_identifier.value,
+                        span=create_span_from_token(start_token),
+                    )
+
+            # Fall back to expression parsing for complex patterns
+            return (yield ("parse_expression", ()))
+
     def parse_type_set(self) -> ASTNode:
         """Parse type set: @type_set(i32, i64, f32)."""
-        start_token = self.consume(TokenType.BUILTIN_ID)  # @type_set
-        self.consume(TokenType.LEFT_PAREN)
-
-        types = []
-        while not self.match(TokenType.RIGHT_PAREN):
-            types.append(self.parse_type())
-            self._list_separator(TokenType.RIGHT_PAREN, "@type_set", newlines=False)
-
-        self.consume(TokenType.RIGHT_PAREN)
-
-        return ASTNode(
-            kind=NodeKind.TYPE_SET,
-            types=types,
-            span=create_span_from_token(start_token)
-        )
+        return self._expression_work("parse_type_set", ())
 
     def parse_mixed_parameters(self) -> tuple[List[ASTNode], List[ASTNode]]:
         """Parse function parameters.
@@ -864,367 +2081,15 @@ class Parser:
 
     def parse_type(self) -> ASTNode:
         """Parse type expressions."""
-        self._enter_nesting()
-        try:
-            start_token = self.current()
-
-            # Builtin type sets: @type_set(i32, i64, ...)
-            if self.match(TokenType.BUILTIN_ID):
-                builtin_token = self.current()
-                if builtin_token.value == "@type_set":
-                    return self.parse_type_set()
-
-            # Reference types: ref T
-            if self.match(TokenType.REF):
-                self.advance()
-                target_type = self.parse_type()
-                return ASTNode(
-                    kind=NodeKind.TYPE_POINTER,
-                    target_type=target_type,
-                    span=create_span_from_token(start_token),
-                )
-
-            # Array/slice types: [N]T or []T
-            if self.match(TokenType.LEFT_BRACKET):
-                self.advance()
-                size = None
-
-                # Check if it's a slice (empty brackets) or array (with size)
-                if not self.match(TokenType.RIGHT_BRACKET):
-                    size = self.parse_expression()
-
-                self.consume(TokenType.RIGHT_BRACKET)
-                element_type = self.parse_type()
-
-                if size:
-                    return ASTNode(
-                        kind=NodeKind.TYPE_ARRAY,
-                        element_type=element_type,
-                        size=size,
-                        span=create_span_from_token(start_token),
-                    )
-                else:
-                    return ASTNode(
-                        kind=NodeKind.TYPE_SLICE,
-                        element_type=element_type,
-                        span=create_span_from_token(start_token),
-                    )
-
-            # Function types: fn(params) return_type
-            if self.match(TokenType.FN):
-                fn_token = self.advance()
-
-                # Parse parameter types (not full parameters with names)
-                self.consume(TokenType.LEFT_PAREN)
-                param_types = []
-
-                self.skip_terminators()
-                while not self.match(TokenType.RIGHT_PAREN):
-                    # Parse just the type, no parameter name
-                    param_types.append(self.parse_type())
-                    self._list_separator(
-                        TokenType.RIGHT_PAREN, "function type parameter list"
-                    )
-
-                self.consume(TokenType.RIGHT_PAREN)
-
-                # Parse return type (optional, defaults to void)
-                return_type = None
-                if not self.match(
-                    TokenType.TERMINATOR,
-                    TokenType.ASSIGN,
-                    TokenType.RIGHT_PAREN,
-                    TokenType.RIGHT_BRACKET,
-                    TokenType.RIGHT_BRACE,
-                    TokenType.LEFT_BRACE,
-                    TokenType.COMMA,
-                    TokenType.EOF,
-                ):
-                    return_type = self.parse_type()
-
-                return create_function_type(
-                    param_types=param_types,
-                    return_type=return_type,
-                    span=create_span_from_token(fn_token),
-                )
-
-            # Inline struct types: struct { field: type, ... }
-            if self.match(TokenType.STRUCT):
-                struct_token = self.advance()
-                self.consume(TokenType.LEFT_BRACE)
-
-                fields = []
-                self.skip_terminators()
-
-                while not self.match(TokenType.RIGHT_BRACE):
-                    # Parse field: name: type
-                    field_name_token = self.consume(TokenType.IDENTIFIER)
-                    self.consume(TokenType.COLON)
-                    field_type = self.parse_type()
-
-                    field = ASTNode(
-                        kind=NodeKind.FIELD,
-                        name=field_name_token.value,
-                        field_type=field_type,
-                        span=create_span_from_token(field_name_token),
-                    )
-                    fields.append(field)
-                    self._list_separator(
-                        TokenType.RIGHT_BRACE, "inline struct type", newline_separates=True
-                    )
-
-                self.consume(TokenType.RIGHT_BRACE)
-
-                return create_inline_struct_type(
-                    fields=fields,
-                    span=create_span_from_token(struct_token),
-                )
-
-            # Generic types: $T, $TYPE, etc.
-            if self.match(TokenType.GENERIC_TYPE):
-                generic_token = self.advance()
-                # Remove the $ prefix for consistency
-                type_name = generic_token.value[1:]
-                return ASTNode(
-                    kind=NodeKind.TYPE_GENERIC,
-                    name=type_name,
-                    span=create_span_from_token(generic_token),
-                )
-
-            # Primitive or identifier types
-            if self.match(TokenType.IDENTIFIER):
-                type_name_token = self.advance()
-                type_name = type_name_token.value
-
-                # Check for generic parameters: Type(T1, T2, ...)
-                if self.match(TokenType.LEFT_PAREN):
-                    self.advance()
-                    generic_params = []
-                    while not self.match(TokenType.RIGHT_PAREN):
-                        generic_params.append(self.parse_type())
-                        self._list_separator(
-                            TokenType.RIGHT_PAREN, "type argument list", newlines=False
-                        )
-                    self.consume(TokenType.RIGHT_PAREN)
-
-                    # Create a generic type instantiation node
-                    return ASTNode(
-                        kind=NodeKind.TYPE_IDENTIFIER,
-                        name=type_name,
-                        generic_params=generic_params,
-                        span=create_span_from_token(type_name_token),
-                    )
-
-                return ASTNode(
-                    kind=NodeKind.TYPE_IDENTIFIER,
-                    name=type_name,
-                    span=create_span_from_token(type_name_token),
-                )
-
-            # Primitive types: the keyword text is the type name
-            if start_token.type in _PRIMITIVE_TYPE_TOKENS:
-                self.advance()
-                return create_primitive_type(
-                    start_token.value, create_span_from_token(start_token)
-                )
-
-            raise ParseError.from_token("Expected type", self.current(), self.filename)
-
-        finally:
-            self._exit_nesting()
+        return self._expression_work("parse_type", ())
 
     def parse_block(self) -> ASTNode:
         """Parse block statement."""
-        start_token = self.consume(TokenType.LEFT_BRACE)
-        statements = []
-
-        self.skip_terminators()
-
-        while not self.match(TokenType.RIGHT_BRACE) and not self.at_end():
-            iteration_start = self.position
-            stmt = self.parse_statement()
-            if stmt:
-                statements.append(stmt)
-            self._require_statement_end()
-            self.skip_terminators()
-            self._require_progress(iteration_start, "block")
-
-        end_token = self.consume(TokenType.RIGHT_BRACE)
-
-        return create_block(
-            statements=statements, span=create_span_from_tokens(start_token, end_token)
-        )
+        return self._statement_work("parse_block", None)
 
     def parse_statement(self) -> Optional[ASTNode]:
         """Parse statements."""
-        self._enter_nesting()
-        try:
-            start_token = self.current()
-
-            # Loop label prefix: @outer for ... / @outer while ...
-            if self.match(TokenType.BUILTIN_ID) and self.peek().type in (
-                TokenType.FOR,
-                TokenType.WHILE,
-            ):
-                label_token = self.advance()
-                label = label_token.value[1:]
-                loop_stmt = self.parse_statement()
-                loop_stmt.label = label
-                return loop_stmt
-
-            # Return statement
-            if self.match(TokenType.RET):
-                self.advance()
-                value = None
-                if not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
-                    value = self.parse_expression()
-                return create_return_stmt(value, create_span_from_token(start_token))
-
-            # Break statement (optionally with label: break outer)
-            if self.match(TokenType.BREAK):
-                self.advance()
-                label = None
-                if self.match(TokenType.IDENTIFIER) and not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
-                    label = self.advance().value
-                return ASTNode(
-                    kind=NodeKind.BREAK, label=label, span=create_span_from_token(start_token)
-                )
-
-            # Continue statement (optionally with label: continue outer)
-            if self.match(TokenType.CONTINUE):
-                self.advance()
-                label = None
-                if self.match(TokenType.IDENTIFIER) and not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
-                    label = self.advance().value
-                return ASTNode(
-                    kind=NodeKind.CONTINUE, label=label, span=create_span_from_token(start_token)
-                )
-
-            # Fall statement (fallthrough in match)
-            if self.match(TokenType.FALL):
-                self.advance()
-                return ASTNode(
-                    kind=NodeKind.FALL, span=create_span_from_token(start_token)
-                )
-
-            # Match statement
-            if self.match(TokenType.MATCH):
-                return self.parse_match_statement()
-
-            # Defer statement
-            if self.match(TokenType.DEFER):
-                return self.parse_defer_statement()
-
-            # Del statement
-            if self.match(TokenType.DEL):
-                return self.parse_del_statement()
-
-            # If statement
-            if self.match(TokenType.IF):
-                return self.parse_if_statement()
-
-            # While statement
-            if self.match(TokenType.WHILE):
-                return self.parse_while_statement()
-
-            # For statement
-            if self.match(TokenType.FOR):
-                return self.parse_for_statement()
-
-            # Block statement
-            if self.match(TokenType.LEFT_BRACE):
-                return self.parse_block()
-
-            # Variable or constant declarations inside function body
-            if self.match(TokenType.IDENTIFIER):
-                lookahead = self.peek()
-                if lookahead.type == TokenType.DECLARE_VAR:
-                    # Simple: name := value
-                    name_token = self.advance()
-                    self.consume(TokenType.DECLARE_VAR)
-                    value = self.parse_expression()
-                    return create_var_decl(
-                        name=name_token.value,
-                        value=value,
-                        is_public=False,
-                        span=create_span_from_token(name_token),
-                    )
-                elif lookahead.type == TokenType.COLON:
-                    # Reject the old label: spelling for loop labels.
-                    peek2 = self.peek(2)
-                    if peek2.type in (TokenType.FOR, TokenType.WHILE):
-                        raise ParseError.from_token(
-                            "Use '@label' before a loop instead of 'label:'",
-                            self.current(),
-                            self.filename,
-                            self.source_lines,
-                        )
-
-                    # Explicit type annotation: name: type = value (initialization optional)
-                    name_token = self.advance()
-                    self.consume(TokenType.COLON)
-                    explicit_type = self.parse_type()
-
-                    # Make initialization optional - allow uninitialized declarations
-                    value = None
-                    if self.match(TokenType.ASSIGN):
-                        self.advance()
-                        value = self.parse_expression()
-
-                    var_decl = create_var_decl(
-                        name=name_token.value,
-                        value=value,
-                        is_public=False,
-                        span=create_span_from_token(name_token),
-                    )
-                    var_decl.explicit_type = explicit_type
-                    return var_decl
-                elif lookahead.type == TokenType.DECLARE_CONST:
-                    # Constant or local type declaration: name :: value|struct|enum|union|fn
-                    name_token = self.advance()
-                    self.consume(TokenType.DECLARE_CONST)
-
-                    # Check for struct/enum/union/function declarations
-                    if self.match(TokenType.STRUCT):
-                        return self.parse_struct_decl_with_name(name_token.value, False, name_token)
-                    elif self.match(TokenType.ENUM):
-                        return self.parse_enum_decl_with_name(name_token.value, False, name_token)
-                    elif self.match(TokenType.UNION):
-                        return self.parse_union_decl_with_name(name_token.value, False, name_token)
-                    elif self.match(TokenType.FN):
-                        # Check if this is a function type alias or function declaration
-                        if self._is_fn_type_alias():
-                            return self._parse_fn_type_alias(name_token.value, False, name_token)
-                        return self.parse_function_decl_with_name(name_token.value, False, name_token)
-                    elif (
-                        self._is_type_start()
-                        or self.match(TokenType.LEFT_BRACKET)
-                    ):
-                        # Type alias: Handle :: u64, Vector :: [3]f32, etc.
-                        # A bare identifier stays a constant (see above).
-                        type_node = self.parse_type()
-                        return ASTNode(
-                            kind=NodeKind.TYPE_ALIAS,
-                            name=name_token.value,
-                            value=type_node,
-                            is_public=False,
-                            span=create_span_from_token(name_token),
-                        )
-                    else:
-                        # Regular constant declaration
-                        value = self.parse_expression()
-                        return create_const_decl(
-                            name=name_token.value,
-                            value=value,
-                            is_public=False,
-                            span=create_span_from_token(name_token),
-                        )
-
-            # Expression statement or assignment
-            return self.parse_expression_or_assignment()
-
-        finally:
-            self._exit_nesting()
+        return self._statement_work("parse_statement", None)
 
     def _parse_header_expression(self) -> ASTNode:
         """Parse the expression of an `if`/`while`/`match` header.
@@ -1251,62 +2116,15 @@ class Parser:
 
     def parse_if_statement(self) -> ASTNode:
         """Parse if statement. Both branches are blocks; `else if` chains."""
-        if_token = self.consume(TokenType.IF)
-        condition = self._parse_header_expression()
-        self._require_block_start("the if condition")
-        then_stmt = self.parse_block()
-
-        else_stmt = None
-        if self.match(TokenType.ELSE):
-            self.advance()
-            if not self.match(TokenType.IF):
-                self._require_block_start("'else'")
-            else_stmt = self.parse_statement()
-
-        return ASTNode(
-            kind=NodeKind.IF_STMT,
-            condition=condition,
-            then_stmt=then_stmt,
-            else_stmt=else_stmt,
-            span=create_span_from_token(if_token),
-        )
+        return self._statement_work("parse_if_statement", None)
 
     def parse_while_statement(self) -> ASTNode:
         """Parse while statement. The body is a block."""
-        while_token = self.consume(TokenType.WHILE)
-        condition = self._parse_header_expression()
-        self._require_block_start("the while condition")
-        body = self.parse_block()
-
-        return ASTNode(
-            kind=NodeKind.WHILE,
-            condition=condition,
-            body=body,
-            span=create_span_from_token(while_token),
-        )
+        return self._statement_work("parse_while_statement", None)
 
     def parse_for_statement(self) -> ASTNode:
         """Parse for statement."""
-        for_token = self.consume(TokenType.FOR)
-
-        # Simple infinite loop: for { ... }
-        if self.match(TokenType.LEFT_BRACE):
-            body = self.parse_block()
-            return ASTNode(
-                kind=NodeKind.FOR, body=body, span=create_span_from_token(for_token)
-            )
-
-        saved = self._header_depth
-        self._header_depth = self._depth_at[self.position]
-        try:
-            kind, header = self._parse_for_header()
-        finally:
-            self._header_depth = saved
-
-        body = self.parse_block()
-        return ASTNode(
-            kind=kind, body=body, span=create_span_from_token(for_token), **header
-        )
+        return self._statement_work("parse_for_statement", None)
 
     def _parse_for_header(self) -> tuple[NodeKind, dict]:
         """Parse a for header up to the body: the node kind and its header fields."""
@@ -1419,125 +2237,19 @@ class Parser:
 
     def parse_expression(self) -> ASTNode:
         """Parse expressions using precedence climbing."""
-        return self.parse_binary_expression(0)
+        return self._expression_work("parse_expression", ())
 
     def parse_binary_expression(self, min_precedence: int) -> ASTNode:
         """Parse binary expressions with precedence climbing."""
-        self._enter_nesting()
-        try:
-            left = self.parse_unary_expression()
-
-            while True:
-                # Check if current token is a binary operator
-                if not self.match(
-                    TokenType.PLUS,
-                    TokenType.MINUS,
-                    TokenType.MULTIPLY,
-                    TokenType.DIVIDE,
-                    TokenType.MODULO,
-                    TokenType.EQUAL,
-                    TokenType.NOT_EQUAL,
-                    TokenType.LESS_THAN,
-                    TokenType.LESS_EQUAL,
-                    TokenType.GREATER_THAN,
-                    TokenType.GREATER_EQUAL,
-                    TokenType.AND,
-                    TokenType.OR,
-                    TokenType.BITWISE_AND,
-                    TokenType.BITWISE_OR,
-                    TokenType.BITWISE_XOR,
-                    TokenType.LEFT_SHIFT,
-                    TokenType.RIGHT_SHIFT,
-                ):
-                    break
-
-                op_token = self.current()
-                binary_op = token_to_binary_op(op_token.type)
-                if not binary_op:
-                    break
-
-                precedence = get_binary_precedence(binary_op)
-                if precedence < min_precedence:
-                    break
-
-                self.advance()  # Consume operator
-
-                # Check if we're at end of input or terminator after operator
-                if self.at_end() or self.match(TokenType.TERMINATOR, TokenType.RIGHT_PAREN, 
-                                               TokenType.RIGHT_BRACE, TokenType.RIGHT_BRACKET,
-                                               TokenType.COMMA):
-                    raise ParseError.from_token(
-                        f"Expected expression after '{op_token.value}' operator",
-                        self.current(), self.filename
-                    )
-
-                # Right associative operators would use precedence here,
-                # but A7 operators are left associative
-                right = self.parse_binary_expression(precedence + 1)
-
-                left = create_binary_expr(left, binary_op, right)
-
-            return left
-
-        finally:
-            self._exit_nesting()
+        return self._expression_work("parse_binary_expression", (min_precedence,))
 
     def parse_unary_expression(self) -> ASTNode:
         """Parse unary expressions."""
-        self._enter_nesting()
-        try:
-            start_token = self.current()
-
-            # Unary operators
-            if self.match(
-                TokenType.MINUS,
-                TokenType.NOT,
-                TokenType.LOGICAL_NOT,
-                TokenType.BITWISE_NOT,
-            ):
-                op_token = self.advance()
-                unary_op = token_to_unary_op(op_token.type)
-                if unary_op:
-                    operand = self.parse_unary_expression()
-                    return ASTNode(
-                        kind=NodeKind.UNARY,
-                        operator=unary_op,
-                        operand=operand,
-                        span=combine_spans(
-                            create_span_from_token(start_token), operand.span
-                        ),
-                    )
-
-            return self.parse_postfix_expression()
-
-        finally:
-            self._exit_nesting()
+        return self._expression_work("parse_unary_expression", ())
 
     def parse_postfix_expression(self) -> ASTNode:
         """Parse postfix expressions (calls, indexing, field access)."""
-        expr = self.parse_primary_expression()
-
-        while True:
-            if self.match(TokenType.LEFT_PAREN):
-                if expr.kind == NodeKind.NEW_EXPR:
-                    raise ParseError.from_token(
-                        "new expressions do not take initializer arguments; use 'new T' or 'new(T)'",
-                        self.current(),
-                        self.filename,
-                        self.source_lines,
-                    )
-                # Function call
-                expr = self.parse_call_expression(expr)
-            elif self.match(TokenType.LEFT_BRACKET):
-                # Array indexing
-                expr = self.parse_index_expression(expr)
-            elif self.match(TokenType.DOT):
-                # Field access or dereference
-                expr = self.parse_field_or_deref_expression(expr)
-            else:
-                break
-
-        return expr
+        return self._expression_work("parse_postfix_expression", ())
 
     def _is_type_start(self) -> bool:
         """Check if the current token starts a type that cannot be an expression."""
@@ -1560,85 +2272,15 @@ class Parser:
 
     def _parse_call_argument(self) -> ASTNode:
         """Parse a single call argument, which may be an expression or a type argument."""
-        # A type keyword, `ref`, `$T` or `fn` cannot start an expression.
-        if self._is_type_start() or self.match(TokenType.FN):
-            return self.parse_type()
-        # `[` opens an array type [N]T or an array literal [1, 2, 3].
-        if self.match(TokenType.LEFT_BRACKET) and self._bracket_starts_type():
-            return self.parse_type()
-        # An identifier is an expression here, also when it names a type
-        # such as Option(i32).
-        return self.parse_expression()
+        return self._expression_work("_parse_call_argument", ())
 
     def parse_call_expression(self, function: ASTNode) -> ASTNode:
         """Parse function call expression."""
-        self.consume(TokenType.LEFT_PAREN)
-        arguments = []
-        self.skip_terminators()
-
-        while not self.match(TokenType.RIGHT_PAREN):
-            arguments.append(self._parse_call_argument())
-            self._list_separator(TokenType.RIGHT_PAREN, "call arguments")
-
-        end_token = self.consume(TokenType.RIGHT_PAREN)
-
-        return create_call_expr(
-            function=function,
-            arguments=arguments,
-            span=_span_through(function.span, end_token),
-        )
+        return self._expression_work("parse_call_expression", (function,))
 
     def parse_index_expression(self, object_expr: ASTNode) -> ASTNode:
         """Parse array indexing expression."""
-        self.consume(TokenType.LEFT_BRACKET)
-
-        # Check for slice notation
-        if self.match(TokenType.DOT_DOT):
-            # This is a slice [..end]
-            self.advance()
-            end = (
-                self.parse_expression()
-                if not self.match(TokenType.RIGHT_BRACKET)
-                else None
-            )
-            end_token = self.consume(TokenType.RIGHT_BRACKET)
-
-            return ASTNode(
-                kind=NodeKind.SLICE,
-                object=object_expr,
-                start=None,
-                end=end,
-                span=_span_through(object_expr.span, end_token),
-            )
-
-        index = self.parse_expression()
-
-        # Check for slice notation
-        if self.match(TokenType.DOT_DOT):
-            self.advance()
-            end = (
-                self.parse_expression()
-                if not self.match(TokenType.RIGHT_BRACKET)
-                else None
-            )
-            end_token = self.consume(TokenType.RIGHT_BRACKET)
-
-            return ASTNode(
-                kind=NodeKind.SLICE,
-                object=object_expr,
-                start=index,
-                end=end,
-                span=_span_through(object_expr.span, end_token),
-            )
-
-        end_token = self.consume(TokenType.RIGHT_BRACKET)
-
-        return ASTNode(
-            kind=NodeKind.INDEX,
-            object=object_expr,
-            index=index,
-            span=_span_through(object_expr.span, end_token),
-        )
+        return self._expression_work("parse_index_expression", (object_expr,))
 
     def parse_field_or_deref_expression(self, object_expr: ASTNode) -> ASTNode:
         """Parse field access."""
@@ -1659,379 +2301,40 @@ class Parser:
 
     def parse_primary_expression(self) -> ASTNode:
         """Parse primary expressions."""
-        start_token = self.current()
-
-        # Literals
-        if self.match(
-            TokenType.INTEGER_LITERAL,
-            TokenType.FLOAT_LITERAL,
-            TokenType.CHAR_LITERAL,
-            TokenType.STRING_LITERAL,
-            TokenType.TRUE_LITERAL,
-            TokenType.FALSE_LITERAL,
-            TokenType.NIL_LITERAL,
-        ):
-            return create_literal_from_token(self.advance())
-
-        # Inline struct type with initialization: struct { x: i32 } { x: 42 }
-        if self.match(TokenType.STRUCT):
-            struct_type = self.parse_type()  # Parses struct { fields... }
-            # If followed by { it's a struct literal initialization
-            if self.match(TokenType.LEFT_BRACE):
-                return self._parse_inline_struct_init(struct_type)
-            return struct_type
-
-        # Generic type parameters used in expression context (e.g., [$N]$T array sizes)
-        if self.match(TokenType.GENERIC_TYPE):
-            token = self.advance()
-            name = token.value[1:]  # Remove '$' prefix
-            return create_identifier(name, create_span_from_token(token))
-
-        # New expression: new Type or new [size]Type
-        if self.match(TokenType.NEW):
-            return self.parse_new_expression()
-
-        # Array literals: [1, 2, 3]
-        if self.match(TokenType.LEFT_BRACKET):
-            return self.parse_array_literal()
-
-        # Builtin intrinsics: @size_of(T), @align_of(T), etc.
-        if self.match(TokenType.BUILTIN_ID):
-            return self.parse_builtin_intrinsic()
-
-        # Identifiers, cast expressions, or struct literals
-        if self.match(TokenType.IDENTIFIER):
-            name = self.advance().value
-
-            # Check for cast expression: cast(type, expr)
-            if name == "cast" and self.match(TokenType.LEFT_PAREN):
-                return self.parse_cast_expression(start_token)
-
-            # Generic struct literal instantiation: Pair(i32, string){...}.
-            # Tried only when a `{` follows the matching `)` and a struct
-            # literal may start there; a failed try is not repeated.
-            saved_position = self.position
-            close = self._close_at.get(saved_position)
-            if (
-                self.match(TokenType.LEFT_PAREN)
-                and close is not None
-                and self.tokens[close + 1].type == TokenType.LEFT_BRACE
-                and self._should_parse_struct_literal()
-                and saved_position not in self._not_generic_literal
-            ):
-                type_args = []
-                self.advance()  # consume '('
-                try:
-                    while not self.match(TokenType.RIGHT_PAREN):
-                        type_args.append(self.parse_type())
-                        self._list_separator(
-                            TokenType.RIGHT_PAREN, "type argument list", newlines=False
-                        )
-                    self.advance()  # consume ')'
-                    struct_literal = self.parse_struct_literal(
-                        name, create_span_from_token(start_token)
-                    )
-                    struct_literal.type_arguments = type_args
-                    return struct_literal
-                except ParseError as e:
-                    if getattr(e, "fatal", False):
-                        raise
-                    # Not a generic struct literal: parse it as a call.
-                    self._not_generic_literal.add(saved_position)
-                    self.position = saved_position
-
-            # Check for struct literal: Person{...}
-            # Only parse as struct literal if we're in an appropriate context
-            # (not in a statement context where { would start a block)
-            if self.match(TokenType.LEFT_BRACE) and self._should_parse_struct_literal():
-                return self.parse_struct_literal(
-                    name, create_span_from_token(start_token)
-                )
-            else:
-                return create_identifier(name, create_span_from_token(start_token))
-
-        # Parenthesized expressions
-        if self.match(TokenType.LEFT_PAREN):
-            self.advance()
-            expr = self.parse_expression()
-            end_token = self.consume(TokenType.RIGHT_PAREN)
-            expr.span = create_span_from_tokens(start_token, end_token)
-            return expr
-
-        # If expressions
-        if self.match(TokenType.IF):
-            return self.parse_if_expression()
-
-        # Match expressions (match used in expression context)
-        if self.match(TokenType.MATCH):
-            return self.parse_match_expression()
-
-        raise ParseError.from_token(
-            "Expected expression", self.current(), self.filename, self.source_lines
-        )
+        return self._expression_work("parse_primary_expression", ())
 
     def parse_cast_expression(self, start_token: Token) -> ASTNode:
         """Parse cast expression: cast(type, expr)"""
-        self.advance()  # consume '('
-
-        # Parse the target type
-        target_type = self.parse_type()
-
-        # Expect comma
-        self.consume(TokenType.COMMA, "Expected ',' after type in cast expression")
-
-        # Parse the expression to cast
-        expression = self.parse_expression()
-
-        # Expect closing paren
-        end_token = self.consume(TokenType.RIGHT_PAREN, "Expected ')' after cast expression")
-
-        return create_cast_expr(
-            target_type=target_type,
-            expression=expression,
-            span=create_span_from_tokens(start_token, end_token),
-        )
+        return self._expression_work("parse_cast_expression", (start_token,))
 
     def parse_builtin_intrinsic(self) -> ASTNode:
         """Parse builtin intrinsic: @size_of(T), @align_of(T), @type_id(T), @unreachable(), etc."""
-        # @type_set(...) is both a type and value-level construct in tests.
-        # Reuse dedicated parser to produce a TYPE_SET AST node.
-        if self.match(TokenType.BUILTIN_ID) and self.current().value == "@type_set":
-            return self.parse_type_set()
+        return self._expression_work("parse_builtin_intrinsic", ())
 
-        builtin_token = self.consume(TokenType.BUILTIN_ID)
-        builtin_name = builtin_token.value  # Includes '@' prefix
-
-        # Parse arguments
-        self.consume(TokenType.LEFT_PAREN)
-        arguments = []
-
-        # Some builtins take types, some take expressions
-        # For simplicity, we'll parse types for size_of, align_of, type_id
-        # and expressions for others
-
-        if not self.match(TokenType.RIGHT_PAREN):
-            # Check if this is a type-taking builtin
-            if builtin_name in ("@size_of", "@align_of", "@type_id", "@type_name"):
-                # Parse type arguments
-                arguments.append(self.parse_type())
-                while self.match(TokenType.COMMA):
-                    self.advance()
-                    arguments.append(self.parse_type())
-            else:
-                # Parse expression arguments
-                arguments.append(self.parse_expression())
-                while self.match(TokenType.COMMA):
-                    self.advance()
-                    arguments.append(self.parse_expression())
-
-        end_token = self.consume(TokenType.RIGHT_PAREN)
-
-        return ASTNode(
-            kind=NodeKind.CALL,
-            function=create_identifier(builtin_name, create_span_from_token(builtin_token)),
-            arguments=arguments,
-            span=create_span_from_tokens(builtin_token, end_token),
-        )
-    
     def parse_new_expression(self) -> ASTNode:
         """Parse new expression: new Type, new [size]Type, or new(Type)"""
-        new_token = self.consume(TokenType.NEW)
+        return self._expression_work("parse_new_expression", ())
 
-        # Support optional parenthesized syntax: new(Type) or new([size]Type)
-        has_parens = False
-        if self.match(TokenType.LEFT_PAREN):
-            has_parens = True
-            self.advance()
-
-        # Parse the type (which may include array dimensions)
-        type_node = self.parse_type()
-
-        if has_parens:
-            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after type in new expression")
-
-        return create_new_expr(
-            type_node=type_node,
-            span=create_span_from_token(new_token)
-        )
-    
     def parse_if_expression(self) -> ASTNode:
         """Parse if expressions: if cond { expr } else if cond { expr } else { expr }"""
-        self._enter_nesting()
-        try:
-            if_token = self.consume(TokenType.IF)
-            saved = self._header_depth
-            self._header_depth = self._depth_at[self.position]
-            try:
-                condition = self.parse_expression()
-            finally:
-                self._header_depth = saved
-            self.consume(TokenType.LEFT_BRACE)
-            self.skip_terminators()
-            then_expr = self.parse_expression()
-            self.skip_terminators()
-            self.consume(TokenType.RIGHT_BRACE)
-
-            # An if expression yields a value on every path.
-            if not self.match(TokenType.ELSE):
-                raise ParseError.from_token(
-                    "An if expression needs an 'else' branch",
-                    self.current(),
-                    self.filename,
-                    self.source_lines,
-                )
-            self.advance()
-            if self.match(TokenType.IF):
-                # else if — recursively parse another if expression
-                else_expr = self.parse_if_expression()
-            else:
-                self.consume(TokenType.LEFT_BRACE)
-                self.skip_terminators()
-                else_expr = self.parse_expression()
-                self.skip_terminators()
-                self.consume(TokenType.RIGHT_BRACE)
-
-            return ASTNode(
-                kind=NodeKind.IF_EXPR,
-                condition=condition,
-                then_expr=then_expr,
-                else_expr=else_expr,
-                span=create_span_from_token(if_token),
-            )
-
-        finally:
-            self._exit_nesting()
+        return self._expression_work("parse_if_expression", ())
 
     def parse_match_expression(self) -> ASTNode:
         """Parse match expression (match used in expression context).
         Reuses the same syntax as match statements but produces a MATCH_EXPR node."""
-        match_token = self.consume(TokenType.MATCH)
-        saved = self._header_depth
-        self._header_depth = self._depth_at[self.position]
-        try:
-            expression = self.parse_expression()
-        finally:
-            self._header_depth = saved
-
-        self.consume(TokenType.LEFT_BRACE)
-        cases = []
-        else_case = None
-
-        while not self.at_end():
-            iteration_start = self.position
-            self.skip_terminators()
-            if self.match(TokenType.RIGHT_BRACE) or self.at_end():
-                break
-            self._check_match_arm_order(else_case is not None)
-
-            if self.match(TokenType.CASE):
-                case_token = self.advance()
-
-                patterns = [self.parse_pattern()]
-                while self.match(TokenType.COMMA):
-                    self.advance()
-                    patterns.append(self.parse_pattern())
-
-                self.consume(TokenType.COLON)
-                # In expression context, parse an expression (not a statement)
-                value = self.parse_expression()
-
-                case_node = ASTNode(
-                    kind=NodeKind.CASE_BRANCH,
-                    patterns=patterns,
-                    expression=value,
-                    span=create_span_from_token(case_token),
-                )
-                cases.append(case_node)
-
-            elif self.match(TokenType.ELSE):
-                self.advance()
-                self.consume(TokenType.COLON)
-                else_case = self.parse_expression()
-
-            else:
-                raise self._fatal_error(
-                    "Expected 'case' or 'else' in match expression",
-                    self.current(),
-                )
-
-            self.skip_terminators()
-            self._require_progress(iteration_start, "match expression")
-
-        self.consume(TokenType.RIGHT_BRACE)
-
-        return ASTNode(
-            kind=NodeKind.MATCH_EXPR,
-            expression=expression,
-            cases=cases,
-            else_case=else_case,
-            span=create_span_from_token(match_token),
-        )
+        return self._expression_work("parse_match_expression", ())
 
     def parse_array_literal(self) -> ASTNode:
         """Parse array literals: [1, 2, 3]"""
-        start_token = self.consume(TokenType.LEFT_BRACKET)
-        elements = []
-        self.skip_terminators()
-
-        while not self.match(TokenType.RIGHT_BRACKET):
-            elements.append(self.parse_expression())
-            self._list_separator(TokenType.RIGHT_BRACKET, "array literal")
-
-        self.consume(TokenType.RIGHT_BRACKET)
-
-        return ASTNode(
-            kind=NodeKind.ARRAY_INIT,
-            elements=elements,
-            span=create_span_from_token(start_token),
-        )
+        return self._expression_work("parse_array_literal", ())
 
     def parse_struct_literal(self, struct_name: str, span: SourceSpan) -> ASTNode:
         """Parse struct literals: Person{name: "John", age: 30} or Token{1, [10, 20, 30]}"""
-        self.consume(TokenType.LEFT_BRACE)
-        field_inits = []
-
-        # Skip terminators after opening brace
-        self.skip_terminators()
-
-        # Named (`field: value`) or positional (`value`); the first item decides.
-        is_named = self.match(TokenType.IDENTIFIER) and self.peek().type == TokenType.COLON
-
-        while not self.match(TokenType.RIGHT_BRACE):
-            if is_named:
-                field_name_token = self.consume(TokenType.IDENTIFIER)
-                self.consume(TokenType.COLON)
-                field_value = self.parse_expression()
-                field_name = field_name_token.value
-                field_span = create_span_from_token(field_name_token)
-            else:
-                field_value = self.parse_expression()
-                field_name = None
-                field_span = field_value.span
-            field_inits.append(
-                ASTNode(
-                    kind=NodeKind.FIELD_INIT,
-                    name=field_name,
-                    value=field_value,
-                    span=field_span,
-                )
-            )
-            self._list_separator(TokenType.RIGHT_BRACE, "struct literal")
-
-        self.consume(TokenType.RIGHT_BRACE)
-
-        return ASTNode(
-            kind=NodeKind.STRUCT_INIT,
-            struct_type=struct_name,
-            field_inits=field_inits,
-            span=span,
-        )
+        return self._expression_work("parse_struct_literal", (struct_name, span))
 
     def _parse_inline_struct_init(self, struct_type: ASTNode) -> ASTNode:
         """Parse inline struct initialization: struct { ... } { field: value, ... }"""
-        init = self.parse_struct_literal("__inline__", struct_type.span)
-        init.inline_type = struct_type
-        return init
+        return self._expression_work("_parse_inline_struct_init", (struct_type,))
 
     def parse_struct_decl_with_name(
         self, name: str, is_public: bool, name_token: Token
@@ -2179,175 +2482,15 @@ class Parser:
 
     def parse_pattern(self) -> ASTNode:
         """Parse match patterns including ranges, literals, and enum access."""
-        start_token = self.current()
-        
-        # Parse the first part of the pattern
-        pattern = self.parse_primary_pattern()
-        
-        # Check for range pattern: expr..expr
-        if self.match(TokenType.DOT_DOT):
-            self.advance()  # consume '..'
-            end_pattern = self.parse_primary_pattern()
-            
-            return ASTNode(
-                kind=NodeKind.PATTERN_RANGE,
-                start=pattern,
-                end=end_pattern,
-                span=create_span_from_token(start_token),
-            )
-        
-        return pattern
+        return self._expression_work("parse_pattern", ())
 
     def parse_primary_pattern(self) -> ASTNode:
         """Parse primary pattern elements (literals, identifiers with dots)."""
-        start_token = self.current()
-        
-        # Literals
-        if self.match(
-            TokenType.INTEGER_LITERAL,
-            TokenType.FLOAT_LITERAL,
-            TokenType.CHAR_LITERAL,
-            TokenType.STRING_LITERAL,
-            TokenType.TRUE_LITERAL,
-            TokenType.FALSE_LITERAL,
-            TokenType.NIL_LITERAL,
-        ):
-            return ASTNode(
-                kind=NodeKind.PATTERN_LITERAL,
-                literal=create_literal_from_token(self.advance()),
-                span=create_span_from_token(start_token),
-            )
-        
-        # Leading-dot tag patterns for tagged unions: `.tag` tests the tag
-        # without binding; `.tag(name)` tests and binds the payload by value.
-        # There is no `.tag(_)` placeholder form; omit the binding instead.
-        if self.match(TokenType.DOT):
-            self.advance()  # consume '.'
-            if not self.match(TokenType.IDENTIFIER):
-                raise ParseError.from_token(
-                    "Expected a tag name after '.' in pattern",
-                    self.current(), self.filename
-                )
-            tag_identifier = self.advance()
-            binding: Optional[str] = None
-            if self.match(TokenType.LEFT_PAREN):
-                self.advance()  # consume '('
-                if not self.match(TokenType.IDENTIFIER):
-                    raise ParseError.from_token(
-                        "Expected a binding name in '.tag(name)' pattern",
-                        self.current(), self.filename
-                    )
-                binding_identifier = self.advance()
-                if binding_identifier.value == "_":
-                    raise ParseError.from_token(
-                        "No '.tag(_)' form: write bare '.tag' to test without binding",
-                        binding_identifier, self.filename
-                    )
-                binding = binding_identifier.value
-                self.consume(TokenType.RIGHT_PAREN)
-            return ASTNode(
-                kind=NodeKind.PATTERN_ENUM,
-                enum_type="",
-                variant=tag_identifier.value,
-                name=binding,
-                span=create_span_from_token(start_token),
-            )
-
-        # Identifiers and enum access patterns  
-        if self.match(TokenType.IDENTIFIER):
-            first_identifier = self.advance()
-            
-            # Check for enum access: EnumType.Variant
-            if self.match(TokenType.DOT):
-                self.advance()  # consume '.'
-                if not self.match(TokenType.IDENTIFIER):
-                    raise ParseError.from_token(
-                        "Expected identifier after '.' in pattern", 
-                        self.current(), self.filename
-                    )
-                variant_identifier = self.advance()
-                
-                return ASTNode(
-                    kind=NodeKind.PATTERN_ENUM,
-                    enum_type=first_identifier.value,
-                    variant=variant_identifier.value,
-                    span=create_span_from_token(start_token),
-                )
-            else:
-                if first_identifier.value == "_":
-                    return ASTNode(
-                        kind=NodeKind.PATTERN_WILDCARD,
-                        span=create_span_from_token(start_token),
-                    )
-                # Simple identifier pattern
-                return ASTNode(
-                    kind=NodeKind.PATTERN_IDENTIFIER,
-                    name=first_identifier.value,
-                    span=create_span_from_token(start_token),
-                )
-        
-        # Fall back to expression parsing for complex patterns
-        return self.parse_expression()
+        return self._expression_work("parse_primary_pattern", ())
 
     def parse_match_statement(self) -> ASTNode:
         """Parse match statements."""
-        match_token = self.consume(TokenType.MATCH)
-        expression = self._parse_header_expression()
-
-        self.consume(TokenType.LEFT_BRACE)
-        cases = []
-        else_case = None
-
-        while not self.at_end():
-            iteration_start = self.position
-            self.skip_terminators()
-            if self.match(TokenType.RIGHT_BRACE) or self.at_end():
-                break
-            self._check_match_arm_order(else_case is not None)
-
-            if self.match(TokenType.CASE):
-                case_token = self.advance()
-
-                # Parse patterns (supporting ranges, multiple values, enum access)
-                patterns = [self.parse_pattern()]
-                while self.match(TokenType.COMMA):
-                    self.advance()
-                    patterns.append(self.parse_pattern())
-
-                self.consume(TokenType.COLON)
-                body = self.parse_statement()
-
-                case_node = ASTNode(
-                    kind=NodeKind.CASE_BRANCH,
-                    patterns=patterns,
-                    statement=body,
-                    span=create_span_from_token(case_token),
-                )
-                cases.append(case_node)
-
-            elif self.match(TokenType.ELSE):
-                self.advance()
-                self.consume(TokenType.COLON)
-                else_case = [self.parse_statement()]
-
-            else:
-                raise self._fatal_error(
-                    "Expected 'case' or 'else' in match statement",
-                    self.current(),
-                )
-
-            self.skip_terminators()
-            self._require_progress(iteration_start, "match statement")
-
-        self.consume(TokenType.RIGHT_BRACE)
-
-        return ASTNode(
-            kind=NodeKind.MATCH,
-            expression=expression,
-            cases=cases,
-            else_case=else_case,
-            span=create_span_from_token(match_token),
-        )
+        return self._statement_work("parse_match_statement", None)
 
     def _check_match_arm_order(self, else_seen: bool) -> None:
         """`else:` is the last arm of a match and appears once."""
@@ -2365,14 +2508,7 @@ class Parser:
 
     def parse_defer_statement(self) -> ASTNode:
         """Parse defer statements."""
-        defer_token = self.consume(TokenType.DEFER)
-        statement = self.parse_statement()
-
-        return ASTNode(
-            kind=NodeKind.DEFER,
-            statement=statement,
-            span=create_span_from_token(defer_token),
-        )
+        return self._statement_work("parse_defer_statement", None)
 
     def parse_del_statement(self) -> ASTNode:
         """Parse del statements."""

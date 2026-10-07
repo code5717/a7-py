@@ -7,6 +7,7 @@ Simple, enum-based design with minimal inheritance and visitor pattern.
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Any
 from enum import Enum, auto
+from threading import local
 
 from .tokens import Token, TokenType
 from .errors import SourceSpan
@@ -153,6 +154,15 @@ class AssignOp(Enum):
     SHR_ASSIGN = auto()  # >>=
 
 
+_AST_REPR_CONTEXT = local()
+_AST_ROOT = object()
+_AST_LEAVE = object()
+_AST_TEXT = object()
+_AST_FIELD = object()
+_AST_DICT_ITEM = object()
+_AST_SEQUENCE = object()
+
+
 # Simple AST node - no inheritance
 @dataclass
 class ASTNode:
@@ -257,6 +267,145 @@ class ASTNode:
     resolved_type: Optional["ASTNode"] = None  # Inferred type annotation
     hoisted: bool = False                 # FUNCTION: was hoisted from nested position
     stdlib_canonical: Optional[str] = None  # Canonical stdlib call name
+
+    def __eq__(self, other):
+        return _equal_ast(self, other)
+
+    def __repr__(self):
+        return _repr_ast(self)
+
+
+def _equal_ast(self, other):
+    """Consume AST/container pairs before dispatching equality to leaf values."""
+    if other.__class__ is not self.__class__:
+        return NotImplemented
+    pending = [(_AST_ROOT, self, other)]
+    active = set()
+    while pending:
+        action, left, right = pending.pop()
+        if action is _AST_LEAVE:
+            active.remove((id(left), id(right)))
+            continue
+        if action is _AST_SEQUENCE:
+            index, sequence = left
+            if index >= len(sequence) or index >= len(right):
+                if len(sequence) != len(right):
+                    return False
+                continue
+            pending.append((_AST_SEQUENCE, (index + 1, sequence), right))
+            pending.append((None, sequence[index], right[index]))
+            continue
+        if action is _AST_DICT_ITEM:
+            key, value = left
+            if key not in right:
+                return False
+            pending.append((None, value, right[key]))
+            continue
+        if left is right:
+            continue
+        ast_pair = (action is _AST_ROOT or isinstance(left, ASTNode) and isinstance(right, ASTNode)
+                    and type(left).__eq__ is _AST_EQ_METHOD
+                    and type(right).__eq__ is _AST_EQ_METHOD)
+        container = type(left)
+        if ast_pair:
+            if type(left) is not type(right):
+                return False
+            pairs = [(getattr(left, name), getattr(right, name)) for name in _AST_COMPARE_FIELDS]
+        elif container is type(right) and container in (list, tuple):
+            if container is list and len(left) != len(right):
+                return False
+            pairs = None
+        elif container is dict and type(right) is dict:
+            if len(left) != len(right):
+                return False
+            pairs = None
+        else:
+            if not left == right:
+                return False
+            continue
+        identity = (id(left), id(right))
+        if identity in active:
+            # Generated dataclass equality cannot compare distinct cycles.
+            raise RecursionError("maximum recursion depth exceeded in comparison")
+        active.add(identity)
+        pending.append((_AST_LEAVE, left, right))
+        if pairs is None and container in (list, tuple):
+            pending.append((_AST_SEQUENCE, (0, left), right))
+        elif pairs is None:
+            pending.extend((_AST_DICT_ITEM, item, right) for item in reversed(list(left.items())))
+        else:
+            pending.extend((None, a, b) for a, b in reversed(pairs))
+    return True
+
+
+def _repr_ast(self):
+    """Render declared fields with a shared path-local cycle guard."""
+    active = getattr(_AST_REPR_CONTEXT, "active", None)
+    if active is None:
+        active = _AST_REPR_CONTEXT.active = set()
+    entered = set()
+    pending = [(_AST_ROOT, self)]
+    output = []
+    try:
+        while pending:
+            action, value = pending.pop()
+            if action is _AST_TEXT:
+                output.append(value)
+                continue
+            if action is _AST_FIELD:
+                owner, name = value
+                pending.append((None, getattr(owner, name)))
+                continue
+            if action is _AST_LEAVE:
+                active.remove(value)
+                entered.remove(value)
+                continue
+            ast_node = (action is _AST_ROOT or
+                        isinstance(value, ASTNode) and type(value).__repr__ is _AST_REPR_METHOD)
+            container = type(value)
+            if not ast_node and container not in (list, tuple, dict):
+                output.append(repr(value))
+                continue
+            identity = id(value)
+            if identity in active:
+                output.append("..." if ast_node else {list: "[...]", tuple: "(...)", dict: "{...}"}[container])
+                continue
+            active.add(identity)
+            entered.add(identity)
+            pending.append((_AST_LEAVE, identity))
+            parts = []
+            if ast_node:
+                parts.append((_AST_TEXT, value.__class__.__qualname__ + "("))
+                for index, name in enumerate(_AST_REPR_FIELDS):
+                    if index:
+                        parts.append((_AST_TEXT, ", "))
+                    parts.extend([(_AST_TEXT, name + "="), (_AST_FIELD, (value, name))])
+                parts.append((_AST_TEXT, ")"))
+            elif container is dict:
+                parts.append((_AST_TEXT, "{"))
+                for index, (key, item) in enumerate(value.items()):
+                    if index:
+                        parts.append((_AST_TEXT, ", "))
+                    parts.extend([(None, key), (_AST_TEXT, ": "), (None, item)])
+                parts.append((_AST_TEXT, "}"))
+            else:
+                parts.append((_AST_TEXT, "[" if container is list else "("))
+                for index, item in enumerate(value):
+                    if index:
+                        parts.append((_AST_TEXT, ", "))
+                    parts.append((None, item))
+                if container is tuple and len(value) == 1:
+                    parts.append((_AST_TEXT, ","))
+                parts.append((_AST_TEXT, "]" if container is list else ")"))
+            pending.extend(reversed(parts))
+        return "".join(output)
+    finally:
+        active.difference_update(entered)
+
+_AST_EQ_METHOD = ASTNode.__eq__
+_AST_REPR_METHOD = ASTNode.__repr__
+_AST_COMPARE_FIELDS = tuple(name for name, info in ASTNode.__dataclass_fields__.items() if info.compare)
+_AST_REPR_FIELDS = tuple(name for name, info in ASTNode.__dataclass_fields__.items() if info.repr)
 
 
 # Utility functions for creating common AST nodes

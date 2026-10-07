@@ -1899,10 +1899,23 @@ is separate from this website's Markdown reference.
 ## Safety stance
 
 Source recursion is banned. The semantic validator rejects direct and mutual
-recursion and tracked local function-pointer alias cycles. Compiler internals
-have their own ongoing conversion to stacks and worklists. Type-checker
-statements now use a worklist for blocks, branches, loops and match arms.
-Expression checking and type resolution still contain recursive calls.
+recursion and tracked local function-pointer alias cycles.
+
+Current compiler candidates use worklists for parser statements, expressions,
+types and patterns; type checking and resolution; safety statements and
+expressions; Zig emission; and AST
+comparison and display. Parsing retains the 256-level logical nesting limit.
+The recursive-group, deepcopy and generated-method exception lists are empty.
+Arbitrary external Python callbacks inside AST payloads remain outside the
+traversal guarantee.
+
+These candidates are newer than the fully qualified, pushed `621f70c`
+checkpoint. Focused and baseline-comparison checks passed, and the backend
+candidate passed all 51 native examples in debug and release. A combined
+release gate is still required. These results do not establish a fully iterative
+compiler or full V1. The
+[architecture record](https://github.com/code5717/a7-py/blob/master/docs/ARCHITECTURE.md)
+identifies the candidate source versions and evidence.
 
 Safety checks cover narrowing casts, division and modulo denominators, indexing
 and slice bounds, nil reference use, and direct use after `del`. Alias and

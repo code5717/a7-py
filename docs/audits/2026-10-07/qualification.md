@@ -1,7 +1,10 @@
 # Compiler repair qualification, 2026-10-07
 
-The integration checkpoint passed the complete release gate with 3,374 tests
-and one expected failure. V1 is incomplete.
+The earlier pushed checkpoint `621f70c` passed the complete release gate with
+3,374 tests and one expected failure. The current frozen manifest `04330ece`
+passed 3,602 tests with one expected failure and the native checks. Its original
+gate failed on missing Git metadata; all recovery checks passed on unchanged
+sources. Both runs are preserved below. V1 is incomplete.
 
 ## Resumed baseline
 
@@ -170,3 +173,81 @@ their findings were checked against source and reproductions before action.
 Failed invocations remain in the local archive and are not counted as reviews.
 Model output is advisory evidence, not a replacement for compiler or native
 checks. The digest records scope limits and corrected reviewer claims.
+
+## Published documentation checkpoint
+
+The [deployment record](published-docs-verification.json) records successful
+GitHub Pages deployment for `4ace8caf3b764a37558534c77601db02a02088ac`.
+Six HTML pages, both llms entry points, four Markdown/JSON documentation exports,
+the sitemap and three site assets returned HTTP 200. All 16 responses matched
+the frozen site's bytes, including its CSS, JavaScript and search index.
+
+These are HTTP publication checks. Browser-harness could not establish a
+connection; the computer-use inventory was empty and its in-app browser was
+unavailable. Rendered desktop/mobile layout, navigation/search interactions
+and browser console health remain unverified. The deployment is a development
+documentation checkpoint, not V1 publication.
+
+## Subsequent iterative candidates
+
+The [follow-up record](iterative-followup-verification.json) identifies the later
+AST and type-resolution candidates. AST comparison/display passed 129 focused
+tests, 47 independent checks and GLM review within the compiler-payload boundary.
+Custom Python payload mutation and wrapper reentry remain outside that boundary.
+Type resolution passed 126 focused tests, 64 independent checks and a 12-case
+differential. The independent 210-link alias source reaches Zig generation at
+recursion limit 100; both earlier checker variants fail with internal exit 8.
+
+The initial combined candidate passed 3,018 tests excluding native and slow
+cases. A later parser/setter snapshot passed 3,040. The expression snapshot
+passed 3,082. Each result applies to the source manifest in the follow-up
+record; none is a full release gate.
+
+Parser statement and backend statement GLM reviews found no introduced
+regression. The later parser expression candidate passed 576 focused tests
+and 462 baseline comparisons. Independent review matched 111 cases. It found
+an ineffective test hook; the corrected hook observes actual driver requests,
+and all 34 error-handling tests pass. Checker expressions passed 1,246 focused
+tests and 648 fresh-AST comparisons. Backend expressions passed 184 focused
+tests, 171 source/profile comparisons and 42 fresh-AST comparisons. Debug and
+release native verification each passed all 51 examples. Expression GLM reviews found no introduced regression in their tested scopes.
+
+The safety statement conversion also passed 40 independent compile runs and
+six new deep tests. Both scanner modes now report empty recursive-group,
+deepcopy and generated-method lists. The live integration check passed 42
+tests. Its GLM review matched 300 paired analyses and 70 exception cases. These are
+bounded checks, not complete
+dynamic-call or V1 acceptance.
+
+Safety review found conditional setters incorrectly counted as unconditional
+stores and valid cleanup on a returning path counted as a continuing deletion.
+The failed results remain archived. Candidate ebda repairs explicit cleanup;
+the original control builds and prints the expected six lines in all three
+profiles. Candidate 178c also repairs returned reference origins, valid one-trip
+loop cases and loop-local alias deletion. Its 294 focused tests and 65 reviewer
+replay cases pass within their stated expectations. GLM review matched 165 behavioral cases; independent review found exponential fresh-origin
+expansion and a preexisting equivalent-increment false rejection. General selected/container identities remain open.
+
+The component checks above describe intermediate snapshots. The combined
+integration and its metadata recovery below qualify their final combination;
+they do not establish V1 acceptance.
+
+Compact provenance candidate `338ecedb` is now integrated. Independent consumer
+review matched 16 programs; 159 integrated focused tests pass. The depth-64
+factory retains 196 graph nodes, and its valid native control prints the expected
+output in debug, release and fast profiles. These measurements close the
+observed expansion for this source family, without proving a general complexity
+bound. GLM review matched 68 paired programs and reproduced the resource
+counts. Frozen manifest `04330ece` passed 3,602 tests with one expected failure,
+51 example E2E checks, all 51 artifacts in each of three profiles, 61 error-stage
+checks and native package installation. The compiler gate finished with 10 of
+11 checks passing. The secrets check failed with `fatal: not a git repository`
+because the isolated snapshot lacked Git metadata. The release wrapper stopped
+before site and dependency/security audits. The original gate remains recorded
+as exit 1. An independent review verified all 1,591 source hashes and modes.
+An exact-manifest Git index was then created in the isolated copy, without a
+commit or source changes. Secrets, locked site install, site checks, Bun audit,
+locked requirements export, pip-audit and Bandit all passed. All source hashes
+and modes still match. The [follow-up record](iterative-followup-verification.json)
+retains both the failed run and the seven recovery results.
+Global-store alias propagation and equivalent-increment rejection remain open.

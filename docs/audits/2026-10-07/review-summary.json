@@ -1,9 +1,9 @@
 {
   "recorded_at": "2026-10-06T23:38:07.463503+00:00",
-  "completed_external_reviews": 12,
+  "completed_external_reviews": 27,
   "model_counts": {
-    "zai-coding-plan/glm-5.3": 7,
-    "zai-coding-plan/glm-5.3-flash": 5
+    "zai-coding-plan/glm-5.3": 21,
+    "zai-coding-plan/glm-5.3-flash": 6
   },
   "reviews": [
     {
@@ -113,6 +113,142 @@
       "log": "tmp/v1-completion-2026-10-07/flash-small/stdlib_fixture_repair.log",
       "log_sha256": "404a7cfb0cea33cdb761552956a20db657dce3b3f66e12306b9750b1d6732420",
       "disposition": "No test-patch issue found. Original sources byte-identical as rejection fixtures; dispatch outputs and compiler calls preserved. Correct reviewer count label: 20 is total passing tests, not 20 native; 4 are compile-only. Compiler source unchanged by fixture repair."
+    },
+    {
+      "reviewer": "ast_methods",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T00:26:13.219869+00:00",
+      "exit_code": 0,
+      "log_sha256": "27f1bcd15dbe2613e8e93751a3df0bc1643d2a1c66cf77d30c55256028d710c4",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/ast_methods.log",
+      "source_sha256": "21c85515ee9978a0c42a8a55e48d2fe1070fc029ac22d0ecb317232b281fe108",
+      "disposition": "Pass for compiler-created AST payloads. Independent deep cases and comparison ordering checked. Custom leaf container mutation changes repr; arbitrary wrapper reentry can recurse. Both boundaries documented; no V1 nonrecursion claim."
+    },
+    {
+      "reviewer": "type_resolution",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T00:51:31.574759+00:00",
+      "exit_code": 0,
+      "log_sha256": "0a0048fcf3bf7b965b6bd8fab8f19047e1d70886437454b96b76d252eb106685",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/type_resolution.log",
+      "disposition": "Pass for afefdf type worklist and alias declaration identity. Independent25case differential, constant runtimePython stack probes and full200aliaspipeline reproduced. Cross-module isolation inference is not accepted as module qualification; current per-module semantic scopes remain unfinished. CHANGELOG already updated outside review overlay."
+    },
+    {
+      "reviewer": "parser_statements",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T00:50:12.754285+00:00",
+      "exit_code": 0,
+      "log_sha256": "6601d990d47b9ebaa5eda4b33461d7a5819ac8b453a7ca8df09a6cce06525ee0",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/parser_statements.log",
+      "disposition": "Pass for452083 statement parser.128curated and3000seeded differential cases, logicalcap and cleanup checked; no actionable defect. New expression/type parser work is a separate revision."
+    },
+    {
+      "reviewer": "loop_field",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T00:54:42.201524+00:00",
+      "exit_code": 0,
+      "log_sha256": "77fcce27b75a5957621c7fb650e9f049295b47e5e65d4cd6e12770b295cfcc9f",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/loop_field.log",
+      "disposition": "Primary witness repaired but candidate1813 not accepted as final: valid fall-store, factory-return and bounded-loop shapes regress, plus preexisting looplocalalias deletion remains unsafe. Conditional-store, exit-partition, return-provenance and trip-proof followups are under repair. Reviewer classification as documented precision loss does not approve valid-program regressions."
+    },
+    {
+      "reviewer": "backend_statements",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:01:05.561141+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/backend_statements.log",
+      "log_sha256": "948b6e85caa9ad7178cc7c8037e5301602957c74f58f279b6ad9c4eea2d55cc0",
+      "disposition": "No introduced regression found: 144 independent fixture/profile pairs and 153 example/profile pairs match. Deep statement shapes pass100; isolated nested-function backend result does not qualify recursive safety traversal."
+    },
+    {
+      "reviewer": "backend_expressions",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:12:48.797505+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/backend_expressions.log",
+      "log_sha256": "306d967864fa551832e43cf3d28dc4df249e07a7c4c886fce85ac2b04e78f4b7",
+      "disposition": "No introduced regression across 186 source/profile pairs, six deep AST shapes and 18 error-order/chain cases. Measured frame depth stays constant. Preexisting nested-match error scope leak is preserved by this conversion; that observation does not imply a new approval is needed to fix it."
+    },
+    {
+      "reviewer": "checker_expressions",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:19:42.671413+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/checker_expressions.log",
+      "log_sha256": "1a07ec239813054b4b5dd2a0194b4dbefc219f8047fa9074007446ec8edc5386",
+      "disposition": "No introduced regression in 57 checker-reaching independent sources, fault injection, annotation/scope comparisons and measured constant Python frame depth. Twenty-two parse-miss sources provide no checker evidence. Broad structural impossibility wording is not adopted as proof beyond these checks."
+    },
+    {
+      "reviewer": "parser_expressions",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:20:12.310753+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/parser_expressions.log",
+      "log_sha256": "7e29ce78e572d47f6878fc1e8b815183060bbb683652a055794e59292a83edc6",
+      "disposition": "1005 independent serialized comparisons and 44 cap-boundary cases match. Inert bracket test hook fixed separately; fatal injection strengthened to one-shot with empty fallback memo assertion. Obsolete frame-count comment corrected. Unreachable internal action fallthrough does not require an unsolicited defensive fallback. Parse-only single timing sample is not a performance qualification."
+    },
+    {
+      "reviewer": "docs_counts",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T01:21:50.106309+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/flash-small/docs_counts.log",
+      "log_sha256": "f9771b23bff39b329356ef2f65c71dbc207714fb6aa5c5a08eeae4bf8c43d5ee",
+      "disposition": "Corrected STATUS wording: independent safety review completed with findings; only GLM review remains pending. Counts and GPU/model boundaries agree at frozen one-recursive-group snapshot. Later zero-group traversal change is outside this review."
+    },
+    {
+      "reviewer": "safety_final",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:30:35.409910+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/safety_final.log",
+      "log_sha256": "156f93e7090da2fc6c4bc310811d8af8f0d3653e033892ce6b6e7458a49bf0fe",
+      "disposition": "165 compile-only cases across three revisions match stated behavioral expectations; F1-F4 repaired in tested scope. Overall approval is withheld: independent review separately proved exponential fresh-origin growth. Preexisting valid equivalent-increment, zero-trip and alternate-update precision refusals remain open. Reviewer summary counts/wording do not override raw case evidence or the resource finding."
+    },
+    {
+      "reviewer": "safety_iterative",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:37:06.581837+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/safety_iterative.log",
+      "log_sha256": "58d88f45eed1b99ee8572b8111772c3ca855caad9c43037e8322e1bc2eb1549d",
+      "disposition": "Traversal conversion matches 300 paired same-AST analyses and 70 exception-boundary rows; deep source and 5000-layer AST checks pass with constant Python frame depth. Both scanner modes empty. Exponential provenance and valid equivalent-increment rejection are preserved and remain separate findings."
+    },
+    {
+      "reviewer": "array_branches",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:41:01.276195+00:00",
+      "exit_code": 0,
+      "log_sha256": "950dda100befeaf4f56843cece2449b777b6aa777008739f0509fb53d5aae50f",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/array_branches.log",
+      "disposition": "No introduced regression found in contextual literal fitting. Diagnostic multiplicity changes on rejected inputs are recorded. Earlier candidate JSON hashes identify monkeypatched host baseline, not V3; released source and independently substituted V3 are the comparison authority. Mixed typed/literal fitting is a separate later patch. No pytest or native execution by this reviewer. One manifest Read permission rejection recovered through shell read; review completed."
+    },
+    {
+      "reviewer": "safety_provenance",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T01:56:30.273528+00:00",
+      "exit_code": 0,
+      "log_sha256": "32385e1b92f1c6ee2f1ef34bf866dfcb095ec917c624b36069f306b09178d7c2",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/safety_provenance.log",
+      "disposition": "68 independent paired programs preserve exits, diagnostics and emitted Zig. Factory resource table reproduced through depth64;400 graph oracle operations and8225 canonicality pairs pass; both scanners empty. Pre-format test suite evidence does not identify shipped formatted test bytes; later parent159-test integration does. Joined-holder store gap remains within separate pending identity proposal. Duplicate graph initialization is cosmetic. Scanner API probe failed then was corrected; no provider failure."
+    },
+    {
+      "reviewer": "mixed_arrays",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T02:00:14.048530+00:00",
+      "exit_code": 0,
+      "log_sha256": "80f759467f648a046bcfd79d47a02db68859074301f7c8ff091696d88b5f9203",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/mixed_arrays.log",
+      "disposition": "79 independent compile-only programs; no introduced regression found. Typed narrowing, overflow and unresolved generic-array branches remain rejected. Summary category counts overlap; raw rows are authoritative. Initial bool-array expectation was wrong: both variants accept equal bool array types. Missing prompt artifact names were resolved to actual IMPLEMENTATION.md/comparison.json/hashes.json. Native evidence remains parent-owned."
+    },
+    {
+      "reviewer": "global_aliases",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T02:18:03.148670+00:00",
+      "exit_code": 0,
+      "log_sha256": "6c14575e7c180896341c34b0545e03a3534c0d4c768a1d902cbfb739b0a2fa27",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/global_aliases.log",
+      "disposition": "No introduced regression found in assigned global-store scope. Independent ordering witnesses,23 author controls,12 parent cases and51 example emissions checked; module unsafe witness0\u21926 and valid controls0. Exact frozen362 source governs review, not earlier candidate.patch. Claims that later code deltas are semantics-preserving hardening are not adopted as proof. Guard-join example differs from original saved final-global false rejection; that finding remains open. Manifest Read denial recovered via shell; no provider failure."
     }
   ],
   "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",
@@ -122,5 +258,6 @@
     "a7/passes/safety.py": "d6d414ec58aa7ab84b40953d2654c0aad819e4110c2e0bbb2acb74ed47ee9aa3",
     "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
   },
-  "updated_at": "2026-10-06T23:56:02.715621+00:00"
+  "updated_at": "2026-10-07T02:19:00.945533+00:00",
+  "current_compiler_hashes_label": "Pushed integration checkpoint 621f70c; later candidate reviews carry separate hashes."
 }

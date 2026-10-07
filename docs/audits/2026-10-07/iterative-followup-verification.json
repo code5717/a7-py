@@ -1,0 +1,792 @@
+{
+  "boundary": "Component history and frozen04330ece integration with separate metadata recovery. No full V1 qualification; later scratch candidates excluded.",
+  "source_hashes": {
+    "a7/ast_nodes.py": "21c85515ee9978a0c42a8a55e48d2fe1070fc029ac22d0ecb317232b281fe108",
+    "a7/passes/type_checker.py": "afefdf9582b517b448df387c70f523c81c9d3b405de8c5ae9dba12683a921f26",
+    "a7/passes/safety.py": "1813b6df26e6085774dee8feb56f294bc7e8363575788f72fc1be0e56ff438e0"
+  },
+  "ast": {
+    "focused_passed": 129,
+    "independent_passed": 47,
+    "external_review": "ast_methods",
+    "limits": [
+      "Custom leaf mutation of containers during repr can differ from Python builtin rendering.",
+      "Arbitrary wrapper objects stored inside AST payloads can reenter recursive Python methods; compiler-created payloads do not use this shape."
+    ]
+  },
+  "type_resolution": {
+    "focused_passed": 126,
+    "independent_passed": 64,
+    "differential_cases": 12,
+    "independent_deep_source": "210 mixed array/slice/ref aliases; limit100 original and alias-fixed exit8, candidateexit0.",
+    "external_review": "Completed; no introduced regression found. Per-module scope inference rejected; merged entry AST remains current architecture."
+  },
+  "combined_fast": {
+    "checkout": "/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/checkout",
+    "source_manifest": "/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/manifest.json",
+    "command": "taskset -c 4-7 env PYTHONPATH=/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/checkout /home/cx89/Projects/pl-dev/a7-py/.venv/bin/python -m pytest -o addopts= -n 2 -m \"not zig and not slow\" -q",
+    "result": "3018 passed in 42.03s",
+    "log_sha256": "4e073cb898f3e6884a421843d991292676d44014d91c35484ad67544b2daf6bb",
+    "boundary": "Pre-followup safety candidate1813. Two independent conditional-setter findings remain; excludes native/slow and later edits."
+  },
+  "native_controls": {
+    "at": "2026-10-07T00:35:17.482188+00:00",
+    "source_sha256": "5505ffb1f777b64bb95874b2b513a9f3d1f789161a0efe22782e81757012ef85",
+    "compiler_manifest": "/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/manifest.json",
+    "expected": "7 2147483648\n9\n9\n41\n12\n73\n",
+    "records": [
+      {
+        "profile": "debug",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/checkout/main.py",
+          "build",
+          "--profile",
+          "debug",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls-debug"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls-debug\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "6a15c8d7f07522a9ff65b583e41e5990c89ba76c4410bfe114020e93ac4ca3f8",
+        "matched": true
+      },
+      {
+        "profile": "release",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/checkout/main.py",
+          "build",
+          "--profile",
+          "release",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls-release"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls-release\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "f9660ce86781a51dffe56d52d410d8d3aee21049b724711d8c8194637a87903a",
+        "matched": true
+      },
+      {
+        "profile": "fast",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-type_resolution-review-2026-10-07-dex1yker/checkout/main.py",
+          "build",
+          "--profile",
+          "fast",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls-fast"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/deferred-controls-fast\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "65162368454bc6635fe608c9cb0cad8c595290852f6b8a99fd385eba3e947d03",
+        "matched": true
+      }
+    ]
+  },
+  "parser_statements": {
+    "source_sha256": "45208388a6bc72563815e892acdedf6b4fc270ce5566b6e33f07f8dd6f338e61",
+    "focused_passed": 175,
+    "author_differential_cases": 66,
+    "independent_passed": 90,
+    "independent_differential_cases": 29,
+    "external_review": "Completed; 128 curated and 3000 seeded fuzz comparisons matched.",
+    "deep_pipeline": "blocks60 and if35 at limit100: parser failure exit8 becomes backend codegen exit7; limit1000 exits0.",
+    "ratchet_at_snapshot": {
+      "groups": 5,
+      "functions": 83,
+      "generated": 0
+    },
+    "boundary": "Preserves logical256 nesting cap. No fullpipeline deep acceptance claim."
+  },
+  "conditional_setter_followup": {
+    "source_sha256": "ba258afd0f4e7423c71a284b094637918bfe7cd8af49d966bfa97fed08c8f7e3",
+    "focused_passed": 199,
+    "differential_cases": 13,
+    "result": "Four unsafe conditional-setter forms0to6; seven valid expression controls0to0; two valid condition-store cases6to0. Ten original independent witnesses retain expected exits.",
+    "boundary": "Terminal-path cleanup remains separate; full release gate pending."
+  },
+  "backend_statements": {
+    "source_sha256": "3e64c1ec8e22717c9c5ace99d4a4a2b2d2a3826488a3dd3c85f5692a56667304",
+    "focused_passed": 187,
+    "author_differential_profile_cases": 171,
+    "parent_independent_profile_cases": 24,
+    "parent_result": "All eight new sources compile0 across three profiles; candidate limits100 and1000 match baseline1000 emitted Zig and diagnostics.",
+    "external_review": "Completed; 144 independent fixture/profile pairs and 153 example/profile pairs matched.",
+    "native_debug_examples": 51,
+    "native_release_examples": 51,
+    "remaining_boundary": "Sixty nested local functions still fail before codegen in safety statement recursion. Expression/type backend recursion remains.",
+    "ratchet_at_snapshot": {
+      "groups": 4,
+      "functions": 65,
+      "generated": 0
+    }
+  },
+  "parser_setter_fast": {
+    "snapshot": "/var/tmp/a7-parser_statements-review-2026-10-07-4qij78ad/checkout",
+    "result": "3040 passed in42.22s",
+    "excluded": "zig and slow",
+    "log_sha256": "e93ae39b83e53edd6bcddc477a945c116a7a10cff52e85678baa602b7d20daf7",
+    "boundary": "Includes parser452 and safetyba258; predates backend statement and loop-exit changes."
+  },
+  "source_hashes_boundary": "Initial follow-up snapshot; later component hashes below supersede it.",
+  "safety_blockers_at_initial_snapshot": [
+    "Short-circuit and if-expression conditional setters incorrectly counted as must-store. Independent repair underway.",
+    "Terminating-path explicit cleanup falsely poisons loop head and exit; preexisting in baseline and candidate. Deferred-cleanup variant does not fix this source."
+  ],
+  "safety_followup": {
+    "source_sha256": "178c6bf6ac6a660e960070703b34fa4968330af0801264fde5f6864832f19796",
+    "focused_passed": 294,
+    "review_replay_rows": 65,
+    "result": "Conditional setters, terminating cleanup, fresh return provenance, valid one-trip loops and direct loop-local alias deletion repaired in candidate.",
+    "independent_review": "23 behavioral witnesses;57focused tests. Introduced exponential fresh-origin expansion and preexisting equivalent-increment rejection remain open.",
+    "external_review": "Completed:165 compile-only behavioral cases. Overall candidate remains unqualified due independently confirmed exponential origin expansion.",
+    "boundary": "No full release gate; general selected/container identities remain open.",
+    "open_findings": [
+      "Preexisting valid one-trip loop with equivalent increments on mutually exclusive paths rejects6.",
+      "Introduced factory fanout expansion: depths2/4/6/8 yield return sets4/16/64/256 and fresh origin counts11/47/191/767 for linear-size acyclic source. No larger stress run."
+    ]
+  },
+  "parser_expressions": {
+    "source_sha256": "58c4448eed9d065d00f95630ca43fe1e82f4e3ee969f7524f387c2a7db87e4f0",
+    "focused_passed": 576,
+    "author_differential_cases": 462,
+    "independent_differential_cases": 111,
+    "independent_focused_passed": 61,
+    "test_only_followup": "Bracket-led call argument hook now observes actual driver requests; 34 error-handling tests pass. Production hash unchanged.",
+    "test_hashes": {
+      "a7/parser.py": "58c4448eed9d065d00f95630ca43fe1e82f4e3ee969f7524f387c2a7db87e4f0",
+      "test/test_iterative_parser_expressions.py": "7e92b7bf41cb6f15b69d09a33b19670433a7fd0dec5e50ce7821a1629f46e8e1",
+      "test/test_parser_error_handling_improvements.py": "695e781420f6bbd19cb9ef3466a175f10c56cf723db27a4f046aab1e6a809901"
+    },
+    "external_review": "Completed: 1005 independently serialized comparisons,44cap-boundary cases and exception/state checks found no introduced regression.",
+    "test_only_review": "Independent reviewer confirmed actual request boundary is observed; prior caveat resolved.",
+    "whitespace_followup": {
+      "before_sha256": "58c4448eed9d065d00f95630ca43fe1e82f4e3ee969f7524f387c2a7db87e4f0",
+      "after_sha256": "20ad1600bac8552015ea4944efe76a7239d3caadbd45a3561141da3872aba749",
+      "change": "Trailing whitespace only; complete Python AST including source positions identical.",
+      "compiler_behavior_change": false
+    },
+    "comment_followup": {
+      "before_sha256": "20ad1600bac8552015ea4944efe76a7239d3caadbd45a3561141da3872aba749",
+      "after_sha256": "9da02ec6a4029763f0a40ebd8f1b451dc7a64ea7e50802adf6b5453182fa035f",
+      "change": "Parser class docstring and obsolete Python-frame-count comment only."
+    }
+  },
+  "checker_expressions": {
+    "source_sha256": "7b5d91cc937d0385f8dbbee0137180365174af215d223894d8e513405a3d9d0a",
+    "focused_passed": 1246,
+    "author_differential_cases": 648,
+    "checker_reaching_cases": 612,
+    "external_review": "Completed:57checker-reaching independent sources, annotations/scopes, exception cleanup and constant-frame-depth probes found no introduced regression."
+  },
+  "backend_expressions": {
+    "source_sha256": "3aaf327eb678622377c9b0f0b4d54657f3e7b4a30dcffd06d661ae2809f0c32b",
+    "focused_passed": 184,
+    "author_differential_profile_cases": 171,
+    "fresh_ast_pairs": 42,
+    "deep_source_comparisons": 30,
+    "native_debug_examples": 51,
+    "native_release_examples": 51,
+    "external_review": "Completed; 186 profile pairs, deep AST, ordering/error-chain/state and constant Python frame-depth checks found no introduced regression."
+  },
+  "expression_combined_fast": {
+    "snapshot": "/var/tmp/a7-checker_expressions-review-2026-10-07-frdxmk4k/checkout",
+    "result": "3082 passed in 31.03s",
+    "excluded": "zig and slow",
+    "log_sha256": "148937fb2731d95c141c9978c9556c5a2e6d16949091a9e3343fab91a4448a20",
+    "boundary": "Contains all expression drivers and safety ebda; excludes later safety178c and test-only parser hook correction."
+  },
+  "remaining_recursion": {
+    "groups": 0,
+    "functions": 0,
+    "generated": 0,
+    "deepcopy": 0,
+    "boundary": "Both scanner modes empty; tested deep inputs and frozen integration compiler checks pass. Separate metadata recovery passes all residual release checks. Arbitrary Python payload callbacks remain outside AST structural guarantee."
+  },
+  "native_explicit_cleanup_ebda": {
+    "at": "2026-10-07T00:52:09.934791+00:00",
+    "source_sha256": "d4e192f064e32836bfa0218b5431fefbc97e96872e00269e728b8426c48c938d",
+    "compiler_manifest": "/var/tmp/a7-exit-native-2026-10-07-d69owzhj/manifest.json",
+    "expected": "7 2147483648\n9\n9\n41\n12\n73\n",
+    "records": [
+      {
+        "profile": "debug",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-exit-native-2026-10-07-d69owzhj/checkout/main.py",
+          "build",
+          "--profile",
+          "debug",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/exit-repaired-controls-debug"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/exit-repaired-controls-debug\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "4518c1cfb885fa929ec45fa0ecd9b3ca5d6a4d7da9d4b5d25a55b1485de3b8ac",
+        "matched": true
+      },
+      {
+        "profile": "release",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-exit-native-2026-10-07-d69owzhj/checkout/main.py",
+          "build",
+          "--profile",
+          "release",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/exit-repaired-controls-release"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/exit-repaired-controls-release\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "7806ad36204ebf127bab6aee59e1b3a3af112e52259ee36e7e48264ce8ca6dfc",
+        "matched": true
+      },
+      {
+        "profile": "fast",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-exit-native-2026-10-07-d69owzhj/checkout/main.py",
+          "build",
+          "--profile",
+          "fast",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/exit-repaired-controls-fast"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/exit-repaired-controls-fast\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "2dd42e1c121ad31892e15b445146b7b140c9c8e15524cd081509c183fdb88f9a",
+        "matched": true
+      }
+    ]
+  },
+  "native_explicit_cleanup_178c": {
+    "at": "2026-10-07T01:10:16.400338+00:00",
+    "source_sha256": "d4e192f064e32836bfa0218b5431fefbc97e96872e00269e728b8426c48c938d",
+    "compiler_manifest": "/var/tmp/a7-safety_final-review-2026-10-07-dqkd1v6h/manifest.json",
+    "expected": "7 2147483648\n9\n9\n41\n12\n73\n",
+    "records": [
+      {
+        "profile": "debug",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-safety_final-review-2026-10-07-dqkd1v6h/checkout/main.py",
+          "build",
+          "--profile",
+          "debug",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/final-safety-controls-debug"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/final-safety-controls-debug\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "df0746729fb147dbf8db8d4eed33976896bd660ebe38b7f757217184d07e9198",
+        "matched": true
+      },
+      {
+        "profile": "release",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-safety_final-review-2026-10-07-dqkd1v6h/checkout/main.py",
+          "build",
+          "--profile",
+          "release",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/final-safety-controls-release"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/final-safety-controls-release\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "5529074ee26d71b9ea2984e3e4a9134e75054e6b51f81cb6e830ab4c7303a6bb",
+        "matched": true
+      },
+      {
+        "profile": "fast",
+        "command": [
+          "taskset",
+          "-c",
+          "0-3",
+          "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+          "/var/tmp/a7-safety_final-review-2026-10-07-dqkd1v6h/checkout/main.py",
+          "build",
+          "--profile",
+          "fast",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/controls.a7",
+          "-o",
+          "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/final-safety-controls-fast"
+        ],
+        "build_exit": 0,
+        "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/native-candidate-controls/final-safety-controls-fast\n",
+        "build_stderr": "",
+        "run_exit": 0,
+        "stdout": "7 2147483648\n9\n9\n41\n12\n73\n",
+        "stderr": "",
+        "binary_sha256": "af886ac4e5869583c4d5ae6bfb9a7dd7410a0d6ad907507dbea95b71f2198f57",
+        "matched": true
+      }
+    ]
+  },
+  "safety_combined_fast": {
+    "snapshot": "/var/tmp/a7-safety_final-review-2026-10-07-dqkd1v6h/checkout",
+    "result": "3138 passed in 41.66s",
+    "excluded": "zig and slow",
+    "log_sha256": "8fdc471c01d2452dc94a80764b6041edc4c931d75c6829d1d9f59704e78c8baf",
+    "boundary": "Passing tests do not close the independent exponential factory-origin finding or equivalent-increment valid rejection."
+  },
+  "safety_iterative": {
+    "source_sha256": "e339c46f48242074137e835b5fa2824cd461985cd4772e0be2fb5f89357750ac",
+    "baseline_sha256": "178c6bf6ac6a660e960070703b34fa4968330af0801264fde5f6864832f19796",
+    "focused_passed": 258,
+    "author_state_differentials": 228,
+    "author_source_profile_pairs": 195,
+    "author_exception_comparisons": 12,
+    "independent_compile_runs": 40,
+    "independent_new_tests": 6,
+    "external_review": "Completed:300paired same-AST analyses,70exception rows,deep source and5000-layerAST checks found no introduced regression. Resourcefinding preserved.",
+    "boundary": "Traversal conversion only; baseline exponential fresh-origin and equivalent-increment findings remain open."
+  },
+  "array_branch_fitting": {
+    "baseline_sha256": "7b5d91cc937d0385f8dbbee0137180365174af215d223894d8e513405a3d9d0a",
+    "candidate_sha256": "61a816487f58ab9d9290b2b5374da1e1da9dfab300e515f395ed6790b562eac8",
+    "tests_sha256": "cb9371c2d20be410ad7a1487be537e8e10bd64f0f913737e975ecd4773bebda7",
+    "change": "Contextual array literal fitting through IF/MATCH for ordinary and generic destinations; typed narrowing remains rejected; preexisting mixed typed/literal arm unification gap remains.",
+    "focused_passed": 206,
+    "independent_cases": 31,
+    "new_nonnative_tests": 17,
+    "native": "One combined program passes debug and fast with exact output; earlier generic-only slice passed nine source/profile runs.",
+    "external_review": "Completed; no introduced regression found. See array_branches review disposition and artifact-hash caveat.",
+    "boundary": "Included in frozen04330ece integration and recovered release checks; mixed typed/literal repair recorded separately below."
+  },
+  "mixed_array_branches": {
+    "source_sha256": "a87ebdfd895d4e50fd03725ff6afdc32b42d22747faebd1eef9b51a64f5be0dc",
+    "baseline_sha256": "61a816487f58ab9d9290b2b5374da1e1da9dfab300e515f395ed6790b562eac8",
+    "author_focused_passed": 244,
+    "author_differentials": 29,
+    "parent_source_cases": 13,
+    "parent_compiler_observations": 52,
+    "integrated_tests_passed": 17,
+    "native": "One program exercises both IF/MATCH paths and nested arrays in debug/fast with exact output.",
+    "test_sha256": "3b3eda3836a2e0adf6f85c5a50c313c684cdfc20a9d40eacc7407bd32fac0841",
+    "boundary": "Concrete destinations included in frozen04330ece integration and recovered release checks. Unresolved generic array-element branches and callable alias obligations remain open.",
+    "external_review": "Completed:79 independent compile-only programs, no introduced regression found. Raw rows override overlapping summary categories."
+  },
+  "safety_provenance_candidate": {
+    "source_sha256": "338ecedb1ba3600b6563770b9e5b15a36db8d248c26612081cdbe64d974e4625",
+    "baseline_sha256": "e339c46f48242074137e835b5fa2824cd461985cd4772e0be2fb5f89357750ac",
+    "focused_passed": 271,
+    "finite_paired_analyses": 234,
+    "additional_source_pairs": 26,
+    "source_profile_pairs": 276,
+    "parent_graph_set_fixtures": 128,
+    "parent_graph_operation_comparisons": 1536,
+    "fanout64": {
+      "graph_nodes": 196,
+      "memoized_query_pairs": 324,
+      "runtime_fact_handles": 133
+    },
+    "independent_consumer_review": "16 independent paired source cases match exits, exact diagnostics and successful Zig hashes;117 focused tests pass.",
+    "external_review": "Completed:68 independent paired programs,400 graph oracle operations,8225 canonicality pairs and reproduced factory64 resource counts; no introduced regression found.",
+    "boundary": "Integrated338ecedb; frozen04330ece compiler checks pass; original metadata failure and successful7residual checks retained. Global-store alias and equivalent increments remain scratch candidates.",
+    "integration_tests": "159 passed,2 native deselected in4.64s",
+    "native": {
+      "compiler_manifest": "/var/tmp/a7-safety_provenance-review-2026-10-07-yd5edhhb/manifest.json",
+      "source_sha256": "2ae552e5dd77901e9b08efb2041dffee35618471dbe30639dacf4a13d09c0c70",
+      "records": [
+        {
+          "profile": "debug",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+            "/var/tmp/a7-safety_provenance-review-2026-10-07-yd5edhhb/checkout/main.py",
+            "build",
+            "--profile",
+            "debug",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-native.a7",
+            "-o",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-debug"
+          ],
+          "build_exit": 0,
+          "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-debug\n",
+          "build_stderr": "",
+          "run_exit": 0,
+          "stdout": "7 9\n9\n",
+          "stderr": "",
+          "matched": true,
+          "binary_sha256": "bf53a05125f1bd925eb758e7c1b08ecf3385e6ab3d83360689e2980461d625eb"
+        },
+        {
+          "profile": "release",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+            "/var/tmp/a7-safety_provenance-review-2026-10-07-yd5edhhb/checkout/main.py",
+            "build",
+            "--profile",
+            "release",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-native.a7",
+            "-o",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-release"
+          ],
+          "build_exit": 0,
+          "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-release\n",
+          "build_stderr": "",
+          "run_exit": 0,
+          "stdout": "7 9\n9\n",
+          "stderr": "",
+          "matched": true,
+          "binary_sha256": "42247903e2f1712056da7f510bea8f008751c580eca794fa0c8e649105663687"
+        },
+        {
+          "profile": "fast",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+            "/var/tmp/a7-safety_provenance-review-2026-10-07-yd5edhhb/checkout/main.py",
+            "build",
+            "--profile",
+            "fast",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-native.a7",
+            "-o",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-fast"
+          ],
+          "build_exit": 0,
+          "build_stdout": "Built /home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/safety-graph-parent-review/fanout-fast\n",
+          "build_stderr": "",
+          "run_exit": 0,
+          "stdout": "7 9\n9\n",
+          "stderr": "",
+          "matched": true,
+          "binary_sha256": "2f9c690252875caf70a670d2e316d5b30d9bcc2747e51cf270bd8f0488d0c3b0"
+        }
+      ]
+    }
+  },
+  "module_global_combination": {
+    "source_manifest": "tmp/v1-completion-2026-10-07/module-combined-parent/manifest.json",
+    "checker_sha256": "d33cdb852a8230425fd0370c3bccd958a4ecd5317ba1810478ff69f9e0b1fdcd",
+    "safety_sha256": "362bfce5e06e9f50f89dd910dba4a522c567f570de8ffea48958778877e8af3a",
+    "focused": "182 passed,10 native deselected",
+    "independent_global_cases": 12,
+    "boundary": "Isolated scratch combination only; live module/global changes not integrated. External review and native/full qualification pending."
+  },
+  "module_stage9_combination": {
+    "compiler_manifest": "tmp/v1-completion-2026-10-07/module-combined-stage9-parent/manifest.json",
+    "compiler_manifest_sha256": "95ce4632e1ebd7b7b177c999ef14cf8b5dbf7119ad3d35770d1d7e5e0a34ebfe",
+    "checker_sha256": "d33cdb852a8230425fd0370c3bccd958a4ecd5317ba1810478ff69f9e0b1fdcd",
+    "safety_sha256": "607f1fdecc662a61751efdadd01c5cabc6f7a63559d28358ad9433f8b04a706d",
+    "fast_result": "3263 passed in32.99s",
+    "fast_log_sha256": "54f24f3424066e7e30233a5fda1086ca390f4b05df08329dc4c29b0c322be08f",
+    "excluded": "zig and slow",
+    "reporting": "Independent review confirmed stage8 Markdown delimiter/HTML escaping defect. Stage9 preserves all3 independent rendered owner labels, lookup isolation and1601-deep scope output;10 tests pass.",
+    "boundary": "Scratch only. All3 native control profiles pass; GLM module/loop review and combined full qualification remain pending. Global362 review complete.",
+    "native": {
+      "record": "tmp/v1-completion-2026-10-07/module-scope-parent-review/native/stage9-results.json",
+      "sha256": "f4e26d46846c7737a4cdc3131533242cc065e85d9b707f105d625ad2e5674c34",
+      "manifest_sha256": "95ce4632e1ebd7b7b177c999ef14cf8b5dbf7119ad3d35770d1d7e5e0a34ebfe",
+      "expected": "12 19 7 2147483648 2\n",
+      "profiles": [
+        {
+          "profile": "debug",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "12 19 7 2147483648 2\n",
+          "matched": true,
+          "binary_sha256": "346c405fbc5e701ee402507c019de1df25fe820546ffb5ba6b354e4ff589b6fa"
+        },
+        {
+          "profile": "release",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "12 19 7 2147483648 2\n",
+          "matched": true,
+          "binary_sha256": "c0afb8de58d88bf7eb327b925a81c64d9ad3bf6b5bb317a876648a98cccb900d"
+        },
+        {
+          "profile": "fast",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "12 19 7 2147483648 2\n",
+          "matched": true,
+          "binary_sha256": "168f455e10d5e368501d1753f0d5a09e5933449d94e0cc1b19e71ea55682730d"
+        }
+      ]
+    }
+  },
+  "generic_callable_trial": {
+    "checker_sha256": "a6675443f40d1f9517cecfe36a85157dcaf219a2ce79ed630e03404392161da9",
+    "status": "Excluded from integration",
+    "focused_passed": 151,
+    "comparisons": 52,
+    "boundary": "Excluded: finite target sets lose selector correlation. Immutable generic alias builds/runs; mutable, runtime-selected and array-stored generic values fail native compilation exit7. General representation needs disposition. Unresolved-arraya4 remains excluded.",
+    "native_controls": {
+      "record": "tmp/v1-completion-2026-10-07/generic-callable-native-review/results.json",
+      "sha256": "7a5c7c17ec8543a7f2535bb438b4db2c737db30e421a9b02d9b87dc1481ce92f",
+      "compiler_manifest_sha256": "04330ece457e14f83c89624ac547a7f38725788d8f120182de2958ad064a1288",
+      "profile": "debug",
+      "rows": [
+        {
+          "name": "immutable_alias",
+          "source_sha256": "83a3151b3deeac48e6c234e34ea02f6e00b7d15f265e7cd5c5bedd5a793d6f6a",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "1\n",
+          "matched": true
+        },
+        {
+          "name": "mutable_reassignment",
+          "source_sha256": "e1cc0039391570b928d393ab2473924fd3cc61be34bc42db4dedc289904c2037",
+          "build_exit": 7
+        },
+        {
+          "name": "if_selected",
+          "source_sha256": "f70a1aeddf41d774eeb3385b63206dbc7ec6af62564717002b3134d8b007c2ec",
+          "build_exit": 7
+        },
+        {
+          "name": "array_selected",
+          "source_sha256": "bbb4021db4d54aca7356f04f1d6663f4654577b721aadfc99920ff36925cdd94",
+          "build_exit": 7
+        },
+        {
+          "name": "one_trip_rebind",
+          "source_sha256": "a295289c9d6fcf8814c226770ceed754082953090e06f50b78b49373bf78c608",
+          "build_exit": 7
+        }
+      ],
+      "limits": "Only safe bodies executed; failing builds did not run. Debug profile only. Exact Zig diagnostics retained in raw record."
+    }
+  },
+  "equivalent_increment_candidate": {
+    "safety_sha256": "607f1fdecc662a61751efdadd01c5cabc6f7a63559d28358ad9433f8b04a706d",
+    "baseline_sha256": "362bfce5e06e9f50f89dd910dba4a522c567f570de8ffea48958778877e8af3a",
+    "focused_passed": 328,
+    "new_controls": 26,
+    "parent_unsigned_execution_oracle_cases": 36,
+    "external_review": "running",
+    "boundary": "Scratch only; no native execution or whole-safety qualification."
+  },
+  "global_alias_candidate": {
+    "source_sha256": "362bfce5e06e9f50f89dd910dba4a522c567f570de8ffea48958778877e8af3a",
+    "focused_passed": 302,
+    "parent_cases": 12,
+    "external_review": "Completed with no introduced regression found; see global_aliases disposition.",
+    "boundary": "Scratch only; pending native/full integration. Original guard-join precision gap remains open."
+  },
+  "iterative_integration_gate": {
+    "started_at": "2026-10-07T01:47:56.808009+00:00",
+    "checkout": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout",
+    "command": [
+      "taskset",
+      "-c",
+      "0-15",
+      "env",
+      "A7_PYTEST_WORKERS=4",
+      "./run_release_checks.sh"
+    ],
+    "manifest_sha256": "04330ece457e14f83c89624ac547a7f38725788d8f120182de2958ad064a1288",
+    "pid": 1479823,
+    "exit_code": 1,
+    "finished_at": "2026-10-07T02:21:23.099989+00:00",
+    "log_sha256": "6a8acc78ae455a7a1b7a333063efc35debd732f3454d8b7cc137b36fc27e5fc4",
+    "result": "10/11 compiler checks; 3602 passed,1 xfailed;51 E2E;51 artifacts each debug/release/fast;61 error-stage;package native pass",
+    "failure": "Original exit1: secrets enumeration required missing Git metadata; release wrapper stopped before site and audits. All7 residual checks subsequently passed on unchanged1591source files, separately recorded.",
+    "recovery": {
+      "started_at": "2026-10-07T02:28:57.253647+00:00",
+      "manifest_sha256": "04330ece457e14f83c89624ac547a7f38725788d8f120182de2958ad064a1288",
+      "source_files": 1591,
+      "metadata": "Synthetic exact-manifest Git index only; no commit/history; source unchanged.",
+      "rows": [
+        {
+          "name": "secrets",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "env",
+            "A7_PYTEST_WORKERS=1",
+            "./run_all_tests.sh",
+            "--only",
+            "Secrets Check"
+          ],
+          "exit_code": 0,
+          "log_sha256": "35d21278c61d17cf713536b9eff267d0f3950a177ac4fdff255ad7f879ba6aa1"
+        },
+        {
+          "name": "site-install",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout/site",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "bun",
+            "install",
+            "--frozen-lockfile"
+          ],
+          "exit_code": 0,
+          "log_sha256": "bc549645a61f065cfa699ea0bf1a1902a1a15380285be8c7d0427f822aa616f9"
+        },
+        {
+          "name": "site-check",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout/site",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "bun",
+            "run",
+            "check"
+          ],
+          "exit_code": 0,
+          "log_sha256": "1258fb398d6b22e22d0bbdb65fe2c97d5354c749f372ef996fd4bc58e033f386"
+        },
+        {
+          "name": "bun-audit",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout/site",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "bun",
+            "audit",
+            "--audit-level=moderate"
+          ],
+          "exit_code": 0,
+          "log_sha256": "f359e278e25730e73d5ddd751140c53f387144ea3ffef2cce8c5f133b9667a65"
+        },
+        {
+          "name": "requirements",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "uv",
+            "export",
+            "--locked",
+            "--all-groups",
+            "--no-emit-project",
+            "--format",
+            "requirements-txt",
+            "--output-file",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/iterative-gate-recovery-review/requirements.txt"
+          ],
+          "exit_code": 0,
+          "log_sha256": "ccc975eea03c412c4c785301dcd382ad7553451711ca6067441736bb060c3126"
+        },
+        {
+          "name": "pip-audit",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "uvx",
+            "--from",
+            "pip-audit==2.10.0",
+            "pip-audit",
+            "--strict",
+            "-r",
+            "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/iterative-gate-recovery-review/requirements.txt"
+          ],
+          "exit_code": 0,
+          "log_sha256": "15950a68a7ed99c59779717acefdceb3f69cfd31bde67d2c954f2a3cea4d7955"
+        },
+        {
+          "name": "bandit",
+          "cwd": "/var/tmp/a7-iterative-integration-2026-10-07-v74l88xo/checkout",
+          "command": [
+            "taskset",
+            "-c",
+            "12-15",
+            "uvx",
+            "--from",
+            "bandit==1.9.4",
+            "bandit",
+            "-r",
+            "a7",
+            "scripts",
+            "main.py",
+            "-q",
+            "--skip",
+            "B404,B603"
+          ],
+          "exit_code": 0,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "finished_at": "2026-10-07T02:29:10.578024+00:00",
+      "source_hashes_and_modes_unchanged": true,
+      "all_residual_checks_passed": true
+    }
+  }
+}

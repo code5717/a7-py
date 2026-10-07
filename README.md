@@ -104,9 +104,17 @@ isolation remains unfinished.
 
 Use `usize` for sizes, lengths and indices. Use `isize` for signed pointer-sized
 offsets and position differences. A7 source recursion is rejected; use loops or
-explicit stacks. Safety expression traversal and type-checker statement
-traversal use explicit stacks. Safety statements, parser and other internal
-paths still contain recursion.
+explicit stacks. Current traversal candidates use worklists for parsing, type
+checking, safety traversal, Zig emission and AST comparison and display. The
+recursive-group and generated-method exception lists are empty. The frozen
+integration passed 3,602 tests with one expected failure. Its secrets check
+needed Git metadata restored; that check and all remaining release checks then
+passed on unchanged sources.
+See [architecture](docs/ARCHITECTURE.md) for the checked source versions and
+qualification limits.
+
+Array literals selected by `if` or `match` use the declared element type.
+Concrete generic calls check each literal element for size and range.
 
 Heap values currently require `del` or `defer del`. Pass lvalues directly to
 `ref` parameters and access reference fields after nil checks. There are no

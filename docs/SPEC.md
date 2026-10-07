@@ -309,7 +309,12 @@ s: MyStruct = nil      // ERROR: value structs cannot be nil
 
 Array literals must match the declared array length when a target type is
 present. Each element is checked against the declared element type, including
-nested array literals.
+nested array literals and literal arms selected by `if` or `match`. Generic
+initializers and bound callback arguments apply those checks at each concrete
+instantiation. Typed array values still require compatible element types;
+a typed `[2]i32` does not narrow implicitly to `[2]i8`. In an `if` or `match`,
+a concrete typed numeric array arm supplies the element type for literal arms
+of the same shape.
 
 ---
 
@@ -1575,10 +1580,10 @@ semantically resolved or backend-lowered yet:
 ### 11.2 Standard Library Functions
 
 Generation 1 (current, virtual, backend-lowered): `io.print`,
-`io.println`, `io.eprintln` — the only stdlib I/O calls the Zig
-backend lowers, to `__a7_stdout_print` / `__a7_stderr_print` with the
-persistent-writer preamble (`a7/stdlib/io.py:10-24`,
-`a7/backends/zig.py:152-221`). `std/io` and `io` (likewise
+`io.println`, `io.eprintln` lower to `__a7_stdout_print` /
+`__a7_stderr_print` with the persistent-writer preamble in
+`a7/backends/zig.py`. Recoverable I/O emission and its checker gap are
+described below. `std/io` and `io` (likewise
 `std/math` and `math`) are alternate public spellings of the same
 virtual module (`a7/stdlib/__init__.py:11-16`). Current virtual
 modules also provide math calls such as `math.sqrt`, `math.abs`,

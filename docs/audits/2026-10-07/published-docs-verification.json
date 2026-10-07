@@ -1,0 +1,152 @@
+{
+  "checked_at": "2026-10-07T00:07:24.331777+00:00",
+  "deployed_commit": "4ace8caf3b764a37558534c77601db02a02088ac",
+  "deploy_workflow_run": 37550125629,
+  "rows": [
+    {
+      "path": "index.html",
+      "url": "https://code5717.github.io/a7-py/index.html",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 15688,
+      "sha256": "d94ac992514360adf439c75dc49740b7c4bafa379c3c4bd681118659cc1664c8",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "start/index.html",
+      "url": "https://code5717.github.io/a7-py/start/index.html",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 20226,
+      "sha256": "c69b493549d08c6c5965ccf657164f5062f9113769afe8f9edf3c161998ad74c",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "compiler/index.html",
+      "url": "https://code5717.github.io/a7-py/compiler/index.html",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 24420,
+      "sha256": "7fa1f2faed2fe1f3906826dac801c260b69a1eba4348ef9194fe7d91ae879de3",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "language/modules/index.html",
+      "url": "https://code5717.github.io/a7-py/language/modules/index.html",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14222,
+      "sha256": "fd54647e2e6f79fc5060134e93a099c4fcdcd8a038eaca9b5440b9f91065f79f",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "status/index.html",
+      "url": "https://code5717.github.io/a7-py/status/index.html",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 17027,
+      "sha256": "5f99e29c7f72ec9be811e29bd07d4d808c0c91a527218d3a50c3c02f6a1f8983",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "release/index.html",
+      "url": "https://code5717.github.io/a7-py/release/index.html",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 17313,
+      "sha256": "04701f1e5b40445ec57cf0f039383e0c1b3aed611339c20bd0250ea5a44bfe30",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "llms.txt",
+      "url": "https://code5717.github.io/a7-py/llms.txt",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "bytes": 3898,
+      "sha256": "6beebf5b82ac260bdf9135a05146badeba5f11fbb528504e3a8e0a721a94eb79",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "llms-full.txt",
+      "url": "https://code5717.github.io/a7-py/llms-full.txt",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "bytes": 117156,
+      "sha256": "1a25370608e0ad7b558fb1353c35dafa23985fcf26dd80b025da95a6518441f3",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "docs/index.md",
+      "url": "https://code5717.github.io/a7-py/docs/index.md",
+      "status": 200,
+      "content_type": "text/markdown; charset=utf-8",
+      "bytes": 3861,
+      "sha256": "f7813732bb55358e415903ba71fdfe42f03ad9c7c7c89f99edad7301cebf081a",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "docs/manifest.json",
+      "url": "https://code5717.github.io/a7-py/docs/manifest.json",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 333000,
+      "sha256": "11db66c5064003ef77d7d253dd2c8229c6d7ebc772783b1ec81df408a5628d40",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "docs/compiler.md",
+      "url": "https://code5717.github.io/a7-py/docs/compiler.md",
+      "status": 200,
+      "content_type": "text/markdown; charset=utf-8",
+      "bytes": 9124,
+      "sha256": "49dcc96546ce53d16a2777b1374e479b74000ee4b90d02ca1fe0df3169cbef16",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "docs/language/modules.md",
+      "url": "https://code5717.github.io/a7-py/docs/language/modules.md",
+      "status": 200,
+      "content_type": "text/markdown; charset=utf-8",
+      "bytes": 3694,
+      "sha256": "5b2e5c863f5afc8810cc4c711ec33f22b6735e48af8bcf8b2308db1e9caa2d74",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "sitemap.xml",
+      "url": "https://code5717.github.io/a7-py/sitemap.xml",
+      "status": 200,
+      "content_type": "application/xml",
+      "bytes": 1755,
+      "sha256": "4eec17e11db84105e538cdf7553572096887bceafdcf6c70aa4b0b83eb54bfa4",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "assets/search.json",
+      "url": "https://code5717.github.io/a7-py/assets/search.json",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 184621,
+      "sha256": "315734ef2e7711e61364efc8dc63d9b4ed6e2450378a0e3bb12eabecfe19152f",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "assets/site.css",
+      "url": "https://code5717.github.io/a7-py/assets/site.css",
+      "status": 200,
+      "content_type": "text/css; charset=utf-8",
+      "bytes": 21781,
+      "sha256": "e0b3e5572f57e9b92bfd5c26a7923c7b71239cc5a81bcaba9547c2087845db29",
+      "matches_frozen_build": true
+    },
+    {
+      "path": "assets/site.js",
+      "url": "https://code5717.github.io/a7-py/assets/site.js",
+      "status": 200,
+      "content_type": "application/javascript; charset=utf-8",
+      "bytes": 10870,
+      "sha256": "e08843ef74f05f29016e3e380fc74a7ae029f88e6cf0046a14e69488774d99ff",
+      "matches_frozen_build": true
+    }
+  ],
+  "browser_boundary": "browser-harness daemon failed to connect; doctor reports zero connections. Computer-use inventory empty and createBrowserTab(iab) reports unavailable. No rendered, mobile, interaction or console acceptance claimed."
+}

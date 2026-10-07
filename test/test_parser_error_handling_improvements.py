@@ -541,13 +541,22 @@ class TestPhase1SpeculationAndMatchFixes:
         """Fatal errors are re-raised, not swallowed, by the `Name(types){...}` try."""
         parser = Parser(Tokenizer("Pair(i32){}").tokenize())
 
-        def raise_fatal():
-            raise parser._fatal_error("boom", parser.current())
+        enter_nesting = parser._enter_nesting
+        injected = False
 
-        parser.parse_type = raise_fatal
+        def raise_fatal_in_type():
+            nonlocal injected
+            if not injected and parser.current().value == "i32":
+                injected = True
+                raise parser._fatal_error("boom", parser.current())
+            enter_nesting()
+
+        # Inject at the nesting boundary used by the speculative type parse.
+        parser._enter_nesting = raise_fatal_in_type
         with pytest.raises(ParseError) as exc_info:
             parser.parse_expression()
         assert getattr(exc_info.value, "fatal", False) is True
+        assert parser._not_generic_literal == set()
 
     def test_non_fatal_error_falls_back_to_call(self):
         """`Pair(1){...}` is not a generic struct literal: `1` is no type, so it is a call."""
@@ -560,10 +569,14 @@ class TestPhase1SpeculationAndMatchFixes:
         """An array-literal argument is classified by lookahead, not by a failed type parse."""
         parser = Parser(Tokenizer("[1]").tokenize())
 
-        def no_type_parse():
-            raise AssertionError("parse_type called for an array literal argument")
+        expression_steps = parser._expression_steps
 
-        parser.parse_type = no_type_parse
+        def no_type_parse(action, payload):
+            if action == "parse_type":
+                raise AssertionError("parse_type called for an array literal argument")
+            return expression_steps(action, payload)
+
+        parser._expression_steps = no_type_parse
         node = parser._parse_call_argument()
         assert node.kind.name == "ARRAY_INIT"
 

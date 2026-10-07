@@ -769,184 +769,833 @@ class ZigCodeGenerator(CodeGenerator):
         """Resolve a name through the local rename map, then the global one."""
         return self._rename_map.get(name, self._global_renames.get(name, name))
 
-    def visit(self, node: ASTNode) -> None:
-        """Visit an AST node and generate Zig code."""
-        if node is None:
+    def _statement_work(self, action, payload):
+        # Only this driver resumes statement frames; children yield requests.
+        pending = [self._statement_steps(action, payload)]
+        result = None
+        try:
+            while pending:
+                try:
+                    action, payload = pending[-1].send(result)
+                except StopIteration as finished:
+                    pending.pop()
+                    result = finished.value
+                    continue
+                pending.append(self._statement_steps(action, payload))
+                result = None
+        finally:
+            for frame in reversed(pending):
+                frame.close()
+
+    def _statement_steps(self, action, payload):
+        if action == "visit":
+            node, = payload
+            if node is None:
+                return
+
+            kind = node.kind
+
+            if kind == NodeKind.PROGRAM:
+                (yield ("_visit_program", (node,)))
+            elif kind == NodeKind.FUNCTION:
+                if id(node) in self._hoisted_names:
+                    # Emitted at file scope by the enclosing `_visit_function`.
+                    if node.name:
+                        self._rename_map[node.name] = self._hoisted_names[id(node)]
+                    return
+                (yield ("_visit_function", (node,)))
+            elif kind == NodeKind.STRUCT:
+                self._visit_struct(node)
+            elif kind == NodeKind.ENUM:
+                self._visit_enum(node)
+            elif kind == NodeKind.UNION:
+                self._visit_union(node)
+            elif kind == NodeKind.CONST:
+                self._visit_const(node)
+            elif kind == NodeKind.VAR:
+                self._visit_var(node)
+            elif kind == NodeKind.TYPE_ALIAS:
+                self._visit_type_alias(node)
+            elif kind == NodeKind.IMPORT:
+                pass  # Imports handled via preamble / special-casing
+            elif kind == NodeKind.BLOCK:
+                (yield ("_visit_block", (node,)))
+            elif kind == NodeKind.IF_STMT:
+                (yield ("_visit_if_stmt", (node,)))
+            elif kind == NodeKind.WHILE:
+                (yield ("_visit_while", (node,)))
+            elif kind == NodeKind.FOR:
+                (yield ("_visit_for", (node,)))
+            elif kind == NodeKind.FOR_IN:
+                (yield ("_visit_for_in", (node,)))
+            elif kind == NodeKind.FOR_IN_INDEXED:
+                (yield ("_visit_for_in_indexed", (node,)))
+            elif kind == NodeKind.MATCH:
+                (yield ("_visit_match", (node,)))
+            elif kind == NodeKind.RETURN:
+                self._visit_return(node)
+            elif kind == NodeKind.BREAK:
+                self._visit_break(node)
+            elif kind == NodeKind.CONTINUE:
+                self._visit_continue(node)
+            elif kind == NodeKind.FALL:
+                self._visit_fall(node)
+            elif kind == NodeKind.DEFER:
+                (yield ("_visit_defer", (node,)))
+            elif kind == NodeKind.DEL:
+                self._visit_del(node)
+            elif kind == NodeKind.ASSIGNMENT:
+                self._visit_assignment(node)
+            elif kind == NodeKind.EXPRESSION_STMT:
+                self._visit_expression_stmt(node)
+            else:
+                raise CodegenError(
+                    f"Zig backend: unhandled node kind '{kind.name}'",
+                    getattr(node, "span", None),
+                )
             return
 
-        kind = node.kind
+        if action == "_visit_program":
+            node, = payload
+            for decl in (node.declarations or []):
+                (yield ("visit", (decl,)))
+                self.output.write("\n")
+            return
 
-        if kind == NodeKind.PROGRAM:
-            self._visit_program(node)
-        elif kind == NodeKind.FUNCTION:
+        if action == "_visit_function":
+            node, = payload
+            name = node.name or "anonymous"
+            emit_prefix = getattr(node, "module_emit_prefix", "")
+
+            is_main = (name == "main" and not emit_prefix and id(node) not in self._hoisted_names)
             if id(node) in self._hoisted_names:
-                # Emitted at file scope by the enclosing `_visit_function`.
-                if node.name:
-                    self._rename_map[node.name] = self._hoisted_names[id(node)]
-                return
-            self._visit_function(node)
-        elif kind == NodeKind.STRUCT:
-            self._visit_struct(node)
-        elif kind == NodeKind.ENUM:
-            self._visit_enum(node)
-        elif kind == NodeKind.UNION:
-            self._visit_union(node)
-        elif kind == NodeKind.CONST:
-            self._visit_const(node)
-        elif kind == NodeKind.VAR:
-            self._visit_var(node)
-        elif kind == NodeKind.TYPE_ALIAS:
-            self._visit_type_alias(node)
-        elif kind == NodeKind.IMPORT:
-            pass  # Imports handled via preamble / special-casing
-        elif kind == NodeKind.BLOCK:
-            self._visit_block(node)
-        elif kind == NodeKind.IF_STMT:
-            self._visit_if_stmt(node)
-        elif kind == NodeKind.WHILE:
-            self._visit_while(node)
-        elif kind == NodeKind.FOR:
-            self._visit_for(node)
-        elif kind == NodeKind.FOR_IN:
-            self._visit_for_in(node)
-        elif kind == NodeKind.FOR_IN_INDEXED:
-            self._visit_for_in_indexed(node)
-        elif kind == NodeKind.MATCH:
-            self._visit_match(node)
-        elif kind == NodeKind.RETURN:
-            self._visit_return(node)
-        elif kind == NodeKind.BREAK:
-            self._visit_break(node)
-        elif kind == NodeKind.CONTINUE:
-            self._visit_continue(node)
-        elif kind == NodeKind.FALL:
-            self._visit_fall(node)
-        elif kind == NodeKind.DEFER:
-            self._visit_defer(node)
-        elif kind == NodeKind.DEL:
-            self._visit_del(node)
-        elif kind == NodeKind.ASSIGNMENT:
-            self._visit_assignment(node)
-        elif kind == NodeKind.EXPRESSION_STMT:
-            self._visit_expression_stmt(node)
-        else:
-            raise CodegenError(
-                f"Zig backend: unhandled node kind '{kind.name}'",
-                getattr(node, "span", None),
+                emitted_name = self._hoisted_names[id(node)]
+            elif is_main and self._io_streams_needed:
+                emitted_name = "__a7_user_main"
+            elif emit_prefix:
+                emitted_name = f"{emit_prefix}{name}"
+            else:
+                emitted_name = self._global_renames.get(name, name)
+
+            saved_mutated_declarations = self._mutated_declarations
+            saved_used = self._used_identifiers
+            saved_untyped_consts = self._untyped_consts
+            saved_generic_env = self._generic_env
+            saved_rename_map = self._rename_map
+            saved_snapshots = self._rename_snapshots
+            self._untyped_consts = dict(saved_untyped_consts)
+            self._mutated_declarations = self._collect_mutated_declarations(node.body) if node.body else set()
+            self._used_identifiers = self._collect_used_identifiers(node.body) if node.body else set()
+
+            # A nested function is emitted at file scope, before its parent, under
+            # a name no user declaration can spell. It sees no local of the parent.
+            nested_functions = self._collect_nested_functions(node.body) if node.body else []
+            if nested_functions:
+                outer_names = self._declared_names(node)
+                for nested in nested_functions:
+                    self._reject_captures(nested, outer_names)
+                    self._hoisted_names[id(nested)] = self._unique_name(f"__a7_fn_{nested.name or 'anonymous'}")
+                # Nested functions call each other by their hoisted names.
+                self._rename_map = dict(saved_rename_map)
+                self._rename_map.update(
+                    (nested.name, self._hoisted_names[id(nested)]) for nested in nested_functions if nested.name
+                )
+                self._rename_snapshots = []
+                for nested in nested_functions:
+                    (yield ("_visit_function", (nested,)))
+                    self.output.write("\n")
+                self._rename_map = saved_rename_map
+                self._rename_snapshots = saved_snapshots
+
+            # Generic parameters: the declared list, then every `$T` the
+            # signature names, in the order `_generic_call_args` passes them.
+            generic_params = [param.name for param in (node.generic_params or []) if param.name]
+            discovered: list[str] = []
+            for param in (node.parameters or []):
+                self._collect_generic_type_names(param.param_type, discovered, signature_order=True)
+            self._collect_generic_type_names(node.return_type, discovered, signature_order=True)
+            generic_params.extend(n for n in dict.fromkeys(discovered) if n not in generic_params)
+            self._generic_env = set(generic_params)
+
+            self._push_scope()
+            params = node.parameters or []
+            for i, param in enumerate(params):
+                if param.param_type is None:
+                    raise CodegenError(
+                        f"Zig backend: parameter '{param.name or i}' of '{name}' has no type",
+                        param.span or node.span,
+                    )
+            parameter_names = [self._declare_var_in_scope(p.name) if p.name else "_" for p in params]
+            parameter_types = [self._emit_type_node(p.param_type) for p in params]
+            # A function without a return type returns nothing.
+            return_type = self._emit_type_node(node.return_type) if node.return_type else "void"
+            comptime_params = self._comptime_param_list(
+                node, generic_params,
+                [p.param_type for p in params] + [node.return_type, node.body],
             )
+
+            # The body is emitted first: a parameter Zig never reads must be
+            # written `_`, and only the emitted body says which bindings it read.
+            uses_before = [self._identifier_uses.get(emitted, 0) for emitted in parameter_names]
+            outer_output = self.output
+            self.output = StringIO()
+            was_in_function = self._in_function
+            self._in_function = True
+            if node.body and (node.body.statements or []):
+                (yield ("_visit_block_inline", (node.body, [],)))
+            else:
+                self.output.write("{}\n")
+            self._in_function = was_in_function
+            body = self.output.getvalue()
+            self.output = outer_output
+            self._pop_scope()
+
+            rendered_params = [comptime_params] if comptime_params else []
+            for emitted, before, ptype in zip(parameter_names, uses_before, parameter_types):
+                used = emitted != "_" and self._identifier_uses.get(emitted, 0) != before
+                rendered_params.append(f"{self._quote_identifier(emitted) if used else '_'}: {ptype}")
+
+            prefix = "pub " if ((is_main and not self._io_streams_needed) or getattr(node, 'is_public', False)) else ""
+            self._write_indent()
+            self.output.write(
+                f"{prefix}fn {self._quote_identifier(emitted_name)}({', '.join(rendered_params)}) {return_type} "
+            )
+            self.output.write(body)
+
+            self._mutated_declarations = saved_mutated_declarations
+            self._used_identifiers = saved_used
+            self._untyped_consts = saved_untyped_consts
+            self._generic_env = saved_generic_env
+            return
+
+        if action == "_visit_block":
+            node, = payload
+            self._write_indent()
+            (yield ("_visit_block_inline", (node, None,)))
+            return
+
+        if action == "_visit_block_inline":
+            node, prelude_lines, = payload
+            self.output.write("{\n")
+            self.indent()
+            self._push_scope()
+
+            for line in prelude_lines or []:
+                self._write_indent()
+                self.output.write(line)
+                self.output.write("\n")
+
+            # A nested function is callable in its whole block, so its hoisted
+            # name is bound before the first statement.
+            for stmt in (node.statements or []):
+                if stmt.kind == NodeKind.FUNCTION and stmt.name and id(stmt) in self._hoisted_names:
+                    self._rename_map[stmt.name] = self._hoisted_names[id(stmt)]
+
+            for stmt in (node.statements or []):
+                (yield ("visit", (stmt,)))
+
+            self._pop_scope()
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_visit_switch_block":
+            node, = payload
+            self.output.write("{\n")
+            self.indent()
+            self._push_scope()
+
+            for stmt in (node.statements or []):
+                (yield ("visit", (stmt,)))
+
+            self._pop_scope()
+            self.dedent()
+            self._write_indent()
+            self.output.write("},\n")
+            return
+
+        if action == "_visit_if_stmt":
+            node, = payload
+            self._write_indent()
+            cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
+            self.output.write(f"if ({cond}) ")
+
+            if node.then_stmt and node.then_stmt.kind == NodeKind.BLOCK:
+                (yield ("_visit_block_inline", (node.then_stmt, None,)))
+            elif node.then_stmt:
+                self.output.write("{\n")
+                self.indent()
+                self._push_scope()
+                (yield ("visit", (node.then_stmt,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+
+            if node.else_stmt:
+                # Remove trailing newline for else
+                buf = self.output.getvalue()
+                if buf.endswith("}\n"):
+                    self.output = StringIO()
+                    self.output.write(buf[:-1])  # Remove the trailing \n
+                    self.output.write(" else ")
+                else:
+                    self._write_indent()
+                    self.output.write("else ")
+
+                if node.else_stmt.kind == NodeKind.BLOCK:
+                    (yield ("_visit_block_inline", (node.else_stmt, None,)))
+                elif node.else_stmt.kind == NodeKind.IF_STMT:
+                    (yield ("_visit_else_chain", (node.else_stmt,)))
+                else:
+                    self.output.write("{\n")
+                    self.indent()
+                    self._push_scope()
+                    (yield ("visit", (node.else_stmt,)))
+                    self._pop_scope()
+                    self.dedent()
+                    self._write_indent()
+                    self.output.write("}\n")
+            return
+
+        if action == "_visit_else_chain":
+            node, = payload
+            current = node
+            while current is not None:
+                if current.kind == NodeKind.IF_STMT:
+                    cond = self._strip_condition_parens(self._emit_expr(current.condition), current.condition)
+                    self.output.write(f"if ({cond}) ")
+                    if current.then_stmt and current.then_stmt.kind == NodeKind.BLOCK:
+                        (yield ("_visit_block_inline", (current.then_stmt, None,)))
+                    elif current.then_stmt:
+                        self.output.write("{\n")
+                        self.indent()
+                        self._push_scope()
+                        (yield ("visit", (current.then_stmt,)))
+                        self._pop_scope()
+                        self.dedent()
+                        self._write_indent()
+                        self.output.write("}\n")
+                    if current.else_stmt:
+                        buf = self.output.getvalue()
+                        if buf.endswith("}\n"):
+                            self.output = StringIO()
+                            self.output.write(buf[:-1])
+                            self.output.write(" else ")
+                        current = current.else_stmt
+                        continue
+                    break
+                elif current.kind == NodeKind.BLOCK:
+                    (yield ("_visit_block_inline", (current, None,)))
+                    break
+                else:
+                    self.output.write("{\n")
+                    self.indent()
+                    self._push_scope()
+                    (yield ("visit", (current,)))
+                    self._pop_scope()
+                    self.dedent()
+                    self._write_indent()
+                    self.output.write("}\n")
+                    break
+            return
+
+        if action == "_visit_while":
+            node, = payload
+            self._write_indent()
+            emitted_label = self._loop_label_name(node)
+            if emitted_label:
+                self.output.write(f"{emitted_label}: ")
+            if node.condition:
+                cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
+                self.output.write(f"while ({cond}) ")
+            else:
+                self.output.write("while (true) ")
+
+            self._loop_label_stack.append((node.label, emitted_label))
+            if node.body and node.body.kind == NodeKind.BLOCK:
+                (yield ("_visit_block_inline", (node.body, None,)))
+            elif node.body:
+                self.output.write("{\n")
+                self.indent()
+                self._push_scope()
+                (yield ("visit", (node.body,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+            self._loop_label_stack.pop()
+            return
+
+        if action == "_visit_for":
+            node, = payload
+            self._write_indent()
+
+            # Infinite loop: for { ... }
+            if not node.init and not node.condition and not node.update:
+                emitted_label = self._loop_label_name(node)
+                if emitted_label:
+                    self.output.write(f"{emitted_label}: ")
+                self.output.write("while (true) ")
+                self._loop_label_stack.append((node.label, emitted_label))
+                if node.body and node.body.kind == NodeKind.BLOCK:
+                    (yield ("_visit_block_inline", (node.body, None,)))
+                elif node.body:
+                    self.output.write("{\n")
+                    self.indent()
+                    self._push_scope()
+                    (yield ("visit", (node.body,)))
+                    self._pop_scope()
+                    self.dedent()
+                    self._write_indent()
+                    self.output.write("}\n")
+                self._loop_label_stack.pop()
+                return
+
+            # C-style for: for i := 0; i < 10; i += 1 { ... }
+            # Zig doesn't have C-style for. Use a block with while + continue expression.
+            self.output.write("{\n")
+            self.indent()
+
+            self._push_scope()
+            # Init statement
+            if node.init:
+                (yield ("visit", (node.init,)))
+
+            # While with continue expression
+            self._write_indent()
+            emitted_label = self._loop_label_name(node)
+            if emitted_label:
+                self.output.write(f"{emitted_label}: ")
+            if node.condition:
+                cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
+                self.output.write(f"while ({cond})")
+            else:
+                self.output.write("while (true)")
+
+            # Continue expression (update)
+            if node.update:
+                update_str = self._emit_statement_as_expr(node.update)
+                self.output.write(f" : ({update_str})")
+
+            self.output.write(" ")
+
+            self._loop_label_stack.append((node.label, emitted_label))
+            if node.body and node.body.kind == NodeKind.BLOCK:
+                (yield ("_visit_block_inline", (node.body, None,)))
+            elif node.body:
+                self.output.write("{\n")
+                self.indent()
+                self._push_scope()
+                (yield ("visit", (node.body,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+            self._loop_label_stack.pop()
+            self._pop_scope()
+
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_visit_for_in":
+            node, = payload
+            self._write_indent()
+            iterable = self._emit_expr(node.iterable)
+            if node.iterable is not None and node.iterable.kind == NodeKind.ARRAY_INIT:
+                iterable = self._typed_array_literal(node.iterable, iterable)
+            self._push_scope()
+            iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
+            before = {iter_name: self._identifier_uses.get(iter_name, 0)}
+            emitted_label = self._loop_label_name(node)
+            outer_output = self.output
+            self.output = StringIO()
+
+            self._loop_label_stack.append((node.label, emitted_label))
+            if node.body and node.body.kind == NodeKind.BLOCK:
+                (yield ("_visit_block_inline", (node.body, None,)))
+            elif node.body:
+                self.output.write("{\n")
+                self.indent()
+                self._push_scope()
+                (yield ("visit", (node.body,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+            self._loop_label_stack.pop()
+            body = self.output.getvalue()
+            self.output = outer_output
+            self._pop_scope()
+            if self._identifier_uses.get(iter_name, 0) == before.get(iter_name, 0):
+                iter_name = "_"
+            if emitted_label:
+                self.output.write(f"{emitted_label}: ")
+            self.output.write(f"for ({iterable}) |{self._quote_identifier(iter_name)}| ")
+            self.output.write(body)
+            return
+
+        if action == "_visit_for_in_indexed":
+            node, = payload
+            self._write_indent()
+            iterable = self._emit_expr(node.iterable)
+            if node.iterable is not None and node.iterable.kind == NodeKind.ARRAY_INIT:
+                iterable = self._typed_array_literal(node.iterable, iterable)
+            self._push_scope()
+            iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
+            index_name = self._declare_var_in_scope(node.index_var) if node.index_var else "_"
+            before = {name: self._identifier_uses.get(name, 0) for name in (iter_name, index_name)}
+            emitted_label = self._loop_label_name(node)
+            outer_output = self.output
+            self.output = StringIO()
+
+            self._loop_label_stack.append((node.label, emitted_label))
+            if node.body and node.body.kind == NodeKind.BLOCK:
+                (yield ("_visit_block_inline", (node.body, None,)))
+            elif node.body:
+                self.output.write("{\n")
+                self.indent()
+                self._push_scope()
+                (yield ("visit", (node.body,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+            self._loop_label_stack.pop()
+            body = self.output.getvalue()
+            self.output = outer_output
+            self._pop_scope()
+            if self._identifier_uses.get(iter_name, 0) == before.get(iter_name, 0):
+                iter_name = "_"
+            if self._identifier_uses.get(index_name, 0) == before.get(index_name, 0):
+                index_name = "_"
+            if emitted_label:
+                self.output.write(f"{emitted_label}: ")
+            if index_name == "_":
+                self.output.write(f"for ({iterable}) |{self._quote_identifier(iter_name)}| ")
+            else:
+                self.output.write(f"for ({iterable}, 0..) |{self._quote_identifier(iter_name)}, {self._quote_identifier(index_name)}| ")
+            self.output.write(body)
+            return
+
+        if action == "_visit_match":
+            node, = payload
+            tags = self._match_union_tags(node)
+            if tags is None:
+                if self._match_has_fall(node):
+                    (yield ("_visit_match_with_fall", (node,)))
+                    return
+                if self._match_has_capture(node) or not self._match_fits_switch(node):
+                    (yield ("_visit_match_as_if_chain", (node,)))
+                    return
+                arms = list(node.cases or [])
+                wildcard = None
+                exhaustive = self._match_covers_closed_type(node)
+            else:
+                # Tag matches always take the switch: only a prong can bind a
+                # payload (`.tag(bind)` → `.tag => |bind|`). A `fall` inside a tag
+                # arm reaches `_visit_fall` with no fall context and fails there.
+                arms, wildcard, exhaustive = self._tag_match_arms(node, tags)
+
+            # The A7 body for values no arm names: `case _:` or `else:`.
+            rest: Optional[list[ASTNode]] = None
+            if wildcard is not None:
+                rest = self._case_statements(wildcard)
+            elif node.else_case:
+                rest = self._else_case_statements(node.else_case)
+                if len(rest) == 1 and rest[0].kind == NodeKind.BLOCK:
+                    # `else: { ... }` parses as one block; the prong supplies the braces.
+                    rest = list(rest[0].statements or [])
+
+            if exhaustive and rest is not None:
+                # Zig rejects an `else` prong once every value has a prong. The
+                # body stays in a dead block so the names it uses still count as
+                # used and mutated for Zig's unused-variable checks.
+                self._write_indent()
+                self.output.write("if (false) {\n")
+                self.indent()
+                self._push_scope()
+                for stmt in rest:
+                    (yield ("visit", (stmt,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}\n")
+                rest = None
+
+            self._write_indent()
+            expr = self._emit_expr(node.expression)
+            if tags is not None:
+                expr = self._tag_scrutinee(node, expr)
+            self.output.write(f"switch ({expr}) {{\n")
+            self.indent()
+
+            for case in arms:
+                binding = self._match_tag_binding(case) if tags is not None else None
+                patterns = ", ".join(self._emit_pattern(pattern) for pattern in (case.patterns or []))
+                self._write_indent()
+                body = getattr(case, "statement", None)
+                if binding is None and body is not None and body.kind == NodeKind.BLOCK:
+                    self.output.write(f"{patterns} => ")
+                    (yield ("_visit_switch_block", (body,)))
+                    continue
+                self._push_scope()
+                if binding is not None:
+                    # Declared before it is written so a local, parameter or
+                    # function of the same name renames the capture.
+                    declared = self._declare_var_in_scope(binding)
+                    self.output.write(f"{patterns} => |{self._quote_identifier(declared)}| {{\n")
+                    self.indent()
+                    self._write_indent()
+                    self.output.write(self._pending_discard(declared) + "\n")
+                else:
+                    self.output.write(f"{patterns} => {{\n")
+                    self.indent()
+                for stmt in self._case_statements(case):
+                    (yield ("visit", (stmt,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("},\n")
+
+            if rest is not None:
+                self._write_indent()
+                self.output.write("else => {\n")
+                self.indent()
+                self._push_scope()
+                for stmt in rest:
+                    (yield ("visit", (stmt,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("},\n")
+            elif tags is None and not exhaustive:
+                # A statement match may handle no arm; the switch must still be
+                # exhaustive for Zig. The validator rejects a tag match that
+                # misses a tag, so a tag switch never needs this prong.
+                self._write_indent()
+                self.output.write("else => {},\n")
+
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_visit_match_as_if_chain":
+            node, = payload
+            scrutinee = self._unique_name("__a7_match")
+            expr = self._emit_expr(node.expression)
+            by_content = self._is_string_type(self._type_map.get(id(node.expression)))
+
+            self._write_indent()
+            self.output.write("{\n")
+            self.indent()
+            self._write_indent()
+            self.output.write(f"const {scrutinee} = {expr};\n")
+
+            emitted_branch = False
+            emitted_unconditional = False
+            for case in node.cases or []:
+                if emitted_unconditional:
+                    continue
+                condition = self._emit_match_condition_zig(scrutinee, case.patterns or [], by_content)
+                if emitted_branch:
+                    self.output.write(" else ")
+                else:
+                    self._write_indent()
+                if condition == "true":
+                    self.output.write("{\n")
+                    emitted_unconditional = True
+                else:
+                    self.output.write(f"if ({condition}) {{\n")
+                self.indent()
+                self._push_scope()
+                self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
+                stmt = getattr(case, "statement", None)
+                if stmt:
+                    if stmt.kind == NodeKind.BLOCK:
+                        for inner in stmt.statements or []:
+                            (yield ("visit", (inner,)))
+                    else:
+                        (yield ("visit", (stmt,)))
+                else:
+                    for inner in case.statements or []:
+                        (yield ("visit", (inner,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}")
+                emitted_branch = True
+
+            if node.else_case and not emitted_unconditional:
+                if emitted_branch:
+                    self.output.write(" else ")
+                else:
+                    self._write_indent()
+                self.output.write("{\n")
+                self.indent()
+                self._push_scope()
+                for stmt in self._else_case_statements(node.else_case):
+                    (yield ("visit", (stmt,)))
+                self._pop_scope()
+                self.dedent()
+                self._write_indent()
+                self.output.write("}")
+
+            if emitted_branch or node.else_case:
+                self.output.write("\n")
+
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_visit_match_with_fall":
+            node, = payload
+            scrutinee = self._unique_name("__a7_match")
+            done_flag = self._unique_name("__a7_match_done")
+            fall_flag = self._unique_name("__a7_match_fall")
+            expr = self._emit_expr(node.expression)
+            by_content = self._is_string_type(self._type_map.get(id(node.expression)))
+
+            self._write_indent()
+            self.output.write("{\n")
+            self.indent()
+            self._write_indent()
+            self.output.write(f"const {scrutinee} = {expr};\n")
+            self._write_indent()
+            self.output.write(f"var {done_flag}: bool = false;\n")
+            self._write_indent()
+            self.output.write(f"var {fall_flag}: bool = false;\n")
+
+            case_index = 0
+            for case in (node.cases or []):
+                condition = self._emit_match_condition_zig(scrutinee, case.patterns or [], by_content)
+                self._write_indent()
+                self.output.write(f"if (!{done_flag} and !{fall_flag} and ({condition})) {fall_flag} = true;\n")
+                (yield ("_emit_fall_case_body", (case, scrutinee, fall_flag, done_flag, case_index,)))
+                case_index += 1
+
+            if node.else_case:
+                self._write_indent()
+                self.output.write(f"if (!{done_flag} and !{fall_flag}) {fall_flag} = true;\n")
+                (yield ("_emit_fall_else_body", (node.else_case, fall_flag, done_flag, case_index,)))
+
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_emit_fall_case_body":
+            case, scrutinee, fall_flag, done_flag, case_index, = payload
+            stmt = getattr(case, "statement", None)
+            body_has_fall = self._case_has_direct_fall(case)
+            end_label = self._unique_name(f"__a7_match_case_{case_index}") if body_has_fall else ""
+            self._write_indent()
+            if end_label:
+                self.output.write(f"if ({fall_flag}) {end_label}: {{\n")
+            else:
+                self.output.write(f"if ({fall_flag}) {{\n")
+            self.indent()
+            self._push_scope()
+            self._write_indent()
+            self.output.write(f"{fall_flag} = false;\n")
+            self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
+
+            if end_label:
+                self._fall_context_stack.append((fall_flag, end_label))
+            try:
+                if stmt:
+                    if stmt.kind == NodeKind.BLOCK:
+                        self._write_indent()
+                        (yield ("_visit_block_inline", (stmt, None,)))
+                    else:
+                        (yield ("visit", (stmt,)))
+                else:
+                    for stmt in case.statements or []:
+                        (yield ("visit", (stmt,)))
+            finally:
+                if end_label:
+                    self._fall_context_stack.pop()
+
+            self._write_indent()
+            self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+            self._pop_scope()
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_emit_fall_else_body":
+            else_case, fall_flag, done_flag, case_index, = payload
+            self._write_indent()
+            self.output.write(f"if ({fall_flag}) {{\n")
+            self.indent()
+            self._push_scope()
+            self._write_indent()
+            self.output.write(f"{fall_flag} = false;\n")
+
+            for stmt in self._else_case_statements(else_case):
+                (yield ("visit", (stmt,)))
+
+            self._write_indent()
+            self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
+            self._pop_scope()
+            self.dedent()
+            self._write_indent()
+            self.output.write("}\n")
+            return
+
+        if action == "_visit_defer":
+            node, = payload
+            if node.statement:
+                if node.statement.kind == NodeKind.BLOCK:
+                    self._write_indent()
+                    self.output.write("defer ")
+                    (yield ("_visit_block_inline", (node.statement, None,)))
+                else:
+                    if node.statement.kind in (NodeKind.RETURN, NodeKind.BREAK, NodeKind.CONTINUE, NodeKind.FALL):
+                        # Zig rejects control flow that leaves a defer.
+                        raise CodegenError(
+                            f"Zig backend: '{node.statement.kind.name}' cannot be deferred",
+                            node.statement.span or node.span,
+                        )
+                    # One statement emitter for deferred and plain statements:
+                    # `visit` raises a codegen error on a kind it does not know.
+                    self._write_indent()
+                    self.output.write("defer {\n")
+                    self.indent()
+                    self._push_scope()
+                    (yield ("visit", (node.statement,)))
+                    self._pop_scope()
+                    self.dedent()
+                    self._write_indent()
+                    self.output.write("}\n")
+            elif node.expression:
+                self._write_indent()
+                self.output.write("defer ")
+                expr_str = self._emit_expr(node.expression)
+                if not self._expression_returns_void(node.expression):
+                    expr_str = "_ = " + expr_str
+                self.output.write(f"{expr_str};\n")
+            return
+
+    def visit(self, node: ASTNode) -> None:
+        """Visit an AST node and generate Zig code."""
+        self._statement_work("visit", (node,))
 
     # === Top-level declarations ===
 
     def _visit_program(self, node: ASTNode) -> None:
         """Visit program root."""
-        for decl in (node.declarations or []):
-            self.visit(decl)
-            self.output.write("\n")
+        self._statement_work("_visit_program", (node,))
 
     def _visit_function(self, node: ASTNode) -> None:
         """Visit function declaration."""
-        name = node.name or "anonymous"
-        emit_prefix = getattr(node, "module_emit_prefix", "")
-
-        is_main = (name == "main" and not emit_prefix and id(node) not in self._hoisted_names)
-        if id(node) in self._hoisted_names:
-            emitted_name = self._hoisted_names[id(node)]
-        elif is_main and self._io_streams_needed:
-            emitted_name = "__a7_user_main"
-        elif emit_prefix:
-            emitted_name = f"{emit_prefix}{name}"
-        else:
-            emitted_name = self._global_renames.get(name, name)
-
-        saved_mutated_declarations = self._mutated_declarations
-        saved_used = self._used_identifiers
-        saved_untyped_consts = self._untyped_consts
-        saved_generic_env = self._generic_env
-        saved_rename_map = self._rename_map
-        saved_snapshots = self._rename_snapshots
-        self._untyped_consts = dict(saved_untyped_consts)
-        self._mutated_declarations = self._collect_mutated_declarations(node.body) if node.body else set()
-        self._used_identifiers = self._collect_used_identifiers(node.body) if node.body else set()
-
-        # A nested function is emitted at file scope, before its parent, under
-        # a name no user declaration can spell. It sees no local of the parent.
-        nested_functions = self._collect_nested_functions(node.body) if node.body else []
-        if nested_functions:
-            outer_names = self._declared_names(node)
-            for nested in nested_functions:
-                self._reject_captures(nested, outer_names)
-                self._hoisted_names[id(nested)] = self._unique_name(f"__a7_fn_{nested.name or 'anonymous'}")
-            # Nested functions call each other by their hoisted names.
-            self._rename_map = dict(saved_rename_map)
-            self._rename_map.update(
-                (nested.name, self._hoisted_names[id(nested)]) for nested in nested_functions if nested.name
-            )
-            self._rename_snapshots = []
-            for nested in nested_functions:
-                self._visit_function(nested)
-                self.output.write("\n")
-            self._rename_map = saved_rename_map
-            self._rename_snapshots = saved_snapshots
-
-        # Generic parameters: the declared list, then every `$T` the
-        # signature names, in the order `_generic_call_args` passes them.
-        generic_params = [param.name for param in (node.generic_params or []) if param.name]
-        discovered: list[str] = []
-        for param in (node.parameters or []):
-            self._collect_generic_type_names(param.param_type, discovered, signature_order=True)
-        self._collect_generic_type_names(node.return_type, discovered, signature_order=True)
-        generic_params.extend(n for n in dict.fromkeys(discovered) if n not in generic_params)
-        self._generic_env = set(generic_params)
-
-        self._push_scope()
-        params = node.parameters or []
-        for i, param in enumerate(params):
-            if param.param_type is None:
-                raise CodegenError(
-                    f"Zig backend: parameter '{param.name or i}' of '{name}' has no type",
-                    param.span or node.span,
-                )
-        parameter_names = [self._declare_var_in_scope(p.name) if p.name else "_" for p in params]
-        parameter_types = [self._emit_type_node(p.param_type) for p in params]
-        # A function without a return type returns nothing.
-        return_type = self._emit_type_node(node.return_type) if node.return_type else "void"
-        comptime_params = self._comptime_param_list(
-            node, generic_params,
-            [p.param_type for p in params] + [node.return_type, node.body],
-        )
-
-        # The body is emitted first: a parameter Zig never reads must be
-        # written `_`, and only the emitted body says which bindings it read.
-        uses_before = [self._identifier_uses.get(emitted, 0) for emitted in parameter_names]
-        outer_output = self.output
-        self.output = StringIO()
-        was_in_function = self._in_function
-        self._in_function = True
-        if node.body and (node.body.statements or []):
-            self._visit_block_inline(node.body, prelude_lines=[])
-        else:
-            self.output.write("{}\n")
-        self._in_function = was_in_function
-        body = self.output.getvalue()
-        self.output = outer_output
-        self._pop_scope()
-
-        rendered_params = [comptime_params] if comptime_params else []
-        for emitted, before, ptype in zip(parameter_names, uses_before, parameter_types):
-            used = emitted != "_" and self._identifier_uses.get(emitted, 0) != before
-            rendered_params.append(f"{self._quote_identifier(emitted) if used else '_'}: {ptype}")
-
-        prefix = "pub " if ((is_main and not self._io_streams_needed) or getattr(node, 'is_public', False)) else ""
-        self._write_indent()
-        self.output.write(
-            f"{prefix}fn {self._quote_identifier(emitted_name)}({', '.join(rendered_params)}) {return_type} "
-        )
-        self.output.write(body)
-
-        self._mutated_declarations = saved_mutated_declarations
-        self._used_identifiers = saved_used
-        self._untyped_consts = saved_untyped_consts
-        self._generic_env = saved_generic_env
+        self._statement_work("_visit_function", (node,))
 
     def _visit_struct(self, node: ASTNode) -> None:
         """Visit struct declaration."""
@@ -1290,307 +1939,39 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _visit_block(self, node: ASTNode) -> None:
         """Visit block statement (as a standalone statement)."""
-        self._write_indent()
-        self._visit_block_inline(node)
+        self._statement_work("_visit_block", (node,))
 
     def _visit_block_inline(self, node: ASTNode, prelude_lines: Optional[list[str]] = None) -> None:
         """Visit block and output braces + indented contents."""
-        self.output.write("{\n")
-        self.indent()
-        self._push_scope()
-
-        for line in prelude_lines or []:
-            self._write_indent()
-            self.output.write(line)
-            self.output.write("\n")
-
-        # A nested function is callable in its whole block, so its hoisted
-        # name is bound before the first statement.
-        for stmt in (node.statements or []):
-            if stmt.kind == NodeKind.FUNCTION and stmt.name and id(stmt) in self._hoisted_names:
-                self._rename_map[stmt.name] = self._hoisted_names[id(stmt)]
-
-        for stmt in (node.statements or []):
-            self.visit(stmt)
-
-        self._pop_scope()
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_visit_block_inline", (node, prelude_lines,))
 
     def _visit_switch_block(self, node: ASTNode) -> None:
         """Visit a block inside a switch prong (needs trailing comma)."""
-        self.output.write("{\n")
-        self.indent()
-        self._push_scope()
-
-        for stmt in (node.statements or []):
-            self.visit(stmt)
-
-        self._pop_scope()
-        self.dedent()
-        self._write_indent()
-        self.output.write("},\n")
+        self._statement_work("_visit_switch_block", (node,))
 
     def _visit_if_stmt(self, node: ASTNode) -> None:
         """Visit if statement."""
-        self._write_indent()
-        cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
-        self.output.write(f"if ({cond}) ")
-
-        if node.then_stmt and node.then_stmt.kind == NodeKind.BLOCK:
-            self._visit_block_inline(node.then_stmt)
-        elif node.then_stmt:
-            self.output.write("{\n")
-            self.indent()
-            self._push_scope()
-            self.visit(node.then_stmt)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}\n")
-
-        if node.else_stmt:
-            # Remove trailing newline for else
-            buf = self.output.getvalue()
-            if buf.endswith("}\n"):
-                self.output = StringIO()
-                self.output.write(buf[:-1])  # Remove the trailing \n
-                self.output.write(" else ")
-            else:
-                self._write_indent()
-                self.output.write("else ")
-
-            if node.else_stmt.kind == NodeKind.BLOCK:
-                self._visit_block_inline(node.else_stmt)
-            elif node.else_stmt.kind == NodeKind.IF_STMT:
-                self._visit_else_chain(node.else_stmt)
-            else:
-                self.output.write("{\n")
-                self.indent()
-                self._push_scope()
-                self.visit(node.else_stmt)
-                self._pop_scope()
-                self.dedent()
-                self._write_indent()
-                self.output.write("}\n")
+        self._statement_work("_visit_if_stmt", (node,))
 
     def _visit_else_chain(self, node: ASTNode) -> None:
         """Handle else / else if chains. Iterative to avoid stack overflow."""
-        current = node
-        while current is not None:
-            if current.kind == NodeKind.IF_STMT:
-                cond = self._strip_condition_parens(self._emit_expr(current.condition), current.condition)
-                self.output.write(f"if ({cond}) ")
-                if current.then_stmt and current.then_stmt.kind == NodeKind.BLOCK:
-                    self._visit_block_inline(current.then_stmt)
-                elif current.then_stmt:
-                    self.output.write("{\n")
-                    self.indent()
-                    self._push_scope()
-                    self.visit(current.then_stmt)
-                    self._pop_scope()
-                    self.dedent()
-                    self._write_indent()
-                    self.output.write("}\n")
-                if current.else_stmt:
-                    buf = self.output.getvalue()
-                    if buf.endswith("}\n"):
-                        self.output = StringIO()
-                        self.output.write(buf[:-1])
-                        self.output.write(" else ")
-                    current = current.else_stmt
-                    continue
-                break
-            elif current.kind == NodeKind.BLOCK:
-                self._visit_block_inline(current)
-                break
-            else:
-                self.output.write("{\n")
-                self.indent()
-                self._push_scope()
-                self.visit(current)
-                self._pop_scope()
-                self.dedent()
-                self._write_indent()
-                self.output.write("}\n")
-                break
+        self._statement_work("_visit_else_chain", (node,))
 
     def _visit_while(self, node: ASTNode) -> None:
         """Visit while statement."""
-        self._write_indent()
-        emitted_label = self._loop_label_name(node)
-        if emitted_label:
-            self.output.write(f"{emitted_label}: ")
-        if node.condition:
-            cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
-            self.output.write(f"while ({cond}) ")
-        else:
-            self.output.write("while (true) ")
-
-        self._loop_label_stack.append((node.label, emitted_label))
-        if node.body and node.body.kind == NodeKind.BLOCK:
-            self._visit_block_inline(node.body)
-        elif node.body:
-            self.output.write("{\n")
-            self.indent()
-            self._push_scope()
-            self.visit(node.body)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}\n")
-        self._loop_label_stack.pop()
+        self._statement_work("_visit_while", (node,))
 
     def _visit_for(self, node: ASTNode) -> None:
         """Visit for statement (C-style or infinite)."""
-        self._write_indent()
-
-        # Infinite loop: for { ... }
-        if not node.init and not node.condition and not node.update:
-            emitted_label = self._loop_label_name(node)
-            if emitted_label:
-                self.output.write(f"{emitted_label}: ")
-            self.output.write("while (true) ")
-            self._loop_label_stack.append((node.label, emitted_label))
-            if node.body and node.body.kind == NodeKind.BLOCK:
-                self._visit_block_inline(node.body)
-            elif node.body:
-                self.output.write("{\n")
-                self.indent()
-                self._push_scope()
-                self.visit(node.body)
-                self._pop_scope()
-                self.dedent()
-                self._write_indent()
-                self.output.write("}\n")
-            self._loop_label_stack.pop()
-            return
-
-        # C-style for: for i := 0; i < 10; i += 1 { ... }
-        # Zig doesn't have C-style for. Use a block with while + continue expression.
-        self.output.write("{\n")
-        self.indent()
-
-        self._push_scope()
-        # Init statement
-        if node.init:
-            self.visit(node.init)
-
-        # While with continue expression
-        self._write_indent()
-        emitted_label = self._loop_label_name(node)
-        if emitted_label:
-            self.output.write(f"{emitted_label}: ")
-        if node.condition:
-            cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
-            self.output.write(f"while ({cond})")
-        else:
-            self.output.write("while (true)")
-
-        # Continue expression (update)
-        if node.update:
-            update_str = self._emit_statement_as_expr(node.update)
-            self.output.write(f" : ({update_str})")
-
-        self.output.write(" ")
-
-        self._loop_label_stack.append((node.label, emitted_label))
-        if node.body and node.body.kind == NodeKind.BLOCK:
-            self._visit_block_inline(node.body)
-        elif node.body:
-            self.output.write("{\n")
-            self.indent()
-            self._push_scope()
-            self.visit(node.body)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}\n")
-        self._loop_label_stack.pop()
-        self._pop_scope()
-
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_visit_for", (node,))
 
     def _visit_for_in(self, node: ASTNode) -> None:
         """Visit for-in loop: for val in arr → for (arr) |val|"""
-        self._write_indent()
-        iterable = self._emit_expr(node.iterable)
-        if node.iterable is not None and node.iterable.kind == NodeKind.ARRAY_INIT:
-            iterable = self._typed_array_literal(node.iterable, iterable)
-        self._push_scope()
-        iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
-        before = {iter_name: self._identifier_uses.get(iter_name, 0)}
-        emitted_label = self._loop_label_name(node)
-        outer_output = self.output
-        self.output = StringIO()
-
-        self._loop_label_stack.append((node.label, emitted_label))
-        if node.body and node.body.kind == NodeKind.BLOCK:
-            self._visit_block_inline(node.body)
-        elif node.body:
-            self.output.write("{\n")
-            self.indent()
-            self._push_scope()
-            self.visit(node.body)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}\n")
-        self._loop_label_stack.pop()
-        body = self.output.getvalue()
-        self.output = outer_output
-        self._pop_scope()
-        if self._identifier_uses.get(iter_name, 0) == before.get(iter_name, 0):
-            iter_name = "_"
-        if emitted_label:
-            self.output.write(f"{emitted_label}: ")
-        self.output.write(f"for ({iterable}) |{self._quote_identifier(iter_name)}| ")
-        self.output.write(body)
+        self._statement_work("_visit_for_in", (node,))
 
     def _visit_for_in_indexed(self, node: ASTNode) -> None:
         """Visit indexed for-in: for i, val in arr → for (arr, 0..) |val, i|"""
-        self._write_indent()
-        iterable = self._emit_expr(node.iterable)
-        if node.iterable is not None and node.iterable.kind == NodeKind.ARRAY_INIT:
-            iterable = self._typed_array_literal(node.iterable, iterable)
-        self._push_scope()
-        iter_name = self._declare_var_in_scope(node.iterator) if node.iterator else "_"
-        index_name = self._declare_var_in_scope(node.index_var) if node.index_var else "_"
-        before = {name: self._identifier_uses.get(name, 0) for name in (iter_name, index_name)}
-        emitted_label = self._loop_label_name(node)
-        outer_output = self.output
-        self.output = StringIO()
-
-        self._loop_label_stack.append((node.label, emitted_label))
-        if node.body and node.body.kind == NodeKind.BLOCK:
-            self._visit_block_inline(node.body)
-        elif node.body:
-            self.output.write("{\n")
-            self.indent()
-            self._push_scope()
-            self.visit(node.body)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}\n")
-        self._loop_label_stack.pop()
-        body = self.output.getvalue()
-        self.output = outer_output
-        self._pop_scope()
-        if self._identifier_uses.get(iter_name, 0) == before.get(iter_name, 0):
-            iter_name = "_"
-        if self._identifier_uses.get(index_name, 0) == before.get(index_name, 0):
-            index_name = "_"
-        if emitted_label:
-            self.output.write(f"{emitted_label}: ")
-        if index_name == "_":
-            self.output.write(f"for ({iterable}) |{self._quote_identifier(iter_name)}| ")
-        else:
-            self.output.write(f"for ({iterable}, 0..) |{self._quote_identifier(iter_name)}, {self._quote_identifier(index_name)}| ")
-        self.output.write(body)
+        self._statement_work("_visit_for_in_indexed", (node,))
 
     def _match_has_tag_patterns(self, node: ASTNode) -> bool:
         """Return True when a match tests union tags with leading-dot patterns."""
@@ -1676,208 +2057,15 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _visit_match(self, node: ASTNode) -> None:
         """Visit match statement → Zig switch, or an if-chain when no switch fits."""
-        tags = self._match_union_tags(node)
-        if tags is None:
-            if self._match_has_fall(node):
-                self._visit_match_with_fall(node)
-                return
-            if self._match_has_capture(node) or not self._match_fits_switch(node):
-                self._visit_match_as_if_chain(node)
-                return
-            arms = list(node.cases or [])
-            wildcard = None
-            exhaustive = self._match_covers_closed_type(node)
-        else:
-            # Tag matches always take the switch: only a prong can bind a
-            # payload (`.tag(bind)` → `.tag => |bind|`). A `fall` inside a tag
-            # arm reaches `_visit_fall` with no fall context and fails there.
-            arms, wildcard, exhaustive = self._tag_match_arms(node, tags)
-
-        # The A7 body for values no arm names: `case _:` or `else:`.
-        rest: Optional[list[ASTNode]] = None
-        if wildcard is not None:
-            rest = self._case_statements(wildcard)
-        elif node.else_case:
-            rest = self._else_case_statements(node.else_case)
-            if len(rest) == 1 and rest[0].kind == NodeKind.BLOCK:
-                # `else: { ... }` parses as one block; the prong supplies the braces.
-                rest = list(rest[0].statements or [])
-
-        if exhaustive and rest is not None:
-            # Zig rejects an `else` prong once every value has a prong. The
-            # body stays in a dead block so the names it uses still count as
-            # used and mutated for Zig's unused-variable checks.
-            self._write_indent()
-            self.output.write("if (false) {\n")
-            self.indent()
-            self._push_scope()
-            for stmt in rest:
-                self.visit(stmt)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}\n")
-            rest = None
-
-        self._write_indent()
-        expr = self._emit_expr(node.expression)
-        if tags is not None:
-            expr = self._tag_scrutinee(node, expr)
-        self.output.write(f"switch ({expr}) {{\n")
-        self.indent()
-
-        for case in arms:
-            binding = self._match_tag_binding(case) if tags is not None else None
-            patterns = ", ".join(self._emit_pattern(pattern) for pattern in (case.patterns or []))
-            self._write_indent()
-            body = getattr(case, "statement", None)
-            if binding is None and body is not None and body.kind == NodeKind.BLOCK:
-                self.output.write(f"{patterns} => ")
-                self._visit_switch_block(body)
-                continue
-            self._push_scope()
-            if binding is not None:
-                # Declared before it is written so a local, parameter or
-                # function of the same name renames the capture.
-                declared = self._declare_var_in_scope(binding)
-                self.output.write(f"{patterns} => |{self._quote_identifier(declared)}| {{\n")
-                self.indent()
-                self._write_indent()
-                self.output.write(self._pending_discard(declared) + "\n")
-            else:
-                self.output.write(f"{patterns} => {{\n")
-                self.indent()
-            for stmt in self._case_statements(case):
-                self.visit(stmt)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("},\n")
-
-        if rest is not None:
-            self._write_indent()
-            self.output.write("else => {\n")
-            self.indent()
-            self._push_scope()
-            for stmt in rest:
-                self.visit(stmt)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("},\n")
-        elif tags is None and not exhaustive:
-            # A statement match may handle no arm; the switch must still be
-            # exhaustive for Zig. The validator rejects a tag match that
-            # misses a tag, so a tag switch never needs this prong.
-            self._write_indent()
-            self.output.write("else => {},\n")
-
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_visit_match", (node,))
 
     def _visit_match_as_if_chain(self, node: ASTNode) -> None:
         """Visit capture-bearing match statements as an if/else chain."""
-        scrutinee = self._unique_name("__a7_match")
-        expr = self._emit_expr(node.expression)
-        by_content = self._is_string_type(self._type_map.get(id(node.expression)))
-
-        self._write_indent()
-        self.output.write("{\n")
-        self.indent()
-        self._write_indent()
-        self.output.write(f"const {scrutinee} = {expr};\n")
-
-        emitted_branch = False
-        emitted_unconditional = False
-        for case in node.cases or []:
-            if emitted_unconditional:
-                continue
-            condition = self._emit_match_condition_zig(scrutinee, case.patterns or [], by_content)
-            if emitted_branch:
-                self.output.write(" else ")
-            else:
-                self._write_indent()
-            if condition == "true":
-                self.output.write("{\n")
-                emitted_unconditional = True
-            else:
-                self.output.write(f"if ({condition}) {{\n")
-            self.indent()
-            self._push_scope()
-            self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
-            stmt = getattr(case, "statement", None)
-            if stmt:
-                if stmt.kind == NodeKind.BLOCK:
-                    for inner in stmt.statements or []:
-                        self.visit(inner)
-                else:
-                    self.visit(stmt)
-            else:
-                for inner in case.statements or []:
-                    self.visit(inner)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}")
-            emitted_branch = True
-
-        if node.else_case and not emitted_unconditional:
-            if emitted_branch:
-                self.output.write(" else ")
-            else:
-                self._write_indent()
-            self.output.write("{\n")
-            self.indent()
-            self._push_scope()
-            for stmt in self._else_case_statements(node.else_case):
-                self.visit(stmt)
-            self._pop_scope()
-            self.dedent()
-            self._write_indent()
-            self.output.write("}")
-
-        if emitted_branch or node.else_case:
-            self.output.write("\n")
-
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_visit_match_as_if_chain", (node,))
 
     def _visit_match_with_fall(self, node: ASTNode) -> None:
         """Visit a fall-capable match statement as a sequential state machine."""
-        scrutinee = self._unique_name("__a7_match")
-        done_flag = self._unique_name("__a7_match_done")
-        fall_flag = self._unique_name("__a7_match_fall")
-        expr = self._emit_expr(node.expression)
-        by_content = self._is_string_type(self._type_map.get(id(node.expression)))
-
-        self._write_indent()
-        self.output.write("{\n")
-        self.indent()
-        self._write_indent()
-        self.output.write(f"const {scrutinee} = {expr};\n")
-        self._write_indent()
-        self.output.write(f"var {done_flag}: bool = false;\n")
-        self._write_indent()
-        self.output.write(f"var {fall_flag}: bool = false;\n")
-
-        case_index = 0
-        for case in (node.cases or []):
-            condition = self._emit_match_condition_zig(scrutinee, case.patterns or [], by_content)
-            self._write_indent()
-            self.output.write(f"if (!{done_flag} and !{fall_flag} and ({condition})) {fall_flag} = true;\n")
-            self._emit_fall_case_body(case, scrutinee, fall_flag, done_flag, case_index)
-            case_index += 1
-
-        if node.else_case:
-            self._write_indent()
-            self.output.write(f"if (!{done_flag} and !{fall_flag}) {fall_flag} = true;\n")
-            self._emit_fall_else_body(node.else_case, fall_flag, done_flag, case_index)
-
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_visit_match_with_fall", (node,))
 
     def _emit_fall_case_body(
         self,
@@ -1887,42 +2075,7 @@ class ZigCodeGenerator(CodeGenerator):
         done_flag: str,
         case_index: int,
     ) -> None:
-        stmt = getattr(case, "statement", None)
-        body_has_fall = self._case_has_direct_fall(case)
-        end_label = self._unique_name(f"__a7_match_case_{case_index}") if body_has_fall else ""
-        self._write_indent()
-        if end_label:
-            self.output.write(f"if ({fall_flag}) {end_label}: {{\n")
-        else:
-            self.output.write(f"if ({fall_flag}) {{\n")
-        self.indent()
-        self._push_scope()
-        self._write_indent()
-        self.output.write(f"{fall_flag} = false;\n")
-        self._emit_match_capture_bindings_zig(case.patterns or [], scrutinee)
-
-        if end_label:
-            self._fall_context_stack.append((fall_flag, end_label))
-        try:
-            if stmt:
-                if stmt.kind == NodeKind.BLOCK:
-                    self._write_indent()
-                    self._visit_block_inline(stmt)
-                else:
-                    self.visit(stmt)
-            else:
-                for stmt in case.statements or []:
-                    self.visit(stmt)
-        finally:
-            if end_label:
-                self._fall_context_stack.pop()
-
-        self._write_indent()
-        self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
-        self._pop_scope()
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_emit_fall_case_body", (case, scrutinee, fall_flag, done_flag, case_index,))
 
     def _emit_fall_else_body(
         self,
@@ -1931,22 +2084,7 @@ class ZigCodeGenerator(CodeGenerator):
         done_flag: str,
         case_index: int,
     ) -> None:
-        self._write_indent()
-        self.output.write(f"if ({fall_flag}) {{\n")
-        self.indent()
-        self._push_scope()
-        self._write_indent()
-        self.output.write(f"{fall_flag} = false;\n")
-
-        for stmt in self._else_case_statements(else_case):
-            self.visit(stmt)
-
-        self._write_indent()
-        self.output.write(f"if (!{fall_flag}) {done_flag} = true;\n")
-        self._pop_scope()
-        self.dedent()
-        self._write_indent()
-        self.output.write("}\n")
+        self._statement_work("_emit_fall_else_body", (else_case, fall_flag, done_flag, case_index,))
 
     def _visit_fall(self, node: ASTNode) -> None:
         if not self._fall_context_stack:
@@ -2109,36 +2247,7 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _visit_defer(self, node: ASTNode) -> None:
         """Visit defer statement."""
-        if node.statement:
-            if node.statement.kind == NodeKind.BLOCK:
-                self._write_indent()
-                self.output.write("defer ")
-                self._visit_block_inline(node.statement)
-            else:
-                if node.statement.kind in (NodeKind.RETURN, NodeKind.BREAK, NodeKind.CONTINUE, NodeKind.FALL):
-                    # Zig rejects control flow that leaves a defer.
-                    raise CodegenError(
-                        f"Zig backend: '{node.statement.kind.name}' cannot be deferred",
-                        node.statement.span or node.span,
-                    )
-                # One statement emitter for deferred and plain statements:
-                # `visit` raises a codegen error on a kind it does not know.
-                self._write_indent()
-                self.output.write("defer {\n")
-                self.indent()
-                self._push_scope()
-                self.visit(node.statement)
-                self._pop_scope()
-                self.dedent()
-                self._write_indent()
-                self.output.write("}\n")
-        elif node.expression:
-            self._write_indent()
-            self.output.write("defer ")
-            expr_str = self._emit_expr(node.expression)
-            if not self._expression_returns_void(node.expression):
-                expr_str = "_ = " + expr_str
-            self.output.write(f"{expr_str};\n")
+        self._statement_work("_visit_defer", (node,))
 
     def _visit_del(self, node: ASTNode) -> None:
         """Visit del statement → Zig allocator.destroy."""
@@ -2303,52 +2412,653 @@ class ZigCodeGenerator(CodeGenerator):
 
     # === Expression emission (returns string) ===
 
+    def _expression_work(self, action, payload):
+        pending = [self._expression_steps(action, payload)]
+        result = None
+        failure = None
+        try:
+            while pending:
+                try:
+                    if failure is None:
+                        action, payload = pending[-1].send(result)
+                    else:
+                        error, failure = failure, None
+                        action, payload = pending[-1].throw(error)
+                except StopIteration as finished:
+                    pending.pop()
+                    result = finished.value
+                    continue
+                except BaseException as error:
+                    pending.pop()
+                    if not pending:
+                        raise
+                    # A parent may translate a child's CodegenError.
+                    failure = error
+                    result = None
+                    continue
+                pending.append(self._expression_steps(action, payload))
+                result = None
+            return result
+        finally:
+            for frame in reversed(pending):
+                frame.close()
+
+    def _expression_steps(self, action, payload):
+        if action == "_emit_expr":
+            node, = payload
+            if node is None:
+                raise CodegenError("Zig backend: internal error: missing expression node")
+
+            kind = node.kind
+
+            if kind == NodeKind.LITERAL:
+                return self._emit_literal(node)
+            elif kind == NodeKind.IDENTIFIER:
+                return self._emit_identifier(node)
+            elif kind == NodeKind.BINARY:
+                return (yield ("_emit_binary_iterative", (node,)))
+            elif kind == NodeKind.UNARY:
+                return (yield ("_emit_unary", (node,)))
+            elif kind == NodeKind.CALL:
+                return (yield ("_emit_call", (node,)))
+            elif kind == NodeKind.INDEX:
+                return (yield ("_emit_index", (node,)))
+            elif kind == NodeKind.SLICE:
+                return (yield ("_emit_slice", (node,)))
+            elif kind == NodeKind.FIELD_ACCESS:
+                return (yield ("_emit_field_access", (node,)))
+            elif kind == NodeKind.ADDRESS_OF:
+                return (yield ("_emit_address_of", (node,)))
+            elif kind == NodeKind.DEREF:
+                return (yield ("_emit_deref", (node,)))
+            elif kind == NodeKind.CAST:
+                return (yield ("_emit_cast", (node,)))
+            elif kind == NodeKind.IF_EXPR:
+                return (yield ("_emit_if_expr", (node,)))
+            elif kind == NodeKind.MATCH_EXPR:
+                return (yield ("_emit_match_expr", (node,)))
+            elif kind == NodeKind.STRUCT_INIT:
+                return (yield ("_emit_struct_init", (node,)))
+            elif kind == NodeKind.ARRAY_INIT:
+                return (yield ("_emit_array_init", (node,)))
+            elif kind == NodeKind.NEW_EXPR:
+                return (yield ("_emit_new_expr", (node,)))
+            elif kind in (NodeKind.TYPE_PRIMITIVE, NodeKind.TYPE_IDENTIFIER,
+                          NodeKind.TYPE_ARRAY, NodeKind.TYPE_SLICE,
+                          NodeKind.TYPE_POINTER, NodeKind.TYPE_FUNCTION,
+                          NodeKind.TYPE_GENERIC):
+                return (yield ("_emit_type_node", (node, None,)))
+            else:
+                raise CodegenError(f"Zig backend: unsupported expression node '{kind.name}'", node.span)
+
+        if action == "_emit_binary_iterative":
+            root, = payload
+            rendered: dict[int, str] = {}
+            stack: list[tuple[ASTNode, bool]] = [(root, False)]
+            while stack:
+                node, ready = stack.pop()
+                if node.kind != NodeKind.BINARY:
+                    rendered[id(node)] = (yield ("_emit_expr", (node,)))
+                    continue
+                if ready:
+                    left = rendered.pop(id(node.left))
+                    right = rendered.pop(id(node.right))
+                    if (
+                        node.operator in self._ASSOC_CHAIN_OPS
+                        and node.left is not None
+                        and node.left.kind == NodeKind.BINARY
+                        and node.left.operator == node.operator
+                        and not isinstance(self._type_map.get(id(node)), ArrayType)
+                        and left.startswith("(")
+                        and left.endswith(")")
+                    ):
+                        # Same-operator left chains regroup identically under the
+                        # wrapper (`((a +% b) +% c)` is `(a +% b +% c)`), so the
+                        # inner pair is redundant. Array vector lowering keeps
+                        # its parens: the child text is nested inside `@as`.
+                        left = left[1:-1]
+                    rendered[id(node)] = self._emit_binary_from_parts(node, left, right)
+                    continue
+                stack.append((node, True))
+                if node.right is not None:
+                    stack.append((node.right, False))
+                if node.left is not None:
+                    stack.append((node.left, False))
+            return rendered[id(root)]
+
+        if action == "_emit_unary":
+            node, = payload
+            operand = (yield ("_emit_expr", (node.operand,)))
+            op = node.operator
+
+            operand_type = self._type_map.get(id(node.operand))
+            integral = isinstance(operand_type, PrimitiveType) and operand_type.is_integral()
+            literal = node.operand.kind == NodeKind.LITERAL
+            if op == UnaryOp.NOT:
+                return f"(!{operand})"
+            elif op == UnaryOp.BIT_NOT:
+                if literal:
+                    # Zig has no `~` on comptime_int.
+                    return f"(~@as({self._emit_semantic_type(self._type_map.get(id(node)))}, {operand}))"
+                return f"(~{operand})"
+            elif op != UnaryOp.NEG:
+                raise CodegenError(f"Zig backend: internal error: unary operator '{getattr(op, 'name', op)}' has no lowering", node.span)
+            elif integral and not literal:
+                # Wraps like binary `+ - *`: `-MIN` is MIN in every profile.
+                return f"(-%{operand})"
+            else:
+                return f"(-{operand})"
+
+        if action == "_emit_call":
+            node, = payload
+            # Special-case io.println / io.print
+            if self._is_io_call(node):
+                return self._emit_io_call_expr(node)
+            # Result-returning io calls construct the union value inline here
+            # (a helper method would join the _emit_call/_emit_expr cycle and
+            # trip the no-recursion ratchet, so the emission stays inline).
+            if self._is_io_result_call(node):
+                canonical = getattr(node, "stdlib_canonical", None) or ""
+                args = node.arguments or []
+                if canonical == "std.io.read_line":
+                    buf = (yield ("_emit_expr", (args[0],))) if args else "&[_]u8{}"
+                    return f"__a7_stdin_read_line({buf})"
+                if not args:
+                    return '__a7_stdout_print_ok("\\n", .{})'
+                fmt_str = self._convert_format_string((yield ("_emit_expr", (args[0],))), args[1:])
+                if fmt_str.endswith('"'):
+                    fmt_str = fmt_str[:-1] + '\\n"'
+                if len(args) == 1:
+                    return f"__a7_stdout_print_ok({fmt_str}, .{{}})"
+                argument_parts = []
+                for arg in args[1:]:
+                    argument_parts.append((yield ("_emit_expr", (arg,))))
+                zig_args = ", ".join(argument_parts)
+                if self._has_top_level_comma(zig_args):
+                    return f"__a7_stdout_print_ok({fmt_str}, .{{ {zig_args} }})"
+                return f"__a7_stdout_print_ok({fmt_str}, .{{{zig_args}}})"
+
+            file_module_call = getattr(node, "file_module_call", None)
+            if file_module_call:
+                prefix, field = file_module_call
+                args_list = self._generic_call_args(node)
+                implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
+                for index, arg in enumerate(node.arguments or []):
+                    if index in implicit_ref_args:
+                        args_list.append(f"&{(yield ("_emit_expr", (arg,)))}")
+                    else:
+                        args_list.append((yield ("_emit_expr", (arg,))))
+                return f"{prefix}{field}({', '.join(args_list)})"
+
+            canonical = getattr(node, "stdlib_canonical", None)
+            if canonical and canonical.startswith("std.math."):
+                short = canonical.split(".")[-1]
+                if short in ('sqrt', 'abs', 'floor', 'ceil', 'sin', 'cos', 'tan',
+                             'log', 'exp', 'min', 'max'):
+                    argument_parts = []
+                    for arg in node.arguments or []:
+                        argument_parts.append((yield ("_emit_expr", (arg,))))
+                    args = ", ".join(argument_parts)
+                    if short == "abs":
+                        result_type = self._type_map.get(id(node))
+                        if isinstance(result_type, PrimitiveType) and result_type.is_integral() and result_type.name.startswith("i"):
+                            # @bitCast wraps `abs(MIN)` to MIN; @intCast would trap or be
+                            # undefined. The inner @as types a literal argument.
+                            zig_type = self._emit_semantic_type(result_type)
+                            return f"@as({zig_type}, @bitCast(@abs(@as({zig_type}, {args}))))"
+                    return f"@{short}({args})"
+
+            func = (yield ("_emit_expr", (node.function,)))
+
+            args_list = self._generic_call_args(node)
+            implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
+            for index, arg in enumerate(node.arguments or []):
+                if index in implicit_ref_args:
+                    args_list.append(f"&{(yield ("_emit_expr", (arg,)))}")
+                else:
+                    args_list.append((yield ("_emit_expr", (arg,))))
+            args = ", ".join(args_list)
+            return f"{func}({args})"
+
+        if action == "_emit_index":
+            node, = payload
+            self._require_backend_approval(node, "index")
+            obj = (yield ("_emit_expr", (node.object,)))
+            if node.object is not None and node.object.kind == NodeKind.ARRAY_INIT:
+                obj = self._typed_array_literal(node.object, obj)
+            if (
+                node.index
+                and node.index.kind == NodeKind.LITERAL
+                and node.index.literal_kind == LiteralKind.INTEGER
+                and isinstance(node.index.literal_value, int)
+                and node.index.literal_value >= 0
+            ):
+                return f"{obj}[{node.index.literal_value}]"
+            idx = (yield ("_emit_expr", (node.index,)))
+            index_type = self._type_map.get(id(node.index)) if node.index else None
+            if index_type is not None and getattr(index_type, "name", None) == "usize":
+                return f"{obj}[{idx}]"
+            return f"{obj}[@intCast({idx})]"
+
+        if action == "_emit_slice":
+            node, = payload
+            self._require_backend_approval(node, "slice")
+            obj = (yield ("_emit_expr", (node.object,)))
+            start = (yield ("_emit_slice_bound", (node.start, "0",)))
+            end = (yield ("_emit_slice_bound", (node.end, "",)))
+            return f"{obj}[{start}..{end}]"
+
+        if action == "_emit_slice_bound":
+            bound, default, = payload
+            if bound is None:
+                return default
+            if (
+                bound.kind == NodeKind.LITERAL
+                and bound.literal_kind == LiteralKind.INTEGER
+                and isinstance(bound.literal_value, int)
+                and bound.literal_value >= 0
+            ):
+                return str(bound.literal_value)
+            emitted = (yield ("_emit_expr", (bound,)))
+            bound_type = self._type_map.get(id(bound))
+            if bound_type is not None and getattr(bound_type, "name", None) == "usize":
+                return emitted
+            return f"@intCast({emitted})"
+
+        if action == "_emit_field_access":
+            node, = payload
+            if getattr(node, "implicit_deref_object", False):
+                self._require_backend_approval(node, "deref")
+                obj = (yield ("_emit_implicit_ref_field_base", (node.object,)))
+            else:
+                obj = (yield ("_emit_expr", (node.object,)))
+                if node.object is not None and node.object.kind == NodeKind.STRUCT_INIT:
+                    # `P{ .x = 1 }.x` does not parse in Zig.
+                    obj = f"({obj})"
+                elif node.object is not None and node.object.kind == NodeKind.ARRAY_INIT:
+                    obj = self._typed_array_literal(node.object, obj)
+            if not node.field:
+                raise CodegenError("Zig backend: internal error: field access has no field name", node.span)
+            return f"{obj}.{self._quote_field(node.field)}"
+
+        if action == "_emit_address_of":
+            node, = payload
+            operand = (yield ("_emit_expr", (node.operand,)))
+            return f"&{operand}"
+
+        if action == "_emit_deref":
+            node, = payload
+            self._require_backend_approval(node, "deref")
+            pointer = (yield ("_emit_expr", (node.pointer,)))
+            pointer_type = self._type_map.get(id(node.pointer)) if node.pointer else None
+            if isinstance(pointer_type, PointerType):
+                return f"{pointer}[0]"
+            return f"{pointer}.?.*"
+
+        if action == "_emit_implicit_ref_field_base":
+            node, = payload
+            expr = (yield ("_emit_expr", (node,)))
+            node_type = self._type_map.get(id(node)) if node else None
+            if isinstance(node_type, PointerType):
+                return f"{expr}[0]"
+            return f"{expr}.?"
+
+        if action == "_emit_cast":
+            node, = payload
+            self._require_backend_approval(node, "cast")
+            decision = getattr(node, "cast_decision", None)
+            if decision is None or not decision.allowed:
+                raise CodegenError("Zig backend: cast was not approved by semantic analysis", node.span)
+
+            target_type = (yield ("_emit_type_node", (node.target_type, node.span,)))
+            expr = (yield ("_emit_expr", (node.expression,)))
+            source_type = getattr(node, "cast_source_type", None)
+            cast_target_type = getattr(node, "cast_target_type", None)
+            source_name = getattr(source_type, "name", None)
+            target_name = getattr(cast_target_type, "name", None)
+
+            if decision.kind is CastClass.LOSSLESS:
+                return f"@as({target_type}, {expr})"
+            if source_name in {"f32", "f64"} and target_name in {"f32", "f64"}:
+                return f"@as({target_type}, @floatCast({expr}))"
+            if source_name in {"f32", "f64"}:
+                return f"@as({target_type}, @intFromFloat({expr}))"
+            if target_name in {"f32", "f64"}:
+                return f"@as({target_type}, @floatFromInt({expr}))"
+            if self._is_nonnegative_integer_literal(node.expression):
+                return f"@as({target_type}, {expr})"
+            return f"@as({target_type}, @intCast({expr}))"
+
+        if action == "_emit_if_expr":
+            node, = payload
+            cond = self._strip_condition_parens((yield ("_emit_expr", (node.condition,))), node.condition)
+            then_val = (yield ("_emit_expr", (node.then_expr,)))
+            else_val = (yield ("_emit_expr", (node.else_expr,)))
+            # Parenthesize: a bare Zig `if` expression extends its else branch over
+            # any operator that follows, so `(if c a else b) + 10` must keep the
+            # parentheses to select before the operator applies.
+            return f"(if ({cond}) {then_val} else {else_val})"
+
+        if action == "_emit_match_expr":
+            node, = payload
+            tags = self._match_union_tags(node)
+            if tags is None:
+                if self._match_has_capture(node) or not self._match_fits_switch(node):
+                    return (yield ("_emit_match_expr_with_captures", (node,)))
+                arms = list(node.cases or [])
+                wildcard = None
+                exhaustive = self._match_covers_closed_type(node)
+            else:
+                arms, wildcard, exhaustive = self._tag_match_arms(node, tags)
+
+            expr = (yield ("_emit_expr", (node.expression,)))
+            if tags is not None:
+                expr = self._tag_scrutinee(node, expr)
+            case_indent = "    " * (self.indent_level + 1)
+            close_indent = "    " * self.indent_level
+            parts = [f"switch ({expr}) {{"]
+
+            for case in arms:
+                pattern_parts = []
+                for pattern in case.patterns or []:
+                    pattern_parts.append((yield ("_emit_pattern", (pattern,))))
+                pattern_str = ", ".join(pattern_parts)
+                binding = self._match_tag_binding(case) if tags is not None else None
+                case_expr = getattr(case, 'expression', None)
+                capture = ""
+                self._push_scope()
+                if binding is not None:
+                    declared = self._declare_var_in_scope(binding)
+                    uses_before = self._identifier_uses.get(declared, 0)
+                val = (yield ("_emit_expr", (case_expr,)))
+                # Zig rejects an unused capture, and a prong value has no room
+                # for a `_ = name;` discard, so the capture is written only when
+                # the value reads it.
+                if binding is not None and self._identifier_uses.get(declared, 0) != uses_before:
+                    capture = f"|{self._quote_identifier(declared)}| "
+                self._pop_scope()
+                parts.append(f"\n{case_indent}{pattern_str} => {capture}{val},")
+
+            rest = None
+            if wildcard is not None:
+                rest_expr = getattr(wildcard, 'expression', None)
+                rest = (yield ("_emit_expr", (rest_expr,)))
+            elif node.else_case:
+                rest = (yield ("_emit_expr", (node.else_case if isinstance(node.else_case, ASTNode) else None,)))
+
+            if rest is not None and not exhaustive:
+                parts.append(f"\n{case_indent}else => {rest},")
+            parts.append(f"\n{close_indent}}}")
+            if rest is not None and exhaustive:
+                # Zig rejects an `else` prong once every value has a prong; the
+                # dead branch keeps the names the A7 `else` value uses in use.
+                return f"(if (false) {rest} else {''.join(parts)})"
+            return "".join(parts)
+
+        if action == "_emit_match_expr_with_captures":
+            node, = payload
+            label = self._unique_name("__a7_match_expr")
+            scrutinee = self._unique_name("__a7_match")
+            expr = (yield ("_emit_expr", (node.expression,)))
+            by_content = self._is_string_type(self._type_map.get(id(node.expression)))
+            parts = [f"{label}: {{ const {scrutinee} = {expr};"]
+
+            emitted_branch = False
+            emitted_unconditional = False
+            for case in node.cases or []:
+                if emitted_unconditional:
+                    continue
+                case_expr = getattr(case, "expression", None)
+                if case_expr is None:
+                    continue
+                condition = (yield ("_emit_match_condition_zig", (scrutinee, case.patterns or [], by_content,)))
+                prefix = " else " if emitted_branch else " "
+                if condition == "true":
+                    parts.append(f"{prefix}{{")
+                    emitted_unconditional = True
+                else:
+                    parts.append(f"{prefix}if ({condition}) {{")
+                self._push_scope()
+                for pattern in case.patterns or []:
+                    if self._is_capture_pattern(pattern):
+                        name = self._declare_var_in_scope(pattern.name or "value")
+                        parts.append(f" const {self._quote_identifier(name)} = {scrutinee};")
+                        parts.append(" " + self._pending_discard(name))
+                parts.append(f" break :{label} {(yield ("_emit_expr", (case_expr,)))}; }}")
+                self._pop_scope()
+                emitted_branch = True
+
+            if not emitted_unconditional:
+                # The checker accepts a match expression without `else` only when
+                # its arms cover every value, so this branch cannot run.
+                else_expr = (yield ("_emit_expr", (node.else_case,))) if isinstance(node.else_case, ASTNode) else "unreachable"
+                prefix = " else " if emitted_branch else " "
+                parts.append(f"{prefix}{{ break :{label} {else_expr}; }}")
+
+            parts.append(" }")
+            return "".join(parts)
+
+        if action == "_emit_struct_init":
+            node, = payload
+            struct_name = self._use_name(node.struct_type or "")
+            field_inits = node.field_inits or []
+            type_args = getattr(node, "type_arguments", None) or []
+
+            if struct_name and struct_name != "__inline__":
+                if type_args:
+                    # The checker resolves a `$N` argument to a GenericValueArg on
+                    # the literal's instance type; every other argument is a type.
+                    resolved = getattr(self._type_map.get(id(node)), "type_args", None) or ()
+                    type_parts = []
+                    for i, arg in enumerate(type_args):
+                        if i < len(resolved) and isinstance(resolved[i], GenericValueArg):
+                            type_parts.append(self._emit_semantic_type(resolved[i]))
+                        else:
+                            type_parts.append((yield ("_emit_type_node", (arg, None,))))
+                    rendered_args = ", ".join(type_parts)
+                    parts = [f"{struct_name}({rendered_args}){{ "]
+                else:
+                    parts = [f"{struct_name}{{ "]
+            else:
+                parts = [".{ "]
+
+            for i, fi in enumerate(field_inits):
+                if i > 0:
+                    parts.append(", ")
+                val = (yield ("_emit_expr", (fi.value,)))
+                if fi.name:
+                    parts.append(f".{self._quote_field(fi.name)} = {val}")
+                else:
+                    parts.append(val)
+
+            parts.append(" }")
+            return "".join(parts)
+
+        if action == "_emit_array_init":
+            node, = payload
+            elements = node.elements or []
+            element_parts = []
+            for element in elements:
+                element_parts.append((yield ("_emit_expr", (element,))))
+            elems = ", ".join(element_parts)
+            return f".{{ {elems} }}"
+
+        if action == "_emit_new_expr":
+            node, = payload
+            zig_type = (yield ("_emit_type_node", (getattr(node, 'target_type', None), node.span,)))
+            self._helpers.add("new")
+            return f"__a7_new({zig_type})"
+
+        if action == "_emit_pattern":
+            node, = payload
+            if node is None:
+                return "_"
+
+            kind = node.kind
+            if kind == NodeKind.PATTERN_LITERAL:
+                return (yield ("_emit_expr", (node.literal,)))
+            elif kind == NodeKind.PATTERN_IDENTIFIER:
+                return self._use_name(node.name) if node.name and node.name != "_" else "_"
+            elif kind == NodeKind.PATTERN_ENUM:
+                return f".{self._quote_field(node.variant)}" if node.variant else "_"
+            elif kind == NodeKind.PATTERN_RANGE:
+                start = (yield ("_emit_pattern", (node.start,)))
+                end = (yield ("_emit_pattern", (node.end,)))
+                return f"{start}...{end}"
+            elif kind == NodeKind.PATTERN_WILDCARD:
+                return "_"
+            else:
+                try:
+                    return (yield ("_emit_expr", (node,)))
+                except CodegenError as exc:
+                    raise CodegenError(
+                        f"Zig backend: unsupported match pattern '{kind.name}'",
+                        node.span,
+                    ) from exc
+
+        if action == "_emit_match_condition_zig":
+            scrutinee_expr, patterns, by_content, = payload
+            conditions: list[str] = []
+            for pattern in patterns:
+                condition = (yield ("_emit_match_pattern_condition_zig", (scrutinee_expr, pattern, by_content,)))
+                if condition is None:
+                    return "true"
+                conditions.append(condition)
+            if not conditions:
+                return "false"
+            if len(conditions) == 1:
+                return conditions[0]
+            return " or ".join(f"({condition})" for condition in conditions)
+
+        if action == "_emit_match_pattern_condition_zig":
+            scrutinee_expr, pattern, by_content, = payload
+            if pattern.kind == NodeKind.PATTERN_WILDCARD:
+                return None
+            if by_content:
+                # A string scrutinee: Zig's `==` on slices compares pointers.
+                name = pattern.name or ""
+                if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+                    if name == "_" or self._is_capture_pattern(pattern):
+                        return None
+                    value = self._use_name(name)
+                elif pattern.kind == NodeKind.PATTERN_LITERAL:
+                    value = (yield ("_emit_expr", (pattern.literal,)))
+                else:
+                    raise CodegenError(
+                        f"Zig backend: a string match cannot test pattern '{pattern.kind.name}'",
+                        pattern.span,
+                    )
+                self._needs_std = True
+                return f"std.mem.eql(u8, {scrutinee_expr}, {value})"
+            if pattern.kind == NodeKind.PATTERN_LITERAL:
+                value = (yield ("_emit_expr", (pattern.literal,)))
+                return f"{scrutinee_expr} == {value}"
+            if pattern.kind == NodeKind.PATTERN_ENUM:
+                value = f".{self._quote_field(pattern.variant)}" if pattern.variant else "_"
+                return f"{scrutinee_expr} == {value}"
+            if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
+                name = pattern.name or ""
+                if name == "_":
+                    return None
+                if self._is_capture_pattern(pattern):
+                    return None
+                return f"{scrutinee_expr} == {self._use_name(name)}"
+            if pattern.kind == NodeKind.PATTERN_RANGE:
+                start = (yield ("_emit_pattern", (pattern.start,))) if pattern.start else "0"
+                end = (yield ("_emit_pattern", (pattern.end,))) if pattern.end else "0"
+                return f"{scrutinee_expr} >= {start} and {scrutinee_expr} <= {end}"
+            value = (yield ("_emit_expr", (pattern,)))
+            return f"{scrutinee_expr} == {value}"
+
+        if action == "_emit_type_node":
+            node, span, = payload
+            if node is None:
+                raise CodegenError("Zig backend: missing type node", span)
+
+            generic_env = self._generic_env
+
+            # Build prefix iteratively for linear chains: ref ref [N][M]... base
+            prefix_parts = []
+            current = node
+            while current is not None:
+                kind = current.kind
+
+                if kind == NodeKind.TYPE_POINTER:
+                    if (
+                        current.target_type
+                        and current.target_type.kind == NodeKind.TYPE_GENERIC
+                        and current.target_type.name not in generic_env
+                    ):
+                        raise CodegenError("Zig backend: unresolved generic pointer type", current.span)
+                    prefix_parts.append("?*")
+                    current = current.target_type
+                elif kind == NodeKind.TYPE_ARRAY:
+                    size = (yield ("_emit_expr", (current.size,)))
+                    prefix_parts.append(f"[{size}]")
+                    current = current.element_type
+                elif kind == NodeKind.TYPE_SLICE:
+                    prefix_parts.append("[]")
+                    current = current.element_type
+                else:
+                    # Base type — emit and prepend all prefixes
+                    base = (yield ("_emit_type_leaf", (current, None,)))
+                    return "".join(prefix_parts) + base
+
+            raise CodegenError("Zig backend: incomplete type expression", node.span)
+
+        if action == "_emit_type_leaf":
+            node, span, = payload
+            if node is None:
+                raise CodegenError("Zig backend: missing type leaf", span)
+
+            generic_env = self._generic_env
+            kind = node.kind
+            if kind == NodeKind.TYPE_PRIMITIVE:
+                return self._map_primitive_type(node.type_name)
+            elif kind == NodeKind.TYPE_IDENTIFIER:
+                if node.generic_params:
+                    type_parts = []
+                    for param in node.generic_params:
+                        type_parts.append((yield ("_emit_type_node", (param, None,))))
+                    args = ", ".join(type_parts)
+                    if not node.name:
+                        raise CodegenError("Zig backend: generic type identifier is missing a name", node.span)
+                    return f"{self._use_name(node.name)}({args})"
+                if not node.name:
+                    raise CodegenError("Zig backend: type identifier is missing a name", node.span)
+                if node.name in self._untyped_consts:
+                    # A `$N` value argument in a type annotation (`x: Buf(SIZE)`).
+                    # The checker records no type for this node, and an untyped
+                    # constant has no Zig declaration, so its value is written here.
+                    return (yield ("_emit_expr", (self._untyped_consts[node.name].value,)))
+                return self._use_name(node.name)
+            elif kind == NodeKind.TYPE_GENERIC:
+                if node.name in generic_env:
+                    return self._quote_identifier(node.name)
+                raise CodegenError(f"Zig backend: unresolved generic type '{node.name or '?'}'", node.span)
+            elif kind == NodeKind.TYPE_FUNCTION:
+                parameter_parts = []
+                for param in node.parameter_types or []:
+                    parameter_parts.append((yield ("_emit_type_node", (param, None,))))
+                params = ", ".join(parameter_parts)
+                # A function type without a return type returns nothing.
+                ret = (yield ("_emit_type_node", (node.return_type, None,))) if node.return_type else "void"
+                return f"*const fn ({params}) {ret}"
+            elif kind == NodeKind.TYPE_STRUCT:
+                fields = node.fields or []
+                parts = ["struct {"]
+                for f in fields:
+                    fname = f.name or "unknown"
+                    ftype = (yield ("_emit_type_node", (f.field_type, f.span,)))
+                    parts.append(f"\n    {self._quote_field(fname)}: {ftype},")
+                parts.append("\n}")
+                return "".join(parts)
+            else:
+                raise CodegenError(f"Zig backend: unsupported type node '{kind.name}'", node.span)
+
     def _emit_expr(self, node: ASTNode) -> str:
         """Emit an expression as a Zig string."""
-        if node is None:
-            raise CodegenError("Zig backend: internal error: missing expression node")
-
-        kind = node.kind
-
-        if kind == NodeKind.LITERAL:
-            return self._emit_literal(node)
-        elif kind == NodeKind.IDENTIFIER:
-            return self._emit_identifier(node)
-        elif kind == NodeKind.BINARY:
-            return self._emit_binary_iterative(node)
-        elif kind == NodeKind.UNARY:
-            return self._emit_unary(node)
-        elif kind == NodeKind.CALL:
-            return self._emit_call(node)
-        elif kind == NodeKind.INDEX:
-            return self._emit_index(node)
-        elif kind == NodeKind.SLICE:
-            return self._emit_slice(node)
-        elif kind == NodeKind.FIELD_ACCESS:
-            return self._emit_field_access(node)
-        elif kind == NodeKind.ADDRESS_OF:
-            return self._emit_address_of(node)
-        elif kind == NodeKind.DEREF:
-            return self._emit_deref(node)
-        elif kind == NodeKind.CAST:
-            return self._emit_cast(node)
-        elif kind == NodeKind.IF_EXPR:
-            return self._emit_if_expr(node)
-        elif kind == NodeKind.MATCH_EXPR:
-            return self._emit_match_expr(node)
-        elif kind == NodeKind.STRUCT_INIT:
-            return self._emit_struct_init(node)
-        elif kind == NodeKind.ARRAY_INIT:
-            return self._emit_array_init(node)
-        elif kind == NodeKind.NEW_EXPR:
-            return self._emit_new_expr(node)
-        elif kind in (NodeKind.TYPE_PRIMITIVE, NodeKind.TYPE_IDENTIFIER,
-                      NodeKind.TYPE_ARRAY, NodeKind.TYPE_SLICE,
-                      NodeKind.TYPE_POINTER, NodeKind.TYPE_FUNCTION,
-                      NodeKind.TYPE_GENERIC):
-            return self._emit_type_node(node)
-        else:
-            raise CodegenError(f"Zig backend: unsupported expression node '{kind.name}'", node.span)
+        return self._expression_work("_emit_expr", (node,))
 
     def _emit_literal(self, node: ASTNode) -> str:
         """Emit a literal value."""
@@ -2456,38 +3166,7 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_binary_iterative(self, root: ASTNode) -> str:
         """Emit nested binary expressions without using the Python call stack."""
-        rendered: dict[int, str] = {}
-        stack: list[tuple[ASTNode, bool]] = [(root, False)]
-        while stack:
-            node, ready = stack.pop()
-            if node.kind != NodeKind.BINARY:
-                rendered[id(node)] = self._emit_expr(node)
-                continue
-            if ready:
-                left = rendered.pop(id(node.left))
-                right = rendered.pop(id(node.right))
-                if (
-                    node.operator in self._ASSOC_CHAIN_OPS
-                    and node.left is not None
-                    and node.left.kind == NodeKind.BINARY
-                    and node.left.operator == node.operator
-                    and not isinstance(self._type_map.get(id(node)), ArrayType)
-                    and left.startswith("(")
-                    and left.endswith(")")
-                ):
-                    # Same-operator left chains regroup identically under the
-                    # wrapper (`((a +% b) +% c)` is `(a +% b +% c)`), so the
-                    # inner pair is redundant. Array vector lowering keeps
-                    # its parens: the child text is nested inside `@as`.
-                    left = left[1:-1]
-                rendered[id(node)] = self._emit_binary_from_parts(node, left, right)
-                continue
-            stack.append((node, True))
-            if node.right is not None:
-                stack.append((node.right, False))
-            if node.left is not None:
-                stack.append((node.left, False))
-        return rendered[id(root)]
+        return self._expression_work("_emit_binary_iterative", (root,))
 
     def _emit_binary_from_parts(self, node: ASTNode, left: str, right: str) -> str:
         """Render a binary node from already-rendered child expressions."""
@@ -2563,26 +3242,7 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_unary(self, node: ASTNode) -> str:
         """Emit a unary expression."""
-        operand = self._emit_expr(node.operand)
-        op = node.operator
-
-        operand_type = self._type_map.get(id(node.operand))
-        integral = isinstance(operand_type, PrimitiveType) and operand_type.is_integral()
-        literal = node.operand.kind == NodeKind.LITERAL
-        if op == UnaryOp.NOT:
-            return f"(!{operand})"
-        elif op == UnaryOp.BIT_NOT:
-            if literal:
-                # Zig has no `~` on comptime_int.
-                return f"(~@as({self._emit_semantic_type(self._type_map.get(id(node)))}, {operand}))"
-            return f"(~{operand})"
-        elif op != UnaryOp.NEG:
-            raise CodegenError(f"Zig backend: internal error: unary operator '{getattr(op, 'name', op)}' has no lowering", node.span)
-        elif integral and not literal:
-            # Wraps like binary `+ - *`: `-MIN` is MIN in every profile.
-            return f"(-%{operand})"
-        else:
-            return f"(-{operand})"
+        return self._expression_work("_emit_unary", (node,))
 
     def _generic_call_args(self, node: ASTNode) -> list[str]:
         """Emit the comptime type arguments a generic call carries, in order."""
@@ -2609,143 +3269,31 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_call(self, node: ASTNode) -> str:
         """Emit a function call."""
-        # Special-case io.println / io.print
-        if self._is_io_call(node):
-            return self._emit_io_call_expr(node)
-        # Result-returning io calls construct the union value inline here
-        # (a helper method would join the _emit_call/_emit_expr cycle and
-        # trip the no-recursion ratchet, so the emission stays inline).
-        if self._is_io_result_call(node):
-            canonical = getattr(node, "stdlib_canonical", None) or ""
-            args = node.arguments or []
-            if canonical == "std.io.read_line":
-                buf = self._emit_expr(args[0]) if args else "&[_]u8{}"
-                return f"__a7_stdin_read_line({buf})"
-            if not args:
-                return '__a7_stdout_print_ok("\\n", .{})'
-            fmt_str = self._convert_format_string(self._emit_expr(args[0]), args[1:])
-            if fmt_str.endswith('"'):
-                fmt_str = fmt_str[:-1] + '\\n"'
-            if len(args) == 1:
-                return f"__a7_stdout_print_ok({fmt_str}, .{{}})"
-            zig_args = ", ".join(self._emit_expr(a) for a in args[1:])
-            if self._has_top_level_comma(zig_args):
-                return f"__a7_stdout_print_ok({fmt_str}, .{{ {zig_args} }})"
-            return f"__a7_stdout_print_ok({fmt_str}, .{{{zig_args}}})"
-
-        file_module_call = getattr(node, "file_module_call", None)
-        if file_module_call:
-            prefix, field = file_module_call
-            args_list = self._generic_call_args(node)
-            implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
-            for index, arg in enumerate(node.arguments or []):
-                if index in implicit_ref_args:
-                    args_list.append(f"&{self._emit_expr(arg)}")
-                else:
-                    args_list.append(self._emit_expr(arg))
-            return f"{prefix}{field}({', '.join(args_list)})"
-
-        canonical = getattr(node, "stdlib_canonical", None)
-        if canonical and canonical.startswith("std.math."):
-            short = canonical.split(".")[-1]
-            if short in ('sqrt', 'abs', 'floor', 'ceil', 'sin', 'cos', 'tan',
-                         'log', 'exp', 'min', 'max'):
-                args = ", ".join(self._emit_expr(a) for a in (node.arguments or []))
-                if short == "abs":
-                    result_type = self._type_map.get(id(node))
-                    if isinstance(result_type, PrimitiveType) and result_type.is_integral() and result_type.name.startswith("i"):
-                        # @bitCast wraps `abs(MIN)` to MIN; @intCast would trap or be
-                        # undefined. The inner @as types a literal argument.
-                        zig_type = self._emit_semantic_type(result_type)
-                        return f"@as({zig_type}, @bitCast(@abs(@as({zig_type}, {args}))))"
-                return f"@{short}({args})"
-
-        func = self._emit_expr(node.function)
-
-        args_list = self._generic_call_args(node)
-        implicit_ref_args = set(getattr(node, "implicit_ref_args", set()) or set())
-        for index, arg in enumerate(node.arguments or []):
-            if index in implicit_ref_args:
-                args_list.append(f"&{self._emit_expr(arg)}")
-            else:
-                args_list.append(self._emit_expr(arg))
-        args = ", ".join(args_list)
-        return f"{func}({args})"
+        return self._expression_work("_emit_call", (node,))
 
     def _emit_index(self, node: ASTNode) -> str:
         """Emit array indexing."""
-        self._require_backend_approval(node, "index")
-        obj = self._emit_expr(node.object)
-        if node.object is not None and node.object.kind == NodeKind.ARRAY_INIT:
-            obj = self._typed_array_literal(node.object, obj)
-        if (
-            node.index
-            and node.index.kind == NodeKind.LITERAL
-            and node.index.literal_kind == LiteralKind.INTEGER
-            and isinstance(node.index.literal_value, int)
-            and node.index.literal_value >= 0
-        ):
-            return f"{obj}[{node.index.literal_value}]"
-        idx = self._emit_expr(node.index)
-        index_type = self._type_map.get(id(node.index)) if node.index else None
-        if index_type is not None and getattr(index_type, "name", None) == "usize":
-            return f"{obj}[{idx}]"
-        return f"{obj}[@intCast({idx})]"
+        return self._expression_work("_emit_index", (node,))
 
     def _emit_slice(self, node: ASTNode) -> str:
         """Emit slice expression."""
-        self._require_backend_approval(node, "slice")
-        obj = self._emit_expr(node.object)
-        start = self._emit_slice_bound(node.start, default="0")
-        end = self._emit_slice_bound(node.end, default="")
-        return f"{obj}[{start}..{end}]"
+        return self._expression_work("_emit_slice", (node,))
 
     def _emit_slice_bound(self, bound: Optional[ASTNode], *, default: str) -> str:
         """Emit a slice bound, coercing non-usize values via @intCast."""
-        if bound is None:
-            return default
-        if (
-            bound.kind == NodeKind.LITERAL
-            and bound.literal_kind == LiteralKind.INTEGER
-            and isinstance(bound.literal_value, int)
-            and bound.literal_value >= 0
-        ):
-            return str(bound.literal_value)
-        emitted = self._emit_expr(bound)
-        bound_type = self._type_map.get(id(bound))
-        if bound_type is not None and getattr(bound_type, "name", None) == "usize":
-            return emitted
-        return f"@intCast({emitted})"
+        return self._expression_work("_emit_slice_bound", (bound, default,))
 
     def _emit_field_access(self, node: ASTNode) -> str:
         """Emit field access."""
-        if getattr(node, "implicit_deref_object", False):
-            self._require_backend_approval(node, "deref")
-            obj = self._emit_implicit_ref_field_base(node.object)
-        else:
-            obj = self._emit_expr(node.object)
-            if node.object is not None and node.object.kind == NodeKind.STRUCT_INIT:
-                # `P{ .x = 1 }.x` does not parse in Zig.
-                obj = f"({obj})"
-            elif node.object is not None and node.object.kind == NodeKind.ARRAY_INIT:
-                obj = self._typed_array_literal(node.object, obj)
-        if not node.field:
-            raise CodegenError("Zig backend: internal error: field access has no field name", node.span)
-        return f"{obj}.{self._quote_field(node.field)}"
+        return self._expression_work("_emit_field_access", (node,))
 
     def _emit_address_of(self, node: ASTNode) -> str:
         """Emit internal address-of."""
-        operand = self._emit_expr(node.operand)
-        return f"&{operand}"
+        return self._expression_work("_emit_address_of", (node,))
 
     def _emit_deref(self, node: ASTNode) -> str:
         """Emit internal dereference."""
-        self._require_backend_approval(node, "deref")
-        pointer = self._emit_expr(node.pointer)
-        pointer_type = self._type_map.get(id(node.pointer)) if node.pointer else None
-        if isinstance(pointer_type, PointerType):
-            return f"{pointer}[0]"
-        return f"{pointer}.?.*"
+        return self._expression_work("_emit_deref", (node,))
 
     def _emit_implicit_deref(self, node: Optional[ASTNode]) -> str:
         expr = self._emit_expr(node)
@@ -2755,37 +3303,11 @@ class ZigCodeGenerator(CodeGenerator):
         return f"{expr}.?.*"
 
     def _emit_implicit_ref_field_base(self, node: Optional[ASTNode]) -> str:
-        expr = self._emit_expr(node)
-        node_type = self._type_map.get(id(node)) if node else None
-        if isinstance(node_type, PointerType):
-            return f"{expr}[0]"
-        return f"{expr}.?"
+        return self._expression_work("_emit_implicit_ref_field_base", (node,))
 
     def _emit_cast(self, node: ASTNode) -> str:
         """Emit cast expression."""
-        self._require_backend_approval(node, "cast")
-        decision = getattr(node, "cast_decision", None)
-        if decision is None or not decision.allowed:
-            raise CodegenError("Zig backend: cast was not approved by semantic analysis", node.span)
-
-        target_type = self._emit_type_node(node.target_type, span=node.span)
-        expr = self._emit_expr(node.expression)
-        source_type = getattr(node, "cast_source_type", None)
-        cast_target_type = getattr(node, "cast_target_type", None)
-        source_name = getattr(source_type, "name", None)
-        target_name = getattr(cast_target_type, "name", None)
-
-        if decision.kind is CastClass.LOSSLESS:
-            return f"@as({target_type}, {expr})"
-        if source_name in {"f32", "f64"} and target_name in {"f32", "f64"}:
-            return f"@as({target_type}, @floatCast({expr}))"
-        if source_name in {"f32", "f64"}:
-            return f"@as({target_type}, @intFromFloat({expr}))"
-        if target_name in {"f32", "f64"}:
-            return f"@as({target_type}, @floatFromInt({expr}))"
-        if self._is_nonnegative_integer_literal(node.expression):
-            return f"@as({target_type}, {expr})"
-        return f"@as({target_type}, @intCast({expr}))"
+        return self._expression_work("_emit_cast", (node,))
 
     def _divisor_may_be_minus_one(self, result_type, divisor: Optional[ASTNode]) -> bool:
         """True when an integral `/` or `%` could be `MIN / -1`.
@@ -2835,144 +3357,19 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_if_expr(self, node: ASTNode) -> str:
         """Emit if expression."""
-        cond = self._strip_condition_parens(self._emit_expr(node.condition), node.condition)
-        then_val = self._emit_expr(node.then_expr)
-        else_val = self._emit_expr(node.else_expr)
-        # Parenthesize: a bare Zig `if` expression extends its else branch over
-        # any operator that follows, so `(if c a else b) + 10` must keep the
-        # parentheses to select before the operator applies.
-        return f"(if ({cond}) {then_val} else {else_val})"
+        return self._expression_work("_emit_if_expr", (node,))
 
     def _emit_match_expr(self, node: ASTNode) -> str:
         """Emit match expression → Zig switch expression, or an if-chain block."""
-        tags = self._match_union_tags(node)
-        if tags is None:
-            if self._match_has_capture(node) or not self._match_fits_switch(node):
-                return self._emit_match_expr_with_captures(node)
-            arms = list(node.cases or [])
-            wildcard = None
-            exhaustive = self._match_covers_closed_type(node)
-        else:
-            arms, wildcard, exhaustive = self._tag_match_arms(node, tags)
-
-        expr = self._emit_expr(node.expression)
-        if tags is not None:
-            expr = self._tag_scrutinee(node, expr)
-        case_indent = "    " * (self.indent_level + 1)
-        close_indent = "    " * self.indent_level
-        parts = [f"switch ({expr}) {{"]
-
-        for case in arms:
-            pattern_str = ", ".join(self._emit_pattern(p) for p in (case.patterns or []))
-            binding = self._match_tag_binding(case) if tags is not None else None
-            case_expr = getattr(case, 'expression', None)
-            capture = ""
-            self._push_scope()
-            if binding is not None:
-                declared = self._declare_var_in_scope(binding)
-                uses_before = self._identifier_uses.get(declared, 0)
-            val = self._emit_expr(case_expr)
-            # Zig rejects an unused capture, and a prong value has no room
-            # for a `_ = name;` discard, so the capture is written only when
-            # the value reads it.
-            if binding is not None and self._identifier_uses.get(declared, 0) != uses_before:
-                capture = f"|{self._quote_identifier(declared)}| "
-            self._pop_scope()
-            parts.append(f"\n{case_indent}{pattern_str} => {capture}{val},")
-
-        rest = None
-        if wildcard is not None:
-            rest_expr = getattr(wildcard, 'expression', None)
-            rest = self._emit_expr(rest_expr)
-        elif node.else_case:
-            rest = self._emit_expr(node.else_case if isinstance(node.else_case, ASTNode) else None)
-
-        if rest is not None and not exhaustive:
-            parts.append(f"\n{case_indent}else => {rest},")
-        parts.append(f"\n{close_indent}}}")
-        if rest is not None and exhaustive:
-            # Zig rejects an `else` prong once every value has a prong; the
-            # dead branch keeps the names the A7 `else` value uses in use.
-            return f"(if (false) {rest} else {''.join(parts)})"
-        return "".join(parts)
+        return self._expression_work("_emit_match_expr", (node,))
 
     def _emit_match_expr_with_captures(self, node: ASTNode) -> str:
         """Emit a capture-bearing match expression as a Zig block expression."""
-        label = self._unique_name("__a7_match_expr")
-        scrutinee = self._unique_name("__a7_match")
-        expr = self._emit_expr(node.expression)
-        by_content = self._is_string_type(self._type_map.get(id(node.expression)))
-        parts = [f"{label}: {{ const {scrutinee} = {expr};"]
-
-        emitted_branch = False
-        emitted_unconditional = False
-        for case in node.cases or []:
-            if emitted_unconditional:
-                continue
-            case_expr = getattr(case, "expression", None)
-            if case_expr is None:
-                continue
-            condition = self._emit_match_condition_zig(scrutinee, case.patterns or [], by_content)
-            prefix = " else " if emitted_branch else " "
-            if condition == "true":
-                parts.append(f"{prefix}{{")
-                emitted_unconditional = True
-            else:
-                parts.append(f"{prefix}if ({condition}) {{")
-            self._push_scope()
-            for pattern in case.patterns or []:
-                if self._is_capture_pattern(pattern):
-                    name = self._declare_var_in_scope(pattern.name or "value")
-                    parts.append(f" const {self._quote_identifier(name)} = {scrutinee};")
-                    parts.append(" " + self._pending_discard(name))
-            parts.append(f" break :{label} {self._emit_expr(case_expr)}; }}")
-            self._pop_scope()
-            emitted_branch = True
-
-        if not emitted_unconditional:
-            # The checker accepts a match expression without `else` only when
-            # its arms cover every value, so this branch cannot run.
-            else_expr = self._emit_expr(node.else_case) if isinstance(node.else_case, ASTNode) else "unreachable"
-            prefix = " else " if emitted_branch else " "
-            parts.append(f"{prefix}{{ break :{label} {else_expr}; }}")
-
-        parts.append(" }")
-        return "".join(parts)
+        return self._expression_work("_emit_match_expr_with_captures", (node,))
 
     def _emit_struct_init(self, node: ASTNode) -> str:
         """Emit struct initialization."""
-        struct_name = self._use_name(node.struct_type or "")
-        field_inits = node.field_inits or []
-        type_args = getattr(node, "type_arguments", None) or []
-
-        if struct_name and struct_name != "__inline__":
-            if type_args:
-                # The checker resolves a `$N` argument to a GenericValueArg on
-                # the literal's instance type; every other argument is a type.
-                resolved = getattr(self._type_map.get(id(node)), "type_args", None) or ()
-                rendered_args = ", ".join(
-                    self._emit_semantic_type(resolved[i])
-                    if i < len(resolved) and isinstance(resolved[i], GenericValueArg)
-                    else self._emit_type_node(arg)
-                    for i, arg in enumerate(type_args)
-                )
-                parts = [f"{struct_name}({rendered_args}){{ "]
-            else:
-                parts = [f"{struct_name}{{ "]
-        else:
-            parts = [".{ "]
-
-        for i, fi in enumerate(field_inits):
-            if i > 0:
-                parts.append(", ")
-            val = self._emit_expr(fi.value)
-            if fi.name:
-                parts.append(f".{self._quote_field(fi.name)} = {val}")
-            else:
-                parts.append(val)
-
-        parts.append(" }")
-        return "".join(parts)
+        return self._expression_work("_emit_struct_init", (node,))
 
     def _emit_array_init(self, node: ASTNode) -> str:
         """Emit array initialization.
@@ -2982,9 +3379,7 @@ class ZigCodeGenerator(CodeGenerator):
         the literal's own type before fitting it to that destination, so a
         typed literal here would be `[3]i32` for `a: [3]i64 = [1, 2, 3]`.
         """
-        elements = node.elements or []
-        elems = ", ".join(self._emit_expr(e) for e in elements)
-        return f".{{ {elems} }}"
+        return self._expression_work("_emit_array_init", (node,))
 
     def _typed_array_literal(self, node: ASTNode, rendered: str) -> str:
         """Give an array literal its own type where nothing supplies one.
@@ -2999,50 +3394,15 @@ class ZigCodeGenerator(CodeGenerator):
 
     def _emit_new_expr(self, node: ASTNode) -> str:
         """Emit new expression → `__a7_new`. The checker rejects `new [N]T`."""
-        zig_type = self._emit_type_node(getattr(node, 'target_type', None), span=node.span)
-        self._helpers.add("new")
-        return f"__a7_new({zig_type})"
+        return self._expression_work("_emit_new_expr", (node,))
 
     def _emit_pattern(self, node: ASTNode) -> str:
         """Emit a match pattern."""
-        if node is None:
-            return "_"
-
-        kind = node.kind
-        if kind == NodeKind.PATTERN_LITERAL:
-            return self._emit_expr(node.literal)
-        elif kind == NodeKind.PATTERN_IDENTIFIER:
-            return self._use_name(node.name) if node.name and node.name != "_" else "_"
-        elif kind == NodeKind.PATTERN_ENUM:
-            return f".{self._quote_field(node.variant)}" if node.variant else "_"
-        elif kind == NodeKind.PATTERN_RANGE:
-            start = self._emit_pattern(node.start)
-            end = self._emit_pattern(node.end)
-            return f"{start}...{end}"
-        elif kind == NodeKind.PATTERN_WILDCARD:
-            return "_"
-        else:
-            try:
-                return self._emit_expr(node)
-            except CodegenError as exc:
-                raise CodegenError(
-                    f"Zig backend: unsupported match pattern '{kind.name}'",
-                    node.span,
-                ) from exc
+        return self._expression_work("_emit_pattern", (node,))
 
     def _emit_match_condition_zig(self, scrutinee_expr: str, patterns: list[ASTNode], by_content: bool = False) -> str:
         """Condition of one if-chain arm. `by_content` marks a string scrutinee."""
-        conditions: list[str] = []
-        for pattern in patterns:
-            condition = self._emit_match_pattern_condition_zig(scrutinee_expr, pattern, by_content)
-            if condition is None:
-                return "true"
-            conditions.append(condition)
-        if not conditions:
-            return "false"
-        if len(conditions) == 1:
-            return conditions[0]
-        return " or ".join(f"({condition})" for condition in conditions)
+        return self._expression_work("_emit_match_condition_zig", (scrutinee_expr, patterns, by_content,))
 
     def _emit_match_pattern_condition_zig(
         self,
@@ -3050,43 +3410,7 @@ class ZigCodeGenerator(CodeGenerator):
         pattern: ASTNode,
         by_content: bool = False,
     ) -> Optional[str]:
-        if pattern.kind == NodeKind.PATTERN_WILDCARD:
-            return None
-        if by_content:
-            # A string scrutinee: Zig's `==` on slices compares pointers.
-            name = pattern.name or ""
-            if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
-                if name == "_" or self._is_capture_pattern(pattern):
-                    return None
-                value = self._use_name(name)
-            elif pattern.kind == NodeKind.PATTERN_LITERAL:
-                value = self._emit_expr(pattern.literal)
-            else:
-                raise CodegenError(
-                    f"Zig backend: a string match cannot test pattern '{pattern.kind.name}'",
-                    pattern.span,
-                )
-            self._needs_std = True
-            return f"std.mem.eql(u8, {scrutinee_expr}, {value})"
-        if pattern.kind == NodeKind.PATTERN_LITERAL:
-            value = self._emit_expr(pattern.literal)
-            return f"{scrutinee_expr} == {value}"
-        if pattern.kind == NodeKind.PATTERN_ENUM:
-            value = f".{self._quote_field(pattern.variant)}" if pattern.variant else "_"
-            return f"{scrutinee_expr} == {value}"
-        if pattern.kind == NodeKind.PATTERN_IDENTIFIER:
-            name = pattern.name or ""
-            if name == "_":
-                return None
-            if self._is_capture_pattern(pattern):
-                return None
-            return f"{scrutinee_expr} == {self._use_name(name)}"
-        if pattern.kind == NodeKind.PATTERN_RANGE:
-            start = self._emit_pattern(pattern.start) if pattern.start else "0"
-            end = self._emit_pattern(pattern.end) if pattern.end else "0"
-            return f"{scrutinee_expr} >= {start} and {scrutinee_expr} <= {end}"
-        value = self._emit_expr(pattern)
-        return f"{scrutinee_expr} == {value}"
+        return self._expression_work("_emit_match_pattern_condition_zig", (scrutinee_expr, pattern, by_content,))
 
     def _unique_name(self, prefix: str) -> str:
         self._name_counter += 1
@@ -3100,83 +3424,11 @@ class ZigCodeGenerator(CodeGenerator):
         A `$T` resolves against `self._generic_env`, the generic parameters
         of the declaration being emitted.
         """
-        if node is None:
-            raise CodegenError("Zig backend: missing type node", span)
-
-        generic_env = self._generic_env
-
-        # Build prefix iteratively for linear chains: ref ref [N][M]... base
-        prefix_parts = []
-        current = node
-        while current is not None:
-            kind = current.kind
-
-            if kind == NodeKind.TYPE_POINTER:
-                if (
-                    current.target_type
-                    and current.target_type.kind == NodeKind.TYPE_GENERIC
-                    and current.target_type.name not in generic_env
-                ):
-                    raise CodegenError("Zig backend: unresolved generic pointer type", current.span)
-                prefix_parts.append("?*")
-                current = current.target_type
-            elif kind == NodeKind.TYPE_ARRAY:
-                size = self._emit_expr(current.size)
-                prefix_parts.append(f"[{size}]")
-                current = current.element_type
-            elif kind == NodeKind.TYPE_SLICE:
-                prefix_parts.append("[]")
-                current = current.element_type
-            else:
-                # Base type — emit and prepend all prefixes
-                base = self._emit_type_leaf(current)
-                return "".join(prefix_parts) + base
-
-        raise CodegenError("Zig backend: incomplete type expression", node.span)
+        return self._expression_work("_emit_type_node", (node, span,))
 
     def _emit_type_leaf(self, node: ASTNode, span=None) -> str:
         """Emit a non-chain (leaf) type node."""
-        if node is None:
-            raise CodegenError("Zig backend: missing type leaf", span)
-
-        generic_env = self._generic_env
-        kind = node.kind
-        if kind == NodeKind.TYPE_PRIMITIVE:
-            return self._map_primitive_type(node.type_name)
-        elif kind == NodeKind.TYPE_IDENTIFIER:
-            if node.generic_params:
-                args = ", ".join(self._emit_type_node(p) for p in node.generic_params)
-                if not node.name:
-                    raise CodegenError("Zig backend: generic type identifier is missing a name", node.span)
-                return f"{self._use_name(node.name)}({args})"
-            if not node.name:
-                raise CodegenError("Zig backend: type identifier is missing a name", node.span)
-            if node.name in self._untyped_consts:
-                # A `$N` value argument in a type annotation (`x: Buf(SIZE)`).
-                # The checker records no type for this node, and an untyped
-                # constant has no Zig declaration, so its value is written here.
-                return self._emit_expr(self._untyped_consts[node.name].value)
-            return self._use_name(node.name)
-        elif kind == NodeKind.TYPE_GENERIC:
-            if node.name in generic_env:
-                return self._quote_identifier(node.name)
-            raise CodegenError(f"Zig backend: unresolved generic type '{node.name or '?'}'", node.span)
-        elif kind == NodeKind.TYPE_FUNCTION:
-            params = ", ".join(self._emit_type_node(p) for p in (node.parameter_types or []))
-            # A function type without a return type returns nothing.
-            ret = self._emit_type_node(node.return_type) if node.return_type else "void"
-            return f"*const fn ({params}) {ret}"
-        elif kind == NodeKind.TYPE_STRUCT:
-            fields = node.fields or []
-            parts = ["struct {"]
-            for f in fields:
-                fname = f.name or "unknown"
-                ftype = self._emit_type_node(f.field_type, span=f.span)
-                parts.append(f"\n    {self._quote_field(fname)}: {ftype},")
-            parts.append("\n}")
-            return "".join(parts)
-        else:
-            raise CodegenError(f"Zig backend: unsupported type node '{kind.name}'", node.span)
+        return self._expression_work("_emit_type_leaf", (node, span,))
 
     def _map_primitive_type(self, type_name: str) -> str:
         """Map an A7 primitive type to Zig."""

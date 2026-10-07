@@ -15,15 +15,23 @@ The [October 7 qualification record](audits/2026-10-07/qualification.md)
 separates the resumed baseline from later compiler repairs. The frozen baseline
 passed 3,090 tests with 7 expected failures and the other ten compiler/package
 checks, including all 51 examples in every profile and native package installs.
-The later integration checkpoint passed its full release gate with 3,374 tests
+The earlier pushed checkpoint `621f70c` passed its full release gate with 3,374 tests
 and one expected failure. It includes the checker statement, joined-child and
 alias-clash edits, all 51 examples in every profile, installed packages, site
-checks and dependency/security checks. V1 remains incomplete.
+checks and dependency/security checks. The current frozen integration,
+manifest `04330ece`, passed 3,602 tests with one expected failure and the native
+checks. Its secrets check required Git metadata recovery; that check and all
+skipped release checks then passed on unchanged sources. V1 remains incomplete.
 
 GPU execution is deferred under L75. The
 [Zig GPU research](research/2026-10-07-zig-gpu-support.md) separates installed
 0.16, stable 0.17 and development support, host APIs and compile-only results.
 It does not qualify device execution. L73's GPU publication requirement stays open.
+
+The [published documentation checkpoint](audits/2026-10-07/published-docs-verification.json)
+passed 16 HTTP content comparisons against the frozen build. Browser interaction
+and responsive rendering remain unverified because no browser connection was
+available. This does not satisfy final publication acceptance.
 
 ## Current Surface
 
@@ -90,10 +98,25 @@ now preserve the represented aliases without marking every possible child
 deleted. Focused and independent compile-only checks, native controls in all
 profiles and the integration gate pass. Stores through a selected holder can still leave an original base's
 field facts stale, and joined-holder nil-write invalidation remains incomplete.
-Other paths retain explicitly incomplete legacy analysis. Loop-head
-analysis still misses deletion through a reference-field argument; an unrelated
-local allocation deleted by a callee can still cause valid parent use to be
-rejected. See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
+Other paths retain incomplete legacy analysis. A later candidate repairs
+loop-head deletion through a reference-field argument and a loop-local alias.
+It preserves unrelated allocations, fresh factory returns and valid one-trip
+loops. It also separates returning cleanup from continuing paths. That candidate
+passes 294 focused nonnative tests and replays 65 reviewer cases. GLM review matched 165 behavioral cases; the full integration gate above
+predates it.
+Independent review also found exponential fresh-origin expansion in a small
+acyclic factory chain. Compact allocation graphs now retain 196 nodes for the
+depth-64 reproducer. Independent comparison of 16 programs preserves exits,
+diagnostics and generated Zig; 159 integrated focused tests pass. The depth-64
+valid control runs in all three profiles. GLM review matched 68 paired programs
+and reproduced the resource counts. The frozen integration run passed 3,602 tests
+with one expected failure, 51 examples in each build profile, and native package
+installation. Its secrets check failed because the snapshot lacked Git metadata.
+After metadata recovery, that check and all skipped release checks passed on
+unchanged sources. Global-reference stores still lose alias identity across calls,
+so deleting the global can leave a stale caller alias accepted. That repair is
+in progress. A preexisting valid one-trip loop with separate but
+equivalent branch increments is still rejected. See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
 for the separate array/slice/selected-value decision boundary.
 The October 4 runtime-contract
 repair defines signed minimum-value arithmetic and checks runtime shift counts;
@@ -131,11 +154,21 @@ and `test/test_safety_stale_facts.py`.
   duplicate check still compares float constants as `f64`. Bitwise `~`
   is not folded. Declaration-order-independent global typing follows
   [P-TYP](plan/packets/P-TYP-forward-globals.md).
-- The current low-recursion suite passes through `python -m pytest`: 44 tests
-  passed on October 7. The [older paired check](audits/2026-09-20-core-v1/recursion-launcher-check.md)
-  is historical evidence. The scanner still finds seven explicit recursive
-  groups containing 94 functions, plus ten generated methods. Passing the
-  selected deep tests does not qualify the full no-recursion requirement.
+- Both candidate recursion scanner modes report empty recursive-group,
+  deepcopy and generated-method lists. Safety statements; parser statements,
+  expressions and types; checker statements,
+  expressions and type resolution; backend statements, expressions and types;
+  and AST structural comparison/display now use explicit worklists. These
+  candidates are newer than the qualified integration checkpoint. The frozen
+  expression snapshot passed 3,082 nonnative tests. Parser review matched 111
+  independent cases; backend debug and release each passed all 51 examples.
+  Expression GLM reviews passed within their assigned scopes. Safety traversal
+  review passed. The combined snapshot passed 3,602 tests with one expected
+  failure; secrets and skipped release checks passed after metadata recovery.
+  The [follow-up record](audits/2026-10-07/iterative-followup-verification.json)
+  identifies each source and its evidence. Passing selected deep inputs does
+  not establish the full no-recursion requirement. Arbitrary external Python
+  payload callbacks remain outside the AST structural traversal guarantee.
 
 - A labeled loop whose label is never targeted no longer emits a label: the
   fix landed with commit `ed0baff`, and the never-targeted case is pinned in
@@ -193,8 +226,23 @@ and `test/test_safety_stale_facts.py`.
   native controls and the integration gate pass.
   Callback provenance through record fields and array elements, and generic
   declarations stored as runtime function pointers, remain open.
-  Array-literal arms inside generic if/match initializers still lack nested
-  contextual fitting. General call-chain propagation of generic inference stays open.
+  A later candidate fits ordinary and generic if/match array-literal arms,
+  including nested arrays. It passed 206 focused tests and combined debug/fast
+  native controls. GLM review found no introduced regression. The repair is
+  included in the frozen integration and recovered release checks above.
+  A further candidate fits literal arms to a concrete typed array arm. Its
+  244 focused tests, 13 independent source cases and debug/fast execution of
+  both branches pass. GLM review matched 79 independent compile-only programs
+  without an introduced regression. Calls through local, global and aggregate
+  generic-function aliases can still bypass body obligations. A local flow
+  trial remains excluded because it loses branch correlations. Native probes
+  confirm an immutable generic alias runs, while mutable, runtime-selected and
+  array-stored generic declarations fail during Zig compilation. Their runtime
+  representation remains an unresolved design choice.
+  An unresolved generic element destination such as
+  `[2]$T` still fails before instantiation; a separate repair must preserve
+  obligations through callable aliases. General call-chain propagation of
+  generic inference stays open.
 - Multiple return values, destructuring, and variadic runtime
   lowering are not current backend features. Tagged unions match
   through leading-dot arms (see below); other tag workflows stay open.

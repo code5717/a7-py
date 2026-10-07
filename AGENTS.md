@@ -37,14 +37,11 @@ static call-graph scan with a shrinking allowlist of the recursive groups
 that still exist; do not add to it. The historical census from 2026-09-17
 listed the parser, type checker, type equality (`a7/types.py`), semantic
 validator, safety pass, AST preprocessor, backend, module resolver, symbol
-table dump and console formatter. Current state per `README.md`: semantic
-analysis, AST preprocessing, formatter/reporting AST walks, and backend
-binary-expression emission use explicit stacks; the parser is recursive
-descent and backend statement/non-binary expression paths still use
-visitor-style recursive emission in places. The pipeline is validated at
-Python recursion limit 100 (see `test/test_iterative_traversal.py`). A7
-source recursion is a separate, banned construct (see "A7 Source Rules"
-below).
+table dump and console formatter. Read `README.md` and `docs/STATUS.md` for
+current traversal implementation and verification boundaries. Keep the scanner
+and deep full-pipeline checks aligned; a passing subset at Python recursion
+limit 100 does not prove all compiler internals are iterative. A7 source
+recursion is a separate, banned construct (see "A7 Source Rules" below).
 
 ## Verification Commands
 

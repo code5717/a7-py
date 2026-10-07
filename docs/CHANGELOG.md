@@ -5,6 +5,12 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+The traversal changes below passed the frozen integration's compiler and native
+checks. Missing Git metadata caused its secrets check to fail; that check and
+all skipped release checks passed after metadata recovery on unchanged sources.
+See [architecture](ARCHITECTURE.md)
+for source versions and evidence. This does not qualify full V1.
+
 - The docs-site lockfile uses source-map-js 1.2.2, fixing the upstream indexed
   source-map denial-of-service advisory GHSA-68fv-2mgg-jv7q.
 
@@ -28,22 +34,36 @@ belong in git history, not in long Markdown logs.
   aliases resolve with a loop instead of recursive calls.
 - Bound generic callback signatures survive local assignment and branch
   selection. Generic `if`/`match` initializers use concrete destination fitting.
+- AST structural equality and debug display handle deep parsed trees with
+  explicit worklists, preserving declared-field comparison and cycle behavior.
+- Statement, expression, type and pattern parsing use worklists, preserving
+  token order, lookahead recovery and the existing 256-level logical nesting
+  limit.
+- Type resolution uses a stack for compound types and alias dependencies.
+  Alias caches distinguish declarations with the same name. A string assigned
+  through a shadowed integer alias now fails with semantic exit 6.
 - Type diagnostic representations use an explicit stack while preserving
   inherited dataclass fields, evaluation order and cycle markers.
-- Type-checker statements use a worklist for nested blocks, branches, loops and
-  match arms, preserving scope, facts and diagnostic order. Parser, expression
-  checking, type resolution, safety statements and backend paths still contain
-  recursion.
+- Array-literal arms in `if` and `match` fit declared element types, including
+  nested arrays, generic locals and bound callback arguments. Overflow and
+  typed-array narrowing remain semantic errors.
+- Type-checker statements, expressions and patterns use worklists, preserving
+  scope, facts, initializer fitting and diagnostic order.
+- Zig statement, expression and type emission use worklists, preserving output
+  bytes, emission order and diagnostic causes in the checked comparisons.
+- Safety statement traversal uses suspended frames. The recursive-group,
+  deepcopy and generated-method exception lists are empty in the frozen
+  integration. Compact allocation graphs remove the measured factory-origin
+  expansion.
 - Bounded exact callee effects propagate reference-field replacement/deletion
   through supported calls. Nested-function global deletion reaches callers;
   global body effects apply after argument evaluation. General alias/lifetime
   analysis remains incomplete.
 - Semantic call-summary helpers and inferred-type emission use explicit stacks.
-  Other parser, checker, safety-statement and backend paths remain recursive.
 
 - Safety expression traversal uses an explicit stack. Long runtime expression
   chains reach code generation without exhausting the Python call stack.
-  Statement traversal still contains recursion.
+  Statement traversal now uses a separate worklist.
 - The local gate uses `A7_PYTEST_WORKERS`, from 1 to 8, with a default of 8.
   Invalid values fail before any check runs.
 

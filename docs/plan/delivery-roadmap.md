@@ -288,7 +288,7 @@ open in the [audit inventory](audit/open-items.md).
 | Imported diagnostics lose origin | Verified fixed for covered regression triggers | `test/test_pipeline_diagnostics.py` |
 | Keyword and loop-capture bindings generate invalid Zig | Verified fixed for covered regression triggers | `test/test_pipeline_native.py` |
 | Constant float remainder differs from runtime | Verified fixed under L33 for covered regression triggers | `test/test_constant_folding_exact.py`; native repair gate |
-| Deep programs pass at recursion limit 100 | Not established | Existing pipeline tests use shallow nesting; scanner retains recursive groups |
+| Deep programs pass at recursion limit 100 | Verified for identified inputs | Worklists pass the deep cases and both scanner modes are empty; frozen integration passed compiler/native checks, then secrets and skipped release checks passed after metadata recovery. Arbitrary dynamic payload callbacks remain outside the guarantee |
 | NOREC-0b dispatch omissions and false positives | Verified fixed for the listed mechanisms | Scanner before/after tests in delivery evidence; dynamic Python limitations remain |
 | File-module implementation requires another approval of L25-L31 | Superseded by L69 | Implement the approved scopes; [P-MOD](packets/P-MOD-modules.md) retains compatibility evidence and extra proposals that need separate disposition |
 | Typed IR and new proof/emission pipeline can replace current passes | Blocked by correctness-first exit | L23 requires critical/high closure or presented decision packets |
@@ -360,6 +360,18 @@ Reference counting and tracing are now eligible candidates under L37, not select
 Do not infer count-free reuse from Perceus or unrestricted in-place behavior
 from FP². Prototype disputed mechanisms in isolation after freezing workload
 specifications and proposed budgets.
+
+The October 7 compile-only check accepts the three L67-ready proxy workloads
+from `tmp/b-benchspec/`: shared references, returned allocations and cleanup.
+Their success counter oracles are `49999995000000`, `50000005000000`, and
+`9999900 100`. The compiler source matches checkpoint `621f70c`; no native
+workload or mechanism benchmark ran in this check. Raw hashes and commands are
+in `tmp/v1-completion-2026-10-07/memory-prototype-next/compile-ready-results.json`.
+Promote those three under L67 after native correctness checks; rewrite cache,
+copy, text and cyclic workloads before promotion. The current harness's host-pin
+ratio and timing-only measurements do not satisfy L38's per-workload C runtime
+and peak-live-memory limits. Equivalent C baselines and actual release/retention
+instrumentation remain required before the arena/RC comparison can qualify.
 
 Pair unsafe programs with valid guarded controls. Exercise actual diagnostics,
 artifacts, execution and recovery. Compare constants and runtime boundary values
