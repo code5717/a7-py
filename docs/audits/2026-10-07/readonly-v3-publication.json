@@ -1,0 +1,15 @@
+{
+  "commit": "1af55208cffaf07e61c79902f2081b2814bd8b87",
+  "deploy_run": 37593101495,
+  "deployment": {
+    "conclusion": "success",
+    "headSha": "1af55208cffaf07e61c79902f2081b2814bd8b87",
+    "status": "completed",
+    "url": "https://github.com/code5717/a7-py/actions/runs/37593101495"
+  },
+  "http_files_byte_exact": 61,
+  "http_result_sha256": "8bc65964b4fe416513babcac2f775c8d079b62088c32d70eeada5d3703997933",
+  "expected_dist_sha256": "f3033015e327a1b517857e30a78ea45aa51e289fd364257fc34c97e6d291c15a",
+  "browser_inventory_sha256": "5d01741b24c5a2a4e6f898bbd799d6ac7e879ef15c3b2e5b381e7fe5e0c9cb04",
+  "boundary": "HTTP bytes only; current CUA inventory has no browsers, so rendered interaction remains unverified."
+}

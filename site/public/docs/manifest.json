@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "88296df7f9beb01c783c7bf5cec025bec1be5c46252dafeae460f3e1ad33b7ec"
+    "value": "5174e70470a7055d7c1c3da4c9f263ab593b7e8e4266f0f83a8b4183ceeb8ab6"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -1073,6 +1073,7 @@
       "aliases": [],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/memory.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json",
         "https://github.com/code5717/a7-py/blob/master/examples/011_memory.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/013_pointers.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/024_defer.a7",
@@ -1326,6 +1327,7 @@
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/compiler.md",
         "https://github.com/code5717/a7-py/blob/master/scripts/verify_examples_e2e.py",
+        "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json",
         "https://github.com/code5717/a7-py/blob/master/docs/ARCHITECTURE.md",
         "https://github.com/code5717/a7-py/blob/master/a7/cli.py",
         "https://github.com/code5717/a7-py/blob/master/a7/compile.py",
@@ -1387,6 +1389,7 @@
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/status.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md",
         "https://github.com/code5717/a7-py/blob/master/docs/audits/README.md"

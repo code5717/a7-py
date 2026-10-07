@@ -33,6 +33,14 @@ and the source-recursion ban. Keep historical evidence and rejected proposals.
 
 ## Delivery sequence and exits
 
+The executable-entry readonly check passed local qualification: 12 valid
+native controls and the full release gate with 3,918 tests and one expected
+failure. The first gate's test-hook failure and its two-line forwarding repair
+remain in the [verification record](../audits/2026-10-07/readonly-entry-verification.json).
+The selected entry uses only a complete existing summary; `--lib`, incomplete
+effects and general local-selector inference stay outside this check. Callee
+origin text currently omits its source filename. V1 remains incomplete.
+
 1. Preserve the full source baseline and record current decisions. Reconcile all
    original and later audit findings against current evidence.
 2. Repair compiler correctness and finish iterative traversal. Each critical/high
@@ -481,10 +489,23 @@ sum 661,665. At 100,000 accesses they agree on 49,999 hits, 50,001 misses
 and sum 6,616,665. The independent model checks 66 failure/retry cases.
 Primary inline and fixed-pool C baselines must use zero workload heap
 allocations. Per-miss heap storage is a separate ownership stress case.
-The native contract and inline C source are prepared. The independent
-pool source and native checks remain pending. Python model results do not
-establish actual allocation, runtime storage or speed. See the
-[preparation record](../audits/2026-10-07/memory-w5-preparation.json).
+Both C sources passed 84 bounded O0 native checks each. Exact small
+traces, parser rejection and output-failure exits were checked against
+archived raw outputs. Native layout has 44 rows for inline storage and
+47 for the pool. The pool category summary omitted a 15-byte snapshot;
+source and native records include it. The corrected 475-byte inventory
+is not peak memory. See the [native record](../audits/2026-10-07/memory-w5-verification.json);
+the [preparation record](../audits/2026-10-07/memory-w5-preparation.json)
+preserves the earlier source-only stage.
+
+The corrected arena/RC contract distinguishes wrapper attempts, actual
+allocator calls and physical allocation/free counts. Source-specific layouts,
+fault traces and prototype source are frozen. Independent source review found
+no blocker in the named paths; compilation and native qualification remain
+pending. Silent trace-failure cleanup still needs an allocator observer.
+Large workloads, optimized execution, complete memory accounting and
+performance remain unqualified. Keep stack eligibility separate from
+the proposed whole-cache heap experiments.
 
 Maintain five warmups and thirty measured samples per workload when measurement
 is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,

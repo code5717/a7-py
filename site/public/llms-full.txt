@@ -1474,6 +1474,17 @@ incomplete. Alias tracking also has gaps for array elements, selected or joined
 field paths, nested aggregates, borrowed aggregates and direct deletion of call
 results. Accepted programs can still violate allocation lifetimes.
 
+Represented readonly calls reject known nil field reads across branches,
+read-only defers and certified loops. The executable-entry check evaluates the
+original entry file's parameterless `main` against its complete readonly summary.
+A proved reachable nil read adds semantic exit 6 after ordinary safety checks.
+Imported or nested functions named `main` do not replace it; `--lib` has no
+implicit execution root. Unknown or incomplete summaries do not supply a proof.
+Effectful entries, ordered mutation and general caller-local truth remain open.
+The entry diagnostic includes the originating callee line and column, but not
+its filename. The [entry qualification record](https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json)
+identifies the checked snapshot and remaining limits.
+
 Slices must not outlive their backing arrays, and references must not outlive referents. These are required programming constraints. Full ownership, alias tracking, and lifetime enforcement remain incomplete. There is no implicit deep-copy guarantee.
 
 ## Safety checks and remaining gaps
@@ -1991,17 +2002,23 @@ The recursive-group, deepcopy and generated-method exception lists are empty.
 Arbitrary external Python callbacks inside AST payloads remain outside the
 traversal guarantee.
 
-These candidates are newer than the fully qualified, pushed `621f70c`
-checkpoint. Focused and baseline-comparison checks passed, and the backend
-candidate passed all 51 native examples in debug and release. A combined
-release gate is still required. These results do not establish a fully iterative
-compiler or full V1. The
+The current source passed the combined release gate with 3,918 tests and one
+expected failure, all 51 native examples, and all 11 compiler/package checks.
+The [entry verification record](https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json)
+identifies the frozen source and results. Passing this gate does not establish
+complete iterative traversal or full V1. The
 [architecture record](https://github.com/code5717/a7-py/blob/master/docs/ARCHITECTURE.md)
-identifies the candidate source versions and evidence.
+records the traversal work and its remaining limits.
 
 Safety checks cover narrowing casts, division and modulo denominators, indexing
-and slice bounds, nil reference use, and direct use after `del`. Alias and
-lifetime gaps remain. These checks do not prove complete memory safety, and
+and slice bounds, nil reference use, and direct use after `del`. The original
+executable entry declaration is also checked against its complete readonly
+summary. A proved reachable nil read adds semantic exit 6 after ordinary safety
+checks; existing fatal diagnostics retain priority. Imported or nested functions
+named `main` do not replace that entry, and `--lib` supplies no execution root.
+Missing, incomplete or unresolved summaries add no proof or new acceptance.
+Effectful entries, ordered mutation and general caller-local truth remain
+incomplete. Alias and lifetime gaps remain. These checks do not prove complete memory safety, and
 compilation is not sandboxing. See [memory](/a7-py/docs/language/memory.md) and
 [status](/a7-py/docs/status.md).
 
@@ -2059,6 +2076,15 @@ the recursion exception list is empty. Deep pipeline tests run at Python
 recursion limit 100. A7 source recursion remains a separate rejected construct.
 
 ## Known gaps
+
+The readonly executable-entry check passed the repaired full release gate and
+12 valid native build/run controls on the recorded source snapshot. It evaluates
+only a complete summary of the original parameterless entry declaration and
+adds semantic exit 6 for a proved reachable nil read. Library mode has no
+implicit execution root. Effectful entries and general caller-local truth remain
+incomplete. See the [qualification record](https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json)
+for the first failed test-hook integration, its repair and the bounded native
+controls. This does not qualify full safety or V1.
 
 - Safety remains incomplete for aliases through array elements and selected
   fields, loop field-argument deletion and unsupported callee effects. A bounded

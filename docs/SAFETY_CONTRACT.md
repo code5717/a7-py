@@ -105,6 +105,17 @@ reference fields, containers, nonliteral caller captures, effectful callees and
 resource-excluded summaries remain incomplete; an unknown predicate is not a
 safety proof. Existing effectful-call analysis retains its separate limits.
 
+The executable-entry check evaluates the original entry file's
+parameterless `main` declaration after ordinary safety checks. A complete
+readonly summary that proves a reachable nil read adds semantic exit 6. Existing
+fatal diagnostics retain priority. An imported or nested declaration named
+`main` does not replace the selected entry; `--lib` supplies no execution root.
+Missing, incomplete and unresolved summaries add no proof or new acceptance.
+The entry diagnostic includes the originating callee line and column but not
+its source filename. Twelve native build/run controls and the repaired
+full release gate passed on the identified source snapshot.
+Effectful entries, ordered mutation and general caller-local truth remain open.
+
 A bounded direct-call repair selects return facts for bodies containing only
 blocks, boolean-literal or boolean-parameter conditions, and reference-parameter
 or nil returns. Parameters must have explicit `ref` or `bool` types, and every

@@ -441,7 +441,8 @@ class SafetyProofPass:
         self.reported: set[tuple[int, str]] = set()
         self.refused_nonwrap: set[tuple[int, str]] = set()
 
-    def analyze(self, program: ASTNode, filename: str = "<unknown>") -> BackendPlan:
+    def analyze(self, program: ASTNode, filename: str = "<unknown>", *,
+                executable_entry: Optional[ASTNode] = None) -> BackendPlan:
         self.current_file = filename
         self.errors = []
         self.obligations = []
@@ -459,6 +460,21 @@ class SafetyProofPass:
         self._reset_bindings()
         self._bind_names(program)
         self._visit_program(program)
+        # Entry identity comes from the original file before module merging.
+        # Existing diagnostics retain priority; incomplete summaries stay unknown.
+        if executable_entry is not None and not self.errors:
+            name = self._key(executable_entry)
+            violation, origin, disposition = self.readonly_requirements.evaluate(name, [])
+            self.readonly_requirements.dispositions.append((id(executable_entry), name, disposition))
+            if violation is True:
+                origin_span = getattr(origin, "span", None)
+                required = "readonly executable entry field access must remain non-nil"
+                if origin_span is not None:
+                    required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column})"
+                obligation = self._obligation(ObligationKind.REF_NON_NIL, executable_entry,
+                    "readonly_entry_precondition", None, required, TypeErrorType.CANNOT_DEREFERENCE)
+                self._error(obligation, "reachable readonly callee read receives nil",
+                    "Guard the reference or avoid the entry path that reads it")
         return self.backend_plan
 
     def _origin_set(self, values):

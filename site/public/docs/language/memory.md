@@ -89,6 +89,17 @@ incomplete. Alias tracking also has gaps for array elements, selected or joined
 field paths, nested aggregates, borrowed aggregates and direct deletion of call
 results. Accepted programs can still violate allocation lifetimes.
 
+Represented readonly calls reject known nil field reads across branches,
+read-only defers and certified loops. The executable-entry check evaluates the
+original entry file's parameterless `main` against its complete readonly summary.
+A proved reachable nil read adds semantic exit 6 after ordinary safety checks.
+Imported or nested functions named `main` do not replace it; `--lib` has no
+implicit execution root. Unknown or incomplete summaries do not supply a proof.
+Effectful entries, ordered mutation and general caller-local truth remain open.
+The entry diagnostic includes the originating callee line and column, but not
+its filename. The [entry qualification record](https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json)
+identifies the checked snapshot and remaining limits.
+
 Slices must not outlive their backing arrays, and references must not outlive referents. These are required programming constraints. Full ownership, alias tracking, and lifetime enforcement remain incomplete. There is no implicit deep-copy guarantee.
 
 ## Safety checks and remaining gaps

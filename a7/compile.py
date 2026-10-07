@@ -350,10 +350,13 @@ class A7Compiler:
                 )
                 entry_errors: list[Any] = []
                 has_main = False
+                executable_entry = None
                 for declaration in ast.declarations or []:
                     if declaration.kind != NodeKind.FUNCTION or declaration.name != "main":
                         continue
                     has_main = True
+                    if not self.is_library and not declaration.parameters and declaration.return_type is None:
+                        executable_entry = declaration
                     if declaration.parameters or declaration.return_type is not None:
                         entry_errors.append(SemanticError(
                             "Executable entry point main must have no parameters and no return value",
@@ -530,7 +533,7 @@ class A7Compiler:
                         if sv_ok:
                             safety = SafetyProofPass(symbol_table, type_checker.node_types)
                             safety.source_lines = source_lines
-                            backend_plan = safety.analyze(ast, str(input_path))
+                            backend_plan = safety.analyze(ast, str(input_path), executable_entry=executable_entry)
                             sp_ok = len(safety.errors) == 0
                             semantic_passes.append(
                                 {

@@ -64,8 +64,8 @@ def test_linear_factory_fanout_retains_compact_runtime_facts(tmp_path, monkeypat
     observed = []
 
     class Capture(SafetyProofPass):
-        def analyze(self, *args):
-            result = super().analyze(*args)
+        def analyze(self, *args, **kwargs):
+            result = super().analyze(*args, **kwargs)
             observed.append((len(self.allocation_graph.nodes),
                              len(self.allocation_graph.combinations),
                              sum(len(fact.allocations) for fact in self.facts.by_node.values())))

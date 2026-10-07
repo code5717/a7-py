@@ -1,0 +1,57 @@
+{
+  "status": "Both standalone C baselines passed bounded O0 native correctness; W5 memory/performance qualification remains incomplete",
+  "strategies": {
+    "inline": {
+      "attempt": "tmp/v1-completion-2026-10-07/memory-w5-inline-native-prep-v2/attempts/20261007T083751Z-a20f9330",
+      "run_sha256": "91e80dc5dd44a3b5a8007b3bd78785d04886e9dd78250cb2c576fa1c67193f6f",
+      "preparation_manifest_sha256": "94fc99e726bfde9b258e9e32e89c1d49d9df330e3880bd28536dfe5701212e8e",
+      "audit_manifest_sha256": "4b77a089052db4e314b733ce6394810eee87ee71fbccf78df61f56771a4cd4b0",
+      "audit_report_sha256": "44f52bfedb7046a7f8c621f8e237dd3dedbc373e351b9083751f6db68f9ef881",
+      "audit_results_sha256": "14c9c6fb4846465b84034802d10ad29d034f979825e5929c763f641a5c3f7f50",
+      "binary_sha256": "6c0499fe481902faf56b4a400a5bc3a27b15786928b92fb4768613dca9812c60",
+      "commands": 90,
+      "case_counts": {
+        "semantic": 31,
+        "invalid": 47,
+        "sink_failure": 6
+      },
+      "captured_streams": 172,
+      "unobserved_streams": 8,
+      "native_layout_rows": 44,
+      "declared_object_inventory_bytes": 651
+    },
+    "pool": {
+      "attempt": "tmp/v1-completion-2026-10-07/memory-w5-pool-native-prep/attempts/20261007T090841Z-c61e2e8c",
+      "run_sha256": "6eaafc4ca8cd2c3dece824bfcdef8d4455ff5c0f56635726288d78f48e3b2cb6",
+      "preparation_manifest_sha256": "b33c1f5a87a773fc76d1ee4b2526a964316e621827e818d64189f320f81c5801",
+      "audit_manifest_sha256": "2aa2823af326d434f648b8074173f924e33ef1f462b26a0df6679ee3a54437ac",
+      "audit_report_sha256": "acfc2d3bd1a733ed31220e521b05082fd7cd77af2f787f4efaaf31a2b91d349b",
+      "audit_results_sha256": "ed24b1c0d0407fd78773f0fef95ba87c8485792d13ed53c91cd301a8ee7ca576",
+      "binary_sha256": "0433ad4f92650ea3e6a5ea07ea46211107a340ca5056b6b120b44c507ee8a7c6",
+      "commands": 90,
+      "case_counts": {
+        "semantic": 31,
+        "invalid": 47,
+        "sink": 6
+      },
+      "captured_streams": 172,
+      "unobserved_streams": 8,
+      "native_layout_rows": 47,
+      "declared_object_inventory_bytes": 475
+    }
+  },
+  "build": "Strict C11 -O0 -Wall -Wextra -Wpedantic -Werror",
+  "semantic_scope": "Each source passed 31 small full-trace cases, including loader failure/retry and two separate cold invocations. Every captured trace and stdout matched the common contract and timestamp model.",
+  "parser_and_sink_scope": "Each source passed 47 invalid-input cases and six output-failure cases. Positive exits 5/6 were observed for stdout/trace failures using /dev/full and closed pipes.",
+  "audit_independence": "C source authors differ from the timestamp model author. The archive auditor authored that model and the inline runner; archived recomputation is not a second independent semantic model or an independent review of that runner design.",
+  "pool_metadata_correction": "The descriptive category list omits category 211, a 15-byte snapshot. Frozen expected rows, source and native layout include it. The complete declared inventory is 475 bytes, not 460. Original evidence remains unchanged.",
+  "observability": "Eight descriptors per source were redirected and unobserved. Both-unwritable exit 6 does not prove both failures were observed. Missing cleanup output cannot prove cleanup after a trace failure.",
+  "managed_prototypes": {
+    "status": "Corrected contract and prototype source frozen; independent source review found no blocker in named paths. Compilation and native execution remain pending.",
+    "contract_manifest_sha256": "a7e0c59c5c6ba8b189df71e8d3aa95a0751fee79f7a1d9a5de75ede2bc3c0a58",
+    "source_manifest_sha256": "76a059b3edb051c40e69ec76cfc15746cbefeaca69004437488da6b002cfc843",
+    "independent_source_review_manifest_sha256": "4f9a0a2a58ac8aca92b236e768c70ea0c078f947c9d1afcb13dc0771ca6e31b9",
+    "boundary": "Abstract source-state checks do not prove native ABI or reclamation. Silent trace-failure cleanup needs a separate allocator observer. No production memory mechanism is selected."
+  },
+  "boundary": "Declared inventories are not peak stack or total runtime memory. No allocator interposition, sanitizer, optimized-code inspection, large native workload, timing, full peak accounting, A7 lowering, production memory selection or L38 acceptance."
+}

@@ -5,6 +5,10 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- The selected executable entry rejects a known nil
+  read through its complete readonly summary. Library mode has no implicit
+  execution root. General caller-local and effectful proofs remain incomplete.
+
 - Represented readonly callees reject known nil field reads across branches,
   defers and certified loops. Previously accepted guarded controls remain
   accepted. Finite-loop

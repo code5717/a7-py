@@ -1,8 +1,8 @@
 {
-  "recorded_at": "2026-10-06T23:38:07.463503+00:00",
-  "completed_external_reviews": 49,
+  "recorded_at": "2026-10-07T09:11:07.080712+00:00",
+  "completed_external_reviews": 51,
   "model_counts": {
-    "zai-coding-plan/glm-5.3": 37,
+    "zai-coding-plan/glm-5.3": 39,
     "zai-coding-plan/glm-5.3-flash": 12
   },
   "reviews": [
@@ -479,6 +479,35 @@
       "manifest_sha256": "c79672fbd2df58a62d3425d8df338a35dfee4a0d7238c8e8d41d73ac04e78d5a",
       "reconciliation_sha256": "ae9012b14be264a9db809f7e570215d6f99b796c3a4933436fb5c9c32dce57c6",
       "disposition": "No critical or major source finding. The reviewer matched 37 matrix cases and 126 prior cases with accepted Zig parity. The independently reproduced 0/False collision corrects its narrower 1/True-only explanation. Initial copied-fixture omission and later verification of 513 hashes and 43 source rows are preserved separately. Full gate and six native controls passed on the parent qualification snapshot; unknown and incomplete predicates remain unproved."
+    },
+    {
+      "reviewer": "readonly_executable_entry",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T08:52:25.763000+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/safety-readonly-entry-glm-review/review.log",
+      "log_sha256": "3cffad6ea05fd18c5ba04b2918ec3c91a4166e7c193e7a6dc7b543e589da3d95",
+      "manifest_sha256": "b8d68a6b4939ba4acabe19dd4fbea1a0acee9e02c21edc1bb1da76fc220006b8",
+      "report_sha256": "8f15d421bc7c25899cf9e736f562fefb69c5d4a733dca6436b6da27b2e4696d0",
+      "reconciliation_sha256": "cc380f1ae34bba743db58d2b3d8a687ff1ddc369cf9a361b40b64ce7d6dd308e",
+      "disposition": "Completed advisory blocked the original entry candidate on a confirmed test-hook keyword-forwarding failure. The full gate reproduced that failure. The later two-line test repair and its follow-up review are separate evidence. Original production semantics were not shown incorrect. System Python used a Rich stub; separate controller replay with actual Rich matched 88 structured outcomes and emitted hashes. Native qualification remains parent-owned.",
+      "followup": {
+        "manifest_sha256": "d501ed6cde1d9adb42c256c11ac875cbbb92cfc7153a13eb69f3e12ea48ca236",
+        "report_sha256": "490f6ca0c1a8bfddf9d68e7e7c7280bdaaec0bc1057193b89356d28351a5f155",
+        "disposition": "Same-session bounded continuation resolves F1 for the two-line test-only candidate. Six compile probes preserve keyword forwarding and entry rejection. Original blocked report remains unchanged. No additional independent review count; repaired full gate was pending at this follow-up; its later passed result is recorded in readonly-entry-verification.json."
+      }
+    },
+    {
+      "reviewer": "memory_w5_c_sources",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T09:05:46.030000+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/memory-w5-c-glm-review/review.log",
+      "log_sha256": "1da5d7198045fd04c459bb914bb710acf82a7782418d445db6212fa40dcecf87",
+      "manifest_sha256": "1790fa3265351ef969ba0c647309481c13abb61da1388a623bfbb6b9bc0c08c5",
+      "report_sha256": "48ae6cb590c9ef032163f928d0892b1cfa9032861f3a1680f5993a7f1f0f2248",
+      "reconciliation_sha256": "612c9697f8976caa0b6e11705f6098d60275eb874c0247b55511ac534cba1540",
+      "disposition": "Bounded source/model review found no confirmed blocker. Reconciliation corrects pool inventory475 rather than460, sampled rather than exhaustive N parsing, and child1830 total comparisons. Remaining-risk-entirely-native claim rejected. Parent native checks are separate and were not reviewed."
     }
   ],
   "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",

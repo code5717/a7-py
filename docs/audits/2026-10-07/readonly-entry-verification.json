@@ -1,0 +1,66 @@
+{
+  "status": "Local entry-check qualification passed; full V1 remains incomplete",
+  "source_manifest_sha256": "5310e967aff6962805d768070a8a2e86a522f91030bda7d1058c5f2e2f3c5dc9",
+  "full_gate": {
+    "started_at": "2026-10-07T09:09:38.734067+00:00",
+    "manifest_sha256": "5310e967aff6962805d768070a8a2e86a522f91030bda7d1058c5f2e2f3c5dc9",
+    "command": [
+      "taskset",
+      "-c",
+      "0-11",
+      "env",
+      "A7_PYTEST_WORKERS=8",
+      "./run_release_checks.sh"
+    ],
+    "checkout": "/var/tmp/a7-readonly-entry-v2-qualification-p24owiy2/checkout",
+    "indexed_source_files_before_start": 1621,
+    "boundary": "Entry candidate with test-hook keyword forwarding repair. First qualification failed one pytest integration hook; its evidence remains preserved. Production compiler bytes match that first candidate. This new full gate must pass independently; no V1 completion claim.",
+    "pid": 2856867,
+    "exit_code": 0,
+    "finished_at": "2026-10-07T09:38:28.440721+00:00",
+    "changed_sources": [],
+    "log_sha256": "677046b9846e6f517785358a12524f92ea7a7f176f6617471c435a5a19bbfde0"
+  },
+  "pytest": {
+    "passed": 3918,
+    "xfailed": 1
+  },
+  "compiler_package_checks": "11/11",
+  "first_failed_gate": {
+    "started_at": "2026-10-07T08:39:09.551372+00:00",
+    "manifest_sha256": "983c7ec3ccfc793d1eaa0d42a482d370da7a80f342fd4d3f3bec68b5efe085e1",
+    "command": [
+      "taskset",
+      "-c",
+      "0-11",
+      "env",
+      "A7_PYTEST_WORKERS=8",
+      "./run_release_checks.sh"
+    ],
+    "checkout": "/var/tmp/a7-readonly-entry-qualification-zgjkuryv/checkout",
+    "indexed_source_files_before_start": 1621,
+    "boundary": "Executable-entry candidate composed on pushed 1af5520 with pending-status docs. Previous readonly V3 qualification does not qualify these new compiler changes. External review remains separate. No V1 completion claim.",
+    "pid": 2801925,
+    "exit_code": 1,
+    "finished_at": "2026-10-07T09:07:49.848841+00:00",
+    "changed_sources": [],
+    "log_sha256": "fdb9ab6211bf61852312d0a5f0f35b0dde9bde448c659f848b19558f195fdd89"
+  },
+  "repair": "Only the provenance test hook changed to accept and forward **kwargs. All resource-state assertions remain. All a7 source hashes match the first candidate and its native controls.",
+  "native": {
+    "builds": 12,
+    "safe_executions": 12,
+    "unsafe_compile_only": 12,
+    "audit_manifest_sha256": "f01c9fb7732acaa5a194c20e0a1ad4fe7f218f65fe68ea570848b2d7d58ce6e3",
+    "run_sha256": "9130d75863a4e3e3874d31cb705bc669e3ff090aa6a3b910d50308df6d11af02",
+    "boundary": "Four safe controls in three profiles terminate with empty stdout/stderr and exit 0. These do not prove retained optimized work or rich runtime state. The literal unsafe case preserves an existing check; local/counter/defer unsafe cases exercise the entry check.",
+    "metadata_correction": "Original runner already consumed each release hash exclusively. The added launcher provides a second packet-wide exclusive marker. The original incorrect release explanation is preserved with an additive correction."
+  },
+  "reviews": {
+    "independent_manifest_sha256": "813aeba8d98bf321fa6318aaf46a316c1af3bd465b9f94f940f0be08b7468245",
+    "original_glm_manifest_sha256": "b8d68a6b4939ba4acabe19dd4fbea1a0acee9e02c21edc1bb1da76fc220006b8",
+    "test_repair_glm_followup_manifest_sha256": "d501ed6cde1d9adb42c256c11ac875cbbb92cfc7153a13eb69f3e12ea48ca236",
+    "boundary": "Original GLM review blocked the test-hook integration. Separate same-session follow-up resolved that finding for the two-line repair. Rich-stub rendering limits and separate actual-Rich replay are retained in the original envelope."
+  },
+  "boundary": "Only complete readonly entry summaries can add this rejection. Effectful, unresolved and work-excluded summaries do not supply a proof. General caller-local truth, container and lifetime analysis remain incomplete. This record does not qualify the separate stdio candidate or a production memory mechanism."
+}

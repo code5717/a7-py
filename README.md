@@ -112,6 +112,11 @@ remain accepted. Existing call checks still apply. General callee, container
 and lifetime proofs remain incomplete; see the
 [safety contract](docs/SAFETY_CONTRACT.md).
 
+The compiler also checks the original executable entry declaration against
+its complete readonly summary. It rejects a represented nil read reached through
+a known local selector. `--lib` has no implicit executable root. General
+caller-local Boolean and effect proofs remain incomplete.
+
 Use `usize` for sizes, lengths and indices. Use `isize` for signed pointer-sized
 offsets and position differences. A7 source recursion is rejected; use loops or
 explicit stacks. Current traversal candidates use worklists for parsing, type

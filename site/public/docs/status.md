@@ -41,6 +41,15 @@ recursion limit 100. A7 source recursion remains a separate rejected construct.
 
 ## Known gaps
 
+The readonly executable-entry check passed the repaired full release gate and
+12 valid native build/run controls on the recorded source snapshot. It evaluates
+only a complete summary of the original parameterless entry declaration and
+adds semantic exit 6 for a proved reachable nil read. Library mode has no
+implicit execution root. Effectful entries and general caller-local truth remain
+incomplete. See the [qualification record](https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json)
+for the first failed test-hook integration, its repair and the bounded native
+controls. This does not qualify full safety or V1.
+
 - Safety remains incomplete for aliases through array elements and selected
   fields, loop field-argument deletion and unsupported callee effects. A bounded
   exact-callee repair covers represented field replacement/deletion paths.

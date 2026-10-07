@@ -165,17 +165,23 @@ The recursive-group, deepcopy and generated-method exception lists are empty.
 Arbitrary external Python callbacks inside AST payloads remain outside the
 traversal guarantee.
 
-These candidates are newer than the fully qualified, pushed `621f70c`
-checkpoint. Focused and baseline-comparison checks passed, and the backend
-candidate passed all 51 native examples in debug and release. A combined
-release gate is still required. These results do not establish a fully iterative
-compiler or full V1. The
+The current source passed the combined release gate with 3,918 tests and one
+expected failure, all 51 native examples, and all 11 compiler/package checks.
+The [entry verification record](https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json)
+identifies the frozen source and results. Passing this gate does not establish
+complete iterative traversal or full V1. The
 [architecture record](https://github.com/code5717/a7-py/blob/master/docs/ARCHITECTURE.md)
-identifies the candidate source versions and evidence.
+records the traversal work and its remaining limits.
 
 Safety checks cover narrowing casts, division and modulo denominators, indexing
-and slice bounds, nil reference use, and direct use after `del`. Alias and
-lifetime gaps remain. These checks do not prove complete memory safety, and
+and slice bounds, nil reference use, and direct use after `del`. The original
+executable entry declaration is also checked against its complete readonly
+summary. A proved reachable nil read adds semantic exit 6 after ordinary safety
+checks; existing fatal diagnostics retain priority. Imported or nested functions
+named `main` do not replace that entry, and `--lib` supplies no execution root.
+Missing, incomplete or unresolved summaries add no proof or new acceptance.
+Effectful entries, ordered mutation and general caller-local truth remain
+incomplete. Alias and lifetime gaps remain. These checks do not prove complete memory safety, and
 compilation is not sandboxing. See [memory](/a7-py/docs/language/memory.md) and
 [status](/a7-py/docs/status.md).
 

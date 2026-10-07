@@ -441,9 +441,15 @@ runtime storage remain unmeasured. The RC prototype clears this
 container's owned edges before releasing roots. General cycle collection,
 timing and L38 remain unqualified. See the
 [W3 record](audits/2026-10-07/memory-w3-verification.json).
-W5's independent cache models agree on both workload sizes and failure
-retry behavior. Native implementations and their memory/performance
-qualification remain pending.
+W5 inline and fixed-pool C baselines each passed 84 bounded O0 native
+checks: 31 small full traces, 47 invalid inputs and six output failures.
+Archived outputs match the independent timestamp model. Their declared
+storage inventories are 651 and 475 bytes; these are not measured peaks.
+The corrected arena/RC contract and source are frozen and independently
+reviewed. Managed compilation and native execution, large C workloads,
+optimized execution, full memory accounting, performance and L38
+qualification remain pending. See the
+[W5 native record](audits/2026-10-07/memory-w5-verification.json).
 Canonical Option/Result and typed existing stdlib hooks are integrated. The frozen
 compiler/package gate passed 3,826 tests with one expected failure and all 11
 checks. The release wrapper then failed a stale generated docs manifest. After
@@ -458,6 +464,24 @@ review matches 37 matrix cases and preserves 126 prior results. Six valid native
 controls pass across all three profiles. Caller-local selectors and summaries
 outside the existing work certificate can still leave unsafe reads unresolved.
 The compiler does not treat those unresolved predicates as safety proofs.
+
+The compiler also checks the original executable entry declaration against
+its complete readonly summary. It rejects a represented nil read reached through
+a known local selector. `--lib` has no implicit executable root. General
+caller-local Boolean and effect proofs remain incomplete.
+The check retains existing entry-signature diagnostic priority. Its callee
+origin text reports line and column without the originating source filename.
+Independent compile-only review found six new rejections in 26 paired sources;
+15 jointly accepted sources emit identical Zig. This does not qualify native
+behavior or close the unresolved cases above. The native controls establish
+successful empty-output execution in three profiles, without measuring
+retained optimized work. The first full gate failed a test hook that did not
+forward the new keyword argument. Its two-line repair preserved all state-size
+assertions. The fresh full release gate passed 3,918 tests with one expected
+failure, all 11 compiler/package checks, the site, dependencies and static
+checks. All 1,621 frozen source files remained unchanged. The
+[entry verification record](audits/2026-10-07/readonly-entry-verification.json)
+preserves both gate results and the independent/GLM reviews.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence
