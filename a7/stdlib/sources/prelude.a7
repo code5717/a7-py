@@ -1,0 +1,2 @@
+Option :: union(tag) { some: $T, none: bool }
+Result :: union(tag) { ok: $T, err: $E }

@@ -1,9 +1,9 @@
 {
   "recorded_at": "2026-10-06T23:38:07.463503+00:00",
-  "completed_external_reviews": 41,
+  "completed_external_reviews": 45,
   "model_counts": {
-    "zai-coding-plan/glm-5.3": 31,
-    "zai-coding-plan/glm-5.3-flash": 10
+    "zai-coding-plan/glm-5.3": 33,
+    "zai-coding-plan/glm-5.3-flash": 12
   },
   "reviews": [
     {
@@ -385,6 +385,56 @@
       "report": "tmp/v1-completion-2026-10-07/memory-w4-v2-glm-review/REVIEW.md",
       "report_sha256": "591c7c3a0f850e8962af43507af662f6aa0301df9d9f872dbfaf53d59da1c633",
       "disposition": "No blocking source finding in the standalone W4 fixture. The reviewer source-derived model matches all 24 archived native traces. Four real weaknesses in the advisory oracle are rejected by the mandatory independent full-sequence checker. Correctness is limited to Debug LLVM/LLD and C-O0; complete peak memory, optimized timing, L38 and production memory selection remain open."
+    },
+    {
+      "reviewer": "memory_w1_v1",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T05:40:03.264000+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/memory-w1-glm-review/review.log",
+      "log_sha256": "936643429eccb23ea8397acecb9a291f68ba03d6b44b079152c650256a495049",
+      "report": "tmp/v1-completion-2026-10-07/memory-w1-glm-review/authoritative-completion/REVIEW-final.md",
+      "report_sha256": "c312591e1ccfe76ccd29fbfc54321e4d58f26300c2ae052be5eb92fbe2e726d5",
+      "authoritative_completion": "tmp/v1-completion-2026-10-07/memory-w1-glm-review/authoritative-completion/session-status.json",
+      "authoritative_completion_sha256": "032f44765a2a5c67bade58b5f0594b0def3ce18247f30b31e5e77e2a21d6dc60",
+      "disposition": "Main and built-in review completed according to read-only OpenCode session records; the wrapper exited earlier. Frozen v1 source review covers 42 synthetic schedules, not repaired v3 qualification. There were 11,711 mutation attempts, including 760 duplicate event mutations. The controller rejects the assertion that failed-copy publication is harmless: v2 repairs it and the v3 native corruption controls verify that repair. Later native compilation exposed and fixed the alignment type error. E9 and E10 describe latent state without a normal-input trigger. Optimized execution, timing and complete memory accounting remain unqualified. The later v1-to-v3 Flash delta review completed separately and is recorded below."
+    },
+    {
+      "reviewer": "memory_w1_v3_delta",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T06:12:45.003812+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/memory-w1-delta-flash-review/review.log",
+      "log_sha256": "d33122805a9b388b833bef5091b5a18ce403cba4b48c1db1a3fc3f90ada0fbcb",
+      "report": "tmp/v1-completion-2026-10-07/memory-w1-delta-flash-review/REPORT.md",
+      "report_sha256": "186ff276eade0583dfb759c802d74095f4fe817e223f24e5e908b987abcd9370",
+      "disposition": "No defect found in the failed-copy publication repair and explicit alignment type delta. All 301 input files remained unchanged; archived ordinary and corruption traces were checked without native execution. Historical comparison uses annotated v1 control flow. Exact patch and mutant bytes reconstruct; transform metadata alone omits indentation and comments. Reviewer permission denials and corrected script errors remain preserved. Arbitrary failure injection, optimized timing, complete memory accounting and production lowering remain unqualified."
+    },
+    {
+      "reviewer": "stdlib_b2_v2",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T06:27:25.790000+00:00",
+      "exit_code": 0,
+      "report": "tmp/v1-completion-2026-10-07/stdlib-b2-glm-review/authoritative-completion/REPORT.md",
+      "report_sha256": "be6a09a0da35514a3fd13e96d821abf1d3ae59f873ebff1d00c6120ba8e5351e",
+      "authoritative_completion": "tmp/v1-completion-2026-10-07/stdlib-b2-glm-review/authoritative-completion/completion.json",
+      "authoritative_completion_sha256": "fe1ab6466e4e8f6863eeabae26bb581cbfbf736ee396a1dd0fc8e6b2fd88c934",
+      "reconciliation": "tmp/v1-completion-2026-10-07/stdlib-b2-glm-review/RECONCILIATION.md",
+      "reconciliation_sha256": "4fe91216f38e811699cc201ba746cda3a8b32d79e6c5429d21bbb8ff6c484b53",
+      "disposition": "Main and all four built-in reviews completed. One introduced blocker confirmed by paired source probes: void I/O value contexts regress from semantic exit6 to internal exit8 because signature.return_type is None. The passing v2 gate does not clear this counterexample. Parent v3 repair and fresh gate are separate. Predicted match-map and qualified-tag issues were refuted by primary probes. Math.abs coverage prose was stale; package smoke had passed but its evidence was absent from the review packet. All3226 copied inputs remained unchanged."
+    },
+    {
+      "reviewer": "stdlib_b2_v3_void_delta",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T06:44:20.544000+00:00",
+      "exit_code": 0,
+      "report": "tmp/v1-completion-2026-10-07/stdlib-b2-v3-flash-review/REPORT.md",
+      "report_sha256": "a6c5ab4e3ec06e224e46cd4aa476168ae03a75c51c57ad952fb5871836467c0c",
+      "log": "tmp/v1-completion-2026-10-07/stdlib-b2-v3-flash-review/review.log",
+      "log_sha256": "ed324fb5d27da0ac709429bce7a74c9462904cfa74d7c2a5b65046701e833037",
+      "reconciliation": "tmp/v1-completion-2026-10-07/stdlib-b2-v3-flash-review/RECONCILIATION.md",
+      "reconciliation_sha256": "ece109c5f718da773352df26de2b763052b7f048d13efcb519e4ea3469a3c2bb",
+      "disposition": "No correctness finding in the four-path v3 delta. Void return, typed initializer, binary, condition, equality and assignment contexts restore semantic6 from internal8. Accepted controls emit identical Zig. Unannotated void binding still rejects at codegen7 as before. The immutable prompt named site/data/features.json; actual site/content/features.json was verified. Math.abs prose matches backend and existing three-profile test. Tool setup errors are retained; all3219 pinned files unchanged. Native/full v3 gate remains separate."
     }
   ],
   "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",
@@ -394,7 +444,7 @@
     "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
     "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
   },
-  "updated_at": "2026-10-07T05:26:54.692959+00:00",
+  "updated_at": "2026-10-07T06:49:26.990438+00:00",
   "current_compiler_hashes_label": "Integrated literal-return compiler source matching full manifest 86af92eb. Final evidence prose is checked separately.",
   "failed_followup_invocations": [
     {

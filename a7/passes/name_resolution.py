@@ -6,6 +6,7 @@ reports name collisions. Uses of names are resolved by the type checker.
 """
 
 from collections import deque
+from importlib.resources import files
 from typing import Optional, List
 
 from a7.ast_nodes import ASTNode, NodeKind
@@ -40,7 +41,7 @@ class NameResolutionPass:
         self._rejected: set = set()
         self._nested_functions = deque()
 
-    def analyze(self, program: ASTNode, filename: str = "<unknown>") -> SymbolTable:
+    def analyze(self, program: ASTNode, filename: str = "<unknown>", *, include_prelude: bool = True) -> SymbolTable:
         """
         Perform name resolution on a program.
 
@@ -58,8 +59,64 @@ class NameResolutionPass:
         self.current_file = filename
         self.errors = []
 
-        # Visit the program
+        if include_prelude:
+            from a7.tokens import Tokenizer
+            from a7.parser import Parser
+            # Generated identities cannot capture even a legal local __ name.
+            written_names = set()
+            bindings = {
+                NodeKind.FUNCTION: "Function", NodeKind.STRUCT: "Struct",
+                NodeKind.ENUM: "Enum", NodeKind.UNION: "Union",
+                NodeKind.TYPE_ALIAS: "Type alias", NodeKind.VAR: "Variable",
+                NodeKind.CONST: "Constant", NodeKind.PARAMETER: "Parameter",
+                NodeKind.GENERIC_PARAM: "Generic parameter",
+                NodeKind.TYPE_GENERIC: "Generic parameter",
+                NodeKind.PATTERN_ENUM: "Match capture",
+            }
+            pending = [program]
+            while pending:
+                node = pending.pop()
+                declared = [(node.name, bindings[node.kind])] if node.kind in bindings else []
+                if node.kind == NodeKind.IMPORT:
+                    declared.append((node.alias, "Import alias"))
+                elif node.kind in {NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
+                    declared.extend(((node.iterator, "Iterator"), (node.index_var, "Index variable")))
+                for name, label in declared:
+                    if name in {"Option", "Result"}:
+                        self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span,
+                                       f"{label} '{name}' conflicts with the compiler prelude")
+                if node.name:
+                    written_names.add(node.name)
+                if getattr(node, "module_identity_name", None):
+                    written_names.add(node.module_identity_name)
+                for value in vars(node).values():
+                    if isinstance(value, ASTNode):
+                        pending.append(value)
+                    elif isinstance(value, (list, tuple)):
+                        pending.extend(child for child in value if isinstance(child, ASTNode))
+            # One declaration per compilation; file scopes share these symbols.
+            for decl in program.declarations or []:
+                if not getattr(decl, "file_scope", None):
+                    decl.file_scope = filename
+            program.entry_file_scope = (program.declarations[-1].file_scope
+                                        if program.declarations else filename)
+            for source_name in ("prelude", "io"):
+                resource = files("a7.stdlib").joinpath("sources", source_name + ".a7")
+                source = resource.read_text(encoding="utf-8")
+                owner = "<stdlib/" + source_name + ">"
+                declarations = Parser(Tokenizer(source, owner).tokenize(), owner, source.splitlines()).parse().declarations
+                for decl in declarations:
+                    decl.file_scope = owner
+                    identity = "__a7_" + decl.name
+                    while identity in written_names:
+                        identity += "_"
+                    written_names.add(identity)
+                    decl.module_identity_name = identity
+                    decl.stdlib_declaration = True
+                program.declarations.extend(declarations)
         self.visit_program(program)
+        if include_prelude:
+            self.symbols.select_file_scope(program.entry_file_scope)
 
         # Return symbol table - caller should check self.errors
         return self.symbols
@@ -131,7 +188,7 @@ class NameResolutionPass:
         kind, label, mutable = described
         fallback = "<unknown>" if node.kind in (NodeKind.CONST, NodeKind.VAR) else "<anonymous>"
         name = node.name or fallback
-        if name.startswith("__") and self.symbols.current_scope.parent is None:
+        if name.startswith("__") and self.symbols.current_scope.parent is None and not getattr(node, "stdlib_declaration", False):
             self.add_error(SemanticErrorType.UNSUPPORTED_FEATURE, node.span,
                            f"Top-level name '{name}' is reserved for the compiler")
         self._predeclared.add(id(node))
@@ -139,6 +196,11 @@ class NameResolutionPass:
         identity = getattr(node, "module_identity_name", None)
         if identity:
             self.symbols.identity_symbols[identity] = symbol
+        if getattr(node, "stdlib_declaration", False):
+            if node.name in {"Option", "Result"}:
+                self.symbols.prelude_symbols[node.name] = symbol
+            else:
+                self.symbols.stdlib_type_symbols[node.name] = symbol
         if not self.symbols.define(symbol):
             self._rejected.add(id(node))
             self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"{label} '{name}'")

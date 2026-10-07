@@ -70,7 +70,7 @@ example. A file-scope `@type_set` alias works the same way.
 
 ## Status and restrictions
 
-Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic tagged unions specialize positionally. Standard-library `Option` and `Result` implementations are not shipped; generic enums remain unsupported.
+Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic tagged unions specialize positionally. Canonical prelude types `Option(T)` and `Result(T, E)` are available in every file. Their names cannot be redeclared; module imports remain explicit. Generic enums remain unsupported.
 
 Generic names start with a letter after `$` and may contain digits and underscores after that letter, so `$T1` is a valid spelling and `$123` is not. The tokenizer uses Unicode-aware character checks; ASCII names are the documented forms.
 

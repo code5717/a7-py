@@ -143,6 +143,8 @@ class ModuleResolver:
         """
         if not self._is_safe_module_path(module_path):
             return None
+        if module_path.startswith("std/"):
+            return None
 
         search_paths = (
             [Path(importing_file).resolve().parent]
@@ -177,6 +179,13 @@ class ModuleResolver:
                     active.remove(self.loading_stack.pop())
                     continue
                 try:
+                    if path.startswith("std/"):
+                        if not self._is_safe_module_path(path) or any(part in {"", ".", ".."} for part in path.split("/")):
+                            raise A7ImportError(f"Invalid reserved module path '{path}'")
+                        parent = Path(importer).resolve().parent if importer else self.entry_root
+                        if any(candidate.is_file() for base in {parent, self.entry_root}
+                               for candidate in (base / (path + ".a7"), base / path / "mod.a7")):
+                            raise A7ImportError(f"Module path '{path}' is reserved for the standard library; remove the project shadow")
                     if self.is_virtual_module(path):
                         self._load_virtual_module(path)
                         continue
@@ -254,7 +263,7 @@ class ModuleResolver:
         ast = Parser(tokens, file_path, source_lines).parse()
         self._attach_source_context(ast, file_path, source_lines)
         name_pass = NameResolutionPass()
-        name_pass.analyze(ast, file_path)
+        name_pass.analyze(ast, file_path, include_prelude=False)
         imports = [decl for decl in ast.declarations or [] if decl.kind == NodeKind.IMPORT]
         module_info = ModuleInfo(
             path=module_path,

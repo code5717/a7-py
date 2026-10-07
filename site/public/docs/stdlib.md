@@ -8,10 +8,16 @@ order: 30
 
 # Standard library
 
-A7 resolves standard modules through a compiler registry. It does not load A7
-stdlib source files from disk. `std/io` and `std/math` are the only registered
-modules. Their short aliases `io` and `math` are also recognized; use the
-`std/` spelling in new examples.
+A7 combines a typed hook registry with packaged A7 declarations. `std/io` and
+`std/math` are the registered modules. Their short spellings `io` and `math`
+remain recognized. Literal `std/` paths are reserved for shipped modules;
+project replacements and unavailable reserved modules fail with exit 3.
+
+`Option(T)` and `Result(T, E)` are canonical tagged unions available in every
+file. `Option` has `some: T` and `none: bool`; `Result` has `ok: T` and `err: E`.
+User declarations of those names fail with exit 6. Remove equivalent declarations
+or rename custom types. This prelude does not import modules or provide planned
+`std/option` and `std/result` helper functions.
 
 ## Implemented modules
 
@@ -45,10 +51,40 @@ The format must be a string literal. Each `{}` consumes one value. The number
 of placeholders must equal the number of trailing arguments. `{{` prints `{`
 and `}}` prints `}` without consuming an argument. Other brace text, such as
 `{ }`, prints literally. The backend chooses Zig placeholders from argument types.
-These functions return no value and must be used as statements. This special
+The `print`, `println` and `eprintln` calls return no value and must be used as statements. This special
 stdlib formatting support does not make user-defined variadic functions available.
 General formatting of arbitrary aggregate types is unverified; prefer scalar
 numbers, strings, booleans, and characters as in the checked examples.
+
+### Recoverable I/O
+
+| Call | Result | Input rule |
+| --- | --- | --- |
+| `io.println_ok(format, values...)` | `Result(usize, io.IoErr)` | Same literal-format rule as `println`; empty printing is supported |
+| `io.read_line(buf)` | `Result(usize, io.IoErr)` | Exactly one mutable `[]u8`; use a slice of a fixed array |
+
+```a7
+io :: import "std/io"
+main :: fn() {
+    buf: [32]u8
+    result := io.read_line(buf[0..])
+    match result {
+        case .ok(n): { io.println("read {} bytes", n) }
+        case .err(e): { io.println("read error {}", e) }
+    }
+}
+```
+
+`println_ok` counts bytes including the newline. `read_line` stores and counts the consumed
+newline and preserves remaining input for later reads. A full
+buffer returns its count; a later call continues the line. EOF after bytes returns
+that partial count. EOF before bytes returns `io.IoErr.EndOfStream`. An empty
+buffer returns `ok(0)` without consuming input. The other error variants are
+`WriteFailed`, `FlushFailed` and `ReadFailed`.
+
+Each file that names `io.IoErr` must import `io`. Results can be saved, passed to
+ordinary functions and returned by wrappers. Errors require explicit `match`;
+there is no propagation operator.
 
 ### std/math
 
@@ -85,7 +121,7 @@ For `min` and `max`, one argument type must be assignable to the other. Prefer
 matching explicit types. Math calls lower to Zig builtins. Signed `abs` results
 are converted back to the input type, so `abs` can return `i32` from an `i32`
 function. The minimum signed value has no positive value in the same type;
-that input remains an unsafe edge case. Domain errors, non-finite values, and
+that input wraps to itself in every build profile. Domain errors, non-finite values, and
 integer edge values are not a general checked guarantee of these docs.
 
 Standard-library operations must be called directly. Assigning `math.sqrt`
@@ -100,7 +136,7 @@ specification planning material but are not registered calls.
 | --- | --- | --- |
 | `std/mem`, `std/string` | unavailable | Repository stub files are not registered. |
 | `std/random`, `std/debug` | planned | No current registry entry. |
-| `Option`, `Result`, growable collections | planned | Not current stdlib types. |
+| Growable collections | planned | No current collection modules or automatic memory lowering. |
 | File and network I/O | unavailable | No current stdlib API. |
 | Concurrency primitives | planned | Require language and compiler prerequisites. |
 

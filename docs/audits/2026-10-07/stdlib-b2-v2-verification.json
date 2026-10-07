@@ -1,0 +1,57 @@
+{
+  "started_at": "2026-10-07T05:50:15.490227+00:00",
+  "manifest_sha256": "346a654227513e2d95f5032c775f8752073d897d8d633c6acb31e9a58ba29c1c",
+  "command": [
+    "taskset",
+    "-c",
+    "0-11",
+    "env",
+    "A7_PYTEST_WORKERS=8",
+    "./run_release_checks.sh"
+  ],
+  "checkout": "/var/tmp/a7-stdlib-b2-qualification-2026-10-07-hoy_sf9f/checkout",
+  "boundary": "Frozen B2 repaired compiler, tests, package smoke and draft docs. No integration or V1 completion claim.",
+  "pid": 2542065,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T06:19:01.686755+00:00",
+  "changed_sources": [],
+  "log_sha256": "4fcbc46c1d460cd52a160689e9bf1c19d9c0457381cd0e30178be2a76a3a55be",
+  "frozen_files": 1608,
+  "source_hashes_modes_unchanged": true,
+  "pytest": {
+    "passed": 3819,
+    "xfailed": 1
+  },
+  "compiler_package_checks": {
+    "passed": 11,
+    "skipped": 0
+  },
+  "examples": {
+    "e2e": 51,
+    "debug": 51,
+    "release": 51,
+    "fast": 51
+  },
+  "error_stage_checks": 61,
+  "site": {
+    "tests": 12,
+    "assertions": 2568,
+    "coverage_records": 441,
+    "local_resources": 1500,
+    "search_targets": 181
+  },
+  "source_sha256": {
+    "a7/backends/zig.py": "e86cf8dbd37cbe16e0af109c63302c6ad34d6f14ff791f4a2e79e61074f09c8c",
+    "a7/module_resolver.py": "a789b52989370bbcd5242f0c2408a2d83be28122a587c235eba3c82c86d982ee",
+    "a7/passes/name_resolution.py": "8cacc76f894b132b37b2b2a8726abf8b4502e005c655bb7a72c754453545031c",
+    "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
+    "a7/passes/type_checker.py": "441896468b1dbe6ebb2c550e1bda5e49520419bc6b39454fadb0d5f6d5356a4a",
+    "a7/symbol_table.py": "a46a5635b1d7a0e15608ca0128fd6cfcb2020c1accc7f98783da731732520589",
+    "scripts/verify_wheel_install.py": "46c444c155ce63123aaf204eab3eccbb2ff6c7b46167645eb5983488c7048534",
+    "test/test_stdlib_signature_typing.py": "778c97605152b9044154041b196423cc5a2fd7ec1dba347461ccef904a799997"
+  },
+  "package_smoke_stdout": "wheel smoke 42\noption 7\nread 3 65 90\nchecked\nwritten 8\n",
+  "external_review": "Completed GLM v2 review found introduced void-call diagnostic regression. Candidate v2 is not approved for integration.",
+  "integration": "Blocked by MAJ-1. Separate repaired v3 manifest a141068d is undergoing fresh qualification.",
+  "remaining": "General callee and container proofs, future standard-library batches, production memory and all other unqualified V1 tracks remain open."
+}

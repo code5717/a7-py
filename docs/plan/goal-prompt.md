@@ -44,16 +44,21 @@ that does not depend on that decision. Do not invent automatic-memory,
 concurrency or tensor contracts to bypass a missing approval.
 
 Use independent agents with disjoint file ownership. Use OpenCode
-zai-coding-plan/glm-5.3 for substantive reviews, at most five concurrent runs.
-Use zai-coding-plan/glm-5.3-flash for very small tasks, at most 25 concurrent
-runs. Give detailed prompts: immutable source identity, exact scope, allowed
-and forbidden files/actions, concrete checks, expected results, evidence
+zai-coding-plan/glm-5.3 for substantive reviews, at most five concurrent model
+sessions. Use zai-coding-plan/glm-5.3-flash for very small tasks, at most 25
+concurrent model sessions. Count each run and its active built-in subagents
+toward the corresponding model limit. Give detailed prompts: immutable source
+identity, exact scope, allowed and forbidden files/actions, concrete checks,
+expected results, evidence
 requirements and output format. Maintain the exact external-reviewer role and
 recursion guard required by AGENTS.md, one reviewer identity per batch, and
 controller-managed worker counts. Keep normal tools, web search and built-in
 subagents available. Do not impose a CLI turn count or elapsed-time limit.
 Record failed invocations as failures, not completed reviews. Verify the CLI's
-actual project path and source imports before trusting probe output.
+actual project path and source imports before trusting probe output. Set the
+explicit project directory and matching PWD for isolated reviews, then verify
+the running process and recorded session directory. Preserve permission
+denials and distinguish unperformed checks from completed checks.
 
 Reserve CPUs 16-23 on this 24-CPU machine. Use no more than eight pytest workers
 in total and one full native release gate at a time. Never use -n auto. Pin

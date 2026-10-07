@@ -447,7 +447,7 @@ value := Number{i: 42}
 same_value: i32 = value.i
 
 // Tagged union (discriminated)
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: i32
     err: string
 }
@@ -1195,7 +1195,7 @@ Box :: struct {
 nested: Box(Box(i32))
 
 // Generic union
-Result :: union {
+Outcome :: union {
     ok: $T,
     err: $E,
 }
@@ -1492,7 +1492,10 @@ parent :: import "../utils"
 ### 10.2.1 Module identity and resolution
 
 The resolver first recognizes virtual stdlib spellings, including `io`,
-`std/io`, `math`, and `std/math`. Other imports resolve relative to the
+`std/io`, `math`, and `std/math`. A literal path starting with `std/` is
+reserved for shipped modules. Project replacements and unavailable reserved
+modules fail resolution with exit 3. Explicit relative paths such as
+`./std/helper` follow ordinary local-file rules. Other imports resolve relative to the
 importing file, first as `<path>.a7`, then through the retained
 `<path>/mod.a7` directory fallback. A nested file's `import "helper"` does
 not fall back to the entry directory.
@@ -1609,31 +1612,37 @@ semantically resolved or backend-lowered yet:
 Generation 1 (current, virtual, backend-lowered): `io.print`,
 `io.println`, `io.eprintln` lower to `__a7_stdout_print` /
 `__a7_stderr_print` with the persistent-writer preamble in
-`a7/backends/zig.py`. Recoverable I/O emission and its checker gap are
-described below. `std/io` and `io` (likewise
+`a7/backends/zig.py`. Typed recoverable I/O is described below. `std/io` and `io` (likewise
 `std/math` and `math`) are alternate public spellings of the same
-virtual module (`a7/stdlib/__init__.py:11-16`). Current virtual
+virtual module (`a7/stdlib/__init__.py`). Current virtual
 modules also provide math calls such as `math.sqrt`, `math.abs`,
 `math.floor`, `math.ceil`, `math.sin`, `math.cos`, `math.tan`,
 `math.log`, `math.exp`, `math.min`, and `math.max`. Typed math
 spellings such as `sqrt_f32` and `sqrt_f64` are not callable; the
 list below is a planned API shape.
 
-Recoverable I/O (current emission, checker typing deferred):
-`io.println_ok` prints like `io.println` as a statement
-(`io.println_ok("n={}", 42)` prints `n=42`), and the backend builds a
-`__a7_IoResult` union value (`ok: usize` byte count,
-`err: __a7_IoErr`) that the statement discards. `io.read_line` takes a
-byte slice (`io.read_line(buf[0..])`) and its backend helper reads
-stdin bytes into it, returning the count the same way. The checker
-still types every `std.io.*` call as void and still demands a format
-string as the first argument, so matching on a `println_ok` call or
-passing a buffer through the CLI exits 6 until the checker follow-up
-types them as `Result`. `Option`/`Result` themselves are ordinary
-user-declared generic unions with no builtin sugar: `Option(i32)` and
-`Result(i32, i32)` instantiate positionally, and errors propagate
-through explicit `match` only. There is no `?` operator. Library
-`get`/`pop` and `or{}`/`use` sugar are deferred.
+Recoverable I/O uses the canonical prelude `Result(T, E)` type.
+`io.println_ok` accepts the same literal formats as `io.println` and returns
+`Result(usize, io.IoErr)`. Its success payload counts written bytes, including
+its newline. `io.read_line(buf[0..])` requires one mutable `[]u8` argument and
+returns the same type. Save, forward or match either result with ordinary
+leading-dot match arms. Wrong arity and incompatible argument types fail at
+semantic exit 6. Fixed arrays need an explicit slice.
+
+Import `io` in every file that names `io.IoErr`. Its variants are
+`WriteFailed`, `FlushFailed`, `ReadFailed` and `EndOfStream`. Reading preserves
+unconsumed input across calls. A consumed newline is stored in the buffer and included in the byte
+count. A full buffer returns its count; a later read continues the line. EOF
+after some bytes returns their count; EOF before any bytes returns `EndOfStream`.
+A zero-length buffer returns `ok(0)` without consuming input.
+
+`Option(T)` and `Result(T, E)` are package-owned tagged unions available in every
+file. `Option` has `some: T` and `none: bool`; `Result` has `ok: T` and `err: E`.
+User declarations of either name fail with semantic exit 6. Remove equivalent
+old declarations or rename custom types. Member names remain valid. Module
+imports remain explicit; prelude types do not provide `std/option` or `std/result`
+function modules. Errors propagate through explicit `match`; there is no `?`
+operator. Library `get`/`pop` and `or{}`/`use` sugar remain deferred.
 
 Generation 2 (planned API shape, not callable): the per-type print
 family `print_i32`, `print_f64`, `printf`, `eprint`, `eprintln` listed

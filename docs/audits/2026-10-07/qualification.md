@@ -311,3 +311,33 @@ rendered desktop/mobile, keyboard and console checks did not run. This is a
 local development qualification. Full V1, automatic memory, general conditional
 reference proofs, runtime generic dispatch and the other roadmap requirements
 remain incomplete. GPU execution remains deferred under L75.
+
+
+## Canonical prelude and typed stdlib, 2026-10-07
+
+Package-owned Option/Result and existing I/O hook signatures are integrated.
+Saved results, cross-file wrappers, nested field-only result types and mutable
+slice input passed native checks. Wheel and rebuilt source-distribution installs
+check the same behavior in clean environments. GLM review found a void-call
+regression: typed initializers and returns exited 8. Normalizing absent return
+signatures to void restores semantic exit 6; seven permanent tests and an
+independent Flash delta review cover the repair.
+
+Frozen V3 manifest `a141068d` passed 3,826 tests with one expected failure and
+all 11 compiler/package checks. All 51 examples passed E2E and each of three
+artifact profiles; the error-stage matrix passed 61 checks. The release wrapper
+then exited 1 because `site/public/docs/manifest.json` was stale after a math.abs
+documentation correction. That failure is preserved. V4 manifest `91aabc5f`
+changes only this generated manifest; the other 1,607 files match V3. Site,
+locked dependency audits, Bandit, docs style and secrets checks passed separately.
+All frozen hashes and modes stayed unchanged. This is combined evidence from
+these checks, not a fresh full release-wrapper exit 0. The private V3 Git index
+was initialized before the secrets stage but after the run started; it tracked
+exactly the frozen manifest and changed no source bytes.
+
+The [verification record](stdlib-b2-verification.json) preserves commands,
+hashes, times and boundaries. The earlier [V2 record](stdlib-b2-v2-verification.json)
+retains its green gate and blocking review finding. The review digest now records
+45 completed external reviews. Readonly callee summaries and W2 remain separate
+candidates. General reference proofs, production memory, the remaining standard
+library and other V1 requirements are unqualified. GPU execution remains deferred.

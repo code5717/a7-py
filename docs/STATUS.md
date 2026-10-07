@@ -301,14 +301,16 @@ and `test/test_safety_stale_facts.py`.
   value and exits 6; match the tag without a binding. A `ref` to a
   tagged union matches the same way. Pinned in
   `test/test_match_payload.py` and `test/test_match_dot_e2e.py`.
-- `io.println_ok` and `io.read_line` are registered stdlib calls, and
-  the backend emits code that builds the `Result` union value. The
-  checker still types `std.io.*` calls as void, so matching on the
-  call or passing a buffer exits 6 until checker typing lands.
-  `Option`/`Result` are ordinary user-declared generic unions; their
-  names shadow like any other identifier. `get`/`pop`, checker-typed
-  `Result`, and `or{}`/`use` stay deferred. Pinned in
-  `test/test_stdlib_result.py`.
+- Package-owned `Option(T)` and `Result(T, E)` are available in every file.
+  Redeclaring either name fails at semantic exit 6. Members may retain those names.
+  `io.println_ok` and `io.read_line` return canonical `Result(usize, io.IoErr)`;
+  saved values, wrapper returns and cross-file signatures use the same identity.
+  `read_line` requires one mutable `[]u8` and counts a consumed newline.
+  Module operations and `io.IoErr` require explicit imports in each file.
+  Literal `std/` paths cannot fall back to project files; explicit relative
+  paths keep existing containment rules. `get`/`pop`, collection modules and
+  `or{}`/`use` remain deferred. Pinned in `test/test_stdlib_signature_typing.py`
+  and `test/test_stdlib_result.py`.
 - Zig emission changed in two pinned ways with no runtime behavior
   change: single parens in conditions and left-assoc chains, and native
   `switch` for a match whose scrutinee is an integer, char, bool or
@@ -420,7 +422,13 @@ any workload executed. After an explicit alignment type repair, the frozen retry
 passed 112 checks, including 42 growth cases and controlled corruption tests.
 The repaired program stops before publishing corrupted storage and frees each
 allocation once. Timing, complete runtime storage and L38 remain unqualified.
-The typed stdlib candidate remains isolated from the integrated compiler.
+Canonical Option/Result and typed existing stdlib hooks are integrated. The frozen
+compiler/package gate passed 3,826 tests with one expected failure and all 11
+checks. The release wrapper then failed a stale generated docs manifest. After
+regeneration, site and remaining dependency/static checks passed separately;
+all compiler, test and package source bytes were unchanged. The
+[qualification record](audits/2026-10-07/stdlib-b2-verification.json) preserves
+both results. The readonly callee-summary candidate remains isolated.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence

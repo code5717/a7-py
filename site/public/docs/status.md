@@ -64,7 +64,7 @@ recursion limit 100. A7 source recursion remains a separate rejected construct.
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
 | Generics | Concrete initializers, nested array arms and qualifying immutable local aliases are checked. Imported, module-global, parameter, mutable, selected and captured generic origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
 | Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
-| Standard library | No `Option`, `Result`, collections, or full memory/string library. | [Standard library](/a7-py/docs/stdlib.md) |
+| Standard library | Prelude `Option`/`Result` and typed I/O are available. Collections and a full memory/string library remain incomplete. | [Standard library](/a7-py/docs/stdlib.md) |
 
 Focused native probes verify escaped IO braces and ordinary signed `math.abs`
 results after repairs. `math.abs` of the minimum signed value wraps to that

@@ -99,6 +99,7 @@ class TypeCheckingPass:
         self._annotation_argument_results: Dict[int, bool] = {}
         self._nonnegative_vars: Set[str] = set()
         self.stdlib = StdlibRegistry()
+        self._stdlib_signatures: Dict[str, FunctionType] = {}
         self.exact_bindings = {}
         self._nested_functions = deque()
         self._generic_initializers: dict = {}
@@ -142,6 +143,8 @@ class TypeCheckingPass:
 
         # Visit the program
         self.visit_program(program)
+        if getattr(program, "entry_file_scope", None):
+            self.symbols.select_file_scope(program.entry_file_scope)
 
         if not self.errors:
             self._record_immutable_generic_alias_calls(program)
@@ -424,6 +427,19 @@ class TypeCheckingPass:
             if decl.kind != NodeKind.ENUM:
                 self.register_type_decl(decl)
         self._report_by_value_type_cycles(type_decls)
+
+        # Signatures resolve in their package owner, not the importing file.
+        from a7.tokens import Tokenizer
+        from a7.parser import Parser
+        previous_stack = self.symbols.scope_stack
+        self.symbols.select_file_scope("<stdlib/io>")
+        self._stdlib_signatures = {}
+        for hook in self.stdlib.modules["io"].functions.values():
+            source = hook.signature
+            annotation = Parser(Tokenizer(source, "<stdlib/io signatures>").tokenize(), "<stdlib/io signatures>", [source]).parse_type()
+            self._stdlib_signatures[hook.canonical] = self.resolve_type_node(annotation)
+        self.symbols.scope_stack = previous_stack
+        self.symbols.current_scope = previous_stack[-1]
 
         # Second pass: register function signatures (for mutual recursion support)
         for decl in node.declarations or []:
@@ -2837,8 +2853,21 @@ class TypeCheckingPass:
 
             node.stdlib_canonical = canonical
             if canonical.startswith("std.io."):
-                self._validate_io_call(node, arg_types)
-                return VOID
+                hook = self.stdlib.modules["io"].functions[method_name]
+                signature = self._stdlib_signatures[canonical]
+                if hook.argument_policy == "format":
+                    self._validate_io_call(node, arg_types)
+                elif len(arg_types) != len(signature.param_types):
+                    self.add_type_error(TypeErrorType.WRONG_ARGUMENT_COUNT, node.span,
+                                        context=f"io.{method_name} expects {len(signature.param_types)} arguments, got {len(arg_types)}")
+                else:
+                    for arg, actual, expected in zip(node.arguments or [], arg_types, signature.param_types):
+                        if not (yield ('_is_initializer_assignable_to', (arg, actual, expected, arg.span, f'io.{method_name} argument'))):
+                            self.add_type_error(TypeErrorType.ARGUMENT_TYPE_MISMATCH, arg.span,
+                                                expected_type=str(expected), got_type=str(actual),
+                                                context=f"io.{method_name} argument")
+                self.set_type(function, signature)
+                return signature.return_type if signature.return_type is not None else VOID
             if canonical.startswith("std.math."):
                 return self._validate_math_call(node, canonical, arg_types)
             return UNKNOWN
@@ -2939,6 +2968,14 @@ class TypeCheckingPass:
                         return target.type
                     module_path = getattr(getattr(obj_symbol, "node", None), "module_path", None)
                     canonical_module = self.stdlib.canonical_module_name(module_path or "")
+                    exported_type = self.symbols.lookup(f"{node.object.name}.{field_name}")
+                    if exported_type is not None and exported_type.kind == SymbolKind.ENUM:
+                        self.symbols.resolved_uses[id(node)] = exported_type
+                        if not getattr(node, "member_object", False):
+                            self.add_type_error(TypeErrorType.TYPE_USED_AS_VALUE, node.span,
+                                                context=f"'{node.object.name}.{field_name}' is a type")
+                            return UNKNOWN
+                        return exported_type.type
                     if canonical_module and self.stdlib.resolve_call(module_path or "", field_name) is None:
                         self.add_semantic_error(
                             SemanticErrorType.UNDEFINED_IDENTIFIER,

@@ -31,7 +31,7 @@ def compile_source(tmp_path, source, modules=None):
     "main :: fn() { for h in [1, 2] {} }",
     "main :: fn() { for h, value in [1, 2] {} }",
     "main :: fn() { for value, h in [1, 2] {} }",
-    "Result :: union(tag) { ok: i32 }\nmain :: fn() { x := Result{ok: 1}; match x { case .ok(h): {} } }",
+    "Outcome :: union(tag) { ok: i32 }\nmain :: fn() { x := Outcome{ok: 1}; match x { case .ok(h): {} } }",
 ])
 def test_local_binding_cannot_reuse_own_import_alias(tmp_path, body):
     code, output = compile_source(tmp_path, 'h :: import "helper"\n' + body + '\n')
@@ -102,8 +102,8 @@ def test_non_alias_match_comparison_and_capture_remain_valid(tmp_path):
 @pytest.mark.parametrize('declaration', [
     'Box($h) :: struct { value: $h }',
     'Buffer($h: usize) :: struct { data: [$h]u8 }',
-    'Result($h) :: union(tag) { value: $h }',
-    'Result($h: usize) :: union(tag) { data: [$h]u8 }',
+    'Outcome($h) :: union(tag) { value: $h }',
+    'Outcome($h: usize) :: union(tag) { data: [$h]u8 }',
     'identity($h) :: fn(value: $h) $h { ret value }',
     'consume($h: usize) :: fn(value: [$h]u8) {}',
 ])
@@ -116,7 +116,7 @@ def test_explicit_generic_parameter_cannot_reuse_own_import_alias(tmp_path, decl
 
 @pytest.mark.parametrize('declaration', [
     'Box($h) :: struct { value: $h }',
-    'Result($h: usize) :: union(tag) { data: [$h]u8 }',
+    'Outcome($h: usize) :: union(tag) { data: [$h]u8 }',
 ])
 def test_imported_generic_parameter_clash_reports_declaration_owner(tmp_path, declaration):
     code, output = compile_source(tmp_path, 'part :: import "part"\nmain :: fn() {}\n', {
@@ -131,7 +131,7 @@ def test_imported_generic_parameter_clash_reports_declaration_owner(tmp_path, de
 def test_generic_parameters_and_fields_do_not_inherit_another_files_alias(tmp_path):
     code, output = compile_source(tmp_path, 'h :: import "helper"\nmain :: fn(){x:=h.value()}\n', {
         'helper': '''Box($h) :: struct { h: $h }
-Result($h:usize) :: union(tag) { h: [$h]u8 }
+Outcome($h:usize) :: union(tag) { h: [$h]u8 }
 value :: fn() i32 { ret 7 }
 ''',
     })
@@ -141,7 +141,7 @@ value :: fn() i32 { ret 7 }
 def test_nonclashing_generic_parameters_allow_field_named_like_alias(tmp_path):
     code, output = compile_source(tmp_path, '''h :: import "helper"
 Box($T) :: struct { h: $T }
-Result($N:usize) :: union(tag) { h: [$N]u8 }
+Outcome($N:usize) :: union(tag) { h: [$N]u8 }
 main :: fn(){x:=h.value()}
 ''')
     assert code == 0, output

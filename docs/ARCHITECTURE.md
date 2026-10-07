@@ -29,7 +29,10 @@ Surrounding modules: `a7/cli.py` (argparse entrypoint → `compile.A7Compiler`,
 including the Zig toolchain lookup), `a7/module_resolver.py` (import
 resolution; virtual `std/*` plus file-backed local imports that are merged
 into the single Zig output), `a7/stdlib/` (registry of `std/io` and
-`std/math`), `a7/formatters/` (console/JSON/markdown output for
+`std/math`, typed call policies and package-owned A7 declaration sources).
+The compiler installs one canonical `Option`/`Result` prelude identity per
+compilation and exposes `IoErr` through explicit I/O module imports.
+`a7/formatters/` (console/JSON/markdown output for
 tokens/AST/semantic dumps and the `--doc-out` report), `a7/errors.py`
 (typed errors and rich display).
 

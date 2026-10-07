@@ -457,13 +457,13 @@ class TestGenericEnumsUnions:
     def test_generic_enum_payload_is_a_parse_error(self):
         """Generic enums are out of scope (SPEC 7.2): a variant takes no payload type."""
         source = """
-        Option :: enum {
+        Maybe :: enum {
             Some: $T,
             None,
         }
 
         main :: fn() {
-            opt: Option(i32) = Option(i32).None
+            opt: Maybe(i32) = Maybe(i32).None
         }
         """
         assert expect_parse_error(
@@ -474,13 +474,13 @@ class TestGenericEnumsUnions:
     def test_generic_union(self):
         """Test generic union declaration with inline $T syntax."""
         source = """
-        Result :: union {
+        Outcome :: union {
             ok: $T,
             err: $E,
         }
 
         main :: fn() {
-            res: Result(i32, string)
+            res: Outcome(i32, string)
         }
         """
         assert expect_success(source)

@@ -24,9 +24,28 @@
   "unused_capacity_bytes": 51072,
   "initial_failure": "First Zig build failed: runtime conditional inferred comptime_int for alignment. No workloads executed. Original sources and failed records preserved.",
   "repair": "Only explicit alignment: usize added to repaired candidate and a separate historical test mutant.",
-  "boundary": "Standalone Debug LLVM/LLD and C-O0 correctness. Historical comparison uses v1 control flow plus the typing repair. No timing, full runtime bookkeeping, RSS, stack, L38 or automatic A7 lowering qualification. External review of earlier v1 is still running.",
+  "boundary": "Standalone Debug LLVM/LLD and C-O0 correctness. Historical comparison uses v1 control flow plus the typing repair. No timing, full runtime bookkeeping, RSS, stack, L38 or automatic A7 lowering qualification. External review of earlier v1 completed; the v1-to-v3 delta review also completed without a scoped defect.",
   "native_results": "tmp/v1-completion-2026-10-07/memory-w1-native-prep-v2/attempt-001/results.json",
   "native_results_sha256": "792fb4ab569fc55bb18cce452a2e00d33a001c1cc58988e074ea945f5f7ff492",
   "independent_reconciliation": "tmp/v1-completion-2026-10-07/memory-w1-native-reconciliation/NATIVE-RECONCILIATION.md",
-  "independent_reconciliation_sha256": "5972b0fb8efc6e00e1abc932e24771de15b98b329a961d8b9147903551cf5696"
+  "independent_reconciliation_sha256": "5972b0fb8efc6e00e1abc932e24771de15b98b329a961d8b9147903551cf5696",
+  "external_v1_review": {
+    "finished_at": "2026-10-07T05:40:03.264000+00:00",
+    "report": "tmp/v1-completion-2026-10-07/memory-w1-glm-review/authoritative-completion/REVIEW-final.md",
+    "report_sha256": "c312591e1ccfe76ccd29fbfc54321e4d58f26300c2ae052be5eb92fbe2e726d5",
+    "authoritative_completion": "tmp/v1-completion-2026-10-07/memory-w1-glm-review/authoritative-completion/session-status.json",
+    "authoritative_completion_sha256": "032f44765a2a5c67bade58b5f0594b0def3ce18247f30b31e5e77e2a21d6dc60",
+    "disposition": "Main and built-in review completed according to read-only OpenCode session records; the wrapper exited earlier. Frozen v1 source review covers 42 synthetic schedules, not repaired v3 qualification. There were 11,711 mutation attempts, including 760 duplicate event mutations. The controller rejects the assertion that failed-copy publication is harmless: v2 repairs it and the v3 native corruption controls verify that repair. Later native compilation exposed and fixed the alignment type error. E9 and E10 describe latent state without a normal-input trigger. Optimized execution, timing and complete memory accounting remain unqualified. The separate v1-to-v3 delta review remains pending."
+  },
+  "external_v3_delta_review": {
+    "reviewer": "memory_w1_v3_delta",
+    "model": "zai-coding-plan/glm-5.3-flash",
+    "finished_at": "2026-10-07T06:12:45.003812+00:00",
+    "exit_code": 0,
+    "log": "tmp/v1-completion-2026-10-07/memory-w1-delta-flash-review/review.log",
+    "log_sha256": "d33122805a9b388b833bef5091b5a18ce403cba4b48c1db1a3fc3f90ada0fbcb",
+    "report": "tmp/v1-completion-2026-10-07/memory-w1-delta-flash-review/REPORT.md",
+    "report_sha256": "186ff276eade0583dfb759c802d74095f4fe817e223f24e5e908b987abcd9370",
+    "disposition": "No defect found in the failed-copy publication repair and explicit alignment type delta. All 301 input files remained unchanged; archived ordinary and corruption traces were checked without native execution. Historical comparison uses annotated v1 control flow. Exact patch and mutant bytes reconstruct; transform metadata alone omits indentation and comments. Reviewer permission denials and corrected script errors remain preserved. Arbitrary failure injection, optimized timing, complete memory accounting and production lowering remain unqualified."
+  }
 }

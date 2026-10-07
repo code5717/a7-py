@@ -132,7 +132,11 @@ boolean selectors preserve the selected reference or nil return. Broader return,
 global nil-state and parameter proofs remain incomplete. Automatic memory
 management is not implemented.
 
-The current stdlib provides `io` and `math`. File imports share one emitted Zig
+The current stdlib provides `io` and `math`. Package-owned `Option(T)` and
+`Result(T, E)` are available in every file. Remove old declarations of those
+names or rename custom types. `io.read_line` takes a mutable byte slice, and
+both it and `io.println_ok` return `Result(usize, io.IoErr)`. Import `io` explicitly
+in each file that uses its operations or error type. File imports share one emitted Zig
 file after per-file semantic checking. Selected imports and `using import`
 remain incomplete. Forwarding another file's import alias is rejected under
 L76. Unsupported multi-dot type annotations and struct literals still fail

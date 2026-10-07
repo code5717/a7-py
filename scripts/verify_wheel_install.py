@@ -28,6 +28,7 @@ def run_cmd(
     cwd: Path = ROOT,
     timeout: float = 60.0,
     env: dict[str, str] | None = None,
+    stdin: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd,
@@ -36,6 +37,7 @@ def run_cmd(
         capture_output=True,
         timeout=timeout,
         env=env,
+        input=stdin,
     )
 
 
@@ -119,7 +121,9 @@ def verify_wheel(wheel: Path) -> None:
             raise RuntimeError("installed CLI doctor omitted the unsupported-environment diagnostic")
 
         (work / "helper.a7").write_text(
-            "pub answer :: fn() i32 {\n    ret 42\n}\n", encoding="utf-8"
+            'io :: import "std/io"\npub answer :: fn() i32 { ret 42 }\n'
+            'pub read :: fn(buf: []u8) Result(usize, io.IoErr) { ret io.read_line(buf) }\n',
+            encoding="utf-8"
         )
         program.write_text(
             """io :: import "std/io"
@@ -127,6 +131,22 @@ helper :: import "helper"
 
 main :: fn() {
     io.println("wheel smoke {}", helper.answer())
+    option := Option(i32){some: 7}
+    match option {
+        case .some(n): { io.println("option {}", n) }
+        case .none(empty): { io.println("unexpected none") }
+    }
+    buf: [4]u8
+    result: Result(usize, io.IoErr) = helper.read(buf[0..])
+    match result {
+        case .ok(n): { io.println("read {} {} {}", n, buf[0], buf[1]) }
+        case .err(e): { io.println("unexpected read error") }
+    }
+    written := io.println_ok("checked")
+    match written {
+        case .ok(n): { io.println("written {}", n) }
+        case .err(e): { io.println("unexpected write error") }
+    }
 }
 """,
             encoding="utf-8",
@@ -167,12 +187,14 @@ main :: fn() {
         )
         if build.returncode != 0:
             raise RuntimeError(f"installed CLI debug build failed:\n{first_error_text(build)}")
-        native = run_cmd([str(binary)], cwd=work, timeout=10, env=env)
+        native = run_cmd([str(binary)], cwd=work, timeout=10, env=env, stdin="AZ\n")
         release = run_cmd(
-            [str(a7_cli), "run", str(program), "--profile", "release"], cwd=work, timeout=120, env=env,
+            [str(a7_cli), "run", str(program), "--profile", "release"],
+            cwd=work, timeout=120, env=env, stdin="AZ\n",
         )
+        expected_output = "wheel smoke 42\noption 7\nread 3 65 90\nchecked\nwritten 8\n"
         for profile, process in (("debug", native), ("release", release)):
-            if process.returncode != 0 or process.stdout != "wheel smoke 42\n" or process.stderr:
+            if process.returncode != 0 or process.stdout != expected_output or process.stderr:
                 raise RuntimeError(
                     f"installed CLI {profile} native output mismatch: "
                     f"exit={process.returncode}, stdout={process.stdout!r}, stderr={process.stderr!r}"

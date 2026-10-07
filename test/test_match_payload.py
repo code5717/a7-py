@@ -36,21 +36,21 @@ from conftest import compile_program, expect_exit, expect_ok, failure_text, run_
 ROOT = Path(__file__).resolve().parents[1]
 
 RESULT_UNION = """
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: i32
     err: i32
 }
 """
 
 STRING_UNION = """
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: i32
     err: string
 }
 """
 
 GENERIC_UNION = """
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: $T,
     err: $E,
 }
@@ -147,7 +147,7 @@ class TestBareCaseRejected:
     def test_bare_variant_name_rejected(self):
         source = RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case ok: {
                     x := 1
@@ -160,7 +160,7 @@ class TestBareCaseRejected:
     def test_bare_stray_name_rejected(self):
         source = RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case Blu: {
                     x := 1
@@ -173,7 +173,7 @@ class TestBareCaseRejected:
     def test_bare_case_exit_code_6(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "bare.a7", IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case ok: {
                     io.println("ok")
@@ -187,7 +187,7 @@ class TestBareCaseRejected:
     def test_bare_case_in_match_expr_rejected(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "exprbare.a7", IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             x := match r {
                 case ok: 1
             }
@@ -202,7 +202,7 @@ class TestExhaustivenessListing:
     def test_empty_match_lists_all_tags(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "empty.a7", IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
             }
         }
@@ -214,9 +214,9 @@ class TestExhaustivenessListing:
     def test_partial_coverage_lists_only_missing(self):
         source = RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
-                case Result.ok: {
+                case Outcome.ok: {
                     x := 1
                 }
             }
@@ -230,7 +230,7 @@ class TestExhaustivenessListing:
     def test_dot_partial_coverage_lists_only_missing(self):
         source = RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok: {
                     x := 1
@@ -245,7 +245,7 @@ class TestExhaustivenessListing:
     def test_dot_partial_coverage_exit_code_6(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "dotpartial.a7", IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok: {
                     io.println("ok")
@@ -258,7 +258,7 @@ class TestExhaustivenessListing:
     def test_one_error_per_match(self):
         source = RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
             }
             match r {
@@ -273,7 +273,7 @@ class TestOptOutsUnaffected:
     def test_else_opts_out(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "elseok.a7", IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 else: {
                     io.println("other")
@@ -286,7 +286,7 @@ class TestOptOutsUnaffected:
     def test_explicit_wildcard_opts_out(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "wildok.a7", IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case _: {
                     io.println("wild")
@@ -332,7 +332,7 @@ class TestGenericUnionInterop:
     def test_specialized_union_listing_uses_base_tags(self):
         source = GENERIC_UNION + """
         main :: fn() {
-            r := Result(i32, string){ok: 1}
+            r := Outcome(i32, string){ok: 1}
             match r {
             }
         }
@@ -344,7 +344,7 @@ class TestGenericUnionInterop:
     def test_specialized_union_partial_lists_missing(self):
         source = GENERIC_UNION + """
         main :: fn() {
-            r := Result(i32, string){ok: 1}
+            r := Outcome(i32, string){ok: 1}
             match r {
                 case .ok: {
                     x := 1
@@ -359,7 +359,7 @@ class TestGenericUnionInterop:
     def test_specialized_union_empty_match_exit_code_6(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "genempty.a7", IO_IMPORT + GENERIC_UNION + """
         main :: fn() {
-            r := Result(i32, string){ok: 1}
+            r := Outcome(i32, string){ok: 1}
             match r {
             }
         }
@@ -431,7 +431,7 @@ class TestTagArmRules:
     def test_unknown_dot_tag_rejected(self, tmp_path: Path):
         result = expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .bogus: {
                 }
@@ -439,27 +439,27 @@ class TestTagArmRules:
                 }
             }
         }
-        """, tmp_path, 6, "Union has no such tag (Union 'Result' has no tag 'bogus')")
+        """, tmp_path, 6, "Union has no such tag (Union 'Outcome' has no tag 'bogus')")
         assert "Struct has no such field" not in failure_text(result)
 
     def test_unknown_qualified_tag_rejected(self, tmp_path: Path):
         result = expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
-                case Result.nope: {
+                case Outcome.nope: {
                 }
                 else: {
                 }
             }
         }
-        """, tmp_path, 6, "Union has no such tag (Union 'Result' has no tag 'nope')")
+        """, tmp_path, 6, "Union has no such tag (Union 'Outcome' has no tag 'nope')")
         assert "Struct has no such field" not in failure_text(result)
 
     def test_shared_case_binding_rejected(self, tmp_path: Path):
         expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok(v), .err(e): {
                 }
@@ -470,7 +470,7 @@ class TestTagArmRules:
     def test_string_payload_bind_rejected(self, tmp_path: Path):
         result = expect_exit(STRING_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok(v): {
                 }
@@ -486,7 +486,7 @@ class TestTagArmRules:
     def test_generic_string_payload_bind_rejected(self, tmp_path: Path):
         expect_exit(GENERIC_UNION + """
         main :: fn() {
-            r := Result(i32, string){ok: 1}
+            r := Outcome(i32, string){ok: 1}
             match r {
                 case .ok(v): {
                 }
@@ -570,7 +570,7 @@ class TestTagArmRules:
     def test_payload_message_has_no_plan_ids(self, tmp_path: Path):
         result = compile_program(STRING_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .err(e): {
                 }
@@ -608,7 +608,7 @@ class TestTagArmRules:
     def test_test_only_over_string_payload_allowed(self, tmp_path: Path):
         expect_ok(STRING_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok: {
                 }
@@ -623,52 +623,52 @@ class TestTagArmDiagnostics:
     def test_unknown_tag_in_literal_is_a_tag_error(self, tmp_path: Path):
         result = expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{bogus: 1}
+            r := Outcome{bogus: 1}
         }
-        """, tmp_path, 6, "Union has no such tag (Union 'Result' has no tag 'bogus')")
+        """, tmp_path, 6, "Union has no such tag (Union 'Outcome' has no tag 'bogus')")
         assert "Struct has no such field" not in failure_text(result)
 
     def test_unknown_tag_in_member_access_is_a_tag_error(self, tmp_path: Path):
         result = expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             x := r.nope
         }
-        """, tmp_path, 6, "Union has no such tag (Union 'Result' has no tag 'nope')")
+        """, tmp_path, 6, "Union has no such tag (Union 'Outcome' has no tag 'nope')")
         assert "Struct has no such field" not in failure_text(result)
 
     def test_match_expression_missing_tag_reports_once(self, tmp_path: Path):
         result = expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             x := match r {
                 case .ok(v): v
             }
         }
-        """, tmp_path, 6, "match over tagged union 'Result' misses tag(s): err")
+        """, tmp_path, 6, "match over tagged union 'Outcome' misses tag(s): err")
         assert len(result.failure.details) == 1, failure_text(result)
 
     def test_dot_then_qualified_same_tag_is_redundant(self, tmp_path: Path):
         expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok: {
                 }
-                case Result.ok: {
+                case Outcome.ok: {
                 }
                 case .err: {
                 }
             }
         }
-        """, tmp_path, 6, "redundant match pattern 'Result.ok'")
+        """, tmp_path, 6, "redundant match pattern 'Outcome.ok'")
 
     def test_qualified_then_dot_same_tag_is_redundant(self, tmp_path: Path):
         expect_exit(RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
-                case Result.err: {
+                case Outcome.err: {
                 }
                 case .err: {
                 }
@@ -681,7 +681,7 @@ class TestTagArmDiagnostics:
     def test_fall_in_tag_arm_is_semantic_error(self, tmp_path: Path):
         expect_exit(IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok: {
                     io.println("ok")
@@ -692,11 +692,11 @@ class TestTagArmDiagnostics:
                 }
             }
         }
-        """, tmp_path, 6, "fall cannot be used in a match over tagged union 'Result'")
+        """, tmp_path, 6, "fall cannot be used in a match over tagged union 'Outcome'")
 
 
 REF_UNION_MATCH = IO_IMPORT + RESULT_UNION + """
-show :: fn(r: ref Result) {
+show :: fn(r: ref Outcome) {
     match r {
         case .ok(v): {
             io.println("ok {}", v)
@@ -708,8 +708,8 @@ show :: fn(r: ref Result) {
 }
 
 main :: fn() {
-    a := Result{ok: 1}
-    b := Result{err: 2}
+    a := Outcome{ok: 1}
+    b := Outcome{err: 2}
     show(a)
     show(b)
 }
@@ -725,21 +725,21 @@ class TestRefTaggedUnionMatch:
 
     def test_ref_union_missing_tag_rejected(self, tmp_path: Path):
         expect_exit(RESULT_UNION + """
-        show :: fn(r: ref Result) {
+        show :: fn(r: ref Outcome) {
             match r {
                 case .ok(v): {
                 }
             }
         }
         main :: fn() {
-            a := Result{ok: 1}
+            a := Outcome{ok: 1}
             show(a)
         }
-        """, tmp_path, 6, "match over tagged union 'Result' misses tag(s): err")
+        """, tmp_path, 6, "match over tagged union 'Outcome' misses tag(s): err")
 
     def test_ref_union_unknown_tag_rejected(self, tmp_path: Path):
         expect_exit(RESULT_UNION + """
-        show :: fn(r: ref Result) {
+        show :: fn(r: ref Outcome) {
             match r {
                 case .bogus: {
                 }
@@ -748,21 +748,21 @@ class TestRefTaggedUnionMatch:
             }
         }
         main :: fn() {
-            a := Result{ok: 1}
+            a := Outcome{ok: 1}
             show(a)
         }
-        """, tmp_path, 6, "Union 'Result' has no tag 'bogus'")
+        """, tmp_path, 6, "Union 'Outcome' has no tag 'bogus'")
 
 
 def test_qualified_full_coverage_compiles_end_to_end(tmp_path: Path):
     code, out = cli_exit_and_output(tmp_path, "qualfull.a7", IO_IMPORT + RESULT_UNION + """
     main :: fn() {
-        r := Result{ok: 1}
+        r := Outcome{ok: 1}
         match r {
-            case Result.ok: {
+            case Outcome.ok: {
                 io.println("ok")
             }
-            case Result.err: {
+            case Outcome.err: {
                 io.println("err")
             }
         }
@@ -774,7 +774,7 @@ def test_qualified_full_coverage_compiles_end_to_end(tmp_path: Path):
 def test_dot_full_coverage_compiles_end_to_end(tmp_path: Path):
     code, out = cli_exit_and_output(tmp_path, "dotfull.a7", IO_IMPORT + RESULT_UNION + """
     main :: fn() {
-        r := Result{ok: 1}
+        r := Outcome{ok: 1}
         match r {
             case .ok(v): {
                 io.println("ok")
@@ -791,7 +791,7 @@ def test_dot_full_coverage_compiles_end_to_end(tmp_path: Path):
 def test_bare_with_else_reports_tag_failure(tmp_path: Path):
     code, out = cli_exit_and_output(tmp_path, "bareelse.a7", IO_IMPORT + RESULT_UNION + """
     main :: fn() {
-        r := Result{ok: 1}
+        r := Outcome{ok: 1}
         match r {
             case ok: {
                 io.println("ok")

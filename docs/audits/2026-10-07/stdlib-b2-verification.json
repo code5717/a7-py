@@ -1,0 +1,729 @@
+{
+  "recorded_at": "2026-10-07T07:00:28.254819+00:00",
+  "base_commit": "c1ffb038c6b89afe57b63299a0d6780387529fd9",
+  "candidate_manifest_sha256": "91aabc5fdf37037b5d9c8f7a84e9189e4048fe77a7a9fc15c3b1397047c283ef",
+  "frozen_files": 1608,
+  "full_gate_v3": {
+    "started_at": "2026-10-07T06:29:26.694820+00:00",
+    "manifest_sha256": "a141068d176aea99b127f788e06c54c78ba4bbcdd72245a80d6f652c6c5ce43d",
+    "command": [
+      "taskset",
+      "-c",
+      "0-11",
+      "env",
+      "A7_PYTEST_WORKERS=8",
+      "./run_release_checks.sh"
+    ],
+    "checkout": "/var/tmp/a7-stdlib-b2-v3-2026-10-07-9u5lwtvb/checkout",
+    "boundary": "Frozen B2 v3 void normalization repair, full candidate tests and corrected docs. Earlier v2 gate does not qualify this source. No integration or V1 completion claim.",
+    "pid": 2615198,
+    "exit_code": 1,
+    "finished_at": "2026-10-07T06:57:52.421008+00:00",
+    "changed_sources": [],
+    "log_sha256": "3d616a527dc7179b1e235bc52d2e9902760234084528610b06baca436f4a0af6"
+  },
+  "v4_remaining_release_checks": {
+    "started_at": "2026-10-07T06:59:05.795935+00:00",
+    "manifest_sha256": "91aabc5fdf37037b5d9c8f7a84e9189e4048fe77a7a9fc15c3b1397047c283ef",
+    "commands": [
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "bun",
+          "install",
+          "--frozen-lockfile"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout/site",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "bun",
+          "run",
+          "check"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout/site",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "bun",
+          "audit",
+          "--audit-level=moderate"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout/site",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "uv",
+          "export",
+          "--locked",
+          "--all-groups",
+          "--no-emit-project",
+          "--format",
+          "requirements-txt",
+          "--output-file",
+          "/tmp/a7-b2-v4-dependency-xjeg_m1e/requirements.txt"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "uvx",
+          "--from",
+          "pip-audit==2.10.0",
+          "pip-audit",
+          "--strict",
+          "-r",
+          "/tmp/a7-b2-v4-dependency-xjeg_m1e/requirements.txt"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "uvx",
+          "--from",
+          "bandit==1.9.4",
+          "bandit",
+          "-r",
+          "a7",
+          "scripts",
+          "main.py",
+          "-q",
+          "--skip",
+          "B404,B603"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "uv",
+          "run",
+          "python",
+          "scripts/check_docs_style.py"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout",
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "taskset",
+          "-c",
+          "12-15",
+          "uv",
+          "run",
+          "python",
+          "scripts/check_no_secrets.py"
+        ],
+        "cwd": "/var/tmp/a7-stdlib-b2-v4-2026-10-07-3thccsar/checkout",
+        "exit_code": 0
+      }
+    ],
+    "boundary": "Remaining release checks after V3 exports failure. Compiler/package results inherited only by exact source parity; not a new full gate.",
+    "exit_code": 0,
+    "changed_sources": [],
+    "finished_at": "2026-10-07T06:59:16.721913+00:00",
+    "log_sha256": "06dcf0fffe7e099c1d9f6011b225eb6bf55e1c3f22adcf05186b14983c2465b1"
+  },
+  "exports_only_delta": {
+    "changed": [
+      "site/public/docs/manifest.json"
+    ],
+    "unchanged_files": 1607,
+    "v3_manifest_sha256": "a141068d176aea99b127f788e06c54c78ba4bbcdd72245a80d6f652c6c5ce43d",
+    "v4_manifest_sha256": "91aabc5fdf37037b5d9c8f7a84e9189e4048fe77a7a9fc15c3b1397047c283ef",
+    "v3_gate_exit": 1,
+    "v3_failure": "site check:exports stale generated manifest"
+  },
+  "git_enumeration_setup": {
+    "recorded_at": "2026-10-07T06:48:39.030485+00:00",
+    "source_manifest_sha256": "a141068d176aea99b127f788e06c54c78ba4bbcdd72245a80d6f652c6c5ce43d",
+    "tracked_source_files": 1608,
+    "commands": [
+      {
+        "command": [
+          "git",
+          "init",
+          "--quiet",
+          "/var/tmp/a7-stdlib-b2-v3-2026-10-07-9u5lwtvb/checkout"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "git",
+          "-C",
+          "/var/tmp/a7-stdlib-b2-v3-2026-10-07-9u5lwtvb/checkout",
+          "add",
+          "--force",
+          "--pathspec-from-file=/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/stdlib-b2-qualification-v3/git-manifest-paths.nul",
+          "--pathspec-file-nul"
+        ],
+        "exit": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "boundary": "Snapshot copy omitted untracked Git metadata. Initialized an isolated index before secrets stage so it can enumerate all frozen source files. No source bytes, live repository index, or existing test result changed. Setup occurred after gate start and is recorded explicitly."
+  },
+  "pytest": {
+    "passed": 3826,
+    "xfailed": 1
+  },
+  "compiler_package_checks": {
+    "passed": 11,
+    "skipped": 0
+  },
+  "examples": {
+    "e2e": 51,
+    "debug": 51,
+    "release": 51,
+    "fast": 51
+  },
+  "error_stage_checks": 61,
+  "package_smoke_stdout": "wheel smoke 42\noption 7\nread 3 65 90\nchecked\nwritten 8\n",
+  "source_sha256": {
+    "a7/__init__.py": "004b4df2d71f04771a073dfc3f4a12a70b95cb2b2372315855d79df6b3ecd5da",
+    "a7/ast_nodes.py": "21c85515ee9978a0c42a8a55e48d2fe1070fc029ac22d0ecb317232b281fe108",
+    "a7/ast_preprocessor.py": "8a80410cf01a73504852683882e337b900bacd7bd1649d8d32a99c8bf9760470",
+    "a7/backends/__init__.py": "132179f771bf2839eb6c79163c81ce376ca81d37d79380d874494e81e4dfbcc7",
+    "a7/backends/base.py": "b853273e8f05daf12e9560aa33b625cbc69b7eda041015e718625200a3cb393b",
+    "a7/backends/zig.py": "e86cf8dbd37cbe16e0af109c63302c6ad34d6f14ff791f4a2e79e61074f09c8c",
+    "a7/cast_classifier.py": "48727ca11d8f0540e2a6a3e740a4938b2791015ca856f2525296613b275c45e0",
+    "a7/cli.py": "b4d542e4fe125872951e3287d957e314492eb6097492ba4966c2c2b998e5db3d",
+    "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
+    "a7/errors.py": "3603c90d0b6298b03802aee9de446394ac07370d90acb342831c809592d2cb4e",
+    "a7/exact_constants.py": "47a1891aa898b70181457b5eae23e8ba2125593054105d0195b7ecf8b2e272d0",
+    "a7/formatters/__init__.py": "0d3fb9cf156390a59f9c357a57b776138300d80abb0de708d5f3f5bcf069c1a4",
+    "a7/formatters/ast_walk.py": "c1018bd0f7de054387249b693b80650d65da77800aa7933b34e7678dfd2147ad",
+    "a7/formatters/console_formatter.py": "03bc0fe3f9ddbd9ba72e3da79cc62f7cb32d2cd72e520fff278587af062893f4",
+    "a7/formatters/json_formatter.py": "6d4277a9c70f02d525d0e4bb5613feabc76e6a8a92926994706f8bed529f5c94",
+    "a7/formatters/markdown_formatter.py": "c12d4dd0e76888ebda59398d83be89d62dc3553103b6311aa15be775e7f35f86",
+    "a7/formatters/scope_walk.py": "4b776e77afa08c848920ba889b0e205f88ecba646226173b4d7bcb1969845a43",
+    "a7/generics.py": "2fda7f0b81ca17436a6ba4627a660d1e7fc056eacf17227a3d44281c19a4b062",
+    "a7/layout.py": "feb6d59ba02b2b4d5e1360387d45395ce65c7f8f1d9f836658c5fa9126995b36",
+    "a7/module_resolver.py": "a789b52989370bbcd5242f0c2408a2d83be28122a587c235eba3c82c86d982ee",
+    "a7/parser.py": "4bd5970244f9022a65190629738839755e4a7f8a008c3958731c9972c08f7bb6",
+    "a7/passes/__init__.py": "8facac3f58f69203c3910fb1051e9aa13ae8b4c018e003d0d4049ad5f29a9ca7",
+    "a7/passes/name_resolution.py": "8cacc76f894b132b37b2b2a8726abf8b4502e005c655bb7a72c754453545031c",
+    "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
+    "a7/passes/semantic_validator.py": "ed9a5db56aae1a86340de90c381208d3ab985be3e2e176847b5c4029648ac060",
+    "a7/passes/type_checker.py": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
+    "a7/semantic_context.py": "b2e921c8f8c26f88cf847880e640e787ff8c0aa3acf4ec69d7a50fc221a5c293",
+    "a7/stdlib/__init__.py": "55d6ac3a2c7cf0fe2b608d29966f64a1e28c45baca0f58e523440f78e07f6451",
+    "a7/stdlib/io.py": "3c4f7a10324a349f3a99d23083ee0ff28278351d32618221fd13bad685ca052c",
+    "a7/stdlib/math.py": "e94d3f5a569ace8f90f9aa5a639a95dda51d5b15ba2e34b981a2f901fc4a29e7",
+    "a7/stdlib/sources/io.a7": "4ad8fd7b1fb20e32f91b68b69aafb5bd305fa96f7231a9ab664e6764d8f2f4cd",
+    "a7/stdlib/sources/prelude.a7": "e4e26f6fa4faa37f67a1f0397d42c609b0d702d1a478758e821da948e86750e9",
+    "a7/symbol_table.py": "a46a5635b1d7a0e15608ca0128fd6cfcb2020c1accc7f98783da731732520589",
+    "a7/tokens.py": "817595d8f5c293a5369255a0369d0aa1c2f72aa85993c311c0e349e63851b4e0",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+    "pyproject.toml": "b9a346a7f63c7ea2d9024c9c95a79a752ad0c164df7a2e88ce280ca95657c598",
+    "scripts/verify_wheel_install.py": "46c444c155ce63123aaf204eab3eccbb2ff6c7b46167645eb5983488c7048534",
+    "test/conftest.py": "73855f660df4db3c0f02da0a34e30a457b42795ce86a32ff3a4181e945b84fca",
+    "test/fixtures/golden_outputs/000_empty.out": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test/fixtures/golden_outputs/001_hello.out": "c98c24b677eff44860afea6f493bbaec5bb1c4cbb209c6fc2bbb47f66ff2ad31",
+    "test/fixtures/golden_outputs/002_var.out": "9fca8eb1d900d5c8bce86acc02bf5dd5cc150d6800249677024597de326ff221",
+    "test/fixtures/golden_outputs/003_comments.out": "f2fe2555cbd9fd71967b2039ca0a2e08bfaa50af00afad191d4a23fefcc7ba27",
+    "test/fixtures/golden_outputs/004_func.out": "877376e92bc1d758957748a290413af6b7e31da5fd8c2c940c6d89109b1b74b5",
+    "test/fixtures/golden_outputs/005_for_loop.out": "c1aa175146f6c71681af898ffa31a14d96643dafcdc715ee923b472debf7a27b",
+    "test/fixtures/golden_outputs/006_if.out": "ccb77ff52d336bf6f6e8d40cbdfc0726fdaf127acacbd9a10a7f3ebef0a908ca",
+    "test/fixtures/golden_outputs/007_while.out": "e39fa3bc783711c3f1384f94b039204bd1532423e2e2d2a1de3d2d8fce875e8d",
+    "test/fixtures/golden_outputs/008_switch.out": "3127340663211a45da7ecebefa5558e1c6510716ca8c470ce254e3925a5b4783",
+    "test/fixtures/golden_outputs/009_struct.out": "22f6528fba931617a48241df51116dc6b77f44cc6604bad4a9d57fc80300b1e9",
+    "test/fixtures/golden_outputs/010_enum.out": "ef8c8f8f346254c1677452d252a4a26d463359ac3d7555a5cd426a0fe819531e",
+    "test/fixtures/golden_outputs/011_memory.out": "c4eb6f3db1be674c6bc3fc05d8627e4096b93814e3f149c21e35164eabe5a4bf",
+    "test/fixtures/golden_outputs/012_arrays.out": "a3798c868faf98ed3355d0e1be68547b24a0058c72cd30b343a58cdc1756fed0",
+    "test/fixtures/golden_outputs/013_pointers.out": "9f85c2808929aec8e6924b733686227c009de4a3a2fa317484af0872452b281d",
+    "test/fixtures/golden_outputs/014_generics.out": "d1eb5d3cb14958ba6ef32549ffb306da78f58af2d1bbc08b8a5d6d71ea7565bf",
+    "test/fixtures/golden_outputs/015_types.out": "d5485916e5079773b99eeb88f667b295e6ee289371842c037add555ae5f4a98f",
+    "test/fixtures/golden_outputs/016_unions.out": "1d04c1a1f0a2143f1f3207bc2d73dda7f9ac4d9ba8ec62df03595a3b7dc4780c",
+    "test/fixtures/golden_outputs/017_methods.out": "06ef37b36adbe3c5706d98755bedb15e855bc7ffad3684259a1ba8e2bbd7bcfd",
+    "test/fixtures/golden_outputs/018_modules.out": "e4d116e8ac36b4a1232e6a3729c0d4b3c15919367aeb4d80afa66bfaea6aa1e8",
+    "test/fixtures/golden_outputs/019_literals.out": "5da3479808ce301317c58fe6a9db5637c67af15f1e468f4e873fdbc0d2bbe294",
+    "test/fixtures/golden_outputs/020_operators.out": "25c1e01d680bc8cc96e39710ef353793ae155e5f15798143c5df11fdd7970d58",
+    "test/fixtures/golden_outputs/021_control_flow.out": "095e1c4197fb74288b1f93c3cebb2dfb10480e02aefd2ca8b07776a41ea6bdb1",
+    "test/fixtures/golden_outputs/022_function_pointers.out": "0a853e91f038b826406e6a909abc704d47ccaa73365d16a1761b53b580495a3b",
+    "test/fixtures/golden_outputs/023_inline_structs.out": "87a0d97c3c3056e33164e97ff2f9c3fa4848d8bf52c1e042c8e944ed44a9668d",
+    "test/fixtures/golden_outputs/024_defer.out": "6b3be0edeb0f2f93d231096077acba883c3e6bea723cbeb52230806ee968c03a",
+    "test/fixtures/golden_outputs/025_linked_list.out": "8eb8ab6239c59d993abc0e0034b434220b8b1ddcc75291ff5bc82b14c9f4660d",
+    "test/fixtures/golden_outputs/026_binary_tree.out": "ffa43c079246add99df2e6e96f099088539c1c47e633441f7101d2fac17e7af1",
+    "test/fixtures/golden_outputs/027_callbacks.out": "db462895bb4233074bb7e2187220618fe94ab492b31ea20392f825ed9d977973",
+    "test/fixtures/golden_outputs/028_state_machine.out": "937fe104661d95978500e4908b47d1c7e7bfc463646ab13d067288b0c5b8c402",
+    "test/fixtures/golden_outputs/029_sorting.out": "e9db0c829e481aaf4db8c25adcf02e9a3ba38b3d1892026e1ef4713648de4d04",
+    "test/fixtures/golden_outputs/030_calculator.out": "add4bb08ae201caa927e1ff5977ec4d855acda51df6537d1c43d666ed59aed5a",
+    "test/fixtures/golden_outputs/031_number_guessing.out": "21959b325a09f6f3d6ef9d5516f75217315a868233ec739a9b2da54e151c8203",
+    "test/fixtures/golden_outputs/032_prime_numbers.out": "de8628d9f29138f8589dffb0d2f46f442f200628da7f989bfb72bc7fd0f3ccc0",
+    "test/fixtures/golden_outputs/033_fibonacci.out": "23d50353829fd0aa691ab90e6b8a71b1870136253b698df788252309b93f5d41",
+    "test/fixtures/golden_outputs/034_string_utils.out": "f0295bd3bde5375924a0ae5ebaecf53bc04c1c26e7227acea12b22ec330cc81a",
+    "test/fixtures/golden_outputs/035_matrix.out": "a90da61b302e92835f3fda8d7b0f869bcaac0a78b2675278b0303ad6222b196b",
+    "test/fixtures/golden_outputs/036_control_flow_edges.out": "5501857ea9878ac97b591080a731361c2e1e3b39849ec104402fe1bf3dee1e18",
+    "test/fixtures/golden_outputs/037_language_tour.out": "7c23381f3300242f25073e22701c9c88c0dc2bc20216983a007d201dfae1b30e",
+    "test/fixtures/golden_outputs/038_inventory_report.out": "6285f957d2dbfbf5a2b5eab7b2d75adb50080cdd6333a1b1ee6226b97cb3b893",
+    "test/fixtures/golden_outputs/039_text_analyzer.out": "e6d416a367bf39c274aecd18327ef8789d45e046a30c680f86e9f0c015f03f1a",
+    "test/fixtures/golden_outputs/040_task_board.out": "b03168b4b18134b03e18f598ca9da741c310580d3192847609e49fda484dc8d5",
+    "test/fixtures/golden_outputs/041_route_simulation.out": "6ade9615fad3c402961380f3f3c3c86eb0f3aba2c041a06b912c6c67326e4cbe",
+    "test/fixtures/golden_outputs/042_gradebook.out": "c8c6a2571ccd2828add71affd908b2aaafddfcaf8603ea8e0e0744178ef111f8",
+    "test/fixtures/golden_outputs/043_math_library.out": "2af6f60027354869f5a7aad211c9fe2bd471119b4e547f3ca5fc59c76be6d3f9",
+    "test/fixtures/golden_outputs/044_indexing_rules.out": "8e869b96f8ee21b70feaf679e9e5d4ce1db8fec72c7451433ce04223b11e54b0",
+    "test/fixtures/golden_outputs/045_formatting.out": "60f588be5c70fa06c29ee8893f1c005c6e7f98767a568c0a519416839c9a3250",
+    "test/fixtures/golden_outputs/046_match_full.out": "f3762c40f2c77f08618b82d4e6cbb2b8dc987aa850ddc777ea598fe33856a580",
+    "test/fixtures/golden_outputs/047_safety_obligations.out": "b1b9cea4507212c32766caba76b2db4346b58c39e637b44962beb5bf1bf9404a",
+    "test/fixtures/golden_outputs/048_worklist_traversal.out": "2dddbd6b3714f08cfa8eea99f9891849f57c674c79d904af7192821117afaebb",
+    "test/fixtures/golden_outputs/049_expense_ledger.out": "abba672f4ec5cbe742d9d696f2af135348d3597bd42815eb08aeaeb0412abed8",
+    "test/fixtures/golden_outputs/050_tip_split.out": "eb8be98cfee8de31770990e96b96b9a74707377bec1c5db5874312b551254d19",
+    "test/fixtures/safety_regressions/call_delete_guard.a7": "23baf8a3a882b96d267b4435d810d32c21785cbac9deda22c4671c6c5955b8e4",
+    "test/fixtures/safety_regressions/d_call_invalidates.a7": "4789c004c3751fbf9297cd90363f4d17f1bf80b500490fb8c68058d099d55648",
+    "test/fixtures/safety_regressions/d_del_braced_defer.a7": "a3a4023c0441be21e6960d2d7743cd2988c157793b45cd8f2cedca8996953880",
+    "test/fixtures/safety_regressions/d_join_gap.a7": "355a5d3bd51332db87ed5cefb25d70ea480af83a4630de5a6460e64f785306eb",
+    "test/fixtures/safety_regressions/d_loop_defer_del.a7": "45becc429381e38f02cd4980117d75fb088f0e27c00eab109cda4636f8717951",
+    "test/fixtures/safety_regressions/d_loop_no_fixedpoint.a7": "a7398991777fda57b04fd35621e8bb96f90d1dd7e330d70e9d3ec5ce6f075bc7",
+    "test/fixtures/safety_regressions/d_ref_nil_call.a7": "d40ae52fb0d650891c2467ed1861d5a2a492b93cd707f481bf60829d793fa8a1",
+    "test/fixtures/safety_regressions/deferred_delete_guard.a7": "5104f181801a41e33050041db63979f8728b8d103130b8ac72341dccf4304c23",
+    "test/fixtures/safety_regressions/loop_call_delete_guard.a7": "3f572c61853147afe68bc34bc969067f84105c3843ec6c9c36dc181d60937796",
+    "test/fixtures/safety_regressions/loop_delete_guard.a7": "9d302d9a980c6f99400bdd6498ebad9d53c97b2a324772e4dde015266b302542",
+    "test/native_profiles.py": "6592c372bd465db1e6f6d8ffb75544d41cfeb99ed16049d16b2e2515fdc37943",
+    "test/norec_scan.py": "3f20da2adaa3752be700d8a9a7d64768cd17eebe967ff8ecf3f9269451606c1e",
+    "test/pipeline_helpers.py": "9e75f90040d03d024e408de46ea651c933bfc601d5de4e601b15896c083ca14d",
+    "test/test_array_branch_fitting.py": "cb9371c2d20be410ad7a1487be537e8e10bd64f0f913737e975ecd4773bebda7",
+    "test/test_array_literals.py": "271b268b0f98c36c47feda9261973e9d4e6da085e8dadeaa6b146d531e0294fa",
+    "test/test_assignment_mutability.py": "ea4d9d2948a6191294f3c365ccc2f5d18ec58fda15a2536f74024d2bd7c9baca",
+    "test/test_ast_preprocessor.py": "1f46b0bf0a40e13057d7c021b29ae310de868b71de408dac0b07ff2d7f071838",
+    "test/test_ast_views_complete.py": "d592595a925b22edd727aa0196a1a6b577203c6d7ed513967250bf24bbb18a13",
+    "test/test_audit_backend_repairs.py": "82b18b14a6b43bf7bb2aacfae387cfed87fdfd42baed0f2ad55c26465eceb778",
+    "test/test_audit_safety_repairs.py": "72ef14d1ca100fd3502b8fdb50b6ec5bdadda1cd9bc39611d23f2f289f83ede0",
+    "test/test_audit_type_boundaries.py": "798278cef1012384e366da76805fd58112c7ad6f59873f51046fe62dcad6b58d",
+    "test/test_backend_internal_errors.py": "e455a9cf1993251aed435fc9bd65679004791b1c0a20e78ff6ee2d237a5c382b",
+    "test/test_backends_registry.py": "f21887ab2f686b8a3ea7efabb37b24d5a8f77260ce8c67574dc2b9170356c54f",
+    "test/test_build_profiles.py": "f06a8037f40f8dcdcf5175655ed38816f131e4bc0ba40cf9f556990e6d5d1885",
+    "test/test_cast_safety_matrix.py": "54a2452fde6f3a7d77ae8ba55805ce12251edee48352d7c680854254410fa91f",
+    "test/test_char_literal_errors.py": "f89914fc2ad20e159b95b23d7c5ae3a2ec1e64cdfac78aef9d0498e1db2b6112",
+    "test/test_checked_arithmetic_edges.py": "2edaba4792a5ea20438ebb5e2494bf3809c0d26196adf031eae37570a311690e",
+    "test/test_cli_failures.py": "5e79057662f5ff34989017a8be5cd7aa9e0b19cb64717c28e98192e240adff7a",
+    "test/test_cli_streams_and_markup.py": "7bade5786d532c1d0c613822c121552ec8b461c9932f670528cce350c1e63110",
+    "test/test_cli_workflows.py": "e33f47b1301bc49dda07e25837b6c16be56332721862799ef94e4e15b1ba963d",
+    "test/test_codegen_emit.py": "5c6cb74bf019c20f89dddee04a969bf8d7ad97fb8da8a10f95832cd082211094",
+    "test/test_codegen_zig.py": "c1c947cb804913eb416ccba2c30821f735c5fb292f6ea6401fbcb93055d1cfdf",
+    "test/test_compound_assignment_types.py": "f868fe728523dc359cddbec1aa9720023c000fd637eb9f8150356e451a14292d",
+    "test/test_console_review_regressions.py": "2fa12cf1ba61b810eaf327476ed2d4b82feacae16cde17cb5bbf39cfaac8a6ae",
+    "test/test_constant_folding_exact.py": "7dc57e561be9df3c6cf7eced7e4fc75f5aa13b5c86e73c796204d74790571b06",
+    "test/test_defer_control_flow.py": "276e98e02f9d91d43a68172042d7460a84cb0bf612cb3245b174973bd38f43ea",
+    "test/test_del_defer_codegen.py": "468b25aa7da2cfd1306e9cd74c304a4535342c5e5c0a5dcc869bb802973c5f1c",
+    "test/test_duplicate_function_names.py": "615d8c0cd998551c489e5549c4ad2d9db80c2c0a2f1c4a822ad0fb42e7c175c8",
+    "test/test_enum_tag_types.py": "86a4a26d0d7558c57519579044e64bef5d84489cf0e92201aecef143fbf1c004",
+    "test/test_error_catalog_pins.py": "f69ca25a46b944fcfa14565e026c6c5f5be0ffb737c12009b14bce5935dde6f8",
+    "test/test_error_stage_matrix.py": "d245ef145b1449123debf8febacc674163df789d97cf139499948b6117ff4c7f",
+    "test/test_exact_constant_arithmetic.py": "5f8e05378a5e3b57da99ceefb6765e829a22033c1a20622770cd769e34df9390",
+    "test/test_examples_e2e.py": "0b4fa8aaf67182ddd6c0a1edb18c1a7939db9e2860592edc1ea888ea7ee64fa4",
+    "test/test_expression_context_typing.py": "efda9f7ec2703c4eb078796bb6dc70bf6e7770f667ce7f7a66b0587a10a29ad3",
+    "test/test_feature_pins.py": "6b83f9c0c17ffa8f082bd173993580b588d012b766388161febecb4b780d34a6",
+    "test/test_file_module_scopes.py": "c3c950440cda2cbffbe3f7e0fd5eba20c2e4d607a4a244586d6572ee967a5bbc",
+    "test/test_float_nonfinite_folding.py": "36bf9cd4a787420aad27fc296ab95a7722fc0137e225bd0b966b6f51e994147c",
+    "test/test_gate_review_regressions.py": "641d682f50686481d528559e96df5f39a25913151c0f7f6654b5aae5072474ed",
+    "test/test_generic_callbacks.py": "13fb22d206b55c0797f321e9b7e96e27caba5f337a865bd4ad304d436f0de3d2",
+    "test/test_generic_constraints.py": "ec008a0ddf882a4deb8e3fc81be1812cf057dfb503cec1972ffed373bac82b01",
+    "test/test_generic_initializer_instantiation.py": "214549b0599af2880eed280be7659fd1abe99d3dfa68637dc9cc6bdf45114c1e",
+    "test/test_generics_fast_union.py": "a2b25b5deb1981b094490cd659cfe386d26a23d682541a4035ebc751ff0ccdea",
+    "test/test_generics_value_param_codegen.py": "fc21ef40f64b02be6398b886bbaa6228378a7f20173c9dc28fbcda872d6779a0",
+    "test/test_generics_value_params.py": "c0d1811904bc0d2e9f9f202922c83acacc4036ad6a5d45bb42a1c066b0dbb8fd",
+    "test/test_glm_for_update.py": "779d457b6befa15cfbf70e2a867880fd9eec7956cd3855bf6a3b6e881692e052",
+    "test/test_identifier_collisions.py": "a4f006018a43ee29b9c01fbfd74f50d6a9fe876eaf939e1f1290456849d5b086",
+    "test/test_immutable_generic_aliases.py": "d75226b82b71f919683ff09937f830a5377e6407248386ed867bc58886272080",
+    "test/test_import_error_stages.py": "7b147e93516e6bdb1172685435b5ee668b51a81d6609cef7cce0ae6de9a51110",
+    "test/test_inline_generic_functions.py": "f86fa55e86e499809ac0f1698e4a80a86c85e620687822d3373ba7ea8894d31c",
+    "test/test_iterative_ast_methods.py": "7444af299b289be856d51a3c38b8dfaf2c32dcc8a9e7a4bfb4f854e1ac4a30f1",
+    "test/test_iterative_backend_expressions.py": "e0d46f300f0c2a2fc29ebdea967dc2e2e1e5dca81a2be9c929db10a5d48398fe",
+    "test/test_iterative_backend_statements.py": "eb6e007b053ea02f1a259034ddd53be87bb0e2e9ccc9ebcd23c2c10a085b4ded",
+    "test/test_iterative_checker_expressions.py": "cce6e8c3222ce0945171b9e0d4a9afd00e69722c1d34beb8fdb44465505e00d4",
+    "test/test_iterative_checker_statements.py": "57bb788d5dd5844ff718d466af81c2dd5e1f83c3461477a426a9ce83d0f5eba6",
+    "test/test_iterative_console.py": "f6e639fee611e7d42848f4e04da62fbf7ad4f1558ca8fbbba6c0b4cbec595805",
+    "test/test_iterative_helpers.py": "81adcb4a54b59f6130775ac00a33f554fb553464135161627b7334c09c00ae43",
+    "test/test_iterative_module_loading.py": "2436c02ac7b36c00228c7625f73605215398850ce7921d95bcb24317e7911416",
+    "test/test_iterative_parser_expressions.py": "7e92b7bf41cb6f15b69d09a33b19670433a7fd0dec5e50ce7821a1629f46e8e1",
+    "test/test_iterative_parser_statements.py": "2fd1037d260fc3188dac33fecc81303a65ef4ffbc3fad778e9aa52443a8b6669",
+    "test/test_iterative_preprocessor.py": "43283c915eeb387b322c11500732d05190522305be6f94108e7074ca9b029a7c",
+    "test/test_iterative_return_analysis.py": "6a4ca964db9ac978fc2330a02486960b4a00e5ebc54e89b3f177e64b7f2e853a",
+    "test/test_iterative_safety_statements.py": "9ee3b7e7363de975ddd92db3e9791f441f269449cac17948dcbf86e4a4a9bc97",
+    "test/test_iterative_semantic_calls.py": "cbb8a84e8b457996752059af7a83c18891f8f432058c1287a89d176c2c0f45ef",
+    "test/test_iterative_semantic_type_emission.py": "3df54edd8cbdfdd9b0edc7575df11f6fbd064f8ef71d2423cee57f10a14c5985",
+    "test/test_iterative_traversal.py": "83a485a49745f20d01ba76ac81ee2eb401dd3886a5c03a4044a332537fb0140f",
+    "test/test_iterative_type_checker_helpers.py": "a719bbfc92eddd7473c75d4a045f19a8572d1640de2618823f9b602f906ed9bb",
+    "test/test_iterative_type_equality_hashing.py": "6e835ff10cda42fb6935725fa04837fa9decb0fd527314067202e2a66203f7db",
+    "test/test_iterative_type_operations.py": "80cb97b94c6538c91b54ed71f7ab8b029c8c0ae85de41167c11bab2fadf3d541",
+    "test/test_iterative_type_resolution.py": "36301a847ba0fffcf55a1b17be0e5af0a09453d4b85236e32e6d8b28c5b22317",
+    "test/test_iterative_types.py": "b097d6851c58982871ecbeb90ac39720295667879bce3363aa3c2e79676c159e",
+    "test/test_json_deep_tree.py": "348acb7c46043d24e91e513cbcb78eb1f317c481aaa580459eb6389ff346bb6a",
+    "test/test_json_diagnostics.py": "cc36993c01d0c7399b594d85cccd0a65f36fbf26f425bee23e7d0bf459fff88c",
+    "test/test_language_audit_json_formatter.py": "412a34c096497b14604ba2feeda35e36d8110c1142771294d7c5bb15bcdba042",
+    "test/test_language_audit_match_coverage.py": "7847801e76e22c980889a93634d6a9f30cbca5b720f3bbac6eb32d3c5c4eaa34",
+    "test/test_language_audit_parser_fixes.py": "ab07eadd6bee32de9ba423ab3fdfe5ebfa8b8c6cbbc92c474ec1ac6a389db449",
+    "test/test_layout.py": "2d79d5c4446dc7913659f1c971b057d1907700365623392a299a18f57e922f0c",
+    "test/test_layout_matches_zig.py": "00f14730b4155b2003bf83ca6d5e71c7fe8c5839c15dbe6e22f74286dbf593ee",
+    "test/test_list_separators.py": "d349071702744863ff07d5f86de8da7cc677688242b7e751dc06fbc8c979c425",
+    "test/test_long_expression_chains.py": "9c717e1009ef918c3a1b3a89e658b1f6dbf86889672e8dd78cde7022d838ee19",
+    "test/test_match_dot_e2e.py": "dcbe69807db43f6602c06e91d4d63216cbc1a53d416821dfbf5627bcd9ef5d99",
+    "test/test_match_payload.py": "0c2f691609cfa278ae6e8310c5a8ef42dd61e3be1b6564126a4b8c6472284cba",
+    "test/test_match_ranges_break.py": "59d64e1e5e5ee05a3e5780f5ff04d392d47cf36cb3bcced9bafd646ef3ba61de",
+    "test/test_mixed_array_branches.py": "3b3eda3836a2e0adf6f85c5a50c313c684cdfc20a9d40eacc7407bd32fac0841",
+    "test/test_module_alias_clashes.py": "1c2be2e7b1e94cc8ca296da31150559d3fbc475c1831ad7c736a0d57965f6a8f",
+    "test/test_module_alias_shadowing.py": "5bf81ea77edb108006e26002f5fd3e353b73988b7e22f5c1abc98341a779801f",
+    "test/test_module_const_diagnostics.py": "a26230601d85ecce8b83734c28145ab88de10d8bea6c2b1b6dd292cfda6c039c",
+    "test/test_module_import_local.py": "0da7e173cd3e7a5ef9abd488be9ac673926452fca27bcf9ca6d31e7e576d6c47",
+    "test/test_module_path_codegen.py": "9e6aeb05e052a34b5ab04c923ffb37cba58a46db1bea23f87a1c554cb0455854",
+    "test/test_module_path_identity.py": "ef52143ee31ad62fd195ea7951356d1043a3989215f03785a9897a6c0e7e3ccd",
+    "test/test_module_resolver.py": "8341f69d46db00dd9259c7d1bec147ce3784c7afa8c85ee95dc8a73a3fa7b572",
+    "test/test_module_scope_reporting.py": "35b67c62c51a8612e75d9b3b1cbc78a1aeeadd0ddb18cf767730d366bc477657",
+    "test/test_multi_file_modules.py": "c2570f69fb4ac0288fb9b1e9fcfdde7b4f145dafec97957d667106be0f5a6a99",
+    "test/test_nested_function_codegen.py": "f3f48659701776e53df68999349af1a394787892a3c5f0f32b3c2d1d7b3c155a",
+    "test/test_nested_functions.py": "eab301c054ac103e476315a019c52442e848be47565638765c3c97036e5b7504",
+    "test/test_nil_typing.py": "c7e7575b7a73c758f8a8ae0eaad3f07641b88c680ac0e19f4b8bad5f8bda8207",
+    "test/test_no_recursion.py": "299daea6f67a45bf039f3715d634fbc73b7b79c34a3c4dbed58ae98cb234f72c",
+    "test/test_operator_typing.py": "5fc73e597439ab888f6667057a62bc54c13e93077fbe173bd2b8054b62b20e40",
+    "test/test_output_paths.py": "974e9c1da73ec400773a3691fe1d7980dd3b7ace0ed671c242a0709048898717",
+    "test/test_parameter_use_tracking.py": "282348c69aabcfbf05701d7236160682f70c8ef05ae395a845dab886e847974a",
+    "test/test_parse_termination.py": "638ec0fd774512c717eeca4007608fef53fc37047c0420cc1d3c2212c1f12cdd",
+    "test/test_parser_advanced_edge_cases.py": "7f1bab9503f33865f224fd306b43e0469d98b05ac41e1b43b9223594481481bc",
+    "test/test_parser_basic.py": "e204890cfaaab4df9e899a03dfdb0da9a99faec13ec070d032d4371555a2f429",
+    "test/test_parser_call_argument_cost.py": "5ccf0af445414d39a343ff39b4865667607bd7d4d2c5ccf6bf646284bc809771",
+    "test/test_parser_combinatorial.py": "d50e359df459dbac179e76e06b8eb44b3fef13976bd935bc1f23fc5029a94c8a",
+    "test/test_parser_comprehensive_problems.py": "05ad59f2af8696bdcb018c32e67d9cbc129ae9b7f1cb6117ed98e935004bfa53",
+    "test/test_parser_creative_cases.py": "6d0db6c49407d762e9450369d2d9066364985800528d22032f1f6880669d1f92",
+    "test/test_parser_depth.py": "f3615b3cbcbc5e586ad11d8f12470b234cf9e4f485523c53a0828319276b7a50",
+    "test/test_parser_edge_cases.py": "f899b4ab8c9a9ae34d584f52e039f1588ef92a8d665c63a8a1415281f3f1aff1",
+    "test/test_parser_error_handling_improvements.py": "919acc0428d3b272e139c0a3252a31eb44c9e6b1aa2fe4ae5355f131828c618a",
+    "test/test_parser_examples.py": "6cc2a1010937290e5e4b50973bca7a0d87704094b56eb417daf754a1f6d2c52c",
+    "test/test_parser_extreme_edge_cases.py": "0eadb7417e43ec0e5b0e68812a307a1f0201f09397f49ae1258293065b089115",
+    "test/test_parser_fuzzing.py": "4c2bc4ddff64a542146b59736f7367d2f83bfb8f0f8680e74ec71c31020dd9a7",
+    "test/test_parser_integration.py": "cd6f7a5d6295544bb8bb58757eac0cab6b31b40f4dd269a42c5e02b10d0e2ff7",
+    "test/test_parser_missing_constructs.py": "c5d4e6bf4379637f19fbcc7b066a0238fe8d5be4f7af1fb628028684f79683db",
+    "test/test_parser_regressions.py": "c28f63b35b4962cf3f527a1ea9e702e9713f1f641410d3e3cdf77309d7d2bd6b",
+    "test/test_parser_rejects_invalid_forms.py": "6d10367fc10f5decf1e1c4fbf4c3c181f8ba5806b225d0365219864259a23eca",
+    "test/test_parser_spans.py": "e25b834a25225a6886913de40ffbc760a208646638a89cdad5229d4fa0383031",
+    "test/test_parser_stress_tests.py": "af3cf15f1b3fc71f4355cc5415ed9d76639d8436e2f9862f16c5892b67e61ed3",
+    "test/test_parser_type_combinations.py": "e9993dba6815bc5bfb462294ff2c2154203bb212d6176525f9f74032f96c7168",
+    "test/test_parser_unicode_and_special.py": "93868214858a119219d57e838ae3dcce47e1b22694a365b8ef0c60c4fc1999a8",
+    "test/test_pattern_constants.py": "85549c315b5734df4c8e709391ca774eda9479971dd4a03c6be7fd3ab3a5fd04",
+    "test/test_pipeline_artifacts.py": "080a7912896744d2682cde28080296b1247e38ba48e105dd356284ea32865c21",
+    "test/test_pipeline_diagnostics.py": "cd0ac477e7d0c352dd67237072ae43b8116e7c7c0c47aafeee50675c7651506e",
+    "test/test_pipeline_native.py": "64f9f84d739e08b778032184aca1756432b9de37ae1dd214b7e67f8da50b212c",
+    "test/test_real_pipeline_helpers.py": "9dfcce439bc907129fd46a8865781d907533205474c96ed7991b00bc3fdc44e3",
+    "test/test_recursion_ban_function_values.py": "39fd0a3ff0f5db0a4f3bae3ac25e2eeeed778a6a14d07a66d564e7efbf27daad",
+    "test/test_recursion_detection_scaling.py": "5f2b5caebf1d0f2ae6ba7a9bad659701060f9a6c0607a5c39561f7fb459c9357",
+    "test/test_rejected_examples.py": "e04d07b9591ce6a8aaba1ce27c55a87e2d40a38fcb1b4f152a01d8b9c06f2351",
+    "test/test_release_tooling.py": "498405f278b8728e69fa3b213c0710a653ae633d44718a37a48dda2dc668ce90",
+    "test/test_release_version.py": "4c4f6fe24516bee2afacf29d853e17c2ed571bbeca8bf90900ec3c98e910fd7c",
+    "test/test_resume_backend_bindings.py": "a779afca59fe9c18c8b72d7ca27127105c44ca6640ef51f32b21c404c49ccda4",
+    "test/test_return_paths.py": "8f0e2e108b607482c6b4402731c42f9a5a0b19ae57193fc22cb696091cd68f04",
+    "test/test_saf4_early_return.py": "d2d1b4bc8eb94792a7004ac06854d88429791cd0e05b0c0f3fce33e0f8e777c3",
+    "test/test_safety_binding_identity.py": "1ab33a069589b437d23e4c6606733f549e1fb464cdd3e838a2a36fb147604c6e",
+    "test/test_safety_callee_effects.py": "bc0617bd3fc823d42f37eb5c6f827799d12603c46b9a36005f87254cf989f4ee",
+    "test/test_safety_defer_facts.py": "1f142115fa6ceb508b7bacfe366c8fff64e7e6460fe33a36479aac5aa5e65ed1",
+    "test/test_safety_equivalent_increments.py": "8294b73cd4951a244435af46fadb2f8456cf8bc1f1f6dbb705d16e962996f385",
+    "test/test_safety_expression_order.py": "ad28fefea25b48aaf9b640a2a16d6f06a8312df474c1d021cf4bf0c2c04ef4b8",
+    "test/test_safety_global_aliases.py": "b5878c63360dc23eb76275d647d9a43292033bd45230bd08018bdef4adbc9054",
+    "test/test_safety_hints.py": "06d64f8749b38f5463119541a122d6b826b4d3c1dafb801ab25b01e0c857e675",
+    "test/test_safety_literal_returns.py": "60231b4e6af7901b1a2296b7a0ebff7624b6e45e8cddb551b8d5517fbccb525a",
+    "test/test_safety_loop_exit_effects.py": "c9faa3edd19d87498533af21d809b97d474a6c55341235072522e0299af0e67d",
+    "test/test_safety_loop_facts.py": "158f86524745abfa12b56aff96cf6a1598a3812b93b9aed9b56354213d834fad",
+    "test/test_safety_loop_field_effects.py": "e7e3568c2e99b81da7c323cc108358559dd182cce8eb17e3a2e791bb048e7588",
+    "test/test_safety_precursors.py": "3f313de71c5db2f9cf79ac9798194b0b3f57e3a7aece7eaa4322e5f266dd9490",
+    "test/test_safety_provenance.py": "a10591e5d27857202f7bfe7e47db0c43db09fcffd88a84be5e09655c24499665",
+    "test/test_safety_reference_identity.py": "aaf0eca9fe794113806b5548d77e45c5d975cedf395e173be6fd48965a33a5e3",
+    "test/test_safety_stale_facts.py": "a38637cb3e6b1d847874080b0d316dd087e1e1ae5b676961f43c4804c5ba21be",
+    "test/test_selected_child_native.py": "df4b87061987360206f9cdc2d545f4932a3f222afdfde50c5d8e83f5bed4e261",
+    "test/test_semantic_analysis.py": "552afe4db1001e965ab774f57b23ff104a4c8ae22286eff0eb5c12c89d505903",
+    "test/test_semantic_comprehensive.py": "397a8e839f1e4c62c8c81fd21972635647d182c87b8071812f7410e399938c93",
+    "test/test_semantic_control_flow.py": "c64aaa538934fbb06ace85b209cd27369fccb98e384ae9540554596cf070ae13",
+    "test/test_semantic_errors.py": "e28f25bf5ea7e3257da9a34eaea5bf5af6f8d343c21f2b40d7fb85f5864c2348",
+    "test/test_semantic_expressions.py": "6e84bdfd47b011637e0c0055ba63f0d5f2f18e2da2d2a4fbda6a3e9875fa64d3",
+    "test/test_semantic_functions.py": "4b4250a958df4fed2c9742a80e3a5ed566cb1d8f51cf62e6a144cf59fd87a7d9",
+    "test/test_semantic_generics.py": "f727f007cf3706feeecbc9eded63d8cd286977da914a9d8b161fc19a949574fa",
+    "test/test_semantic_mode_imports.py": "e726d23c704b00041f70d6a728ce64c1d0b730402bb6cd23414b7dd15af4b263",
+    "test/test_semantic_types.py": "4be405581e236ea540b5bbe3c8cefcb89cee52ec0c0db105c76609ce6ca95264",
+    "test/test_single_diagnostic.py": "d8b0fd0bcecafd2410b1c8d56fdfc2ba97c5eba9df5909361fae2fdbb0b2dee6",
+    "test/test_stage_boundary.py": "8f221c9cd5e0a34a07d99be419599576e26ac1cb5fffdcac6f31fe897e995f7c",
+    "test/test_stage_exit_codes.py": "5ebcbfeedc1d62f227f9ec51672ee47b81d3238dd4e5f49376b2312c7a9e97da",
+    "test/test_statement_forms_codegen.py": "868d914bbd3692dde23a2d863d5c7966118e597c3f9e01e4ea51601f0dd305f1",
+    "test/test_statement_terminators.py": "e3e8d3f786525c4ffaa4aab2847d2d690bddfdf9a614352f26c72da6c18791d6",
+    "test/test_stdlib_call_resolution.py": "551afe109688451c0045aee3d7a05f0008163d8807b1fd3ea9c1255801f047e4",
+    "test/test_stdlib_registry.py": "d33bfe9023d25a51fc2db2e5e13099edb14c82795a0a1b8acdf2402e4bcaba0a",
+    "test/test_stdlib_result.py": "b086b8c7cff281e8f0b6640a5926faeaa03886248aacb973bdaf10f8502d6545",
+    "test/test_stdlib_signature_typing.py": "56a7f4bd6cd6c98511c5a16d9a5f177b3ec9d85a2f6cb83f2b7f885f736e2e25",
+    "test/test_stdout_contract.py": "b007a5c98cbb6f79008480bb1c6f03b3a60c0ac890413dd5085a519d415b3b6c",
+    "test/test_string_equality.py": "28fd7d10f2fab59851bfd08579d724d8f139046195b41ed700c29346b1f10713",
+    "test/test_struct_literal_contexts.py": "51a7d82b8b9ff8ba6f5a729d474ade2ab7b43dc861852529141a0c5106e87ae7",
+    "test/test_tokenizer.py": "6d732865f9db4e052da251af577ddbe2fdcd96da256170f53e581867cd18ac5a",
+    "test/test_type_alias_binding.py": "bb53f96ba56ac93c6bba891b96bb5ec5812009535dfa81ea0e34e6ef64ee1674",
+    "test/test_type_declaration_order.py": "484b60798414cd67d69289d157c91bc83511e930812224ffc7be43e6959fd561",
+    "test/test_type_set_aliases.py": "f9c505950c7b0565644a529b1c47c2d228a95019f90c66df5fc670d862e08ed9",
+    "test/test_untyped_constants_acceptance.py": "30410f2e0e39a907005e506e2025c3ce01d6b683734b84e271b81d6bbc423410",
+    "test/test_v1_backend_regressions.py": "0d92be83a5c5d117840535722ecad9d57693c3c51a9c183b92d023609570e711",
+    "test/test_value_vs_type.py": "478c2bcbeb3008582e1e45f8212d1768b26ba7dec874afea902b07a449a43e08",
+    "test/test_where_clauses.py": "56197b677be95dacf33179890b45630e6bda7c37707e8a6ece48309f7deee7d6",
+    "test/test_zero_initialization.py": "b33672b3a02f28c2cfd0a7d4f2f0b84f8363af86c22cfeeddd3c4e59aeeede79",
+    "test/test_zig_backend_runtime.py": "004a9c6f897b8903d36bec23d4f0af61236ad92775c267f2d566381ce153f9b6"
+  },
+  "reviews": {
+    "controller": "parent /root",
+    "integration_approved": true,
+    "candidate_manifest_sha256": "91aabc5fdf37037b5d9c8f7a84e9189e4048fe77a7a9fc15c3b1397047c283ef",
+    "unresolved_introduced_blockers": [],
+    "disposition": "V2 GLM MAJ-1 void return normalization fixed in V3 and verified by seven permanent tests, full compiler/package gate and independent Flash delta. V3 wrapper failed stale generated exports; V4 differs only in site/public/docs/manifest.json, with all remaining site/dependency/static checks successful. No V4 fresh full-gate claim.",
+    "review_artifacts": [
+      "stdlib-b2-glm-review/RECONCILIATION.md",
+      "stdlib-b2-v3-flash-review/REPORT.md"
+    ],
+    "historical_v3_gate_exit": 1
+  },
+  "integration": {
+    "base_commit": "c1ffb038c6b89afe57b63299a0d6780387529fd9",
+    "manifest_sha256": "91aabc5fdf37037b5d9c8f7a84e9189e4048fe77a7a9fc15c3b1397047c283ef",
+    "changes": [
+      {
+        "path": "README.md",
+        "before_sha256": "4fa0c6bb542dc92b0da0d9ba4e7143bd7d3a884bc1dfb7da7b7ab6d0b30850e9",
+        "qualified_sha256": "21ed97cbc2ca16a56651f7763c0985418764eeb6413466b35f34095f7a28513a",
+        "mode": 420
+      },
+      {
+        "path": "a7/backends/zig.py",
+        "before_sha256": "3aaf327eb678622377c9b0f0b4d54657f3e7b4a30dcffd06d661ae2809f0c32b",
+        "qualified_sha256": "e86cf8dbd37cbe16e0af109c63302c6ad34d6f14ff791f4a2e79e61074f09c8c",
+        "mode": 420
+      },
+      {
+        "path": "a7/module_resolver.py",
+        "before_sha256": "8d52c2a5d825594b6358ebe68d3e9aea42792c06a5210e3e6ee6c64e379434a1",
+        "qualified_sha256": "a789b52989370bbcd5242f0c2408a2d83be28122a587c235eba3c82c86d982ee",
+        "mode": 420
+      },
+      {
+        "path": "a7/passes/name_resolution.py",
+        "before_sha256": "951a43f9de94d309564a04459c480ffe00c37cae12daedcdc5cd8282d1632af6",
+        "qualified_sha256": "8cacc76f894b132b37b2b2a8726abf8b4502e005c655bb7a72c754453545031c",
+        "mode": 420
+      },
+      {
+        "path": "a7/passes/type_checker.py",
+        "before_sha256": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
+        "qualified_sha256": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
+        "mode": 420
+      },
+      {
+        "path": "a7/stdlib/__init__.py",
+        "before_sha256": "70c5b5a14265c64caa8c5a22417d018b1212a5cf2b6689da100b7854936c0b62",
+        "qualified_sha256": "55d6ac3a2c7cf0fe2b608d29966f64a1e28c45baca0f58e523440f78e07f6451",
+        "mode": 420
+      },
+      {
+        "path": "a7/stdlib/io.py",
+        "before_sha256": "e01f0fb576e63c72b9a2ad0a4bd7b4c47ef0811f6400e4ce269f0d853db1a815",
+        "qualified_sha256": "3c4f7a10324a349f3a99d23083ee0ff28278351d32618221fd13bad685ca052c",
+        "mode": 420
+      },
+      {
+        "path": "a7/stdlib/sources/io.a7",
+        "before_sha256": null,
+        "qualified_sha256": "4ad8fd7b1fb20e32f91b68b69aafb5bd305fa96f7231a9ab664e6764d8f2f4cd",
+        "mode": 420
+      },
+      {
+        "path": "a7/stdlib/sources/prelude.a7",
+        "before_sha256": null,
+        "qualified_sha256": "e4e26f6fa4faa37f67a1f0397d42c609b0d702d1a478758e821da948e86750e9",
+        "mode": 420
+      },
+      {
+        "path": "a7/symbol_table.py",
+        "before_sha256": "100f01577df674572506881ace089b439b604deaac465c068366c147a43fe173",
+        "qualified_sha256": "a46a5635b1d7a0e15608ca0128fd6cfcb2020c1accc7f98783da731732520589",
+        "mode": 420
+      },
+      {
+        "path": "docs/ARCHITECTURE.md",
+        "before_sha256": "618fe36da7d9c1742d1e75605c7776836ba0b2b151a8eb24018b4ac5332a9e7c",
+        "qualified_sha256": "33cb9d338e368ff3d728eabe499422bdd43632bd009bb97d898e4b611cea437b",
+        "mode": 420
+      },
+      {
+        "path": "docs/CHANGELOG.md",
+        "before_sha256": "6846c2064e3658390f2eaea37c776c72dbfb5b194982e3aee62537dc835becab",
+        "qualified_sha256": "12ca0e18b9fec7a644efdece07bf69a9de9c88b959e132a565b9d762449b4102",
+        "mode": 420
+      },
+      {
+        "path": "docs/SPEC.md",
+        "before_sha256": "3901835513b324be440d6eeb72e0a742660fb021f692ab30ee2f31557bf88078",
+        "qualified_sha256": "d30d9d7b6835e3600d20b2688ba948f6ff5742383af47af6d23e9b4b4bd0bd89",
+        "mode": 420
+      },
+      {
+        "path": "docs/STATUS.md",
+        "before_sha256": "40558c77045be42c2ac9218bf59854811bb1f851f506a8be33ee877417852314",
+        "qualified_sha256": "c84b217dddbc856f2d7a4ff82fa3975daf5a6e70c6ef8eddb2f9b98f25343327",
+        "mode": 420
+      },
+      {
+        "path": "docs/plan/delivery-roadmap.md",
+        "before_sha256": "e6daf27dea49d4d57552696c9520e2e3952c89cf0427ce5f28f569840637e0f1",
+        "qualified_sha256": "f5b5548395320f33eda5c050febc7b91265f987d869b2e9474660f6ef7e6e480",
+        "mode": 420
+      },
+      {
+        "path": "examples/rejected/unknown_stdlib_call.a7",
+        "before_sha256": "ca8e2f1a467a0d04bc9e91a595b8372073b89ef81cd8d26a03ad524d59042ea5",
+        "qualified_sha256": "8a6ca113237c00b4e02e93fcdc73064d33147d3ff3126d597afefeda6bbbb815",
+        "mode": 420
+      },
+      {
+        "path": "pyproject.toml",
+        "before_sha256": "86f8e0454f88894afb872ee80207778534da965e2adc05d42c164e6e953bf0e6",
+        "qualified_sha256": "b9a346a7f63c7ea2d9024c9c95a79a752ad0c164df7a2e88ce280ca95657c598",
+        "mode": 420
+      },
+      {
+        "path": "scripts/verify_wheel_install.py",
+        "before_sha256": "7b078d555c31c921dd8e35ac3827c5a3c47e0b426c05416f7cd33924dd8dd5db",
+        "qualified_sha256": "46c444c155ce63123aaf204eab3eccbb2ff6c7b46167645eb5983488c7048534",
+        "mode": 420
+      },
+      {
+        "path": "site/content/features.json",
+        "before_sha256": "f1a3994f97c868d3d43dad6f375dfa8958bde454e556b44ff04e1a9bab2a429d",
+        "qualified_sha256": "979f729a509ae03adb6ddbfe649cf629afd62341613d44012610423f0105500b",
+        "mode": 420
+      },
+      {
+        "path": "site/docs/coverage.md",
+        "before_sha256": "bfa7a0f74a4221a33af671397fa887493bf48b297cacd2b96d961b8898668936",
+        "qualified_sha256": "74075bb7a64e2ed036e1250826f1022200fa2514adbdd8b0bea8a423d19aa53b",
+        "mode": 420
+      },
+      {
+        "path": "site/public/docs/language/generics.md",
+        "before_sha256": "0aae6cb9eb4a036ff8cbd9ec07d0ad9748a82d130249296e705de6e2408b3dc6",
+        "qualified_sha256": "a0ae44a597b29e91b9c79fcc48ddfa54f640d1bdb2484a29b9bc27c08df0f1be",
+        "mode": 420
+      },
+      {
+        "path": "site/public/docs/language/modules.md",
+        "before_sha256": "b3ce4c940e7cfe30f381fdafab0ae5f3f6dd01d29ff057773cc1f4932259fe26",
+        "qualified_sha256": "e401ea76a2d99d1953ebb4a7df4fad694f6f9003027a2ae1e1fbfef1f7863727",
+        "mode": 420
+      },
+      {
+        "path": "site/public/docs/manifest.json",
+        "before_sha256": "50e1359047c4dd45b3c920d1c37d10e4c90c63c57000b922fe9d32b5892a8e6d",
+        "qualified_sha256": "2e4be7c5c457bc4dc90b1884e8138a0301a05486a2adc67c49471f8e6b70ddc8",
+        "mode": 420
+      },
+      {
+        "path": "site/public/docs/status.md",
+        "before_sha256": "e377604d4a9875613163e1f49013f4cd8a88484c0a46d228ac32d6c49456b133",
+        "qualified_sha256": "2242721bae003137c7593e51d90dce98b72c96517cde7f5a696ae376d71493fa",
+        "mode": 420
+      },
+      {
+        "path": "site/public/docs/stdlib.md",
+        "before_sha256": "ca2fa3b645a071906333c3340a012b83413415dd2fec5591c6f512ab1b1a24ca",
+        "qualified_sha256": "04d9f92a0b7d528887d6f75944874f1f3a743a09d5ae0927c18fda78ed7673b8",
+        "mode": 420
+      },
+      {
+        "path": "site/public/llms-full.txt",
+        "before_sha256": "4a7318db34bd5f3aa21908413777f7665feb8bcee8029f0d9d24bb8b05cbf7b8",
+        "qualified_sha256": "3aa2ddb7ec704692c0183ea53bfe5133f17842ee064944ad54aa3b3044527b5e",
+        "mode": 420
+      },
+      {
+        "path": "test/test_file_module_scopes.py",
+        "before_sha256": "9350b611628c52f8ce9ee18e3c052e5658b11cd93b54d35c7b46a4f3cb82b30c",
+        "qualified_sha256": "c3c950440cda2cbffbe3f7e0fd5eba20c2e4d607a4a244586d6572ee967a5bbc",
+        "mode": 420
+      },
+      {
+        "path": "test/test_generics_fast_union.py",
+        "before_sha256": "30f2c25de55daf51a9ac609e6f673834eeb820dea43aeea482e75bac80e89bbe",
+        "qualified_sha256": "a2b25b5deb1981b094490cd659cfe386d26a23d682541a4035ebc751ff0ccdea",
+        "mode": 420
+      },
+      {
+        "path": "test/test_match_dot_e2e.py",
+        "before_sha256": "633ced9f213889132ce1e567a4f490a3745608a87e108f83e114f35d08d569df",
+        "qualified_sha256": "dcbe69807db43f6602c06e91d4d63216cbc1a53d416821dfbf5627bcd9ef5d99",
+        "mode": 420
+      },
+      {
+        "path": "test/test_match_payload.py",
+        "before_sha256": "feb843af9d3ba6bb2cb8f4015e5b8a697b2e1652124f3d73931d9d6230a6a8dc",
+        "qualified_sha256": "0c2f691609cfa278ae6e8310c5a8ef42dd61e3be1b6564126a4b8c6472284cba",
+        "mode": 420
+      },
+      {
+        "path": "test/test_module_alias_clashes.py",
+        "before_sha256": "25d6a8aa661bab1ea245aac909da9a2051d23850ddb432ee6ff215ab70d4a0b6",
+        "qualified_sha256": "1c2be2e7b1e94cc8ca296da31150559d3fbc475c1831ad7c736a0d57965f6a8f",
+        "mode": 420
+      },
+      {
+        "path": "test/test_safety_binding_identity.py",
+        "before_sha256": "efd0f2781f4eeaa83cdc54a5fa6bb7b21b2e5e5b8606f128f37502808b983b83",
+        "qualified_sha256": "1ab33a069589b437d23e4c6606733f549e1fb464cdd3e838a2a36fb147604c6e",
+        "mode": 420
+      },
+      {
+        "path": "test/test_semantic_generics.py",
+        "before_sha256": "6d4be9b2d865291069c374ec5c9168684b82c01bef83d94d43bb2afd0c5a54fe",
+        "qualified_sha256": "f727f007cf3706feeecbc9eded63d8cd286977da914a9d8b161fc19a949574fa",
+        "mode": 420
+      },
+      {
+        "path": "test/test_stage_boundary.py",
+        "before_sha256": "94f329ea695c4ad16f9867dc84067c6ad9f609ef1a41b6d16f7c04725d756825",
+        "qualified_sha256": "8f221c9cd5e0a34a07d99be419599576e26ac1cb5fffdcac6f31fe897e995f7c",
+        "mode": 420
+      },
+      {
+        "path": "test/test_stdlib_result.py",
+        "before_sha256": "4d61383cdc9a7fd666f1edcc6a2c41c7bf034c9f046743a2db6fede49f0fc3b7",
+        "qualified_sha256": "b086b8c7cff281e8f0b6640a5926faeaa03886248aacb973bdaf10f8502d6545",
+        "mode": 420
+      },
+      {
+        "path": "test/test_stdlib_signature_typing.py",
+        "before_sha256": null,
+        "qualified_sha256": "56a7f4bd6cd6c98511c5a16d9a5f177b3ec9d85a2f6cb83f2b7f885f736e2e25",
+        "mode": 420
+      }
+    ],
+    "boundary": "Exact qualified source and draft docs copied. Final qualification prose and audit records are checked separately.",
+    "applied_at": "2026-10-07T06:59:39.115631+00:00"
+  },
+  "boundary": "V3 full release wrapper remains exit 1. All 11 compiler/package checks passed. V4 changes only generated site/public/docs/manifest.json; site and remaining dependency/static checks passed separately with all frozen hashes/modes unchanged. Final evidence prose checked separately. No new full-gate exit-0 claim and no V1 completion."
+}

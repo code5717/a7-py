@@ -15,14 +15,14 @@ from conftest import build_and_run, expect_exit, run_both_profiles
 IO_IMPORT = 'io :: import "std/io"\n'
 
 RESULT_UNION = """
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: i32
     err: i32
 }
 """
 
 GENERIC_UNION = """
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: $T,
     err: $E,
 }
@@ -38,7 +38,7 @@ def run(source: str, tmp_path, zig: str) -> str:
 class TestDotArms:
     def test_payload_binds_the_active_field(self, tmp_path, zig):
         out = run(IO_IMPORT + RESULT_UNION + """
-        show :: fn(r: Result) {
+        show :: fn(r: Outcome) {
             match r {
                 case .ok(v): {
                     x: i32 = v + 1
@@ -50,8 +50,8 @@ class TestDotArms:
             }
         }
         main :: fn() {
-            show(Result{ok: 41})
-            show(Result{err: 7})
+            show(Outcome{ok: 41})
+            show(Outcome{err: 7})
         }
         """, tmp_path, zig)
         assert out == "ok 42\nerr 7\n"
@@ -76,7 +76,7 @@ class TestDotArms:
     def test_generic_union_match_expression(self, tmp_path, zig):
         out = run(IO_IMPORT + GENERIC_UNION + """
         main :: fn() {
-            r := Result(i32, bool){ok: 7}
+            r := Outcome(i32, bool){ok: 7}
             out := match r {
                 case .ok(v): v + 1
                 case .err(e): if e { 100 } else { 0 }
@@ -92,19 +92,19 @@ class TestFullCoverage:
 
     def test_qualified_arms_cover_every_tag(self, tmp_path, zig):
         out = run_both_profiles(IO_IMPORT + RESULT_UNION + """
-        show :: fn(r: Result) {
+        show :: fn(r: Outcome) {
             match r {
-                case Result.ok: {
+                case Outcome.ok: {
                     io.println("ok")
                 }
-                case Result.err: {
+                case Outcome.err: {
                     io.println("err")
                 }
             }
         }
         main :: fn() {
-            show(Result{ok: 1})
-            show(Result{err: 1})
+            show(Outcome{ok: 1})
+            show(Outcome{err: 1})
         }
         """, tmp_path, zig)
         assert out == "ok\nerr\n"
@@ -113,7 +113,7 @@ class TestFullCoverage:
         """The A7 `else` can never run. Its body still names `extra` and
         `fallback`, which Zig must not report as unused."""
         out = run_both_profiles(IO_IMPORT + RESULT_UNION + """
-        pick :: fn(r: Result, fallback: i32) i32 {
+        pick :: fn(r: Outcome, fallback: i32) i32 {
             ret match r {
                 case .ok(v): v
                 case .err(e): e
@@ -121,7 +121,7 @@ class TestFullCoverage:
             }
         }
         main :: fn() {
-            r := Result{err: 5}
+            r := Outcome{err: 5}
             extra := 9
             match r {
                 case .ok(v): { io.println("ok {}", v) }
@@ -129,8 +129,8 @@ class TestFullCoverage:
                 else: { io.println("never {}", extra) }
             }
             match r {
-                case Result.ok: { io.println("ok") }
-                case Result.err: { io.println("err") }
+                case Outcome.ok: { io.println("ok") }
+                case Outcome.err: { io.println("err") }
                 else: { io.println("never") }
             }
             io.println("{}", pick(r, 0))
@@ -142,22 +142,22 @@ class TestFullCoverage:
 class TestWildcardArm:
     def test_wildcard_beside_dot_arm(self, tmp_path, zig):
         out = run_both_profiles(IO_IMPORT + RESULT_UNION + """
-        show :: fn(r: Result) {
+        show :: fn(r: Outcome) {
             match r {
                 case .ok(v): { io.println("ok {}", v) }
                 case _: { io.println("other") }
             }
         }
-        code :: fn(r: Result) i32 {
+        code :: fn(r: Outcome) i32 {
             ret match r {
                 case .err(e): e
                 case _: 0
             }
         }
         main :: fn() {
-            show(Result{err: 4})
-            show(Result{ok: 2})
-            io.println("{} {}", code(Result{err: 4}), code(Result{ok: 2}))
+            show(Outcome{err: 4})
+            show(Outcome{ok: 2})
+            io.println("{} {}", code(Outcome{err: 4}), code(Outcome{ok: 2}))
         }
         """, tmp_path, zig)
         assert out == "other\nok 2\n4 0\n"
@@ -165,7 +165,7 @@ class TestWildcardArm:
 
 SHADOW_LOCAL = IO_IMPORT + RESULT_UNION + """
 main :: fn() {
-    r := Result{err: 4}
+    r := Outcome{err: 4}
     e: i32 = 100
     match r {
         case .ok(v): { io.println("ok {}", v) }
@@ -176,7 +176,7 @@ main :: fn() {
 """
 
 SHADOW_PARAMETER = IO_IMPORT + RESULT_UNION + """
-show :: fn(r: Result, v: i32) {
+show :: fn(r: Outcome, v: i32) {
     match r {
         case .ok(v): { io.println("ok {}", v) }
         case .err(e): { io.println("err {}", e) }
@@ -184,7 +184,7 @@ show :: fn(r: Result, v: i32) {
     io.println("{}", v)
 }
 main :: fn() {
-    show(Result{ok: 4}, 7)
+    show(Outcome{ok: 4}, 7)
 }
 """
 
@@ -193,7 +193,7 @@ v :: fn() i32 {
     ret 9
 }
 main :: fn() {
-    r := Result{ok: 4}
+    r := Outcome{ok: 4}
     match r {
         case .ok(v): { io.println("ok {}", v) }
         case .err(e): { io.println("err {}", e) }
@@ -204,7 +204,7 @@ main :: fn() {
 
 SHADOW_IN_EXPRESSION = IO_IMPORT + RESULT_UNION + """
 main :: fn() {
-    r := Result{ok: 4}
+    r := Outcome{ok: 4}
     v: i32 = 100
     n := match r {
         case .ok(v): v + 1
@@ -232,7 +232,7 @@ class TestPayloadCapture:
         """Zig rejects an unused capture."""
         out = run_both_profiles(IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 4}
+            r := Outcome{ok: 4}
             n := match r {
                 case .ok(v): 1
                 case .err(e): 0
@@ -294,7 +294,7 @@ class TestRejected:
     def test_partial_dot_coverage_lists_missing(self, tmp_path):
         expect_exit(IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok(v): {
                     io.println("ok {}", v)
@@ -306,7 +306,7 @@ class TestRejected:
     def test_payload_binding_mistyped_use(self, tmp_path):
         expect_exit(IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .ok(v): {
                     s: string = v
@@ -322,7 +322,7 @@ class TestRejected:
     def test_unknown_tag(self, tmp_path):
         expect_exit(IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case .bogus: {
                     io.println("no")
@@ -337,7 +337,7 @@ class TestRejected:
     def test_bare_arm_reports_tag_failure(self, tmp_path):
         expect_exit(IO_IMPORT + RESULT_UNION + """
         main :: fn() {
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             match r {
                 case ok: {
                     io.println("ok")

@@ -18,7 +18,7 @@ BOX = IO + """Box :: struct { value: i32 }
 keep :: fn(b: ref Box) { b.value = 1 }
 drop :: fn(b: ref Box) { del b }
 """
-RESULT = """Result :: union(tag) {
+RESULT = """Outcome :: union(tag) {
     ok: i32
     err: i32
 }
@@ -95,18 +95,18 @@ main :: fn() {
     ("", "    v := 5\n"),
 ], ids=["file-scope-constant", "local"])
 def test_match_capture_does_not_inherit_an_outer_fact(tmp_path, outer, local):
-    source = IO + outer + RESULT + "f :: fn(r: Result) i32 {\n" + local + """    match r {
+    source = IO + outer + RESULT + "f :: fn(r: Outcome) i32 {\n" + local + """    match r {
         case .ok(v): { ret 10 / v }
         case .err(e): { ret e }
     }
 }
-main :: fn() { io.println("{}", f(Result{ok: 0})) }
+main :: fn() { io.println("{}", f(Outcome{ok: 0})) }
 """
     expect_exit(source, tmp_path, 6, DIVISOR)
 
 
 def test_guarded_match_capture_divides(tmp_path, zig):
-    source = IO + "v :: 5\n" + RESULT + """f :: fn(r: Result) i32 {
+    source = IO + "v :: 5\n" + RESULT + """f :: fn(r: Outcome) i32 {
     match r {
         case .ok(v): {
             if v != 0 { ret 10 / v }
@@ -116,7 +116,7 @@ def test_guarded_match_capture_divides(tmp_path, zig):
     }
 }
 main :: fn() {
-    io.println("{} {} {} {}", f(Result{ok: 0}), f(Result{ok: 2}), f(Result{err: 9}), 10 / v)
+    io.println("{} {} {} {}", f(Outcome{ok: 0}), f(Outcome{ok: 2}), f(Outcome{err: 9}), 10 / v)
 }
 """
     assert run_both_profiles(source, tmp_path, zig) == "0 5 9 2\n"

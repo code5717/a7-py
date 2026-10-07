@@ -20,6 +20,12 @@ console :: import "std/io"
 
 An alias is local: `console.println(...)` calls the same virtual module as `io.println(...)`. `std/io` and `std/math`, along with their short `io` and `math` module names, are compiler-backed virtual modules.
 
+`Option(T)` and `Result(T, E)` are available without imports. Module operations
+and `io.IoErr` still require an explicit import in each file. Literal paths
+starting with `std/` select shipped modules; project replacements or unavailable
+reserved modules fail with exit 3. Explicit relative paths such as
+`./std/helper` keep ordinary file resolution and containment rules.
+
 Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Qualified calls, types, constants and struct literals use each file's own scope and emit into the same generated Zig source. Paths resolve relative to the importing file. A nested file may use `../utils`
 when the target stays inside the entry file's folder. Paths and symlinks that
 escape that folder are rejected. Directory fallback through `path/mod.a7`

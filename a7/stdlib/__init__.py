@@ -23,6 +23,8 @@ class StdlibFunction:
     module: str              # "io"
     name: str                # "println"
     canonical: str           # "std.io.println"
+    signature: Optional[str] = None
+    argument_policy: str = "fixed"
 
 
 @dataclass

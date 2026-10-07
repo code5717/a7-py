@@ -1,7 +1,7 @@
 """Pins for generic `union(tag)` specialization and conflicting `$T` bindings.
 
 - `union(tag)` declarations with `$T` fields monomorphize positionally
-  like generic structs (`Result(i32, string){...}`).
+  like generic structs (`Outcome(i32, string){...}`).
 - Conflicting `$T` bindings at one call site are a compile error.
 - A wrong number of type arguments is an arity error naming both counts.
 """
@@ -66,52 +66,52 @@ class TestGenericUnionSpecialization:
 
     def test_union_specialization_initializes(self):
         source = """
-        Result :: union(tag) {
+        Outcome :: union(tag) {
             ok: $T,
             err: $E,
         }
 
         main :: fn() {
-            r := Result(i32, string){ok: 1}
+            r := Outcome(i32, string){ok: 1}
         }
         """
         assert expect_success(source)
 
     def test_union_specialization_checks_field_type(self):
         source = """
-        Result :: union(tag) {
+        Outcome :: union(tag) {
             ok: $T,
             err: $E,
         }
 
         main :: fn() {
-            r := Result(i32, string){ok: "nope"}
+            r := Outcome(i32, string){ok: "nope"}
         }
         """
         assert expect_error(source, "Union field 'ok'")
 
     def test_union_specialization_rejects_unknown_field(self):
         source = """
-        Result :: union(tag) {
+        Outcome :: union(tag) {
             ok: $T,
             err: $E,
         }
 
         main :: fn() {
-            r := Result(i32, string){missing: 1}
+            r := Outcome(i32, string){missing: 1}
         }
         """
-        assert expect_error(source, "Union has no such tag (Union 'Result' has no tag 'missing')")
+        assert expect_error(source, "Union has no such tag (Union 'Outcome' has no tag 'missing')")
 
     def test_union_specialization_field_access(self):
         source = """
-        Result :: union(tag) {
+        Outcome :: union(tag) {
             ok: $T,
             err: $E,
         }
 
         main :: fn() {
-            r := Result(i32, string){ok: 1}
+            r := Outcome(i32, string){ok: 1}
             x := r.ok
         }
         """
@@ -119,13 +119,13 @@ class TestGenericUnionSpecialization:
 
     def test_distinct_specializations_do_not_mix(self):
         source = """
-        Result :: union(tag) {
+        Outcome :: union(tag) {
             ok: $T,
             err: $E,
         }
 
         main :: fn() {
-            r: Result(string, string) = Result(i32, string){ok: 1}
+            r: Outcome(string, string) = Outcome(i32, string){ok: 1}
         }
         """
         assert expect_error(source, "Type mismatch")
@@ -196,7 +196,7 @@ class TestConflictingInferenceIsError:
 
 
 GENERIC_RESULT = """
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: $T,
     err: $E,
 }
@@ -216,18 +216,18 @@ class TestTypeArgumentCount:
     def test_union_too_few_arguments(self, tmp_path):
         result = expect_exit(GENERIC_RESULT + """
         main :: fn() {
-            c := Result(i32){ok: 1}
+            c := Outcome(i32){ok: 1}
         }
         """, tmp_path, 6,
-            "Generic parameter count mismatch: Result takes 2 generic argument(s) ($T, $E), got 1")
+            "Generic parameter count mismatch: Outcome takes 2 generic argument(s) ($T, $E), got 1")
         assert len(result.failure.details) == 1, failure_text(result)
 
     def test_union_too_many_arguments(self, tmp_path):
         result = expect_exit(GENERIC_RESULT + """
         main :: fn() {
-            d := Result(i32, string, bool){ok: 1}
+            d := Outcome(i32, string, bool){ok: 1}
         }
-        """, tmp_path, 6, "Result takes 2 generic argument(s) ($T, $E), got 3")
+        """, tmp_path, 6, "Outcome takes 2 generic argument(s) ($T, $E), got 3")
         assert "Union field 'ok'" not in failure_text(result)
 
     def test_struct_too_few_arguments(self, tmp_path):
@@ -263,9 +263,9 @@ class TestTypeArgumentCount:
     def test_annotation_too_many_arguments(self, tmp_path):
         expect_exit(GENERIC_RESULT + """
         main :: fn() {
-            z: Result(i32, i32, i32)
+            z: Outcome(i32, i32, i32)
         }
-        """, tmp_path, 6, "Result takes 2 generic argument(s) ($T, $E), got 3")
+        """, tmp_path, 6, "Outcome takes 2 generic argument(s) ($T, $E), got 3")
 
     def test_parameter_annotation_arity_reported_once(self, tmp_path):
         result = expect_exit(GENERIC_PAIR + """

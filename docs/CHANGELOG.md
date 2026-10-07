@@ -5,6 +5,14 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Package-owned `Option(T)` and `Result(T, E)` are available in every file.
+  User declarations of those names now fail at semantic exit 6; remove equivalent
+  declarations or rename custom types. Record fields and enum members remain valid.
+- `io.read_line` checks one mutable byte-slice argument. It and `io.println_ok`
+  return `Result(usize, io.IoErr)` through the full compiler. Existing read/EOF
+  behavior and empty printing are preserved. Literal `std/` import paths select
+  shipped modules; project replacements fail at resolution exit 3.
+
 - Simple direct calls with literal boolean selectors retain their selected
   reference or nil return. Unguarded nil-result field access fails at semantic
   exit 6. Deleting an unselected allocation preserves the selected live result.

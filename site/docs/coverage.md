@@ -56,7 +56,7 @@ These findings are recorded with source programs and diagnostics in
 | selected-imports | unavailable | [language/modules](../public/docs/language/modules.md) | Resolver metadata is not runnable backend support. |
 | using-import | unavailable | [language/modules](../public/docs/language/modules.md) | Not a supported public executable import workflow. |
 | concurrency | planned | [language/builtins](../public/docs/language/builtins.md) | No implemented public concurrency model. |
-| collections | planned | [language/builtins](../public/docs/language/builtins.md) | Option, Result and collection modules are planned. |
+| collections | planned | [language/builtins](../public/docs/language/builtins.md) | Collection modules remain planned; canonical prelude Option(T) and Result(T, E) are available. |
 | 1. Introduction | limited | [language/syntax](../public/docs/language/syntax.md) | Design intent and project context, qualified by current implementation status. |
 | 1.1 Language Overview | limited | [language/syntax](../public/docs/language/syntax.md) | Design intent and project context, qualified by current implementation status. |
 | 1.2 Design Philosophy | limited | [language/syntax](../public/docs/language/syntax.md) | Design intent and project context, qualified by current implementation status. |
@@ -276,10 +276,10 @@ These findings are recorded with source programs and diagnostics in
 | std.io.println | limited | [stdlib](../public/docs/stdlib.md) | Native ordinary/empty output calls verified. Literal formats and matching bare {} arguments required; {{ and }} print literal braces without consuming arguments. |
 | std.io.print | limited | [stdlib](../public/docs/stdlib.md) | Native ordinary/empty output calls verified. Literal formats and matching bare {} arguments required; {{ and }} print literal braces without consuming arguments. |
 | std.io.eprintln | limited | [stdlib](../public/docs/stdlib.md) | Native ordinary/empty output calls verified. Literal formats and matching bare {} arguments required; {{ and }} print literal braces without consuming arguments. |
-| std.io.println_ok | limited | [stdlib](../public/docs/stdlib.md) | Registered call. The backend builds a Result value that a statement discards. The checker types the call as void, so matching on it exits 6. |
-| std.io.read_line | limited | [stdlib](../public/docs/stdlib.md) | Registered call taking a byte slice. The checker rejects the call from the CLI until stdlib calls carry declared types; a second read in one program loses input. |
+| std.io.println_ok | limited | [stdlib](../public/docs/stdlib.md) | Returns canonical Result(usize, io.IoErr); success counts written bytes including the newline. Saved and forwarded results support explicit match. |
+| std.io.read_line | limited | [stdlib](../public/docs/stdlib.md) | Requires one mutable []u8 and returns canonical Result(usize, io.IoErr). Repeated reads preserve remaining input; EOF and full-buffer behavior have native controls. |
 | std.math.sqrt | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
-| std.math.abs | limited | [stdlib](../public/docs/stdlib.md) | Ordinary floating and signed integer native calls verified. Signed results preserve the input type. The minimum signed input has no representable positive result and remains an unsafe edge case. |
+| std.math.abs | limited | [stdlib](../public/docs/stdlib.md) | Floating and signed integer native calls verified. Signed results preserve the input type. The minimum signed input wraps to itself; the i32 edge is tested in all three native profiles. |
 | std.math.floor | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
 | std.math.ceil | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
 | std.math.sin | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
@@ -497,7 +497,8 @@ The operator inventory was extracted from `Tokenizer._try_operator`, including
 all 42 actual operator and punctuation spellings. The standard-library inventory
 comes from `StdlibRegistry`, not the specification's proposed API list.
 
-The refreshed native probes verify escaped IO format braces and ordinary signed
-`math.abs` results after compiler repairs. The minimum signed `abs` input remains
-an unsafe edge case. The corresponding records link the regression tests and
-[observed probe results](content-verification.md).
+The refreshed native probes verify escaped IO format braces and signed
+`math.abs` results. The minimum signed input wraps to itself.
+[`test_checked_arithmetic_edges.py`](../../test/test_checked_arithmetic_edges.py)
+checks the i32 minimum in debug, release and fast profiles. The earlier
+[observed probe results](content-verification.md) remain historical evidence.

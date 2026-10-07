@@ -164,12 +164,12 @@ main :: fn() {
         source="""\
 io :: import "std/io"
 
-Result :: union(tag) {
+Outcome :: union(tag) {
     ok: i32
     err: i32
 }
 
-show :: fn(r: Result) {
+show :: fn(r: Outcome) {
     match r {
         case .ok(v): {
             io.println("ok {}", v)
@@ -181,8 +181,8 @@ show :: fn(r: Result) {
 }
 
 main :: fn() {
-    show(Result{ok: 41})
-    show(Result{err: 7})
+    show(Outcome{ok: 41})
+    show(Outcome{err: 7})
 }
 """,
     ),

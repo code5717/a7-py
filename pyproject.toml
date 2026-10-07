@@ -35,3 +35,6 @@ markers = [
     "zig: builds or runs native code with the Zig toolchain",
     "slow: takes several seconds without Zig",
 ]
+
+[tool.setuptools.package-data]
+"a7.stdlib" = ["sources/*.a7"]

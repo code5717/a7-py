@@ -1,0 +1,1 @@
+IoErr :: enum { WriteFailed, FlushFailed, ReadFailed, EndOfStream }

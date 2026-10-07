@@ -161,14 +161,19 @@ class SymbolTable:
         self.current_scope: Scope = self.global_scope
         self.scope_stack: List[Scope] = [self.global_scope]
         self.file_scopes: Dict[str, Scope] = {}
+        # Implicit package declarations are not declarations in a user's files.
+        self.stdlib_scopes: Dict[str, Scope] = {}
         self.identity_symbols: Dict[str, Symbol] = {}
         self.resolved_uses: Dict[int, Symbol] = {}
+        self.prelude_symbols: Dict[str, Symbol] = {}
+        self.stdlib_type_symbols: Dict[str, Symbol] = {}
 
     def select_file_scope(self, key: str) -> None:
-        scope: Optional[Scope] = self.file_scopes.get(key)
+        scopes = self.stdlib_scopes if key.startswith("<stdlib/") else self.file_scopes
+        scope: Optional[Scope] = scopes.get(key)
         if scope is None:
             scope = Scope(key)
-            self.file_scopes[key] = scope
+            scopes[key] = scope
         self.current_scope = scope
         self.scope_stack = [scope]
 
@@ -239,12 +244,14 @@ class SymbolTable:
             alias, field = name.split(".", 1)
             imported = self.current_scope.lookup(alias)
             path = getattr(imported.node, "target_file_scope", None) if imported else None
+            if imported is not None and imported.kind == SymbolKind.MODULE and getattr(imported.node, "module_path", None) in {"io", "std/io"}:
+                return self.stdlib_type_symbols.get(field)
             target = self.file_scopes.get(path)
             if target is None or field.startswith("_"):
                 return None
             symbol = target.lookup_local(field)
             return symbol if symbol is not None and symbol.kind != SymbolKind.MODULE else None
-        return self.current_scope.lookup(name) or self.identity_symbols.get(name)
+        return self.current_scope.lookup(name) or self.prelude_symbols.get(name) or self.identity_symbols.get(name)
 
     def lookup_type(self, name: str) -> Optional[Type]:
         """

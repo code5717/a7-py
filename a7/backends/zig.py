@@ -134,6 +134,10 @@ class ZigCodeGenerator(CodeGenerator):
             if d.name and d.kind == NodeKind.CONST and d.value and getattr(d, "untyped_binding", False)
         }
 
+        # Implicit declarations emit only when user code or a runtime hook uses them.
+        self._stdlib_decl_names = {d.name for d in ast.declarations or []
+                                   if getattr(d, "stdlib_declaration", False)}
+        self._stdlib_types_needed = set()
         # First pass: scan for features that need preamble items
         self._scan_features(ast)
 
@@ -244,7 +248,35 @@ class ZigCodeGenerator(CodeGenerator):
         if root is None:
             return
 
+        seen_types = set()
+
         def visitor(node):
+            if not getattr(node, "stdlib_declaration", False):
+                # Inferred types and nested generic arguments need declarations too.
+                pending_types = [self._type_map.get(id(node))]
+                while pending_types:
+                    type_ = pending_types.pop()
+                    if type_ is None or id(type_) in seen_types:
+                        continue
+                    seen_types.add(id(type_))
+                    name = type_.base_name if isinstance(type_, GenericInstanceType) else getattr(type_, "name", None)
+                    if name in self._stdlib_decl_names:
+                        self._stdlib_types_needed.add(name)
+                    if isinstance(type_, GenericInstanceType):
+                        pending_types.extend(type_.type_args)
+                    elif isinstance(type_, (ArrayType, SliceType)):
+                        pending_types.append(type_.element_type)
+                    elif isinstance(type_, ReferenceType):
+                        pending_types.append(type_.referent_type)
+                    elif isinstance(type_, PointerType):
+                        pending_types.append(type_.pointee_type)
+                    elif isinstance(type_, FunctionType):
+                        pending_types.extend((*type_.param_types, type_.return_type))
+                    elif isinstance(type_, (StructType, UnionType)):
+                        pending_types.extend(field.field_type for field in type_.fields)
+                for name in (node.name, node.struct_type, node.enum_type):
+                    if name in self._stdlib_decl_names:
+                        self._stdlib_types_needed.add(name)
             if node.kind == NodeKind.NEW_EXPR or node.kind == NodeKind.DEL:
                 self._needs_allocator = True
                 self._needs_std = True
@@ -269,6 +301,11 @@ class ZigCodeGenerator(CodeGenerator):
                     self._io_streams_needed.update(("stdin", "read_line"))
 
         self._walk_ast(root, visitor)
+        if {"print_ok", "read_line"} & self._io_streams_needed:
+            self._stdlib_types_needed.update((
+                self._symbol_table.prelude_symbols["Result"].type.name,
+                self._symbol_table.stdlib_type_symbols["IoErr"].type.name,
+            ))
 
     _HELPER_SOURCE = {
         "zero": (
@@ -388,8 +425,9 @@ class ZigCodeGenerator(CodeGenerator):
             lines.append('    __a7_writer.interface.flush() catch @panic("a7 stderr flush failed");')
             lines.append("}")
         if {"print_ok", "read_line"} & self._io_streams_needed:
-            lines.append("const __a7_IoErr = enum { WriteFailed, FlushFailed, ReadFailed, EndOfStream };")
-            lines.append("const __a7_IoResult = union(enum) { ok: usize, err: __a7_IoErr };")
+            result_name = self._emit_semantic_type(self._symbol_table.prelude_symbols["Result"].type)
+            error_name = self._emit_semantic_type(self._symbol_table.stdlib_type_symbols["IoErr"].type)
+            lines.append(f"const __a7_IoResult = {result_name}(usize, {error_name});")
         if "print_ok" in self._io_streams_needed:
             lines.append("fn __a7_stdout_print_ok(comptime fmt: []const u8, args: anytype) __a7_IoResult {")
             lines.append("    __a7_stdout_writer.?.interface.print(fmt, args) catch return .{ .err = .WriteFailed };")
@@ -446,7 +484,8 @@ class ZigCodeGenerator(CodeGenerator):
         'iterable', 'statement', 'patterns', 'object', 'index', 'literal',
         'start', 'end', 'explicit_type', 'param_type', 'return_type',
         'target_type', 'element_type', 'size', 'parameter_types', 'type_args',
-        'type_arguments', 'fields', 'parameters', 'variants',
+        'type_arguments', 'generic_params', 'fields', 'field_type',
+        'resolved_type', 'parameters', 'variants',
     )
 
     def _walk_ast(self, node: ASTNode, visitor):
@@ -858,6 +897,8 @@ class ZigCodeGenerator(CodeGenerator):
         if action == "_visit_program":
             node, = payload
             for decl in (node.declarations or []):
+                if getattr(decl, "stdlib_declaration", False) and decl.name not in self._stdlib_types_needed:
+                    continue
                 (yield ("visit", (decl,)))
                 self.output.write("\n")
             return

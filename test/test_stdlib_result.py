@@ -1,22 +1,4 @@
-"""G5b pins: Option/Result as ordinary generic unions, plus recoverable I/O.
-
-Packet: G5B-option-result (pure stdlib, no `?`, explicit match only).
-Generic `union(tag)` specialization and payload matching are in-tree (G5a/7a);
-this file pins the G5b layer on top and records its seams:
-
-- `Option`/`Result` are user-declared generic unions. No builtin, no sugar.
-- `io.println_ok` / `io.read_line` are registered stdlib calls whose Zig
-  emission constructs a `__a7_IoResult` union value (`ok: usize` byte count,
-  `err: __a7_IoErr`). The type checker still types every `std.io.*` call as
-  void and validates the first argument as a format string, so matching on
-  these calls and passing a buffer to `read_line` are rejected at exit 6
-  until the checker follow-up types them as `Result(usize, IoErr)`. Those
-  rejections are pinned as seam markers, not as desired behavior.
-- Owning payloads (e.g. `string`) cannot bind by value yet (M33/M49); the
-  Option/Result programs below use copy payloads only.
-- Library `get`/`pop` checked spellings and `or{}`/`use` sugar are deferred
-  per the packet and have no pins here.
-"""
+"""Canonical prelude unions and checked recoverable I/O through the full pipeline."""
 
 from __future__ import annotations
 
@@ -38,19 +20,9 @@ UV = shutil.which("uv")
 
 IO_IMPORT = 'io :: import "std/io"\n'
 
-OPTION_UNION = """
-Option :: union(tag) {
-    some: $T,
-    none: bool,
-}
-"""
+OPTION_UNION = ""
 
-RESULT_UNION = """
-Result :: union(tag) {
-    ok: $T,
-    err: $E,
-}
-"""
+RESULT_UNION = ""
 
 
 def run_a7(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -70,46 +42,18 @@ def compile_source(tmp_path: Path, name: str, source: str) -> tuple[int, str]:
 
 
 def codegen_to_zig(source: str) -> str:
-    """Run the full front end plus Zig backend in-process.
+    """Use the supported pipeline; any frontend failure fails the native fixture."""
+    from tempfile import TemporaryDirectory
+    from a7.compile import A7Compiler
 
-    Unlike the CLI, this proceeds to codegen even when the type checker
-    reports errors, which is how the read_line emission is pinned while
-    the checker still rejects buffer arguments (see the seam test).
-    """
-    from a7.ast_preprocessor import ASTPreprocessor
-    from a7.backends.zig import ZigCodeGenerator
-    from a7.parser import Parser
-    from a7.passes import (
-        NameResolutionPass,
-        SafetyProofPass,
-        SemanticValidationPass,
-        TypeCheckingPass,
-    )
-    from a7.tokens import Tokenizer
-
-    tokenizer = Tokenizer(source, filename="test.a7")
-    ast = Parser(tokenizer.tokenize(), filename="test.a7").parse()
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(ast, "test.a7")
-    type_map = None
-    backend_plan = None
-    if not resolver.errors:
-        checker = TypeCheckingPass(symbols)
-        checker.analyze(ast, "test.a7")
-        type_map = checker.node_types
-        safety = SafetyProofPass(symbols, type_map)
-        backend_plan = safety.analyze(ast, "test.a7")
-    preprocessor = ASTPreprocessor(
-        symbol_table=symbols, type_map=type_map, stdlib=StdlibRegistry()
-    )
-    ast = preprocessor.process(ast)
-    return ZigCodeGenerator().generate(
-        ast,
-        type_map=type_map,
-        symbol_table=symbols,
-        backend_plan=backend_plan,
-        profile="debug",
-    )
+    with TemporaryDirectory(prefix="a7-typed-io-") as directory:
+        root = Path(directory)
+        src = root / "main.a7"
+        src.write_text(source, encoding="utf-8")
+        output = root / "main.zig"
+        result = A7Compiler().compile_file_detailed(str(src), str(output))
+        assert result.ok, result.failure
+        return output.read_text(encoding="utf-8")
 
 
 def build_zig(zig_code: str, tmp_path: Path, zig: str, name: str) -> Path:
@@ -148,19 +92,18 @@ class TestRegistry:
 
 
 class TestShadowing:
-    """Packet section 3e: no new rule. The names are ordinary identifiers;
-    collisions report the existing ALREADY_DEFINED shape."""
+    """Tag spellings remain identifiers; user unions retain collision checks."""
 
-    def test_some_none_ok_err_option_result_are_ordinary_names(self, tmp_path: Path):
+    def test_some_none_ok_err_are_ordinary_names(self, tmp_path: Path):
         code, out = compile_source(tmp_path, "shadowok.a7", IO_IMPORT + """
         main :: fn() {
             ok := 1
             err := 2
             some := 3
             none := 4
-            Option := 5
-            Result := 6
-            io.println("{}", ok + err + some + none + Option + Result)
+            option_value := 5
+            result_value := 6
+            io.println("{}", ok + err + some + none + option_value + result_value)
         }
         """)
         assert code == 0, out
@@ -172,9 +115,9 @@ class TestShadowing:
             err := 2
             some := 3
             none := 4
-            Option := 5
-            Result := 6
-            io.println("{}", ok + err + some + none + Option + Result)
+            option_value := 5
+            result_value := 6
+            io.println("{}", ok + err + some + none + option_value + result_value)
         }
         """)
         assert code == 0, out
@@ -199,12 +142,12 @@ class TestShadowing:
 
     def test_duplicate_union_is_already_defined(self, tmp_path: Path):
         code, out = compile_source(tmp_path, "shadowunion.a7", IO_IMPORT + """
-        Option :: union(tag) {
+        Maybe :: union(tag) {
             some: i32,
             none: bool,
         }
 
-        Option :: union(tag) {
+        Maybe :: union(tag) {
             some: i32,
             none: bool,
         }
@@ -215,18 +158,18 @@ class TestShadowing:
         """)
         assert code == 6, out
         assert "Already defined" in out
-        assert "Union 'Option'" in out
+        assert "Union 'Maybe'" in out
 
     def test_tag_and_local_share_spelling(self, tmp_path: Path, zig: str):
         code, out = compile_source(tmp_path, "shadowtag.a7", IO_IMPORT + """
-        Result :: union(tag) {
+        Outcome :: union(tag) {
             ok: i32,
             err: i32,
         }
 
         main :: fn() {
             ok := 10
-            r := Result{ok: 1}
+            r := Outcome{ok: 1}
             out := match r {
                 case .ok(v): v + ok
                 case .err(e): e
@@ -345,16 +288,6 @@ class TestOptionResultMatch:
 
     def test_cross_kind_mixing_is_a_type_error(self, tmp_path: Path):
         code, out = compile_source(tmp_path, "crosskind.a7", IO_IMPORT + """
-        Option :: union(tag) {
-            some: i32,
-            none: bool,
-        }
-
-        Result :: union(tag) {
-            ok: i32,
-            err: i32,
-        }
-
         f :: fn() Result(i32, i32) {
             ret Option(i32){none: true}
         }
@@ -405,17 +338,16 @@ class TestPrintlnOk:
             io.println_ok("hello")
         }
         """)
-        assert "const __a7_IoErr = enum { WriteFailed, FlushFailed, ReadFailed, EndOfStream };" in zig_code
-        assert "const __a7_IoResult = union(enum) { ok: usize, err: __a7_IoErr };" in zig_code
+        assert "EndOfStream," in zig_code
+        assert "const __a7_IoResult = user__a7_Result_1(usize, user__a7_IoErr_1);" in zig_code
         assert "__a7_stdout_print_ok(\"hello\\n\", .{})" in zig_code
         assert "catch return .{ .err = .WriteFailed }" in zig_code
         assert "catch return .{ .err = .FlushFailed }" in zig_code
         assert "return .{ .ok = std.fmt.count(fmt, args) };" in zig_code
         assert "_ = __a7_stdout_print_ok(" in zig_code
 
-    def test_match_on_call_rejected_until_checker_types_land(self, tmp_path: Path):
-        """Seam marker (checker follow-up): the call is still void-typed,
-        so tag patterns cannot resolve against it."""
+    def test_match_on_call_has_result_payloads(self, tmp_path: Path):
+        """The success arm has a usize payload and joins the literal fallback."""
         code, out = compile_source(tmp_path, "pokseam.a7", IO_IMPORT + """
         main :: fn() {
             n := match io.println_ok("hi") {
@@ -425,15 +357,11 @@ class TestPrintlnOk:
             io.println("{}", n)
         }
         """)
-        assert code == 6, out
-        assert "requires a tagged-union match value" in out
+        assert code == 0, out
 
 
 class TestReadLine:
-    """The CLI rejects every `io.read_line` call today (see the seam test at
-    the end of this class), so these tests reach the backend through
-    `codegen_to_zig`, which runs codegen despite the checker's error. They pin
-    the runtime helper, not a user-reachable feature."""
+    """Checked byte slices reach the persistent native reader."""
 
     SHOW = IO_IMPORT + """
     show :: fn(buf: []u8) {
@@ -524,14 +452,29 @@ class TestReadLine:
             proc.kill()
             proc.stdout.close()
 
-    def test_cli_rejects_buffer_until_checker_types_land(self, tmp_path: Path):
-        """Seam marker (checker follow-up): the io validator still demands
-        a format string as the first argument."""
+    def test_cli_accepts_mutable_byte_slice(self, tmp_path: Path):
+        """A byte buffer is a typed argument, not a format string."""
         code, out = compile_source(tmp_path, "rlseam.a7", IO_IMPORT + """
         main :: fn() {
             buf: [16]u8
             io.read_line(buf[0..])
         }
         """)
-        assert code == 6, out
-        assert "io format" in out
+        assert code == 0, out
+
+
+    def test_full_buffer_then_remaining_line(self, tmp_path: Path, zig: str):
+        binary = build_zig(codegen_to_zig(self.SHOW + """
+        main :: fn() {
+            buf: [4]u8
+            show(buf[0..])
+            io.println("bytes {} {}", buf[0], buf[3])
+            show(buf[0..])
+            io.println("bytes {} {}", buf[0], buf[2])
+            show(buf[0..])
+        }
+        """), tmp_path, zig, "rlfull")
+        proc = subprocess.run([str(binary)], input="abcdef\n", capture_output=True, text=True, timeout=30)
+        assert (proc.returncode, proc.stdout, proc.stderr) == (
+            0, "ok 4\nbytes 97 100\nok 3\nbytes 101 10\nerr .EndOfStream\n", "",
+        )

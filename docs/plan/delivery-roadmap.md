@@ -183,9 +183,9 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   restores the duplicate-name error).
 - A2 Payload matching: dot arms parse, check, lower and run (L66);
   repairs under R2.
-- A3 Option/Result: user-declared generic unions work; `io` Result
-  calls are registered and emitted; checker-typed stdlib returns
-  QUEUED as part of B2.
+- A3 Option/Result: package-owned canonical generic unions and checker-typed
+  existing stdlib returns are integrated under B1/B2 and L68. Collection
+  operations and future stdlib modules remain queued.
 - A4 Numerics: one `--profile` flag with values `debug`, `release`
   (checked) and `fast` (L64); exact constant arithmetic (L61). The
   remaining numerics rows from research (NaN, spelling) are PROPOSED.
@@ -206,11 +206,17 @@ sources shipped inside the package, with `std/` reserved. The design,
 signatures and open choices are in
 [the stdlib proposal](../audits/2026-10-04/stdlib-proposal.md).
 
-- B1 `Option`/`Result` generic unions. DONE as user-declared unions.
-- B2 Checker types stdlib calls from declared signatures, so
-  `match io.read_line(buf)` works. IN PROGRESS in an isolated candidate. R5
-  module prerequisites passed. Prelude ownership, typed I/O, mutable-buffer
-  facts and literal `std/` reservation still need combined qualification.
+- B1 `Option`/`Result` generic unions. Package-owned canonical declarations
+  replace user declarations under L68/U3. Integrated and package-tested.
+- B2 Existing stdlib calls use declared signatures. Saved `read_line` results,
+  cross-file signatures and nested field-only types compile and run. Void I/O
+  calls in typed initializers and returns fail with semantic exit 6. The frozen
+  compiler/package gate passed 3,826 tests with one expected failure and all
+  11 checks. A stale generated docs manifest stopped the release wrapper.
+  Regenerating that one export preserved all compiler/package source bytes;
+  site and remaining release checks then passed. Independent GLM and Flash
+  reviews covered the repaired source. The [record](../audits/2026-10-07/stdlib-b2-verification.json)
+  preserves the failed wrapper and separate recovery. Broader stdlib work remains.
 - B3 Phase A, no heap: `io`, `option`, `result`, `slices`, `strings`,
   `ascii`, `bytes`, `math`, `conv`, `sort`, `hash`, `random`, `time`,
   `os`, `fs`, `path`, `testing`, `json`, `yaml` (L65, L68). QUEUED

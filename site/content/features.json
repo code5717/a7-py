@@ -234,7 +234,7 @@
  {
   "id": "collections",
   "status": "planned",
-  "qualification": "Option, Result and collection modules are planned.",
+  "qualification": "Collection modules remain planned; canonical prelude Option(T) and Result(T, E) are available.",
   "topic": "language/builtins",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
@@ -2688,7 +2688,7 @@
  {
   "id": "stdlib-io-println-ok",
   "status": "limited",
-  "qualification": "Registered call. The backend builds a Result value that a statement discards. The checker types the call as void, so matching on it exits 6.",
+  "qualification": "Returns canonical Result(usize, io.IoErr); success counts written bytes including the newline. Saved and forwarded results support explicit match.",
   "topic": "stdlib",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/a7/stdlib/io.py",
@@ -2699,7 +2699,7 @@
  {
   "id": "stdlib-io-read-line",
   "status": "limited",
-  "qualification": "Registered call taking a byte slice. The checker rejects the call from the CLI until stdlib calls carry declared types; a second read in one program loses input.",
+  "qualification": "Requires one mutable []u8 and returns canonical Result(usize, io.IoErr). Repeated reads preserve remaining input; EOF and full-buffer behavior have native controls.",
   "topic": "stdlib",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/a7/stdlib/io.py",
@@ -2721,13 +2721,14 @@
  {
   "id": "stdlib-math-abs",
   "status": "limited",
-  "qualification": "Ordinary floating and signed integer native calls verified. Signed results preserve the input type. The minimum signed input has no representable positive result and remains an unsafe edge case.",
+  "qualification": "Floating and signed integer native calls verified. Signed results preserve the input type. The minimum signed input wraps to itself; the i32 edge is tested in all three native profiles.",
   "topic": "stdlib",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/a7/stdlib/math.py",
    "https://github.com/code5717/a7-py/blob/master/a7/passes/type_checker.py",
    "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
-   "https://github.com/code5717/a7-py/blob/master/test/test_audit_backend_repairs.py"
+   "https://github.com/code5717/a7-py/blob/master/test/test_audit_backend_repairs.py",
+   "https://github.com/code5717/a7-py/blob/master/test/test_checked_arithmetic_edges.py"
   ],
   "title": "std.math.abs"
  },

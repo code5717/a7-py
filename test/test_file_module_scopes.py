@@ -48,8 +48,8 @@ def test_imported_alias_keeps_its_declaration_scope(tmp_path):
     expect_exit('a::import "a"\nLocal::string\nmain::fn(){v:a.Value="bad"}',tmp_path,6,'mismatch')
 
 def test_enum_and_union_qualified_construction(tmp_path):
-    write_modules(tmp_path, {'a':'Color::enum{red,blue}\nResult::union(tag){ok:i32,bad:string}'})
-    expect_ok('a::import "a"\nmain::fn(){c:a.Color=a.Color.red;r:a.Result=a.Result{ok:7}}',tmp_path)
+    write_modules(tmp_path, {'a':'Color::enum{red,blue}\nOutcome::union(tag){ok:i32,bad:string}'})
+    expect_ok('a::import "a"\nmain::fn(){c:a.Color=a.Color.red;r:a.Outcome=a.Outcome{ok:7}}',tmp_path)
 
 def test_global_reference_mutation_reaches_saved_alias(tmp_path):
     write_modules(tmp_path, {'a':'Box::struct{x:i32}\ng:ref Box\nset::fn(p:ref Box){g=p}\ndrop::fn(){del g}'})

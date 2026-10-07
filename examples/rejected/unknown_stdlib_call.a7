@@ -1,6 +1,6 @@
 // REJECTED ON PURPOSE - this file must NOT compile.
 //
-// std/io exposes exactly print, println and eprintln. A misspelled call is
+// std/io rejects unknown operation names. A misspelled call is
 // rejected at the call site rather than lowered to a field the backend would
 // have to invent.
 io :: import "std/io"
