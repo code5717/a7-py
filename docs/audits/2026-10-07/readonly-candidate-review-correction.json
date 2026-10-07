@@ -1,0 +1,51 @@
+{
+  "recorded_at": "2026-10-07T07:24:19.678415+00:00",
+  "candidate_source_sha256": "15bcf31948e9d351dc281e51888ceb8921049bff6f88433eabbf109e52c92263",
+  "finding_F1": "Confirmed introduced false rejection for forwarded scalar borrow; candidate remains isolated pending repair.",
+  "finding_F2": "The proposed certificate bypass is unconfirmed. Source counts apply target cost and argument costs; all four bounded witnesses remain below the existing expanded-work certificate. No missing production bound is established by these probes.",
+  "correction": "Commit8cff568 prematurely listed a missing evaluation-work bound. The current roadmap removes that unsupported claim; original probe artifacts and commit history remain.",
+  "probe_sha256": "6c6e895fa58f6935b4fce263cb94a75779e793adf158dcd3df04b67be9b2c83e",
+  "rows": [
+    {
+      "depth": 2,
+      "exit": 6,
+      "name": "f0",
+      "environments": 6,
+      "cache": 64,
+      "nodes": 37,
+      "work_bound": 7744,
+      "expanded_work": 99
+    },
+    {
+      "depth": 4,
+      "exit": 6,
+      "name": "f0",
+      "environments": 19,
+      "cache": 227,
+      "nodes": 43,
+      "work_bound": 21316,
+      "expanded_work": 471
+    },
+    {
+      "depth": 6,
+      "exit": 6,
+      "name": "f0",
+      "environments": 53,
+      "cache": 664,
+      "nodes": 49,
+      "work_bound": 41616,
+      "expanded_work": 1959
+    },
+    {
+      "depth": 8,
+      "exit": 6,
+      "name": "f0",
+      "environments": 142,
+      "cache": 1818,
+      "nodes": 55,
+      "work_bound": 68644,
+      "expanded_work": 7911
+    }
+  ],
+  "boundary": "Compile-only resource observations, no unsafe execution, stress run or general complexity proof. Main external review still active; not counted as completed."
+}

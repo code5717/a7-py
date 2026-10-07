@@ -143,8 +143,7 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   reference aliases through array elements, selected/base store synchronization
   and joined-holder nil-write invalidation; global nil-state and parameter proof
   gaps; callee effects outside bounded analysis; the
-  isolated readonly V2 candidate's forwarded-borrow false rejection and missing
-  evaluation-work bound for argument environments; the type-based imprecision of the recursion
+  isolated readonly V2 candidate's forwarded-borrow false rejection; the type-based imprecision of the recursion
   rule, function-pointer
   locals without an initializer, a `main` exit status. Ordinary heap-scalar
   reads and printing need the proposed
