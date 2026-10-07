@@ -547,7 +547,7 @@
     "fast_log_sha256": "54f24f3424066e7e30233a5fda1086ca390f4b05df08329dc4c29b0c322be08f",
     "excluded": "zig and slow",
     "reporting": "Independent review confirmed stage8 Markdown delimiter/HTML escaping defect. Stage9 preserves all3 independent rendered owner labels, lookup isolation and1601-deep scope output;10 tests pass.",
-    "boundary": "Scratch only. All3 native control profiles pass; GLM module/loop review and combined full qualification remain pending. Global362 review complete.",
+    "boundary": "Scratch only. All3 native control profiles pass; global362 andloop607 GLM complete. Module constant diagnostic follow-up and combined full qualification remain pending.",
     "native": {
       "record": "tmp/v1-completion-2026-10-07/module-scope-parent-review/native/stage9-results.json",
       "sha256": "f4e26d46846c7737a4cdc3131533242cc065e85d9b707f105d625ad2e5674c34",
@@ -579,7 +579,8 @@
           "binary_sha256": "168f455e10d5e368501d1753f0d5a09e5933449d94e0cc1b19e71ea55682730d"
         }
       ]
-    }
+    },
+    "external_review": "Stage7 completed:96 independent fixtures,40 author cases,71 repository programs. Scoped no introduced regression; imported-const diagnostic repair and integration docs still required. Raw pytest/report mismatch recorded in review summary."
   },
   "generic_callable_trial": {
     "checker_sha256": "a6675443f40d1f9517cecfe36a85157dcaf219a2ce79ed630e03404392161da9",
@@ -631,8 +632,38 @@
     "focused_passed": 328,
     "new_controls": 26,
     "parent_unsigned_execution_oracle_cases": 36,
-    "external_review": "running",
-    "boundary": "Scratch only; no native execution or whole-safety qualification."
+    "external_review": "Completed:51 independent paired sources,11 intended6to0 and40unchanged; no introduced regression found. See review-summary disposition and explicit resource limits.",
+    "boundary": "Scratch only; no native execution or whole-safety qualification.",
+    "native": {
+      "record": "tmp/v1-completion-2026-10-07/global-loop-native-review/native-results.json",
+      "expected": "31\n9\n21\n21\n",
+      "profiles": [
+        {
+          "profile": "debug",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "31\n9\n21\n21\n",
+          "matched": true,
+          "binary_sha256": "9ff3e6474571ff66583b5516e354a139d913a39c2308f6d60fad9bea778739b2"
+        },
+        {
+          "profile": "release",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "31\n9\n21\n21\n",
+          "matched": true,
+          "binary_sha256": "317ed3e436eb5ee3bcefc613bb0a50af1439e054f169dbee2f4c9ab9f61871f3"
+        },
+        {
+          "profile": "fast",
+          "build_exit": 0,
+          "run_exit": 0,
+          "stdout": "31\n9\n21\n21\n",
+          "matched": true,
+          "binary_sha256": "c8f58c5354c50b46c7b25896539383f8cf76f396c72d3e1f8dfc9f266d5300b0"
+        }
+      ]
+    }
   },
   "global_alias_candidate": {
     "source_sha256": "362bfce5e06e9f50f89dd910dba4a522c567f570de8ffea48958778877e8af3a",
@@ -787,6 +818,517 @@
       "finished_at": "2026-10-07T02:29:10.578024+00:00",
       "source_hashes_and_modes_unchanged": true,
       "all_residual_checks_passed": true
+    }
+  },
+  "null_guard_trial": {
+    "status": "Excluded: independent review found introduced unsafe acceptances",
+    "safety_sha256": "68f7d390777ee8eaac1d361cc25a5f5482fbcc2992af826839a1f741d4e1ce4f",
+    "baseline_sha256": "607f1fdecc662a61751efdadd01c5cabc6f7a63559d28358ad9433f8b04a706d",
+    "findings": [
+      "Nullable reference parameter receives body-validation non_nil assumption; using that assumption for branch feasibility drops a real deletion path,6to0.",
+      "Conditional global=nil write is omitted by current summary; preserving mapped non_nil allows subsequent nil dereference,6to0."
+    ],
+    "evidence": "tmp/v1-completion-2026-10-07/safety-null-guard-independent-review",
+    "boundary": "No live integration.354 focused tests and valid native controls do not qualify candidate; GLM review ongoing.",
+    "external_review": "Completed, rejected.33 paired probes confirm conditionalnil regression; independent51probes additionally expose unsafe parameter and returnednil guard pruning."
+  },
+  "published_1857": {
+    "checked_at": "2026-10-07T02:43:43.817574+00:00",
+    "deployed_commit": "1857e0383e37170c3e68e1d5b4b8486380c74204",
+    "deploy_workflow_run": 37562558541,
+    "rows": [
+      {
+        "path": "index.html",
+        "url": "https://code5717.github.io/a7-py/index.html",
+        "status": 200,
+        "bytes": 15688,
+        "sha256": "d94ac992514360adf439c75dc49740b7c4bafa379c3c4bd681118659cc1664c8",
+        "matches_local_build": true
+      },
+      {
+        "path": "start/index.html",
+        "url": "https://code5717.github.io/a7-py/start/index.html",
+        "status": 200,
+        "bytes": 20226,
+        "sha256": "c69b493549d08c6c5965ccf657164f5062f9113769afe8f9edf3c161998ad74c",
+        "matches_local_build": true
+      },
+      {
+        "path": "compiler/index.html",
+        "url": "https://code5717.github.io/a7-py/compiler/index.html",
+        "status": 200,
+        "bytes": 25125,
+        "sha256": "fadc7559e785bdcacc715b6ba73ba88e199a6266a7c80533ff5095f146782616",
+        "matches_local_build": true
+      },
+      {
+        "path": "language/modules/index.html",
+        "url": "https://code5717.github.io/a7-py/language/modules/index.html",
+        "status": 200,
+        "bytes": 14222,
+        "sha256": "fd54647e2e6f79fc5060134e93a099c4fcdcd8a038eaca9b5440b9f91065f79f",
+        "matches_local_build": true
+      },
+      {
+        "path": "status/index.html",
+        "url": "https://code5717.github.io/a7-py/status/index.html",
+        "status": 200,
+        "bytes": 17027,
+        "sha256": "5f99e29c7f72ec9be811e29bd07d4d808c0c91a527218d3a50c3c02f6a1f8983",
+        "matches_local_build": true
+      },
+      {
+        "path": "release/index.html",
+        "url": "https://code5717.github.io/a7-py/release/index.html",
+        "status": 200,
+        "bytes": 17313,
+        "sha256": "04701f1e5b40445ec57cf0f039383e0c1b3aed611339c20bd0250ea5a44bfe30",
+        "matches_local_build": true
+      },
+      {
+        "path": "llms.txt",
+        "url": "https://code5717.github.io/a7-py/llms.txt",
+        "status": 200,
+        "bytes": 3898,
+        "sha256": "6beebf5b82ac260bdf9135a05146badeba5f11fbb528504e3a8e0a721a94eb79",
+        "matches_local_build": true
+      },
+      {
+        "path": "llms-full.txt",
+        "url": "https://code5717.github.io/a7-py/llms-full.txt",
+        "status": 200,
+        "bytes": 117827,
+        "sha256": "c2ee3357b5048480dde9a96dc75759428d35476d8b73abc5d6291034b9721ae5",
+        "matches_local_build": true
+      },
+      {
+        "path": "docs/index.md",
+        "url": "https://code5717.github.io/a7-py/docs/index.md",
+        "status": 200,
+        "bytes": 3861,
+        "sha256": "f7813732bb55358e415903ba71fdfe42f03ad9c7c7c89f99edad7301cebf081a",
+        "matches_local_build": true
+      },
+      {
+        "path": "docs/manifest.json",
+        "url": "https://code5717.github.io/a7-py/docs/manifest.json",
+        "status": 200,
+        "bytes": 333078,
+        "sha256": "886bce58d6888505e892ffdb5c0e2a74dc6f2945f2163203a8b66d4e3936d5dc",
+        "matches_local_build": true
+      },
+      {
+        "path": "docs/compiler.md",
+        "url": "https://code5717.github.io/a7-py/docs/compiler.md",
+        "status": 200,
+        "bytes": 9795,
+        "sha256": "4001461aa29ad24e19566c1532ba9e6dced4dd90659a406e154a918770ff291f",
+        "matches_local_build": true
+      },
+      {
+        "path": "docs/language/modules.md",
+        "url": "https://code5717.github.io/a7-py/docs/language/modules.md",
+        "status": 200,
+        "bytes": 3694,
+        "sha256": "5b2e5c863f5afc8810cc4c711ec33f22b6735e48af8bcf8b2308db1e9caa2d74",
+        "matches_local_build": true
+      },
+      {
+        "path": "sitemap.xml",
+        "url": "https://code5717.github.io/a7-py/sitemap.xml",
+        "status": 200,
+        "bytes": 1755,
+        "sha256": "4eec17e11db84105e538cdf7553572096887bceafdcf6c70aa4b0b83eb54bfa4",
+        "matches_local_build": true
+      },
+      {
+        "path": "assets/search.json",
+        "url": "https://code5717.github.io/a7-py/assets/search.json",
+        "status": 200,
+        "bytes": 185218,
+        "sha256": "91c1db818427d22c172e450ff973e7bffc75c6063cd0ac7f1c2af7a2bb649048",
+        "matches_local_build": true
+      },
+      {
+        "path": "assets/site.css",
+        "url": "https://code5717.github.io/a7-py/assets/site.css",
+        "status": 200,
+        "bytes": 21781,
+        "sha256": "e0b3e5572f57e9b92bfd5c26a7923c7b71239cc5a81bcaba9547c2087845db29",
+        "matches_local_build": true
+      },
+      {
+        "path": "assets/site.js",
+        "url": "https://code5717.github.io/a7-py/assets/site.js",
+        "status": 200,
+        "bytes": 10870,
+        "sha256": "e08843ef74f05f29016e3e380fc74a7ae029f88e6cf0046a14e69488774d99ff",
+        "matches_local_build": true
+      }
+    ],
+    "boundary": "HTTP byte comparisons only. Browser interaction/responsive rendering unverified. V1 incomplete."
+  },
+  "commit_1857": {
+    "at": "2026-10-07T02:34:00.297760+00:00",
+    "commit": "1857e0383e37170c3e68e1d5b4b8486380c74204",
+    "remote_master": "1857e0383e37170c3e68e1d5b4b8486380c74204\trefs/heads/master",
+    "compiler_test_files_matching_frozen_manifest": 266,
+    "manifest_sha256": "04330ece457e14f83c89624ac547a7f38725788d8f120182de2958ad064a1288",
+    "final_docs_checks": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/iterative-precommit-review/final-doc-checks.json",
+    "ci": {
+      "id": 37562558581,
+      "status": "pending"
+    },
+    "docs_deploy": {
+      "id": 37562558541,
+      "status": "in_progress"
+    },
+    "boundary": "Checkpoint only. Original metadata failure and successful residual checks remain separate;V1 incomplete."
+  },
+  "module_stage10_combination": {
+    "source_manifest": "tmp/v1-completion-2026-10-07/module-stage10-integration/full-manifest.json",
+    "fast": {
+      "started_at": "2026-10-07T02:47:56.874870+00:00",
+      "command": [
+        "taskset",
+        "-c",
+        "8-11",
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-o",
+        "addopts=",
+        "-n",
+        "2",
+        "-m",
+        "not zig and not slow",
+        "-q"
+      ],
+      "manifest_sha256": "36b9846f03be336c04686c250f7dc0a65d72c08c3f621516102a3442af387f53",
+      "checkout": "/var/tmp/a7-module-stage10-2026-10-07-8_kbzc1e/checkout",
+      "exit_code": 0,
+      "finished_at": "2026-10-07T02:48:53.862713+00:00",
+      "log_sha256": "45c038feb73b4312ccba92539338fd603465a76e047a225029ea19fef78a1734"
+    },
+    "fast_result": "3272 passed in56.63s",
+    "full_gate": {
+      "started_at": "2026-10-07T02:53:11.133616+00:00",
+      "checkout": "/var/tmp/a7-module-stage10-2026-10-07-8_kbzc1e/checkout",
+      "command": [
+        "taskset",
+        "-c",
+        "0-15",
+        "env",
+        "A7_PYTEST_WORKERS=4",
+        "./run_release_checks.sh"
+      ],
+      "manifest_sha256": "9e399cb50dd734722189f4a0dd3b30d7c8ae2d3d87b882c710b74912f0ec0700",
+      "pid": 1671867,
+      "exit_code": 1,
+      "finished_at": "2026-10-07T03:29:16.190917+00:00",
+      "log_sha256": "8d34e4faddba7bc899aa266374e17b4e2aab6ee69915721e8bf894b414b0bc90"
+    },
+    "boundary": "Frozen gate finished exit 1: 10/11 compiler/package checks passed. The sole pytest failure is the obsolete top-level reserved-name acceptance fixture. All 51 examples and debug/release/fast artifacts, 61 error stages, package/native installation checks, docs style and secrets passed. Outer site/dependency/security checks did not run after the compiler gate failure. Corrected fixture and later compiler changes require fresh qualification.",
+    "constant_diagnostic_review": "Completed glm-5.3-flash:17 independent cases and51 example emissions, no introduced regression; qualified names also improve by-ref argument diagnostics. Earlier-error stdlib boundary retained.",
+    "pytest_observed": {
+      "passed": 3689,
+      "failed": 1,
+      "xfailed": 1,
+      "seconds": 1007.21,
+      "failure": "test/test_identifier_collisions.py::test_user_names_with_the_generator_prefix",
+      "boundary": "The gate is still running. The failing test expects a top-level reserved __ name to compile. Compatibility and collision coverage are under review against L69; no compiler change or successful full-gate claim."
+    },
+    "post_gate_source_check": {
+      "files": 1597,
+      "mismatches": [],
+      "manifest_sha256": "9e399cb50dd734722189f4a0dd3b30d7c8ae2d3d87b882c710b74912f0ec0700"
+    }
+  },
+  "nil_origins_trial": {
+    "source_sha256": "f52147dc9c1ef64c3e4976f12eae33c0487d2df83ec8bd2b660f45ee25efdd62",
+    "baseline_sha256": "607f1fdecc662a61751efdadd01c5cabc6f7a63559d28358ad9433f8b04a706d",
+    "focused_passed": 318,
+    "paired_source_profile_cases": 378,
+    "change": "Explicitnilalternative-2 retained in effect summaries and filtered fromallocation/deletion identities; original607IF/globalstripping/ValueFactunchanged.",
+    "boundary": "Scratch only; integration withheld. Completed GLM review and independent follow-up found valid false-flag and guarded-reference return calls newly rejected. Earlier no-blocker review is superseded for compatibility. No native execution or combined release qualification.",
+    "independent_review_progress": "Completed: 28 source pairs, six intended rejections and 22 unchanged outcomes. Nil is excluded from allocation and deletion identities. Factory depths 8, 16 and 32 retain 28, 52 and 100 graph nodes.",
+    "preexisting_boundary": "Readonly parameter dereference inside a for-loop callee can accept a nil actual when exact replay does not apply; remains0in607/f521. Caller precondition/proof gap remains open.",
+    "compatibility_followup": {
+      "report": "tmp/v1-completion-2026-10-07/safety-nil-origins-compatibility-next/REPORT.md",
+      "sha256": "942069a79b04b0a22a97754c9ac9c1c3a9c317d9b74b3476d26e8416936a84b7",
+      "paired_cases": 21,
+      "disposition": "Valid controls regress. Withhold integration; conditional origin relationships need a separately reviewed repair."
+    }
+  },
+  "callee_precondition_investigation": {
+    "report": "tmp/v1-completion-2026-10-07/safety-callee-preconditions-next/REPORT.md",
+    "sha256": "d36930405b22c5d6b908e5a6c324dcc778132c9e72ea1c255f28df1d0d5a114d",
+    "paired_cases": 29,
+    "result": "The fallback omits readonly callee non-nil requirements when exact replay excludes loops and other statements. Conditional preconditions are proposed to preserve guarded, false-flag and zero-trip controls. No implementation or native execution."
+  },
+  "module_stage11_combination": {
+    "fast": {
+      "started_at": "2026-10-07T03:14:27.617057+00:00",
+      "command": [
+        "taskset",
+        "-c",
+        "8-11",
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-o",
+        "addopts=",
+        "-n",
+        "2",
+        "-m",
+        "not zig and not slow",
+        "-q"
+      ],
+      "checkout": "/var/tmp/a7-module-stage11-2026-10-07-y_4l8lk6/checkout",
+      "manifest_sha256": "f6a684da13fe2d49fcf713b8834af1388460e20ff9d56ba4ba4693364f2cd64a",
+      "exit_code": 1,
+      "finished_at": "2026-10-07T03:15:20.852482+00:00",
+      "log_sha256": "dd3b2c130c0fdc76d26175ab42d0bacd2779afecc8984cf36f433b32e5d1fbd4"
+    },
+    "result": "13 failed, 3292 passed. Module resolved variable symbols suppress immutable-alias obligation registration. Candidate withheld; function-symbol-only lookup correction is under independent review in stage12."
+  },
+  "module_stage12_combination": {
+    "fast": {
+      "started_at": "2026-10-07T03:17:16.347030+00:00",
+      "command": [
+        "taskset",
+        "-c",
+        "8-11",
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-o",
+        "addopts=",
+        "-n",
+        "2",
+        "-m",
+        "not zig and not slow",
+        "-q"
+      ],
+      "checkout": "/var/tmp/a7-module-stage12-2026-10-07-ypv5p_9s/checkout",
+      "manifest_sha256": "0102c50c991ca9c9800bfe653051ae4f742d0b17da233699f02eca6b7425de31",
+      "exit_code": 0,
+      "finished_at": "2026-10-07T03:18:12.667701+00:00",
+      "log_sha256": "b2ccdc0bba5caa975e421b207c439aa5b43852ede75c17366ecff01aad342e12"
+    },
+    "result": "3305 passed in 56.02s",
+    "checker_sha256": "6d960026ce3310fbc3e44bea417e7e8a35ba493c1d62716f9f6ebdbe28f16dc1",
+    "change": "Restrict resolved callee declaration identity to FUNCTION symbols; immutable variable aliases again enter the alias obligation pass. Independent review remains active.",
+    "boundary": "Scratch only. No full native gate for this combination. L76 import-local rejection was approved afterward and is not implemented here. Nil-origin and unsafe guard candidates remain excluded.",
+    "independent_review": {
+      "report": "tmp/v1-completion-2026-10-07/module-alias-integration-independent-review/REPORT.md",
+      "sha256": "c29d2255ea415fcefcffa9fcdf6cb96fa6b43c329b05d87068e5f6398bdda277",
+      "paired_cases": 44,
+      "result": "13 required rejections restored; 31 unchanged exits, diagnostics and Zig. No new blocker within the reviewed scope."
+    }
+  },
+  "immutable_alias_native": {
+    "results": "tmp/v1-completion-2026-10-07/immutable-alias-native-review/results.json",
+    "sha256": "5d10fec2a7a46c1471d03c36453842c0dcacb7c512033a068a27ef9c50e0f940",
+    "profiles": [
+      "debug",
+      "release",
+      "fast"
+    ],
+    "result": "All builds and runs passed; exact stdout 7 900 300 / 7 900 / 900 7. Frozen checker793 candidate only; module-integrated candidate requires its own qualification."
+  },
+  "memory_foundation_native": {
+    "results": "tmp/v1-completion-2026-10-07/memory-foundation-native-review/results.json",
+    "report_sha256": "3dd65c54efd71ac5579c5b7dd9683b24e5bea0431ab00bac5d9fa432d7a0bec2",
+    "checks": 133,
+    "passed": 133,
+    "configuration": "Zig 0.16.0 Debug -fllvm -flld, common C-O0 allocator object and C baseline",
+    "boundary": "Frozen v2 source unchanged. Default linker relocation failure and -flld-only signal11 preserved. Only small shared/returned fixtures and injected acquisition failures qualified; no full workloads, performance ratios, physical-memory accounting or production mechanism choice."
+  },
+  "module_stage13_combination": {
+    "source_manifest": "tmp/v1-completion-2026-10-07/module-stage13-integration/manifest.json",
+    "source_manifest_sha256": "c37e0c083999f1e14f7d19d47b8c7939627805d2dec6c49f266cab93f0cb63a8",
+    "checker_sha256": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
+    "fast": {
+      "started_at": "2026-10-07T03:37:25.204941+00:00",
+      "command": [
+        "taskset",
+        "-c",
+        "8-11",
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-o",
+        "addopts=",
+        "-n",
+        "2",
+        "-m",
+        "not zig and not slow",
+        "-q"
+      ],
+      "checkout": "/var/tmp/a7-module-stage13-2026-10-07-l2dz6i7g/checkout",
+      "manifest_sha256": "c37e0c083999f1e14f7d19d47b8c7939627805d2dec6c49f266cab93f0cb63a8",
+      "exit_code": 0,
+      "finished_at": "2026-10-07T03:38:16.731397+00:00",
+      "log_sha256": "af2c6118d3f4203adde924e1887edd103c201950c5dbf61cb738f7ed7a579ad2"
+    },
+    "fast_result": "3337 passed in 51.26s",
+    "native_results": "tmp/v1-completion-2026-10-07/module-stage13-integration/native-results.json",
+    "native_results_sha256": "bef3990f2b7deda2e1d89bc6ca6fc9c19434d72c53b4bb08c7ccb409d5ba46e0",
+    "native_result": "Two targeted pytest cases passed: corrected prefix collision in Debug/ReleaseFast, direct import and public wrapper in all three profiles. Immutable alias controls separately pass all three profiles with exact output.",
+    "boundary": "Full manifest27c4c26e passed unchanged. Integrated compiler/tests match that frozen source; post-gate documentation records are checked separately. Independent L76/coreGLM/deltaFlash reviews found no scoped blocker. Rendered browser QA unavailable; V1 and remaining safety/generic/memory requirements remain incomplete.",
+    "full_gate": {
+      "started_at": "2026-10-07T03:46:14.819529+00:00",
+      "checkout": "/var/tmp/a7-module-stage13-2026-10-07-l2dz6i7g/checkout",
+      "command": [
+        "taskset",
+        "-c",
+        "0-15",
+        "env",
+        "A7_PYTEST_WORKERS=8",
+        "./run_release_checks.sh"
+      ],
+      "manifest_sha256": "27c4c26e60a4f18ea09e594b21890640173b6b40bb2818b777504060d1cd879f",
+      "pid": 1909813,
+      "exit_code": 0,
+      "finished_at": "2026-10-07T04:16:35.259625+00:00",
+      "log_sha256": "0584d8ef7e1bdfe333afec935fe8d53b50c4fabe2ead812e5b72235038a88845"
+    },
+    "site_preflight": {
+      "command": [
+        "taskset",
+        "-c",
+        "12-15",
+        "bun",
+        "run",
+        "check"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-10-07T03:44:52.390684+00:00",
+      "log_sha256": "8fb3dbe2d7f0c6d2ab23bd58b3a567f2dfa63f87835e29c9a75d65e53a3fa3eb",
+      "prior_attempts": "Missing isolated tsc fixed by locked installation; stale SPEC heading and feature/matrix entries reconciled. Prior failure artifacts preserved."
+    },
+    "import_local_core_review": {
+      "report": "tmp/v1-completion-2026-10-07/module-import-local-glm-review/REPORT.md",
+      "sha256": "98014e75a1592f7ea2df50b116365f924539bafcd40fd0991a6d06566abf614a",
+      "source_checker_sha256": "bb9edf5f17335582bd687828d4175f0369535b07384c24ec5b5ebe530c5e962a",
+      "result": "File-local import checks independently reviewed on bb9. The 59-pair matrix has 31 required rejections, 16 unchanged semantic failures, 10 accepted controls with identical Zig, and two unchanged parser failures. Two further global initializer probes reject as required. No blocker found. Core review excludes the later f099 diagnostic and seen-node delta. Controller caveats preserve reviewer fixture paths, temporary diff placement and bounded probe commands; the model run finished naturally. Native and full release qualification remain separate."
+    },
+    "rendered_browser_review": {
+      "report": "tmp/v1-completion-2026-10-07/module-stage13-browser-review/REPORT.md",
+      "sha256": "b082a9e8e0109a7596535baa1907b9b1b7654364723a787e06f1a82cc9cd989b",
+      "result": "Blocked: browser-harness has no active browser connection and CUA reports no available browser. No preview, screenshots, viewport, keyboard, console or rendered checks ran. Static preflight remains separate evidence."
+    },
+    "import_local_delta_review": {
+      "report": "tmp/v1-completion-2026-10-07/module-import-local-v2-flash-review/REPORT.md",
+      "sha256": "1c55c515715725b236f06e72f31177a161db2c1594a5f2761a0f74a996708201",
+      "checker_sha256": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
+      "result": "The bb9-to-f099 diagnostic/seen-node delta passed six independent paired compile cases and two synthetic shared-node experiments. Private diagnostics and accepted Zig remain unchanged. The existing diagnosed marker still mutates in both revisions; the delta adds no further AST mutation. Snapshot differences do not prove live drift after freezing. Initial missing-dependency and observer errors were reviewer setup failures, preserved separately. No broad complexity or native qualification claim."
+    },
+    "full_gate_observed_progress": "Complete:3756 passed,1 xfailed; all11 compiler/package checks plus site/dependency/security checks passed.",
+    "post_gate_source_check": {
+      "at": "2026-10-07T04:17:17.483627+00:00",
+      "manifest_sha256": "27c4c26e60a4f18ea09e594b21890640173b6b40bb2818b777504060d1cd879f",
+      "files_checked": 1599,
+      "mismatches": []
+    },
+    "package_hashes": {
+      "dist/a7_py-0.3.0.tar.gz": "4b513afa54bb70b71f1c5d4587a0f46e5149144734860950c8dadf0d167e7067",
+      "dist/a7_py-0.3.0-py3-none-any.whl": "e6933419092aa9e20f3bcf5df52e0339d27ef4ab29b71c7f330141d5133c5887"
+    },
+    "site_result": {
+      "tests": 12,
+      "assertions": 2566,
+      "pages": 23,
+      "coverage_records": 441,
+      "local_resources": 1499,
+      "search_targets": 180
+    },
+    "live_compiler_test_parity": {
+      "files_checked": 273,
+      "mismatches": [],
+      "full_manifest_sha256": "27c4c26e60a4f18ea09e594b21890640173b6b40bb2818b777504060d1cd879f"
+    },
+    "post_integration_checks": {
+      "docs_style": 0,
+      "secrets": 0,
+      "git_diff_check": 0,
+      "site_sync_exports": 0,
+      "site_check": 0,
+      "site_result": "12 tests,2566 assertions,441coverage records,23pages,1499localresources,180searchtargets; renderedbrowser checks remain unavailable."
+    }
+  },
+  "memory_foundation_accounting": {
+    "report": "tmp/v1-completion-2026-10-07/memory-foundation-accounting-review/REPORT.md",
+    "sha256": "e924898f7c5f9155e532e732a108dd5c983454f04e02c9269c52fa96735ddc21",
+    "result": "24 source-derived phase/failure tables agree with archived backing peaks/output. Existing traces lack arena suballocation, root, queue and phase-read events. Declared217/32 budgets are not measured memory; no L38 qualification."
+  },
+  "conditional_origin_design": {
+    "report": "tmp/v1-completion-2026-10-07/safety-conditional-origin-design/REPORT.md",
+    "sha256": "a6fdb53d216c019b55efe4487f5207cae5ef70f49b676787c8c662fe83156780",
+    "boundary": "22 paired compile probes on stage13/f521 reproduce lost selector correlation. Design only; complete conditional origins and callee obligations remain unimplemented."
+  },
+  "literal_selected_return_candidate": {
+    "report": "tmp/v1-completion-2026-10-07/safety-conditional-return-literals-next/REPORT.md",
+    "sha256": "6ce28aa4f19cc1fa4db0bf3c4a2b3e9ca124dd7124bff3e18a635a0db740d051",
+    "boundary": "Scratch safety0d8 only. Author56pairs and independent41pairs remain compile-only evidence. GLM review failed provider limit; regression tests and native controls being prepared. No integration or release qualification. Complete conditional-origin analysis remains open.",
+    "independent_review": {
+      "report": "tmp/v1-completion-2026-10-07/safety-conditional-return-literals-independent-review/REPORT.md",
+      "sha256": "d49ce39f560f30d21b416f60875590c70bf1836493200917cc4af7932383fdbb",
+      "result": "41 pairs:7 selected-nil0to6,3 valid selected-identity6to0,31 unchanged exits. Two rejected-case diagnostics become more precise. New accepted native control is prepared, unexecuted. A later observation corrects the report argument-policy claim: guarded nil passthrough actual remains accepted on both revisions; unguarded use rejection does not prove rejection at argument checking."
+    },
+    "external_review": {
+      "result": "Failed provider invocation, exit1: Rate limit reached for requests. No verdict; not completed.",
+      "run": {
+        "identity": "A7 V1 completion correctness reviewer, batch 2026-10-07",
+        "model": "zai-coding-plan/glm-5.3",
+        "checkout": "/var/tmp/a7-literal-return-glm-2026-10-07-88r762bx/checkout",
+        "scratch": "/var/tmp/a7-literal-return-glm-2026-10-07-88r762bx/scratch",
+        "manifest": "/var/tmp/a7-literal-return-glm-2026-10-07-88r762bx/manifest.json",
+        "started_at": "2026-10-07T04:07:47.223834+00:00",
+        "prompt_sha256": "7c56318f089fdd79098387d789e09b1f046ad64cb2729a1ca878eaf972d5b973",
+        "pid": 2066178,
+        "exit_code": 1,
+        "finished_at": "2026-10-07T04:12:29.620531+00:00",
+        "log_sha256": "97e93d697a04ab2489dab0a835202b9125e3b5124dbe09bf9108ca2cc7be8a42"
+      }
+    },
+    "local_verification": {
+      "fast": {
+        "passed": 3348,
+        "seconds": 90.51,
+        "exit": 0,
+        "record": "fast-run.json"
+      },
+      "native": {
+        "passed": 3,
+        "seconds": 22.13,
+        "exit": 0,
+        "profiles": [
+          "debug",
+          "release",
+          "fast"
+        ],
+        "stdout_asserted": "9\n7\n7\n9\n11\n",
+        "stderr_asserted": "",
+        "record": "native-run.json"
+      },
+      "manifest_hashes_modes_unchanged": true,
+      "index_correction_needed": false,
+      "external_review": "provider rate limit; incomplete",
+      "full_gate_executed": false,
+      "integration_approved": false
+    }
+  },
+  "memory_foundation_v3_candidate": {
+    "report": "tmp/v1-completion-2026-10-07/memory-prototype-foundation-v3/REPORT.md",
+    "sha256": "981220dad7129f594af4e461c6b7d50d5d6912ea73744d69dd4043a2d8cf6e97",
+    "boundary": "Scratch instrumentation preserves v2 source. Adds bounded events for backing, payload, root/edge transfer, queue and reads. Static Python checks only; C/Zig compilation and native behavior unverified. GLM review running. Independent oracle frozen before candidate inspection. No L38 qualification.",
+    "native": {
+      "report": "tmp/v1-completion-2026-10-07/memory-foundation-v3-native-review/REPORT.md",
+      "sha256": "cd037254dea941a36a4cc01426764961d5bec3771844a74676ca1a879132d929",
+      "checks": 134,
+      "result": "24 phase/failure traces,102invalid grammar,7argument counts and1overflow passed. Source and independent oracle unchanged. Separate strengthened runner rejects missing/duplicate/reordered checkpoint events; frozen candidate oracle alone has weaker validation. GLM review remains running. Debug LLVM/LLD and C-O0 only; no L38 qualification."
     }
   }
 }

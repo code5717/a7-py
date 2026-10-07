@@ -157,9 +157,20 @@ class SymbolTable:
 
     def __init__(self):
         """Initialize with a global scope."""
-        self.global_scope = Scope("global")
-        self.current_scope = self.global_scope
+        self.global_scope: Scope = Scope("global")
+        self.current_scope: Scope = self.global_scope
         self.scope_stack: List[Scope] = [self.global_scope]
+        self.file_scopes: Dict[str, Scope] = {}
+        self.identity_symbols: Dict[str, Symbol] = {}
+        self.resolved_uses: Dict[int, Symbol] = {}
+
+    def select_file_scope(self, key: str) -> None:
+        scope: Optional[Scope] = self.file_scopes.get(key)
+        if scope is None:
+            scope = Scope(key)
+            self.file_scopes[key] = scope
+        self.current_scope = scope
+        self.scope_stack = [scope]
 
     def enter_scope(self, name: str, reuse_existing: bool = False) -> Scope:
         """
@@ -224,7 +235,16 @@ class SymbolTable:
         Returns:
             Symbol if found in current or any parent scope, None otherwise
         """
-        return self.current_scope.lookup(name)
+        if "." in name:
+            alias, field = name.split(".", 1)
+            imported = self.current_scope.lookup(alias)
+            path = getattr(imported.node, "target_file_scope", None) if imported else None
+            target = self.file_scopes.get(path)
+            if target is None or field.startswith("_"):
+                return None
+            symbol = target.lookup_local(field)
+            return symbol if symbol is not None and symbol.kind != SymbolKind.MODULE else None
+        return self.current_scope.lookup(name) or self.identity_symbols.get(name)
 
     def lookup_type(self, name: str) -> Optional[Type]:
         """
@@ -302,19 +322,25 @@ class SymbolTable:
         Generate a debug dump of the symbol table.
 
         Args:
-            scope: Starting scope (default: global)
+            scope: Starting scope (default: all file roots, or global if unpartitioned)
             indent: Indentation level
 
         Returns:
             String representation of symbol table
         """
         if scope is None:
-            scope = self.global_scope
+            roots = list(self.file_scopes.values()) if self.file_scopes else [self.global_scope]
+        else:
+            roots = [scope]
 
         lines = []
-        pending = [(scope, indent)]
+        pending = [(root, indent) for root in reversed(roots)]
+        visited = set()
         while pending:
             current, level = pending.pop()
+            if id(current) in visited:
+                continue
+            visited.add(id(current))
             prefix = "  " * level
             lines.append(f"{prefix}{current.name}:")
             for name, symbol in sorted(current.symbols.items()):

@@ -96,8 +96,12 @@ class NameResolutionPass:
         # then tell a constant declared below it from a new name: `case LIMIT:`
         # compares with LIMIT wherever LIMIT is declared in the file.
         for decl in node.declarations or []:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             self._predeclare(decl)
         for decl in node.declarations or []:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             self.visit_declaration(decl)
         root_stack = self.symbols.scope_stack
         while self._nested_functions:
@@ -110,6 +114,9 @@ class NameResolutionPass:
 
     def _predeclare(self, node: ASTNode) -> None:
         """Define a declaration in the current scope without visiting its body."""
+        if node.kind == NodeKind.IMPORT and node.alias and node.alias.startswith("__") and self.symbols.current_scope.parent is None:
+            self.add_error(SemanticErrorType.UNSUPPORTED_FEATURE, node.span,
+                           f"Top-level name '{node.alias}' is reserved for the compiler")
         described = {
             NodeKind.FUNCTION: (SymbolKind.FUNCTION, "Function", False),
             NodeKind.STRUCT: (SymbolKind.STRUCT, "Struct", False),
@@ -124,8 +131,14 @@ class NameResolutionPass:
         kind, label, mutable = described
         fallback = "<unknown>" if node.kind in (NodeKind.CONST, NodeKind.VAR) else "<anonymous>"
         name = node.name or fallback
+        if name.startswith("__") and self.symbols.current_scope.parent is None:
+            self.add_error(SemanticErrorType.UNSUPPORTED_FEATURE, node.span,
+                           f"Top-level name '{name}' is reserved for the compiler")
         self._predeclared.add(id(node))
         symbol = Symbol(name=name, kind=kind, type=UNKNOWN, node=node, is_mutable=mutable)
+        identity = getattr(node, "module_identity_name", None)
+        if identity:
+            self.symbols.identity_symbols[identity] = symbol
         if not self.symbols.define(symbol):
             self._rejected.add(id(node))
             self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"{label} '{name}'")

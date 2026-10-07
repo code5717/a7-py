@@ -33,10 +33,45 @@ into the single Zig output), `a7/stdlib/` (registry of `std/io` and
 tokens/AST/semantic dumps and the `--doc-out` report), `a7/errors.py`
 (typed errors and rich display).
 
+## File-module scopes and lowering
+
+The resolver retains importer-relative canonical paths and entry-root containment.
+Name resolution creates one file-root scope per module. `resolved_uses` records
+AST-use-to-declaration identity; type checking resolves qualified types and values
+in those scopes. Generic bodies retain the scope of their defining file.
+
+After type checking, `_lower_file_module_bindings` assigns unique emission names
+to resolved declarations and uses. Semantic validation, safety and the Zig backend
+consume those identities. Modules keep their existing load order, with declarations
+in source order, followed by the entry file. There is still one Zig output.
+
+Semantic reports retain file and lexical owners, including nested scopes. Markdown
+owner labels escape table separators and HTML characters. This reporting data does
+not introduce a typed IR. Typed IR remains unfinished.
+
+Known-call safety summaries now compose direct reference stores to globals with
+captured arguments, return origins and deletion origins. Equivalent positive
+counter increments can establish at most one loop trip when all backedges cross
+the bound without overflow. General global nil-state and parameter obligations
+remain incomplete. The combined stage13 source passed the full release gate on
+2026-10-07. [Status](STATUS.md) records the source manifest and remaining gaps.
+
+L76 rejects parsed access through another file's import alias with semantic exit
+6 and caller-relative direct-import guidance. Existing multi-dot type/literal
+syntax still fails parsing with exit 5. Ordinary exported struct-field chains
+retain their declaration identity.
+
+Local aliases of same-file generic declarations that are never reassigned,
+passed by reference or captured by another function now
+retain their concrete body obligations. Imported, module-global, parameter,
+mutable, selected and captured origins remain incomplete. This does not implement
+general runtime dispatch of generic declarations.
+
 ## Traversal candidates and qualification
 
-Compiler internals must use explicit stacks and worklists. The static scan in
-`test/test_no_recursion.py` limits the remaining recursive groups.
+Compiler internals must use explicit stacks and worklists. Both modes of the static scan in
+`test/test_no_recursion.py` report zero recursive groups, deepcopy calls and
+recursive generated methods. The empty lists are the enforced boundary.
 The component snapshots below were combined in frozen manifest `04330ece`.
 It passed 3,602 tests with one expected failure and all native example profiles.
 The secrets check failed because the snapshot lacked Git metadata. After an

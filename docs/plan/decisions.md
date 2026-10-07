@@ -419,8 +419,8 @@ not waive L73's GPU qualification requirement for V1 publication.
 L76. The user selected "Keep imports local (Recommended)" in the
 [import forwarding proposal](packets/P-MOD-import-forwarding.md).
 If `a.a7` imports `b`, another file cannot access that import as `a.b`.
-Calls, values, types and constants reached through such a chain must fail
-with semantic exit 6. The diagnostic identifies the local import and directs
+Parsed calls, values, types and constants reached through such a chain must
+fail with semantic exit 6. The diagnostic identifies the local import and directs
 the caller to import the dependency in its own file.
 
 Direct imports and ordinary public wrappers remain accepted. For example,
@@ -430,7 +430,9 @@ shadows, file identity, initialization order, bare imports, directory fallback,
 `pub` and local `__` names. It adds no syntax. The previously accepted
 `a.b.value()` emission failed native build with exit 7; the new diagnostic
 rejects it before Zig compilation. Implementation and native qualification
-remain separate from this approval.
+remain separate from this approval. Unsupported multi-dot type annotations and
+struct literals already fail parsing with exit 5. Their grammar is unchanged;
+this decision does not add syntax solely to change that existing error stage.
 
 ## Scope limits
 

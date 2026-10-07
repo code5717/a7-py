@@ -80,9 +80,12 @@ reassignment. Guarded reference fields receive the same nil checks, including
 user fields named `ptr`. `defer` schedules a statement for scope exit;
 `defer del value_box` keeps cleanup next to allocation.
 
-Alias tracking remains incomplete for array elements, joined allocation field
-paths, nested aggregates and deletion through borrowed aggregates. Accepted
-programs can still violate allocation lifetimes in these cases.
+Known direct stores into global references propagate allocation identity
+through calls. Deleting the stored allocation invalidates tracked caller
+aliases. Global nil-state summaries and callee non-nil requirements remain
+incomplete. Alias tracking also has gaps for array elements, selected or joined
+field paths, nested aggregates, borrowed aggregates and direct deletion of call
+results. Accepted programs can still violate allocation lifetimes.
 
 Slices must not outlive their backing arrays, and references must not outlive referents. These are required programming constraints. Full ownership, alias tracking, and lifetime enforcement remain incomplete. There is no implicit deep-copy guarantee.
 

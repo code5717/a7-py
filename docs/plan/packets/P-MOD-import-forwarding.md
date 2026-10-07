@@ -1,10 +1,12 @@
 # Import forwarding decision
 
 Approved as L76 on 2026-10-07: "Keep imports local (Recommended)".
-This decision covers access through another file's import alias. Implementation
-and native qualification are pending; the alternative below is not selected.
+This decision covers access through another file's import alias. It is implemented
+and qualified in full source manifest `27c4c26e`, including direct-import and
+public-wrapper native controls. The alternative below is not selected. See
+[Status](../../STATUS.md) for the qualification boundary.
 
-## Current behavior
+## Behavior before the decision
 
 ```a7
 // b.a7
@@ -68,6 +70,11 @@ including longer chains; it must preserve underscore privacy and local shadows.
 It does not change directory fallback, bare imports, `pub`, local `__` names,
 file identity, initialization order or struct-field access.
 
+The parser already rejects multi-dot type annotations such as `x:a.b.Box`
+and literals such as `a.b.Box{}` with exit 5. That grammar remains unchanged.
+The semantic exit-6 rule applies to parsed constructs, including `a.b` used as
+a type or literal name and longer expression chains such as `a.b.value()`.
+
 ## Alternative
 
 Expose non-private import aliases as namespace members. Then `a.b.value()`
@@ -83,5 +90,6 @@ lowering behavior. It makes `a`'s imports part of `a`'s public interface.
 - Private names remain inaccessible through every path.
 - A normal struct field named `b` remains a field, including `a.value.b`.
 - Local shadows and same-name declarations in separate files keep their identity.
-- The rejected form receives exit 6 before Zig compilation. Successful Zig
-  emission alone does not qualify the accepted controls.
+- Parsed forwarded-import forms receive exit 6 before Zig compilation.
+  Unsupported multi-dot type/literal syntax keeps parser exit 5. Successful
+  Zig emission alone does not qualify the accepted controls.

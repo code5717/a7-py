@@ -6,6 +6,7 @@ source code, tokens, AST, semantic analysis, and generated output.
 """
 
 from datetime import datetime
+from html import escape
 from typing import Optional, List, Dict
 
 from .ast_walk import iter_children
@@ -135,7 +136,10 @@ class MarkdownFormatter:
                     lines.append("| Name | Kind | Type | Scope |")
                     lines.append("|------|------|------|-------|")
                     for sym in symbols:
-                        lines.append(f"| `{sym['name']}` | {sym['kind']} | `{sym['type']}` | {sym['scope']} |")
+                        scope = escape(sym["scope"], quote=False)
+                        for delimiter in "\\`*_[]|~":
+                            scope = scope.replace(delimiter, "\\" + delimiter)
+                        lines.append(f"| `{sym['name']}` | {sym['kind']} | `{sym['type']}` | {scope} |")
                     lines.append("")
 
             # Errors
@@ -242,11 +246,19 @@ class MarkdownFormatter:
     def _collect_symbols(self, symbol_table) -> list:
         """Collect symbols from symbol table."""
         symbols = []
-        scope = symbol_table.current_scope if hasattr(symbol_table, 'current_scope') else None
-        if scope is None and hasattr(symbol_table, 'global_scope'):
-            scope = symbol_table.global_scope
+        file_scopes = getattr(symbol_table, "file_scopes", {})
         visited = set()
-        self._walk_scope(scope, symbols, "global", visited)
+        if file_scopes:
+            for filename, scope in file_scopes.items():
+                start = len(symbols)
+                self._walk_scope(scope, symbols, "global", visited)
+                for row in symbols[start:]:
+                    row["scope"] = f"{filename}::{row['scope']}"
+        else:
+            scope = getattr(symbol_table, "current_scope", None)
+            if scope is None:
+                scope = getattr(symbol_table, "global_scope", None)
+            self._walk_scope(scope, symbols, "global", visited)
         return symbols
 
     def _walk_scope(self, scope, symbols: list, scope_name: str, visited: set):

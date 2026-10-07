@@ -196,11 +196,12 @@
  {
   "id": "file-modules",
   "status": "limited",
-  "qualification": "Simple alias calls lower to one combined Zig file; broad cross-module typing remains incomplete.",
+  "qualification": "Per-file scopes, underscore privacy, qualified types and struct literals emit one combined Zig file. Import aliases stay local; imported generic function values retain checking gaps.",
   "topic": "language/modules",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
-   "https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py"
+   "https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py",
+   "https://github.com/code5717/a7-py/blob/master/test/test_module_import_local.py"
   ]
  },
  {
@@ -1262,13 +1263,13 @@
  {
   "id": "spec-10-4-visibility-rules-staged-intent",
   "status": "limited",
-  "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
+  "qualification": "Per-file scopes enforce underscore privacy and keep import aliases local. Local double-underscore names and pub parsing retain their existing behavior.",
   "topic": "language/modules",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
    "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
   ],
-  "title": "10.4 Visibility Rules (staged intent)"
+  "title": "10.4 Visibility rules"
  },
  {
   "id": "spec-11-built-in-functions-and-operators",

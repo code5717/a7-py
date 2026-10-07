@@ -73,17 +73,34 @@ identity after field replacement. They rejected valid parent/sibling uses after
 child-only deletion and parent use after an unrelated local allocation was
 deleted. See [Status](STATUS.md) for the recorded findings.
 
-A bounded ordered-callee-effect candidate addresses direct, local-alias and
+The bounded ordered-callee-effect repair addresses direct, local-alias and
 forwarded reference field replacement/deletion, with at most one conditional
 across the known call expansion, source-sized expanded work, block/return exits
-and LIFO defers. It passes focused checks but awaits combined-source qualification; these findings are not closed by earlier passing controls.
+and LIFO defers. It passed the earlier integration gate. That qualification applies to the represented paths.
 Multiple conditional occurrences, loops, match, new allocations, returned
-references, by-value aggregate parameters/copies, global storage, short-circuit
+references, by-value aggregate parameters/copies, short-circuit
 expressions, unknown callees and unrepresented standard-library effects remain
 incomplete. Selected reference arguments or descendant facts with multiple
 allocation identities retain the older summaries, whose missed aliases and
 conservative rejections remain unresolved. These checks do not establish
 complete allocation lifetime safety.
+A later bounded repair composes known direct global reference stores, captured
+arguments, return origins and deletion origins. Deleting an allocation stored in
+a global invalidates represented caller aliases; replacing that global does not
+retarget saved old values. Unknown, indirect and container effects remain
+incomplete. Global nil-state summaries and parameter proof obligations are still
+open, so this repair does not establish non-nil safety across all calls.
+The null-guard trial `68f` and nil-origin trial `f521` are excluded. The former
+accepts unsafe programs; the latter rejects a confirmed valid false-branch
+control. Conditional origin relations and callee preconditions remain open.
+
+The one-trip proof accepts separate positive increments on alternative paths when
+every backedge crosses the loop bound without wrapping. It continues to reject
+unproven multi-trip deletion and applies deletion effects after loop exit.
+General loop invariants and termination are outside this proof. The combined
+stage13 source passed the full release gate. See [Status](STATUS.md) for its
+manifest, the earlier failed stage10 gate and remaining safety limits.
+
 A run-time shift count is checked when the program runs, in every profile.
 Signed `MIN / -1`, `-MIN` and `abs(MIN)` have defined wrapping results. Union
 discriminant proofs and complete ownership analysis remain active work.

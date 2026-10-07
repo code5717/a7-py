@@ -35,9 +35,10 @@ callee effect model must preserve evaluation order, actual-argument aliasing,
 ordered live/non-nil uses and stores/deletes, and mark unsupported functions
 explicitly. Never silently classify unknown effects as read-only.
 
-Existing language decisions remain approved, including L69 module scopes and
-L68 stdlib architecture. Before any new syntax or behavior change outside an
-existing approval, present current behavior, proposed behavior, a concrete A7
+Existing language decisions remain approved, including L69 module scopes,
+L76 file-local imports and L68 stdlib architecture. Before any new syntax or
+behavior change outside an existing approval, present current behavior,
+proposed behavior, a concrete A7
 example and compatibility impact. Record the user's decision. Continue work
 that does not depend on that decision. Do not invent automatic-memory,
 concurrency or tensor contracts to bypass a missing approval.

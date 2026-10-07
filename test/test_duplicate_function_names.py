@@ -1,13 +1,8 @@
-"""Two top-level functions with one name exit 6, whatever their signatures.
-
-Imported modules merge into one flat function namespace, so two modules that
-both export `c` collide the same way. Qualified calls (`a.c()`, `b.c()`) do
-not keep them apart.
-"""
+"""Duplicate function names conflict within one file scope."""
 
 from __future__ import annotations
 
-from conftest import expect_exit
+from conftest import expect_exit, expect_ok
 
 ALREADY_DEFINED = "Already defined: Function 'f'"
 
@@ -81,7 +76,7 @@ main :: fn() {
 """, tmp_path, 6, ALREADY_DEFINED)
 
 
-def test_two_modules_exporting_one_name_rejected(tmp_path):
+def test_two_modules_exporting_one_name_keep_distinct_types(tmp_path):
     (tmp_path / "a.a7").write_text("""pub c :: fn() char {
     ret 'A'
 }
@@ -90,11 +85,12 @@ def test_two_modules_exporting_one_name_rejected(tmp_path):
     ret 7
 }
 """, encoding="utf-8")
-    expect_exit("""io :: import "std/io"
+    expect_ok("""io :: import "std/io"
 a :: import "a"
 b :: import "b"
 main :: fn() {
-    io.println("{}", a.c())
-    io.println("{}", b.c())
+    x: char = a.c()
+    y: i32 = b.c()
+    io.println("{} {}", x, y)
 }
-""", tmp_path, 6, "Already defined: Function 'c'")
+""", tmp_path)

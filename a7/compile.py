@@ -510,6 +510,7 @@ class A7Compiler:
                     type_map = type_checker.node_types
 
                     if tc_ok:
+                        self._lower_file_module_bindings(ast, symbol_table)
                         validator = SemanticValidationPass(
                             symbol_table, type_checker.node_types
                         )
@@ -1019,32 +1020,90 @@ class A7Compiler:
         module_resolver: Any,
     ) -> ASTNode:
         module_decls: list[ASTNode] = []
-        seen_paths: set[str] = set()
-        for module_info in loaded_modules:
-            if module_info.ast is None or module_resolver.is_virtual_module(module_info.path):
+        files = [(info.ast, info.file_path) for info in loaded_modules
+                 if info.ast is not None and not module_resolver.is_virtual_module(info.path)]
+        files.append((ast, str(module_resolver.entry_root / "<entry>")))
+        written_names = set()
+        work = [program for program, _ in files]
+        while work:
+            node = work.pop()
+            if node.name:
+                written_names.add(node.name)
+            for value in vars(node).values():
+                if isinstance(value, ASTNode):
+                    work.append(value)
+                elif isinstance(value, list):
+                    work.extend(child for child in value if isinstance(child, ASTNode))
+        seen_paths = set()
+        for index, (program, path) in enumerate(files):
+            if path in seen_paths:
                 continue
-            # Key on the resolved file path, not the import spelling, so one
-            # file loaded under two spellings still merges once. Same-file
-            # double imports are rejected earlier as a compile error.
-            if module_info.file_path in seen_paths:
-                continue
-            seen_paths.add(module_info.file_path)
-            prefix = self._module_emit_prefix(module_info.path)
-            for decl in module_info.ast.declarations or []:
-                if decl.kind == NodeKind.IMPORT:
-                    continue
-                if decl.kind == NodeKind.FUNCTION:
-                    decl.module_emit_prefix = prefix
+            seen_paths.add(path)
+            for decl in program.declarations or []:
+                decl.file_scope = path
+                decl.module_index = index
+                decl.module_entry = program is ast
+                if decl.name and program is not ast:
+                    module_path = Path(path).relative_to(module_resolver.entry_root).with_suffix("").as_posix()
+                    identity = self._module_emit_prefix(module_path) + decl.name
+                    while identity in written_names:
+                        identity += "_"
+                    written_names.add(identity)
+                    decl.module_identity_name = identity
+                if decl.kind == NodeKind.IMPORT and not module_resolver.is_virtual_module(decl.module_path or ""):
+                    module = module_resolver.get_module(decl.module_path, path if program is not ast else None)
+                    decl.target_file_scope = module.file_path
                 module_decls.append(decl)
+            work = list(program.declarations or [])
+            while work:
+                node = work.pop()
+                vars(node).pop("file_module_call", None)
+                vars(node).pop("module_emit_prefix", None)
+                for value in vars(node).values():
+                    if isinstance(value, ASTNode):
+                        work.append(value)
+                    elif isinstance(value, list):
+                        work.extend(child for child in value if isinstance(child, ASTNode))
+        return ASTNode(kind=NodeKind.PROGRAM, declarations=module_decls, span=ast.span)
 
-        if not module_decls:
-            return ast
-
-        return ASTNode(
-            kind=NodeKind.PROGRAM,
-            declarations=module_decls + list(ast.declarations or []),
-            span=ast.span,
-        )
+    def _lower_file_module_bindings(self, program: ASTNode, symbols: Any) -> None:
+        # File scopes have already resolved every use. The later whole-program
+        # passes receive unique declaration keys in original emission order.
+        if not symbols.file_scopes:
+            return
+        work = list(program.declarations or [])
+        while work:
+            node = work.pop()
+            for value in vars(node).values():
+                if isinstance(value, ASTNode):
+                    work.append(value)
+                elif isinstance(value, list):
+                    work.extend(child for child in value if isinstance(child, ASTNode))
+            bound = symbols.resolved_uses.get(id(node))
+            target = bound.node if bound is not None else None
+            identity = getattr(target, "module_identity_name", None)
+            if identity:
+                node.source_name = node.name or node.field or node.struct_type
+                if node.kind == NodeKind.FIELD_ACCESS:
+                    node.kind = NodeKind.IDENTIFIER
+                    node.name = identity
+                    node.object = None
+                    node.field = None
+                elif node.kind in {NodeKind.IDENTIFIER, NodeKind.TYPE_IDENTIFIER, NodeKind.PATTERN_IDENTIFIER}:
+                    node.name = identity
+                elif node.kind == NodeKind.STRUCT_INIT:
+                    node.struct_type = identity
+                elif node.kind == NodeKind.PATTERN_ENUM:
+                    node.enum_type = identity
+            if getattr(node, "module_identity_name", None):
+                node.source_name = node.name
+                node.name = node.module_identity_name
+        for scope in symbols.file_scopes.values():
+            for symbol in scope.symbols.values():
+                identity = getattr(symbol.node, "module_identity_name", None)
+                if identity:
+                    symbols.global_scope.symbols[identity] = symbol
+        symbols.global_scope.symbols.update(symbols.current_scope.symbols)
 
     def _backend_unsupported_feature_errors(
         self,

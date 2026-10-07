@@ -1,9 +1,9 @@
 {
   "recorded_at": "2026-10-06T23:38:07.463503+00:00",
-  "completed_external_reviews": 27,
+  "completed_external_reviews": 38,
   "model_counts": {
-    "zai-coding-plan/glm-5.3": 21,
-    "zai-coding-plan/glm-5.3-flash": 6
+    "zai-coding-plan/glm-5.3": 28,
+    "zai-coding-plan/glm-5.3-flash": 10
   },
   "reviews": [
     {
@@ -249,15 +249,141 @@
       "log_sha256": "6c14575e7c180896341c34b0545e03a3534c0d4c768a1d902cbfb739b0a2fa27",
       "log": "tmp/v1-completion-2026-10-07/glm-parallel/global_aliases.log",
       "disposition": "No introduced regression found in assigned global-store scope. Independent ordering witnesses,23 author controls,12 parent cases and51 example emissions checked; module unsafe witness0\u21926 and valid controls0. Exact frozen362 source governs review, not earlier candidate.patch. Claims that later code deltas are semantics-preserving hardening are not adopted as proof. Guard-join example differs from original saved final-global false rejection; that finding remains open. Manifest Read denial recovered via shell; no provider failure."
+    },
+    {
+      "reviewer": "generic_callable_trial",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T02:33:04.421461+00:00",
+      "exit_code": 0,
+      "log_sha256": "53a83a5c6c6cb3439186c07604d0128370d4f4f4baec342c8caccb4e13a74b7f",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/generic_callable_trial.log",
+      "disposition": "Excluded trial.73 independent compile-only pairs reproduce required alias checks and correlation false rejections. New same-file scope limit: imported generic aliases still bypass obligations. Invalid-source diagnostic order may change; scratch baseline/scanner-count documentation corrected separately. Reviewer runtime-valid wording means source-semantics reasoning only: parent native controls show mutable/selected/array forms fail Zig builds. No integration approval or general complexity qualification inferred."
+    },
+    {
+      "reviewer": "equivalent_increments",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T02:38:43.914423+00:00",
+      "exit_code": 0,
+      "log_sha256": "eb73363bc6ac73ad6066f8b728e7b30d74855e6f694fcd6954f1758dcbc02c5e",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/equivalent_increments.log",
+      "disposition": "No introduced regression found in51 independent paired sources:11 intended6to0 and40 unchanged. Positive min/max delta and overflow/ref-exposure checks reviewed. Match withoutelse, nested writes to samecounter and false-at-entry remain conservative. Resource results apply only measured shapes; initial stress timeouts came from erroneous exponential source generator and buffering, not established compiler hang. No general complexity or whole-safety claim. Author328tests inspected, not independently rerun."
+    },
+    {
+      "reviewer": "module_scopes",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T02:38:40.768840+00:00",
+      "exit_code": 0,
+      "log_sha256": "44af12d2d1ebd217756fa6625eeb8c3be8ff59fca5652efe015d7d96be25ab36",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/module_scopes.log",
+      "disposition": "96 independent module fixtures,40 author cases and71 repository programs inspected/compiled; approved scope changes matched, no introduced invalid emission found by inspection. Misleading imported-constant assignment diagnostic remains actionable. Nested import reexports/hardlinks unresolved; known alias UAF closes only in separate362/607 combination. Stage8/9 reporting fixes have separate independent evidence. Candidate docs require update at integration. Report claims no pytest, but raw transcript contains14-test invocation with13pass1knownUAFfailure; preserve discrepancy, do not count as clean suite or native evidence."
+    },
+    {
+      "reviewer": "safety_null_guard",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T02:52:49.978970+00:00",
+      "exit_code": 0,
+      "log_sha256": "95d984cfd3520bd8d5e8d899e0911f3e3daed4eb8a3e154215c92fff024aa789",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/safety_null_guard.log",
+      "disposition": "Reject68f.33 independent paired probes reproduce6 unsafe conditional-global-nil acceptances. GLM no-unsafe-guard-hunk claim is limited by missing nullable-parameter witness: independent51-case review proves separate branch-pruning unsoundness and returned-nil manifestation. Do not adopt suggested nil-as-unknown patch or claim it qualifies68f. Separate explicit-nil-origin repair on607 retains original global stripping and IFjoins; proof-vs-assumption precision remains unresolved. No unsafe native program executed."
+    },
+    {
+      "reviewer": "module_const_diagnostic",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T02:58:53.695444+00:00",
+      "exit_code": 0,
+      "log_sha256": "6d62fdcdc55ad4664938785caf4cab135b4ef99a06d38c4dccbdb0d0d8b2337a",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/module_const_diagnostic.log",
+      "disposition": "No introduced regression in bounded diagnostic review.17 independent cases and51 example emissions preserve exits/Zig;5 intended qualified-constant message changes. Refargument diagnostics also corrected. Localfield fallback resolvesNone; mutablemodule/privacy/shadow controls preserved. No native/pytest. Stdlib write probes stop at earlier errors, so they do not exercise immutable-root stdlib path. Exact evaluator scheduling inferred from absent resolved-use, not traced."
+    },
+    {
+      "reviewer": "immutable_generic_aliases",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T03:05:14.593590+00:00",
+      "exit_code": 0,
+      "log_sha256": "87bd38a422713d4783f156df4c27f7860ce2f3f171d33f679bb5d07dc2793164",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/immutable_generic_aliases.log",
+      "disposition": "Independent review and controller reconciliation support the bounded immutable same-file alias repair. Twelve intended rejections and 24 unchanged author matrix cases were independently reproduced. Mixed direct/alias diagnostics can move to another genuine call site; a nested capture case moves backend exit 7 to semantic exit 6. Native controls remain queued. Imported, mutable, selected, aggregate, global and parameter-origin gaps remain open. No full generic qualification."
+    },
+    {
+      "reviewer": "safety_nil_origins",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T03:14:27.454857+00:00",
+      "exit_code": 0,
+      "log_sha256": "6bd9272e2162d6b9d89b1f5a55f43fed069632efdab87ba86ac039b5b4e14055",
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/safety_nil_origins.log",
+      "disposition": "Controller withholds integration despite advisory approval. The review confirms a valid false-flag global forwarding call changes from exit 0 to 6. Independent follow-up reproduces the same regression in direct returns and caller-guarded reference returns. Documentation alone cannot authorize these compatibility changes. Nil identity isolation passed reviewed probes; no new acceptance was found. The reviewer parser-cap and deletion-witness claims require separate reconciliation. Follow-up confirms the reported 150-function parser cap was an f32 keyword collision; renaming identifiers compiles all 150 functions. The quoted true-selector delete source is valid; a corrected false-selector source independently confirms the preexisting lifetime gap. Neither unsafe source was executed."
+    },
+    {
+      "reviewer": "module_collision_test",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T03:21:32.646188+00:00",
+      "exit_code": 0,
+      "log_sha256": "028a8dce7b60513842bf11efdfb0ccfc8de3f05fa37d66eb44814181f173016c",
+      "log": "tmp/v1-completion-2026-10-07/module-collision-flash-review/raw.log",
+      "disposition": "Test-only compatibility correction independently verified against L27/L69. Four compile outcomes 6/0/0/6, actual generated-name collision and original output assertion preserved. No compiler behavior change. Native Debug/ReleaseFast qualification remains pending; existing helper does not assert empty stderr."
+    },
+    {
+      "reviewer": "module_alias_kind_guard",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T03:32:35.973173+00:00",
+      "exit_code": 0,
+      "log_sha256": "2d16fb42c932b45805d7db01bb416304839dc43ccc6f2b3745fdc8d1abfb0b59",
+      "log": "tmp/v1-completion-2026-10-07/module-alias-integration-flash-review/review.log",
+      "disposition": "The one-expression FUNCTION-symbol guard independently reviewed. Twenty-four source pairs include eight intended rejections; controller does not adopt the report claim that all eight correspond to the original 13 failing tests. Its unreplayed-case list has six items despite a heading saying five. Root fast gate and separate 44-pair review cover all 13. Module-global variable aliases and imported generic values remain unchanged open gaps. No native runs in this review."
+    },
+    {
+      "reviewer": "module_import_local_L76",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T03:51:42.587730+00:00",
+      "exit_code": 0,
+      "log_sha256": "c4a2744592810cf931e5b5a58929a3cdfe8c55e01a71858679e4aa6265a94d3c",
+      "log": "tmp/v1-completion-2026-10-07/module-import-local-glm-review/review.log",
+      "report": "tmp/v1-completion-2026-10-07/module-import-local-glm-review/REPORT.md",
+      "report_sha256": "98014e75a1592f7ea2df50b116365f924539bafcd40fd0991a6d06566abf614a",
+      "disposition": "File-local import checks independently reviewed on bb9. The 59-pair matrix has 31 required rejections, 16 unchanged semantic failures, 10 accepted controls with identical Zig, and two unchanged parser failures. Two further global initializer probes reject as required. No blocker found. Core review excludes the later f099 diagnostic and seen-node delta. Controller caveats preserve reviewer fixture paths, temporary diff placement and bounded probe commands; the model run finished naturally. Native and full release qualification remain separate."
+    },
+    {
+      "reviewer": "module_import_local_v2",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-07T03:58:00.131702+00:00",
+      "exit_code": 0,
+      "log_sha256": "6494726b7e15c2a8313ce2a988a175e21eb37c292e029d0c08e3928ae3d609e2",
+      "log": "tmp/v1-completion-2026-10-07/module-import-local-v2-flash-review/raw.log",
+      "report": "tmp/v1-completion-2026-10-07/module-import-local-v2-flash-review/REPORT.md",
+      "report_sha256": "1c55c515715725b236f06e72f31177a161db2c1594a5f2761a0f74a996708201",
+      "disposition": "The bb9-to-f099 diagnostic/seen-node delta passed six independent paired compile cases and two synthetic shared-node experiments. Private diagnostics and accepted Zig remain unchanged. The existing diagnosed marker still mutates in both revisions; the delta adds no further AST mutation. Snapshot differences do not prove live drift after freezing. Initial missing-dependency and observer errors were reviewer setup failures, preserved separately. No broad complexity or native qualification claim."
     }
   ],
   "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",
   "current_compiler_hashes": {
-    "a7/compile.py": "4802d338ecb48e7e1473ef9f117e0e10197ce7aee69dcd274c14905659700f2e",
-    "a7/passes/type_checker.py": "977cd1117051a770fa5b79c77412e458ef31f34bff01812e02b56810c08508ce",
-    "a7/passes/safety.py": "d6d414ec58aa7ab84b40953d2654c0aad819e4110c2e0bbb2acb74ed47ee9aa3",
+    "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
+    "a7/passes/type_checker.py": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
+    "a7/passes/safety.py": "607f1fdecc662a61751efdadd01c5cabc6f7a63559d28358ad9433f8b04a706d",
     "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
   },
-  "updated_at": "2026-10-07T02:19:00.945533+00:00",
-  "current_compiler_hashes_label": "Pushed integration checkpoint 621f70c; later candidate reviews carry separate hashes."
+  "updated_at": "2026-10-07T04:21:14.740865+00:00",
+  "current_compiler_hashes_label": "Integrated stage13 compiler source matching full manifest27c4c26e; later literal-return candidate remains separate.",
+  "failed_followup_invocations": [
+    {
+      "reviewer": "safety_conditional_return_literals",
+      "model": "zai-coding-plan/glm-5.3",
+      "exit_code": 1,
+      "finished_at": "2026-10-07T04:12:29.620531+00:00",
+      "log": "tmp/v1-completion-2026-10-07/safety-conditional-return-literals-glm-review/review.log",
+      "log_sha256": "97e93d697a04ab2489dab0a835202b9125e3b5124dbe09bf9108ca2cc7be8a42",
+      "reason": "Rate limit reached for requests",
+      "disposition": "No verdict or independent semantic probes. Not counted among38 completed reviews. Candidate0d8 remains awaiting external review; no retry started."
+    }
+  ],
+  "earlier_compiler_snapshots": [
+    {
+      "label": "Pushed integration checkpoint 621f70c; later candidate reviews carry separate hashes.",
+      "files": {
+        "a7/compile.py": "4802d338ecb48e7e1473ef9f117e0e10197ce7aee69dcd274c14905659700f2e",
+        "a7/passes/type_checker.py": "977cd1117051a770fa5b79c77412e458ef31f34bff01812e02b56810c08508ce",
+        "a7/passes/safety.py": "d6d414ec58aa7ab84b40953d2654c0aad819e4110c2e0bbb2acb74ed47ee9aa3",
+        "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
+      }
+    }
+  ]
 }

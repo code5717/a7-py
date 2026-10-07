@@ -52,7 +52,7 @@ These findings are recorded with source programs and diagnostics in
 | reference-passing | limited | [language/memory](../public/docs/language/memory.md) | Ordinary lvalues pass to ref parameters; nil proof required for heap refs. |
 | ownership | limited | [language/memory](../public/docs/language/memory.md) | Direct use-after-del checks do not establish full alias or lifetime enforcement. |
 | automatic-memory | planned | [language/memory](../public/docs/language/memory.md) | Automatic memory management is planned and not the current manual new/del model. |
-| file-modules | limited | [language/modules](../public/docs/language/modules.md) | Simple alias calls lower to one combined Zig file; broad cross-module typing remains incomplete. |
+| file-modules | limited | [language/modules](../public/docs/language/modules.md) | Per-file scopes, underscore privacy, qualified types and struct literals emit one combined Zig file. Import aliases stay local; imported generic function values retain checking gaps. |
 | selected-imports | unavailable | [language/modules](../public/docs/language/modules.md) | Resolver metadata is not runnable backend support. |
 | using-import | unavailable | [language/modules](../public/docs/language/modules.md) | Not a supported public executable import workflow. |
 | concurrency | planned | [language/builtins](../public/docs/language/builtins.md) | No implemented public concurrency model. |
@@ -147,7 +147,7 @@ These findings are recorded with source programs and diagnostics in
 | 10.2.1 Module identity and resolution | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 10.2.2 Cycles and entry | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 10.3 Standard Library Status | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
-| 10.4 Visibility Rules (staged intent) | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
+| 10.4 Visibility rules | limited | [language/modules](../public/docs/language/modules.md) | Per-file scopes enforce underscore privacy and keep import aliases local. Local double-underscore names and pub parsing retain their existing behavior. |
 | 11. Built-in Functions and Operators | limited | [language/builtins](../public/docs/language/builtins.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 11.1 Builtin Functions | limited | [language/builtins](../public/docs/language/builtins.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 11.2 Standard Library Functions | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual IO/math functions are current; broader signature catalogue is planned API shape. |

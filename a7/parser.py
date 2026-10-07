@@ -1309,6 +1309,9 @@ class Parser:
                 if self.match(TokenType.IDENTIFIER):
                     type_name_token = self.advance()
                     type_name = type_name_token.value
+                    if self.match(TokenType.DOT):
+                        self.advance()
+                        type_name += "." + self.consume(TokenType.IDENTIFIER, "Expected a qualified type name").value
 
                     # Check for generic parameters: Type(T1, T2, ...)
                     if self.match(TokenType.LEFT_PAREN):
@@ -1591,6 +1594,15 @@ class Parser:
             # Identifiers, cast expressions, or struct literals
             if self.match(TokenType.IDENTIFIER):
                 name = self.advance().value
+                if self.match(TokenType.DOT) and self.peek().type == TokenType.IDENTIFIER:
+                    after = self.position + 2
+                    close = self._close_at.get(after)
+                    literal = self.tokens[after].type == TokenType.LEFT_BRACE or (
+                        self.tokens[after].type == TokenType.LEFT_PAREN and close is not None
+                        and self.tokens[close + 1].type == TokenType.LEFT_BRACE)
+                    if literal and self._should_parse_struct_literal():
+                        self.advance()
+                        name += "." + self.advance().value
 
                 # Check for cast expression: cast(type, expr)
                 if name == "cast" and self.match(TokenType.LEFT_PAREN):
@@ -1999,10 +2011,15 @@ class Parser:
                             self.current(), self.filename
                         )
                     variant_identifier = self.advance()
+                    enum_name = first_identifier.value
+                    if self.match(TokenType.DOT):
+                        self.advance()
+                        enum_name += "." + variant_identifier.value
+                        variant_identifier = self.consume(TokenType.IDENTIFIER, "Expected a qualified variant name")
 
                     return ASTNode(
                         kind=NodeKind.PATTERN_ENUM,
-                        enum_type=first_identifier.value,
+                        enum_type=enum_name,
                         variant=variant_identifier.value,
                         span=create_span_from_token(start_token),
                     )

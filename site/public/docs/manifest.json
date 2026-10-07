@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "93787d8d7a9e0976ab082943e167e397a8c5f94d50844a614797e05711311124"
+    "value": "35d6cf1c93ee0229a2410166c991b1b3403bed89e9970dd2cb8c90779adbf776"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -1110,6 +1110,11 @@
         },
         {
           "level": 2,
+          "id": "imports-stay-local",
+          "text": "Imports stay local"
+        },
+        {
+          "level": 2,
           "id": "status-and-restrictions",
           "text": "Status and restrictions"
         },
@@ -1132,6 +1137,8 @@
         "https://github.com/code5717/a7-py/blob/master/test/test_module_path_identity.py",
         "https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7",
         "https://github.com/code5717/a7-py/blob/master/test/test_module_alias_shadowing.py",
+        "https://github.com/code5717/a7-py/blob/master/test/test_file_module_scopes.py",
+        "https://github.com/code5717/a7-py/blob/master/test/test_module_import_local.py",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md"
       ],
@@ -1343,8 +1350,8 @@
         },
         {
           "level": 2,
-          "id": "active-priorities",
-          "text": "Active priorities"
+          "id": "work-and-verification",
+          "text": "Work and verification"
         },
         {
           "level": 2,
@@ -1368,13 +1375,14 @@
         }
       ],
       "aliases": [
-        "status"
+        "status",
+        "active-priorities"
       ],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/status.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
-        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md",
+        "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md",
         "https://github.com/code5717/a7-py/blob/master/docs/audits/README.md"
       ],
@@ -5905,11 +5913,12 @@
     {
       "id": "file-modules",
       "status": "limited",
-      "qualification": "Simple alias calls lower to one combined Zig file; broad cross-module typing remains incomplete.",
+      "qualification": "Per-file scopes, underscore privacy, qualified types and struct literals emit one combined Zig file. Import aliases stay local; imported generic function values retain checking gaps.",
       "topic": "language/modules",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
-        "https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py"
+        "https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py",
+        "https://github.com/code5717/a7-py/blob/master/test/test_module_import_local.py"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/modules/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
@@ -6017,13 +6026,13 @@
     {
       "id": "spec-10-4-visibility-rules-staged-intent",
       "status": "limited",
-      "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
+      "qualification": "Per-file scopes enforce underscore privacy and keep import aliases local. Local double-underscore names and pub parsing retain their existing behavior.",
       "topic": "language/modules",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
-      "title": "10.4 Visibility Rules (staged intent)",
+      "title": "10.4 Visibility rules",
       "documentationUrl": "https://code5717.github.io/a7-py/language/modules/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
     },

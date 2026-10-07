@@ -5,12 +5,29 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
-The traversal changes below passed the frozen integration's compiler and native
-checks. Missing Git metadata caused its secrets check to fail; that check and
-all skipped release checks passed after metadata recovery on unchanged sources.
-See [architecture](ARCHITECTURE.md)
-for source versions and evidence. This does not qualify full V1.
+The combined stage13 source passed the full release gate with 3,756 tests and
+one expected failure. All 51 examples passed in every profile. See
+[Status](STATUS.md) for source identity, other checks and remaining gaps.
+This does not qualify full V1.
 
+- L76 keeps import aliases local to their declaring file. Parsed forwarding
+  rejects with semantic exit 6 and a direct-import example. Unsupported multi-dot
+  type annotations and struct literals retain parse exit 5.
+- Local generic declaration aliases that are never reassigned, passed by
+  reference or captured by another function retain
+  concrete body obligations. Other callable origins remain incomplete; general
+  runtime generic dispatch is not implemented.
+
+- File modules now use separate semantic scopes, name-based top-level privacy
+  and distinct nominal identities. Qualified types, struct literals, constant
+  array lengths and generic bodies keep their defining file's bindings.
+  Semantic reports retain file and lexical owners. Imported constant writes
+  name the qualified constant in the diagnostic.
+- Known direct global reference stores propagate allocation identity through
+  calls. Deletion invalidates represented caller aliases while live replacements
+  remain usable. Equivalent positive increments on alternative loop paths can
+  prove one trip without weakening post-loop deletion checks. Global nil-state
+  and parameter proof gaps remain open.
 - The docs-site lockfile uses source-map-js 1.2.2, fixing the upstream indexed
   source-map denial-of-service advisory GHSA-68fv-2mgg-jv7q.
 
@@ -21,7 +38,7 @@ for source versions and evidence. This does not qualify full V1.
 - File imports resolve relative to the importing file. Parent paths work within
   the entry directory; paths and symlinks that escape it remain rejected.
   Canonical file identity unifies alternate spellings for caches and cycles.
-  Separate per-module semantic scopes remain unfinished.
+  Per-module semantic scopes now precede whole-program identity lowering.
 - Local bindings that reuse their own file's import aliases now fail with
   semantic exit 6 under L28. Parameters, loop bindings and match captures follow
   the same rule; field names and another file's aliases remain independent.

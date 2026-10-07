@@ -130,10 +130,14 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   shifts; recursion ban over function values; control flow leaving a
   `defer`; zero-initialization; `release` as ReleaseSafe plus `fast`;
   stdout flushing. The October 7 L74 repair rejects SAF-2, SAF-8 and direct
-  reference alias misuse while preserving the approved controls. Open:
+  reference alias misuse while preserving the approved controls. Later candidates
+  cover loop-head field deletion, returning cleanup, compact allocation origins,
+  direct global reference stores and equivalent positive one-trip increments.
+  Stage13 passed its full release gate. Trials `68f` and `f521` are excluded; the
+  latter rejects a confirmed valid false-branch control. Open:
   reference aliases through array elements, selected/base store synchronization
-  and joined-holder nil-write invalidation; callee effects outside bounded exact
-  replay, including loop-head field-argument deletion; the
+  and joined-holder nil-write invalidation; global nil-state and parameter proof
+  gaps; callee effects outside bounded analysis; the
   type-based imprecision of the recursion rule, function-pointer
   locals without an initializer, a `main` exit status. Ordinary heap-scalar
   reads and printing need the proposed
@@ -141,8 +145,24 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
 - R5 Language core (L61, L62, L69). PARTIAL: the October 4 repair checkpoint
   includes statement/list parsing, type registration, `nil`, mutability,
   exact constants, inline-`$T` codegen and CLI/diagnostic repairs. Per-module
-  scopes remain queued under L69. Importer-local alias clashes now reject under
-  L28; focused and native controls and the integration gate pass. The remaining
+  scopes, visibility, qualified values/types and report ownership now have a
+  combined candidate under L69. The stage9 module control passes in
+  all profiles. Stage10's full compiler gate failed only the obsolete `__`
+  fixture: 3,689 passed, one failed and one expected failure remained; outer
+  checks did not run. The fixture correction was independently reviewed. Stage12
+  passed 3,305 nonnative tests. Stage13 passed 3,337 nonnative tests and targeted
+  native collision, direct-import/public-wrapper and immutable-alias controls.
+  Full manifest `27c4c26e` then passed 3,756 tests with one expected failure,
+  all 11 compiler/package checks, site checks and dependency/security checks.
+  All 1,599 frozen file hashes and modes remained unchanged. L76 core and
+  diagnostic-delta external reviews found no scoped blocker.
+  L76 rejects parsed import forwarding at semantic
+  exit 6 while unsupported multi-dot type/literal forms retain parse exit 5.
+  Local aliases retain obligations when their same-file copy chain is never
+  reassigned, passed by reference or captured by another function;
+  imported/global/parameter/mutable/selected/captured origins remain incomplete.
+  General runtime generic dispatch remains absent. Importer-local
+  alias clashes continue to reject under L28. The remaining
   strict expected failure and
   audit findings prevent declaring the language core complete.
 - R6 Docs, site and records. PARTIAL: README rewritten; tensor proposals moved
@@ -229,8 +249,8 @@ needs evidence at the final identified source state before publication.
 
 | Requirement | Current disposition | Required evidence |
 | --- | --- | --- |
-| Compiler correctness and iterative traversal | Iterative traversal landed with an empty recursion exception list; correctness gaps and one expected failure remain | Close critical/high findings, execute accepted forms, reject invalid forms and preserve deep inputs at recursion limit 100 |
-| Modules and language contracts | L69 approved; per-module work remains. L76 approves file-local imports; rejection of forwarded import aliases is pending | Qualified names, visibility, identity, cycles, diagnostics, direct-import and public-wrapper controls |
+| Compiler correctness and iterative traversal | Iterative paths landed; expected failure and critical correctness findings remain | Keep scanner lists empty; close critical/high findings and run deep inputs at recursion limit 100. Dynamic external Python callbacks remain outside the traversal guarantee |
+| Modules and language contracts | L69 scopes and L76 local-import rule implemented; stage13 full gate passed, broader gaps remain | Qualified names, visibility, identity, cycles, diagnostics and approved compatibility probes |
 | Automatic memory and collections | Arena/RC comparison approved; mechanism unselected | Shared identity, explicit copies, cycles, bounded retention and exactly-once cleanup; each workload meets L38 |
 | Stdlib and checked native integration | L68 architecture/options approved; delivery incomplete | Installed-package examples and real I/O, parsing, allocation and native failure recovery |
 | Structured concurrency | Required by L73; design unresolved | Task/channel state machines, races, cancellation, blocked-worker wakeup and shutdown cleanup |
@@ -372,6 +392,19 @@ copy, text and cyclic workloads before promotion. The current harness's host-pin
 ratio and timing-only measurements do not satisfy L38's per-workload C runtime
 and peak-live-memory limits. Equivalent C baselines and actual release/retention
 instrumentation remain required before the arena/RC comparison can qualify.
+
+The later copy/text/ID-cycle proxy runs passed reduced checks and retained work
+in optimized disassembly. Allocation/failure controls passed 234 checks, but
+integer-ID cycles and buffer scans do not establish actual reference-cycle or
+retained-text behavior. The standalone foundation then passed 133 Debug checks
+with LLVM/LLD and C-O0 through one allocation shim. It covers small explicit-root
+shared and returned fixtures with failure cleanup. It is not full W1/W4 or
+seven-workload qualification. Preserve those sources and failed linker evidence.
+Next, independently review typed RC/domain lifetimes and complete per-phase
+metadata/retention accounting before extending the actual workload shapes.
+Maintain five warmups and thirty measured samples per workload when measurement
+is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,
+must remain at most 1.10 against equivalent reviewed C under L38.
 
 Pair unsafe programs with valid guarded controls. Exercise actual diagnostics,
 artifacts, execution and recovery. Compare constants and runtime boundary values

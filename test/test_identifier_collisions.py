@@ -3,10 +3,11 @@
 Zig rejects a declaration named like a primitive type (`u1`, `f16`, `void`)
 unless it is quoted, and a local named like a file-scope declaration. The
 generated preamble declares `std`, `allocator`, `panic` and `main` at file
-scope and owns the `__a7_` prefix; a user name that matches is renamed.
+scope and owns the `__a7_` prefix; matching local user names are renamed.
+Top-level `__` names are reserved under L27/L69.
 """
 
-from conftest import run_both_profiles
+from conftest import run_both_profiles, expect_ok, expect_exit
 
 
 def test_locals_named_like_zig_primitive_types(tmp_path, zig):
@@ -84,9 +85,35 @@ main :: fn() {
 """, tmp_path, zig) == "1 41 2 5\n"
 
 
-def test_user_names_with_the_generator_prefix(tmp_path, zig):
-    # `__a7_match_1` is the name the backend gives the first match scrutinee.
+def test_local_names_with_the_generator_prefix(tmp_path, zig):
+    # Local `__` names remain legal; top-level ones are reserved under L27/L69.
+    # The nested helper consumes suffix 1; this match uses `__a7_match_2`.
     assert run_both_profiles("""
+io :: import "std/io"
+main :: fn() {
+    __a7_stdout_print :: fn(n: i32) i32 { ret n + 1 }
+    __a7_io := 9
+    __a7_match_2 := 3
+    match __a7_match_2 {
+        case seen: { io.println("{}", seen) }
+    }
+    io.println("{} {}", __a7_io, __a7_stdout_print(1))
+}
+""", tmp_path, zig) == "3\n9 2\n"
+
+
+def test_local_generator_prefix_bindings_remain_accepted(tmp_path):
+    expect_ok("""
+main :: fn() {
+    __a7_local :: fn(__a7_arg: i32) i32 { ret __a7_arg + 1 }
+    __a7_match_1 := 3
+    __a7_result := __a7_local(__a7_match_1)
+}
+""", tmp_path)
+
+
+def test_top_level_generator_prefix_is_reserved(tmp_path):
+    expect_exit("""
 io :: import "std/io"
 __a7_stdout_print :: fn(n: i32) i32 { ret n + 1 }
 main :: fn() {
@@ -97,4 +124,4 @@ main :: fn() {
     }
     io.println("{} {}", __a7_io, __a7_stdout_print(1))
 }
-""", tmp_path, zig) == "3\n9 2\n"
+""", tmp_path, 6, "Top-level name '__a7_stdout_print' is reserved for the compiler")

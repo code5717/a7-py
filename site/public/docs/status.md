@@ -22,7 +22,7 @@ is the current implementation authority.
 | Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
 | References and explicit allocation | limited | Nil guards, tracked field deletion and direct alias deletion checks exist; complete lifetime guarantees remain unavailable. |
 | Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |
-| File modules | limited | Simple aliased imports emit one combined Zig file. |
+| File modules | limited | Separate file scopes, qualified declarations and underscore privacy emit one combined Zig file; import aliases stay local. |
 | Fixed arrays and slices | limited | Bounds checking exists; heap fixed-array allocation is rejected. |
 | `std/io` and `std/math` | limited | Registered calls only; see exact signatures and restrictions. |
 | Source recursion | unavailable | Rejected by semantic validation; use iterative algorithms. |
@@ -31,27 +31,22 @@ Constant floating remainder follows the runtime truncation rule, including the
 dividend sign and negative zero. Diagnostics retain imported module locations.
 Output paths cannot overwrite input modules; artifact reports exclude stale files.
 
-## Active priorities
+## Work and verification
 
-- Keep current counts script-derived with `uv run python scripts/project_status.py`.
-- Complete practical multi-file support while retaining one combined Zig output.
-- Resolve numeric decisions before changing arithmetic or casts.
-- Split safety internals into control-flow, facts, obligations, proof discharge, and backend planning.
-- Complete generic specialization and call-chain propagation.
-- Maintain installed `a7 check`, `a7 build`, `a7 run`, `a7 doctor`, and `a7 --version` checks. Wheel and source-distribution workflows pass on Linux x86-64.
-- Convert remaining recursive compiler internals to explicit stacks and worklists.
-
-The source recursion ban and the compiler-internals conversion are separate
-requirements. Neither makes the other complete.
+The [repository status](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
+and [delivery roadmap](https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md)
+hold the current work list. Compiler AST traversals use explicit worklists;
+the recursion exception list is empty. Deep pipeline tests run at Python
+recursion limit 100. A7 source recursion remains a separate rejected construct.
 
 ## Known gaps
 
 - Safety remains incomplete for aliases through array elements and selected
   fields, loop field-argument deletion and unsupported callee effects. A bounded
-  exact-callee repair passes focused controls for field replacement/deletion and
-  nested global effects; combined-source qualification remains pending.
-- Type operations and several AST walks use explicit stacks. Full compiler
-  traversal still needs conversion.
+  exact-callee repair covers represented field replacement/deletion paths.
+  Direct global reference stores now propagate allocation identity. Global nil
+  state and callee non-nil requirements remain incomplete; these checks do not
+  establish full lifetime safety.
 
 - A labeled loop whose label is never targeted no longer emits a label: the
   fix landed with commit `ed0baff`, and the never-targeted case is pinned in
@@ -63,11 +58,11 @@ requirements. Neither makes the other complete.
 
 | Topic | Current restriction | Reference |
 | --- | --- | --- |
-| Modules | Selected imports, `using import`, module-qualified struct literals and complete per-file scopes remain incomplete. Bare entry-file calls to module functions reject with the qualified spelling. | [Modules](/a7-py/docs/language/modules.md) |
+| Modules | Selected imports and `using import` remain unavailable. File scopes and qualified struct literals work. Parsed import forwarding rejects with exit 6; unsupported multi-dot type/literal syntax keeps parser exit 5. | [Modules](/a7-py/docs/language/modules.md) |
 | Numeric operations | Integer addition, subtraction and multiplication wrap. Runtime shifts are checked; signed minimum-value division, negation and absolute value wrap. | [Operators](/a7-py/docs/language/operators.md) |
 | Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
-| Generics | Concrete local initializers and bound callback aliases/assignments/branches are checked. Field/array callback provenance and arbitrary specialization propagation remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
+| Generics | Concrete initializers, nested array arms and qualifying immutable local aliases are checked. Imported, module-global, parameter, mutable, selected and captured generic origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
 | Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | No `Option`, `Result`, collections, or full memory/string library. | [Standard library](/a7-py/docs/stdlib.md) |
 

@@ -109,14 +109,21 @@ acyclic factory chain. Compact allocation graphs now retain 196 nodes for the
 depth-64 reproducer. Independent comparison of 16 programs preserves exits,
 diagnostics and generated Zig; 159 integrated focused tests pass. The depth-64
 valid control runs in all three profiles. GLM review matched 68 paired programs
-and reproduced the resource counts. The frozen integration run passed 3,602 tests
+and reproduced the resource counts. The published `1857e03` integration run passed 3,602 tests
 with one expected failure, 51 examples in each build profile, and native package
 installation. Its secrets check failed because the snapshot lacked Git metadata.
 After metadata recovery, that check and all skipped release checks passed on
-unchanged sources. Global-reference stores still lose alias identity across calls,
-so deleting the global can leave a stale caller alias accepted. That repair is
-in progress. A preexisting valid one-trip loop with separate but
-equivalent branch increments is still rejected. See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
+unchanged sources. The later integration candidate propagates direct global
+reference stores and deletion effects across known calls. It preserves captured
+arguments, saved old globals and distinct live replacements. Its one-trip proof
+also accepts separate positive increments on alternative paths when every
+backedge crosses the bound without wrapping. Post-loop deletion checks remain.
+Global nil-state summaries and parameter proof obligations remain incomplete;
+the unsafe nullability/branch-precision trial `68f` is excluded. Nil-origin
+trial `f521` is also excluded after a confirmed valid false-branch control
+regressed. Conditional origin relations and callee preconditions remain open.
+The integrated stage13 source retains safety `607` and passed its full release
+gate. See the [container-identity proposal](plan/packets/P-REF-container-identities.md)
 for the separate array/slice/selected-value decision boundary.
 The October 4 runtime-contract
 repair defines signed minimum-value arithmetic and checks runtime shift counts;
@@ -130,7 +137,7 @@ and `test/test_safety_stale_facts.py`.
 ## Active implementation priorities
 
 1. Keep status and release facts script-derived, not hard-coded.
-2. Add practical multi-file A7 support that always emits one combined Zig file.
+2. Qualify per-file module scopes and reporting in the combined release gate.
 3. Resolve the numeric gates in [the v1 plan](plan/README.md) before changing
    arithmetic or casts. Decisions L3 and L4 retain explicit-width integers and
    reject `int`, `uint`, and `number`.
@@ -140,9 +147,11 @@ and `test/test_safety_stale_facts.py`.
 6. Maintain installed-distribution checks for `a7 check`, `a7 build`, `a7 run`,
    `a7 doctor` and `a7 --version`. Wheel and source-distribution workflows pass
    on the current Linux x86-64 target.
-7. Finish iterative compiler traversal. Module loading, type display, console
-   labels and type-checker statements now use explicit stacks. The full pipeline
-   still contains recursion. See the [delivery roadmap](plan/delivery-roadmap.md).
+7. Keep both recursion scans empty and extend deep pipeline checks for new
+   compiler paths. All currently scanned recursive groups, deepcopy calls and
+   generated-method cycles are removed. Dynamic external Python callbacks remain
+   outside the structural traversal guarantee. See the
+   [delivery roadmap](plan/delivery-roadmap.md).
 
 ## Known Gaps
 
@@ -159,7 +168,7 @@ and `test/test_safety_stale_facts.py`.
   expressions and types; checker statements,
   expressions and type resolution; backend statements, expressions and types;
   and AST structural comparison/display now use explicit worklists. These
-  candidates are newer than the qualified integration checkpoint. The frozen
+  paths are included in the qualified integration checkpoint. The earlier frozen
   expression snapshot passed 3,082 nonnative tests. Parser review matched 111
   independent cases; backend debug and release each passed all 51 examples.
   Expression GLM reviews passed within their assigned scopes. Safety traversal
@@ -183,17 +192,40 @@ and `test/test_safety_stale_facts.py`.
   follow-up](audits/2026-09-20-core-v1/backend-glm-followup.md) preserves the
   original reproducers.
 
-- File-backed imports target one combined Zig output file. Selected imports,
-  `using import`, and module-qualified struct literals remain follow-up work.
-  A bare entry-file call to a module function is rejected with exit 6, naming
-  the qualified spelling. L28 now rejects local bindings that reuse their own
-  file's import aliases, including parameters, loop bindings and match captures.
-  Focused checks, native dispatch controls and the integration gate pass.
-  This does not establish per-module namespace isolation or private-name checks.
-- L76 now requires import aliases to stay local to their declaring file.
-  Rejecting `a.b.value()` when `b` is an import of `a` is approved and pending
-  implementation. Direct imports and ordinary public wrappers must remain
-  accepted. See the [decision packet](plan/packets/P-MOD-import-forwarding.md).
+- File-backed imports now have separate semantic scopes, private top-level names
+  and distinct nominal type identities. Qualified types, struct literals,
+  constant array lengths and generic bodies resolve in their defining files.
+  Reports retain file and lexical owners. One combined Zig output preserves
+  existing module and declaration order. L28 still rejects local bindings that
+  reuse their own file's aliases; fields remain independent. Selected imports,
+  `using import` and hardlink identity remain open. L76 keeps import aliases local
+  to their declaring file. Parsed forwarding rejects with semantic exit 6 and
+  direct-import guidance; ordinary public wrappers and struct fields remain
+  valid. Unsupported multi-dot type annotations and literals retain parse exit
+  5. The [approved packet](plan/packets/P-MOD-import-forwarding.md) records this
+  boundary.
+  Stage10's full compiler gate exited 1: 3,689 tests passed, one obsolete `__`
+  fixture failed and one expected failure remained. The other ten compiler
+  checks and all 51 examples in every profile passed; outer release checks did
+  not run. The corrected fixture received independent review. Stage12 passed
+  3,305 nonnative tests. Stage13 combines modules, constant diagnostics, global
+  aliases, equivalent loop increments, immutable generic aliases, the symbol-kind
+  guard and L76 v2. Manifest `c37e0c08` passed 3,337 nonnative tests in 51.26
+  seconds. Two targeted native tests passed: corrected local-name collisions in
+  debug/fast and direct imports/public wrappers in all three profiles. The
+  combined immutable-alias control built and produced its expected output in
+  all three profiles. Full manifest `27c4c26e` then passed the complete release
+  gate: 3,756 tests with one expected failure, all 11 compiler/package checks,
+  51 examples in every profile, site checks and dependency/security checks.
+  All 1,599 frozen file hashes and modes remained unchanged. L76 core and
+  diagnostic-delta external reviews found no scoped blocker. Rendered browser
+  checks could not run because no browser connection was available. These
+  results do not qualify full V1.
+- Local aliases of same-file generic declarations that are never reassigned,
+  passed by reference or captured by another function now
+  preserve concrete body obligations. Imported, module-global, parameter, mutable,
+  selected and captured origins remain incomplete. General runtime generic
+  dispatch is not implemented.
 - An entry file must define `main :: fn()`; a file without one exits 6 at the
   Entry Point stage. Imported modules are exempt. `a7 check --lib` checks a
   library file without an entry point; `build` and `run` still require one.
@@ -237,12 +269,13 @@ and `test/test_safety_stale_facts.py`.
   A further candidate fits literal arms to a concrete typed array arm. Its
   244 focused tests, 13 independent source cases and debug/fast execution of
   both branches pass. GLM review matched 79 independent compile-only programs
-  without an introduced regression. Calls through local, global and aggregate
-  generic-function aliases can still bypass body obligations. A local flow
-  trial remains excluded because it loses branch correlations. Native probes
-  confirm an immutable generic alias runs, while mutable, runtime-selected and
-  array-stored generic declarations fail during Zig compilation. Their runtime
-  representation remains an unresolved design choice.
+  without an introduced regression. The bounded immutable local-alias repair
+  preserves obligations for same-file aliases whose copy chain is never
+  reassigned, passed by reference or captured by another function.
+  Imported, module-global, parameter, mutable, selected, captured and aggregate
+  origins remain incomplete. The earlier local-flow trial stays excluded because
+  it loses branch correlations. No general runtime generic representation is
+  implemented.
   An unresolved generic element destination such as
   `[2]$T` still fails before instantiation; a separate repair must preserve
   obligations through callable aliases. General call-chain propagation of
@@ -360,6 +393,14 @@ mechanism is selected. The Python compiler remains the bootstrap implementation;
 Zig handles generated code and runtime/native integration. L73 also requires
 structured concurrency, CPU AI, actual GPU execution and self-hosting parity.
 These requirements remain unqualified. A package registry stays outside scope.
+
+Small standalone arena/RC foundation fixtures passed 133 Debug checks using
+LLVM/LLD and a shared C-O0 allocation shim. They cover explicit-root aliasing,
+returned values and injected backing-allocation failure. They do not qualify
+the seven required workload shapes, automatic A7 lowering or L38. Runtime
+category budgets are not measured stack bounds; full metadata and retention
+accounting remain open. The [roadmap](plan/delivery-roadmap.md) owns the next
+experiment steps.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence

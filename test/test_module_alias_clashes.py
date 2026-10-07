@@ -72,14 +72,15 @@ def test_same_import_alias_in_distinct_files_remains_valid(tmp_path):
 
 
 def test_imported_match_capture_reusing_own_alias_is_rejected(tmp_path):
-    # The flat merge drops this import before name resolution, which currently
-    # classifies the bare pattern as a capture. L28 rejects that local binding.
+    # The own-file alias is visible under L69. It is a reference, not a
+    # capture; a namespace cannot serve as an integer value pattern.
     code, output = compile_source(tmp_path, 'part :: import "part"\nmain :: fn() {}\n', {
         "helper": 'answer :: 1\n',
         "part": 'h :: import "helper"\nother :: fn() { match 1 { case h: {} } }\n',
     })
     assert code == 6, output
-    assert "Local 'h' conflicts" in output
+    assert "module namespace" in output
+    assert "conflicts with this file's import alias" not in output
     assert str(tmp_path / "part.a7") in output
 
 
@@ -88,7 +89,8 @@ def test_identifier_comparison_is_not_reported_as_alias_capture(tmp_path):
     # this identifier as a capture. Any invalid-pattern error belongs to the
     # existing semantic checks, not the L28 binding diagnostic.
     code, output = compile_source(tmp_path, 'h :: import "helper"\nmain :: fn() { match 1 { case h: {} } }\n')
-    assert code == 0, output
+    assert code == 6, output
+    assert "module namespace" in output
     assert "conflicts with this file's import alias" not in output
 
 

@@ -355,10 +355,10 @@ class ParameterEffectState:
     deleted: set[int | AllocationRef] = field(default_factory=set)
     written: set[str] = field(default_factory=set)
     places: dict[str, Optional[frozenset[int | AllocationRef]]] = field(default_factory=dict)
-    visited: set[int] = field(default_factory=set)
+    counter_delta: Optional[tuple[int, int]] = (0, 0)
 
     def copy(self) -> ParameterEffectState:
-        return ParameterEffectState(dict(self.aliases), set(self.deleted), set(self.written), dict(self.places), set(self.visited))
+        return ParameterEffectState(dict(self.aliases), set(self.deleted), set(self.written), dict(self.places), self.counter_delta)
 
     @staticmethod
     def join(states: list[ParameterEffectState]) -> ParameterEffectState:
@@ -366,7 +366,11 @@ class ParameterEffectState:
                                            for state in states))
                    for key in set().union(*(state.aliases.keys() for state in states))}
         result = ParameterEffectState(aliases)
-        result.visited = set.intersection(*(state.visited for state in states)) if states else set()
+        if any(state.counter_delta is None for state in states):
+            result.counter_delta = None
+        elif states:
+            result.counter_delta = (min(state.counter_delta[0] for state in states),
+                                    max(state.counter_delta[1] for state in states))
         for state in states:
             result.deleted.update(state.deleted)
             result.written.update(state.written)
@@ -403,6 +407,10 @@ class SafetyProofPass:
         self.allocation_place_names = {}
         self.global_origins: dict[int, str] = {}
         self.function_returns = {}
+        self.function_global_effects = {}
+        # True only when ordered origins describe every deletion in the body.
+        self.function_direct_deletes = {}
+        self.reference_globals = set()
         self.function_written_globals: dict[str, set[str]] = {}
         self.function_field_stores: dict[str, dict[tuple[int, str], frozenset[tuple[int | AllocationRef, bool]]]] = {}
         self.function_deleted_globals: dict[str, set[str]] = {}
@@ -732,6 +740,8 @@ class SafetyProofPass:
         self.global_origins = {-5 - 2 * id(declaration): self._key(declaration)
                                for declaration in node.declarations or []
                                if declaration.kind == NodeKind.VAR and declaration.name}
+        self.reference_globals = {self._key(d) for d in node.declarations or []
+                                  if d.kind == NodeKind.VAR and isinstance(self._type(d), ReferenceType)}
         bodies = {}
         declarations = list(node.declarations or [])
         while declarations:
@@ -747,6 +757,8 @@ class SafetyProofPass:
         self.function_parameter_deletes = {name: set() for name in bodies}
         self.function_field_stores = {name: {} for name in bodies}
         self.function_returns = {name: (frozenset(), frozenset()) for name in bodies}
+        self.function_global_effects = {name: ({}, frozenset(), frozenset()) for name in bodies}
+        self.function_direct_deletes = {name: True for name in bodies}
         self.function_written_globals = {name: set() for name in bodies}
         calls: dict[str, set[str]] = {}
         self.borrowed_keys = set()
@@ -765,6 +777,8 @@ class SafetyProofPass:
                     if key in self.file_variables:
                         self.function_written_globals[name].add(key)
                 if item.kind == NodeKind.DEL:
+                    if item.expression is None or item.expression.kind != NodeKind.IDENTIFIER:
+                        self.function_direct_deletes[name] = False
                     deleted_key = self._place_key(item.expression)
                     if deleted_key and deleted_key.split(".")[0] in self.file_variables:
                         deleted_globals.add(deleted_key)
@@ -778,6 +792,7 @@ class SafetyProofPass:
                         callees.add(self._key(callee))
                     else:
                         deletes = True
+                        self.function_direct_deletes[name] = False
                 for value in vars(item).values():
                     if isinstance(value, ASTNode):
                         stack.append(value)
@@ -786,11 +801,19 @@ class SafetyProofPass:
             self.function_deleted_globals[name] = deleted_globals
             self.function_deletes[name] = deletes
             calls[name] = callees
+        own_direct_deletes = dict(self.function_direct_deletes)
         changed = True
         while changed:
             changed = False
             for name, callees in calls.items():
-                writes, parameter_deletes, stores, returns = self._parameter_effect_summary(bodies[name])
+                direct_before = self.function_direct_deletes[name]
+                self.function_direct_deletes[name] = own_direct_deletes[name] and all(
+                    self.function_direct_deletes.get(c, False) for c in callees)
+                writes, parameter_deletes, stores, returns, global_effects = self._parameter_effect_summary(bodies[name])
+                changed |= direct_before != self.function_direct_deletes[name]
+                if global_effects != self.function_global_effects[name]:
+                    self.function_global_effects[name] = global_effects
+                    changed = True
                 if returns != self.function_returns[name]:
                     self.function_returns[name] = returns
                     changed = True
@@ -956,7 +979,8 @@ class SafetyProofPass:
                                         if (path and name == target) or name.startswith(target + ".")})
         function_type = self._type(node.function)
         reference_parameter = isinstance(function_type, FunctionType) and index < len(function_type.param_types) and isinstance(function_type.param_types[index], ReferenceType)
-        if isinstance(self._type(arg), ReferenceType) and reference_parameter and self._calls_deleting_function(node):
+        direct = callee and callee.kind == NodeKind.IDENTIFIER and self.function_direct_deletes.get(self._key(callee), False)
+        if isinstance(self._type(arg), ReferenceType) and reference_parameter and self._calls_deleting_function(node) and not direct:
             self._move_allocations(fact.allocations)
             if key and self.facts.symbol(key).allocations == fact.allocations:
                 self.moved_symbols.add(key)
@@ -1179,6 +1203,10 @@ class SafetyProofPass:
         # deletion reaches. Branches join origins; loops iterate a finite set
         # of parameter indices, not increasingly long access paths.
         field_places = aliases is not None
+        condition = function.condition if field_places else None
+        counter = (self._key(condition.left) if condition and condition.kind == NodeKind.BINARY
+                   and condition.operator in {BinaryOp.LT, BinaryOp.LE}
+                   and condition.left.kind == NodeKind.IDENTIFIER else None)
         if aliases is None:
             aliases = {self._key(param): frozenset({(index, True)})
                        for index, param in enumerate(function.parameters or [])}
@@ -1228,6 +1256,9 @@ class SafetyProofPass:
             if action == "loop_condition":
                 context = state
                 if live:
+                    if field_places and node is function:
+                        # Measure one body-to-backedge path, not accumulated trips.
+                        flow.counter_delta = (0, 0)
                     condition = node.condition
                     literal = condition.literal_value if condition and condition.kind == NodeKind.LITERAL and condition.literal_kind == LiteralKind.BOOLEAN else None
                     if literal is not True:
@@ -1251,6 +1282,10 @@ class SafetyProofPass:
             if action == "loop_back":
                 context = state
                 if live:
+                    if field_places and node is not function and flow.counter_delta != context["entry"].counter_delta:
+                        # Repeated inner writes cannot bound this outer trip.
+                        # An outer defer on a labeled exit never reaches here.
+                        flow.counter_delta = None
                     context["back"].append(flow.copy())
                 head = ParameterEffectState.join([context["entry"], *context["back"]])
                 if head != context["head"]:
@@ -1274,8 +1309,7 @@ class SafetyProofPass:
             if action == "bind":
                 if live:
                     key, value = state
-                    flow.aliases[key] = (unknown_origins if not field_places and key in self.global_origins.values()
-                                         else self._parameter_origins(value, flow.aliases, field_places=field_places, unknown_origins=unknown_origins))
+                    flow.aliases[key] = self._parameter_origins(value, flow.aliases, field_places=field_places, unknown_origins=unknown_origins)
                 continue
             if action == "store":
                 if live:
@@ -1321,19 +1355,27 @@ class SafetyProofPass:
                                 flow.written.add(key)
                             if may_delete and is_ref and reference_parameter:
                                 flow.places[key] = None
+                # Actuals have already run. Global tokens denote these entry
+                # values even when the callee later replaces their slots.
+                entry_globals = dict(flow.aliases)
+                global_stores, global_deleted, _ = self.function_global_effects.get(name, ({}, frozenset(), frozenset()))
                 for key in self.function_written_globals.get(name, self.file_variables):
                     if key in flow.aliases:
                         flow.aliases[key] = unknown_origins
                 return_origins, dead_returns = self.function_returns.get(name, (frozenset({(-1, True)}), frozenset()))
                 translated_returns = set()
-                for dead_group, group in [(False, return_origins), (True, ((origin, True) for origin in dead_returns))]:
+                translated_globals = {}
+                groups = [(None, return_origins), (False, ((origin, True) for origin in dead_returns | global_deleted))]
+                groups.extend((key, origins) for key, origins in global_stores.items())
+                for destination, group in groups:
+                    translated = set()
                     for origin, exact in group:
                         if not exact or origin == -1:
                             values = unknown_origins
                         elif isinstance(origin, int) and origin >= 0 and origin < len(captured):
                             values = captured[origin][0]
                         elif origin in self.global_origins:
-                            values = flow.aliases.get(self.global_origins[origin], unknown_origins)
+                            values = entry_globals.get(self.global_origins[origin], unknown_origins)
                         elif isinstance(origin, AllocationRef):
                             if field_places:
                                 values = frozenset()
@@ -1342,10 +1384,15 @@ class SafetyProofPass:
                                 values = frozenset({(invocation, True)})
                         else:
                             values = unknown_origins
-                        if dead_group:
+                        if destination is False:
                             flow.deleted.update(value for value, direct in values if direct)
                         else:
-                            translated_returns.update(values)
+                            translated.update(values)
+                    if destination is None:
+                        translated_returns.update(translated)
+                    elif destination is not False:
+                        translated_globals[destination] = self._origin_set(translated)
+                flow.aliases.update(translated_globals)
                 flow.aliases[f"@call:{id(node)}"] = self._origin_set(translated_returns)
                 for index in self.function_parameter_deletes.get(name, set()):
                     if index < len(captured):
@@ -1363,7 +1410,7 @@ class SafetyProofPass:
                                 invocation = AllocationRef(self.allocation_graph.prefix(("call", id(node)), origin.root))
                                 translated.add((invocation, exact))
                             elif origin in self.global_origins:
-                                translated.update(flow.aliases.get(self.global_origins[origin], unknown_origins))
+                                translated.update(entry_globals.get(self.global_origins[origin], unknown_origins))
                         targets = []
                         if field_places and key:
                             prefixes = [key]
@@ -1512,10 +1559,20 @@ class SafetyProofPass:
             elif node.kind == NodeKind.ASSIGNMENT:
                 targets.append((node.target, ""))
                 if field_places:
-                    flow.visited.add(id(node))
                     key = self._place_key(node.target)
                     if key:
                         flow.written.add(key)
+                    if counter is not None and key == counter:
+                        if (flow.counter_delta is not None
+                                and node.operator == AssignOp.ADD_ASSIGN
+                                and node.target.kind == NodeKind.IDENTIFIER
+                                and node.value.kind == NodeKind.LITERAL
+                                and node.value.literal_kind == LiteralKind.INTEGER
+                                and node.value.literal_value > 0):
+                            step = node.value.literal_value
+                            flow.counter_delta = (flow.counter_delta[0] + step, flow.counter_delta[1] + step)
+                        else:
+                            flow.counter_delta = None
                 if node.target and node.target.kind == NodeKind.IDENTIFIER and not getattr(node, "implicit_deref_target", False):
                     work.append(("bind", node, (self._key(node.target), node.value)))
                 elif field_places and node.target and node.target.kind == NodeKind.FIELD_ACCESS:
@@ -1527,8 +1584,10 @@ class SafetyProofPass:
                     work.append(("bind", node, (self._key(node), node.value)))
             for target in deletion_targets:
                 # A descendant origin does not mean the parameter itself dies.
-                flow.deleted.update(index for index, exact in self._parameter_origins(
-                    target, flow.aliases, field_places=field_places, unknown_origins=unknown_origins) if exact)
+                origins = self._parameter_origins(target, flow.aliases, field_places=field_places, unknown_origins=unknown_origins)
+                if not field_places and any(not exact or origin == -1 for origin, exact in origins):
+                    self.function_direct_deletes[self._key(function)] = False
+                flow.deleted.update(index for index, exact in origins if exact)
             for target, suffix in targets:
                 stored_value = node.value if node.kind == NodeKind.ASSIGNMENT else None
                 fields = []
@@ -1563,7 +1622,15 @@ class SafetyProofPass:
             return_origins = frozenset({(-1, True)})
         dead_returns = frozenset().union(*(dead for _, dead in returned))
         dead_returns = self._origin_intersection(dead_returns, dead_returns)
-        return writes, {index for index in deleted if isinstance(index, int) and index >= 0}, stores, (return_origins, dead_returns)
+        global_stores = {key: self._origin_set(frozenset().union(*(branch.aliases.get(key, frozenset()) for branch in exits)))
+                         for key in self.reference_globals if key in self.function_written_globals.get(self._key(function), set())}
+        deleted_origins = frozenset(origin for origin, _ in self._origin_set((origin, True) for origin in deleted))
+        if not field_places and -1 in deleted_origins:
+            self.function_direct_deletes[self._key(function)] = False
+        dead_globals = frozenset(key for key in self.reference_globals if any(
+            self._origin_intersection((origin for origin, exact in branch.aliases.get(key, ()) if exact), branch.deleted)
+            for branch in exits))
+        return writes, {index for index in deleted if isinstance(index, int) and index >= 0}, stores, (return_origins, dead_returns), (global_stores, deleted_origins, dead_globals)
 
     def _visit_decl(self, node: ASTNode) -> None:
         if node.kind == NodeKind.FUNCTION and node.body:
@@ -1610,7 +1677,7 @@ class SafetyProofPass:
                 if isinstance(origin, AllocationRef):
                     deleted[origin] = frozenset({origin})
             deletions.append(deleted)
-        return back.written, deletions[0], exit_state.written, deletions[1], results["has_break"], back.visited
+        return back.written, deletions[0], exit_state.written, deletions[1], results["has_break"], back.counter_delta
 
     def _apply_loop_deletions(self, deleted: dict[str | AllocationRef, Optional[frozenset[str | AllocationRef]]]) -> None:
         for key, allocations in deleted.items():
@@ -1881,7 +1948,7 @@ class SafetyProofPass:
             self.frames.append(ExitFrame(node))
             if node.init:
                 yield node.init
-            written, deleted, exit_written, exit_deleted, has_break, back_assignments = self._loop_effects(node)
+            written, deleted, exit_written, exit_deleted, has_break, back_delta = self._loop_effects(node)
             # A counter increment on every backedge can establish at most one
             # active iteration. Integer wrapping must not re-enable the guard.
             single_iteration = False
@@ -1916,18 +1983,18 @@ class SafetyProofPass:
                             pending.append((value, nested or statement.kind in LOOP_KINDS))
                         elif isinstance(value, list):
                             pending.extend((child, nested or statement.kind in LOOP_KINDS) for child in value if isinstance(child, ASTNode))
-                if safe_counter and len(updates) == 1:
-                    update, nested = updates[0]
-                    if (not nested and id(update) in back_assignments and update.operator == AssignOp.ADD_ASSIGN
-                            and update.target.kind == NodeKind.IDENTIFIER
-                            and update.value.kind == NodeKind.LITERAL
-                            and update.value.literal_kind == LiteralKind.INTEGER
-                            and interval is not None and interval.lower is not None and interval.upper is not None):
-                        bound = condition.right.literal_value + (condition.operator == BinaryOp.LE)
-                        step = update.value.literal_value
-                        active_upper = min(interval.upper, bound - 1)
-                        single_iteration = (step > 0 and interval.lower < bound <= interval.lower + step
-                                            and self._range_fits(IntegerInterval(interval.lower, active_upper + step), self._type(condition.left)))
+                if (safe_counter and back_delta is not None and updates
+                        and all(not nested and update.operator == AssignOp.ADD_ASSIGN
+                                and update.target.kind == NodeKind.IDENTIFIER
+                                and update.value.kind == NodeKind.LITERAL
+                                and update.value.literal_kind == LiteralKind.INTEGER
+                                and update.value.literal_value > 0 for update, nested in updates)
+                        and interval is not None and interval.lower is not None and interval.upper is not None):
+                    bound = condition.right.literal_value + (condition.operator == BinaryOp.LE)
+                    minimum_step, maximum_step = back_delta
+                    active_upper = min(interval.upper, bound - 1)
+                    single_iteration = (minimum_step > 0 and interval.lower < bound <= interval.lower + minimum_step
+                                        and self._range_fits(IntegerInterval(interval.lower, active_upper + maximum_step), self._type(condition.left)))
             if not single_iteration:
                 self._apply_loop_deletions(deleted)
                 self._forget_names(written)
@@ -2052,7 +2119,7 @@ class SafetyProofPass:
             self.frames = saved_frames
             self.defer_floor = saved_floor
 
-    def _call_origin_fact(self, node: ASTNode, captured, origins) -> ValueFact:
+    def _call_origin_fact(self, node: ASTNode, captured, origins, global_values=None) -> ValueFact:
         values = []
         for origin, exact in origins:
             if not exact or origin == -1:
@@ -2068,7 +2135,8 @@ class SafetyProofPass:
                                 self.moved_symbols.add(AllocationRef(remaining))
                 values.append(ValueFact(maybe_nil=True, allocations=frozenset({AllocationRef(root)})))
             elif origin in self.global_origins:
-                values.append(self.facts.symbol(self.global_origins[origin]))
+                key = self.global_origins[origin]
+                values.append(global_values[key] if global_values is not None else self.facts.symbol(key))
             elif isinstance(origin, int) and origin >= 0 and origin < len(captured):
                 values.append(captured[origin][0])
         fact = values[0] if values else ValueFact(maybe_nil=True)
@@ -2084,7 +2152,7 @@ class SafetyProofPass:
         while pending:
             action, node, context = pending.pop()
             if action == "exact_finish":
-                name, captured = context
+                name, captured, global_values = context
                 if self._exact_call_name(node, captured) == name:
                     self._replay_exact_effects(node, name, captured)
                 else:
@@ -2092,9 +2160,10 @@ class SafetyProofPass:
                     # This call gets legacy effects once, with no partial replay.
                     for index, arg in enumerate(node.arguments or []):
                         self._apply_legacy_reference_effects(node, index, arg, captured[index][0])
+                    pending.append(("global_effects", node, (name, captured, global_values)))
                 continue
             if action == "store_effects":
-                name, captured = context
+                name, captured, global_values = context
                 # Only deletion-free summaries restore a stored value here.
                 # Deleting callees still require the ordered exact replay.
                 if not self.function_deletes.get(name, True):
@@ -2108,41 +2177,59 @@ class SafetyProofPass:
                         prefixes.extend(self._allocation_prefixes(holder.allocations))
                         if self._allocation_count(holder.allocations) > 1:
                             continue
-                        fact = self._call_origin_fact(node, captured, origins)
+                        fact = self._call_origin_fact(node, captured, origins, global_values)
                         for prefix in prefixes:
                             self._store_value(prefix + "." + path, None, replace(fact, maybe_nil=True, non_nil=False))
                 continue
             if action == "return_effects":
-                name, captured = context
+                name, captured, global_values = context
                 if isinstance(self._type(node), ReferenceType):
                     origins, dead = self.function_returns.get(name, (frozenset({(-1, True)}), frozenset()))
-                    fact = self._call_origin_fact(node, captured, origins)
+                    fact = self._call_origin_fact(node, captured, origins, global_values)
                     for origin in dead:
-                        affected = self._call_origin_fact(node, captured, {(origin, True)})
+                        affected = self._call_origin_fact(node, captured, {(origin, True)}, global_values)
                         self._move_allocations(affected.allocations)
                     self.facts.set_node(node, fact)
                 continue
+            if action == "capture_globals":
+                context.update({key: self.facts.symbol(key) for key in self.global_origins.values()})
+                continue
             if action == "global_effects":
-                for key in context:
-                    self._delete_place(key)
+                name, captured, global_values = context
+                stores, deleted, dead_globals = self.function_global_effects.get(name, ({}, frozenset(), frozenset()))
+                final_values = {key: self._call_origin_fact(node, captured, origins, global_values)
+                                for key, origins in stores.items()}
+                affected = [self._call_origin_fact(node, captured, {(origin, True)}, global_values)
+                            for origin in deleted]
+                fallback = self.function_deleted_globals.get(name, set()) if name is not None else self.file_variables
+                for key in fallback:
+                    if not self.function_direct_deletes.get(name, False) or key not in self.reference_globals:
+                        self._delete_place(key)
                 self._forget_names(self.file_variables)
+                for key, fact in final_values.items():
+                    self._store_value(key, None, replace(fact, non_nil=False, maybe_nil=True))
+                for fact in affected:
+                    self._move_allocations(fact.allocations)
+                for key in self.reference_globals:
+                    if key in dead_globals or self._allocations_moved(self.facts.symbol(key).allocations):
+                        self.moved_symbols.add(key)
                 continue
             if action == "call_start":
                 exact_name = self._exact_call_name(node)
                 captured = []
+                global_values = {}
                 callee = node.function
                 name = self._key(callee) if callee and callee.kind == NodeKind.IDENTIFIER else None
-                pending.append(("return_effects", node, (name, captured)))
+                pending.append(("return_effects", node, (name, captured, global_values)))
                 if exact_name:
-                    pending.append(("exact_finish", node, (exact_name, captured)))
+                    pending.append(("exact_finish", node, (exact_name, captured, global_values)))
                 elif node.function and node.function.kind == NodeKind.IDENTIFIER:
-                    pending.append(("store_effects", node, (self._key(node.function), captured)))
+                    pending.append(("store_effects", node, (self._key(node.function), captured, global_values)))
                 borrowed = getattr(node, "implicit_ref_args", set())
                 function_type = self._type(node.function)
                 if not exact_name and not getattr(node, "stdlib_canonical", None):
-                    callee = node.function
-                    deleted_globals = self.function_deleted_globals.get(self._key(callee), set()) if callee and callee.kind == NodeKind.IDENTIFIER else self.file_variables
-                    pending.append(("global_effects", node, deleted_globals))
+                    pending.append(("global_effects", node, (name, captured, global_values)))
+                pending.append(("capture_globals", node, global_values))
                 for i, arg in reversed(list(enumerate(node.arguments or []))):
                     pending.append(("call_arg", node, (i, arg, borrowed, function_type, exact_name, captured)))
                     pending.append(("visit", arg, None))

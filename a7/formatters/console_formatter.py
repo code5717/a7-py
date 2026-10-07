@@ -134,14 +134,14 @@ class ConsoleFormatter:
                 sym_table.add_column("Name", style="yellow", width=20)
                 sym_table.add_column("Kind", style="cyan", width=14)
                 sym_table.add_column("Type", style="green")
-                sym_table.add_column("Scope", style="dim", width=12)
+                sym_table.add_column("Scope", style="dim", min_width=12, overflow="fold")
 
                 for sym in symbols[:30]:  # Limit to 30 symbols
                     sym_table.add_row(
                         Text(sym.get("name", "?")),
                         sym.get("kind", "?"),
                         Text(sym.get("type", "?")),
-                        Text(sym.get("scope", "global")),
+                        Text(sym.get("scope", "global"), overflow="fold"),
                     )
 
                 self.console.print(sym_table)
@@ -232,12 +232,19 @@ class ConsoleFormatter:
     def _collect_symbols(self, symbol_table) -> list:
         """Collect symbols from a symbol table for display."""
         symbols = []
-        scope = symbol_table.current_scope if hasattr(symbol_table, 'current_scope') else None
-        if scope is None and hasattr(symbol_table, 'global_scope'):
-            scope = symbol_table.global_scope
-
+        file_scopes = getattr(symbol_table, "file_scopes", {})
         visited = set()
-        self._walk_scope(scope, symbols, "global", visited)
+        if file_scopes:
+            for filename, scope in file_scopes.items():
+                start = len(symbols)
+                self._walk_scope(scope, symbols, "global", visited)
+                for row in symbols[start:]:
+                    row["scope"] = f"{filename}::{row['scope']}"
+        else:
+            scope = getattr(symbol_table, "current_scope", None)
+            if scope is None:
+                scope = getattr(symbol_table, "global_scope", None)
+            self._walk_scope(scope, symbols, "global", visited)
         return symbols
 
     def _walk_scope(self, scope, symbols: list, scope_name: str, visited: set):

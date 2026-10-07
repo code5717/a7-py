@@ -103,6 +103,8 @@ class TypeCheckingPass:
         self._nested_functions = deque()
         self._generic_initializers: dict = {}
         self._generic_calls: dict = {}
+        self._generic_alias_bindings = {}
+        self._generic_alias_calls = []
         self._bound_callback_values: Set[int] = set()
         self._generic_callback_arguments: dict = {}
 
@@ -133,11 +135,16 @@ class TypeCheckingPass:
         self._nonnegative_vars = set()
         self._generic_initializers = {}
         self._generic_calls = {}
+        self._generic_alias_bindings = {}
+        self._generic_alias_calls = []
         self._bound_callback_values = set()
         self._generic_callback_arguments = {}
 
         # Visit the program
         self.visit_program(program)
+
+        if not self.errors:
+            self._record_immutable_generic_alias_calls(program)
 
         # Calls may precede declarations. Check each concrete instantiation
         # after all bodies have recorded their initializer requirements.
@@ -337,13 +344,18 @@ class TypeCheckingPass:
         declarations = {id(d): d for d in globals_}
         dependencies = {}
         for decl in globals_:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             edges = []
             found = set()
             stack = [decl.value] if decl.value else []
             while stack:
                 expr = stack.pop()
-                if expr.kind == NodeKind.IDENTIFIER:
-                    symbol = self.symbols.lookup(expr.name)
+                reference = expr.name if expr.kind == NodeKind.IDENTIFIER else None
+                if expr.kind == NodeKind.FIELD_ACCESS and expr.object is not None and expr.object.kind == NodeKind.IDENTIFIER:
+                    reference = f"{expr.object.name}.{expr.field}"
+                if reference is not None:
+                    symbol = self.symbols.lookup(reference)
                     key = id(symbol.node) if symbol else None
                     if key in declarations and key not in found:
                         edges.append(key)
@@ -386,6 +398,8 @@ class TypeCheckingPass:
                 work.extend((child, False) for child in reversed(dependencies[key]))
         # Exact constants can supply lengths in signatures and aggregate types.
         for decl in ordered:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             if decl.kind == NodeKind.CONST and not decl.explicit_type:
                 exact = self._evaluate_exact(decl.value, self.symbols.lookup, self.exact_bindings)
                 if exact is not None:
@@ -398,23 +412,33 @@ class TypeCheckingPass:
             if decl.kind in {NodeKind.STRUCT, NodeKind.ENUM, NodeKind.UNION, NodeKind.TYPE_ALIAS}
         ]
         for decl in type_decls:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             if decl.kind == NodeKind.ENUM:
                 self.register_enum_type(decl)
             elif decl.kind in {NodeKind.STRUCT, NodeKind.UNION}:
                 self._declare_record_shell(decl)
         for decl in type_decls:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             if decl.kind != NodeKind.ENUM:
                 self.register_type_decl(decl)
         self._report_by_value_type_cycles(type_decls)
 
         # Second pass: register function signatures (for mutual recursion support)
         for decl in node.declarations or []:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             if decl.kind == NodeKind.FUNCTION:
                 self.register_function_signature(decl)
 
         for decl in ordered:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             self.visit_declaration(decl)
         for decl in node.declarations or []:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             if decl.kind not in {NodeKind.CONST, NodeKind.VAR}:
                 self.visit_declaration(decl)
         root_stack = self.symbols.scope_stack
@@ -437,9 +461,9 @@ class TypeCheckingPass:
             return
         generic_params = tuple(gp.name for gp in (node.generic_params or []) if gp.name)
         if node.kind == NodeKind.STRUCT:
-            symbol.type = StructType(name=node.name, fields=(), generic_params=generic_params)
+            symbol.type = StructType(name=getattr(node, "module_identity_name", node.name), fields=(), generic_params=generic_params)
         else:
-            symbol.type = UnionType(name=node.name, fields=(), generic_params=generic_params)
+            symbol.type = UnionType(name=getattr(node, "module_identity_name", node.name), fields=(), generic_params=generic_params)
 
     def _fill_record_shell(self, node: ASTNode, record: Type) -> Type:
         """Move a resolved record's fields into its shell and return the shell."""
@@ -473,6 +497,8 @@ class TypeCheckingPass:
         reported: Set[frozenset] = set()
         finished: Set[str] = set()
         for decl in type_decls:
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
             if decl.kind not in {NodeKind.STRUCT, NodeKind.UNION}:
                 continue
             symbol = self.symbols.lookup(decl.name or "")
@@ -964,7 +990,7 @@ class TypeCheckingPass:
 
     def register_struct_type(self, node: ASTNode) -> None:
         """Register a struct type."""
-        struct_name = node.name or "<anonymous>"
+        struct_name = getattr(node, "module_identity_name", node.name) or "<anonymous>"
 
         # Declared $N kinds are value params; record them for instantiation
         # checks and keep them in scope while resolving field sizes.
@@ -1022,6 +1048,7 @@ class TypeCheckingPass:
                     value = None
                     effective = next_value
                     if variant_node.value:
+                        self._reject_imports_in_constant(variant_node.value)
                         value = self._enum_tag_value(variant_node.value)
                         effective = value
                     variants.append(EnumVariant(name=variant_name, value=value))
@@ -1040,7 +1067,7 @@ class TypeCheckingPass:
                     next_value = effective + 1 if effective is not None else None
 
         # Create enum type
-        enum_type = EnumType(name=enum_name, variants=tuple(variants))
+        enum_type = EnumType(name=getattr(node, "module_identity_name", enum_name), variants=tuple(variants))
 
         # Update symbol
         symbol = self.symbols.lookup(enum_name)
@@ -1049,7 +1076,7 @@ class TypeCheckingPass:
 
     def register_union_type(self, node: ASTNode) -> None:
         """Register a union type."""
-        union_name = node.name or "<anonymous>"
+        union_name = getattr(node, "module_identity_name", node.name) or "<anonymous>"
 
         # Declared $N kinds mirror structs: value params in scope for sizes.
         value_param_types = self._value_param_types_from_params(node.generic_params or [])
@@ -1114,6 +1141,51 @@ class TypeCheckingPass:
             current = symbol.node.value
         return None
 
+    def _reject_import_forwarding(self, name: str, node: ASTNode) -> bool:
+        if "." not in name:
+            return False
+        alias, member = name.split(".", 1)
+        member = member.split(".", 1)[0]
+        imported = self.symbols.lookup(alias)
+        if imported is None or imported.kind != SymbolKind.MODULE:
+            return False
+        scope = self.symbols.file_scopes.get(getattr(imported.node, "target_file_scope", None))
+        target = scope.lookup_local(member) if scope is not None else None
+        if target is None or target.kind != SymbolKind.MODULE:
+            return False
+        if getattr(node, "diagnosed", False):
+            return True
+        if member.startswith("_"):
+            message = f"Private declaration '{member}' in module '{alias}'"
+        else:
+            message = (f"Import alias '{member}' is local to module '{alias}'; "
+                       'import its dependency directly in this file, for example '
+                       'dep :: import "<dependency path>". Choose an unused alias and '
+                       'replace the placeholder with a path resolved from this file')
+        self.add_semantic_error(SemanticErrorType.UNDEFINED_IDENTIFIER, node.span, context=message)
+        node.diagnosed = True
+        return True
+
+    def _reject_imports_in_constant(self, node: ASTNode) -> bool:
+        pending = [node]
+        seen = set()
+        rejected = False
+        while pending:
+            current = pending.pop()
+            if id(current) in seen:
+                continue
+            seen.add(id(current))
+            if (current.kind == NodeKind.FIELD_ACCESS and current.object is not None
+                    and current.object.kind == NodeKind.IDENTIFIER):
+                rejected = self._reject_import_forwarding(
+                    f"{current.object.name}.{current.field}", current) or rejected
+            for value in vars(current).values():
+                if isinstance(value, ASTNode):
+                    pending.append(value)
+                elif isinstance(value, list):
+                    pending.extend(child for child in value if isinstance(child, ASTNode))
+        return rejected
+
     def resolve_type_node(self, node: Optional[ASTNode]) -> Type:
         return self._resolve_type_work("type", node)
 
@@ -1158,12 +1230,18 @@ class TypeCheckingPass:
                 return
 
             self._resolving_type_aliases.add(alias_key)
+            previous_scope = self.symbols.current_scope
+            previous_stack = self.symbols.scope_stack
+            if getattr(node, "file_scope", None):
+                self.symbols.select_file_scope(node.file_scope)
+            symbol = self.symbols.lookup(alias_name)
             try:
                 alias_type = (yield ("type", node.value)) if node.value else UNKNOWN
             finally:
                 self._resolving_type_aliases.remove(alias_key)
+                self.symbols.current_scope = previous_scope
+                self.symbols.scope_stack = previous_stack
 
-            symbol = self.symbols.lookup(alias_name)
             if symbol:
                 symbol.type = alias_type
             else:
@@ -1191,6 +1269,8 @@ class TypeCheckingPass:
                 if current.kind == NodeKind.TYPE_ARRAY:
                     size = 0
                     if current.size is not None:
+                        if self._reject_imports_in_constant(current.size):
+                            return UNKNOWN
                         symbolic = self._symbolic_array_size(current.size)
                         if symbolic is not None:
                             wrappers.append(('array_param', symbolic))
@@ -1245,6 +1325,11 @@ class TypeCheckingPass:
 
         elif node.kind == NodeKind.TYPE_IDENTIFIER:
             type_name = node.name or node.type_name or ""
+            if self._reject_import_forwarding(type_name, node):
+                return UNKNOWN
+            resolved = self.symbols.lookup(type_name)
+            if resolved is not None:
+                self.symbols.resolved_uses[id(node)] = resolved
             if node.generic_params:
                 type_args = []
                 for arg in node.generic_params:
@@ -1261,7 +1346,7 @@ class TypeCheckingPass:
                     type_args.append(value_arg if value_arg is not None else (yield ("type", arg)))
                 if not self._annotation_arguments_ok(node, type_name, type_args):
                     return UNKNOWN
-                return GenericInstanceType(base_name=type_name, type_args=tuple(type_args))
+                return GenericInstanceType(base_name=getattr(resolved.node, "module_identity_name", type_name) if resolved else type_name, type_args=tuple(type_args))
             symbol = self.symbols.lookup(type_name)
             if symbol:
                 if symbol.kind not in {
@@ -1922,6 +2007,81 @@ class TypeCheckingPass:
             while protected:
                 self._finish_statement_region(protected.pop())
 
+    def _record_immutable_generic_alias_calls(self, program):
+        # Resolve only local, unwritten and unexposed identifier-copy chains.
+        # Complete lexical inventory precedes resolution: a later assignment,
+        # capture or borrowed argument must not leave an initializer-only guess.
+        owners = {}
+        declarations = {}
+        occurrences = []
+        blocked = set()
+        pending = [(program, None)]
+        seen = set()
+        while pending:
+            node, owner = pending.pop()
+            if id(node) in seen:
+                continue
+            seen.add(id(node))
+            if node.kind == NodeKind.FUNCTION:
+                owner = id(node)
+            if node.kind in (NodeKind.VAR, NodeKind.CONST, NodeKind.PARAMETER):
+                owners[id(node)] = owner
+                if (owner is not None and node.kind in (NodeKind.VAR, NodeKind.CONST)
+                        and node.value is not None and node.value.kind == NodeKind.IDENTIFIER):
+                    declarations[id(node)] = node
+            if node.kind == NodeKind.IDENTIFIER:
+                occurrences.append((node, owner))
+            roots = []
+            if node.kind == NodeKind.ASSIGNMENT and node.target is not None:
+                roots.append(node.target)
+            elif node.kind == NodeKind.ADDRESS_OF and node.operand is not None:
+                roots.append(node.operand)
+            elif node.kind == NodeKind.CALL:
+                roots.extend(node.arguments[index] for index in getattr(node, 'implicit_ref_args', ()))
+            for root in roots:
+                while root.kind in (NodeKind.FIELD_ACCESS, NodeKind.INDEX):
+                    root = root.object
+                binding = self._generic_alias_bindings.get(id(root))
+                if binding is not None:
+                    blocked.add(id(binding[0]))
+            for value in vars(node).values():
+                if isinstance(value, ASTNode):
+                    pending.append((value, owner))
+                elif isinstance(value, list):
+                    pending.extend((child, owner) for child in value if isinstance(child, ASTNode))
+        for node, owner in occurrences:
+            binding = self._generic_alias_bindings.get(id(node))
+            if binding is not None:
+                declaration = id(binding[0])
+                if declaration in declarations and owners[declaration] != owner:
+                    blocked.add(declaration)
+
+        targets = {}
+        dependents = {}
+        ready = deque()
+        for identity, declaration in declarations.items():
+            if identity in blocked:
+                continue
+            binding = self._generic_alias_bindings.get(id(declaration.value))
+            if binding is None:
+                continue
+            source, kind = binding
+            if kind == SymbolKind.FUNCTION:
+                targets[identity] = source
+                ready.append(identity)
+            elif id(source) in declarations and id(source) not in blocked:
+                dependents.setdefault(id(source), []).append(identity)
+        while ready:
+            source = ready.popleft()
+            for identity in dependents.get(source, ()):
+                targets[identity] = targets[source]
+                ready.append(identity)
+        for call, owner, mapping in self._generic_alias_calls:
+            binding = self._generic_alias_bindings.get(id(call.function))
+            target = targets.get(id(binding[0])) if binding is not None else None
+            if target is not None and owner is not None:
+                self._generic_calls.setdefault(id(owner), []).append((call, target, mapping))
+
     def visit_assignment(self, node: ASTNode) -> None:
         """Visit an assignment statement."""
         # Type check both sides
@@ -2089,6 +2249,8 @@ class TypeCheckingPass:
                     first = current.left
                 elif kind in (NodeKind.FIELD_ACCESS, NodeKind.INDEX, NodeKind.SLICE):
                     first = current.object
+                    if kind == NodeKind.FIELD_ACCESS and first is not None:
+                        first.member_object = True
                 elif kind == NodeKind.CALL and not getattr(current, "file_module_call", None):
                     first = current.function
                     # Module operations have backend lowering only at direct call
@@ -2469,7 +2631,9 @@ class TypeCheckingPass:
                 if callee_symbol and isinstance(callee_symbol.type, FunctionType):
                     alias_func_type = callee_symbol.type
             func_type = alias_func_type or callee_type or ((yield ('visit_expression', (node.function,))) if node.function else UNKNOWN)
-            callee_declaration = None
+            resolved_callee = self.symbols.resolved_uses.get(id(node.function))
+            callee_declaration = (resolved_callee.node if resolved_callee is not None
+                                  and resolved_callee.kind == SymbolKind.FUNCTION else None)
             if alias_func_type is not None:
                 callee_declaration = callee_symbol.node
             elif node.function is not None and node.function.kind == NodeKind.IDENTIFIER:
@@ -2641,6 +2805,11 @@ class TypeCheckingPass:
                 if any(name not in generic_mapping for name in unbound) or self._has_unknown(return_type):
                     return UNKNOWN  # The failed inference is the error.
 
+            if (generic_mapping and callee_declaration is None
+                    and node.function is not None and node.function.kind == NodeKind.IDENTIFIER
+                    and len(self.errors) == errors_before_inference):
+                owner = self.context.current_function
+                self._generic_alias_calls.append((node, owner.node if owner else None, dict(generic_mapping)))
             if generic_mapping and callee_declaration is not None and len(self.errors) == errors_before_inference:
                 owner = self.context.current_function
                 self._generic_calls.setdefault(id(owner.node) if owner else None, []).append(
@@ -2739,6 +2908,35 @@ class TypeCheckingPass:
             # Check if the object is a module symbol — allow field access without error
             if obj_symbol is not None:
                 if obj_symbol.kind == SymbolKind.MODULE:
+                    target_scope = getattr(obj_symbol.node, "target_file_scope", None)
+                    if target_scope is not None:
+                        scope = self.symbols.file_scopes.get(target_scope)
+                        target = scope.lookup_local(field_name) if scope is not None else None
+                        if target is not None and target.kind == SymbolKind.MODULE:
+                            self._reject_import_forwarding(f"{node.object.name}.{field_name}", node)
+                            return UNKNOWN
+                        if target is None:
+                            message = f"Module '{node.object.name}' has no declaration '{field_name}'"
+                            if getattr(node, "direct_call_target", False):
+                                message = f"Cannot call '{node.object.name}.{field_name}' (not defined in the imported module)"
+                            self.add_semantic_error(SemanticErrorType.UNDEFINED_IDENTIFIER, node.span, context=message)
+                            node.diagnosed = True
+                            return UNKNOWN
+                        if field_name.startswith("_"):
+                            self.add_semantic_error(SemanticErrorType.UNDEFINED_IDENTIFIER, node.span,
+                                                    context=f"Private declaration '{field_name}' in module '{node.object.name}'")
+                            node.diagnosed = True
+                            return UNKNOWN
+                        self.symbols.resolved_uses[id(node)] = target
+                        if target.kind in {SymbolKind.TYPE, SymbolKind.STRUCT, SymbolKind.ENUM, SymbolKind.UNION} and not getattr(node, "member_object", False):
+                            self.add_type_error(TypeErrorType.TYPE_USED_AS_VALUE, node.span,
+                                                context=f"'{node.object.name}.{field_name}' is a type")
+                            return UNKNOWN
+                        exact = self.exact_bindings.get(id(target.node))
+                        if exact is not None:
+                            node.exact_constant = exact
+                            return F64 if exact[1] else I32
+                        return target.type
                     module_path = getattr(getattr(obj_symbol, "node", None), "module_path", None)
                     canonical_module = self.stdlib.canonical_module_name(module_path or "")
                     if canonical_module and self.stdlib.resolve_call(module_path or "", field_name) is None:
@@ -2761,6 +2959,8 @@ class TypeCheckingPass:
             if isinstance(obj_type, UnknownType):
                 # The object already has its error.
                 return UNKNOWN
+            if obj_symbol is None and node.object is not None and node.object.kind == NodeKind.FIELD_ACCESS:
+                obj_symbol = self.symbols.resolved_uses.get(id(node.object))
             names_type = obj_symbol is not None and obj_symbol.kind in {
                 SymbolKind.STRUCT, SymbolKind.ENUM, SymbolKind.UNION, SymbolKind.TYPE, SymbolKind.GENERIC_PARAM,
             }
@@ -3203,6 +3403,8 @@ class TypeCheckingPass:
             if pattern.kind == NodeKind.PATTERN_ENUM:
                 enum_name = pattern.enum_type or ""
                 variant_name = pattern.variant or ""
+                if self._reject_import_forwarding(f"{enum_name}.{variant_name}", pattern):
+                    return UNKNOWN
 
                 if enum_name == "":
                     union_type = self._scrutinee_tagged_union(scrutinee_type)
@@ -3225,9 +3427,16 @@ class TypeCheckingPass:
                     return scrutinee_type
 
                 enum_symbol = self.symbols.lookup(enum_name)
+                if enum_symbol is not None and enum_symbol.kind == SymbolKind.MODULE:
+                    pattern.kind = NodeKind.FIELD_ACCESS
+                    pattern.object = ASTNode(kind=NodeKind.IDENTIFIER, name=enum_name, span=pattern.span)
+                    pattern.field = variant_name
+                    return (yield ('visit_expression', (pattern,)))
+                if enum_symbol is not None:
+                    self.symbols.resolved_uses[id(pattern)] = enum_symbol
                 if enum_symbol is not None and isinstance(enum_symbol.type, UnionType):
                     union_type = self._scrutinee_tagged_union(scrutinee_type)
-                    if union_type is not None and union_type.name == enum_name:
+                    if union_type is not None and union_type.name == enum_symbol.type.name:
                         if union_type.get_field(variant_name) is None:
                             self.add_type_error(
                                 TypeErrorType.NO_SUCH_TAG,
@@ -3271,6 +3480,11 @@ class TypeCheckingPass:
 
                 symbol = self.symbols.lookup(pattern_name)
                 if symbol:
+                    if symbol.kind == SymbolKind.MODULE:
+                        self.add_type_error(TypeErrorType.TYPE_USED_AS_VALUE, pattern.span,
+                                            context=f"Pattern '{pattern_name}' names a module namespace, not a value")
+                        return UNKNOWN
+                    self.symbols.resolved_uses[id(pattern)] = symbol
                     self.symbols.mark_used(pattern_name)
                     exact = self.exact_bindings.get(id(symbol.node)) if symbol.node else None
                     if exact is not None:
@@ -3302,7 +3516,10 @@ class TypeCheckingPass:
                         struct_type = self.resolve_type_node(inline_type)
                     else:
                         # Look up type by name
+                        if self._reject_import_forwarding(node.struct_type, node):
+                            return UNKNOWN
                         symbol = self.symbols.lookup(node.struct_type)
+                        self.symbols.resolved_uses[id(node)] = symbol
                         struct_type = symbol.type if symbol else None
                 else:
                     struct_type = self.resolve_type_node(node.struct_type)
@@ -3652,9 +3869,21 @@ class TypeCheckingPass:
         symbol = self.symbols.lookup(ident_name)
 
         if symbol is None:
-            self.add_semantic_error(SemanticErrorType.UNDEFINED_IDENTIFIER, node.span, context=f"'{ident_name}'")
+            context = f"'{ident_name}'"
+            if not ident_name.startswith("_"):
+                for alias in self.symbols.scope_stack[0].symbols.values():
+                    target = self.symbols.file_scopes.get(getattr(alias.node, "target_file_scope", None))
+                    exported = target.lookup_local(ident_name) if target is not None else None
+                    if exported is not None:
+                        spelling = f"{alias.name}.{ident_name}" + ("()" if exported.kind == SymbolKind.FUNCTION else "")
+                        context += f"; write '{spelling}' for the imported declaration"
+                        break
+            self.add_semantic_error(SemanticErrorType.UNDEFINED_IDENTIFIER, node.span, context=context)
             return UNKNOWN
+        self.symbols.resolved_uses[id(node)] = symbol
         self.symbols.mark_used(ident_name)
+        if symbol.node is not None:
+            self._generic_alias_bindings[id(node)] = (symbol.node, symbol.kind)
         # A module alias or a type name is no value. `io.println` and
         # `Color.Red` reach it as the object of a member access, which
         # marks the node first.
@@ -4176,6 +4405,19 @@ class TypeCheckingPass:
         """
         current = target
         while current is not None:
+            resolved = self.symbols.resolved_uses.get(id(current))
+            name = current.field
+            if (current.kind == NodeKind.FIELD_ACCESS and current.object is not None
+                    and current.object.kind == NodeKind.IDENTIFIER):
+                name = f"{current.object.name}.{current.field}"
+                # Exact evaluation can resolve a module constant before the
+                # ordinary field visitor records this use's declaration.
+                if resolved is None:
+                    resolved = self.symbols.lookup(name)
+            if current.kind == NodeKind.FIELD_ACCESS and resolved is not None:
+                if resolved.is_mutable:
+                    return None
+                return f"'{name}' is immutable: it is a constant"
             if current.kind == NodeKind.IDENTIFIER:
                 name = current.name or ""
                 symbol = self.symbols.lookup(name)

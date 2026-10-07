@@ -99,8 +99,12 @@ instantiations. String comparison uses byte contents. Read the [language tour](e
 and [specification](docs/SPEC.md) together with [Status](docs/STATUS.md).
 
 Local bindings cannot reuse an import alias from their own file. This includes
-function parameters, loop bindings and match captures. Full module namespace
-isolation remains unfinished.
+function parameters, loop bindings and match captures. Each file has its own
+namespace. Imported declarations use `alias.name`; top-level `_name` is private,
+and struct fields remain visible. Qualified types and struct literals retain
+their defining file's identity. Import aliases remain local to the file that
+declares them. See [qualification](docs/audits/2026-10-07/qualification.md) and
+[Status](docs/STATUS.md) for the source-specific verification boundary.
 
 Use `usize` for sizes, lengths and indices. Use `isize` for signed pointer-sized
 offsets and position differences. A7 source recursion is rejected; use loops or
@@ -121,11 +125,16 @@ Heap values currently require `del` or `defer del`. Pass lvalues directly to
 public address-of or dereference operators. Heap fixed arrays, `new [N]T`, are
 rejected. Direct reference aliases share deletion state, and guarded reference
 fields are checked. Alias and lifetime checks remain incomplete for array
-elements and fields reached through joined allocation sets. Automatic memory
-management is not implemented.
+elements and fields reached through joined allocation sets. Known direct global
+reference stores now propagate allocation identity through calls, so deleting a
+stored allocation invalidates its caller aliases. Global nil-state and parameter
+proofs remain incomplete. Automatic memory management is not implemented.
 
-The current stdlib provides `io` and `math`. Simple file imports share one
-emitted Zig file; full per-module scopes remain unfinished. Some accepted forms
+The current stdlib provides `io` and `math`. File imports share one emitted Zig
+file after per-file semantic checking. Selected imports and `using import`
+remain incomplete. Forwarding another file's import alias is rejected under
+L76. Unsupported multi-dot type annotations and struct literals still fail
+parsing. Some accepted forms
 still fail later in compilation. The [gap list](docs/STATUS.md) records those
 cases and the remaining generic and numeric limits.
 

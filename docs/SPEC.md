@@ -41,8 +41,8 @@ compile-time generics, and explicit heap allocation with `new` and `del`.
 ### 1.2 Design Philosophy
 
 Design decisions and their compatibility boundaries live in the
-[decision ledger](plan/decisions.md). File-module isolation is approved but
-not yet implemented throughout the semantic pipeline. Tensor operations and
+[decision ledger](plan/decisions.md). File modules have separate semantic scopes
+and lower into one Zig output. Tensor operations and
 accelerator APIs are [design proposals](design/array-programming.md).
 General lifetime and aliasing proofs remain outside the current
 [safety contract](SAFETY_CONTRACT.md).
@@ -105,8 +105,8 @@ digit      = "0"..."9"              ; ASCII digits only
 - Can contain ASCII letters, digits (0-9), and underscores
 - **Unicode characters are not supported** in identifiers
 - L27 approves file-private top-level `_name` and compiler-reserved `__name`.
-  The tokenizer currently accepts both; module visibility enforcement remains
-  incomplete. See §10.4 for the implementation boundary
+  The compiler enforces these rules at file scope. Local `__name` bindings
+  remain accepted. See §10.4 for the compatibility boundary
 - Maximum length: 100 characters
 
 ### 2.4 Keywords
@@ -1279,6 +1279,13 @@ bounds, and `where` on enums exit 6.
 
 ### 7.4 Generic Specialization
 
+Local aliases of same-file generic declarations that are never reassigned,
+passed by reference or captured by another function retain
+concrete body obligations. Imported, module-global, parameter, mutable, selected
+and captured origins remain incomplete. This bounded repair does not provide
+general runtime dispatch for generic declarations. See [Status](STATUS.md) for
+the qualification boundary.
+
 ```a7
 identity($T) :: fn(value: $T) $T {
     ret value
@@ -1384,8 +1391,11 @@ Current implementation:
 2. `del` is validated for reference-like values. Direct reference aliases share
    allocation deletion state; repeated deletion and reads after deletion fail
    until reassignment to a fresh allocation.
-3. `defer del value` can express manual cleanup at scope exit.
-4. Reference fields require a non-nil proof. A user field named `ptr` receives
+3. Known direct global reference stores retain allocation identity across calls.
+   Deleting a stored allocation invalidates represented caller aliases. Unknown
+   and indirect effects retain the existing incomplete fallback.
+4. `defer del value` can express manual cleanup at scope exit.
+5. Reference fields require a non-nil proof. A user field named `ptr` receives
    the same check. Field guards follow assignments and known call effects.
 
 Not yet implemented:
@@ -1394,7 +1404,8 @@ Not yet implemented:
 2. Complete alias tracking through array elements and fields reached through
    joined allocation sets. These gaps prevent a general double-free or
    use-after-free safety claim.
-3. General array/slice bounds-check insertion by the A7 compiler.
+3. Complete propagation of global nil state and parameter proof obligations.
+4. General array/slice bounds-check insertion by the A7 compiler.
 
 ---
 
@@ -1467,7 +1478,7 @@ parent :: import "../utils"
   fails name resolution. Under L28, a local binding cannot reuse an import
   alias from its own file, including a stdlib alias. This check covers
   parameters, loop bindings and match captures. Record fields and aliases in
-  other files do not reserve local names. Full per-file scopes remain unfinished.
+  other files do not reserve local names. Each file has a separate semantic scope.
 - `using import` and selected imports are parser/resolver metadata. Their
   presence in the AST does not establish runnable backend support.
 
@@ -1505,12 +1516,16 @@ Hardlink identity is not specified by this realpath rule.
   in `A7Compiler.compile_file_detailed`. Imported modules never need their own
   `main`. `a7 check --lib` checks a library file without an entry
   point; `build` and `run` still require one.
-- Known gaps (unchanged behavior, stated so callers stop guessing): a
-  bare entry-file call to a module function is rejected with exit 6
-  naming the qualified spelling; module-qualified struct literals are
-  follow-up work, as are selected imports and `using import` lowering
-  (STATUS Known Gaps; `compile.py` `_annotate_file_module_calls` only
-  marks alias-qualified `X.f(...)` and in-module bare sibling calls).
+- Other files' declarations require their import alias. Qualified types,
+  struct literals, enum and union members, and constant array lengths resolve
+  in the imported file. Generic bodies keep their defining file's private names.
+  Selected imports and `using import` lowering remain open. Under L76, an import
+  alias is local to its declaring file: parsed `a.b.value()` access through a
+  dependency imported by `a` rejects with semantic exit 6. Import that dependency
+  directly in the caller or use an ordinary public wrapper in `a`. Ordinary
+  struct-field chains remain valid. Unsupported multi-dot type annotations
+  (`x:a.b.Box`) and literals (`a.b.Box{...}`) retain parse exit 5; L76 adds no
+  grammar. See the approved [packet](plan/packets/P-MOD-import-forwarding.md).
 
 ### 10.3 Standard Library Status
 
@@ -1531,22 +1546,27 @@ Planned, not implemented as public stdlib modules yet:
 - `std/mem`
 - `std/collections`
 
-### 10.4 Visibility Rules (staged intent)
+### 10.4 Visibility rules
 
-L25-L31 and L69 approve these rules: each file has its own namespace,
-`alias.name` accesses another file, top-level `_name` is private, and `__name`
-is reserved for the compiler. Other top-level names are public. Struct fields
-remain visible to importers under L29. `pub` on a field does not hide or expose
-it differently.
+Each file has its own namespace under L25-L31 and L69. `alias.name` accesses
+another file. Top-level `_name` is private, top-level `__name` is reserved for
+the compiler, and other ordinary top-level declarations are public. Import
+aliases stay local under L76. Private declarations remain
+available inside their defining file, including generic bodies. Nominal types
+with the same spelling in different files remain distinct.
 
-The compiler still combines imported declarations for semantic analysis and
-uses call annotations for supported file-module calls. It does not yet enforce
-complete per-file isolation or underscore visibility. `pub` is accepted and
-recorded, but current access checks do not implement the approved visibility
-rule. Removing `pub`, selecting all-site `__` rejection, and changing import
-forms require their separate compatibility dispositions in
-[P-MOD](plan/packets/P-MOD-modules.md). L69 authorizes the per-file scope work;
-these implementation gaps are not a request for another approval of L25-L31.
+All struct fields remain visible to importers under L29. `pub` is still accepted
+and recorded; it does not override the name-based top-level visibility rules or
+change field visibility. Local `__name` bindings remain accepted. Removing `pub`,
+rejecting local `__` names, and changing import forms require separate
+compatibility dispositions in [P-MOD](plan/packets/P-MOD-modules.md).
+
+Name resolution and type checking use file-root scopes and declaration identity.
+The compiler then lowers resolved uses to unique names for whole-program checks
+and one Zig output. It preserves module load order and declaration order within
+each file. Diagnostics for imported constant writes identify the qualified
+binding, such as `a.VALUE`. Semantic reports retain each declaration's file and
+lexical scope.
 
 ---
 

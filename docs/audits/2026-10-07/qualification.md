@@ -251,3 +251,46 @@ locked requirements export, pip-audit and Bandit all passed. All source hashes
 and modes still match. The [follow-up record](iterative-followup-verification.json)
 retains both the failed run and the seven recovery results.
 Global-store alias propagation and equivalent-increment rejection remain open.
+
+
+## Module and safety integration, 2026-10-07
+
+Full source manifest `27c4c26e60a4f18ea09e594b21890640173b6b40bb2818b777504060d1cd879f`
+passed `taskset -c 0-15 env A7_PYTEST_WORKERS=8 ./run_release_checks.sh`.
+The run began at 03:46:14 UTC and finished with exit 0 at 04:16:35 UTC.
+Its log SHA256 is
+`0584d8ef7e1bdfe333afec935fe8d53b50c4fabe2ead812e5b72235038a88845`.
+All 1,599 frozen file hashes and modes remained unchanged after the run.
+The integrated compiler and tests match that source. Subsequent documentation
+updates record the result and receive separate documentation/site checks.
+
+The gate passed 3,756 tests with one known expected failure and all 11
+compiler/package checks. All 51 examples passed E2E and artifact checks in
+Debug, ReleaseSafe and ReleaseFast. The error-stage matrix passed 61 checks;
+wheel and source-distribution native installation checks passed. Ten benchmark
+runs were report-only and do not qualify L38 performance. The site passed 12
+tests with 2,566 assertions, 441 coverage records and checks for 23 built pages,
+1,499 local resources and 180 search targets. Locked dependency audits and
+Bandit passed.
+
+This source includes per-file module scopes and privacy, qualified nominal
+identities, report ownership, constant diagnostics, immutable local generic
+alias obligations, direct global allocation identity and equivalent one-trip
+increments. L76's local-import rejection and direct-import/public-wrapper native
+controls passed. Core GLM and diagnostic-delta Flash reviews found no blocker
+within their identified scopes. The [review digest](review-summary.json) records
+38 completed reviews across earlier and current bounded snapshots. A later
+literal-return review failed with a provider request-rate limit and is not
+counted. That later candidate is separate from this qualified source.
+
+The earlier stage10 run remains a failed gate: 3,689 tests passed, one obsolete
+reserved-name fixture failed and one expected failure remained. The corrected
+fixture preserves the original invalid source as an explicit semantic rejection
+and exercises the valid local-name collision natively. The stage13 result does
+not retroactively change stage10's exit status.
+
+Browser-harness and computer-use tools had no available browser connection, so
+rendered desktop/mobile, keyboard and console checks did not run. This is a
+local development qualification. Full V1, automatic memory, general conditional
+reference proofs, runtime generic dispatch and the other roadmap requirements
+remain incomplete. GPU execution remains deferred under L75.

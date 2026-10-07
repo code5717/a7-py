@@ -23,8 +23,13 @@ instantiation. A bound callback keeps that instantiation's signature through
 local aliases, assignments and branch selection; calls do not infer fresh types.
 For example, a callback instantiated with an i8 argument rejects the value 300.
 Callback values selected through record fields or array elements remain incomplete.
-Array-literal arms inside generic `if`/`match` initializers still lack nested
-contextual fitting.
+Nested array-literal arms inside generic `if`/`match` initializers receive
+contextual fitting. A local generic function alias also carries its declaration's
+body checks when the alias and its copy chain are never reassigned, passed by
+reference or captured by another function.
+Imported, module-global, parameter, mutable, selected and captured generic
+function values still have checking gaps. Runtime generic dispatch is not
+implemented by this repair.
 
 ## Generic structs
 

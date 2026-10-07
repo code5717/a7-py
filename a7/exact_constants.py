@@ -144,6 +144,13 @@ def evaluate(root, lookup, bindings):
                 if value is None:
                     return None
                 values[key] = value
+            elif node.kind == NodeKind.FIELD_ACCESS and node.object is not None and node.object.kind == NodeKind.IDENTIFIER:
+                symbol = lookup(f"{node.object.name}.{node.field}")
+                value = bindings.get(id(symbol.node)) if symbol and symbol.node else None
+                if value is None:
+                    return None
+                values[key] = value
+                node.exact_constant = value
             elif node.kind == NodeKind.UNARY and node.operator == UnaryOp.NEG:
                 # `~` is not folded here: `flags & ~1` on a `u8` relies on
                 # the typed operator, and -2 would not fit `u8`.
