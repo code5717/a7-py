@@ -1,0 +1,137 @@
+{
+  "recorded_at": "2026-10-07T07:19:01.557244+00:00",
+  "started_at": "2026-10-07T07:12:04.191365+00:00",
+  "finished_at": "2026-10-07T07:12:29.429760+00:00",
+  "status": "passed",
+  "profile": "Zig Debug LLVM/LLD and C11 O0",
+  "commands": 92,
+  "checks": 75,
+  "cpus": {
+    "children": "0-3",
+    "python_launcher_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "boundary": "All builds and workload children pinned; Python orchestration affinity was unrestricted."
+  },
+  "source_manifests": {
+    "c": "2675671b42224c78c0a41309fe1690f3f24c9b3a4908d7d56fac5594fc17d65b",
+    "zig": "1aacd89d5444a34120b151fe21aa16db9dca382e179caaa062b987bc724243dd",
+    "runner": "acd9f7d30294925ca2f30df714c4258f477e70cb88e2a399b1de81b38748cdfd"
+  },
+  "observed_success": {
+    "c-0": {
+      "exit": 0,
+      "stdout": "live: [7, 3] alias: [7, 3] snapshot: [2, 3] after_invoice: [7, 3] after_alias: [2, 3]\n",
+      "final_backing": [
+        [
+          "56",
+          "final_backing",
+          "0",
+          "0",
+          "0",
+          "48",
+          "148"
+        ]
+      ],
+      "stdout_sha256": "0807922d3e66a69f333555f27404af57b9aabfba6d49dee2d395d5f23879869f",
+      "stderr_sha256": "b436513afe3361c38dc162e136f40d0d203ca84df1367dbf01a9cb2522ca7e08"
+    },
+    "arena-0": {
+      "exit": 0,
+      "stdout": "live: [7, 3] alias: [7, 3] snapshot: [2, 3] after_invoice: [7, 3] after_alias: [2, 3]\n",
+      "final_backing": [
+        [
+          "63",
+          "final_backing",
+          "0",
+          "0",
+          "0",
+          "48",
+          "196"
+        ]
+      ],
+      "stdout_sha256": "0807922d3e66a69f333555f27404af57b9aabfba6d49dee2d395d5f23879869f",
+      "stderr_sha256": "9b977f4543b4525028d0178b83ef1dfc8208c5cda5d74eb8b8ab932665f5ca92"
+    },
+    "rc-0": {
+      "exit": 0,
+      "stdout": "live: [7, 3] alias: [7, 3] snapshot: [2, 3] after_invoice: [7, 3] after_alias: [2, 3]\n",
+      "final_backing": [
+        [
+          "79",
+          "final_backing",
+          "0",
+          "0",
+          "0",
+          "144",
+          "285"
+        ]
+      ],
+      "stdout_sha256": "0807922d3e66a69f333555f27404af57b9aabfba6d49dee2d395d5f23879869f",
+      "stderr_sha256": "3a261fde161e2c804637fc2df1fd6ae9a209802949ae71d664192e487eff6334"
+    }
+  },
+  "independent_audit": {
+    "run_sha256": "18291348bf2907eb66c1f336673bc16ff765d61f7a6093865f6a46307a5b30dc",
+    "raw_manifest_sha256": "d4493bceee20e816a851d6b307dac2f2c5517d397bf812e844f4e85c3532f29f",
+    "records": 92,
+    "checks": 75,
+    "source_pins": 78,
+    "retained_files": 390,
+    "artifacts": 14,
+    "all_raw_hashes_match": true,
+    "all_input_artifact_hashes_match": true,
+    "checks_by_category": {
+      "normal_or_injected": 18,
+      "copy_corruption": 3,
+      "named_faults": 6,
+      "invalid_inputs": 47,
+      "trace_overflow": 1
+    },
+    "verdict": "Passed bounded native correctness; no L38 or complete-runtime qualification",
+    "review_command": "taskset -c 12-15 python memory-w2-native-independent-review/audit.py",
+    "review_exit": 0
+  },
+  "independent_review_manifest_sha256": "1b71d2a61455833bdf8013bee00343e117047c19c91a19ef6dcf641c9c9a2bd4",
+  "external_review_manifest_sha256": "9bd90159c2a5382cc86ae8f6412f532d2bfc74dde9423eb108ce537c5dc55e50",
+  "raw_records_sha256": "cf5482de1d256604f1e48f46f278bf74e4ab85db689b43e0a6fc886edfd8a493",
+  "raw_checks_sha256": "6db14c89143888a74ef0a23345f9aa8c81aca703d164bd4b419058dd7bab69cc",
+  "raw_artifacts_sha256": "d8e11ddb14f6d8ba6fbc484a63c97698450f32c76fd1c1db3ffdb85195a2c438",
+  "normal_requested_peak_bytes": {
+    "c": 48,
+    "arena": 48,
+    "rc": 144
+  },
+  "named_corruption_residual_bytes": {
+    "retain_count_overflow": 40,
+    "count_underflow": 144,
+    "enqueue_full": 144,
+    "drain_out_of_range": 144,
+    "copy_corruption": 0,
+    "mutation_add_overflow": 0
+  },
+  "boundary": "Bounded native correctness with typed pointers, shared row mutation, independent snapshot and checked failure cleanup. Count/queue corruption cases require exit6 and honest residuals; they do not prove arbitrary corrupt-state recovery. No timing, complete runtime memory, optimized execution, sanitizer coverage, L38 or production mechanism qualification."
+}

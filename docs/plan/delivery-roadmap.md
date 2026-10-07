@@ -143,7 +143,9 @@ P2-52, T-1 and so on) until each is closed here or in STATUS.
   reference aliases through array elements, selected/base store synchronization
   and joined-holder nil-write invalidation; global nil-state and parameter proof
   gaps; callee effects outside bounded analysis; the
-  type-based imprecision of the recursion rule, function-pointer
+  isolated readonly V2 candidate's forwarded-borrow false rejection and missing
+  evaluation-work bound for argument environments; the type-based imprecision of the recursion
+  rule, function-pointer
   locals without an initializer, a `main` exit status. Ordinary heap-scalar
   reads and printing need the proposed
   [scalar-read decision](packets/P-REF-scalar-read.md).
@@ -442,6 +444,17 @@ corruption comparisons. Normal requested backing peaks are 196,608 bytes for
 C/arena and 196,672 for RC. This excludes unmeasured runtime storage and timing.
 The initial candidate and its publish-after-detection behavior are preserved
 as comparison artifacts. Competitive realloc and segmented alternatives remain open.
+W2 now passes 75 Debug native checks across independent C and arena/RC sources:
+18 normal/injected cases, three copy corruptions, six named faults, 47 invalid
+inputs and trace overflow. Actual typed pointers preserve the shared row and
+independent historical snapshot. Normal requested peaks are 48 bytes C/arena
+and 144 RC; corrupt metadata leaves explicitly checked 40/144-byte residuals.
+Independent source, GLM and archived native evidence reviews passed within those
+bounds. [Verification](../audits/2026-10-07/memory-w2-verification.json) retains
+source/runner/artifact hashes. Optimized execution, full runtime accounting,
+competitive representations, timing and L38 remain open. W3 has independent
+source candidates and exact pre-source models; native qualification is pending.
+
 Maintain five warmups and thirty measured samples per workload when measurement
 is authorized. Both runtime and peak-live-byte ratios, including bookkeeping,
 must remain at most 1.10 against equivalent reviewed C under L38.

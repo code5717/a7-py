@@ -341,3 +341,29 @@ retains its green gate and blocking review finding. The review digest now record
 45 completed external reviews. Readonly callee summaries and W2 remain separate
 candidates. General reference proofs, production memory, the remaining standard
 library and other V1 requirements are unqualified. GPU execution remains deferred.
+
+
+## W2 native correctness and published stdlib docs
+
+The independent C baseline and arena/RC W2 candidate passed 75 Debug native
+checks. Shared live paths read the updated row, while the explicit snapshot
+retains its pre-update values. Actual typed objects remain readable across the
+specified owner releases. Independent review rehashed 390 retained files,
+92 command records, 78 input pins and 14 artifacts, then replayed 27 workload,
+copy and fault traces through independent checkers. All compiled/run children
+used CPUs 0–3; the Python orchestration process had unrestricted affinity.
+The [W2 record](memory-w2-verification.json) preserves this boundary.
+
+Normal requested backing peaks are 48 bytes C/arena and 144 RC. The count/queue
+fault controls require exit 6 and recorded residual 40/144 bytes. They do not
+establish arbitrary corrupt-state recovery. No optimized timing, complete runtime
+memory, sanitizer coverage, L38 ratio or production mechanism is qualified.
+The review digest records 46 completed external reviews; ongoing readonly and
+W3 reviews are excluded from that count.
+
+Commit `505bac0` deployed successfully in Docs run `37585026722`. All 61 built
+files match their HTTP responses after one transport timeout succeeded on retry.
+The [publication record](published-stdlib-docs-verification.json) preserves both
+attempts. A fresh computer-use inventory had no connected browser; rendered
+interaction and responsive acceptance remain unverified. The separate CI run
+was pending when the documentation deployment completed.

@@ -422,13 +422,24 @@ any workload executed. After an explicit alignment type repair, the frozen retry
 passed 112 checks, including 42 growth cases and controlled corruption tests.
 The repaired program stops before publishing corrupted storage and frees each
 allocation once. Timing, complete runtime storage and L38 remain unqualified.
+The W2 shared-row and explicit-snapshot prototypes passed 75 Debug native checks.
+Both live paths observe the update; the historical snapshot preserves its values.
+Allocation and copy failures clean up verified owners. Named corrupt-count/queue
+cases exit 6 with recorded residual storage rather than claiming safe reclamation.
+Normal requested backing peaks are 48 bytes for C/arena and 144 for RC. These
+exclude unmeasured runtime storage and do not qualify timing or L38. See the
+[W2 record](audits/2026-10-07/memory-w2-verification.json).
 Canonical Option/Result and typed existing stdlib hooks are integrated. The frozen
 compiler/package gate passed 3,826 tests with one expected failure and all 11
 checks. The release wrapper then failed a stale generated docs manifest. After
 regeneration, site and remaining dependency/static checks passed separately;
 all compiler, test and package source bytes were unchanged. The
 [qualification record](audits/2026-10-07/stdlib-b2-verification.json) preserves
-both results. The readonly callee-summary candidate remains isolated.
+both results. The readonly callee-summary candidate remains isolated. Its V2
+forwarded-scalar-borrow analysis rejects a valid guarded call with exit 6 where
+the baseline accepts it. A paired unsafe call remains accepted on both. That
+candidate is blocked from integration pending repair and fresh qualification;
+its passing test suites do not close these counterexamples.
 The [delivery roadmap](plan/delivery-roadmap.md) owns their work order and exits.
 
 ## Audit evidence

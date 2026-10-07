@@ -1,0 +1,15 @@
+{
+  "commit": "505bac05bafe589ba6a444bf73053fce5ff0ca55",
+  "deploy_run": 37585026722,
+  "deploy_conclusion": "success",
+  "verified_at": "2026-10-07T07:10:16.444890+00:00",
+  "files": 61,
+  "http_status": 200,
+  "all_bytes_match": true,
+  "initial_transport_failures": 1,
+  "retry_matches": 1,
+  "expected_dist_sha256": "9574243a01201ce79e6ef298b493bf18b7801719c5128c2079fcff2e404f705b",
+  "initial_results_sha256": "533383b57082687fc3ed12fe7e02e93a6a6d779de342c4e5040a04c6b01a5134",
+  "retry_results_sha256": "d649e5dff3fc07e4261ea1f5c6ed5a95ef99b1e52b54d1fb0325be0c835aa8c9",
+  "boundary": "All61 built documentation files match HTTP bytes. Fresh CUA inventory returned noapps/nobrowsers; rendered desktop/mobile and interaction checks remain unverified. CI pending when Deploy Docs succeeded."
+}
