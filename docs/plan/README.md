@@ -7,10 +7,13 @@ change or evidence that a planned feature has shipped. Current behavior is in
 [Status](../STATUS.md) and the [safety contract](../SAFETY_CONTRACT.md). User
 decisions are in the [ledger](decisions.md); evidence is in
 [research](research/README.md). Memory management has its own
-[memory plan](memory.md). What has been audited, what has not, and what the
-language still lacks are in the
-[language audit checklist](audit/language-audit-checklist.md); findings with no
-owner are in [open items](audit/open-items.md).
+[memory plan](memory.md). The dated
+[language audit checklist](audit/language-audit-checklist.md) and
+[historical open items](audit/open-items.md) preserve the earlier audit coverage
+and findings. Current priorities live in STATUS and the delivery roadmap.
+
+The [CPU/compiler continuation prompt](goal-prompt.md) includes the current
+GPU deferral, review models and worker limits.
 
 ## Where things go
 
@@ -26,21 +29,27 @@ owner are in [open items](audit/open-items.md).
 
 ## Summary
 
-V1 is the core language under L36-L45: a qualified Python compiler, consistent
-numeric semantics, automatic memory management, errors and collections, useful
-libraries and installed tooling. Zig handles generated programs, native
-integration, runtime support, builds and linking. Linux x86-64 is the first
-qualification target. V2 aims to implement the compiler in A7.
+L73 requires the core language, automatic memory, useful libraries and tools,
+structured concurrency, CPU AI, actual GPU execution and self-hosting before V1
+publication. These areas are not yet qualified. Python remains the bootstrap
+compiler; Zig handles generated programs, native integration and runtime support.
+Linux x86-64 is the first qualification target. Local runs must keep eight
+logical CPUs free and use at most eight pytest workers.
 
-AI, concurrency, multicore and GPU execution remain design constraints and later
-qualification tracks. They no longer block core V1. Runtime memory help and
-runtime safety checks are allowed, with compile-time analysis preferred. The
-[delivery roadmap](delivery-roadmap.md) controls current ordering; older track
-names and observations below are historical planning material until revalidated.
+The [delivery roadmap](delivery-roadmap.md) owns the completion sequence and
+evidence requirements. Unresolved designs need proposals and approval before
+dependent implementation. Existing approvals remain valid, including L69 for
+file modules and L68 for stdlib options. Runtime memory help and checked
+execution are allowed, with compile-time analysis preferred.
+
+The gate examples and work tracks below preserve historical planning evidence.
+Their dated failures are not current reproductions. In particular, October 4
+repairs changed arithmetic edges, recursion detection and comment diagnostics.
+Use STATUS, the ledger and the roadmap for current dispositions.
 
 ## Direction
 
-The ledger holds the exact wording and scope limits. In short:
+The ledger holds the exact wording and scope limits:
 
 - Integers have explicit widths only: `i8`–`i64`, `u8`–`u64`, `isize`, `usize`.
   `usize` stays the index and size type. There is no `number`, `int` or `uint`
@@ -53,11 +62,11 @@ The ledger holds the exact wording and scope limits. In short:
 - Memory is automatic and invisible to users. Static analysis is preferred;
   runtime help is allowed. Each required workload must meet L38's 1.10-times
   runtime and peak-live-memory limits (L37-L39).
-- Future AI covers tensor operations, inference, training and language foundations, on
-  the CPU first with an interface for later accelerators (L7, L8).
+- AI covers tensor operations, inference and training. CPU qualification comes
+  first; actual GPU execution is also required before publication (L73).
 - A7 owns tensor semantics, autodiff, optimizer state, RNG and checkpoints.
   Established libraries provide numerical kernels (L9).
-- Later AI acceptance workloads are a small image classifier and a small decoder
+- AI acceptance workloads are a small image classifier and a small decoder
   transformer, including checkpoint recovery (L10).
 - Existing rules continue: no A7 source recursion, no public address-of or
   dereference operators, no `new [N]T`, no package registry.
@@ -580,4 +589,5 @@ versions and remaining limits.
 
 The [V1 delivery roadmap](delivery-roadmap.md) reconciles the repaired baseline,
 compiler foundations, grouped decisions and dependency milestones. It records
-the approved core V1 scope and leaves unresolved semantics behind explicit approvals.
+the full V1 publication boundary under L73. Unresolved semantics require explicit
+approval before dependent implementation.

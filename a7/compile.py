@@ -18,11 +18,13 @@ from time import perf_counter
 from typing import Any, Optional
 
 from rich.console import Console
+from rich.markup import escape
+from rich.text import Text
 
 from .ast_nodes import ASTNode, NodeKind
 from .ast_preprocessor import ASTPreprocessor
 from .backends import get_backend
-from .errors import CompilerError, ImportError as A7ImportError, ParseError, SemanticError, SemanticErrorType, TokenizerError, display_error, display_errors
+from .errors import CompilerError, ImportError as A7ImportError, ParseError, SemanticError, SemanticErrorType, TokenizerError, display_error, display_errors, error_code, error_hint
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
 from .passes import NameResolutionPass, SafetyProofPass, SemanticValidationPass, TypeCheckingPass
@@ -30,16 +32,66 @@ from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
 console = Console()
+# Human-mode diagnostics go to stderr; stdout carries results and JSON.
+error_console = Console(stderr=True)
+
+# Version of the --format json payload. 3.0: error details carry `code` and
+# `hint`, a detail `message` no longer embeds `file:line:col:`, safety-proof
+# failures have type `SafetyError`, non-compiler exceptions map to a category
+# type. The top-level `error.message` is unchanged.
+JSON_SCHEMA_VERSION = "3.0"
+
+# `type` of an error detail built from an exception that is not a
+# CompilerError (bad backend name, OSError on write), keyed by category.
+_CATEGORY_DETAIL_TYPES = {
+    "io": "IoError",
+    "codegen": "CodegenError",
+    "internal": "InternalError",
+}
+
+
+_JSON_INDENT_LEVELS = 100
 
 
 def _safe_json_dumps(payload: dict[str, Any]) -> str:
     """Serialize a CLI JSON payload, degrading strays to str().
 
-    Formatter output is sanitized, but failure details can still carry
-    non-serializable values (exception args, AST residue). default=str
-    keeps the CLI exit path from raising inside json.dumps.
+    Same text as json.dumps(payload, indent=2, default=str) down to
+    _JSON_INDENT_LEVELS nesting levels, written with an explicit stack:
+    json.dumps recurses per nesting level and hits the recursion limit on
+    an AST with a long postfix chain. Deeper levels keep the indentation of
+    the last counted level; indenting a 10,000-link chain in full takes
+    1.6 GB of spaces.
     """
-    return json.dumps(payload, indent=2, default=str)
+    out: list[str] = []
+    # ("value", object, depth) or ("text", literal, 0), last in first out.
+    stack: list[tuple[str, Any, int]] = [("value", payload, 0)]
+    while stack:
+        op, value, depth = stack.pop()
+        if op == "text":
+            out.append(value)
+            continue
+        is_dict = isinstance(value, dict)
+        if not is_dict and not isinstance(value, (list, tuple)):
+            out.append(json.dumps(value, default=str))
+            continue
+        opener, closer = ("{", "}") if is_dict else ("[", "]")
+        if not value:
+            out.append(opener + closer)
+            continue
+        out.append(opener)
+        pad = "\n" + "  " * min(depth + 1, _JSON_INDENT_LEVELS)
+        entries = list(value.items()) if is_dict else [(None, item) for item in value]
+        pending: list[tuple[str, Any, int]] = []
+        for index, (key, item) in enumerate(entries):
+            lead = ("," if index else "") + pad
+            if is_dict:
+                lead += json.dumps(key if isinstance(key, str) else str(key)) + ": "
+            pending.append(("text", lead, 0))
+            pending.append(("value", item, depth + 1))
+        pending.append(("text", "\n" + "  " * min(depth, _JSON_INDENT_LEVELS) + closer, 0))
+        stack.extend(reversed(pending))
+    return "".join(out)
 
 
 class CompileMode(StrEnum):
@@ -77,6 +129,25 @@ class FailureInfo:
     details: list[dict[str, Any]] = field(default_factory=list)
     span: Optional[dict[str, Any]] = None
     exception_type: Optional[str] = None
+    # The raised errors behind `details`, kept for human rendering.
+    errors: list[Any] = field(default_factory=list)
+
+
+def display_failure(failure: FailureInfo, target: Console) -> None:
+    """Print a failure for a person: location, snippet and hint per error.
+
+    The legacy CLI and the check/build/run commands both render through
+    here, so one error reads the same from either.
+    """
+    compiler_errors = [err for err in failure.errors if isinstance(err, CompilerError)]
+    if failure.category == "semantic" and compiler_errors:
+        display_errors(compiler_errors, target)
+    elif compiler_errors:
+        display_error(compiler_errors[0], target)
+    elif failure.category == "internal":
+        target.print(Text(f"Unexpected error: {failure.message}"), soft_wrap=True)
+    else:
+        target.print(Text.assemble(("✗", "red"), " ", failure.message), soft_wrap=True)
 
 
 @dataclass
@@ -234,8 +305,6 @@ class A7Compiler:
                     # tagged as INTERNAL rather than masquerading as parse.
                     # The parser carries spans but not source lines, so attach
                     # the entry file lines here for human context display.
-                    # Imported-file errors already carry their own lines and
-                    # are left untouched by the guard.
                     if not e.source_lines:
                         e.source_lines = source_lines
                     parse_error = e
@@ -248,7 +317,7 @@ class A7Compiler:
                         "parse",
                         str(parse_error),
                         start,
-                        parse_error=parse_error,
+                        compiler_error=parse_error,
                     )
 
             # Stage 3: Semantic analysis
@@ -299,22 +368,19 @@ class A7Compiler:
                         "add one or check as a library with --lib",
                         span=None, filename=str(input_path), source_lines=source_lines,
                     ))
+                module_scope_inputs = [(ast, str(input_path))]
                 import_errors: list[Any] = []
                 try:
                     loaded_modules = module_resolver.load_program_dependencies(ast, str(input_path))
-                except TokenizerError as e:
-                    return self._finish_with_failure(
-                        result, ExitCode.TOKENIZE, "tokenize", str(e),
-                        start, compiler_error=e,
+                except (TokenizerError, ParseError, A7ImportError) as e:
+                    stage_exit, stage = (
+                        (ExitCode.TOKENIZE, "tokenize") if isinstance(e, TokenizerError)
+                        else (ExitCode.PARSE, "parse") if isinstance(e, ParseError)
+                        else (ExitCode.IO, "io")
                     )
-                except ParseError as e:
+                    self._attach_source_lines(e, str(input_path), source_lines)
                     return self._finish_with_failure(
-                        result, ExitCode.PARSE, "parse", str(e),
-                        start, parse_error=e,
-                    )
-                except A7ImportError as e:
-                    return self._finish_with_failure(
-                        result, ExitCode.IO, "io", str(e),
+                        result, stage_exit, stage, str(e),
                         start, compiler_error=e,
                     )
                 except CompilerError as e:
@@ -325,9 +391,10 @@ class A7Compiler:
                     if not module.file_path.startswith("<")
                 )
                 backend_import_errors: list[Any] = []
-                codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
-                if not import_errors and self.mode in codegen_modes:
-                    module_aliases = self._file_module_aliases(ast, module_resolver)
+                # Every mode that type-checks needs the file modules merged:
+                # the checker resolves `alias.f(...)` against the merged tree.
+                if not import_errors:
+                    module_aliases = self._file_module_aliases(ast, module_resolver, str(input_path))
                     self._annotate_file_module_calls(ast, module_aliases)
                     # Imported modules reference their own imports the same
                     # way the entry file does; annotate their bodies with
@@ -338,7 +405,8 @@ class A7Compiler:
                     for module_info in loaded_modules:
                         if module_info.ast is None or module_resolver.is_virtual_module(module_info.path):
                             continue
-                        own_aliases = self._file_module_aliases(module_info.ast, module_resolver)
+                        module_scope_inputs.append((module_info.ast, module_info.file_path))
+                        own_aliases = self._file_module_aliases(module_info.ast, module_resolver, module_info.file_path)
                         own_functions = frozenset(
                             decl.name
                             for decl in module_info.ast.declarations or []
@@ -366,6 +434,15 @@ class A7Compiler:
                 name_resolver = NameResolutionPass()
                 name_resolver.source_lines = source_lines
                 symbol_table = name_resolver.analyze(ast, str(input_path))
+                alias_clash_errors: list[SemanticError] = []
+                for module_ast, module_file in module_scope_inputs:
+                    self._annotate_file_module_calls(
+                        module_ast, {}, alias_clash_errors=alias_clash_errors,
+                        source_file=module_file,
+                    )
+                for error in alias_clash_errors:
+                    self._attach_source_lines(error, str(input_path), source_lines)
+                name_resolver.errors.extend(alias_clash_errors)
                 nr_ok = len(name_resolver.errors) == 0
                 import_ok = len(import_errors) == 0
                 backend_import_ok = len(backend_import_errors) == 0
@@ -528,6 +605,10 @@ class A7Compiler:
                 except Exception as e:
                     if self.output_format == OutputFormat.HUMAN and self.verbose:
                         traceback.print_exc()
+                    if isinstance(e, CompilerError):
+                        if not e.filename:
+                            e.filename = str(input_path)
+                        self._attach_source_lines(e, str(input_path), source_code.splitlines())
                     return self._finish_with_failure(
                         result,
                         ExitCode.CODEGEN,
@@ -609,26 +690,29 @@ class A7Compiler:
             return result
 
         except Exception as e:
-            if self.output_format == OutputFormat.HUMAN:
-                print(f"Unexpected error: {e}", file=sys.stderr)
             result.failure = FailureInfo(
                 category="internal",
                 message=str(e),
+                details=[self._error_to_detail(e, result.input_path, "internal")],
                 exception_type=type(e).__name__,
             )
             result.ok = False
             result.exit_code = ExitCode.INTERNAL
             result.timing_ms = int((perf_counter() - start) * 1000)
             if self.output_format == OutputFormat.JSON:
-                print(_safe_json_dumps(self._to_json_payload(result)))
+                print(_safe_json_dumps(self.to_json_payload(result)))
+            else:
+                display_failure(result.failure, error_console)
             return result
 
     @staticmethod
     def _artifact_path_conflict(inputs: list[str], outputs: list[str]) -> Optional[str]:
-        """Reject path aliases, including symlinks and existing hard links."""
+        """Reject A7 source paths and path aliases (symlinks, hard links)."""
         protected = [Path(name) for name in inputs]
         for name in outputs:
             destination = Path(name)
+            if destination.suffix == ".a7":
+                return f"Output destination is an A7 source path: {name}"
             for other in protected:
                 same_path = destination.resolve() == other.resolve()
                 same_file = destination.exists() and other.exists() and destination.samefile(other)
@@ -639,7 +723,7 @@ class A7Compiler:
 
     def _emit_success(self, result: CompilationResult) -> None:
         if self.output_format == OutputFormat.JSON:
-            print(_safe_json_dumps(self._to_json_payload(result)))
+            print(_safe_json_dumps(self.to_json_payload(result)))
             return
 
         if self.verbose:
@@ -652,7 +736,7 @@ class A7Compiler:
                 result.codegen_result or {},
             )
             if result.doc_path:
-                console.print(f"[blue]Documentation written to {result.doc_path}[/blue]")
+                console.print(f"[blue]Documentation written to {escape(result.doc_path)}[/blue]")
             return
 
         if self.mode in {CompileMode.TOKENS, CompileMode.AST}:
@@ -682,14 +766,14 @@ class A7Compiler:
             if result.codegen_result:
                 size = int(result.codegen_result.get("bytes", 0))
             console.print(
-                f"[green]Compiled[/green] {result.input_path} -> {output} "
+                f"[green]Compiled[/green] {escape(result.input_path)} -> {escape(output)} "
                 f"[dim]({size} bytes, {result.timing_ms} ms)[/dim]"
             )
 
         if result.doc_path:
-            console.print(f"[blue]Documentation written to {result.doc_path}[/blue]")
+            console.print(f"[blue]Documentation written to {escape(result.doc_path)}[/blue]")
 
-    def _file_module_aliases(self, ast: ASTNode, module_resolver: Any) -> dict[str, str]:
+    def _file_module_aliases(self, ast: ASTNode, module_resolver: Any, importing_file: str) -> dict[str, str]:
         aliases: dict[str, str] = {}
         if ast.kind != NodeKind.PROGRAM:
             return aliases
@@ -698,7 +782,8 @@ class A7Compiler:
                 continue
             module_path = decl.module_path or ""
             if not module_resolver.is_virtual_module(module_path):
-                aliases[decl.alias] = module_path
+                module = module_resolver.get_module(module_path, importing_file=importing_file)
+                aliases[decl.alias] = module.path
         return aliases
 
     def _module_emit_prefix(self, module_path: str) -> str:
@@ -711,6 +796,9 @@ class A7Compiler:
         aliases: dict[str, str],
         sibling_names: frozenset[str] = frozenset(),
         sibling_prefix: str = "",
+        *,
+        alias_clash_errors: Optional[list[SemanticError]] = None,
+        source_file: str = "",
     ) -> None:
         """Mark `X.f(...)` as a call of `f` in the file module imported as `X`.
 
@@ -736,7 +824,14 @@ class A7Compiler:
         would reject `X.f(...)` because import aliases are not Zig
         declarations.
         """
-        if not aliases and not sibling_names:
+        # The validation pass runs after name resolution has distinguished
+        # match captures from comparisons. Its alias set includes stdlib
+        # imports and belongs to this original file, before the flat merge.
+        clash_aliases = {
+            decl.alias for decl in node.declarations or []
+            if decl.kind == NodeKind.IMPORT and decl.alias
+        } if alias_clash_errors is not None else set()
+        if not aliases and not sibling_names and not clash_aliases:
             return
 
         binding_decl_kinds = {
@@ -792,6 +887,31 @@ class A7Compiler:
                 continue
             seen.add(id(value))
             kind = value.kind
+
+            if clash_aliases:
+                declarations = []
+                if frames and kind in binding_decl_kinds:
+                    declarations.append((value.name, value))
+                if kind in (NodeKind.FUNCTION, NodeKind.STRUCT, NodeKind.UNION):
+                    declarations.extend((item.name, item) for item in value.generic_params or [])
+                if kind == NodeKind.FUNCTION:
+                    declarations.extend((item.name, item) for item in value.parameters or [])
+                elif kind in (NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED):
+                    declarations.extend([(value.index_var, value), (value.iterator, value)])
+                elif kind == NodeKind.CASE_BRANCH:
+                    declarations.extend(
+                        (pattern.name, pattern) for pattern in value.patterns or []
+                        if pattern.kind == NodeKind.PATTERN_ENUM
+                        or getattr(pattern, "is_capture_pattern", False)
+                    )
+                for name, declaration in declarations:
+                    if name in clash_aliases:
+                        alias_clash_errors.append(SemanticError.from_type(
+                            SemanticErrorType.ALREADY_DEFINED,
+                            span=declaration.span,
+                            filename=source_file,
+                            context=f"Local '{name}' conflicts with this file's import alias",
+                        ))
 
             if kind == NodeKind.CALL and value.function and value.function.kind == NodeKind.FIELD_ACCESS:
                 obj = value.function.object
@@ -975,30 +1095,14 @@ class A7Compiler:
         start_time: float,
         *,
         compiler_error: Optional[CompilerError] = None,
-        parse_error: Optional[Exception] = None,
         semantic_errors: Optional[list[Any]] = None,
         exception: Optional[Exception] = None,
     ) -> CompilationResult:
-        details: list[dict[str, Any]] = []
-        span = None
-
         if semantic_errors:
-            details = [self._error_to_detail(err, result.input_path) for err in semantic_errors]
-        elif parse_error is not None:
-            details = [self._error_to_detail(parse_error, result.input_path)]
-        elif compiler_error is not None:
-            details = [self._error_to_detail(compiler_error, result.input_path)]
-        elif exception is not None:
-            details = [
-                {
-                    "type": type(exception).__name__,
-                    "message": str(exception),
-                    "file": result.input_path,
-                }
-            ]
-
-        if details:
-            span = details[0].get("span")
+            errors = list(semantic_errors)
+        else:
+            errors = [err for err in (compiler_error, exception) if err is not None]
+        details = [self._error_to_detail(err, result.input_path, category) for err in errors]
 
         result.ok = False
         result.exit_code = exit_code
@@ -1006,29 +1110,38 @@ class A7Compiler:
             category=category,
             message=message,
             details=details,
-            span=span,
+            span=details[0].get("span") if details else None,
             exception_type=type(exception).__name__ if exception else None,
+            errors=errors,
         )
         result.timing_ms = int((perf_counter() - start_time) * 1000)
 
         if self.output_format == OutputFormat.JSON:
-            print(_safe_json_dumps(self._to_json_payload(result)))
+            print(_safe_json_dumps(self.to_json_payload(result)))
         else:
-            if semantic_errors:
-                display_errors(semantic_errors, console)
-            elif parse_error is not None:
-                if isinstance(parse_error, CompilerError):
-                    display_error(parse_error, console)
-                else:
-                    console.print(f"[red]✗[/red] {parse_error}")
-            elif compiler_error is not None:
-                display_error(compiler_error, console)
-            else:
-                console.print(f"[red]✗[/red] {message}")
+            display_failure(result.failure, error_console)
 
         return result
 
-    def _to_json_payload(self, result: CompilationResult) -> dict[str, Any]:
+    @staticmethod
+    def _attach_source_lines(error: CompilerError, entry_path: str, entry_lines: list[str]) -> None:
+        """Give an error the lines of the file it names, for the snippet.
+
+        Errors raised while loading an imported module name that module's
+        file; the resolver's parser does not attach its lines.
+        """
+        if error.source_lines:
+            return
+        if not error.filename or error.filename == entry_path:
+            error.source_lines = entry_lines
+            return
+        try:
+            error.source_lines = Path(error.filename).read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            # No snippet; the header still names the file and position.
+            return
+
+    def to_json_payload(self, result: CompilationResult) -> dict[str, Any]:
         formatted = self.json_formatter.format_compilation(
             result.tokens or [],
             result.ast,
@@ -1037,7 +1150,7 @@ class A7Compiler:
         )
 
         payload: dict[str, Any] = {
-            "schema_version": "2.0",
+            "schema_version": JSON_SCHEMA_VERSION,
             "mode": result.mode.value,
             "status": "ok" if result.ok else "error",
             "input": result.input_path,
@@ -1064,7 +1177,7 @@ class A7Compiler:
                 "ok": result.stages.get("semantic", {}).get("ok", False),
                 "passes": result.semantic_results.get("passes", []),
                 "errors": [
-                    self._error_to_detail(err, result.input_path)
+                    self._error_to_detail(err, result.input_path, "semantic")
                     for err in result.semantic_results.get("errors", [])
                 ],
             }
@@ -1092,10 +1205,18 @@ class A7Compiler:
 
         return payload
 
-    def _error_to_detail(self, err: Any, file_path: str) -> dict[str, Any]:
+    def _error_to_detail(self, err: Any, file_path: str, category: str) -> dict[str, Any]:
+        """One `error.details` entry. `message` carries no location prefix;
+        `file` and `span` hold the location."""
+        is_compiler_error = isinstance(err, CompilerError)
         detail: dict[str, Any] = {
-            "type": type(err).__name__,
-            "message": str(err),
+            "type": (
+                type(err).__name__ if is_compiler_error
+                else _CATEGORY_DETAIL_TYPES.get(category, "CompilerError")
+            ),
+            "code": error_code(err),
+            "message": err.message if is_compiler_error else str(err),
+            "hint": error_hint(err),
             "file": getattr(err, "filename", None) or file_path,
         }
         span = getattr(err, "span", None)
@@ -1146,8 +1267,7 @@ class A7Compiler:
         return False
 
     def _generate_output_path(self, input_path: str) -> str:
-        extension = self._get_backend_extension()
-        return input_path.replace(".a7", extension)
+        return str(Path(input_path).with_suffix(self._get_backend_extension()))
 
     def _get_backend_extension(self) -> str:
         try:

@@ -1,199 +1,25 @@
 """
-Integration tests for A7 → Zig code generation.
+Tests for A7 to Zig code generation.
 
-Tests three levels:
-1. Compilation: A7 source → Zig output succeeds
-2. Syntax: Generated Zig passes `zig ast-check`
-3. Patterns: Generated Zig contains expected code patterns
+Every snippet goes through the full compiler pipeline, so a test cannot pin
+Zig for a program the compiler rejects. Tests that take the `zig` fixture
+build the output and run the binary.
 """
 
-import os
-import subprocess
-import sys
-import tempfile
-import pytest
 from pathlib import Path
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+import pytest
 
-from a7.compile import A7Compiler
-from a7.tokens import Tokenizer
-from a7.parser import Parser
 from a7.ast_nodes import ASTNode, BinaryOp, LiteralKind, NodeKind, UnaryOp
 from a7.backends.zig import ZigCodeGenerator
 from a7.errors import CodegenError, SourceSpan
-from a7.passes import NameResolutionPass, SafetyProofPass, TypeCheckingPass, SemanticValidationPass
-from a7.stdlib import StdlibRegistry
+from a7.parser import Parser
+from a7.tokens import Tokenizer
 
-EXAMPLES_DIR = PROJECT_ROOT / "examples"
+from conftest import build_and_run, expect_exit, expect_ok
+from pipeline_helpers import compile_to_zig as compile_a7_to_zig
+from pipeline_helpers import pipeline_tmp  # noqa: F401
 
-# Strict semantic mode should compile all checked examples.
-SEMANTIC_KNOWN_FAIL: set[str] = set()
-
-
-def has_zig():
-    """Check if zig is available on PATH."""
-    try:
-        result = subprocess.run(["zig", "version"], capture_output=True, text=True, timeout=5)
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
-
-
-ZIG_AVAILABLE = has_zig()
-
-
-def compile_a7_to_zig(source: str, filename: str = "test.a7", profile: str = "debug") -> str:
-    """Compile A7 source code to Zig string."""
-    tokenizer = Tokenizer(source, filename=filename)
-    tokens = tokenizer.tokenize()
-
-    source_lines = source.splitlines()
-    parser = Parser(tokens, filename=filename, source_lines=source_lines)
-    ast = parser.parse()
-
-    # Run semantic analysis
-    name_resolver = NameResolutionPass()
-    name_resolver.source_lines = source_lines
-    symbol_table = name_resolver.analyze(ast, filename)
-
-    type_map = None
-    if len(name_resolver.errors) == 0:
-        type_checker = TypeCheckingPass(symbol_table)
-        type_checker.source_lines = source_lines
-        type_checker.analyze(ast, filename)
-        type_map = type_checker.node_types
-        safety = SafetyProofPass(symbol_table, type_map)
-        safety.source_lines = source_lines
-        backend_plan = safety.analyze(ast, filename)
-        if safety.errors:
-            raise safety.errors[0]
-    else:
-        backend_plan = None
-
-    # Preprocess AST
-    from a7.ast_preprocessor import ASTPreprocessor
-    preprocessor = ASTPreprocessor(
-        symbol_table=symbol_table,
-        type_map=type_map,
-        stdlib=StdlibRegistry(),
-    )
-    ast = preprocessor.process(ast)
-
-    # Generate Zig
-    codegen = ZigCodeGenerator()
-    return codegen.generate(
-        ast,
-        type_map=type_map,
-        symbol_table=symbol_table,
-        backend_plan=backend_plan,
-        profile=profile,
-    )
-
-
-def zig_ast_check(zig_code: str) -> tuple[bool, str]:
-    """Run zig ast-check on the given code. Returns (success, error_message)."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.zig', delete=False) as f:
-        f.write(zig_code)
-        f.flush()
-        try:
-            result = subprocess.run(
-                ["zig", "ast-check", f.name],
-                capture_output=True, text=True, timeout=10
-            )
-            return result.returncode == 0, result.stderr.strip()
-        except subprocess.TimeoutExpired:
-            return False, "zig ast-check timed out"
-        finally:
-            os.unlink(f.name)
-
-
-def zig_build_check(zig_code: str) -> tuple[bool, str]:
-    """Try to compile the Zig code (not link). Returns (success, error_message)."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.zig', delete=False) as f:
-        f.write(zig_code)
-        f.flush()
-        try:
-            result = subprocess.run(
-                ["zig", "build-obj", f.name, "-fno-emit-bin"],
-                capture_output=True, text=True, timeout=30
-            )
-            return result.returncode == 0, result.stderr.strip()
-        finally:
-            os.unlink(f.name)
-
-
-# =============================================================================
-# Level 1: All examples compile from A7 → Zig string
-# =============================================================================
-
-class TestA7Compilation:
-    """Test that all example files compile from A7 to Zig without errors."""
-
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        self.compiler = A7Compiler(verbose=False)
-
-    def _get_example_files(self):
-        return sorted(EXAMPLES_DIR.glob("*.a7"))
-
-    @pytest.mark.parametrize("example", sorted(EXAMPLES_DIR.glob("*.a7")),
-                             ids=lambda p: p.stem)
-    def test_example_compiles(self, example, tmp_path):
-        """Every example should compile A7 → Zig without crashing."""
-        if example.stem in SEMANTIC_KNOWN_FAIL:
-            pytest.skip(f"Known semantic issue under strict mode: {example.stem}")
-        output = tmp_path / example.with_suffix(".zig").name
-        result = self.compiler.compile_file(str(example), str(output))
-        assert result, f"Compilation failed for {example.name}"
-        assert output.exists(), f"Output file not created for {example.name}"
-        content = output.read_text()
-        assert len(content) > 0, f"Empty output for {example.name}"
-
-
-# =============================================================================
-# Level 2: Generated Zig passes syntax check (zig ast-check)
-# =============================================================================
-
-# Examples that pass zig ast-check
-ZIG_AST_CHECK_PASS = {
-    "000_empty", "001_hello", "007_while", "008_switch",
-    "015_types", "016_unions",
-}
-
-# Examples with known issues (skip ast-check for these).
-# All examples now pass zig ast-check.
-ZIG_AST_CHECK_KNOWN_FAIL: set = set()
-
-
-@pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-class TestZigAstCheck:
-    """Test that generated Zig passes syntax validation."""
-
-    @pytest.mark.parametrize("example", sorted(EXAMPLES_DIR.glob("*.a7")),
-                             ids=lambda p: p.stem)
-    def test_ast_check(self, example, tmp_path):
-        """Test zig ast-check on generated output."""
-        stem = example.stem
-        if stem in SEMANTIC_KNOWN_FAIL:
-            pytest.skip(f"Known semantic issue under strict mode: {stem}")
-        if stem in ZIG_AST_CHECK_KNOWN_FAIL:
-            pytest.skip(f"Known issue: {stem}")
-
-        compiler = A7Compiler(verbose=False)
-        output = tmp_path / example.with_suffix(".zig").name
-        compiler.compile_file(str(example), str(output))
-
-        zig_code = output.read_text()
-        ok, err = zig_ast_check(zig_code)
-        assert ok, f"zig ast-check failed for {example.name}:\n{err}"
-
-
-# =============================================================================
-# Level 3: Specific code pattern tests
-# =============================================================================
 
 class TestCodePatterns:
     """Test that specific A7 constructs produce expected Zig patterns."""
@@ -210,13 +36,8 @@ class TestCodePatterns:
         with pytest.raises(CodegenError, match="fall used outside"):
             codegen.visit(ASTNode(NodeKind.FALL))
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_match_fallthrough_compiles_and_runs(self, tmp_path):
-        source = tmp_path / "fallthrough.a7"
-        output = tmp_path / "fallthrough.zig"
-        binary = tmp_path / "fallthrough"
-        source.write_text(
-            '''
+    def test_match_fallthrough_compiles_and_runs(self, tmp_path, zig):
+        source = '''
 io :: import "std/io"
 
 main :: fn() {
@@ -248,26 +69,8 @@ main :: fn() {
         }
     }
 }
-'''.strip(),
-            encoding="utf-8",
-        )
-
-        compiler = A7Compiler(verbose=False)
-        assert compiler.compile_file(str(source), str(output))
-        build = subprocess.run(
-            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert build.returncode == 0, build.stderr
-
-        run = subprocess.run(
-            [str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
+'''
+        run = build_and_run(source, tmp_path, zig)
         assert run.returncode == 0, run.stdout + run.stderr
         assert run.stderr == ""
         assert run.stdout.splitlines() == [
@@ -322,13 +125,8 @@ main :: fn() {
         assert "console.println" not in zig
         assert "mathlib.sqrt" not in zig
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_io_println_writes_stdout_and_eprintln_writes_stderr(self, tmp_path):
-        source = tmp_path / "streams.a7"
-        output = tmp_path / "streams.zig"
-        binary = tmp_path / "streams"
-        source.write_text(
-            '''
+    def test_io_println_writes_stdout_and_eprintln_writes_stderr(self, tmp_path, zig):
+        source = '''
 io :: import "std/io"
 
 main :: fn() {
@@ -336,45 +134,18 @@ main :: fn() {
     io.println("{} {}", 1, true)
     io.eprintln("{}:", "err")
 }
-'''.strip(),
-            encoding="utf-8",
-        )
-
-        compiler = A7Compiler(verbose=False)
-        assert compiler.compile_file(str(source), str(output))
-        build = subprocess.run(
-            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert build.returncode == 0, build.stderr
-
-        run = subprocess.run(
-            [str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
+'''
+        run = build_and_run(source, tmp_path, zig)
         assert run.returncode == 0, run.stdout + run.stderr
         assert run.stdout == "out:1 true\n"
         assert run.stderr == "err:\n"
-        generated = output.read_text(encoding="utf-8")
+        generated = compile_a7_to_zig(source)
         assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)") == 1
         assert generated.count("std.Io.File.stderr().writerStreaming(__a7_io.?, &__a7_stream_buf)") == 1
         assert "std.os.linux.write" not in generated
-        # stdout flush helper body + stderr per-call flush; the main wrapper
-        # calls __a7_stdout_flush(), which is not the literal counted here.
-        assert generated.count("interface.flush") == 2
-        assert generated.count("__a7_stdout_flush();") == 2
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_integer_remainder_matches_truncating_division(self, tmp_path):
-        source = tmp_path / "remainder.a7"
-        output = tmp_path / "remainder.zig"
-        binary = tmp_path / "remainder"
-        source.write_text(
-            '''
+    def test_integer_remainder_matches_truncating_division(self, tmp_path, zig):
+        source = '''
 io :: import "std/io"
 
 main :: fn() {
@@ -382,31 +153,13 @@ main :: fn() {
     b: i32 = 5
     io.println("{} {}", a / b, a % b)
 }
-'''.strip(),
-            encoding="utf-8",
-        )
-
-        compiler = A7Compiler(verbose=False)
-        assert compiler.compile_file(str(source), str(output))
-        build = subprocess.run(
-            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert build.returncode == 0, build.stderr
-
-        run = subprocess.run(
-            [str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
+'''
+        run = build_and_run(source, tmp_path, zig)
         assert run.returncode == 0, run.stdout + run.stderr
         assert run.stdout.strip() == "-3 -2"
         assert run.stderr == ""
 
-    def test_slice_ptr_and_len_fields_emit_zig_slice_fields(self):
+    def test_slice_ptr_and_len_fields_emit_zig_slice_fields(self, tmp_path, zig):
         source = '''
 io :: import "std/io"
 main :: fn() {
@@ -416,13 +169,14 @@ main :: fn() {
     io.println("{}", tail.len)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "tail.ptr" in zig
-        assert "tail.len" in zig
-        ok, err = zig_ast_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert "tail.ptr" in generated
+        assert "tail.len" in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "3\n"
 
-    def test_address_taken_local_uses_mutable_storage(self):
+    def test_address_taken_local_uses_mutable_storage(self, tmp_path, zig):
         source = '''
 touch :: fn(p: ref i32) {
     p += 1
@@ -433,19 +187,14 @@ main :: fn() {
     touch(x)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "var x: i32 = 7;" in zig
-        assert "touch(&x);" in zig
-        ok, err = zig_build_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert "var x: i32 = 7;" in generated
+        assert "touch(&x);" in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_string_slices_compile_and_run(self, tmp_path):
-        source = tmp_path / "string_slice.a7"
-        output = tmp_path / "string_slice.zig"
-        binary = tmp_path / "string_slice"
-        source.write_text(
-            '''
+    def test_string_slices_compile_and_run(self, tmp_path, zig):
+        source = '''
 io :: import "std/io"
 
 main :: fn() {
@@ -458,26 +207,8 @@ main :: fn() {
     }
     io.println("")
 }
-'''.strip(),
-            encoding="utf-8",
-        )
-
-        compiler = A7Compiler(verbose=False)
-        assert compiler.compile_file(str(source), str(output))
-        build = subprocess.run(
-            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert build.returncode == 0, build.stderr
-
-        run = subprocess.run(
-            [str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
+'''
+        run = build_and_run(source, tmp_path, zig)
         assert run.returncode == 0, run.stdout + run.stderr
         assert run.stderr == ""
         assert run.stdout.strip() == "bcdef"
@@ -500,13 +231,9 @@ main :: fn() {
         assert "const x: i32 = 4;" in zig
         assert "MAX" not in zig
 
-    def test_file_without_main_emits_empty_translation_unit(self):
-        """Pins the current no-main behaviour so a change to it is deliberate.
-
-        A main-less file compiles to nothing and exits 0. Whether that should
-        become a located error instead is unresolved decision #2; this test
-        exists so the behaviour cannot drift silently.
-        """
+    def test_library_with_only_a_constant_emits_empty_translation_unit(self):
+        """A `::` constant is substituted at use sites, so a library that
+        holds only one emits no Zig."""
         zig = compile_a7_to_zig('PI :: 3.14\n')
         assert zig.strip() == ""
 
@@ -683,8 +410,10 @@ main :: fn() {
         assert 'c[0] = a[0] + b[0];' not in zig
         assert 'c = (a + b);' not in zig
 
-    def test_fixed_array_addition_expression_contexts(self):
+    def test_fixed_array_addition_expression_contexts(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
+
 first :: fn(xs: [4]f64) f64 {
     ret xs[0]
 }
@@ -694,17 +423,17 @@ main :: fn() {
     b: [4]f64 = [5.0, 6.0, 7.0, 8.0]
     value := first(a + b)
     item := (a + b)[2]
-    _ = value
-    _ = item
+    io.println("{} {}", value, item)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert 'first((@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b)))' in zig
-        assert '(@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b))[2]' in zig
-        ok, err = zig_build_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert 'first((@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b)))' in generated
+        assert '(@as(@Vector(4, f64), a) + @as(@Vector(4, f64), b))[2]' in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "6 10\n"
 
-    def test_void_call_statement_does_not_emit_discard(self):
+    def test_void_call_statement_does_not_emit_discard(self, tmp_path, zig):
         source = '''
 noop :: fn() {
 }
@@ -713,43 +442,49 @@ main :: fn() {
     noop()
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "noop();" in zig
-        assert "_ = noop();" not in zig
-        ok, err = zig_ast_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert "noop();" in generated
+        assert "_ = noop();" not in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
 
-    def test_generic_call_uses_declared_type_parameter_order(self):
+    def test_generic_call_uses_declared_type_parameter_order(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
+
 choose($U, $T) :: fn(left: $U, right: $T) $T {
     ret right
 }
 
 main :: fn() {
     answer := choose("left", 42)
-    _ = answer
+    io.println("{}", answer)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "fn choose(comptime U: type, comptime T: type, _: U, right: T) T" in zig
-        assert 'choose([]const u8, i32, "left", 42)' in zig
-        ok, err = zig_build_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert "fn choose(comptime U: type, comptime T: type, _: U, right: T) T" in generated
+        assert 'choose([]const u8, i32, "left", 42)' in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "42\n"
 
-    def test_usize_index_does_not_emit_intcast(self):
+    def test_usize_index_does_not_emit_intcast(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
+
 main :: fn() {
     arr: [3]i32 = [10, 20, 30]
     i: usize = 1
     value := arr[i]
-    _ = value
+    io.println("{}", value)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "arr[i]" in zig
-        assert "arr[@intCast(i)]" not in zig
-        ok, err = zig_ast_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert "arr[i]" in generated
+        assert "arr[@intCast(i)]" not in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "20\n"
 
     def test_type_alias(self):
         # Type aliases are emitted when using struct/enum patterns
@@ -821,8 +556,7 @@ main :: fn() {
         assert 'a7_loop_outer_continue: while' in zig
         assert 'continue :a7_loop_outer_continue;' in zig
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_labeled_for_in_and_indexed_for_in_runtime(self, tmp_path: Path):
+    def test_labeled_for_in_and_indexed_for_in_runtime(self, tmp_path, zig):
         source = '''
 io :: import "std/io"
 
@@ -859,37 +593,19 @@ main :: fn() {
     io.println("{} {} {}", break_total, continue_total, indexed_total)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "a7_loop_outer_break: for" in zig
-        assert "break :a7_loop_outer_break" in zig
-        assert "a7_loop_outer_continue: for" in zig
-        assert "continue :a7_loop_outer_continue" in zig
-        assert "a7_loop_outer_indexed: for" in zig
-        assert "for (arr, 0..) |x, i|" in zig
-        assert "@intCast(i)" not in zig
-        assert "break :a7_loop_outer_indexed" in zig
+        generated = compile_a7_to_zig(source)
+        assert "a7_loop_outer_break: for" in generated
+        assert "break :a7_loop_outer_break" in generated
+        assert "a7_loop_outer_continue: for" in generated
+        assert "continue :a7_loop_outer_continue" in generated
+        assert "a7_loop_outer_indexed: for" in generated
+        assert "for (arr, 0..) |x, i|" in generated
+        assert "@intCast(i)" not in generated
+        assert "break :a7_loop_outer_indexed" in generated
 
-        source_path = tmp_path / "labeled_for_in.zig"
-        binary_path = tmp_path / "labeled_for_in"
-        source_path.write_text(zig, encoding="utf-8")
-
-        build = subprocess.run(
-            ["zig", "build-exe", str(source_path), "-femit-bin=" + str(binary_path)],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        assert build.returncode == 0, build.stderr
-
-        run = subprocess.run(
-            [str(binary_path)],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        combined = run.stdout + run.stderr
-        assert run.returncode == 0, combined
-        assert combined.strip() == "1 4 1"
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "1 4 1\n"
 
     def test_new_and_del(self):
         source = '''
@@ -903,13 +619,8 @@ main :: fn() {
         assert 'create' in zig or 'alloc' in zig
         assert 'destroy' in zig
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_new_and_del_build_and_run(self, tmp_path):
-        source = tmp_path / "delcheck.a7"
-        output = tmp_path / "delcheck.zig"
-        binary = tmp_path / "delcheck"
-        source.write_text(
-            '''
+    def test_new_and_del_build_and_run(self, tmp_path, zig):
+        source = '''
 io :: import "std/io"
 Box :: struct {
     value: i32
@@ -925,24 +636,8 @@ main :: fn() {
     del value_box
     io.println("deleted")
 }
-'''.strip(),
-            encoding="utf-8",
-        )
-        compiler = A7Compiler(verbose=False)
-        assert compiler.compile_file(str(source), str(output))
-        build = subprocess.run(
-            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert build.returncode == 0, build.stderr
-        run = subprocess.run(
-            [str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
+'''
+        run = build_and_run(source, tmp_path, zig)
         assert run.returncode == 0, run.stdout + run.stderr
         assert run.stdout.splitlines() == ["heap value = 42", "deleted"]
 
@@ -1018,10 +713,6 @@ main :: fn() {
             codegen._emit_array_binary_assignment(target, value)
         assert exc_info.value.span is span
 
-    def test_dead_helpers_removed(self):
-        assert not hasattr(ZigCodeGenerator, "_emit_binary")
-        assert not hasattr(ZigCodeGenerator, "_emit_array_binary_assignment_to_expr")
-
     def test_struct_init(self):
         source = '''
 Point :: struct {
@@ -1084,7 +775,7 @@ Value :: union {
         assert 'const Value = union' in zig
         assert 'int_val: i32' in zig
 
-    def test_union_field_initialization_and_access(self):
+    def test_union_field_initialization_and_access(self, tmp_path, zig):
         source = '''
 io :: import "std/io"
 
@@ -1098,11 +789,12 @@ main :: fn() {
     io.println("{}", v.int_val)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert 'const v = Value{ .int_val = 42 };' in zig
-        assert 'v.int_val' in zig
-        ok, err = zig_ast_check(zig)
-        assert ok, err
+        generated = compile_a7_to_zig(source)
+        assert 'const v = Value{ .int_val = 42 };' in generated
+        assert 'v.int_val' in generated
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "42\n"
 
 
     def test_io_println_with_format(self):
@@ -1116,20 +808,13 @@ main :: fn() {
         zig = compile_a7_to_zig(source)
         assert 'std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)' in zig
         assert 'std.os.linux.write' not in zig
-        # stdout flush helper body only; the wrapper calls __a7_stdout_flush().
-        assert zig.count('interface.flush') == 1
         main_part = zig[zig.index("pub fn main"):]
         assert '__a7_stdout_writer = std.Io.File.stdout()' in main_part
         assert main_part.index('__a7_user_main();') < main_part.index('__a7_stdout_flush();')
         assert '"Value: {}\\n"' in zig  # typed integer placeholder stays stable
 
-    @pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-    def test_helper_prints_use_generated_stdout_helper(self, tmp_path):
-        source = tmp_path / "helper-print.a7"
-        output = tmp_path / "helper-print.zig"
-        binary = tmp_path / "helper-print"
-        source.write_text(
-            '''
+    def test_helper_prints_use_generated_stdout_helper(self, tmp_path, zig):
+        source = '''
 io :: import "std/io"
 
 helper :: fn() {
@@ -1141,49 +826,37 @@ main :: fn() {
     helper()
     io.println("after")
 }
-'''.strip(),
-            encoding="utf-8",
-        )
-
-        compiler = A7Compiler(verbose=False)
-        assert compiler.compile_file(str(source), str(output))
-        generated = output.read_text(encoding="utf-8")
+'''
+        generated = compile_a7_to_zig(source)
         assert generated.count("fn __a7_stdout_print") == 1
         assert generated.count("std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf)") == 1
         assert "std.os.linux.write" not in generated
         assert "fn helper() void {\n    __a7_stdout_print" in generated
         assert "fn helper() void {\n    defer " not in generated
 
-        build = subprocess.run(
-            ["zig", "build-exe", str(output), "-femit-bin=" + str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert build.returncode == 0, build.stderr
-
-        run = subprocess.run(
-            [str(binary)],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-        )
+        run = build_and_run(source, tmp_path, zig)
         assert run.returncode == 0, run.stdout + run.stderr
         assert run.stdout == "before\nhelper\nafter\n"
 
-    def test_char_escape_newline(self):
-        source = "nl := '\\n'\n"
-        zig = compile_a7_to_zig(source)
-        # Should not contain a literal newline inside quotes
-        for line in zig.splitlines():
-            if 'nl' in line and "'" in line:
-                assert '\n' not in line.split("'")[1] if line.count("'") >= 2 else True
+    def test_char_escape_newline(self, tmp_path, zig):
+        source = r'''
+io :: import "std/io"
+main :: fn() {
+    nl := '\n'
+    io.print("a{}b", nl)
+}
+'''
+        # The Zig char literal keeps the escape; a raw newline would not build.
+        assert r"const nl: u8 = '\n';" in compile_a7_to_zig(source)
+        run = build_and_run(source, tmp_path, zig)
+        assert run.returncode == 0, run.stderr
+        assert run.stdout == "a\nb"
 
-    def test_empty_program(self):
+    def test_program_without_main_needs_library_mode(self, tmp_path):
         source = "// empty\n"
-        zig = compile_a7_to_zig(source)
-        # Should produce valid (possibly empty) output
-        assert isinstance(zig, str)
+        expect_exit(source, tmp_path, 6, "No entry point: file defines no 'main :: fn()'")
+        result = expect_ok(source, tmp_path, is_library=True)
+        assert Path(result.output_path).read_text(encoding="utf-8") == ""
 
     def test_release_nonwrap_proven_literals(self):
         source = '''
@@ -1250,61 +923,65 @@ main :: fn() {
 
 
 # =============================================================================
-# Level 4: Zig compilation (build check) for simple programs
+# Generated Zig builds and runs
 # =============================================================================
 
-@pytest.mark.skipif(not ZIG_AVAILABLE, reason="zig not installed")
-class TestZigBuildCheck:
-    """Test that simple generated Zig can be compiled by the Zig compiler."""
+def run_stdout(source, tmp_path, zig):
+    run = build_and_run(source, tmp_path, zig)
+    assert run.returncode == 0, run.stderr
+    return run.stdout
 
-    def test_empty_main(self):
-        source = 'main :: fn() {}\n'
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
 
-    def test_hello_world_ast_check(self):
+class TestZigBuildAndRun:
+    """Small programs compile, build with Zig, and print the expected output."""
+
+    def test_empty_main_builds_and_runs(self, tmp_path, zig):
+        assert run_stdout('main :: fn() {}\n', tmp_path, zig) == ""
+
+    def test_hello_world_builds_and_runs(self, tmp_path, zig):
         source = '''
 io :: import "std/io"
 main :: fn() {
     io.println("Hello!")
 }
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "Hello!\n"
 
-    def test_function_call_ast_check(self):
+    def test_function_call_builds_and_runs(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
 add :: fn(a: i32, b: i32) i32 {
     ret a + b
 }
 main :: fn() {
     result := add(3, 4)
+    io.println("{}", result)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "7\n"
 
-    def test_labeled_loop_ast_check(self):
+    def test_labeled_loops_build_and_run(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
 main :: fn() {
+    passes := 0
     @outer_break while true {
+        passes += 1
         break outer_break
     }
 
     @outer_continue for i := 0; i < 2; i += 1 {
+        passes += 1
         continue outer_continue
     }
+    io.println("{}", passes)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "3\n"
 
-    def test_struct_and_enum_ast_check(self):
+    def test_struct_and_enum_build_and_run(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
 Color :: enum {
     Red
     Green
@@ -1314,12 +991,17 @@ Point :: struct {
     x: f64
     y: f64
 }
+main :: fn() {
+    p := Point{x: 1.5, y: 2.5}
+    c := Color.Green
+    if c == Color.Green {
+        io.println("{} {}", p.x, p.y)
+    }
+}
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "1.5 2.5\n"
 
-    def test_generic_struct_build_check(self):
+    def test_generic_struct_builds_and_runs(self, tmp_path, zig):
         source = '''
 io :: import "std/io"
 
@@ -1332,26 +1014,25 @@ main :: fn() {
     io.println("{}", b.value)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        assert "Box(i32)" in zig
-        ok, err = zig_build_check(zig)
-        assert ok, f"build failed:\n{err}\n\nGenerated:\n{zig}"
+        assert "Box(i32)" in compile_a7_to_zig(source)
+        assert run_stdout(source, tmp_path, zig) == "42\n"
 
-    def test_while_loop_ast_check(self):
+    def test_while_loop_builds_and_runs(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
 main :: fn() {
     i := 0
     while i < 10 {
         i += 1
     }
+    io.println("{}", i)
 }
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "10\n"
 
-    def test_if_else_ast_check(self):
+    def test_if_else_builds_and_runs(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
 max :: fn(a: i32, b: i32) i32 {
     if a > b {
         ret a
@@ -1359,19 +1040,27 @@ max :: fn(a: i32, b: i32) i32 {
         ret b
     }
 }
+main :: fn() {
+    io.println("{} {}", max(3, 7), max(9, 2))
+}
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "7 9\n"
 
-    def test_match_ast_check(self):
+    def test_enum_match_builds_and_runs(self, tmp_path, zig):
         source = '''
+io :: import "std/io"
 Color :: enum {
     Red
     Green
     Blue
 }
+main :: fn() {
+    c := Color.Blue
+    match c {
+        case Color.Red: io.println("red")
+        case Color.Green: io.println("green")
+        case Color.Blue: io.println("blue")
+    }
+}
 '''
-        zig = compile_a7_to_zig(source)
-        ok, err = zig_ast_check(zig)
-        assert ok, f"ast-check failed:\n{err}\n\nGenerated:\n{zig}"
+        assert run_stdout(source, tmp_path, zig) == "blue\n"

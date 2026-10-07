@@ -1,0 +1,50 @@
+// Tip splitter with service-grade percent and per-person share
+
+io :: import "std/io"
+
+Bill :: struct {
+    subtotal: i32
+    service: i32
+    diners: i32
+}
+
+tip_percent :: fn(service: i32) i32 {
+    match service {
+        case 1: { ret 5 }
+        case 2: { ret 10 }
+        case 3: { ret 15 }
+        case 4: { ret 20 }
+        else: { ret 0 }
+    }
+}
+
+grade :: fn(service: i32) string {
+    match service {
+        case 1: { ret "poor" }
+        case 2: { ret "fair" }
+        case 3: { ret "good" }
+        case 4: { ret "great" }
+        else: { ret "unrated" }
+    }
+}
+
+settle :: fn(bill: Bill) {
+    diners := bill.diners
+    if diners != 0 {
+        pct := tip_percent(bill.service)
+        tip := bill.subtotal * pct / 100
+        grand := bill.subtotal + tip
+        each := grand / diners
+        io.println("subtotal={} service={} ({}) diners={}", bill.subtotal, bill.service, grade(bill.service), diners)
+        io.println("tip={} total={} each={}", tip, grand, each)
+    } else {
+        io.println("no diners, no split")
+    }
+}
+
+main :: fn() {
+    io.println("=== Tip Split ===")
+    settle(Bill{subtotal: 120, service: 3, diners: 4})
+    settle(Bill{subtotal: 55, service: 4, diners: 2})
+    settle(Bill{subtotal: 80, service: 9, diners: 3})
+}

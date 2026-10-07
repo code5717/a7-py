@@ -159,9 +159,10 @@ uv run a7 build examples/001_hello.a7 -o hello
 ./hello
 ```
 
-The default profile is `debug`. Use `--profile release` for Zig ReleaseFast.
-Current safety checks have alias and lifetime limits in both profiles; a release
-build does not establish complete memory safety.
+The default profile is `debug`. Use `--profile release` for Zig ReleaseSafe,
+which keeps runtime checks, or `--profile fast` for Zig ReleaseFast, which
+removes them. Current safety checks have alias and lifetime limits in every
+profile; no profile establishes complete memory safety.
 
 To emit Zig without building, keep the existing file-first command:
 
@@ -607,13 +608,13 @@ Source: https://code5717.github.io/a7-py/docs/language/syntax.md
 
 # Syntax and lexical structure
 
-A7 source files use `.a7`. Use ASCII identifiers and spaces for indentation. Newlines or semicolons end statements. Tabs outside literals are rejected. The tokenizer strips a leading UTF-8 byte-order mark. The specification describes ASCII source; broader Unicode source behavior is not a supported portability guarantee.
+A7 source files use `.a7`. Use ASCII identifiers and spaces for indentation. Newlines or semicolons end statements. Tabs outside literals are rejected. The tokenizer strips a leading UTF-8 byte-order mark. Source files are UTF-8. Ordinary identifiers and numeric spellings use ASCII; literal contents and comments can contain non-ASCII characters.
 
 ## Comments and names
 
-`//` and `#` begin line comments. `/* ... */` comments can nest. The current tokenizer accepts end-of-file as the end of an unclosed block comment, so do not rely on it to diagnose a missing `*/`.
+`//` and `#` begin line comments. `/* ... */` comments can nest. An unclosed block comment is a lexical error at its opening delimiter.
 
-Names are case-sensitive. Ordinary identifiers begin with an ASCII letter or underscore, followed by ASCII letters, digits, or underscores. The specification reserves leading underscores for compiler names. The lexer limits identifiers and numeric literal spellings to 100 characters.
+Names are case-sensitive. Ordinary identifiers begin with an ASCII letter or underscore, followed by ASCII letters, digits, or underscores. The approved visibility model makes top-level `_name` private and reserves `__name` for the compiler; enforcement remains incomplete. The lexer limits identifiers and numeric literal spellings to 100 characters.
 
 ```a7
 // A line comment
@@ -628,7 +629,7 @@ answer := 42
 | Integer | `42`, `0x2A`, `0o52`, `0b101010`, `1_000` | The destination type must accommodate the value. |
 | Float | `3.14`, `.5`, `1.`, `2.71e10` | Numeric conversion and range rules still apply. |
 | Boolean | `true`, `false` | Type `bool`. |
-| Character | `'a'`, `'\n'`, `'\x41'` | Public character model is ASCII. |
+| Character | `'a'`, `'\n'`, `'\x41'` | One byte from 0 through 255. |
 | String | `"hello"`, `"a\nb"` | String slicing produces a character slice. |
 | Nil | `nil` | Reference types only, not arrays or other value types. |
 
@@ -642,7 +643,7 @@ The [keyword index](/a7-py/docs/language/builtins.md#keyword-index) lists the to
 
 ## Status and restrictions
 
-Status: supported for the ordinary ASCII forms shown here. Unicode behavior beyond the documented ASCII model is unverified. Parser grammar and AST node lists describe compiler internals, not additional callable features. Numeric edge cases, diagnostics categories, and implementation limits must be read alongside current compiler evidence.
+Status: ordinary names use ASCII. Character literals above code point 255 are rejected; strings can hold UTF-8 source text. Parser grammar and AST node lists describe compiler internals, not additional callable features. Numeric edge cases, diagnostics categories, and implementation limits must be read alongside current compiler evidence.
 
 ## Evidence
 
@@ -738,7 +739,7 @@ Choose explicit-width integers for data. Use `usize` for lengths, capacities, al
 | `isize` | Target pointer width | Signed offsets |
 | `f32` | 32 bits | IEEE 754 single precision |
 | `f64` | 64 bits | IEEE 754 double precision |
-| `char` | Byte representation | Public ASCII character model |
+| `char` | 8 bits | Byte character, 0 through 255 |
 | `string` | Composite | Character data and length |
 
 `int`, `uint`, and `number` are not accepted public alternatives to explicit-width integers. Although the lexer reserves `float`, use the documented `f32` and `f64` spellings. This index makes no runtime-support claim for `float`.
@@ -850,7 +851,7 @@ One-dimensional same-shape numeric fixed-array addition is a supported narrow ar
 ## Evidence
 
 - [a7/parser.py](https://github.com/code5717/a7-py/blob/master/a7/parser.py)
-- [a7/const_eval.py](https://github.com/code5717/a7-py/blob/master/a7/const_eval.py)
+- [a7/exact_constants.py](https://github.com/code5717/a7-py/blob/master/a7/exact_constants.py)
 - [examples/020_operators.a7](https://github.com/code5717/a7-py/blob/master/examples/020_operators.a7)
 - [docs/SAFETY_CONTRACT.md](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md)
 - [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)
@@ -1026,6 +1027,25 @@ Value parameters are immutable. To update a local working value, copy a paramete
 
 A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are unavailable in the current backend.
 
+## Nested functions
+
+A function can declare a nested function that uses its own parameters and locals.
+Capture-free nested functions can be called or returned as function values. The
+backend gives them distinct file-scope Zig names, so separate enclosing functions
+can each declare `helper`.
+
+```a7
+outer :: fn(k: i32) i32 {
+    helper :: fn(v: i32) i32 { ret v + 1 }
+    ret helper(k)
+}
+```
+
+Reading an enclosing local or parameter currently fails during code generation
+with exit 7. Pass that value as an argument instead. Nested bodies receive type,
+return-path, and control-flow checks. See the
+[native regression cases](https://github.com/code5717/a7-py/blob/master/test/test_nested_function_codegen.py).
+
 ## Function types and callbacks
 
 A function type uses `fn(i32, i32) i32`. A named alias can describe a callback, and a parameter of that type can be called inside the function. See the complete [function pointer example](https://github.com/code5717/a7-py/blob/master/examples/022_function_pointers.a7) and [callback example](https://github.com/code5717/a7-py/blob/master/examples/027_callbacks.a7).
@@ -1140,7 +1160,7 @@ A slice shares its backing storage. It must not outlive that storage. Full lifet
 
 ## Strings and characters
 
-`string` is the public ASCII string type. A string literal uses double quotes; a character uses single quotes. String slicing returns `[]char`, not a new `string`. Escape syntax is listed in [syntax](/a7-py/docs/language/syntax.md#literals-and-escapes).
+`string` stores bytes from UTF-8 source literals. A `char` holds one byte from 0 through 255. A string literal uses double quotes; a character uses single quotes. String slicing returns `[]char`, not a new `string`. Escape syntax is listed in [syntax](/a7-py/docs/language/syntax.md#literals-and-escapes).
 
 Slices expose `.len`. Direct string length access such as `text.len` is
 currently rejected by the type checker, despite specification descriptions of
@@ -1193,7 +1213,7 @@ For a `usize` index, `if index < items.len { ... }` proves an index into the sam
 
 ## Planned array programming
 
-Status: limited for current arrays and slices. Tensor types, broadcasting, reshaping, reductions, matrix libraries, autodiff, neural-network primitives, memory-layout controls, SIMD annotations, GPU movement, and advanced multi-axis indexing are planned. Specification section 9 illustrates that proposed design, not executable current APIs.
+Status: limited for current arrays and slices. Tensor types, broadcasting, reshaping, reductions, matrix libraries, autodiff, neural-network primitives, memory-layout controls, SIMD annotations, GPU movement, and advanced multi-axis indexing are planned. The [array programming proposal](https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md) preserves the historical sketches. SPEC section 9 now points to that document. Proposed tensor API spellings are not current executable APIs.
 
 `new [N]T` is unavailable. Use stack fixed arrays or supported slice operations. Do not substitute a heap-array example from an older specification passage.
 
@@ -1245,6 +1265,12 @@ Color :: enum {
 
 Plain enum members receive integer values beginning at zero; explicit values use `Name = integer`. Access members through the enum name, such as `Color.Red`, and match them with `case` patterns. Do not infer payload-carrying `Option` or `Result` support from plain enum support.
 
+Enums with explicit values use the first tag type in `i32`, `u32`, `i64`,
+`u64` that fits all variants, including implicit successors. For example,
+`Big :: enum { A = 4294967295, B }` uses `i64` because `B` is 4294967296.
+If no single supported tag type fits all values, code generation rejects the
+enum. See [wide-enum tests](https://github.com/code5717/a7-py/blob/master/test/test_enum_tag_types.py).
+
 ## Unions
 
 ```a7
@@ -1259,9 +1285,9 @@ An untagged union literal requires exactly one named field. The field must exist
 
 ## Status and restrictions
 
-Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` and tag inspection are reserved or incomplete workflows, not a qualified tagged-union API. Multiple return values and destructuring remain unavailable; use a named result struct.
+Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` supports leading-dot match arms and copyable payload capture; broader lifetime and payload-safety guarantees remain incomplete. Multiple return values and destructuring remain unavailable; use a named result struct.
 
-Only top-level declarations can use `pub`. Individual fields cannot be public declarations. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](/a7-py/docs/language/generics.md).
+`pub` on a struct field is accepted without changing field visibility. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](/a7-py/docs/language/generics.md).
 
 ## Evidence
 
@@ -1281,7 +1307,7 @@ Source: https://code5717.github.io/a7-py/docs/language/generics.md
 
 # Generics and type sets
 
-Generic type parameters use `$T`. Concrete call arguments can infer a function's type parameters. The current examples use explicit generic declaration lists together with inline parameter types.
+Generic type parameters use `$T`. Concrete call arguments can infer a function's type parameters. A function may declare its parameters in a list (`identity($T) :: fn(x: $T) $T`) or inline (`identity :: fn(x: $T) $T`); both compile and run.
 
 ```a7
 identity($T) :: fn(value: $T) $T {
@@ -1290,6 +1316,14 @@ identity($T) :: fn(value: $T) $T {
 ```
 
 Calls `identity(7)` and `identity("ok")` select concrete specializations. The full repository example also instantiates nested generic structs.
+
+Generic local literal, array and scalar `if`/`match` initializers must fit each concrete
+instantiation. A bound callback keeps that instantiation's signature through
+local aliases, assignments and branch selection; calls do not infer fresh types.
+For example, a callback instantiated with an i8 argument rejects the value 300.
+Callback values selected through record fields or array elements remain incomplete.
+Array-literal arms inside generic `if`/`match` initializers still lack nested
+contextual fitting.
 
 ## Generic structs
 
@@ -1309,11 +1343,10 @@ Instantiate with concrete types, for example `Box(i32){value: 7}` or `Pair(i32, 
 
 `@type_set(i8, i16, i32)` describes allowed types. The semantic layer recognizes predefined sets including `Numeric`, `Integer`, `Float`, `Signed`, and `Unsigned`, and local type-set aliases.
 
-A top-level local alias such as `IntOnly :: @type_set(i32, i64)` passes
-semantic checking but currently fails Zig code generation with an unsupported
-`TYPE_SET` node. Semantic recognition alone does not make that alias runnable.
+A file-scope alias such as `IntOnly :: @type_set(i32, i64)` works as a
+constraint (`$T: IntOnly`). It exists only at compile time and emits no Zig.
 
-The documented current constraint shape is `name($T: Numeric) :: fn(value: $T) $T { ... }`. Inferred call arguments are checked against declared constraints. `where` is a reserved spelling, but broad specification examples using `where` are not a substitute for the example-backed current form.
+The constraint shape `name($T: Numeric) :: fn(value: $T) $T { ... }` checks inferred call arguments against the declared constraint. Minimal conjunctions such as `where T: Numeric, U: Float` also work for functions, structs and unions. Richer predicates remain unsupported.
 
 A predefined constraint works without a local alias. This complete program
 prints `42`:
@@ -1327,13 +1360,13 @@ main :: fn() { io.println("{}", identity(42)) }
 ```
 
 The inline constraint `$T: @type_set(i32, i64)` also works in this direct-call
-example. A top-level `@type_set` alias remains a separate codegen limitation.
+example. A file-scope `@type_set` alias works the same way.
 
 ## Status and restrictions
 
-Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic enums and unions appearing in the specification do not establish runnable `Option` or `Result` implementations.
+Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic tagged unions specialize positionally. Standard-library `Option` and `Result` implementations are not shipped; generic enums remain unsupported.
 
-The specification says generic names exclude digits, while the tokenizer accepts digits after the initial letter and delegates further validity to parsing. Use conservative letter-only names such as `$T` or `$ELEMENT` until that discrepancy is resolved. Tokenizer acceptance alone is not execution evidence.
+Generic names start with a letter after `$` and may contain digits and underscores after that letter, so `$T1` is a valid spelling and `$123` is not. The tokenizer uses Unicode-aware character checks; ASCII names are the documented forms.
 
 Some specification examples mix separate `$T` parameters and plain `T` references. Prefer the consistent spellings in the repository's generic example. This documentation does not authorize a syntax change.
 
@@ -1421,7 +1454,15 @@ Branch joins, loop mutations, reference calls, and deferred effects invalidate
 stale facts. A guard before a mutation or call may no longer prove a later
 operation. These checks do not provide complete alias or lifetime analysis.
 
-`del` releases supported heap allocations. A direct read after deletion is rejected until reassignment reinitializes the binding. `defer` schedules a statement for scope exit; `defer del value_box` keeps cleanup next to allocation. See the complete defer example for ordering and early-return behavior.
+`del` releases supported heap allocations. Direct reference aliases share
+deletion state; repeated deletion and reads after deletion fail until fresh
+reassignment. Guarded reference fields receive the same nil checks, including
+user fields named `ptr`. `defer` schedules a statement for scope exit;
+`defer del value_box` keeps cleanup next to allocation.
+
+Alias tracking remains incomplete for array elements, joined allocation field
+paths, nested aggregates and deletion through borrowed aggregates. Accepted
+programs can still violate allocation lifetimes in these cases.
 
 Slices must not outlive their backing arrays, and references must not outlive referents. These are required programming constraints. Full ownership, alias tracking, and lifetime enforcement remain incomplete. There is no implicit deep-copy guarantee.
 
@@ -1435,9 +1476,12 @@ Slices must not outlive their backing arrays, and references must not outlive re
 | Slice | Ordered bounds within the length |
 | Reference field access | Non-nil reference |
 | Backend lowering | Approval for that particular operation |
-| Direct use after deletion | Binding reinitialized before reuse |
+| Tracked reference use after deletion | Referenced allocation has not been deleted |
 
-Status: limited. Shift and numeric edge-case checks, union discriminant proofs, and ownership analysis remain active work. The safety contract states the intended fail-closed behavior and separately lists implementation gaps. Do not turn its intended guarantees into claims that every accepted program is safe.
+Status: limited. Runtime shift checks and wrapping signed minimum-value arithmetic
+are implemented. Union discriminant proofs and complete ownership analysis
+remain unfinished. The safety contract states required behavior and lists
+implementation gaps; it does not guarantee that every accepted program is safe.
 
 ## Planned memory model
 
@@ -1473,11 +1517,28 @@ console :: import "std/io"
 
 An alias is local: `console.println(...)` calls the same virtual module as `io.println(...)`. `std/io` and `std/math`, along with their short `io` and `math` module names, are compiler-backed virtual modules.
 
-Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Simple alias-qualified calls are supported and emit into the same generated Zig source. Import paths with parent traversal such as `../utils` are rejected by the resolver.
+Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Simple alias-qualified calls are supported and emit into the same generated Zig source. Paths resolve relative to the importing file. A nested file may use `../utils`
+when the target stays inside the entry file's folder. Paths and symlinks that
+escape that folder are rejected. Directory fallback through `path/mod.a7`
+remains supported.
+
+Canonical real paths identify loaded file modules. Importing one file twice in
+the same importer is an error, including alternate relative spellings and
+symlinks. Different importing files can share one cached dependency.
+
+A local binding cannot reuse an import alias from its own file, including a
+stdlib alias. Parameters, loop bindings and match captures follow this rule;
+violations fail with semantic exit 6. Record fields and another file's aliases
+do not reserve local names.
 
 ## Public and private declarations
 
-`pub` applies to top-level functions, variables, constants, and types. Items without `pub` are file-private. `pub` cannot decorate a local, parameter, or individual struct field. There is no protected or internal visibility level.
+The approved model makes top-level `_name` private and other top-level names
+public; `__name` is reserved for the compiler. L69 authorizes separate file
+scopes. Complete scope isolation and underscore visibility enforcement remain
+unfinished. Current `pub` parsing does not enforce a private/public boundary.
+Struct fields remain visible to importers; field `pub` has no access-control
+effect. See the [decision ledger](https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md).
 
 ```a7
 pub answer :: fn() i32 {
@@ -1498,6 +1559,7 @@ Selected-import syntax such as `import "helper" { answer }` has resolver metadat
 ## Evidence
 
 - [a7/module_resolver.py](https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py)
+- [test/test_module_path_identity.py](https://github.com/code5717/a7-py/blob/master/test/test_module_path_identity.py)
 - [examples/018_modules.a7](https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7)
 - [test/test_module_alias_shadowing.py](https://github.com/code5717/a7-py/blob/master/test/test_module_alias_shadowing.py)
 - [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
@@ -1519,7 +1581,7 @@ Source: https://code5717.github.io/a7-py/docs/language/builtins.md
 
 | Spelling | Status | Qualification |
 | --- | --- | --- |
-| `@type_set(...)` | Limited | Constraint syntax is recognized; top-level local type-set aliases fail code generation with unsupported `TYPE_SET` |
+| `@type_set(...)` | Limited | Works inline (`$T: @type_set(i32, i64)`) and as a file-scope alias used as a constraint |
 | `cast(Type, value)` | Limited | Primitive conversion needs a safety proof |
 | `@size_of`, `@align_of` | Unavailable | Reserved or parsed; not semantically resolved and backend-lowered |
 | `@type_id`, `@type_name` | Unavailable | No current executable reflection interface |
@@ -1728,8 +1790,9 @@ The entry file must define `main :: fn()`; without one, `check` exits 6 and
 names `--lib`. `check --lib` accepts a library file with no entry point.
 Imported modules never need their own `main`.
 Both native commands require exactly Zig 0.16.0. The default profile is `debug`,
-which selects Zig Debug. `release` selects ReleaseFast. Neither profile closes
-the current alias or lifetime safety gaps.
+which selects Zig Debug. `release` selects ReleaseSafe and keeps runtime
+checks. `fast` selects ReleaseFast and removes them. No profile closes the
+current alias or lifetime safety gaps.
 
 `doctor` exits with code 2 for missing or incompatible Zig. It also returns 2
 outside the V1 qualification target of Linux x86_64 and Python 3.13. Package
@@ -1784,13 +1847,13 @@ uv run a7 examples/001_hello.a7 --mode doc --doc-out /tmp/hello-report.md
 
 ## JSON output
 
-Legacy `--format json` and `check --format json` emit a JSON object with schema version `2.0`. Read the process
+Legacy `--format json` and `check --format json` emit a JSON object with schema version `3.0`. Read the process
 exit code as well as the payload. CLI argument parsing failures use argparse's
 usage text on stderr, even if `--format json` was requested.
 
 | Field | Meaning |
 | --- | --- |
-| `schema_version` | Payload schema, currently `2.0` |
+| `schema_version` | Payload schema, currently `3.0` |
 | `mode` | Requested compiler mode |
 | `status` | `ok` or `error` |
 | `input` | Input path |
@@ -1798,7 +1861,8 @@ usage text on stderr, even if `--format json` was requested.
 | `timing_ms` | Invocation timing; not a benchmark |
 | `stages` | Stages reached, with tokens, AST, semantic results, or generated source |
 | `artifacts` | Paths actually written by this invocation |
-| `error` | Present on failure, with category, message, details, span, and exception type |
+| `error` | Present on failure, with category, message, details, span, and exception type. Each entry in `details` has `type`, `code` (the diagnostic code or null), `message`, `hint` (or null), `file`, and `span` when known |
+| `layout` | Present with `check --layout --format json`: struct sizes, alignments and field offsets |
 
 The `stages` keys are `tokenize`, `parse`, `semantic`, and `codegen`, when
 reached. Their contents depend on the stage. For example, a successful codegen
@@ -1836,7 +1900,9 @@ is separate from this website's Markdown reference.
 
 Source recursion is banned. The semantic validator rejects direct and mutual
 recursion and tracked local function-pointer alias cycles. Compiler internals
-have their own ongoing conversion to stacks and worklists.
+have their own ongoing conversion to stacks and worklists. Type-checker
+statements now use a worklist for blocks, branches, loops and match arms.
+Expression checking and type resolution still contain recursive calls.
 
 Safety checks cover narrowing casts, division and modulo denominators, indexing
 and slice bounds, nil reference use, and direct use after `del`. Alias and
@@ -1878,7 +1944,7 @@ is the current implementation authority.
 | --- | --- | --- |
 | Zig source emission | supported | Only public backend; targets Zig 0.16.0. |
 | Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
-| References and explicit allocation | limited | Nil checks and direct use-after-delete checks exist; alias and lifetime guarantees remain incomplete. |
+| References and explicit allocation | limited | Nil guards, tracked field deletion and direct alias deletion checks exist; complete lifetime guarantees remain unavailable. |
 | Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |
 | File modules | limited | Simple aliased imports emit one combined Zig file. |
 | Fixed arrays and slices | limited | Bounds checking exists; heap fixed-array allocation is rejected. |
@@ -1904,49 +1970,53 @@ requirements. Neither makes the other complete.
 
 ## Known gaps
 
-- Safety remains incomplete. Current probes still accept field-name confusion,
-  fallthrough division, stale global facts after calls and repeated field deletion.
-- A low-recursion test passes through the pytest entry point but fails through
-  `python -m pytest`. Full compiler traversal still needs conversion.
-- Forward-global typing awaits compatibility approval because the fix rejects
-  a float-to-integer assignment that currently builds.
+- Safety remains incomplete for aliases through array elements and selected
+  fields, loop field-argument deletion and unsupported callee effects. A bounded
+  exact-callee repair passes focused controls for field replacement/deletion and
+  nested global effects; combined-source qualification remains pending.
+- Type operations and several AST walks use explicit stacks. Full compiler
+  traversal still needs conversion.
 
 - A labeled loop whose label is never targeted no longer emits a label: the
   fix landed with commit `ed0baff`, and the never-targeted case is pinned in
   both profiles by the `unused-labels` case in
   `test/test_resume_backend_bindings.py`.
 
-- Local constant usage is not tracked by declaration identity. Sibling-scope name
-  collisions and nested constant shadowing can still emit invalid Zig.
+- Local constants use declaration identity. Sibling-scope collisions and nested
+  shadowing are covered by native regression tests.
 
 | Topic | Current restriction | Reference |
 | --- | --- | --- |
-| Modules | Selected imports, `using import`, module-qualified struct literals, and bare entry-file references to module functions remain incomplete. | [Modules](/a7-py/docs/language/modules.md) |
-| Numeric operations | Integer addition, subtraction, and multiplication wrap. Shifts and other numeric edge cases need further qualification. | [Operators](/a7-py/docs/language/operators.md) |
-| Unions | Tag and discriminant workflows are not implemented. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
+| Modules | Selected imports, `using import`, module-qualified struct literals and complete per-file scopes remain incomplete. Bare entry-file calls to module functions reject with the qualified spelling. | [Modules](/a7-py/docs/language/modules.md) |
+| Numeric operations | Integer addition, subtraction and multiplication wrap. Runtime shifts are checked; signed minimum-value division, negation and absolute value wrap. | [Operators](/a7-py/docs/language/operators.md) |
+| Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
-| Generics | Arbitrary specialization propagation is incomplete. | [Generics](/a7-py/docs/language/generics.md) |
+| Generics | Concrete local initializers and bound callback aliases/assignments/branches are checked. Field/array callback provenance and arbitrary specialization propagation remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
 | Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | No `Option`, `Result`, collections, or full memory/string library. | [Standard library](/a7-py/docs/stdlib.md) |
 
 Focused native probes verify escaped IO braces and ordinary signed `math.abs`
-results after repairs. The minimum signed `abs` input remains an unsafe edge case.
-Scalar-filled fixed arrays and direct `string.len` are rejected. A top-level
-local `@type_set` alias can pass semantic checking but fail code generation.
+results after repairs. `math.abs` of the minimum signed value wraps to that
+value in every profile. Scalar-filled fixed arrays and direct `string.len` are
+rejected.
 See [stdlib](/a7-py/docs/stdlib.md), [arrays](/a7-py/docs/language/arrays-strings.md),
 [generics](/a7-py/docs/language/generics.md), and
 [recorded checks](https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md).
 
 ## Planned work
 
-Core V1 includes automatic memory, useful libraries and installed tooling. The
-Python compiler remains the V1 implementation; Zig handles generated code and
-future runtime/native integration. V2 aims to implement the compiler in A7.
+V1 publication requires core language and automatic memory, useful libraries
+and installed tooling, structured concurrency, CPU AI, actual GPU execution,
+and an A7 compiler that establishes self-hosting parity (decision L73).
+The Python compiler remains the bootstrap until parity justifies replacement;
+Zig handles generated code and runtime/native integration.
 
-AI, concurrency, multicore and GPU execution remain design constraints and later
-qualification tracks. Runtime memory help is allowed, but no memory mechanism is
-selected or implemented. See the
-[delivery roadmap](https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md).
+GPU implementation and the proposed local Vulkan experiment remain deferred
+for Zig GPU research under L75. That deferral does not waive V1's GPU
+qualification requirement. No GPU backend or automatic-memory mechanism is
+selected by these decisions. See the
+[delivery roadmap](https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md)
+and [decision ledger](https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md).
 A package registry remains outside the current scope.
 
 ## Not currently available
@@ -2074,7 +2144,7 @@ Bandit. It creates no tag or publication.
 The compiler gate includes tokenizer, parser, semantic and codegen tests;
 example compile/build/run/output checks; debug and release artifacts; CLI
 error-stage checks; docs style; secrets; packaging and isolated installation.
-Installed programs must build and run under Zig Debug and ReleaseFast. The source
+Installed programs must build and run under Zig Debug and ReleaseSafe. The source
 distribution must build its wheel outside the checkout and pass the same checks.
 
 Python auditing uses exported locked project requirements. A passing site build

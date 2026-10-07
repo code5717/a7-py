@@ -1,0 +1,154 @@
+{
+  "scope": "Historical CPU compilation only; no GPU execution. ${REPO} replaces the absolute checkout prefix; all other recorded command arguments are unchanged. Negative return codes are subprocess signal numbers.",
+  "compiler_version": "0.16.0",
+  "compiler_sha256": "2317bbb91798556d9d0f38aabdac23db83f0979b25f767259ae474546724087c",
+  "sources": {
+    "amdgcn_empty.zig": {
+      "text": "export fn kernel() callconv(.amdgcn_kernel) void {}\n",
+      "sha256": "b86e0979adb0eb0db793e6ad5287c46133d49ff4d9287bc732daa4e380090673"
+    },
+    "nvptx_empty.zig": {
+      "text": "export fn kernel() callconv(.nvptx_kernel) void {}\n",
+      "sha256": "db68ab45467fb538e113a075cef2e8cc13186623579e26e488a70ea396ac4541"
+    },
+    "spirv_atomic.zig": {
+      "text": "const std=@import(\"std\"); var x:u32 addrspace(.shared)=0; export fn kernel() callconv(.spirv_kernel) void { std.gpu.executionMode(kernel,.{.local_size=.{.x=1,.y=1,.z=1}}); _=@atomicRmw(u32,&x,.Add,1,.monotonic); }\n",
+      "sha256": "3233040a36b0faf87fa6c6d992db4b261a987b7b6e4e7887808eaf19e5a5b40c"
+    },
+    "spirv_empty.zig": {
+      "text": "const std=@import(\"std\"); export fn kernel() callconv(.spirv_kernel) void { std.gpu.executionMode(kernel,.{.local_size=.{.x=1,.y=1,.z=1}}); }\n",
+      "sha256": "150b70d9fab5fef81642dfa753bb77abe04f2662227572172f5960182cb321ef"
+    }
+  },
+  "results": [
+    {
+      "name": "spirv_empty",
+      "command": [
+        "zig",
+        "build-obj",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/spirv_empty.zig",
+        "-target",
+        "spirv64-vulkan",
+        "-O",
+        "ReleaseFast",
+        "--cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/cache",
+        "--global-cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/global-cache",
+        "-femit-bin=${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/spirv_empty.o"
+      ],
+      "exit": -11,
+      "output": "",
+      "affinity": "12-15 (inherited from taskset parent)"
+    },
+    {
+      "name": "spirv_atomic",
+      "command": [
+        "zig",
+        "build-obj",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/spirv_atomic.zig",
+        "-target",
+        "spirv64-vulkan",
+        "-O",
+        "ReleaseFast",
+        "--cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/cache",
+        "--global-cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/global-cache",
+        "-femit-bin=${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/spirv_atomic.o"
+      ],
+      "exit": -11,
+      "output": "",
+      "affinity": "12-15 (inherited from taskset parent)"
+    },
+    {
+      "name": "amdgcn_empty",
+      "command": [
+        "zig",
+        "build-obj",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/amdgcn_empty.zig",
+        "-target",
+        "amdgcn-amdhsa",
+        "-O",
+        "ReleaseFast",
+        "--cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/cache",
+        "--global-cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/global-cache",
+        "-femit-bin=${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/amdgcn_empty.o"
+      ],
+      "exit": 0,
+      "output": "",
+      "affinity": "12-15 (inherited from taskset parent)"
+    },
+    {
+      "name": "nvptx_empty",
+      "command": [
+        "zig",
+        "build-obj",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/nvptx_empty.zig",
+        "-target",
+        "nvptx64-cuda",
+        "-O",
+        "ReleaseFast",
+        "--cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/cache",
+        "--global-cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/global-cache",
+        "-femit-bin=${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/nvptx_empty.o"
+      ],
+      "exit": 1,
+      "output": "error: cannot emit nvptx64 binary with the LLVM backend; only '-femit-asm' is supported\n",
+      "affinity": "12-15 (inherited from taskset parent)"
+    },
+    {
+      "command": [
+        "zig",
+        "build-obj",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/nvptx_empty.zig",
+        "-target",
+        "nvptx64-cuda",
+        "-O",
+        "ReleaseFast",
+        "--cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/cache",
+        "--global-cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/global-cache",
+        "-fno-emit-bin",
+        "-femit-asm=${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/nvptx_empty.ptx"
+      ],
+      "exit": -6,
+      "output": "LLVM ERROR: .alias requires PTX version >= 6.3 and sm_30\n",
+      "name": "nvptx_asm_default",
+      "affinity": "12-15 (inherited from taskset parent)"
+    },
+    {
+      "command": [
+        "zig",
+        "build-obj",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/nvptx_empty.zig",
+        "-target",
+        "nvptx64-cuda",
+        "-O",
+        "ReleaseFast",
+        "--cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/cache",
+        "--global-cache-dir",
+        "${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/global-cache",
+        "-fno-emit-bin",
+        "-femit-asm=${REPO}/tmp/v1-completion-2026-10-07/zig-gpu-research/nvptx_empty.ptx",
+        "-mcpu=sm_80"
+      ],
+      "exit": -6,
+      "output": "LLVM ERROR: NVPTX aliasee must be a non-kernel function definition\n",
+      "name": "nvptx_asm_sm80",
+      "affinity": "12-15 (inherited from taskset parent)"
+    }
+  ],
+  "artifact_sha256": {
+    "amdgcn_empty.o": "06b7f93da29119f4f9db129fef3dbf384ef8093a7ad55d65bcbb4c128648e488",
+    "spirv_atomic.o": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "spirv_empty.o": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ptx_artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -4,9 +4,7 @@ Token types and tokenizer for the A7 programming language.
 
 from enum import Enum, auto
 from dataclasses import dataclass
-from typing import Optional, List, Union
-import re
-import string
+from typing import Optional, List
 from .errors import TokenizerError, TokenizerErrorType
 
 
@@ -473,6 +471,7 @@ class Tokenizer:
                 )
 
             self._validate_number(number_text, start_column)
+            self._require_number_boundary(number_text, start_column)
             self._add_token(TokenType.INTEGER_LITERAL, number_text, start_column)
             return
 
@@ -511,6 +510,7 @@ class Tokenizer:
                 )
 
             self._validate_number(number_text, start_column)
+            self._require_number_boundary(number_text, start_column)
             self._add_token(TokenType.INTEGER_LITERAL, number_text, start_column)
             return
 
@@ -547,6 +547,7 @@ class Tokenizer:
                 )
 
             self._validate_number(number_text, start_column)
+            self._require_number_boundary(number_text, start_column)
             self._add_token(TokenType.INTEGER_LITERAL, number_text, start_column)
             return
 
@@ -601,8 +602,36 @@ class Tokenizer:
             )
 
         self._validate_number(number_text, start_column, is_float)
+        self._require_number_boundary(number_text, start_column)
         token_type = TokenType.FLOAT_LITERAL if is_float else TokenType.INTEGER_LITERAL
         self._add_token(token_type, number_text, start_column)
+
+    def _require_number_boundary(self, text: str, column: int) -> None:
+        """Reject a literal glued to an identifier character or a second '.digit'.
+
+        `123abc`, `5.foo`, `1.5.3` and `0x1.5` would otherwise lex as two
+        adjacent tokens. SPEC 2.6 keeps one split: `0X2A` is `0` then `X2A`.
+        """
+        char = self.current_char()
+        if char is None:
+            return
+        if char == "_" or (char.isascii() and char.isalnum()):
+            if text == "0" and char in "XBO":
+                return
+            reason = f"'{char}' cannot follow the number '{text}'"
+        elif char == "." and _is_digit(self.peek_char()):
+            reason = f"a second '.{self.peek_char()}' cannot follow the number '{text}'"
+        else:
+            return
+        raise TokenizerError.from_type_and_location(
+            TokenizerErrorType.INVALID_NUMBER,
+            self.line,
+            column,
+            len(text) + 1,
+            self.filename,
+            self.source_lines,
+            f"Invalid numeric literal: {reason}; separate them with a space or an operator",
+        )
 
     def _validate_number(self, text: str, column: int, is_float: bool = False) -> None:
         """Reject malformed literals before AST construction converts their value."""
@@ -719,107 +748,82 @@ class Tokenizer:
             "Invalid string escape sequence",
         )
 
+    def _char_error(self, error_type, line: int, column: int, length: int, message=None):
+        return TokenizerError.from_type_and_location(
+            error_type, line, column, length, self.filename, self.source_lines, message
+        )
+
     def _tokenize_char(self):
-        """Tokenize character literals."""
+        """Tokenize character literals. A char is one byte: one code point up to 255."""
         start_pos = self.position
         start_line = self.line
         start_column = self.column
         self.advance()  # Opening quote
 
-        # Check for empty char literal
-        if self.current_char() == "'":
-            raise TokenizerError.from_type_and_location(
-                TokenizerErrorType.NOT_CLOSED_CHAR,
-                self.line,
-                self.column,
-                1,
-                self.filename,
-                self.source_lines,
+        char = self.current_char()
+        if char is None or char == "\n":
+            raise self._char_error(
+                TokenizerErrorType.NOT_CLOSED_CHAR, start_line, start_column, 1
+            )
+        if char == "'":
+            raise self._char_error(
+                TokenizerErrorType.INVALID_CHARACTER, start_line, start_column, 2,
+                "Empty char literal: put one character between the quotes",
             )
 
-        # Check for EOF
-        if self.current_char() is None:
-            raise TokenizerError.from_type_and_location(
-                TokenizerErrorType.NOT_CLOSED_CHAR,
-                self.line,
-                self.column,
-                1,
-                self.filename,
-                self.source_lines,
-            )
-
-        if self.current_char() == "\\":
-            self.advance()  # Escape character
+        if char == "\\":
+            self.advance()  # Backslash
             escape_char = self.current_char()
-            if escape_char is None:
-                raise TokenizerError.from_type_and_location(
-                    TokenizerErrorType.NOT_CLOSED_CHAR,
-                    self.line,
-                    self.column,
-                    1,
-                    self.filename,
-                    self.source_lines,
+            if escape_char is None or escape_char == "\n":
+                raise self._char_error(
+                    TokenizerErrorType.NOT_CLOSED_CHAR, start_line, start_column, 1
                 )
-            elif escape_char == "x":
-                # Hex escape sequence: \x41
+            if escape_char == "x":
                 self.advance()  # 'x'
-                # Read two hex digits
                 for _ in range(2):
-                    if (
-                        self.current_char()
-                        and self.current_char().lower() in "0123456789abcdef"
-                    ):
-                        self.advance()
-                    else:
-                        raise TokenizerError.from_type_and_location(
-                            TokenizerErrorType.NOT_CLOSED_CHAR,
-                            self.line,
-                            self.column,
-                            1,
-                            self.filename,
-                            self.source_lines,
+                    digit = self.current_char()
+                    if digit is None or digit.lower() not in "0123456789abcdef":
+                        raise self._char_error(
+                            TokenizerErrorType.INVALID_ESCAPE_CHAR, start_line, start_column + 1,
+                            max(2, self.column - start_column - 1),
+                            "Invalid char escape sequence: '\\x' needs two hex digits",
                         )
+                    self.advance()
             elif escape_char in "ntr\\'\"0":
-                # Standard escape sequences: \n, \t, \r, \\, \', \", \0
                 self.advance()
             else:
-                # Invalid escape sequence
-                raise TokenizerError.from_type_and_location(
-                    TokenizerErrorType.NOT_CLOSED_CHAR,
-                    self.line,
-                    self.column,
-                    1,
-                    self.filename,
-                    self.source_lines,
+                raise self._char_error(
+                    TokenizerErrorType.INVALID_ESCAPE_CHAR, start_line, start_column + 1, 2,
+                    f"Invalid char escape sequence '\\{escape_char}'",
                 )
         else:
-            # Single character
+            if ord(char) > 255:
+                raise self._char_error(
+                    TokenizerErrorType.INVALID_CHARACTER, start_line, start_column + 1, 1,
+                    f"Char literal '{char}' is code point {ord(char)}; a char holds one byte (0 to 255)",
+                )
             self.advance()
 
-            # Check for multiple characters (like 'ab')
-            if self.current_char() and self.current_char() != "'":
-                raise TokenizerError.from_type_and_location(
-                    TokenizerErrorType.NOT_CLOSED_CHAR,
-                    self.line,
-                    self.column,
-                    1,
-                    self.filename,
-                    self.source_lines,
-                )
-
         if self.current_char() != "'":
-            raise TokenizerError.from_type_and_location(
-                TokenizerErrorType.NOT_CLOSED_CHAR,
-                self.line,
-                self.column,
-                1,
-                self.filename,
-                self.source_lines,
+            # A closing quote later on the line means too many characters;
+            # none means the literal was never closed.
+            line_end = self.source.find("\n", self.position)
+            if line_end == -1:
+                line_end = len(self.source)
+            closing = self.source.find("'", self.position, line_end)
+            if closing == -1:
+                raise self._char_error(
+                    TokenizerErrorType.NOT_CLOSED_CHAR, start_line, start_column, 1
+                )
+            raise self._char_error(
+                TokenizerErrorType.INVALID_CHARACTER, start_line, start_column,
+                closing - start_pos + 1,
+                "Too many characters in char literal: a char holds one character; "
+                "use double quotes for a string",
             )
 
         self.advance()  # Closing quote
         char_text = self.source[start_pos : self.position]
-        # Use stored start position for correct column
         token = Token(TokenType.CHAR_LITERAL, char_text, start_line, start_column)
         self.tokens.append(token)
 
@@ -864,6 +868,7 @@ class Tokenizer:
     def _tokenize_builtin(self):
         """Tokenize builtin function identifiers (@function)."""
         start_pos = self.position
+        start_column = self.column
         self.advance()  # @
 
         while self.current_char() and (
@@ -872,6 +877,16 @@ class Tokenizer:
             self.advance()
 
         builtin_text = self.source[start_pos : self.position]
+        if builtin_text == "@":
+            raise TokenizerError.from_type_and_location(
+                TokenizerErrorType.INVALID_CHARACTER,
+                self.line,
+                start_column,
+                1,
+                self.filename,
+                self.source_lines,
+                "Expected a name after '@' (a loop label or an intrinsic such as @type_set)",
+            )
         self._add_token(TokenType.BUILTIN_ID, builtin_text)
 
     def _try_operator(self) -> bool:
@@ -1034,7 +1049,6 @@ class Tokenizer:
 
         # Look ahead to check if it's followed by valid generic pattern
         saved_pos = self.position
-        saved_line = self.line
         saved_column = self.column
 
         self.advance()  # consume '$'
@@ -1050,7 +1064,7 @@ class Tokenizer:
                     self.position - saved_pos + 1,
                     self.filename,
                     self.source_lines,
-                    f"Invalid generic syntax: generic types must start with a letter after '$'",
+                    "Invalid generic syntax: generic types must start with a letter after '$'",
                 )
             else:
                 raise TokenizerError.from_type_and_location(
@@ -1060,12 +1074,10 @@ class Tokenizer:
                     1,
                     self.filename,
                     self.source_lines,
-                    f"Invalid generic syntax: '$' cannot be used alone",
+                    "Invalid generic syntax: '$' cannot be used alone",
                 )
-            return True
 
         # Collect the type name
-        start_pos = self.position - 1  # Include the '$'
         type_name = "$"
 
         # For generic types: letters, digits, and underscores allowed ($T, $T1, $TYPE, $MY_TYPE)
@@ -1075,13 +1087,5 @@ class Tokenizer:
             type_name += self.current_char()
             self.advance()
 
-        # Always create generic token, let parser validate the pattern
-        if len(type_name) > 1:
-            self._add_token(TokenType.GENERIC_TYPE, type_name)
-            return True
-
-        # Should not reach here due to earlier checks, but handle as fallback
-        self.position = saved_pos
-        self.line = saved_line
-        self.column = saved_column
-        return False
+        self._add_token(TokenType.GENERIC_TYPE, type_name)
+        return True

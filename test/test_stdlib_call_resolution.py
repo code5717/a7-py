@@ -22,6 +22,7 @@ import subprocess
 import sys
 
 import pytest
+from conftest import shared_zig_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ("Debug", "ReleaseFast")
@@ -37,8 +38,8 @@ def zig():
 
 
 @pytest.fixture(scope="module")
-def zig_cache(tmp_path_factory):
-    return tmp_path_factory.mktemp("zig-cache")
+def zig_cache():
+    return shared_zig_cache()
 
 
 def run_cli(src, out):
@@ -183,25 +184,25 @@ main :: fn() {
     io.println("{} {}", math.sqrt(9.0), g(9.0))
 }
 ''', "4.5 4.5\n", ""),
-    # A block local `io` hides the file-scope std/io alias inside its block
-    # only; `say` prints nothing, the calls outside the block print.
-    "block-local-io-shadows-stdlib-alias": ('''io :: import "std/io"
+    # Block-local `io` calls the silent user function; `console` prints
+    # before and after the block.
+    "block-local-io-with-console-import": ('''console :: import "std/io"
 Printer :: struct {
     println: fn(string)
 }
 say :: fn(s: string) {
 }
 main :: fn() {
-    io.println("outer")
+    console.println("outer")
     {
         io := Printer{println: say}
         io.println("hidden")
     }
-    io.println("after")
+    console.println("after")
 }
 ''', "outer\nafter\n", ""),
-    # A parameter named `io` hides the std/io alias in its function body.
-    "parameter-io-shadows-stdlib-alias": ('''io :: import "std/io"
+    # Parameter `io` calls the user field; `console` remains the stdlib alias.
+    "parameter-io-with-console-import": ('''console :: import "std/io"
 Printer :: struct {
     println: fn(string)
 }
@@ -213,7 +214,7 @@ use_it :: fn(io: Printer) {
 main :: fn() {
     p := Printer{println: say}
     use_it(p)
-    io.println("after")
+    console.println("after")
 }
 ''', "after\n", ""),
 }
@@ -300,3 +301,49 @@ def test_stdlib_examples_match_golden_output(tmp_path, zig, zig_cache, example):
     for profile in PROFILES:
         stdout, stderr = build_and_run(zig, zig_cache, tmp_path, output, profile)
         assert (stdout, stderr) == (golden, ""), profile
+
+
+# Original runtime fixtures now reject under L28. Keep their source unchanged.
+ALIAS_CLASH_CASES = {
+    'block-local-io-shadows-stdlib-alias': '''io :: import "std/io"
+Printer :: struct {
+    println: fn(string)
+}
+say :: fn(s: string) {
+}
+main :: fn() {
+    io.println("outer")
+    {
+        io := Printer{println: say}
+        io.println("hidden")
+    }
+    io.println("after")
+}
+''',
+    'parameter-io-shadows-stdlib-alias': '''io :: import "std/io"
+Printer :: struct {
+    println: fn(string)
+}
+say :: fn(s: string) {
+}
+use_it :: fn(io: Printer) {
+    io.println("hidden")
+}
+main :: fn() {
+    p := Printer{println: say}
+    use_it(p)
+    io.println("after")
+}
+''',
+}
+
+
+@pytest.mark.parametrize("name", sorted(ALIAS_CLASH_CASES))
+def test_local_io_cannot_reuse_own_stdlib_alias(tmp_path, name):
+    src = tmp_path / "main.a7"
+    src.write_text(ALIAS_CLASH_CASES[name], encoding="utf-8")
+    process = run_cli(src, tmp_path / "main.zig")
+    output = process.stdout + process.stderr
+    assert process.returncode == 6, output
+    assert "Local 'io' conflicts with this file's import alias" in output
+    assert str(src) in output

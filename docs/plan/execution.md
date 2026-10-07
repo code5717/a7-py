@@ -2,6 +2,10 @@
 
 Status: approved by the user on 2026-09-16 as the plan of work, and updated 2026-09-17 with the correctness repair (Wave 1R and 2R) and the no-recursion rule. It is not approval of any language change; every change to A7 syntax or behavior still needs its own packet in [packets](packets/). This file mirrors the controlling session's plan. Current dispositions and delivery order are reconciled in [the V1 delivery roadmap](delivery-roadmap.md) and the 2026-09-20 update at the end of this file.
 
+The [limits and failure handling](#limits-and-failure-handling) section contains
+current reviewer and machine-resource rules. Earlier wave-specific worker limits
+and timeout recipes below are historical records, superseded by that section.
+
 ## Context
 
 The user asked for one plan that: audits before changing anything; fixes every known defect; proposes language changes for approval; adds analysis and optimization layers before the Zig backend and improves generated code; adds more examples and full example software; and uses subagents plus GLM-5.3 second opinions to work faster and better. Scope confirmed with the user: full detail through release; fixed-data example apps first, interactive versions after an I/O approval; parallel agents in git worktrees **without commits**.
@@ -278,15 +282,37 @@ A script `tmp/orchestration/wt.sh` implements these steps so they run identicall
 8. Remove the worktree with `git worktree remove --force` once its patch is applied or abandoned.
 
 ### Limits and failure handling
-- At most **3 GLM processes** at once, started ~10 s apart; at most **6 agents** machine-wide, of which at most **3** run Zig builds; exactly **one** `./run_all_tests.sh` machine-wide, wrapped in `timeout 2700`, always in the background. A missing `Summary:` line counts as FAIL.
-- Every shell command redirects to `tmp/<id>/<step>.out` plus a `.rc` file, read back with Read. A missing file counts as NOT RUN, never as a pass.
-- GLM: `TMPDIR=./tmp timeout 2400 opencode run --dir <tree> --agent plan -m zai-coding-plan/glm-5.3 "<prompt>" > tmp/glm/<use>.md 2>&1`. **Provider: always `zai-coding-plan`** (user, 2026-09-16); `zai-coding-plan/glm-5.3-flash` is allowed. Do not use `opencode-go`. **Exit code 0 does not mean success:** a run counts only if the output contains `claims checked:` and no `Rate limit` or `usage limit` error. opencode does not exit on a provider limit; it idles until `timeout`, so `tmp/glm/run_glm.sh` retries a run up to 3 times with growing backoff when the output has a limit error or no `claims checked:` line. The rate limit is shared across the account, including the user's other sessions, so GLM runs go one at a time while throttling shows in `~/.local/share/opencode/log/`. On "database is locked", retry 3 times with 30/60/120 s backoff. On timeout keep partial output, split the prompt, rerun.
-- GLM read-only is prompt-enforced only, so the controller records `git status --porcelain` and `git diff --stat` before and after each run and rejects the run if the tree changed.
-- Crashed agents are resumed from the task card, reports and `git -C <wt> diff`, not from the dead agent's summary.
-- `tmp/orchestration/ledger.md` records task, lane, worktree, patch, verifier result, GLM result, gate result. Promoted to `docs/audits/<date>/` at each wave end.
+
+Current policy, updated 2026-10-07:
+
+- Use `zai-coding-plan/glm-5.3` for substantive reviews, at most five concurrent
+  runs. Use `zai-coding-plan/glm-5.3-flash` for very small tasks, at most 25
+  concurrent runs. The controller counts active workers before allocating more.
+- Keep eight logical CPUs free. Use at most eight pytest workers and one full
+  compiler or release gate at a time. Run long checks in the background and
+  record their exit status and complete summary.
+- Start every external CLI prompt with the role and recursion guard required by
+  AGENTS.md. Keep one reviewer identity throughout the batch. Give each reviewer
+  the source snapshot, allowed files, forbidden actions, concrete checks,
+  expected results, evidence requirements and output format.
+- Run `opencode run -m zai-coding-plan/glm-5.3` or the Flash model above.
+  Do not impose a turn count, deadline or model time limit unless the user asks
+  for one. Keep web search, normal tools and built-in subagents available.
+  The controller allocates any extra workers within the relevant model cap.
+- Verify the CLI's actual project path before reading review results. With
+  OpenCode 2.0.20 standalone runs, set both process cwd and `PWD` to the snapshot.
+  Use task-scoped read permissions and scratch paths; preserve global settings.
+- Record provider limits, authentication errors and unavailable tools. A zero
+  process exit alone is not review evidence. Inspect the actual findings and
+  cited sources. Failed invocations remain failed, even if they produced text.
+- Keep prompts, logs, source manifests and process results under the dated task
+  evidence directory. Check source hashes before and after read-only reviews.
+  Reproduce advisory findings against primary evidence before changing code.
+- Resume crashed agents from their task scope, saved evidence and current diff.
+  Do not treat an unverified agent summary as completed work.
 
 ### When GLM is used
-Worth it: plan and inventory audits; soundness changes in safety or the IR fact engine; security-relevant fixes (ledger L12); each approval packet before it reaches the user; implementer/verifier disagreements; option research for gates (options only). Not worth it: example authoring, golden diffs, harness plumbing, mechanical edits.
+Worth it: plan and inventory audits; soundness changes in safety or the IR fact engine; security-relevant fixes (ledger L12); each approval packet before it reaches the user; implementer/verifier disagreements; option research for gates (options only). Use Flash for bounded checks such as saved-inventory comparisons or local-link verification.
 
 ### Prompt templates (stored in `tmp/templates/`, summarized)
 - **Implementer:** task id, worktree, owned and forbidden files, goal, acceptance commands with expected results; CLAUDE.md rules; redirect every command to files; write `tmp/reports/<id>-impl.md` mapping each claim to command, raw output and file:line; mark NOT RUN; never run git add, commit, restore, stash or checkout; no binary files.

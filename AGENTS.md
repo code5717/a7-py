@@ -48,7 +48,9 @@ below).
 
 ## Verification Commands
 
-- Pytest (all): `PYTHONPATH=. uv run pytest`
+- Pytest (all, parallel): `PYTHONPATH=. uv run pytest -n 8`
+- Pytest fast loop, no native builds:
+  `PYTHONPATH=. uv run pytest -n 8 -m "not zig and not slow"`
 - Single test file: `PYTHONPATH=. uv run pytest test/test_tokenizer.py`
 - Targeted by keyword: `PYTHONPATH=. uv run pytest -k "generic" -v`
 - Debug artifact verification:
@@ -60,16 +62,23 @@ below).
 - Error-stage matrix:
   `uv run python scripts/verify_error_stages.py --mode-set all --format both`
 - Compiler/package gate: `./run_all_tests.sh`
+- Gate pytest workers: `A7_PYTEST_WORKERS=4 ./run_all_tests.sh` uses four
+  workers. The default is eight; accepted values are integers 1 through 8.
+  Keep eight logical CPUs available for other sessions by restricting gate
+  CPU affinity with `taskset` on shared machines. Worker count alone does
+  not limit the CPUs used by native compiler subprocesses.
 - Complete local and CI release checks: `./run_release_checks.sh`
-- Gate kill switch: `A7_CHECK_TIMEOUT` (default 1200s per check, 0 disables),
+- Gate kill switch: `A7_CHECK_TIMEOUT` (default 3600s per check, 0 disables),
   `./run_all_tests.sh --timeout 300` for a shorter bound,
   `./run_all_tests.sh --only pytest` or `--skip bench` to run a subset.
   A hung check fails with `TIMEOUT` (exit 124) instead of hanging the gate.
   To kill a running gate started in background, kill its process tree
   (`ps aux | grep run_all_tests`, then `kill` the gate PID).
-- Tmpfs hygiene: Zig-heavy tests accumulate `/tmp/pytest-of-*` (22G observed,
-  wedging the suite with disk-quota errors). Clear stale dirs with
-  `rm -rf /tmp/pytest-of-*` before a full run when `/tmp` is pressured.
+- Tmpfs hygiene: native tests share one Zig cache per run
+  (`shared_zig_cache` in `test/conftest.py`); a full run leaves about 1.5G
+  under `/tmp/pytest-of-*`. When `/tmp` is pressured, inspect file ages and
+  active process references. Remove only verified stale directories owned
+  by this task; preserve other sessions' files.
 - Package build: `uv build`
 - Wheel install smoke test (clean venv):
   `uv run python scripts/verify_wheel_install.py` (CI/release jobs run this
@@ -103,41 +112,78 @@ navigation when docs structure changes.
 
 ## Writing style
 
-Applies to answers in the terminal and to every document written into this
-repository.
+Applies to terminal answers and every document written into this
+repository. Rules carry stable numbers; cite them in review.
 
-- Lead with the answer. State the result, then the evidence for it. Do not
-  narrate what you are about to do, recap what was just said, or close by
-  summarizing what the reader has already read.
-- Always use simple technical language in replies, questions, plans, and
-  documentation. Use short sentences and familiar words. Explain unfamiliar
-  technical terms with a small example.
-- Cut filler. No "it is worth noting", "in order to", "leverage", "robust",
-  "comprehensive", "seamless", "delve", "journey", "landscape". No praise of the
-  work, the question, or the user. Do not pad an answer to look thorough.
-- Structure only where structure exists. Use a table when there are real
-  columns, a list when there are real items, a heading when there is a real
-  section. Do not bold whole sentences or end with a call to action.
-- Match length to content. A one-line question gets a one-line answer.
-- Make every claim traceable. Attribute a fact to the file, line, command output
-  or source that establishes it. Mark inference as inference and unchecked
-  claims as unchecked. Never state an attribution you have not verified; a
-  confident sentence about which file or reviewer said something is a factual
-  claim like any other.
-- Report failures plainly, with the output. Do not hedge a verified result and
-  do not soften a real failure. Say when a step was skipped.
+- S1 Lead with the answer, then the evidence. No narration of what you
+  are about to do, no recap of what was said, no closing summary of
+  what the reader already read.
+- S2 One idea per sentence. Short sentences, familiar words. Explain an
+  unfamiliar term with a small example, or cut the term.
+- S3 Name the mechanism, actor, or number. "The loader parses the file",
+  "exits with code 2", "2387 passed". A sentence that could appear
+  unchanged in another project's docs says nothing about this one; cut
+  it or make it specific.
+- S4 Structure only where structure exists. Tables for real columns,
+  lists for real items, headings for real sections. No bold whole
+  sentences, no call to action, no chatbot closings ("I hope this
+  helps", "Let me know").
+- S5 Match length to content. A one-line question gets a one-line
+  answer. Do not pad to look thorough.
+- S6 Every claim traceable. Attribute facts to file, line, command
+  output, or source. Mark inference as inference and unchecked claims
+  as unchecked. A confident sentence about which file or reviewer said
+  something is a factual claim like any other.
+- S7 Report failures plainly, with the output. No hedging a verified
+  result, no softening a real failure. Say when a step was skipped.
+- S8 No bare question to the user. Every question pairs simple words
+  with a concrete example: what happens today, what changes, and a
+  short before/after snippet or sample run. The user answers from the
+  question alone, without reading the packet first.
 
 ## Anti-slop
 
-- No emojis in code, docs, or terminal output unless asked or a fixture
-  requires them.
-- No boilerplate docstrings that restate a name. State the invariant or
-  delete the comment.
-- No narrator comments. A comment that only points at itself ("This", "Here",
-  "Obviously", "Clearly", "Simply", "Just", "Note that") says nothing; give
-  the reason instead.
-- No praise or hype adjectives for the work, the question, or the user.
-- Use least-privilege tool calls. Do not ask for broad allows such as
+A separate review pass, not a drafting instruction. Draft first, then
+read once for these patterns only. Fix what matches. Preserve facts,
+examples, structure, and deliberate rhythm. Weak tells count only with
+other tells in the same passage. Never invent a detail to fix vagueness;
+cut the sentence or mark the claim unchecked per S6.
+
+- A1 Words. Never use: additionally, comprehensive, crucial, delve,
+  facilitate, garner, intricate, interplay, journey, landscape (abstract
+  sense), leverage, pivotal, robust, seamless, showcase, tapestry,
+  testament, utilize, vibrant. Prefer the plain word: "use" for
+  utilize/leverage/facilitate, "many" for numerous, "help" for
+  facilitate, "is" or "has" for "serves as", "if" for "in the event
+  that", "to" for "in order to", "because" for "due to the fact that".
+  `scripts/check_docs_style.py` enforces this list on docs outside code
+  fences.
+- A2 Sentences. No binary contrasts ("It's not X. It's Y.", "Not just
+  X, but Y"); state the point directly. No throat-clearing ("Here's the
+  thing", "Let me be clear"), faux-insight setups ("What nobody tells
+  you"), colon reveals ("The best part:"), dramatic fragments ("That's
+  it. That's the whole thing"), or fake-profound endings. No importance
+  puffery ("marks a pivotal moment", "a testament to") and no weasel
+  attribution ("experts agree", "studies show"); name the source or
+  delete the sentence. No synonym cycling: pick one name for a thing and
+  repeat it. No forced groups of three: use the natural number of items.
+  Active voice with a named actor; passive only when the actor is
+  unknown or does not matter. Cut adverbs that prop up weak verbs
+  ("significantly improves" becomes the measured delta) and stacked
+  hedges ("could potentially possibly" becomes "may").
+- A3 Structure. No emojis in code, docs, or terminal output unless asked
+  or a fixture requires them. No boilerplate docstrings that restate a
+  name. State the invariant or delete the comment. No narrator comments
+  ("Obviously", "Clearly", "Simply", "Just", "Note that"); give the
+  reason instead. No praise or hype adjectives for the work, the
+  question, or the user. No generic conclusions ("The future looks
+  bright"); state specific plans or facts.
+- A4 Code. No new abstraction with one caller, no wrapper nobody asked
+  for, no fallback behavior outside the task. No defensive checks or
+  try/catch on trusted paths, no cast that only silences a type error.
+  No error hidden behind false, nil, or an empty result. A cleanup pass
+  keeps behavior unchanged; small focused edits.
+- A5 Use least-privilege tool calls. Do not ask for broad allows such as
   `Bash python3 -c *` or `Read //tmp/**` wildcards; request the narrow path
   or command the step needs.
 
@@ -195,6 +241,22 @@ Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
 treated as a bug.
 
 ## Subagents
+
+Use GLM-5.3 for substantive external reviews, with at most five runs in parallel.
+Use GLM-5.3-Flash for very small tasks, with at most 25 runs in parallel. Give
+each run a detailed prompt with its source snapshot, file scope, required
+checks, evidence boundary and expected output. Count active runs by model before
+starting another; failed or interrupted runs are not completed reviews.
+
+Start every external CLI prompt with this exact role and boundary:
+
+> You are an external reviewer invoked by a controlling Codex session. You are not the primary coordinator. Your output is advisory. You and your sub-agents may use this run's built-in sub-agent feature. Do not directly or indirectly launch any model or agent CLI, including another instance of this CLI, unless the user explicitly requests nested CLI orchestration.
+
+Keep one reviewer identity throughout the review. The controller may start
+independent sibling CLI reviews within the model limits above. Keep normal tools,
+web search and built-in subagent capabilities enabled. Do not impose a turn count,
+execution deadline or model time limit unless the user requests one. Let reviewers
+finish naturally; preserve provider failures and tool limitations as evidence.
 
 Use subagents for independent workstreams. Dispatch code, tests, docs,
 scripts, examples/site, and hygiene work in parallel through subagents when

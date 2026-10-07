@@ -1,0 +1,67 @@
+// Expense ledger with category totals and an over-budget flag
+
+io :: import "std/io"
+
+Entry :: struct {
+    label: string
+    category: i32
+    amount: i32
+}
+
+Ledger :: struct {
+    food: i32
+    travel: i32
+    tools: i32
+    other: i32
+    count: i32
+}
+
+cat_name :: fn(category: i32) string {
+    match category {
+        case 1: { ret "food" }
+        case 2: { ret "travel" }
+        case 3: { ret "tools" }
+        else: { ret "other" }
+    }
+}
+
+post :: fn(ledger: ref Ledger, entry: Entry) {
+    match entry.category {
+        case 1: { ledger.food += entry.amount }
+        case 2: { ledger.travel += entry.amount }
+        case 3: { ledger.tools += entry.amount }
+        else: { ledger.other += entry.amount }
+    }
+    ledger.count += 1
+}
+
+total :: fn(ledger: Ledger) i32 {
+    ret ledger.food + ledger.travel + ledger.tools + ledger.other
+}
+
+print_ledger :: fn(ledger: Ledger, limit: i32) {
+    io.println("=== Expense Ledger ({} entries) ===", ledger.count)
+    io.println("food:   {}", ledger.food)
+    io.println("travel: {}", ledger.travel)
+    io.println("tools:  {}", ledger.tools)
+    io.println("other:  {}", ledger.other)
+    spent := total(ledger)
+    io.println("total:  {} / limit {}", spent, limit)
+    if spent > limit {
+        io.println("status: OVER BUDGET")
+    } else {
+        io.println("status: within budget")
+    }
+}
+
+main :: fn() {
+    ledger := Ledger{food: 0, travel: 0, tools: 0, other: 0, count: 0}
+    post(ledger, Entry{label: "noodles", category: 1, amount: 12})
+    post(ledger, Entry{label: "train", category: 2, amount: 40})
+    post(ledger, Entry{label: "drill bits", category: 3, amount: 25})
+    post(ledger, Entry{label: "stapler", category: 9, amount: 8})
+    io.println("filed {} as {}", "stapler", cat_name(9))
+    print_ledger(ledger, 100)
+    post(ledger, Entry{label: "flight", category: 2, amount: 60})
+    print_ledger(ledger, 100)
+}

@@ -12,70 +12,13 @@ Covers:
 - Loop nesting and labels
 """
 
-import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
 from a7.ast_nodes import ASTNode, LiteralKind, NodeKind
-from a7.passes.name_resolution import NameResolutionPass
-from a7.passes.type_checker import TypeCheckingPass
 from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError, CompilerError
 
 
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
-
-
-def run_semantic_analysis(source: str):
-    """Helper to run full semantic analysis.
-
-    Raises SemanticError if any pass detects errors.
-    """
-    program = parse_program(source)
-
-    # Run name resolution pass
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(program, "<test>")
-    if resolver.errors:
-        raise resolver.errors[0]
-
-    # Run type checking pass
-    type_checker = TypeCheckingPass(symbols)
-    node_types = type_checker.analyze(program, "<test>")
-    if type_checker.errors:
-        raise type_checker.errors[0]
-
-    # Run semantic validation pass
-    validator = SemanticValidationPass(symbols, node_types)
-    validator.analyze(program, "<test>")
-    if validator.errors:
-        raise validator.errors[0]
-
-    return symbols, node_types
-
-
-def expect_success(source: str) -> bool:
-    """Helper to expect successful semantic analysis."""
-    try:
-        run_semantic_analysis(source)
-        return True
-    except CompilerError:
-        return False
-
-
-def expect_error(source: str, error_fragment: str = None) -> bool:
-    """Helper to expect semantic error with optional message check."""
-    try:
-        run_semantic_analysis(source)
-        return False
-    except CompilerError as e:
-        if error_fragment:
-            return error_fragment.lower() in str(e).lower()
-        return True
+from pipeline_helpers import (  # noqa: F401
+    expect_error, expect_parse_error, expect_success, pipeline_tmp,
+)
 
 
 class TestIfElseStatements:
@@ -274,7 +217,7 @@ class TestForLoops:
             x := i
         }
         """
-        assert expect_error(source, "undefined")
+        assert expect_error(source, "Undefined identifier: 'i'")
 
     def test_block_scope_does_not_leak_between_sibling_blocks(self):
         """Names from one block should not be visible in a later sibling block."""
@@ -288,7 +231,7 @@ class TestForLoops:
             }
         }
         """
-        assert expect_error(source, "undefined")
+        assert expect_error(source, "Undefined identifier: 'a'")
 
 
 class TestBreakContinue:
@@ -328,7 +271,7 @@ class TestBreakContinue:
             break
         }
         """
-        assert expect_error(source, "break")
+        assert expect_error(source, "Break statement outside loop")
 
     def test_continue_outside_loop_error(self):
         """Test continue statement outside loop."""
@@ -338,7 +281,7 @@ class TestBreakContinue:
             continue
         }
         """
-        assert expect_error(source, "continue")
+        assert expect_error(source, "Continue statement outside loop")
 
     def test_break_in_nested_loop(self):
         """Test break in nested loop."""
@@ -418,7 +361,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "undefined")
+        assert expect_error(source, "Undefined identifier: 'z'")
 
     def test_match_case_body_reports_type_mismatch(self):
         """Type checking should run for statements inside case branches."""
@@ -470,7 +413,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "non-exhaustive")
+        assert expect_error(source, "Non-exhaustive match: Missing bool case(s): false")
 
     def test_bool_match_wildcard_is_exhaustive(self):
         """Wildcard branch should satisfy match exhaustiveness."""
@@ -501,7 +444,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "non-exhaustive")
+        assert expect_error(source, "Non-exhaustive match: Enum 'Color' missing case(s): Blue")
 
     def test_enum_match_expression_requires_exhaustive_coverage(self):
         """Match expressions should enforce enum exhaustiveness too."""
@@ -520,7 +463,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "non-exhaustive")
+        assert expect_error(source, "Non-exhaustive match: Enum 'Color' missing case(s): Blue")
 
     def test_exhaustive_enum_match_satisfies_return_paths(self):
         """Exhaustive enum matches should satisfy non-void return path checks."""
@@ -567,7 +510,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "non-exhaustive")
+        assert expect_error(source, "Non-exhaustive match: Enum 'Color' missing case(s): Blue")
 
     def test_range_pattern_requires_numeric_or_char_scrutinee(self):
         """Range patterns should reject non-numeric/non-char scrutinee types."""
@@ -990,7 +933,7 @@ class TestMatchStatements:
     def test_identifier_capture_pattern_binds_scrutinee(self):
         """An unresolved identifier pattern should bind the scrutinee in its branch."""
         source = """
-        main :: fn() i32 {
+        pick :: fn() i32 {
             n: i32 = 7
             ret match n {
                 case value: value + 1
@@ -1002,7 +945,7 @@ class TestMatchStatements:
     def test_existing_identifier_pattern_stays_value_pattern(self):
         """Existing identifiers should keep their comparison-pattern behavior."""
         source = """
-        main :: fn() i32 {
+        pick :: fn() i32 {
             limit :: 7
             n: i32 = 7
             ret match n {
@@ -1037,7 +980,7 @@ class TestMatchStatements:
             y := value
         }
         """
-        assert expect_error(source, "identifier 'value'")
+        assert expect_error(source, "Undefined identifier: 'value'")
 
     def test_capture_pattern_makes_later_case_unreachable(self):
         """A capture pattern covers all remaining values."""
@@ -1050,7 +993,9 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "unreachable")
+        assert expect_error(
+            source, "Unreachable code: match pattern '7' is unreachable because a previous wildcard pattern covers all values"
+        )
 
     def test_capture_pattern_makes_else_unreachable(self):
         """Else after a capture pattern is unreachable."""
@@ -1075,7 +1020,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "identifier '_'")
+        assert expect_error(source, "Undefined identifier: '_'")
 
     def test_capture_pattern_assignment_is_rejected(self):
         """Capture bindings are immutable branch-local values."""
@@ -1089,12 +1034,12 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_error(source, "immutable")
+        assert expect_error(source, "'value' is immutable")
 
     def test_capture_pattern_covers_bool_exhaustiveness(self):
         """Capture patterns are exhaustive for bool matches too."""
         source = """
-        main :: fn(flag: bool) i32 {
+        pick :: fn(flag: bool) i32 {
             ret match flag {
                 case value: 1
             }
@@ -1150,7 +1095,7 @@ class TestUnreachableCodeValidation:
             x := 2
         }
         """
-        assert expect_error(source, "unreachable")
+        assert expect_error(source, "Unreachable code: Statement after 'ret' is unreachable")
 
     def test_unreachable_after_break_is_rejected(self):
         source = """
@@ -1161,7 +1106,7 @@ class TestUnreachableCodeValidation:
             }
         }
         """
-        assert expect_error(source, "unreachable")
+        assert expect_error(source, "Unreachable code: Statement after 'break' is unreachable")
 
     def test_unreachable_after_continue_is_rejected(self):
         source = """
@@ -1172,7 +1117,7 @@ class TestUnreachableCodeValidation:
             }
         }
         """
-        assert expect_error(source, "unreachable")
+        assert expect_error(source, "Unreachable code: Statement after 'continue' is unreachable")
 
     def test_unreachable_after_if_with_all_returning_branches_is_rejected(self):
         source = """
@@ -1185,7 +1130,7 @@ class TestUnreachableCodeValidation:
             x := 3
         }
         """
-        assert expect_error(source, "unreachable")
+        assert expect_error(source, "Unreachable code: Statement after 'if' is unreachable")
 
     def test_reachable_after_if_with_one_returning_branch_is_allowed(self):
         source = """
@@ -1208,7 +1153,7 @@ class TestUnreachableCodeValidation:
             x := 3
         }
         """
-        assert expect_error(source, "unreachable")
+        assert expect_error(source, "Unreachable code: Statement after 'match' is unreachable")
 
 
 class TestFallValidation:
@@ -1234,7 +1179,9 @@ class TestFallValidation:
             fall
         }
         """
-        assert expect_error(source, "fall")
+        assert expect_error(
+            source, "fall can only be the final direct statement of a non-final match case"
+        )
 
     def test_fall_in_final_match_case_is_rejected(self):
         source = """
@@ -1248,7 +1195,7 @@ class TestFallValidation:
             }
         }
         """
-        assert expect_error(source, "final")
+        assert expect_error(source, "fall cannot appear in the final match case")
 
     def test_nested_fall_in_match_case_is_rejected(self):
         source = """
@@ -1274,13 +1221,11 @@ class TestDeferStatements:
         """Test simple defer statement."""
         source = """
         main :: fn() {
-            x := 10
-            defer del x
+            p := new i32
+            defer del p
         }
         """
-        # This might not work exactly like this, but tests the structure
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source)
 
     def test_defer_with_function_call(self):
         """Test defer with function call."""
@@ -1296,15 +1241,13 @@ class TestDeferStatements:
         """
         assert expect_success(source)
 
-    def test_defer_outside_function_error(self):
-        """Test defer statement outside function."""
+    def test_defer_outside_function_is_a_parse_error(self):
+        """Only declarations may appear at file scope, so the parser rejects `defer`."""
         source = """
         x := 10
         defer del x
         """
-        # This should error - defer outside function
-        result = expect_error(source, "defer")
-        assert isinstance(result, bool)
+        assert expect_parse_error(source, "3:9: Expected declaration")
 
     def test_multiple_defers(self):
         """Test multiple defer statements."""
@@ -1329,7 +1272,7 @@ class TestDeferStatements:
             defer del x
         }
         """
-        assert expect_error(source, "reference")
+        assert expect_error(source, "Delete requires a reference type")
 
 
 class TestSemanticValidatorSchemaTraversal:

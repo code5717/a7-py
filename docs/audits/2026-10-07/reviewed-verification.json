@@ -1,0 +1,30 @@
+{
+  "started_at": "2026-10-06T23:08:01.483693+00:00",
+  "command": [
+    "taskset",
+    "-c",
+    "0-15",
+    "env",
+    "A7_PYTEST_WORKERS=6",
+    "./run_release_checks.sh"
+  ],
+  "checkout": "/var/tmp/a7-v1-reviewed-2026-10-07-v00k6xtr/checkout",
+  "manifest_sha256": "c6b2321ea2ea6a04f6e5be821a56dbe5f311a2440af56444688aa0a68f2790c0",
+  "pid": 1234543,
+  "exit_code": -15,
+  "finished_at": "2026-10-06T23:20:20.371529+00:00",
+  "log_sha256": "74d840a0993501b20b7b2a55c18b6380ed47ab3878ade826347272f87754d8d8",
+  "snapshot_manifest": "reviewed-manifest.json",
+  "result": "failed pytest stage; intentionally stopped during debug artifact stage",
+  "pytest": {
+    "failed": 2,
+    "passed": 3370,
+    "xfailed": 1
+  },
+  "examples_e2e": "51/51 passed",
+  "remaining_checks": "not completed",
+  "reason": "Two stdlib dispatch fixtures reused their own file import alias, which approved L28 now rejects. The fixture repair preserves the original sources as semantic-exit-6 cases and renames the import alias in valid dispatch cases. Production compiler unchanged.",
+  "repair_test_file": "test/test_stdlib_call_resolution.py",
+  "repair_test_sha256": "551afe109688451c0045aee3d7a05f0008163d8807b1fd3ea9c1255801f047e4",
+  "repair_checks": "20 passed, including 16 native cases and four compile-only cases; independent Flash review completed."
+}

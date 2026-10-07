@@ -6,6 +6,7 @@ from enum import Enum, auto
 from a7.types import (
     FLOAT_BIT_WIDTHS,
     FunctionType,
+    GenericParamType,
     PrimitiveType,
     ReferenceType,
     SIGNED_INTEGER_WIDTHS,
@@ -52,6 +53,77 @@ def classify_cast(source: Type, target: Type, *, source_nonnegative: bool = Fals
     if isinstance(source, (ReferenceType, FunctionType)) or isinstance(target, (ReferenceType, FunctionType)):
         return CastDecision(CastClass.FORBIDDEN, "casts involving references or functions are forbidden")
 
+    if isinstance(source, GenericParamType) or isinstance(target, GenericParamType):
+        return _classify_generic_cast(source, target, source_nonnegative)
+
+    return _classify_primitive_cast(source, target, source_nonnegative)
+
+
+_STRICTNESS = {
+    CastClass.LOSSLESS: 0,
+    CastClass.EXPLICIT_NUMERIC: 1,
+    CastClass.PROVABLE_NARROWING: 2,
+    CastClass.FORBIDDEN: 3,
+}
+
+
+def _numeric_members(type_: Type):
+    """The types a cast operand may be: itself, or every member of its numeric constraint."""
+    if not isinstance(type_, GenericParamType):
+        return [type_]
+    constraint = type_.constraint
+    if constraint is None or not constraint.types:
+        return None
+    members = sorted(constraint.types, key=str)
+    if not all(isinstance(member, PrimitiveType) and member.is_numeric() for member in members):
+        return None
+    return members
+
+
+def _classify_generic_cast(source: Type, target: Type, source_nonnegative: bool) -> CastDecision:
+    """Classify a cast whose source or target is a generic parameter.
+
+    The body is checked once for every type the constraint admits, so the
+    cast gets the strictest class any admitted pair needs. One forbidden
+    pair forbids the cast.
+    """
+    if source.equals(target):
+        return CastDecision(CastClass.LOSSLESS, "source and target types are identical")
+    sources = _numeric_members(source)
+    targets = _numeric_members(target)
+    if sources is None or targets is None:
+        unconstrained = source if sources is None else target
+        return CastDecision(
+            CastClass.FORBIDDEN,
+            f"'{unconstrained}' may be a type that is not a number; constrain the generic "
+            f"parameter, for example '${getattr(unconstrained, 'name', 'T')}: Numeric'",
+        )
+    strictest = CastDecision(CastClass.LOSSLESS, "lossless for every admitted type")
+    for member in sources:
+        for goal in targets:
+            decision = _classify_primitive_cast(member, goal, source_nonnegative)
+            if decision.kind is CastClass.FORBIDDEN:
+                return CastDecision(
+                    CastClass.FORBIDDEN,
+                    f"the constraint admits {member} to {goal}: {decision.reason}",
+                )
+            if _STRICTNESS[decision.kind] > _STRICTNESS[strictest.kind]:
+                strictest = decision
+    if strictest.kind is not CastClass.LOSSLESS:
+        # The backend emits one conversion per cast site and picks it from
+        # the non-generic side. That conversion is an integer one, so every
+        # type the generic side admits has to be an integer.
+        generic_side, members = (source, sources) if isinstance(source, GenericParamType) else (target, targets)
+        if not all(member.is_integral() for member in members):
+            return CastDecision(
+                CastClass.FORBIDDEN,
+                f"'{generic_side}' admits float types, and one cast site converts either integers "
+                f"or floats; constrain '${generic_side.name}' to Integer",
+            )
+    return strictest
+
+
+def _classify_primitive_cast(source: Type, target: Type, source_nonnegative: bool) -> CastDecision:
     if not isinstance(source, PrimitiveType) or not isinstance(target, PrimitiveType):
         return CastDecision(CastClass.FORBIDDEN, "only primitive numeric casts are supported")
 

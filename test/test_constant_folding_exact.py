@@ -5,15 +5,14 @@ Programs are compiled with the real CLI (main.py) and built with the real Zig
 from the A7 source, not by running the compiler. Nothing is mocked.
 
 Set A7_TEST_ZIG to a Zig 0.16.0 binary or put zig on PATH. Missing tools fail
-explicitly. Programs that the compiler may not reject yet (a shift past the
-width, an out-of-range sum) are only compiled, never run. Float folding,
-including results that overflow f64, is in test_float_nonfinite_folding.py.
+explicitly. A constant its destination cannot represent (a shift past the
+width, an out-of-range sum) must exit 6. Float constants that overflow f64
+are in test_float_nonfinite_folding.py.
 """
 
 from fractions import Fraction
 import math
 import os
-import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -25,6 +24,7 @@ from a7.ast_nodes import ASTNode, NodeKind
 from a7.parser import Parser
 from a7.passes import NameResolutionPass, TypeCheckingPass
 from a7.tokens import Tokenizer
+from conftest import expect_exit, shared_zig_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ("Debug", "ReleaseFast")
@@ -58,7 +58,7 @@ def emit(tmp_path, source):
 
 def zig_cache_args(tmp_path):
     return ["--cache-dir", str(tmp_path / "cache"),
-            "--global-cache-dir", str(tmp_path / "global-cache")]
+            "--global-cache-dir", str(shared_zig_cache() / "global")]
 
 
 def run_all_profiles(zig, tmp_path, output):
@@ -341,40 +341,32 @@ main :: fn() {
 
 
 # ---------------------------------------------------------------------------
-# SAF-13 and SAF-14: an integer fold whose result the node's type cannot
-# represent is left to the rest of the pipeline. Compile only, because the
-# compiler does not reject these yet and the emitted Zig may not build.
-#
-# SAF-12 (a float that overflows f64) is not here: infinity is a value the
-# backend can emit, so the requirement is that the program builds and prints
-# the IEEE f64 answer. test/test_float_nonfinite_folding.py checks that.
+# SAF-13 and SAF-14: an exact constant its destination cannot represent is a
+# located compile error (ledger L61). A float that overflows f64 is in
+# test/test_float_nonfinite_folding.py.
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("statement, forbidden", [
-    ("x: i64 = 1 << 20000", None),
-    # The fold wraps to -2147483648 the way the runtime operator does, so a
-    # successful compile must never name the unwrapped value.
-    ("x: i32 = 2147483647 + 1", None),
+@pytest.mark.parametrize("statement, fragment", [
+    # 2**20000 has 6021 decimal digits; the message elides the middle.
+    ("x: i64 = 1 << 20000", "(6021 digits) is out of range for i64"),
+    ("x: i32 = 2147483647 + 1", "Exact constant 2147483648 is out of range for i32"),
 ], ids=["shift-past-width", "sum-past-i32"])
-def test_unrepresentable_fold_is_not_emitted(tmp_path, statement, forbidden):
-    process, out = cli_compile(
-        tmp_path,
+def test_unrepresentable_constant_is_rejected(tmp_path, statement, fragment):
+    expect_exit(
         'io :: import "std/io"\nmain :: fn() {\n    ' + statement + '\n    io.println("{}", x)\n}\n',
+        tmp_path, 6, fragment,
     )
-    # Exit 8 is an internal compiler error; a located rejection (exit 6) or
-    # a successful compile are both acceptable here.
-    assert process.returncode != 8, process.stdout + process.stderr
-    if process.returncode == 0 and forbidden is not None:
-        assert re.search(forbidden, out.read_text(encoding="utf-8")) is None
 
 
-@pytest.mark.parametrize("expression, printed", [
+@pytest.mark.parametrize("expression, value", [
     ("9007199254740993 / 1", "9007199254740993"),
     ("9223372036854775807 / 10", "922337203685477580"),
 ])
-def test_exact_quotient_formatting_widens_default(expression, printed, tmp_path):
-    # An exact quotient beyond i32 widens the formatting default to i64
-    # instead of rejecting: the value is exact and representable.
-    process, out = cli_compile(tmp_path, 'io :: import "std/io"\nmain :: fn() { io.println("{}", ' + expression + ') }\n')
-    assert process.returncode == 0, process.stdout + process.stderr
-    assert printed in out.read_text(encoding="utf-8")
+def test_format_argument_beyond_i32_needs_an_explicit_type(expression, value, tmp_path):
+    # A format argument has no destination, so it takes the i32 default.
+    # The same quotients print through an i64 variable in
+    # test_boundary_values_match_the_run_time_result.
+    expect_exit(
+        'io :: import "std/io"\nmain :: fn() { io.println("{}", ' + expression + ') }\n',
+        tmp_path, 6, "Exact constant " + value + " does not fit default i32",
+    )

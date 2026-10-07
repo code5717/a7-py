@@ -5,17 +5,197 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- The docs-site lockfile uses source-map-js 1.2.2, fixing the upstream indexed
+  source-map denial-of-service advisory GHSA-68fv-2mgg-jv7q.
+
+- The L74 safety repair rejects nil reference-field access, repeated field
+  deletion, and direct reference alias use after deletion with exit 6. Guarded
+  access, distinct allocations and fresh reassignment remain accepted. Aliases
+  through array elements and joined allocation field paths remain unqualified.
+- File imports resolve relative to the importing file. Parent paths work within
+  the entry directory; paths and symlinks that escape it remain rejected.
+  Canonical file identity unifies alternate spellings for caches and cycles.
+  Separate per-module semantic scopes remain unfinished.
+- Local bindings that reuse their own file's import aliases now fail with
+  semantic exit 6 under L28. Parameters, loop bindings and match captures follow
+  the same rule; field names and another file's aliases remain independent.
+- Capture-free nested functions receive symbols, signatures and body checking.
+  Forward calls and returned nested functions compile. Wide enum values use
+  the existing backend tag selection instead of an unconditional i32 check.
+- Generic local initializers are checked against concrete call-site types,
+  including forwarded generic calls. A numeric initializer instantiated as
+  `string` now fails with exit 6 before Zig generation. Constant range-pattern
+  aliases resolve with a loop instead of recursive calls.
+- Bound generic callback signatures survive local assignment and branch
+  selection. Generic `if`/`match` initializers use concrete destination fitting.
+- Type diagnostic representations use an explicit stack while preserving
+  inherited dataclass fields, evaluation order and cycle markers.
+- Type-checker statements use a worklist for nested blocks, branches, loops and
+  match arms, preserving scope, facts and diagnostic order. Parser, expression
+  checking, type resolution, safety statements and backend paths still contain
+  recursion.
+- Bounded exact callee effects propagate reference-field replacement/deletion
+  through supported calls. Nested-function global deletion reaches callers;
+  global body effects apply after argument evaluation. General alias/lifetime
+  analysis remains incomplete.
+- Semantic call-summary helpers and inferred-type emission use explicit stacks.
+  Other parser, checker, safety-statement and backend paths remain recursive.
+
+- Safety expression traversal uses an explicit stack. Long runtime expression
+  chains reach code generation without exhausting the Python call stack.
+  Statement traversal still contains recursion.
+- The local gate uses `A7_PYTEST_WORKERS`, from 1 to 8, with a default of 8.
+  Invalid values fail before any check runs.
+
+- Type checker: types can be used before their declaration, and a
+  struct that holds itself by value exits 6. `nil` has its own type:
+  `p = nil` on a reference works; `x == nil` on a non-reference exits
+  6. Assignment to a field or element of a constant, of a by-value
+  parameter or of a string exits 6. `i32 & i64`, arithmetic on an
+  unconstrained `$T`, and `==` on structs or arrays exit 6. A typed
+  integer no longer converts to a float without `cast` (ledger L72).
+  `case NAME:` compares against a file-scope constant wherever it is
+  declared. An unknown generic constraint exits 6. An if-expression
+  takes its destination type. Each mistake reports once, and an
+  undefined variable is reported as an undefined identifier.
+- Backend: inline generic functions (`identity :: fn(x: $T) $T`) and
+  file-scope `@type_set` aliases compile and run. Strings compare by
+  content in `==`, `!=` and `match`. Names such as `u1`, `std` and
+  `void` work as identifiers. `xs := [1, 2, 3]` is a typed array, so a
+  run-time index and `for v in xs` work. A nested function that
+  captures nothing is hoisted; one that reads an enclosing variable
+  exits 7 and names it. Internal fallbacks that emitted wrong code now
+  raise an error.
+- Parser (ledger L62): a statement ends at a newline, `}` or end of file,
+  and list items need a comma (struct fields, enum variants and union
+  fields may use a newline instead). `x := 1 2`, `Pair(i32 i64)` and
+  `enum { A B C }` exit 5. A number runs into no identifier: `123abc`
+  and `1.5.3` exit 4. Also rejected: `1 = 2`, a parameter without a
+  type, a second `else:` in a match, `if c ret` without a block, an
+  if-expression without `else`, `pub import "x"`, a char literal above
+  code point 255. Now accepted: a long `if` condition ending in a name,
+  a struct literal inside a one-line `if` body, `f :: fn()` with the
+  brace on the next line, `cb: fn()` as a struct field, a positional
+  struct literal over several lines, `using import "p"` (parsed and
+  recorded). Char-literal errors say what is wrong. Nested call
+  arguments parse in linear time. No example or bench program changed.
+- Diagnostics: human-readable errors go to stderr in every command and
+  name their file on a `--> path:line:col` line, including errors in
+  imported modules. `a7 check` prints the same snippet and hint as a
+  compile. Safety-proof errors carry a hint that shows the accepted
+  guard, such as `if n != 0 { ... }`. A message that contains `[` no
+  longer breaks the output.
+- JSON output is schema `3.0`: each detail has `code` and `hint`, its
+  `message` no longer repeats `file:line:col`, proof failures have type
+  `SafetyError`, and `check --layout --format json` adds a `layout`
+  key. Very deep programs produce valid JSON.
+- CLI: the default output path is derived from the file name only, so a
+  directory named `x.a7proj` is left alone. `-o` refuses a destination
+  that ends in `.a7`. `--mode semantic` accepts programs that import
+  file modules. `a7 --version` works beside other arguments.
+- `check --layout` matches Zig's sizes and offsets for unions,
+  single-variant enums and function-pointer fields in the `debug` and
+  `release` profiles; `fast` drops the hidden tag of an untagged union.
+- Build profiles: `--profile release` now builds with Zig ReleaseSafe and
+  keeps runtime checks; the new `--profile fast` builds with ReleaseFast.
+  Compatibility: a release build that used to run unchecked now traps
+  where debug traps and runs slower on print- and allocation-heavy code;
+  use `fast` for the old behavior.
+- Initialization: a declaration without an initializer and every `new T`
+  start as all zeros (nil for references, empty for slices). They read
+  garbage before. Function-pointer locals are the exception and still
+  need a value before use.
+- Integer edges are defined in every profile: `MIN / -1` and `-MIN` wrap
+  to `MIN`, `MIN % -1` is 0, `math.abs(MIN)` is `MIN`. A shift by a
+  run-time count outside the bit width panics with "shift count out of
+  range". `x <<= n`, `1 << n` and `~5` build.
+- Output: stdout flushes before a panic and at each newline on a
+  terminal. A write to a closed pipe (`prog | head -1`) ends the program
+  quietly with status 0.
+- Recursion ban: recursion through a function value (an alias of an
+  alias, a struct field, an array element, a returned function, a
+  function constant, an if-expression) exits 6. `ret`, `break`,
+  `continue` or `fall` leaving a `defer` exits 6. A nested function
+  body gets the same control-flow and return checks as a top-level one.
+  `while true { ... ret ... }` needs no trailing `ret`.
+- Safety: programs that passed the proof and then crashed are now
+  rejected with exit 6. A fact no longer survives a loop that may run
+  zero times, a `defer` is proven at scope exit instead of at its own
+  line, a shadowed name no longer lends its facts to the outer name, a
+  call to a user function forgets facts about file-scope variables, and
+  an arm reached by `fall` no longer ignores the falling arm. Deleting
+  a value twice through `defer del` exits 6. `if b == nil { continue }`
+  now proves `b` non-nil afterwards. Compatibility: a guard may need
+  repeating after a loop or a call.
+- Generics: `union(tag)` declarations with `$T` fields specialize
+  positionally like structs, so `Result(i32, string){ok: 1}` passes
+  and `r.ok` resolves; a wrong field type or unknown field exits 6.
+  Pinned in `test/test_generics_fast_union.py`.
+- Generics: conflicting `$T` bindings at one call site exit 6 with
+  `GENERIC_PARAM_MISMATCH` naming both types; matching bindings still
+  pass. Generic enums are skipped (no payload types). A wrong number of
+  type arguments exits 6 and names the expected parameters.
+- Generics: `$N` value params on fns, structs, and unions. `$N` takes
+  `usize`, `bool`, or small int values through named constants
+  (`Buf(SIZE)` with `SIZE :: 4`, including folded constants such as
+  `SUM :: 2 + 2`); distinct values are distinct types. A value of the
+  wrong kind or range, a type for a value parameter, or a value for a
+  type parameter exits 6 at annotations and literals. Literal value
+  args and call-site inference stay open. Pinned in
+  `test/test_generics_value_params.py`.
+- Generics: minimal `where` conjunctions (`where T: Numeric`) on
+  generic fns, structs, and unions. Richer predicates and `where` on
+  enums exit 6. Pinned in `test/test_where_clauses.py`.
+- Match: tagged-union arms use leading-dot patterns. `case .none:`
+  tests a tag, `case .ok(v):` binds a copy of the payload, and `else:`
+  opts out. A bare `case tag:` exits 6; uncovered tags produce one
+  error listing each missing tag. A payload that is or holds a `string`
+  cannot bind by value. A `ref` to a tagged union matches the same way.
+  Pinned in `test/test_match_payload.py` and
+  `test/test_match_dot_e2e.py`.
+- Stdlib: `io.println_ok` and `io.read_line` construct `Result`
+  union values in generated code. `read_line` keeps one stdin reader
+  for the program, flushes stdout first, and reports end of input and
+  a read error as different `err` values. Matching on the call still exits 6
+  until the checker types them as `Result`; `get`/`pop` and `or{}`
+  with `use` stay deferred. Pinned in `test/test_stdlib_result.py`.
+- Codegen: single parens in conditions and left-assoc chains; native
+  `switch` for a match whose scrutinee is an integer, char, bool or enum
+  and whose arms are constants (other matches keep the if-chain). No
+  runtime behavior change. `ref` parameters stay `?*T`. A capture in a
+  `del` no longer collides with a user variable named `p`. A `defer`
+  takes any statement; a directly deferred `ret`, `break`, `continue`
+  or `fall` exits 7. New examples `049_expense_ledger` and
+  `050_tip_split`. Pinned in `test/test_codegen_emit.py`,
+  `test/test_match_dot_e2e.py` and `test/test_del_defer_codegen.py`.
+- Tests: pin duplicate-import exits (same path, `./` spelling, symlink,
+  reused alias), unclosed and nested-unclosed comment exits, and
+  imported-file stage attribution in `test/test_import_error_stages.py`.
+- Match ranges: a constant reversed range (`case 10..1`, including
+  const-alias, char, and match-expression forms) exits 6 with
+  `invalid_pattern`; swap the endpoints to fix. Ranges with bounds known
+  only at run time keep matching nothing. Pinned in
+  `test/test_match_ranges_break.py`.
+- Docs: align SPEC sections 2.1, 2.2, 2.3, 2.5, 2.6, float-to-int proof,
+  10.2 through 10.2.2, 10.4, 11.2, 12.1, the limits table, and Appendix D
+  with current behavior; no behavior change.
+
 - A declaration initializer reads the outer binding, so `y :: y + 1` inside a
   block means the outer `y` plus one. Match-expression arms use their own
   scopes, so a later match statement no longer resolves arm bindings to an
   outer declaration. A bare call to an imported module's function from the
   entry file exits 6 and names the qualified spelling.
-- Integer constant folds wrap to `i32` when both operands fit, and widen the
-  default to `i64` beyond it. Float folds round each operation in `f64`, so
-  overflow folds to infinity and `infinity - infinity` folds to NaN; a finite
-  decimal that round-trips emits as written instead of a bit pattern, so a
-  folded math call prints the runtime value rather than a comptime-shortened
-  one. An integer zero divisor stays for the safety proof instead of folding.
+- Constant arithmetic is exact and then fitted to its destination
+  (ledger L61). `MONTH_MS :: 30 * 24 * 60 * 60 * 1000` into an `i64` is
+  2592000000. `x: i32 = 2147483647 + 1` exits 6. `0.1 + 0.2 == 0.3` is
+  true. `b: f64 = 1e308 * 10.0` and a float division by constant zero
+  exit 6. `1 << 40` into an `i64` folds exactly. An untyped integer with
+  no destination type defaults to `i32` everywhere, so
+  `io.println("{}", 5000000000)` exits 6 and needs a typed value.
+  A literal such as `1e999999999` exits 6 instead of hanging the
+  compiler. Compatibility: programs that relied on a wrapped or
+  infinite constant, or on an `i64` default, now exit 6 or print the
+  exact value. An integer zero divisor stays for the safety proof.
 - A file with no `main :: fn()` entry point is rejected at the Entry Point
   stage with exit 6 instead of passing check and failing late at the Zig
   build. Imported modules are exempt; only the entry file needs `main`.

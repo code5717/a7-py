@@ -271,16 +271,16 @@ main :: fn() {
         assert stdout == "1 7\n"
 
 
-def test_unresolvable_generic_return_raises_instead_of_void():
-    """A generic return type no parameter carries must fail closed.
+def test_generic_return_no_parameter_carries_is_a_comptime_parameter():
+    """`fn(n: i32) $T` declares `T` as a comptime parameter, never `void`.
 
-    The old emitter wrote a silent `void` fallback here (ZIG-36). The CLI
-    cannot reach this path because parameter checking rejects first, so the
-    emitter is exercised directly on a synthetic declaration.
+    The old emitter wrote a silent `void` return type here (ZIG-36). A call
+    cannot reach the backend: the checker reports that `$T` cannot be
+    inferred. The emitter is exercised directly on a synthetic declaration,
+    so nothing here shows that Zig accepts the output.
     """
     from a7.ast_nodes import ASTNode, NodeKind
     from a7.backends.zig import ZigCodeGenerator
-    from a7.errors import CodegenError
 
     program = ASTNode(
         kind=NodeKind.PROGRAM,
@@ -296,5 +296,4 @@ def test_unresolvable_generic_return_raises_instead_of_void():
             ),
         ],
     )
-    with pytest.raises(CodegenError, match="cannot resolve generic return type"):
-        ZigCodeGenerator().generate(program)
+    assert "fn leak(comptime T: type, _: i32) T {}" in ZigCodeGenerator().generate(program)

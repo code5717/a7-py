@@ -8,7 +8,7 @@ order: 18
 
 # Generics and type sets
 
-Generic type parameters use `$T`. Concrete call arguments can infer a function's type parameters. The current examples use explicit generic declaration lists together with inline parameter types.
+Generic type parameters use `$T`. Concrete call arguments can infer a function's type parameters. A function may declare its parameters in a list (`identity($T) :: fn(x: $T) $T`) or inline (`identity :: fn(x: $T) $T`); both compile and run.
 
 ```a7
 identity($T) :: fn(value: $T) $T {
@@ -17,6 +17,14 @@ identity($T) :: fn(value: $T) $T {
 ```
 
 Calls `identity(7)` and `identity("ok")` select concrete specializations. The full repository example also instantiates nested generic structs.
+
+Generic local literal, array and scalar `if`/`match` initializers must fit each concrete
+instantiation. A bound callback keeps that instantiation's signature through
+local aliases, assignments and branch selection; calls do not infer fresh types.
+For example, a callback instantiated with an i8 argument rejects the value 300.
+Callback values selected through record fields or array elements remain incomplete.
+Array-literal arms inside generic `if`/`match` initializers still lack nested
+contextual fitting.
 
 ## Generic structs
 
@@ -36,11 +44,10 @@ Instantiate with concrete types, for example `Box(i32){value: 7}` or `Pair(i32, 
 
 `@type_set(i8, i16, i32)` describes allowed types. The semantic layer recognizes predefined sets including `Numeric`, `Integer`, `Float`, `Signed`, and `Unsigned`, and local type-set aliases.
 
-A top-level local alias such as `IntOnly :: @type_set(i32, i64)` passes
-semantic checking but currently fails Zig code generation with an unsupported
-`TYPE_SET` node. Semantic recognition alone does not make that alias runnable.
+A file-scope alias such as `IntOnly :: @type_set(i32, i64)` works as a
+constraint (`$T: IntOnly`). It exists only at compile time and emits no Zig.
 
-The documented current constraint shape is `name($T: Numeric) :: fn(value: $T) $T { ... }`. Inferred call arguments are checked against declared constraints. `where` is a reserved spelling, but broad specification examples using `where` are not a substitute for the example-backed current form.
+The constraint shape `name($T: Numeric) :: fn(value: $T) $T { ... }` checks inferred call arguments against the declared constraint. Minimal conjunctions such as `where T: Numeric, U: Float` also work for functions, structs and unions. Richer predicates remain unsupported.
 
 A predefined constraint works without a local alias. This complete program
 prints `42`:
@@ -54,13 +61,13 @@ main :: fn() { io.println("{}", identity(42)) }
 ```
 
 The inline constraint `$T: @type_set(i32, i64)` also works in this direct-call
-example. A top-level `@type_set` alias remains a separate codegen limitation.
+example. A file-scope `@type_set` alias works the same way.
 
 ## Status and restrictions
 
-Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic enums and unions appearing in the specification do not establish runnable `Option` or `Result` implementations.
+Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic tagged unions specialize positionally. Standard-library `Option` and `Result` implementations are not shipped; generic enums remain unsupported.
 
-The specification says generic names exclude digits, while the tokenizer accepts digits after the initial letter and delegates further validity to parsing. Use conservative letter-only names such as `$T` or `$ELEMENT` until that discrepancy is resolved. Tokenizer acceptance alone is not execution evidence.
+Generic names start with a letter after `$` and may contain digits and underscores after that letter, so `$T1` is a valid spelling and `$123` is not. The tokenizer uses Unicode-aware character checks; ASCII names are the documented forms.
 
 Some specification examples mix separate `$T` parameters and plain `T` references. Prefer the consistent spellings in the repository's generic example. This documentation does not authorize a syntax change.
 

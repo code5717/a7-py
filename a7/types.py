@@ -7,6 +7,7 @@ Provides type representation, type checking, and type compatibility analysis.
 from dataclasses import dataclass, fields
 from typing import Optional, List, Dict, Any, Tuple
 from enum import Enum, auto
+from threading import local
 
 from a7.ast_nodes import ASTNode, NodeKind
 
@@ -27,6 +28,7 @@ class TypeKind(Enum):
     TYPE_SET = auto()
     UNKNOWN = auto()
     VOID = auto()
+    NIL = auto()
 
 
 @dataclass(frozen=True)
@@ -136,9 +138,8 @@ class PrimitiveType(Type):
             rank = {'f32': 1, 'f64': 2}
             return rank[target.name] >= rank[self.name]
 
-        if (self.name in signed_ints or self.name in unsigned_ints) and target.name in floats:
-            return True
-
+        # No integer type converts to a float by itself. An untyped integer
+        # constant does; the type checker fits it before asking here.
         return False
 
     def __str__(self) -> str:
@@ -152,18 +153,23 @@ class PrimitiveType(Type):
 class ArrayType(Type):
     """Fixed-size array type: [N]T."""
     element_type: Type
-    size: int
+    size: Optional[int]
+    size_param: Optional[str] = None
 
-    def __init__(self, element_type: Type, size: int):
+    def __init__(self, element_type: Type, size: Optional[int], size_param: Optional[str] = None):
         object.__setattr__(self, 'kind', TypeKind.ARRAY)
         object.__setattr__(self, 'element_type', element_type)
         object.__setattr__(self, 'size', size)
+        object.__setattr__(self, 'size_param', size_param)
 
     def equals(self, other: Type) -> bool:
         return _compare_types(self, other, semantic=True)
 
     def __str__(self) -> str:
         return _format_type(self)
+
+    def __repr__(self) -> str:
+        return _repr_type(self, ArrayType)
 
     def __hash__(self) -> int:
         return _hash_type(self)
@@ -189,6 +195,9 @@ class SliceType(Type):
     def __str__(self) -> str:
         return _format_type(self)
 
+    def __repr__(self) -> str:
+        return _repr_type(self, SliceType)
+
     def __hash__(self) -> int:
         return _hash_type(self)
 
@@ -213,6 +222,9 @@ class PointerType(Type):
     def __str__(self) -> str:
         return _format_type(self)
 
+    def __repr__(self) -> str:
+        return _repr_type(self, PointerType)
+
     def __hash__(self) -> int:
         return _hash_type(self)
 
@@ -236,6 +248,9 @@ class ReferenceType(Type):
 
     def __str__(self) -> str:
         return _format_type(self)
+
+    def __repr__(self) -> str:
+        return _repr_type(self, ReferenceType)
 
     def __hash__(self) -> int:
         return _hash_type(self)
@@ -272,6 +287,9 @@ class FunctionType(Type):
     def __str__(self) -> str:
         return _format_type(self)
 
+    def __repr__(self) -> str:
+        return _repr_type(self, FunctionType)
+
     def __hash__(self) -> int:
         return _hash_type(self)
 
@@ -286,6 +304,9 @@ class StructField:
     """A field in a struct type."""
     name: str
     field_type: Type
+
+    def __repr__(self) -> str:
+        return _repr_type(self, StructField)
 
     def __hash__(self) -> int:
         return _hash_type(self)
@@ -326,6 +347,9 @@ class StructType(Type):
 
     def __str__(self) -> str:
         return _format_type(self)
+
+    def __repr__(self) -> str:
+        return _repr_type(self, StructType)
 
     def __hash__(self) -> int:
         return _hash_type(self)
@@ -379,6 +403,9 @@ class UnionField:
     name: str
     field_type: Type
 
+    def __repr__(self) -> str:
+        return _repr_type(self, UnionField)
+
     def __hash__(self) -> int:
         return _hash_type(self)
 
@@ -393,13 +420,17 @@ class UnionType(Type):
     """Union type (tagged union)."""
     name: str
     fields: tuple[UnionField, ...]
+    generic_params: tuple[str, ...] = ()
 
-    def __init__(self, name, fields=()):
+    def __init__(self, name, fields=(), generic_params=()):
         object.__setattr__(self, 'kind', TypeKind.UNION)
         object.__setattr__(self, 'name', name)
         if isinstance(fields, list):
             fields = tuple(fields)
         object.__setattr__(self, 'fields', fields)
+        if isinstance(generic_params, list):
+            generic_params = tuple(generic_params)
+        object.__setattr__(self, 'generic_params', generic_params)
 
     def equals(self, other: Type) -> bool:
         return isinstance(other, UnionType) and self.name == other.name
@@ -413,6 +444,9 @@ class UnionType(Type):
 
     def __str__(self) -> str:
         return self.name
+
+    def __repr__(self) -> str:
+        return _repr_type(self, UnionType)
 
     def __hash__(self) -> int:
         return hash(('union', self.name))
@@ -440,6 +474,9 @@ class GenericParamType(Type):
     def __str__(self) -> str:
         return _format_type(self)
 
+    def __repr__(self) -> str:
+        return _repr_type(self, GenericParamType)
+
     def __hash__(self) -> int:
         return hash(('generic_param', self.name))
 
@@ -461,6 +498,41 @@ class GenericInstanceType(Type):
         if isinstance(type_args, list):
             type_args = tuple(type_args)
         object.__setattr__(self, 'type_args', type_args)
+
+    def equals(self, other: Type) -> bool:
+        return _compare_types(self, other, semantic=True)
+
+    def __str__(self) -> str:
+        return _format_type(self)
+
+    def __repr__(self) -> str:
+        return _repr_type(self, GenericInstanceType)
+
+    def __hash__(self) -> int:
+        return _hash_type(self)
+
+    def __eq__(self, other):
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return _compare_types(self, other, semantic=False)
+
+
+@dataclass(frozen=True)
+class GenericValueArg(Type):
+    """Compile-time value for a $N parameter: the 4 in Buf(SIZE), SIZE :: 4.
+
+    Stored in GenericInstanceType.type_args beside real Types and joins the
+    instance key, so Buf(2) and Buf(4) are distinct types. Only int values
+    (stored raw) and bools (stored 1/0 with is_bool) occur; the type checker
+    rejects anything else where the instance is written.
+    """
+    value: int
+    is_bool: bool = False
+
+    def __init__(self, value: int, is_bool: bool = False):
+        object.__setattr__(self, 'kind', TypeKind.GENERIC_PARAM)
+        object.__setattr__(self, 'value', int(value))
+        object.__setattr__(self, 'is_bool', is_bool)
 
     def equals(self, other: Type) -> bool:
         return _compare_types(self, other, semantic=True)
@@ -497,6 +569,9 @@ class TypeSet(Type):
 
     def __str__(self) -> str:
         return _format_type(self)
+
+    def __repr__(self) -> str:
+        return _repr_type(self, TypeSet)
 
     def __hash__(self) -> int:
         return _hash_type(self)
@@ -545,6 +620,108 @@ class VoidType(Type):
         return hash('void')
 
 
+@dataclass(frozen=True)
+class NilType(Type):
+    """Type of the `nil` literal. It fits any `ref T` and nothing else."""
+
+    def __init__(self):
+        object.__setattr__(self, 'kind', TypeKind.NIL)
+
+    def equals(self, other: Type) -> bool:
+        return isinstance(other, NilType)
+
+    def is_assignable_to(self, target: Type) -> bool:
+        return isinstance(target, (ReferenceType, NilType))
+
+    def __str__(self) -> str:
+        return "nil"
+
+    def __hash__(self) -> int:
+        return hash('nil')
+
+
+_TYPE_REPR_CONTEXT = local()
+
+
+def _repr_type(root, declaring_type) -> str:
+    """Preserve dataclass field spelling and path-local cycle markers."""
+    active = getattr(_TYPE_REPR_CONTEXT, 'active', None)
+    if active is None:
+        active = _TYPE_REPR_CONTEXT.active = set()
+    entered = set()
+    output = []
+    pending = [('visit', root)]
+    first_node = True
+    try:
+        while pending:
+            action, node = pending.pop()
+            if action == 'text':
+                output.append(node)
+                continue
+            if action == 'field':
+                owner, name = node
+                pending.append(('visit', getattr(owner, name)))
+                continue
+            if action == 'leave':
+                active.remove(node)
+                entered.remove(node)
+                continue
+            dataclass_node = (isinstance(node, (Type, StructField, UnionField, EnumVariant))
+                              and (first_node or type(node).__repr__ in _TYPE_REPR_METHODS))
+            declared_fields = (_TYPE_REPR_FIELDS[declaring_type.__repr__] if first_node
+                               else _TYPE_REPR_FIELDS.get(type(node).__repr__))
+            first_node = False
+            container = type(node)
+            if not dataclass_node and container not in (tuple, list, dict, set, frozenset):
+                output.append(repr(node))
+                continue
+            identity = id(node)
+            if identity in active:
+                marker = '...' if dataclass_node else {
+                    tuple: '(...)', list: '[...]', dict: '{...}',
+                    set: 'set(...)', frozenset: 'frozenset(...)',
+                }[container]
+                output.append(marker)
+                continue
+            active.add(identity)
+            entered.add(identity)
+            pending.append(('leave', identity))
+            parts = []
+            if dataclass_node:
+                parts.append(('text', node.__class__.__qualname__ + '('))
+                for index, field in enumerate(declared_fields):
+                    if index:
+                        parts.append(('text', ', '))
+                    parts.extend([('text', field.name + '='), ('field', (node, field.name))])
+                parts.append(('text', ')'))
+            elif container is dict:
+                parts.append(('text', '{'))
+                for index, (key, value) in enumerate(node.items()):
+                    if index:
+                        parts.append(('text', ', '))
+                    parts.extend([('visit', key), ('text', ': '), ('visit', value)])
+                parts.append(('text', '}'))
+            else:
+                if container is tuple:
+                    opening, closing = '(', ',)' if len(node) == 1 else ')'
+                elif container is list:
+                    opening, closing = '[', ']'
+                elif container is set:
+                    opening, closing = ('{', '}') if node else ('set(', ')')
+                else:
+                    opening, closing = ('frozenset({', '})') if node else ('frozenset(', ')')
+                parts.append(('text', opening))
+                for index, item in enumerate(node):
+                    if index:
+                        parts.append(('text', ', '))
+                    parts.append(('visit', item))
+                parts.append(('text', closing))
+            pending.extend(reversed(parts))
+    finally:
+        active.difference_update(entered)
+    return ''.join(output)
+
+
 def _format_type(root: Type) -> str:
     """Render types into fragments without retaining every nested spelling.
 
@@ -576,7 +753,7 @@ def _format_type(root: Type) -> str:
         if isinstance(node, PrimitiveType):
             parts = [node.name]
         elif isinstance(node, ArrayType):
-            parts = [f"[{node.size}]", node.element_type]
+            parts = [f"[{node.size_param if node.size_param is not None else node.size}]", node.element_type]
         elif isinstance(node, SliceType):
             parts = ["[]", node.element_type]
         elif isinstance(node, PointerType):
@@ -621,6 +798,8 @@ def _format_type(root: Type) -> str:
                     parts.append(", ")
                 parts.append(arg)
             parts.append(")")
+        elif isinstance(node, GenericValueArg):
+            parts = [("true" if node.value else "false") if node.is_bool else str(node.value)]
         elif isinstance(node, TypeSet):
             if node.name:
                 parts = [node.name]
@@ -640,6 +819,8 @@ def _format_type(root: Type) -> str:
             parts = ["unknown type"]
         elif isinstance(node, VoidType):
             parts = ["void"]
+        elif isinstance(node, NilType):
+            parts = ["nil"]
         else:
             raise NotImplementedError(f"__str__ not implemented for {node.__class__.__name__}")
         pending.extend(("visit", part, target) for part in reversed(parts))
@@ -677,17 +858,21 @@ def _comparison_plan(left, right, semantic):
         return left == right
 
     category = next((cls for cls in (PrimitiveType, EnumType, UnionType, GenericParamType,
-                                    UnknownType, VoidType, ArrayType, SliceType, PointerType,
+                                    GenericValueArg, UnknownType, VoidType, NilType, ArrayType, SliceType, PointerType,
                                     ReferenceType, FunctionType, StructType, GenericInstanceType,
                                     TypeSet) if isinstance(left, cls)), Type)
     if isinstance(left, (PrimitiveType, EnumType, UnionType, GenericParamType)):
         return isinstance(right, category) and left.name == right.name
-    if isinstance(left, (UnknownType, VoidType)):
+    if isinstance(left, (UnknownType, VoidType, NilType)):
         return isinstance(right, category)
     if not isinstance(right, category):
         return False
+    if isinstance(left, GenericValueArg):
+        return (isinstance(right, GenericValueArg) and left.value == right.value
+                and left.is_bool == right.is_bool)
     if isinstance(left, ArrayType):
-        return ('all', [pair(left.size, right.size), pair(left.element_type, right.element_type, True)])
+        return ('all', [pair(left.size, right.size), pair(left.size_param, right.size_param),
+                        pair(left.element_type, right.element_type, True)])
     if isinstance(left, SliceType):
         return pair(left.element_type, right.element_type, True)
     if isinstance(left, PointerType):
@@ -826,7 +1011,9 @@ def _hash_type(root, honor_override=False):
             raise RecursionError('Cannot hash a structural cycle in a type')
         children = []
         if isinstance(node, ArrayType):
-            parts = ['array', None, node.size]
+            # The payload keeps its historical 3-tuple when no value parameter
+            # sizes the array; the pinned hash contract covers that shape.
+            parts = ['array', None, node.size] if node.size_param is None else ['array', None, node.size, node.size_param]
             children = [(1, node.element_type, True)]
         elif isinstance(node, (SliceType, PointerType, ReferenceType)):
             if isinstance(node, SliceType):
@@ -852,6 +1039,8 @@ def _hash_type(root, honor_override=False):
         elif isinstance(node, GenericInstanceType):
             parts = ['generic_instance', node.base_name, None]
             children = [(2, node.type_args, False)]
+        elif isinstance(node, GenericValueArg):
+            parts = ['generic_value', node.value, node.is_bool]
         elif isinstance(node, TypeSet):
             parts = ['type_set', node.name if node.name else node.types]
         elif isinstance(node, (PrimitiveType, EnumType, UnionType, GenericParamType)):
@@ -863,6 +1052,9 @@ def _hash_type(root, honor_override=False):
             parts = [node.name, node.value]
         elif isinstance(node, (UnknownType, VoidType)):
             computed[identity] = hash('unknown' if isinstance(node, UnknownType) else 'void')
+            continue
+        elif isinstance(node, NilType):
+            computed[identity] = hash('nil')
             continue
         elif isinstance(node, tuple):
             parts = [None] * len(node)
@@ -882,12 +1074,16 @@ def _hash_type(root, honor_override=False):
 _TYPE_CLASSES = (Type, PrimitiveType, ArrayType, SliceType, PointerType,
                  ReferenceType, FunctionType, StructField, StructType,
                  EnumVariant, EnumType, UnionField, UnionType, GenericParamType,
-                 GenericInstanceType, TypeSet, UnknownType, VoidType)
+                 GenericValueArg,
+                 GenericInstanceType, TypeSet, UnknownType, VoidType, NilType)
 _TYPE_COMPARISON_METHODS = frozenset(
     method for cls in _TYPE_CLASSES for name in ('equals', '__eq__')
     if (method := getattr(cls, name, None)) is not None
 )
 _TYPE_HASH_METHODS = frozenset(cls.__hash__ for cls in _TYPE_CLASSES)
+_TYPE_REPR_FIELDS = {cls.__repr__: tuple(field for field in fields(cls) if field.repr)
+                     for cls in _TYPE_CLASSES}
+_TYPE_REPR_METHODS = frozenset(_TYPE_REPR_FIELDS)
 
 
 # Predefined type instances (singletons)
@@ -912,18 +1108,20 @@ F64 = PrimitiveType('f64')
 
 VOID = VoidType()
 UNKNOWN = UnknownType()
+NIL = NilType()
 
 # Predefined type sets
 NUMERIC_TYPES = frozenset({I8, I16, I32, I64, ISIZE, U8, U16, U32, U64, USIZE, F32, F64})
 INTEGER_TYPES = frozenset({I8, I16, I32, I64, ISIZE, U8, U16, U32, U64, USIZE})
-SIGNED_INT_TYPES = frozenset({I8, I16, I32, I64, ISIZE})
-UNSIGNED_INT_TYPES = frozenset({U8, U16, U32, U64, USIZE})
+# SPEC 7.3: `Signed` is every type with a sign, so it includes the floats.
+SIGNED_TYPES = frozenset({I8, I16, I32, I64, ISIZE, F32, F64})
+UNSIGNED_TYPES = frozenset({U8, U16, U32, U64, USIZE})
 FLOAT_TYPES = frozenset({F32, F64})
 
 NUMERIC = TypeSet(NUMERIC_TYPES, name='Numeric')
 INTEGER = TypeSet(INTEGER_TYPES, name='Integer')
-SIGNED_INT = TypeSet(SIGNED_INT_TYPES, name='SignedInt')
-UNSIGNED_INT = TypeSet(UNSIGNED_INT_TYPES, name='UnsignedInt')
+SIGNED = TypeSet(SIGNED_TYPES, name='Signed')
+UNSIGNED = TypeSet(UNSIGNED_TYPES, name='Unsigned')
 FLOAT = TypeSet(FLOAT_TYPES, name='Float')
 
 
@@ -942,13 +1140,13 @@ def get_primitive_type(name: str) -> Optional[PrimitiveType]:
 
 
 def get_predefined_type_set(name: str) -> Optional[TypeSet]:
-    """Get a predefined type set by name."""
+    """Get a predefined type set by name (the names SPEC 7.3 lists)."""
     type_sets = {
         'Numeric': NUMERIC,
         'Integer': INTEGER,
-        'SignedInt': SIGNED_INT,
-        'UnsignedInt': UNSIGNED_INT,
         'Float': FLOAT,
+        'Signed': SIGNED,
+        'Unsigned': UNSIGNED,
     }
     return type_sets.get(name)
 
@@ -1002,7 +1200,7 @@ def _resolve_constraint_member_type(type_node: Optional[ASTNode]) -> Optional[Ty
 
 # Canonical integer width/range table. Single source for the duplicated
 # mappings in passes/safety.py (SIGNED_RANGES/UNSIGNED_RANGES/INTEGER_RANGES),
-# const_eval.py (_INTEGER_LAYOUT) and cast_classifier.py
+# and cast_classifier.py
 # (_SIGNED_BITS/_UNSIGNED_BITS/_FLOAT_BITS). layout.py keeps its own
 # PRIMITIVE_LAYOUTS: different shape (size, align) plus extra
 # bool/char/string entries, so it is not rewired here.

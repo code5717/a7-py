@@ -5,6 +5,7 @@ import sys
 import pytest
 
 import a7.types as t
+from conftest import low_recursion_limit
 
 
 def shallow_cases(m):
@@ -167,7 +168,7 @@ WRAPPERS = [
 def test_5000_deep_types_at_recursion_limit_100(wrapper):
     previous = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
         a, b, different = t.I32, t.PrimitiveType('i32'), t.I64
         for _ in range(5000):
             a, b, different = wrapper(a), wrapper(b), wrapper(different)
@@ -256,7 +257,7 @@ def test_type_sets_ignore_order_and_resolve_equal_hash_collisions():
 def test_5000_mixed_layers_preserve_differing_leaf_relations():
     previous = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
         a, b, different = t.I32, t.PrimitiveType('i32'), t.I64
         for depth in range(5000):
             wrapper = WRAPPERS[depth % 7]

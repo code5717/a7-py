@@ -1,7 +1,8 @@
 """
 A7 Standard Library Registry.
 
-Maps A7 stdlib modules/functions to canonical names and backend-specific implementations.
+Maps A7 stdlib modules/functions to canonical names. Each backend lowers a
+canonical name itself.
 """
 
 from dataclasses import dataclass, field
@@ -18,11 +19,10 @@ STDLIB_MODULE_ALIASES: Dict[str, str] = {
 
 @dataclass
 class StdlibFunction:
-    """A standard library function with backend mappings."""
+    """A standard library function and its canonical name."""
     module: str              # "io"
     name: str                # "println"
     canonical: str           # "std.io.println"
-    backend_map: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,19 +69,6 @@ class StdlibRegistry:
             if func:
                 return func.canonical
         return None
-
-    def get_backend_mapping(self, canonical: str, backend: str) -> Optional[str]:
-        """Get the backend-specific code for a canonical stdlib function."""
-        for module in self.modules.values():
-            for func in module.functions.values():
-                if func.canonical == canonical:
-                    return func.backend_map.get(backend)
-        return None
-
-    def is_io_call(self, module_name: str, method_name: str) -> bool:
-        """Check if a call is an I/O call (needs special statement-level handling)."""
-        canonical = self.resolve_call(module_name, method_name)
-        return canonical is not None and canonical.startswith("std.io.")
 
 
 __all__ = ["StdlibRegistry", "StdlibFunction", "StdlibModule", "STDLIB_MODULE_ALIASES"]

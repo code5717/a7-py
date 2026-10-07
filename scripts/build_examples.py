@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build A7 examples as debug or release native binaries."""
+"""Build A7 examples as debug, release or fast native binaries."""
 
 from __future__ import annotations
 
@@ -22,6 +22,9 @@ PROFILE_FLAGS = {
         "zig": ["-ODebug"],
     },
     "release": {
+        "zig": ["-OReleaseSafe"],
+    },
+    "fast": {
         "zig": ["-OReleaseFast"],
     },
 }
@@ -241,7 +244,7 @@ def summarize(results: list[BuildResult]) -> tuple[int, int]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build debug/release A7 example artifacts")
+    parser = argparse.ArgumentParser(description="Build debug, release or fast A7 example artifacts")
     parser.add_argument(
         "--profile",
         choices=sorted(PROFILE_FLAGS.keys()),
@@ -293,7 +296,7 @@ def main() -> int:
     backends = [args.backend]
 
     if not shutil.which("zig"):
-        print("zig is required for debug/release artifact builds", file=sys.stderr)
+        print("zig is required for native artifact builds", file=sys.stderr)
         return 2
 
     examples = find_examples(examples_dir)

@@ -16,8 +16,8 @@ Pipeline (orchestrated by `a7/compile.py: A7Compiler`):
    Shared state lives in `a7/semantic_context.py` and `a7/symbol_table.py`;
    type machinery lives in `a7/types.py` (including generic constraint
    resolution). Shared integer width/range tables also live in `a7/types.py`;
-   constant folding lives in `a7/const_eval.py` (preprocessor) and
-   `a7/exact_constants.py` (type checker).
+   constant folding lives in `a7/exact_constants.py`, the only numeric
+   folder.
 4. `a7/ast_preprocessor.py` — sub-passes for stdlib resolution, struct init
    normalization, mutation/usage analysis, inference, shadowing, hoisting, and
    constant folding. AST traversal helpers are shared via
@@ -35,3 +35,17 @@ tokens/AST/semantic dumps and the `--doc-out` report), `a7/errors.py`
 
 No-recursion rule: see "No recursion in compiler internals" in `AGENTS.md`.
 `test/test_no_recursion.py` holds the ratchet.
+
+Safety expression evaluation uses an explicit event stack. It preserves
+left-to-right operand order and applies each argument's borrowing effects before
+the next one. Exact callee replay and global body effects run after argument
+evaluation.
+Expression facts retain the value observed at that evaluation point even when
+a later operand invalidates a symbol fact. Safety statement traversal still
+uses recursive calls.
+
+Type-checker statements use one worklist for blocks, branches, loops and match
+arms. Continuations preserve diagnostic order; a separate region stack restores
+the scopes and facts protected by the original cleanup paths. Deep AST tests
+exercise name resolution and checking without depending on parser depth.
+Expression checking and type resolution still contain recursive calls.

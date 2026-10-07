@@ -18,6 +18,7 @@ import sys
 import pytest
 
 from a7.compile import ExitCode
+from conftest import shared_zig_cache
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,8 +53,8 @@ def zig():
 
 
 @pytest.fixture(scope="module")
-def zig_cache(tmp_path_factory):
-    return tmp_path_factory.mktemp("zig-cache")
+def zig_cache():
+    return shared_zig_cache()
 
 
 def compile_bench(tmp_path, name):

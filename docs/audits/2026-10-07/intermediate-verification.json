@@ -1,0 +1,22 @@
+{
+  "recorded_at": "2026-10-06T22:16:57.934718+00:00",
+  "command": "taskset -c 0-15 env A7_PYTEST_WORKERS=6 ./run_release_checks.sh",
+  "exit_code": 1,
+  "snapshot_manifest": "batch-manifest.json",
+  "snapshot_manifest_sha256": "09119c9aa16945d354fb9e947e9bc0e6fa6439df4d87a443de9de593d032603e",
+  "log_sha256": "0567366e6db315e7e2f30d339e33c2a1f2006593f3343f0e4407a42480098f6e",
+  "compiler_package_gate": {
+    "passed_checks": 11,
+    "skipped": 0,
+    "pytest_passed": 3205,
+    "pytest_xfailed": 2,
+    "examples_each_profile": 51
+  },
+  "site_check": "passed; 12 tests, 2564 assertions, 23 pages, 1496 local resources, 179 search targets",
+  "failure": "bun audit: source-map-js 1.2.1, GHSA-68fv-2mgg-jv7q, high severity",
+  "not_run": [
+    "pip-audit",
+    "bandit"
+  ],
+  "boundary": "Intermediate snapshot only; excludes later safety/type/callback/docs/dependency edits. Not a full-release pass."
+}

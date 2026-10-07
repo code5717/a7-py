@@ -8,6 +8,7 @@ from a7.ast_nodes import ASTNode, NodeKind, create_block, create_identifier
 from a7.passes.semantic_validator import SemanticValidationPass
 from a7.symbol_table import SymbolTable
 from a7.types import BOOL
+from conftest import low_recursion_limit
 
 
 def validator():
@@ -45,7 +46,7 @@ def test_deep_mixed_branches_preserve_complete_and_missing_paths(query):
         partial = branch(create_block([wildcard_match(checker, partial)]), returning())
     old_limit = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
         assert getattr(checker, query)(total) is True
         assert getattr(checker, query)(partial) is False
     finally:

@@ -12,6 +12,7 @@ import subprocess
 import pytest
 
 from a7.compile import A7Compiler
+from conftest import shared_zig_cache
 
 
 @pytest.fixture(scope="module")
@@ -38,7 +39,7 @@ def build(zig, tmp_path, output, profile):
     process = subprocess.run(
         [zig, "build-exe", str(output), "-O", profile,
          "--cache-dir", str(tmp_path / "cache"),
-         "--global-cache-dir", str(tmp_path / "global-cache"),
+         "--global-cache-dir", str(shared_zig_cache() / "global"),
          "-femit-bin=" + str(binary)],
         capture_output=True, text=True,
     )
@@ -84,7 +85,9 @@ show :: fn(value: i64) {
     io.println("{} {}", value / 1, value % 1)
 }
 main :: fn() {
-    io.println("{} {}", 9007199254740993 / 1, 9007199254740993 % 1)
+    quotient: i64 = 9007199254740993 / 1
+    remainder: i64 = 9007199254740993 % 1
+    io.println("{} {}", quotient, remainder)
     show(9007199254740993)
 }
 ''')

@@ -1,8 +1,16 @@
-# A7 Release Checklist
+# A7 release checklist
 
 This file is the release/debug build source of truth for `a7-py`.
 
-## Release Artifacts
+Final V1 publication as `1.0.0` waits for every track in the
+[delivery roadmap](plan/delivery-roadmap.md): core language, automatic memory,
+libraries and tools, concurrency, CPU AI, actual GPU execution and self-hosting
+parity. L73 sets this boundary. Passing the commands below alone does not qualify
+those tracks. Publication is authorized once all required tracks and release
+gates pass. The current package remains a development
+release; no new release verification is claimed by this document.
+
+## Release artifacts
 
 A release should contain:
 
@@ -12,14 +20,34 @@ A release should contain:
 - the documentation site build under `site/dist`
 - the changelog entry for the release version
 
-## Local Prerequisites
+## Local prerequisites
 
 - Python 3.13+
 - `uv`
 - Zig 0.16.0 on `PATH`
 - Bun 1.3+ for the docs site
 
-## Debug Builds
+## Shared-machine limits
+
+`A7_PYTEST_WORKERS` accepts integers from 1 through 8 and defaults to 8.
+The compiler gate rejects other values before running checks. Keep at least
+eight logical CPUs free for other sessions. A worker count does not limit Zig
+or child-process CPU use; restrict the complete gate's CPU affinity as well.
+
+On a Linux machine with 24 logical CPUs numbered 0 through 23, this example
+limits the gate and its children to CPUs 0 through 15:
+
+```bash
+A7_PYTEST_WORKERS=8 taskset -c 0-15 ./run_release_checks.sh
+```
+
+Inspect the local CPU layout before adapting that example. Do not use `-n auto`.
+Use an isolated source snapshot for qualification and record its hashes. The
+[qualification record](audits/2026-10-07/qualification.md) distinguishes saved
+baseline results from later source. Historical checks are not a fresh run of
+the current checkout.
+
+## Debug builds
 
 Debug builds keep compiler/runtime diagnostics friendly:
 
@@ -34,7 +62,7 @@ build/debug/zig/src/*.zig
 build/debug/zig/bin/*
 ```
 
-## Release Builds
+## Release builds
 
 Release builds use optimized target compiler flags and still run every binary
 against the golden output fixtures:
@@ -50,7 +78,18 @@ build/release/zig/src/*.zig
 build/release/zig/bin/*
 ```
 
-## Full Release Gate
+## Fast builds
+
+The gate also builds and runs every example with Zig's `ReleaseFast` mode:
+
+```bash
+uv run python scripts/build_examples.py --profile fast --backend zig --clean
+```
+
+These artifacts go under `build/fast/`. The `release` profile uses
+`ReleaseSafe`; both optimized profiles must match the golden output fixtures.
+
+## Full release gate
 
 Run the same command used by release CI:
 
@@ -83,6 +122,7 @@ reference coverage, types, publication tests, and generated links.
 - Zig example compile/build/run/output verification
 - debug artifact build verification for Zig
 - release artifact build verification for Zig
+- fast artifact build verification for Zig
 - CLI error-stage matrix verification
 - docs style checks
 - committed secrets check
@@ -158,7 +198,7 @@ The current workflow does not publish to a package registry. If registry
 publishing is added later, wire it as a separate reviewed change rather than as
 an implicit side effect of the draft GitHub release job.
 
-## Known Release Caveats
+## Known release caveats
 
 The compiler is not a security sandbox. A7 programs compiled to native binaries
 can do whatever the generated Zig program and host runtime allow. Only compile

@@ -20,7 +20,7 @@ is the current implementation authority.
 | --- | --- | --- |
 | Zig source emission | supported | Only public backend; targets Zig 0.16.0. |
 | Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
-| References and explicit allocation | limited | Nil checks and direct use-after-delete checks exist; alias and lifetime guarantees remain incomplete. |
+| References and explicit allocation | limited | Nil guards, tracked field deletion and direct alias deletion checks exist; complete lifetime guarantees remain unavailable. |
 | Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |
 | File modules | limited | Simple aliased imports emit one combined Zig file. |
 | Fixed arrays and slices | limited | Bounds checking exists; heap fixed-array allocation is rejected. |
@@ -46,49 +46,53 @@ requirements. Neither makes the other complete.
 
 ## Known gaps
 
-- Safety remains incomplete. Current probes still accept field-name confusion,
-  fallthrough division, stale global facts after calls and repeated field deletion.
-- A low-recursion test passes through the pytest entry point but fails through
-  `python -m pytest`. Full compiler traversal still needs conversion.
-- Forward-global typing awaits compatibility approval because the fix rejects
-  a float-to-integer assignment that currently builds.
+- Safety remains incomplete for aliases through array elements and selected
+  fields, loop field-argument deletion and unsupported callee effects. A bounded
+  exact-callee repair passes focused controls for field replacement/deletion and
+  nested global effects; combined-source qualification remains pending.
+- Type operations and several AST walks use explicit stacks. Full compiler
+  traversal still needs conversion.
 
 - A labeled loop whose label is never targeted no longer emits a label: the
   fix landed with commit `ed0baff`, and the never-targeted case is pinned in
   both profiles by the `unused-labels` case in
   `test/test_resume_backend_bindings.py`.
 
-- Local constant usage is not tracked by declaration identity. Sibling-scope name
-  collisions and nested constant shadowing can still emit invalid Zig.
+- Local constants use declaration identity. Sibling-scope collisions and nested
+  shadowing are covered by native regression tests.
 
 | Topic | Current restriction | Reference |
 | --- | --- | --- |
-| Modules | Selected imports, `using import`, module-qualified struct literals, and bare entry-file references to module functions remain incomplete. | [Modules](/a7-py/docs/language/modules.md) |
-| Numeric operations | Integer addition, subtraction, and multiplication wrap. Shifts and other numeric edge cases need further qualification. | [Operators](/a7-py/docs/language/operators.md) |
-| Unions | Tag and discriminant workflows are not implemented. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
+| Modules | Selected imports, `using import`, module-qualified struct literals and complete per-file scopes remain incomplete. Bare entry-file calls to module functions reject with the qualified spelling. | [Modules](/a7-py/docs/language/modules.md) |
+| Numeric operations | Integer addition, subtraction and multiplication wrap. Runtime shifts are checked; signed minimum-value division, negation and absolute value wrap. | [Operators](/a7-py/docs/language/operators.md) |
+| Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
-| Generics | Arbitrary specialization propagation is incomplete. | [Generics](/a7-py/docs/language/generics.md) |
+| Generics | Concrete local initializers and bound callback aliases/assignments/branches are checked. Field/array callback provenance and arbitrary specialization propagation remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
 | Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | No `Option`, `Result`, collections, or full memory/string library. | [Standard library](/a7-py/docs/stdlib.md) |
 
 Focused native probes verify escaped IO braces and ordinary signed `math.abs`
-results after repairs. The minimum signed `abs` input remains an unsafe edge case.
-Scalar-filled fixed arrays and direct `string.len` are rejected. A top-level
-local `@type_set` alias can pass semantic checking but fail code generation.
+results after repairs. `math.abs` of the minimum signed value wraps to that
+value in every profile. Scalar-filled fixed arrays and direct `string.len` are
+rejected.
 See [stdlib](/a7-py/docs/stdlib.md), [arrays](/a7-py/docs/language/arrays-strings.md),
 [generics](/a7-py/docs/language/generics.md), and
 [recorded checks](https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md).
 
 ## Planned work
 
-Core V1 includes automatic memory, useful libraries and installed tooling. The
-Python compiler remains the V1 implementation; Zig handles generated code and
-future runtime/native integration. V2 aims to implement the compiler in A7.
+V1 publication requires core language and automatic memory, useful libraries
+and installed tooling, structured concurrency, CPU AI, actual GPU execution,
+and an A7 compiler that establishes self-hosting parity (decision L73).
+The Python compiler remains the bootstrap until parity justifies replacement;
+Zig handles generated code and runtime/native integration.
 
-AI, concurrency, multicore and GPU execution remain design constraints and later
-qualification tracks. Runtime memory help is allowed, but no memory mechanism is
-selected or implemented. See the
-[delivery roadmap](https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md).
+GPU implementation and the proposed local Vulkan experiment remain deferred
+for Zig GPU research under L75. That deferral does not waive V1's GPU
+qualification requirement. No GPU backend or automatic-memory mechanism is
+selected by these decisions. See the
+[delivery roadmap](https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md)
+and [decision ledger](https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md).
 A package registry remains outside the current scope.
 
 ## Not currently available

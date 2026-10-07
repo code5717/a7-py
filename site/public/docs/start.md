@@ -67,9 +67,10 @@ uv run a7 build examples/001_hello.a7 -o hello
 ./hello
 ```
 
-The default profile is `debug`. Use `--profile release` for Zig ReleaseFast.
-Current safety checks have alias and lifetime limits in both profiles; a release
-build does not establish complete memory safety.
+The default profile is `debug`. Use `--profile release` for Zig ReleaseSafe,
+which keeps runtime checks, or `--profile fast` for Zig ReleaseFast, which
+removes them. Current safety checks have alias and lifetime limits in every
+profile; no profile establishes complete memory safety.
 
 To emit Zig without building, keep the existing file-first command:
 

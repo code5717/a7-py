@@ -1,10 +1,16 @@
 # Feature coverage and evidence
 
-This inventory maps every heading in `docs/SPEC.md`, every lexer keyword and operator spelling, every registered standard-library operation, every current example file, proposed tensor APIs, and the broader proposed standard-library signatures to a documentation topic and disposition. `content/features.json` is the machine-readable source.
+This inventory maps every heading in `docs/SPEC.md`, the preserved array-proposal subsections in
+`docs/design/array-programming.md`, every lexer keyword and operator spelling, every registered standard-library operation, every current example file, proposed tensor APIs, and the broader proposed standard-library signatures to a documentation topic and disposition. `content/features.json` is the machine-readable source.
 
-A disposition records what readers should rely on. It does not turn parser acceptance, a registry entry, or a source revision into execution evidence. The example records link the separate verification report and its fresh compiler/native results for all 43 files. Supported means an implemented documented form with linked source/example evidence, not a general safety guarantee.
+A disposition records what readers should rely on. It does not turn parser acceptance, a registry entry, or a source revision into execution evidence. The example records link the separate verification report and its dated compiler/native results for the files it checked. Supported means an implemented documented form with linked source/example evidence, not a general safety guarantee.
 
-## Reconciled conflicts and remaining questions
+## Historical probe conflicts and remaining questions
+
+The observations below describe the 2026-09-19 probe state. Later SPEC repairs
+resolved several documentation conflicts, including generic-name digits,
+escapes, and scalar-fill arrays. The current matrix follows the current source
+inventories; the linked probe report retains its original evidence.
 
 - Typed `name: Type = value` creates a mutable variable in `Parser.parse_declaration`. SPEC sections 4.1 and 4.2 include contradictory immutable comments. The website follows the parser. Compiler behavior is unchanged.
 - SPEC's keyword list differs from `Tokenizer.KEYWORDS`. The builtin page gives both dispositions. `cast` is context-sensitive parser syntax.
@@ -77,13 +83,12 @@ These findings are recorded with source programs and diagnostics in
 | References (Pointers) | limited | [language/memory](../public/docs/language/memory.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | Structs | limited | [language/aggregate-types](../public/docs/language/aggregate-types.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | Unions | limited | [language/aggregate-types](../public/docs/language/aggregate-types.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
-| Enums | limited | [language/aggregate-types](../public/docs/language/aggregate-types.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
+| Enums | limited | [language/aggregate-types](../public/docs/language/aggregate-types.md) | Plain enums support explicit integer values; emitted tag uses the first of i32, u32, i64, u64 that fits all variants. Regression tests cover wide values. |
 | 3.4 Type Aliases | limited | [language/declarations](../public/docs/language/declarations.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 3.5 Reference Semantics | limited | [language/memory](../public/docs/language/memory.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 4. Declarations and Expressions | limited | [language/declarations](../public/docs/language/declarations.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 4.1 Variable Declarations | limited | [language/declarations](../public/docs/language/declarations.md) | Typed declarations are mutable. Fixed arrays zero-initialize without an initializer; scalar-fill initializers are rejected despite SPEC prose. |
 | 4.2 Declaration Rules | limited | [language/declarations](../public/docs/language/declarations.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
-| 4.2.1 Untyped numeric constants | limited | [language/types](../public/docs/language/types.md) | Approved P-TYP contract with implementation and release verification in progress; exact-value fitting per SPEC, not yet fully verified. |
 | 4.3 Expression Categories | limited | [language/declarations](../public/docs/language/declarations.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | Primary Expressions | limited | [language/declarations](../public/docs/language/declarations.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | Postfix Expressions | limited | [language/declarations](../public/docs/language/declarations.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
@@ -112,35 +117,37 @@ These findings are recorded with source programs and diagnostics in
 | 8.2 Heap Allocation | limited | [language/memory](../public/docs/language/memory.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 8.3 Defer Statement | limited | [language/memory](../public/docs/language/memory.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 8.4 Memory Safety Status | limited | [language/memory](../public/docs/language/memory.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
-| 9. Planned Array Programming for AI | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.1 Multidimensional Arrays | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Tensor Types | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Array Literals and Initialization | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.2 Broadcasting and Vectorized Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Automatic Broadcasting | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Vectorized Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.3 Tensor Manipulation and Reshaping | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Shape Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Axis Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.4 Reduction Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.5 Linear Algebra Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.6 AI-Specific Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Neural Network Primitives | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Gradient Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.7 Memory Layout and Performance | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Memory Layout Control | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Performance Annotations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.8 Indexing and Slicing | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Advanced Indexing | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.9 Built-in Tensor Functions | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| 9.10 Array Programming Examples | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Machine Learning Example | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
-| Scientific Computing Example | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support. |
+| 9. Planned Array Programming for AI | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | SPEC section 9 links to the separate historical array-programming proposal; tensor APIs are not current executable support. |
+| 9.1 Multidimensional Arrays | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Tensor Types | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Array Literals and Initialization | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.2 Broadcasting and Vectorized Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Automatic Broadcasting | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Vectorized Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.3 Tensor Manipulation and Reshaping | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Shape Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Axis Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.4 Reduction Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.5 Linear Algebra Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.6 AI-Specific Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Neural Network Primitives | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Gradient Operations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.7 Memory Layout and Performance | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Memory Layout Control | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Performance Annotations | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.8 Indexing and Slicing | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Advanced Indexing | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.9 Built-in Tensor Functions | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| 9.10 Array Programming Examples | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Machine Learning Example | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
+| Scientific Computing Example | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Historical array-programming proposal, not implemented syntax or approved API spelling. |
 | 10. Modules and Visibility | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 10.1 File-Based Module Model | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 10.2 Import Statements | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
+| 10.2.1 Module identity and resolution | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
+| 10.2.2 Cycles and entry | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 10.3 Standard Library Status | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
-| 10.4 Visibility Rules | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
+| 10.4 Visibility Rules (staged intent) | limited | [language/modules](../public/docs/language/modules.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 11. Built-in Functions and Operators | limited | [language/builtins](../public/docs/language/builtins.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 11.1 Builtin Functions | limited | [language/builtins](../public/docs/language/builtins.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 11.2 Standard Library Functions | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual IO/math functions are current; broader signature catalogue is planned API shape. |
@@ -165,7 +172,6 @@ These findings are recorded with source programs and diagnostics in
 | B.3 Warning Categories | limited | [compiler](../public/docs/compiler.md) | Diagnostic design and examples; do not infer that proposed E-code categories appear in every current diagnostic. |
 | Appendix C: Implementation Limits | unverified | [language/syntax](../public/docs/language/syntax.md) | SPEC limit table is not a verified list of enforced implementation limits. Lexer name/literal limits are documented separately. |
 | Appendix D: ASCII Character Set Support | limited | [language/syntax](../public/docs/language/syntax.md) | ASCII public model; escape support follows tokenizer, which omits several escapes listed in Appendix D. |
-| D.1 Escape Sequences | limited | [language/syntax](../public/docs/language/syntax.md) | ASCII public model; escape support follows tokenizer, which omits several escapes listed in Appendix D. |
 | Appendix E: Implementation Status (a7-py) | limited | [status](../public/docs/status.md) | Historical implementation snapshot; current STATUS and fresh checks take precedence. |
 | E.1 Current Constraints and Open Gaps | limited | [status](../public/docs/status.md) | Historical implementation snapshot; current STATUS and fresh checks take precedence. |
 | E.2 Source Of Truth | limited | [status](../public/docs/status.md) | Historical implementation snapshot; current STATUS and fresh checks take precedence. |
@@ -270,6 +276,8 @@ These findings are recorded with source programs and diagnostics in
 | std.io.println | limited | [stdlib](../public/docs/stdlib.md) | Native ordinary/empty output calls verified. Literal formats and matching bare {} arguments required; {{ and }} print literal braces without consuming arguments. |
 | std.io.print | limited | [stdlib](../public/docs/stdlib.md) | Native ordinary/empty output calls verified. Literal formats and matching bare {} arguments required; {{ and }} print literal braces without consuming arguments. |
 | std.io.eprintln | limited | [stdlib](../public/docs/stdlib.md) | Native ordinary/empty output calls verified. Literal formats and matching bare {} arguments required; {{ and }} print literal braces without consuming arguments. |
+| std.io.println_ok | limited | [stdlib](../public/docs/stdlib.md) | Registered call. The backend builds a Result value that a statement discards. The checker types the call as void, so matching on it exits 6. |
+| std.io.read_line | limited | [stdlib](../public/docs/stdlib.md) | Registered call taking a byte slice. The checker rejects the call from the CLI until stdlib calls carry declared types; a second read in one program loses input. |
 | std.math.sqrt | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
 | std.math.abs | limited | [stdlib](../public/docs/stdlib.md) | Ordinary floating and signed integer native calls verified. Signed results preserve the input type. The minimum signed input has no representable positive result and remains an unsafe edge case. |
 | std.math.floor | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
@@ -281,75 +289,75 @@ These findings are recorded with source programs and diagnostics in
 | std.math.exp | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
 | std.math.min | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
 | std.math.max | limited | [stdlib](../public/docs/stdlib.md) | Registered virtual operation with Zig mapping; signatures and numeric/format restrictions are documented in the stdlib reference. |
-| tensor_arange | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_argmax | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_argmin | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_backward | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_backward_solve | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_batch_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_c_layout | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_cast | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_clip_grad_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_clone | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_concat | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_contiguous | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_copy | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_cross | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_det | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_device | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_dot | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_dtype | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_eig | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_expand_dims | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_eye | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_f_layout | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_flatten | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_forward_solve | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_from_data | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_gelu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_grad_enable | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_inv | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_layer_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_linspace | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_load | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_lu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_lu_pivot | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_matmul | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_max | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_mean | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_min | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_ndim | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_no_grad | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_ones | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_operation | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_print | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_qr | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_random | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_range | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_relu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_reshape | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_save | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_shape | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_sigmoid | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_size | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_softmax | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_split | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_squeeze | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_stack | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_std | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_strided | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_sum | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_svd | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_to_cpu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_to_gpu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_trace | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_transpose | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_unsqueeze | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_var | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_view | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_where | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_zeros | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
+| tensor_arange | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_argmax | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_argmin | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_backward | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_backward_solve | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_batch_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_c_layout | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_cast | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_clip_grad_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_clone | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_concat | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_contiguous | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_copy | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_cross | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_det | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_device | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_dot | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_dtype | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_eig | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_expand_dims | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_eye | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_f_layout | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_flatten | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_forward_solve | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_from_data | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_gelu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_grad_enable | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_inv | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_layer_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_linspace | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_load | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_lu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_lu_pivot | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_matmul | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_max | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_mean | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_min | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_ndim | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_no_grad | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_norm | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_ones | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_operation | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_print | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_qr | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_random | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_range | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_relu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_reshape | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_save | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_shape | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_sigmoid | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_size | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_softmax | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_split | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_squeeze | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_stack | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_std | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_strided | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_sum | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_svd | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_to_cpu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_to_gpu | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_trace | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_transpose | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_unsqueeze | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_var | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_view | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_where | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_zeros | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
 | abs_f32 | planned | [stdlib](../public/docs/stdlib.md) | Illustrative future standalone API, not a current registered stdlib function. Use the actual module-qualified registry. |
 | abs_f64 | planned | [stdlib](../public/docs/stdlib.md) | Illustrative future standalone API, not a current registered stdlib function. Use the actual module-qualified registry. |
 | abs_i32 | planned | [stdlib](../public/docs/stdlib.md) | Illustrative future standalone API, not a current registered stdlib function. Use the actual module-qualified registry. |
@@ -455,12 +463,16 @@ These findings are recorded with source programs and diagnostics in
 | 046_match_full.a7 | supported | [examples](../public/docs/examples.md) | Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only. |
 | 047_safety_obligations.a7 | supported | [examples](../public/docs/examples.md) | Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only. |
 | 048_worklist_traversal.a7 | supported | [examples](../public/docs/examples.md) | Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-01. This establishes this example only. |
+| 049_expense_ledger.a7 | supported | [examples](../public/docs/examples.md) | Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-04. This establishes this example only. |
+| 050_tip_split.a7 | supported | [examples](../public/docs/examples.md) | Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-04. This establishes this example only. |
 | Scalar-fill array initializer | unavailable | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Unavailable: filled: [3]i32 = 7 is rejected at semantic analysis with expected [3]i32, got i32. Use a full literal or a loop. |
 | String .len | unavailable | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Unavailable: text.len on string is rejected as field access on a non-struct type. A verified string slice has .len. |
-| tensor_conv2d | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_maxpool2d | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_to_f32 | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
-| tensor_to_i32 | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed tensor API in SPEC section 9; no current executable implementation. |
+| tensor_conv2d | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_maxpool2d | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_to_f32 | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| tensor_to_i32 | planned | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Proposed API preserved in docs/design/array-programming.md; no current executable implementation. |
+| 4.2.1 Untyped numeric constants | limited | [language/types](../public/docs/language/types.md) | Approved P-TYP contract with implementation and release verification in progress; exact-value fitting per SPEC, not yet fully verified. |
+| Nested functions | limited | [language/functions](../public/docs/language/functions.md) | Capture-free nested functions can be called or returned as function values. Reading an enclosing local or parameter is rejected during code generation with exit 7. |
 
 ## Reference excerpt integration check
 
@@ -478,7 +490,7 @@ possible composition of these features.
 
 ## Inventory validation
 
-A source-derived assertion checked all 117 specification headings, all 48 lexer
+The 2026-09-19 inventory assertion checked all 117 specification headings, all 48 lexer
 keywords, all 43 example filenames, all feature topic paths, and every evidence
 file. The 428 feature IDs are unique, and every status uses the five-value schema.
 The operator inventory was extracted from `Tokenizer._try_operator`, including

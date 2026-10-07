@@ -42,7 +42,8 @@ def test_out_of_range_argument_and_return(tmp_path, literal):
                    f'f :: fn() u8 {{ ret {literal} }}\nmain :: fn() {{}}']:
         result, _ = compile_source(tmp_path, source)
         assert result.returncode == 6, result.stdout + result.stderr
-        assert 'mismatch' in result.stdout.lower()
+        # One diagnostic names the value and the type it does not fit.
+        assert f'{literal} is out of range for u8' in result.stdout
 
 
 def test_stdlib_function_value_rejected(tmp_path):
@@ -51,6 +52,7 @@ def test_stdlib_function_value_rejected(tmp_path):
     assert 'must be called directly' in result.stdout
 
 
+@pytest.mark.zig
 def test_contextual_literals_and_widening_native(tmp_path):
     source = '''io :: import "std/io"
 f :: fn(x: u8) u8 { ret x }

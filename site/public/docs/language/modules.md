@@ -20,11 +20,28 @@ console :: import "std/io"
 
 An alias is local: `console.println(...)` calls the same virtual module as `io.println(...)`. `std/io` and `std/math`, along with their short `io` and `math` module names, are compiler-backed virtual modules.
 
-Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Simple alias-qualified calls are supported and emit into the same generated Zig source. Import paths with parent traversal such as `../utils` are rejected by the resolver.
+Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Simple alias-qualified calls are supported and emit into the same generated Zig source. Paths resolve relative to the importing file. A nested file may use `../utils`
+when the target stays inside the entry file's folder. Paths and symlinks that
+escape that folder are rejected. Directory fallback through `path/mod.a7`
+remains supported.
+
+Canonical real paths identify loaded file modules. Importing one file twice in
+the same importer is an error, including alternate relative spellings and
+symlinks. Different importing files can share one cached dependency.
+
+A local binding cannot reuse an import alias from its own file, including a
+stdlib alias. Parameters, loop bindings and match captures follow this rule;
+violations fail with semantic exit 6. Record fields and another file's aliases
+do not reserve local names.
 
 ## Public and private declarations
 
-`pub` applies to top-level functions, variables, constants, and types. Items without `pub` are file-private. `pub` cannot decorate a local, parameter, or individual struct field. There is no protected or internal visibility level.
+The approved model makes top-level `_name` private and other top-level names
+public; `__name` is reserved for the compiler. L69 authorizes separate file
+scopes. Complete scope isolation and underscore visibility enforcement remain
+unfinished. Current `pub` parsing does not enforce a private/public boundary.
+Struct fields remain visible to importers; field `pub` has no access-control
+effect. See the [decision ledger](https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md).
 
 ```a7
 pub answer :: fn() i32 {
@@ -45,6 +62,7 @@ Selected-import syntax such as `import "helper" { answer }` has resolver metadat
 ## Evidence
 
 - [a7/module_resolver.py](https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py)
+- [test/test_module_path_identity.py](https://github.com/code5717/a7-py/blob/master/test/test_module_path_identity.py)
 - [examples/018_modules.a7](https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7)
 - [test/test_module_alias_shadowing.py](https://github.com/code5717/a7-py/blob/master/test/test_module_alias_shadowing.py)
 - [docs/STATUS.md](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)

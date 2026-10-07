@@ -161,3 +161,28 @@ def test_unreadable_import_exits_3(tmp_path: Path) -> None:
     assert result.returncode == 3, result.stdout + result.stderr
     payload = payload_of(result)
     assert payload["error"]["category"] == "io"
+
+
+def test_unclosed_nested_block_comment_exits_4(tmp_path: Path) -> None:
+    main = tmp_path / "main.a7"
+    main.write_text(
+        "main :: fn() {}\n/* outer /* inner */ still open\n", encoding="utf-8")
+    result = run_cli([str(main)])
+    assert result.returncode == 4, result.stdout + result.stderr
+    assert "not closed" in (result.stdout + result.stderr).lower()
+
+
+def test_permission_denied_import_exits_3(tmp_path: Path) -> None:
+    if os.geteuid() == 0:
+        pytest.skip("root bypasses file permissions")
+    helper = tmp_path / "helper.a7"
+    helper.write_text("pub value :: fn() i32 {\n    ret 7\n}\n", encoding="utf-8")
+    helper.chmod(0o000)
+    try:
+        result = compile_main(
+            tmp_path, 'h :: import "helper"\nmain :: fn() {}\n')
+    finally:
+        helper.chmod(0o644)
+    assert result.returncode == 3, result.stdout + result.stderr
+    payload = payload_of(result)
+    assert payload["error"]["category"] == "io"

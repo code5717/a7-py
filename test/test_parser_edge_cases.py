@@ -153,17 +153,23 @@ class TestParserErrorMessages:
     def test_missing_function_body_error(self):
         """Test error when function body is missing."""
         with pytest.raises(ParseError) as exc_info:
-            parse_a7("test :: fn()")
-        # Should indicate missing function body
-        error_msg = str(exc_info.value)
-        assert "Expected" in error_msg
+            parse_a7("test :: fn(x: i32)")
+        assert "Expected function body" in str(exc_info.value)
+
+    def test_empty_parameter_fn_without_body_is_a_type_alias(self):
+        """`Name :: fn()` with no body is a function type alias, like `fn(i32)`."""
+        ast = parse_a7("test :: fn()")
+        assert ast.declarations[0].kind == NodeKind.TYPE_ALIAS
 
     def test_invalid_parameter_syntax_error(self):
         """Test error with invalid parameter syntax."""
         with pytest.raises(ParseError) as exc_info:
             parse_a7("test :: fn(x) {}")
-        # Should indicate missing type annotation
-        assert "Expected" in str(exc_info.value)
+        # `fn(x)` reads as a function type whose parameter type is `x`;
+        # the `{` after it is then left over on the same line.
+        message = str(exc_info.value)
+        assert "statement must end at a newline" in message
+        assert "'{'" in message
 
     def test_unmatched_parentheses_error(self):
         """Test error with unmatched parentheses."""

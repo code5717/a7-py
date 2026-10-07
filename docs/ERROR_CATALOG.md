@@ -1,7 +1,7 @@
 # Error catalog
 
 Every compiler diagnostic: code, stage, exit code, span, trigger, fix.
-Counts: 22 tokenizer + 34 semantic + 31 type = 87 enum codes, plus ad-hoc
+Counts: 21 tokenizer + 37 semantic + 36 type = 94 enum codes, plus ad-hoc
 `ParseError`, `CodegenError`, `ImportError`, entry-point, and internal rows.
 Exits live in `a7/compile.py` (`ExitCode`); messages and hints in `a7/errors.py`.
 
@@ -10,13 +10,13 @@ Exits live in `a7/compile.py` (`ExitCode`); messages and hints in `a7/errors.py`
 | tokenize | 4 | lexer failure |
 | parse | 5 | syntax failure |
 | semantic | 6 | name, type, safety, import, entry-point failure |
-| codegen | 7 | backend failure (incl. unknown backend) |
-| io | 3 | missing input, output conflict, doc-write failure |
-| usage | 2 | bad CLI flags (`--output` outside compile mode) |
+| codegen | 7 | backend failure (incl. unknown backend), Zig build failure in `build`/`run` |
+| io | 3 | missing input, output conflict (incl. native output over an input), doc-write failure |
+| usage | 2 | bad CLI flags (`--output` outside compile mode), Zig missing for `build`/`run`, `doctor` failures |
 | internal | 8 | unexpected exception (bug) |
 
 JSON shape key: `D1` = detail with span
-(`{type, message, file, span:{start_line, start_column, end_line,
+(`{type, code, message, hint, file, span:{start_line, start_column, end_line,
 end_column, length}}`); `D0` = same without span. The envelope is
 `{category, message, details:[D1|D0], span, exception_type}`.
 Pin key: `matrix` = test_error_stage_matrix, `exits` = test_stage_exit_codes,
@@ -70,6 +70,7 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | missing_return | paths without `ret` → return on every path | — |
 | cannot_assign_to_immutable | `x = 1` on `::` binding → declare with `:=` | sem |
 | invalid_defer_scope | misplaced `defer` → put it in its function body | — |
+| defer_control_flow | `defer ret`, or `break` leaving a `defer { }` block → move the statement out of the defer | — |
 | memory_leak | allocated value escapes scope → free it first | — |
 | double_free | `del` twice → delete once | — |
 | delete_non_reference | `del 1` → delete reference values only | sem |
@@ -83,7 +84,8 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | module_not_found | `import "nosuch"` → fix the path or search path (live CLI path raises ImportError, exit 3; see ad-hoc rows) | — |
 | import_name_conflict | import shadows a name → alias the import | — |
 | unsupported_import | exotic import form → use a virtual stdlib import | — |
-| generic_param_mismatch | wrong `$T` count → match the declared count | — |
+| generic_param_mismatch | `$T` or `$N` cannot be inferred, or a generic type gets the wrong number of arguments → pass every declared parameter | — |
+| generic_binding_conflict | one `$T` bound to two types at a call → pass one type, or cast | — |
 | constraint_violation | type misses the bound → use a conforming type | — |
 | unsupported_feature | parsed but not runnable → rewrite without it | — |
 | unexpected_node_kind | compiler bug → report it | — |
@@ -109,6 +111,11 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | wrong_argument_count | arity differs → pass the declared count | — |
 | argument_type_mismatch | arg type differs → match parameter types | sem |
 | no_such_field | `p.nope` → fix spelling or add the field | sem |
+| no_such_tag | `case .nope:` on a tagged union → fix the tag spelling or add the tag | — |
+| duplicate_enum_value | two variants share a value → give each its own value | — |
+| infinite_size_type | a struct holds itself by value → hold a `ref` instead | — |
+| type_used_as_value | a type or module name where a value is needed → use a value of that type | — |
+| cannot_infer_type | `x := []` or `[nil, nil]` → declare the type | — |
 | field_access_on_non_struct | `.x` on `i32` → use a struct value | sem |
 | cannot_index_type | index into scalar → index arrays/slices only | sem |
 | index_not_integer | `a["k"]` → index with a `usize` value | — |

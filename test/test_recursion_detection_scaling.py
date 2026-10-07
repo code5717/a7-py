@@ -119,7 +119,7 @@ def test_recursive_cycles_report_cycle_path(tmp_path, source, expected, line):
 
     assert result.returncode == ExitCode.SEMANTIC, result.stdout
     details = recursion_details(payload)
-    assert [d["message"].split(": ", 1)[1] for d in details] == expected
+    assert [d["message"] for d in details] == expected
     assert [d["span"]["start_line"] for d in details] == line
 
 
@@ -136,7 +136,7 @@ def test_cycles_sharing_a_function_are_each_reported(tmp_path):
 
     assert result.returncode == ExitCode.SEMANTIC, result.stdout
     details = recursion_details(payload)
-    assert [(d["message"].split(": ", 1)[1], d["span"]["start_line"]) for d in details] == [
+    assert [(d["message"], d["span"]["start_line"]) for d in details] == [
         ("Recursion is not allowed: Cycle: hub -> left -> hub", 1),
         ("Recursion is not allowed: Cycle: right -> hub -> right", 8),
     ]
@@ -158,7 +158,7 @@ def test_disjoint_cycles_in_one_component_are_each_reported(tmp_path):
     assert result.returncode == ExitCode.SEMANTIC, result.stdout
     details = recursion_details(payload)
     assert [
-        (d["message"].split(": ", 1)[1], d["span"]["start_line"], d["span"]["start_column"])
+        (d["message"], d["span"]["start_line"], d["span"]["start_column"])
         for d in details
     ] == [
         ("Recursion is not allowed: Cycle: fa -> fb -> fa", 1, 1),
@@ -237,4 +237,4 @@ def test_cycle_diagnostics_match_the_path_enumerating_search(tmp_path):
 
     assert result.returncode == ExitCode.SEMANTIC, result.stdout
     details = recursion_details(payload)
-    assert [(d["message"].split(": ", 1)[1], d["span"]["start_line"]) for d in details] == expected
+    assert [(d["message"], d["span"]["start_line"]) for d in details] == expected

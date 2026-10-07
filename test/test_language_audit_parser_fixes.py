@@ -72,6 +72,7 @@ def test_ellipsis_has_its_own_located_diagnostic(tmp_path):
     assert not output.exists()
 
 
+@pytest.mark.zig
 def test_multiline_array_preserves_elements_through_native_execution(tmp_path):
     code, payload, output = compile_source(tmp_path, '''io :: import "std/io"
 main :: fn() {

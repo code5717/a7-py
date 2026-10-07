@@ -11,10 +11,21 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.tree import Tree
 from rich.syntax import Syntax
-from rich.columns import Columns
 from rich.markup import escape
 
+from .ast_walk import STATEMENT_FIELDS, iter_children
 from .scope_walk import iter_scopes
+
+# Statement fields whose BLOCK child is not shown as a node of its own: its
+# statements hang directly under the owner (function, loop, `if`, case).
+_INLINE_BLOCK_FIELDS = frozenset({"body", "then_stmt", "statement"})
+# Label prefix that tells a child apart from the owner's main body.
+_FIELD_PREFIXES = {
+    "else_stmt": "[blue]ELSE[/blue] → ",
+    "else_case": "[blue]ELSE[/blue] → ",
+    "init": "[dim]init[/dim] ",
+    "update": "[dim]update[/dim] ",
+}
 
 
 class ConsoleFormatter:
@@ -97,7 +108,6 @@ class ConsoleFormatter:
         passes = results.get("passes", [])
         errors = results.get("errors", [])
         symbol_table = results.get("symbol_table")
-        type_map = results.get("type_map")
 
         # Pass results table
         pass_table = Table(show_header=True, header_style="bold yellow", box=None, pad_edge=False)
@@ -128,10 +138,10 @@ class ConsoleFormatter:
 
                 for sym in symbols[:30]:  # Limit to 30 symbols
                     sym_table.add_row(
-                        sym.get("name", "?"),
+                        Text(sym.get("name", "?")),
                         sym.get("kind", "?"),
-                        sym.get("type", "?"),
-                        sym.get("scope", "global"),
+                        Text(sym.get("type", "?")),
+                        Text(sym.get("scope", "global")),
                     )
 
                 self.console.print(sym_table)
@@ -146,7 +156,7 @@ class ConsoleFormatter:
                 line = ""
                 if hasattr(err, 'span') and err.span:
                     line = f" [dim](line {err.span.start_line})[/dim]"
-                self.console.print(f"  [red]✗[/red] {msg}{line}")
+                self.console.print(f"  [red]✗[/red] {escape(msg)}{line}")
             if len(errors) > 10:
                 self.console.print(f"  [dim]... and {len(errors) - 10} more[/dim]")
 
@@ -165,7 +175,7 @@ class ConsoleFormatter:
 
         # Summary line
         self.console.print(
-            f"  Backend: [cyan]{backend_name}[/cyan]  Output: [green]{output_label}[/green]  Size: [dim]{byte_count} bytes[/dim]"
+            f"  Backend: [cyan]{escape(backend_name)}[/cyan]  Output: [green]{escape(output_label)}[/green]  Size: [dim]{byte_count} bytes[/dim]"
         )
 
         # Show generated code with backend-specific syntax highlighting
@@ -179,13 +189,13 @@ class ConsoleFormatter:
                 )
                 code_panel = Panel(
                     code_syntax,
-                    title=f"Generated {backend_name}: {output_path or 'in-memory'}",
+                    title=Text(f"Generated {backend_name}: {output_path or 'in-memory'}"),
                     border_style="magenta",
                     padding=(0, 1),
                 )
                 self.console.print(code_panel)
             except Exception:
-                self.console.print(Panel(output_code, title="Generated Code", border_style="magenta"))
+                self.console.print(Panel(Text(output_code), title="Generated Code", border_style="magenta"))
 
     def _display_pipeline_summary(self, tokens, ast, semantic_results, codegen_result, input_path):
         """Display a final pipeline summary."""
@@ -210,13 +220,13 @@ class ConsoleFormatter:
         else:
             summary.add_row("Semantic", "[green]✓[/green] clean")
         if output_path:
-            summary.add_row("Codegen", f"[green]✓[/green] {output_path} ({byte_count} bytes)")
+            summary.add_row("Codegen", f"[green]✓[/green] {escape(output_path)} ({byte_count} bytes)")
         elif output_code:
             summary.add_row("Codegen", f"[green]✓[/green] generated in-memory ({byte_count} bytes)")
         else:
             summary.add_row("Codegen", "[dim]skipped[/dim]")
 
-        panel = Panel(summary, title=f"[bold]Compilation Summary: {input_path}[/bold]", border_style="blue")
+        panel = Panel(summary, title=Text(f"Compilation Summary: {input_path}", style="bold"), border_style="blue")
         self.console.print(panel)
 
     def _collect_symbols(self, symbol_table) -> list:
@@ -340,13 +350,8 @@ class ConsoleFormatter:
         else:
             title = f"Compilation: {input_path}"
 
-        # Use syntax highlighting for A7 code (fallback to text)
-        try:
-            source_syntax = Syntax(
-                source_code, "rust", theme="monokai", line_numbers=True
-            )
-        except:
-            source_syntax = source_code
+        # A7 has no Pygments lexer; the Rust one is the closest match.
+        source_syntax = Syntax(source_code, "rust", theme="monokai", line_numbers=True)
 
         code_panel = Panel(source_syntax, title=Text(title), border_style="blue")
         self.console.print(code_panel)
@@ -640,6 +645,27 @@ class ConsoleFormatter:
         else:
             return f"[magenta]{kind.lower()}[/magenta]"
 
+    def _format_pattern(self, pattern) -> str:
+        """One match pattern as source-like text."""
+        def literal_text(holder) -> str:
+            literal = getattr(holder, "literal", None)
+            if literal is None:
+                return "?"
+            return str(literal.raw_text or literal.literal_value)
+
+        kind = pattern.kind.name
+        if kind == "PATTERN_WILDCARD":
+            return "_"
+        if kind == "PATTERN_IDENTIFIER":
+            return pattern.name or "?"
+        if kind == "PATTERN_ENUM":
+            return f"{pattern.enum_type or ''}.{pattern.variant or '?'}"
+        if kind == "PATTERN_LITERAL":
+            return literal_text(pattern)
+        if kind == "PATTERN_RANGE":
+            return f"{literal_text(pattern.start)}..{literal_text(pattern.end)}"
+        return kind.lower()
+
     def format_statement_label(self, stmt) -> str:
         """Format a statement label with detailed information."""
         prefixes = []
@@ -768,6 +794,11 @@ class ConsoleFormatter:
             if hasattr(stmt, "cases") and stmt.cases:
                 stmt_label += f" [dim]({len(stmt.cases)} cases)[/dim]"
 
+        # Match cases - show the patterns
+        elif kind == "CASE_BRANCH":
+            patterns = [self._format_pattern(pattern) for pattern in (stmt.patterns or [])]
+            stmt_label += f" [yellow]{escape(', '.join(patterns))}[/yellow]"
+
         # Break/Continue with labels
         elif kind in ("BREAK", "CONTINUE"):
             if hasattr(stmt, "label") and stmt.label:
@@ -788,23 +819,44 @@ class ConsoleFormatter:
         return prefix + stmt_label
 
     def _add_statements_to_tree(self, parent_node, statements):
-        """Add statement nodes to the tree (iterative)."""
+        """Add one tree node per statement, with every nested statement under it.
+
+        Children come from the shared `iter_children`, filtered to the
+        statement-holding fields: loop bodies, both `if` branches (an
+        `else if` chain included), match cases and the match `else`, `for`
+        init and update, and the statement under a `defer`. Expressions are
+        summarized in the statement label and get no node of their own.
+        Iterative: explicit stack.
+        """
         if statements is None:
             return
 
-        # Stack of (parent_tree_node, statements_list)
-        stack = [(parent_node, statements)]
+        # ("stmt", parent tree node, statement, label prefix) adds a node;
+        # ("children", tree node, statement, "") adds what is nested in it.
+        stack = [("stmt", parent_node, stmt, "") for stmt in reversed(statements)]
         while stack:
-            parent, stmts = stack.pop()
-            for stmt in stmts:
-                stmt_label = self.format_statement_label(stmt)
-                stmt_node = parent.add(stmt_label)
+            op, tree_node, stmt, label_prefix = stack.pop()
+            if op == "stmt":
+                stmt_node = tree_node.add(label_prefix + self.format_statement_label(stmt))
+                stack.append(("children", stmt_node, stmt, ""))
+                continue
 
-                if hasattr(stmt, "statements") and stmt.statements:
-                    stack.append((stmt_node, stmt.statements))
-                elif hasattr(stmt, "then_stmt") and stmt.then_stmt:
-                    if hasattr(stmt.then_stmt, "statements") and stmt.then_stmt.statements:
-                        stack.append((stmt_node, stmt.then_stmt.statements))
-                    if hasattr(stmt, "else_stmt") and stmt.else_stmt:
-                        if hasattr(stmt.else_stmt, "statements") and stmt.else_stmt.statements:
-                            stack.append((stmt_node, stmt.else_stmt.statements))
+            # The label already spells out a `defer` chain down to the
+            # deferred statement; nested statements are that statement's.
+            seen = set()
+            while (getattr(getattr(stmt, "kind", None), "name", None) == "DEFER"
+                   and getattr(stmt, "statement", None) and id(stmt) not in seen):
+                seen.add(id(stmt))
+                stmt = stmt.statement
+            if not hasattr(stmt, "kind"):
+                continue
+
+            nested = []
+            for field, _, child in iter_children(stmt):
+                if field not in STATEMENT_FIELDS:
+                    continue
+                if field in _INLINE_BLOCK_FIELDS and child.kind.name == "BLOCK":
+                    nested.append(("children", tree_node, child, ""))
+                else:
+                    nested.append(("stmt", tree_node, child, _FIELD_PREFIXES.get(field, "")))
+            stack.extend(reversed(nested))

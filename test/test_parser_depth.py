@@ -15,6 +15,7 @@ from a7.compile import A7Compiler, ExitCode
 from a7.errors import ParseError
 from a7.parser import Parser
 from a7.tokens import Tokenizer
+from conftest import low_recursion_limit
 
 
 def compile_ok(source: str) -> bool:
@@ -124,7 +125,7 @@ class TestLowLimitShallow:
 
     def setup_method(self):
         self.old_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
 
     def teardown_method(self):
         sys.setrecursionlimit(self.old_limit)

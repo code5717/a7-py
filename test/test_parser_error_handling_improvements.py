@@ -25,11 +25,10 @@ class TestBetterErrorMessages:
         with pytest.raises(ParseError) as exc_info:
             parse_a7(source)
 
-        # Error message should be helpful
-        assert (
-            "assignment" in str(exc_info.value).lower()
-            or "operator" in str(exc_info.value).lower()
-        )
+        # The statement `x` ends where `42` starts on the same line.
+        message = str(exc_info.value)
+        assert "statement must end at a newline" in message
+        assert "'42'" in message
 
     def test_missing_colon_in_struct_field_error(self):
         """Test error message when colon is missing in struct field."""
@@ -538,26 +537,33 @@ class TestErrorLocationAccuracy:
 class TestPhase1SpeculationAndMatchFixes:
     """Pins for fatal re-raise, for-update flag restore, match error severity."""
 
-    def test_fatal_error_propagates_through_call_argument_speculation(self):
-        """Fatal errors are re-raised, not swallowed, by type-argument speculation."""
-        parser = Parser(Tokenizer("[i32]").tokenize())
+    def test_fatal_error_propagates_through_generic_literal_speculation(self):
+        """Fatal errors are re-raised, not swallowed, by the `Name(types){...}` try."""
+        parser = Parser(Tokenizer("Pair(i32){}").tokenize())
 
         def raise_fatal():
             raise parser._fatal_error("boom", parser.current())
 
         parser.parse_type = raise_fatal
         with pytest.raises(ParseError) as exc_info:
-            parser._parse_call_argument()
+            parser.parse_expression()
         assert getattr(exc_info.value, "fatal", False) is True
 
-    def test_non_fatal_error_still_falls_back_to_expression(self):
-        """Non-fatal speculation failures keep the old restore-and-retry path."""
+    def test_non_fatal_error_falls_back_to_call(self):
+        """`Pair(1){...}` is not a generic struct literal: `1` is no type, so it is a call."""
+        parser = Parser(Tokenizer("Pair(1){}").tokenize())
+        node = parser.parse_expression()
+        assert node.kind.name == "CALL"
+        assert parser.current().value == "{"
+
+    def test_bracket_led_call_argument_is_parsed_without_calling_parse_type(self):
+        """An array-literal argument is classified by lookahead, not by a failed type parse."""
         parser = Parser(Tokenizer("[1]").tokenize())
 
-        def raise_soft():
-            raise ParseError.from_token("soft", parser.current())
+        def no_type_parse():
+            raise AssertionError("parse_type called for an array literal argument")
 
-        parser.parse_type = raise_soft
+        parser.parse_type = no_type_parse
         node = parser._parse_call_argument()
         assert node.kind.name == "ARRAY_INIT"
 

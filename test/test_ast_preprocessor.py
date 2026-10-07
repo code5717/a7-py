@@ -5,7 +5,7 @@ The AST preprocessor runs after parsing and semantic analysis, before code
 generation. It performs several transformations and annotations:
 
 1. Legacy field sugar compatibility (.adr/.val are no longer lowered)
-2. Constant folding (compile-time arithmetic)
+2. Constant folding (booleans and non-numeric equality)
 3. Mutation analysis (is_mutable on VAR nodes)
 4. Usage analysis (is_used on VAR/PARAMETER nodes)
 5. Nested function hoisting (hoisted flag)
@@ -173,64 +173,20 @@ class TestFieldSugarLowering:
 # ===========================================================================
 
 class TestConstantFolding:
-    """Test compile-time evaluation of constant expressions."""
+    """The preprocessor folds booleans and non-numeric equality only.
 
-    def test_add_integers(self):
-        """2 + 3 should fold to literal 5."""
-        ast = preprocess("main :: fn() { x := 2 + 3 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.INTEGER
-        assert val.literal_value == 5
+    Numeric constants have one folder, a7/exact_constants.py, which the type
+    checker runs before this pass. test_exact_constant_arithmetic.py covers it.
+    """
 
-    def test_subtract_integers(self):
-        """10 - 4 should fold to literal 6."""
-        ast = preprocess("main :: fn() { x := 10 - 4 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == 6
-
-    def test_multiply_integers(self):
-        """3 * 7 should fold to literal 21."""
-        ast = preprocess("main :: fn() { x := 3 * 7 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == 21
-
-    def test_divide_integers(self):
-        """10 / 2 should fold to literal 5 (integer division)."""
-        ast = preprocess("main :: fn() { x := 10 / 2 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == 5
-
-    def test_modulo_integers(self):
-        """10 % 3 should fold to literal 1."""
-        ast = preprocess("main :: fn() { x := 10 % 3 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == 1
-
-    def test_negative_integer_division_truncates_toward_zero(self):
-        """Integer constant folding must match backend truncating division."""
-        ast = preprocess("main :: fn() { x := -17 / 5 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == -3
-
-    def test_negative_integer_modulo_uses_truncating_remainder(self):
-        """Integer constant folding must match C `%` and Zig `@rem`."""
-        ast = preprocess("main :: fn() { x := -17 % 5 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == -2
+    @pytest.mark.parametrize("expression", [
+        "2 + 3", "-17 / 5", "1.5 + 2.5", "(6 & 3) | 8", "1 << 4", "2 + 3 == 5", "1 < 2",
+    ])
+    def test_numeric_expression_is_left_for_the_exact_evaluator(self, expression):
+        """A second numeric folder here would see values already rounded to a machine type."""
+        ast, changes = preprocess_with_changes("main :: fn() { x := " + expression + " }")
+        assert get_function_stmts(ast)[0].value.kind == NodeKind.BINARY
+        assert changes == 0
 
     def test_and_booleans(self):
         """true and false should fold to literal false."""
@@ -250,41 +206,6 @@ class TestConstantFolding:
         assert val.literal_kind == LiteralKind.BOOLEAN
         assert val.literal_value is True
 
-    def test_unary_neg_on_literal(self):
-        """-5 (unary negation on integer literal) should fold to literal -5."""
-        ast = preprocess("main :: fn() { x := -5 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.INTEGER
-        assert val.literal_value == -5
-
-    def test_nested_arithmetic(self):
-        """(2 + 3) * 4 should fold to literal 20.
-
-        Bottom-up processing ensures the inner (2 + 3) is folded to 5 first,
-        then 5 * 4 is folded to 20.
-        """
-        ast = preprocess("main :: fn() { x := (2 + 3) * 4 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == 20
-
-    def test_division_by_zero_not_folded(self):
-        """10 / 0 should not be folded (remains a BINARY node)."""
-        ast = preprocess("main :: fn() { x := 10 / 0 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.BINARY
-
-    def test_modulo_by_zero_not_folded(self):
-        """10 % 0 should not be folded."""
-        ast = preprocess("main :: fn() { x := 10 % 0 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.BINARY
-
     def test_unary_not_on_true(self):
         """not true should fold to literal false."""
         ast = preprocess("main :: fn() { x := not true }")
@@ -303,60 +224,10 @@ class TestConstantFolding:
         assert val.literal_kind == LiteralKind.BOOLEAN
         assert val.literal_value is True
 
-    def test_float_addition(self):
-        """1.5 + 2.5 should fold to literal 4.0."""
-        ast = preprocess("main :: fn() { x := 1.5 + 2.5 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.FLOAT
-        assert val.literal_value == 4.0
-
-    def test_negate_float(self):
-        """-3.14 should fold to literal -3.14."""
-        ast = preprocess("main :: fn() { x := -3.14 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.FLOAT
-        assert val.literal_value == -3.14
-
-    def test_expression_with_identifier_not_folded(self):
-        """An expression involving a variable should not be folded."""
-        code = """
-        main :: fn() {
-            y := 10
-            x := y + 5
-        }
-        """
-        ast = preprocess(code)
-        stmts = get_function_stmts(ast)
-        # x := y + 5 should remain BINARY because y is not a constant literal
-        val = stmts[1].value
-        assert val.kind == NodeKind.BINARY
-
-    def test_deeply_nested_folding(self):
-        """((1 + 2) + (3 + 4)) should fold all the way to 10."""
-        ast = preprocess("main :: fn() { x := (1 + 2) + (3 + 4) }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_value == 10
-
-    def test_integer_division_truncates(self):
-        """7 / 2 should fold to 3 (integer division floors)."""
-        ast = preprocess("main :: fn() { x := 7 / 2 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.INTEGER
-        assert val.literal_value == 3
-
     def test_changes_made_incremented_for_folding(self):
         """Each fold operation should increment the changes counter."""
-        ast, changes = preprocess_with_changes("main :: fn() { x := 2 + 3 }")
-        # At minimum, the constant fold itself contributes to changes_made
-        assert changes >= 1
+        ast, changes = preprocess_with_changes("main :: fn() { x := true and false }")
+        assert changes == 1
 
     def test_and_true_true(self):
         """true and true should fold to true."""
@@ -372,15 +243,6 @@ class TestConstantFolding:
         val = stmts[0].value
         assert val.literal_value is False
 
-    def test_numeric_comparison_folds_to_boolean(self):
-        """2 + 3 == 5 should fold through arithmetic and comparison."""
-        ast = preprocess("main :: fn() { x := 2 + 3 == 5 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.BOOLEAN
-        assert val.literal_value is True
-
     def test_string_equality_folds_to_boolean(self):
         """Equal literal strings should fold for == comparisons."""
         ast = preprocess('main :: fn() { x := "a" == "a" }')
@@ -390,21 +252,6 @@ class TestConstantFolding:
         assert val.literal_kind == LiteralKind.BOOLEAN
         assert val.literal_value is True
 
-    def test_bitwise_integer_ops_fold(self):
-        """Integer bitwise expressions should fold when both operands are literals."""
-        ast = preprocess("main :: fn() { x := (6 & 3) | 8 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.LITERAL
-        assert val.literal_kind == LiteralKind.INTEGER
-        assert val.literal_value == 10
-
-    def test_negative_shift_not_folded(self):
-        """Invalid constant shifts stay in the AST for semantic/codegen diagnostics."""
-        ast = preprocess("main :: fn() { x := 1 << -1 }")
-        stmts = get_function_stmts(ast)
-        val = stmts[0].value
-        assert val.kind == NodeKind.BINARY
 
 
 # ===========================================================================
@@ -886,9 +733,9 @@ class TestIntegration:
         """Constant folding and mutation analysis should both work in one pass."""
         code = """
         main :: fn() {
-            x := 2 + 3
-            x = 10
-            y := 4 * 5
+            x := true and false
+            x = true
+            y := "a" == "b"
         }
         """
         ast = preprocess(code)
@@ -897,14 +744,14 @@ class TestIntegration:
         # x's init value should be folded
         var_x = stmts[0]
         assert var_x.value.kind == NodeKind.LITERAL
-        assert var_x.value.literal_value == 5
+        assert var_x.value.literal_value is False
         # x should be mutable (assigned later)
         assert var_x.is_mutable is True
 
         # y's init value should be folded
         var_y = stmts[2]
         assert var_y.value.kind == NodeKind.LITERAL
-        assert var_y.value.literal_value == 20
+        assert var_y.value.literal_value is False
         # y should not be mutable
         assert var_y.is_mutable is False
 
@@ -934,8 +781,8 @@ class TestIntegration:
         hoisting and constant folding applied."""
         code = """
         main :: fn() {
-            compute :: fn() i32 {
-                ret 3 + 4
+            compute :: fn() bool {
+                ret not false
             }
             result := compute()
         }
@@ -951,13 +798,13 @@ class TestIntegration:
         ret_stmt = inner_fn.body.statements[0]
         assert ret_stmt.kind == NodeKind.RETURN
         assert ret_stmt.value.kind == NodeKind.LITERAL
-        assert ret_stmt.value.literal_value == 7
+        assert ret_stmt.value.literal_value is True
 
     def test_full_pipeline_realistic(self):
         """A realistic function exercising multiple preprocessor features."""
         code = """
         compute :: fn(n: i32, unused_flag: bool) i32 {
-            base := 10 + 5
+            base := 15
             result := base
             for i := 0; i < n; i += 1 {
                 result += i
@@ -973,12 +820,8 @@ class TestIntegration:
         assert params["n"].is_used is True
         assert params["unused_flag"].is_used is False
 
-        # Constant folding on base
         stmts = func.body.statements
-        var_base = stmts[0]
-        assert var_base.name == "base"
-        assert var_base.value.kind == NodeKind.LITERAL
-        assert var_base.value.literal_value == 15
+        assert stmts[0].name == "base"
 
         # Mutation analysis
         var_result = stmts[1]

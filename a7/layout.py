@@ -5,7 +5,10 @@ field offsets, size, alignment, 64B cache lines touched, and line utilization.
 Zig lays out auto structs by sorting fields by alignment, largest first, with
 ties keeping declaration order (verified against @offsetOf on Zig 0.16.0),
 then packing sequentially with natural alignment and padding the total to
-the struct alignment. The numbers here match the emitted binary. Field
+the struct alignment. The numbers are those of a debug or release build;
+`test/test_layout_matches_zig.py` compares them with Zig's @sizeOf and
+@offsetOf. A fast build differs in one case: a bare `union` loses its
+hidden tag (see `_union_layout`). Field
 offsets are therefore not source order; the view exists to show where fields
 really land. Field-access counts come from the typed AST and serve as a
 hot/cold hint: a field touched zero times is cold cargo in every walked line.
@@ -22,7 +25,7 @@ from .ast_nodes import ASTNode, NodeKind
 from .types import (
     ArrayType,
     EnumType,
-    GenericParamType,
+    FunctionType,
     PointerType,
     PrimitiveType,
     ReferenceType,
@@ -33,6 +36,11 @@ from .types import (
 )
 
 LINE_BYTES = 64
+
+UNION_TAG_NOTE = (
+    "union sizes include the tag of debug and release builds; "
+    "a fast build drops it from an untagged union"
+)
 
 # name -> (size, align). char lowers to u8 and string to []const u8 in the
 # backend, so both carry the Zig sizes, not source-level ones.
@@ -82,29 +90,61 @@ def _type_display(ty: Optional[Type]) -> str:
     return str(ty)
 
 
-def _enum_tag_layout(ty: EnumType) -> (int, int):
-    """Zig auto enums use the smallest tag that fits the variant count."""
-    count = len(ty.variants)
-    if count <= 1:
-        return (1, 1)
-    bits = max(1, (count - 1).bit_length())
+def _align_up(offset: int, align: int) -> int:
+    return (offset + align - 1) // align * align
+
+
+def _tag_layout(count: int) -> (int, int):
+    """Zig's auto tag for `count` names: the smallest unsigned integer that
+    holds count - 1, stored in a power-of-two byte count. One name needs no
+    bits, so the tag has size 0."""
+    bits = (count - 1).bit_length() if count > 1 else 0
+    if bits == 0:
+        return (0, 1)
     size = 1
     while size * 8 < bits:
         size *= 2
     return (size, size)
 
 
+def _enum_layout(ty: EnumType) -> (int, int):
+    """The backend emits `enum(i32)` when a variant has an explicit value
+    and an auto-tagged `enum` otherwise."""
+    if any(variant.value is not None for variant in ty.variants):
+        return (4, 4)
+    return _tag_layout(len(ty.variants))
+
+
+def _union_layout(members: list) -> Optional[(int, int)]:
+    """Layout of a union from its member layouts.
+
+    Zig stores the largest member, then a tag naming the active member,
+    then pads to the alignment. `union(enum)` always has the tag. A bare
+    `union` has it in Debug and ReleaseSafe (profiles debug and release)
+    as a safety check, and drops it in ReleaseFast (profile fast); the
+    report describes the tagged form.
+    """
+    if any(member is None for member in members):
+        return None
+    payload = max((member[0] for member in members), default=0)
+    align = max((member[1] for member in members), default=1)
+    tag_size, tag_align = _tag_layout(len(members))
+    align = max(align, tag_align)
+    return (_align_up(_align_up(payload, tag_align) + tag_size, align), align)
+
+
 def _leaf_layout(ty: Optional[Type], struct_sizes: dict) -> Optional[(int, int)]:
-    """Layout of a non-composite type. Returns None for generic parameters,
-    unresolved or anonymous structs, and anything unknown."""
+    """Layout of a type with no by-value members. Returns None for generic
+    parameters, unresolved or anonymous structs, and anything unknown."""
     if isinstance(ty, PrimitiveType):
         return PRIMITIVE_LAYOUTS.get(ty.name)
-    if isinstance(ty, (PointerType, ReferenceType)):
+    if isinstance(ty, (PointerType, ReferenceType, FunctionType)):
+        # A function-typed field is emitted as `*const fn (...) R`.
         return (8, 8)
     if isinstance(ty, SliceType):
         return (16, 8)
     if isinstance(ty, EnumType):
-        return _enum_tag_layout(ty)
+        return _enum_layout(ty)
     if isinstance(ty, StructType):
         if ty.generic_params or ty.name is None:
             return None
@@ -112,66 +152,75 @@ def _leaf_layout(ty: Optional[Type], struct_sizes: dict) -> Optional[(int, int)]
     return None
 
 
-def _linear_layout(ty: Optional[Type], struct_sizes: dict) -> Optional[(int, int)]:
-    """Arrays wrapped around a leaf type. Unions are not handled here and
-    return None; call _base_layout for those."""
-    mult = 1
-    current = ty
-    while isinstance(current, ArrayType):
-        if not isinstance(current.size, int) or current.size < 0:
-            return None
-        mult *= current.size
-        current = current.element_type
-    if isinstance(current, UnionType):
-        return None
-    leaf = _leaf_layout(current, struct_sizes)
-    if leaf is None:
-        return None
-    return (leaf[0] * mult, leaf[1])
-
-
 def _base_layout(ty: Optional[Type], struct_sizes: dict) -> Optional[(int, int)]:
     """Size and alignment of a type, resolving nested structs through
     struct_sizes (name -> (size, align) or None). Returns None when the size
     is not computable: generic parameters, unresolved or anonymous structs.
-    Unions flatten their members onto an explicit worklist and take the
-    largest member size; arrays of unions stay unresolved."""
-    if ty is None:
-        return None
-    if not isinstance(ty, UnionType):
-        return _linear_layout(ty, struct_sizes)
-    size = 0
-    align = 1
-    stack = list(ty.fields)
+
+    Arrays and unions are evaluated children first on an explicit stack:
+    each is pushed once to schedule its members and once more to combine
+    their results.
+    """
+    results: dict = {}
+    active: set = set()
+    stack = [(ty, False)]
     while stack:
-        member = stack.pop()
-        inner = member.field_type
-        if isinstance(inner, UnionType):
-            stack.extend(inner.fields)
+        current, members_done = stack.pop()
+        key = id(current)
+        if members_done:
+            active.discard(key)
+            if isinstance(current, ArrayType):
+                inner = results.get(id(current.element_type))
+                sized = isinstance(current.size, int) and current.size >= 0
+                results[key] = (inner[0] * current.size, inner[1]) if inner and sized else None
+            else:
+                results[key] = _union_layout([results.get(id(f.field_type)) for f in current.fields])
             continue
-        layout = _linear_layout(inner, struct_sizes)
-        if layout is None:
-            return None
-        size = max(size, layout[0])
-        align = max(align, layout[1])
-    return (size if size else 1, align)
+        if key in results:
+            continue
+        if isinstance(current, (ArrayType, UnionType)):
+            if key in active or getattr(current, "generic_params", ()):
+                # A type that contains itself by value has no size.
+                results[key] = None
+                continue
+            active.add(key)
+            stack.append((current, True))
+            if isinstance(current, ArrayType):
+                stack.append((current.element_type, False))
+            else:
+                stack.extend((f.field_type, False) for f in current.fields)
+            continue
+        results[key] = _leaf_layout(current, struct_sizes)
+    return results[id(ty)]
 
 
-def _field_dependencies(ty: Optional[Type]) -> list:
-    """Named struct types this type contains by value (arrays included).
-    Pointers, refs and slices never embed their target."""
-    deps: list = []
+def _by_value_members(ty: Optional[Type]) -> list:
+    """Struct and union types this type embeds by value, through arrays and
+    union members. Pointers, refs and slices never embed their target."""
+    found: list = []
+    seen: set = set()
     stack = [ty]
     while stack:
         current = stack.pop()
-        if current is None:
+        if current is None or id(current) in seen:
             continue
+        seen.add(id(current))
         if isinstance(current, ArrayType):
             stack.append(current.element_type)
+        elif isinstance(current, UnionType):
+            found.append(current)
+            stack.extend(f.field_type for f in current.fields)
         elif isinstance(current, StructType):
-            if current.name is not None and not current.generic_params:
-                deps.append(current.name)
-    return deps
+            found.append(current)
+    return found
+
+
+def _field_dependencies(ty: Optional[Type]) -> list:
+    """Named struct types this type contains by value."""
+    return [
+        member.name for member in _by_value_members(ty)
+        if isinstance(member, StructType) and member.name is not None and not member.generic_params
+    ]
 
 
 def compute_struct_layouts(symbol_table) -> list:
@@ -263,17 +312,19 @@ def _layout_struct_instance(ty: StructType, struct_sizes: dict) -> StructLayout:
                                        offset=0, size=size, align=align))
         )
         layout.align = max(layout.align, align)
+        if any(isinstance(member, UnionType) for member in _by_value_members(struct_field.field_type)):
+            layout.note = UNION_TAG_NOTE
     resolved_fields.sort(key=lambda item: (-item[0], item[1]))
     offset = 0
     for _, _, field_layout in resolved_fields:
         if field_layout.size is None:
             continue
-        offset = (offset + field_layout.align - 1) // field_layout.align * field_layout.align
+        offset = _align_up(offset, field_layout.align)
         field_layout.offset = offset
         offset += field_layout.size
     layout.fields = [item[2] for item in resolved_fields]
     if resolved:
-        layout.size = (offset + layout.align - 1) // layout.align * layout.align
+        layout.size = _align_up(offset, layout.align)
     else:
         layout.note = "size unresolved (generic or anonymous field type)"
     return layout
@@ -332,6 +383,8 @@ def format_report(layouts: list) -> str:
             f"{layout.name}: size {layout.size}B align {layout.align} "
             f"lines {layout.lines} line-use {use_text}"
         )
+        if layout.note:
+            lines.append(f"  note: {layout.note}")
         for struct_field in layout.fields:
             if struct_field.size is None or struct_field.offset is None:
                 lines.append(
@@ -345,3 +398,35 @@ def format_report(layouts: list) -> str:
                     f"touched {struct_field.touched}"
                 )
     return "\n".join(lines)
+
+
+def layouts_to_json(layouts: list) -> dict:
+    """The layout report as data, for `a7 check --layout --format json`.
+
+    Unresolved sizes and offsets are null; `note` says why.
+    """
+    return {
+        "line_bytes": LINE_BYTES,
+        "structs": [
+            {
+                "name": layout.name,
+                "size": layout.size,
+                "align": layout.align if layout.size is not None else None,
+                "lines": layout.lines,
+                "line_use_percent": layout.line_use_percent,
+                "note": layout.note or None,
+                "fields": [
+                    {
+                        "name": struct_field.name,
+                        "type": struct_field.type_name,
+                        "offset": struct_field.offset,
+                        "size": struct_field.size,
+                        "align": struct_field.align if struct_field.size is not None else None,
+                        "touched": struct_field.touched,
+                    }
+                    for struct_field in layout.fields
+                ],
+            }
+            for layout in layouts
+        ],
+    }

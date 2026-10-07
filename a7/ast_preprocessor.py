@@ -11,7 +11,7 @@ Runs after semantic analysis, before codegen. Sub-passes:
 5. Infer type annotations → set resolved_type on untyped mutable vars
 6. Resolve variable shadowing → set emit_name
 7. Hoist nested functions → move to module level, set hoisted flag
-8. Fold constants → compile-time arithmetic
+8. Fold constants → boolean operators and non-numeric literal equality
 
 Tree walks and nested function annotation use explicit stacks.
 """
@@ -21,7 +21,6 @@ from .ast_nodes import (
     ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp,
     create_literal, create_primitive_type, SourceSpan,
 )
-from .const_eval import fold_binary, fold_unary
 
 
 # Shared list of all AST child attribute names
@@ -540,7 +539,12 @@ class ASTPreprocessor:
     # ================================================================
 
     def _fold_constants(self, node: ASTNode) -> ASTNode:
-        """Fold simple constant expressions."""
+        """Fold boolean operators and equality of non-numeric literals.
+
+        Numeric constants are folded once, exactly, by the type checker
+        through a7/exact_constants.py. A numeric fold here would be a second
+        folder working on values already rounded to a machine type.
+        """
         if node.kind == NodeKind.UNARY:
             return self._fold_unary(node)
         elif node.kind == NodeKind.BINARY:
@@ -560,20 +564,6 @@ class ASTPreprocessor:
         val = getattr(operand, 'literal_value', None)
         if val is None:
             return node
-
-        if op == UnaryOp.NEG and isinstance(val, (int, float)) and not isinstance(val, bool):
-            result = fold_unary(op, val, self.type_map.get(id(node)))
-            if result is None:
-                return node
-            lk = operand.literal_kind
-            self.changes_made += 1
-            return ASTNode(
-                kind=NodeKind.LITERAL,
-                literal_kind=lk,
-                literal_value=result,
-                raw_text=str(result),
-                span=node.span,
-            )
 
         if op == UnaryOp.NOT and isinstance(val, bool):
             result = not val
@@ -604,40 +594,13 @@ class ASTPreprocessor:
         if lval is None or rval is None:
             return node
 
-        numeric_literals = (
-            isinstance(lval, (int, float)) and not isinstance(lval, bool) and
-            isinstance(rval, (int, float)) and not isinstance(rval, bool)
-        )
-
-        if numeric_literals:
-            result = fold_binary(op, lval, rval, self.type_map.get(id(node)))
-
-            if result is not None:
-                lk = LiteralKind.FLOAT if isinstance(result, float) else LiteralKind.INTEGER
-                self.changes_made += 1
-                return ASTNode(
-                    kind=NodeKind.LITERAL,
-                    literal_kind=lk,
-                    literal_value=result,
-                    raw_text=str(result),
-                    span=node.span,
-                )
-
-        comparable_literals = numeric_literals or left.literal_kind == right.literal_kind
-        if comparable_literals:
+        numeric = {LiteralKind.INTEGER, LiteralKind.FLOAT}
+        if left.literal_kind == right.literal_kind and left.literal_kind not in numeric:
             result = None
             if op == BinaryOp.EQ:
                 result = lval == rval
             elif op == BinaryOp.NE:
                 result = lval != rval
-            elif numeric_literals and op == BinaryOp.LT:
-                result = lval < rval
-            elif numeric_literals and op == BinaryOp.LE:
-                result = lval <= rval
-            elif numeric_literals and op == BinaryOp.GT:
-                result = lval > rval
-            elif numeric_literals and op == BinaryOp.GE:
-                result = lval >= rval
 
             if result is not None:
                 self.changes_made += 1

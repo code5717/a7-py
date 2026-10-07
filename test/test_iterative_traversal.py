@@ -25,6 +25,7 @@ from a7.ast_nodes import ASTNode, BinaryOp, LiteralKind, NodeKind
 from a7.backends.zig import ZigCodeGenerator
 from a7.compile import A7Compiler, OutputFormat
 from a7.formatters import JSONFormatter
+from conftest import low_recursion_limit
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +227,7 @@ class TestLowRecursionLimit:
 
     def setup_method(self):
         self.old_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
 
     def teardown_method(self):
         sys.setrecursionlimit(self.old_limit)

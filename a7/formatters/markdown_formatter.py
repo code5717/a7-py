@@ -8,7 +8,19 @@ source code, tokens, AST, semantic analysis, and generated output.
 from datetime import datetime
 from typing import Optional, List, Dict
 
+from .ast_walk import iter_children
 from .scope_walk import iter_scopes
+
+
+def _fenced(text: str, language: str = "") -> List[str]:
+    """Lines of a fenced code block. The fence is longer than any run of
+    backticks in `text`, so the text cannot close it."""
+    longest = run = 0
+    for char in text:
+        run = run + 1 if char == "`" else 0
+        longest = max(longest, run)
+    fence = "`" * max(3, longest + 1)
+    return [f"{fence}{language}", text, fence]
 
 
 class MarkdownFormatter:
@@ -54,11 +66,9 @@ class MarkdownFormatter:
         lines.append("")
         lines.append(f"**Lines:** {len(source_code.splitlines())}")
         lines.append("")
-        lines.append(f"**Size:** {len(source_code)} bytes")
+        lines.append(f"**Size:** {len(source_code.encode('utf-8'))} bytes")
         lines.append("")
-        lines.append("```")
-        lines.append(source_code.rstrip())
-        lines.append("```")
+        lines.extend(_fenced(source_code.rstrip()))
         lines.append("")
 
         # 2. Lexical Analysis
@@ -85,9 +95,9 @@ class MarkdownFormatter:
             lines.append("")
             lines.append("### AST Structure")
             lines.append("")
-            lines.append("```")
-            self._format_ast_tree(ast, lines, indent=0)
-            lines.append("```")
+            tree_lines: List[str] = []
+            self._format_ast_tree(ast, tree_lines, indent=0)
+            lines.extend(_fenced("\n".join(tree_lines)))
             lines.append("")
         else:
             lines.append("*Parsing failed or was skipped.*")
@@ -160,9 +170,7 @@ class MarkdownFormatter:
             lines.append("")
             lines.append(f"**Size:** {byte_count} bytes")
             lines.append("")
-            lines.append(f"```{syntax_name}")
-            lines.append(output_code.rstrip())
-            lines.append("```")
+            lines.extend(_fenced(output_code.rstrip(), syntax_name))
             lines.append("")
         else:
             lines.append("*Code generation was skipped or failed.*")
@@ -193,16 +201,20 @@ class MarkdownFormatter:
         return "\n".join(lines)
 
     def _format_ast_tree(self, node, lines: list, indent: int = 0) -> None:
-        """Format AST as indented text tree (iterative)."""
+        """Format the AST as an indented text tree, one line per node.
+
+        Children come from the shared `iter_children`, the same set the JSON
+        view prints. Each child is prefixed with the field that holds it, so
+        `then_stmt` and `else_stmt` can be told apart. Iterative: explicit
+        stack.
+        """
         if node is None:
             return
 
-        # Stack of (node, indent_level)
-        stack = [(node, indent)]
+        # Stack of (node, indent_level, field prefix)
+        stack = [(node, indent, "")]
         while stack:
-            current, cur_indent = stack.pop()
-            if current is None:
-                continue
+            current, cur_indent, field_prefix = stack.pop()
 
             prefix = "  " * cur_indent
             kind = current.kind.name if hasattr(current, 'kind') else "?"
@@ -218,25 +230,14 @@ class MarkdownFormatter:
             if hasattr(current, 'operator') and current.operator:
                 label += f" [{current.operator.name}]"
 
-            lines.append(f"{prefix}{label}")
+            lines.append(f"{prefix}{field_prefix}{label}")
 
-            # Collect children in order, then push reversed so first child is processed first
-            children = []
-            if hasattr(current, 'declarations') and current.declarations:
-                children.extend(current.declarations)
-            if hasattr(current, 'parameters') and current.parameters:
-                children.extend(current.parameters)
-            if hasattr(current, 'body') and current.body:
-                children.append(current.body)
-            if hasattr(current, 'statements') and current.statements:
-                children.extend(current.statements)
-            if hasattr(current, 'fields') and current.fields:
-                children.extend(current.fields)
-            if hasattr(current, 'variants') and current.variants:
-                children.extend(current.variants)
-
-            for child in reversed(children):
-                stack.append((child, cur_indent + 1))
+            children = [
+                (child, cur_indent + 1, f"{field}: ")
+                for field, _, child in iter_children(current)
+            ]
+            # Reversed so the first child is popped first.
+            stack.extend(reversed(children))
 
     def _collect_symbols(self, symbol_table) -> list:
         """Collect symbols from symbol table."""
@@ -254,7 +255,7 @@ class MarkdownFormatter:
             sym_dict = getattr(current, 'symbols', {})
             for name, sym in sym_dict.items():
                 kind_str = sym.kind.name if hasattr(sym, 'kind') and hasattr(sym.kind, 'name') else "?"
-                type_str = self._format_symbol_type(sym, scope_name)
+                type_str = self._format_symbol_type(sym, cur_name)
                 symbols.append({"name": name, "kind": kind_str, "type": type_str, "scope": cur_name})
 
     def _is_unknown_symbol_type(self, sym) -> bool:

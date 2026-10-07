@@ -13,68 +13,9 @@ Covers:
 """
 
 import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
-from a7.passes.name_resolution import NameResolutionPass
-from a7.passes.type_checker import TypeCheckingPass
-from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError, CompilerError
 
 
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
-
-
-def run_semantic_analysis(source: str):
-    """Helper to run full semantic analysis.
-
-    Raises SemanticError if any pass detects errors.
-    """
-    program = parse_program(source)
-
-    # Run name resolution pass
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(program, "<test>")
-    if resolver.errors:
-        raise resolver.errors[0]
-
-    # Run type checking pass
-    type_checker = TypeCheckingPass(symbols)
-    node_types = type_checker.analyze(program, "<test>")
-    if type_checker.errors:
-        raise type_checker.errors[0]
-
-    # Run semantic validation pass
-    validator = SemanticValidationPass(symbols, node_types)
-    validator.analyze(program, "<test>")
-    if validator.errors:
-        raise validator.errors[0]
-
-    return symbols, node_types
-
-
-def expect_success(source: str) -> bool:
-    """Helper to expect successful semantic analysis."""
-    try:
-        run_semantic_analysis(source)
-        return True
-    except CompilerError:
-        return False
-
-
-def expect_error(source: str, error_fragment: str = None) -> bool:
-    """Helper to expect semantic error with optional message check."""
-    try:
-        run_semantic_analysis(source)
-        return False
-    except CompilerError as e:
-        if error_fragment:
-            return error_fragment.lower() in str(e).lower()
-        return True
+from pipeline_helpers import expect_error, expect_success, pipeline_tmp  # noqa: F401
 
 
 class TestBasicFunctions:
@@ -160,7 +101,7 @@ class TestFunctionParameters:
             result := add(10, "hello")
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "Argument type mismatch: expected 'i32', got 'string'")
 
     def test_wrong_argument_count_too_few(self):
         """Test function call with too few arguments."""
@@ -173,10 +114,7 @@ class TestFunctionParameters:
             result := add(10)
         }
         """
-        # This should error - too few arguments
-        result = expect_error(source, "argument")
-        # Might not be implemented yet
-        assert isinstance(result, bool)
+        assert expect_error(source, "Expected 2 arguments, got 1")
 
     def test_wrong_argument_count_too_many(self):
         """Test function call with too many arguments."""
@@ -189,10 +127,7 @@ class TestFunctionParameters:
             result := add(10, 20, 30)
         }
         """
-        # This should error - too many arguments
-        result = expect_error(source, "argument")
-        # Might not be implemented yet
-        assert isinstance(result, bool)
+        assert expect_error(source, "Expected 2 arguments, got 3")
 
     def test_reference_parameters(self):
         """Test function with reference parameters."""
@@ -250,7 +185,7 @@ class TestReturnStatements:
             x := get_number()
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "Return type mismatch: expected 'i32', got 'string'")
 
     def test_return_in_void_function_with_value(self):
         """Test return with value in void function."""
@@ -263,10 +198,7 @@ class TestReturnStatements:
             do_work()
         }
         """
-        # This should error - void function returning value
-        result = expect_error(source, "void")
-        # Might not be implemented yet
-        assert isinstance(result, bool)
+        assert expect_error(source, "Cannot return value from void function")
 
     def test_multiple_return_paths(self):
         """Test function with multiple return paths."""
@@ -346,7 +278,7 @@ class TestRecursionBan:
             result := factorial(5)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: factorial -> factorial")
 
     def test_mutual_recursion_is_rejected(self):
         """Test mutually recursive function cycles."""
@@ -369,7 +301,7 @@ class TestRecursionBan:
             x := is_even(10)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: is_even -> is_odd -> is_even")
 
     def test_iterative_rewrite_is_allowed(self):
         """Test the allowed iterative equivalent."""
@@ -421,7 +353,7 @@ class TestRecursionBan:
             result := countdown(3)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: countdown -> countdown")
 
     def test_mutual_function_pointer_alias_recursion_is_rejected(self):
         """Mutual recursion through aliases is still a recursion cycle."""
@@ -446,7 +378,7 @@ class TestRecursionBan:
             result := left(3)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: left -> right -> left")
 
     def test_higher_order_self_recursion_is_rejected(self):
         """A callback trampoline cannot hide direct recursion."""
@@ -466,7 +398,7 @@ class TestRecursionBan:
             result := countdown(3)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: countdown -> countdown")
 
     def test_higher_order_mutual_recursion_is_rejected(self):
         """Mutual recursion through callback parameters is rejected."""
@@ -493,7 +425,7 @@ class TestRecursionBan:
             result := left(3)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: left -> right -> left")
 
     def test_higher_order_parameter_alias_recursion_is_rejected(self):
         """A trampoline that aliases a callback parameter is still visible."""
@@ -514,7 +446,7 @@ class TestRecursionBan:
             result := countdown(3)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: countdown -> countdown")
 
     def test_forwarded_higher_order_recursion_is_rejected(self):
         """A callback passed through another callback cannot hide recursion."""
@@ -540,7 +472,7 @@ class TestRecursionBan:
             result := countdown(3)
         }
         """
-        assert expect_error(source, "recursion")
+        assert expect_error(source, "Recursion is not allowed: Cycle: countdown -> countdown")
 
 
 class TestFunctionPointers:
@@ -642,7 +574,7 @@ class TestFunctionPointers:
             value: Size = 1
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "Undefined type (Type 'Size')")
 
     def test_local_function_type_alias(self):
         """Test function type aliases declared inside blocks."""
@@ -662,6 +594,24 @@ class TestFunctionPointers:
     def test_function_returning_function(self):
         """Test function returning function pointer."""
         source = """
+        add :: fn(a: i32, b: i32) i32 {
+            ret a + b
+        }
+
+        get_adder :: fn() fn(i32, i32) i32 {
+            ret add
+        }
+
+        main :: fn() {
+            adder := get_adder()
+            result := adder(10, 20)
+        }
+        """
+        assert expect_success(source)
+
+    def test_function_returning_nested_function(self):
+        """A function declared inside another can be returned by name."""
+        source = """
         get_adder :: fn() fn(i32, i32) i32 {
             add :: fn(a: i32, b: i32) i32 {
                 ret a + b
@@ -674,6 +624,4 @@ class TestFunctionPointers:
             result := adder(10, 20)
         }
         """
-        # This might not be fully supported yet
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source)

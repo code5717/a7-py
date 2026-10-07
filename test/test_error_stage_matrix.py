@@ -72,7 +72,7 @@ def test_tokenize_errors_are_well_handled(
         assert "line" in combined
     else:
         payload = parse_json_output(result)
-        assert payload["schema_version"] == "2.0"
+        assert payload["schema_version"] == "3.0"
         assert payload["status"] == "error"
         assert payload["error"]["category"] == "tokenize"
         assert payload["error"]["details"][0]["type"] == "TokenizerError"

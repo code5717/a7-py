@@ -9,6 +9,7 @@ from a7.types import (
     StructType, StructField, EnumType, UnionType, GenericParamType,
     GenericInstanceType, TypeSet, I32, I64, STRING, VOID, UNKNOWN, NUMERIC,
 )
+from conftest import low_recursion_limit
 
 
 @pytest.mark.parametrize('type_,expected', [
@@ -72,7 +73,7 @@ def test_deep_composite_diagnostic_at_recursion_limit_100():
     function = FunctionType([type_], type_, True, type_)
     previous = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
         result = str(function)
     finally:
         sys.setrecursionlimit(previous)

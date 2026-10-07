@@ -12,6 +12,7 @@ from a7.ast_nodes import (
     create_var_decl,
 )
 from a7.ast_preprocessor import ASTPreprocessor
+from conftest import low_recursion_limit
 
 
 def test_deep_nested_functions_keep_hoisting_and_parameter_usage():
@@ -30,7 +31,7 @@ def test_deep_nested_functions_keep_hoisting_and_parameter_usage():
     program = create_program([child])
     old_limit = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
         result = ASTPreprocessor().process(program)
     finally:
         sys.setrecursionlimit(old_limit)

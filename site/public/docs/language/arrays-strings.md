@@ -48,7 +48,7 @@ A slice shares its backing storage. It must not outlive that storage. Full lifet
 
 ## Strings and characters
 
-`string` is the public ASCII string type. A string literal uses double quotes; a character uses single quotes. String slicing returns `[]char`, not a new `string`. Escape syntax is listed in [syntax](syntax.md#literals-and-escapes).
+`string` stores bytes from UTF-8 source literals. A `char` holds one byte from 0 through 255. A string literal uses double quotes; a character uses single quotes. String slicing returns `[]char`, not a new `string`. Escape syntax is listed in [syntax](syntax.md#literals-and-escapes).
 
 Slices expose `.len`. Direct string length access such as `text.len` is
 currently rejected by the type checker, despite specification descriptions of
@@ -101,7 +101,7 @@ For a `usize` index, `if index < items.len { ... }` proves an index into the sam
 
 ## Planned array programming
 
-Status: limited for current arrays and slices. Tensor types, broadcasting, reshaping, reductions, matrix libraries, autodiff, neural-network primitives, memory-layout controls, SIMD annotations, GPU movement, and advanced multi-axis indexing are planned. Specification section 9 illustrates that proposed design, not executable current APIs.
+Status: limited for current arrays and slices. Tensor types, broadcasting, reshaping, reductions, matrix libraries, autodiff, neural-network primitives, memory-layout controls, SIMD annotations, GPU movement, and advanced multi-axis indexing are planned. The [array programming proposal](https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md) preserves the historical sketches. SPEC section 9 now points to that document. Proposed tensor API spellings are not current executable APIs.
 
 `new [N]T` is unavailable. Use stack fixed arrays or supported slice operations. Do not substitute a heap-array example from an older specification passage.
 

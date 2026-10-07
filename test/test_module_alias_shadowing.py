@@ -1,14 +1,7 @@
-"""A local binding named like a file-module import alias must not be
-rewritten into a call of the imported module's function (audit PIP-1).
+"""Local function fields keep their bindings beside file-module calls.
 
-Programs go through the real CLI and a real Zig 0.16.0 build in Debug and
-ReleaseFast, and the binaries run. Expected output is fixed by the A7 source:
-the imported module's `work` returns 1, the local struct's `work` field
-points at `two`, which returns 2.
-
-This is a stopgap until the module redesign; ledger L28 will later make a
-local named like an alias a compile error. These tests then need their
-programs changed, not their observable claim about which function runs.
+Native controls use nonclashing local names under L28. Separate rejection
+fixtures cover bindings that reuse their own file's import alias.
 """
 
 import os
@@ -22,6 +15,7 @@ import pytest
 from a7.ast_nodes import NodeKind
 from a7.compile import A7Compiler
 from a7.parser import parse_a7
+from conftest import shared_zig_cache
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -84,7 +78,7 @@ def compile_build_run(zig, tmp_path, main_source):
         built = subprocess.run(
             [zig, "build-exe", str(out), "-O", profile,
              "--cache-dir", str(tmp_path / "cache"),
-             "--global-cache-dir", str(tmp_path / "global-cache"),
+             "--global-cache-dir", str(shared_zig_cache() / "global"),
              "-femit-bin=" + str(binary)],
             capture_output=True, text=True,
         )
@@ -100,12 +94,12 @@ def expect_both(outputs, expected):
     assert outputs == {"Debug": expected, "ReleaseFast": expected}
 
 
-def test_local_named_like_alias_calls_its_own_field(tmp_path, zig):
-    # Audit probe f03: `h.work()` and `g()` both call the local's field.
+def test_local_function_field_and_alias_call_keep_their_bindings(tmp_path, zig):
+    # Both direct and copied function values call the local field.
     source = HEADER + """main :: fn() {
-    h := Ops{work: two}
-    g := h.work
-    io.println("{} {}", h.work(), g())
+    k := Ops{work: two}
+    g := k.work
+    io.println("{} {}", k.work(), g())
 }
 """
     expect_both(compile_build_run(zig, tmp_path, source), "2 2\n")
@@ -123,8 +117,8 @@ def test_module_call_beside_differently_named_locals_calls_module(tmp_path, zig)
 def test_local_in_one_block_does_not_hide_module_elsewhere(tmp_path, zig):
     source = HEADER + """main :: fn() {
     if true {
-        h := Ops{work: two}
-        io.println("{}", h.work())
+        k := Ops{work: two}
+        io.println("{}", k.work())
     }
     if true {
         io.println("{}", h.work())
@@ -135,11 +129,11 @@ def test_local_in_one_block_does_not_hide_module_elsewhere(tmp_path, zig):
     expect_both(compile_build_run(zig, tmp_path, source), "2\n1\n1\n")
 
 
-def test_loop_variable_named_like_alias_shadows_only_inside_loop(tmp_path, zig):
+def test_loop_variable_field_and_module_call_are_distinct(tmp_path, zig):
     source = HEADER + """main :: fn() {
     arr: [1]Ops = [Ops{work: two}]
-    for h in arr {
-        io.println("{}", h.work())
+    for k in arr {
+        io.println("{}", k.work())
     }
     io.println("{}", h.work())
 }
@@ -147,9 +141,9 @@ def test_loop_variable_named_like_alias_shadows_only_inside_loop(tmp_path, zig):
     expect_both(compile_build_run(zig, tmp_path, source), "2\n1\n")
 
 
-def test_parameter_named_like_alias_shadows_only_its_function(tmp_path, zig):
-    source = HEADER + """use_param :: fn(h: Ops) i32 {
-    ret h.work()
+def test_parameter_field_and_module_call_are_distinct(tmp_path, zig):
+    source = HEADER + """use_param :: fn(k: Ops) i32 {
+    ret k.work()
 }
 use_module :: fn(k: Ops) i32 {
     ret h.work() + k.work()
@@ -162,7 +156,7 @@ main :: fn() {
 
 
 def _alias_calls(ast):
-    """Return `h.work()` CALL nodes in source order (by line)."""
+    """Return module and local field CALL nodes in source order (by line)."""
     found = []
     stack = [ast]
     while stack:
@@ -178,7 +172,7 @@ def _alias_calls(ast):
             and value.function.kind == NodeKind.FIELD_ACCESS
             and value.function.object is not None
             and value.function.object.kind == NodeKind.IDENTIFIER
-            and value.function.object.name == "h"
+            and value.function.object.name in {"h", "k"}
         ):
             found.append(value)
         stack.extend(v for v in value.__dict__.values() if isinstance(v, list) or hasattr(v, "kind"))
@@ -186,14 +180,11 @@ def _alias_calls(ast):
 
 
 def test_local_declared_after_call_in_same_block_does_not_capture_the_call(tmp_path, zig):
-    # The first call runs before the local exists, so it is the module
-    # call; the second runs the local's field. Alias callees resolve in the
-    # merged program's global scope, so the program compiles and both
-    # calls run the function their position in the block selects.
+    # Module and local field calls retain their distinct targets.
     source = HEADER + """main :: fn() {
     io.println("{}", h.work())
-    h := Ops{work: two}
-    io.println("{}", h.work())
+    k := Ops{work: two}
+    io.println("{}", k.work())
 }
 """
     expect_both(compile_build_run(zig, tmp_path, source), "1\n2\n")
@@ -214,8 +205,8 @@ def test_scope_walk_handles_60_nested_blocks_at_recursion_limit_100():
         if level == 10:
             lines.append(indent + '    io.println("{}", h.work())')
         if level == 30:
-            lines.append(indent + "    h := Ops{work: two}")
-    lines.append("    " * (depth + 1) + 'io.println("{}", h.work())')
+            lines.append(indent + "    k := Ops{work: two}")
+    lines.append("    " * (depth + 1) + 'io.println("{}", k.work())')
     for level in range(depth, 0, -1):
         lines.append("    " * level + "}")
     lines.append("}")

@@ -1,0 +1,28 @@
+{
+  "recorded_at": "2026-10-06T21:39:29.836778+00:00",
+  "snapshot_manifest": "baseline-manifest.json",
+  "qualification": "Frozen resumed baseline only; excludes current repair batch and V1 acceptance",
+  "pytest": {
+    "command": "taskset -c 0-7 env PYTHONPATH=. uv run --locked pytest --tb=short -q -n 6",
+    "exit_code": 0,
+    "passed": 3090,
+    "xfailed": 7,
+    "log": "baseline-pytest.log"
+  },
+  "other_compiler_checks": {
+    "command": "taskset -c 8-15 ./run_all_tests.sh --skip pytest",
+    "exit_code": 0,
+    "checks_passed": 10,
+    "checks_skipped": 1,
+    "log": "baseline-other-checks.log"
+  },
+  "logs": {
+    "baseline-pytest.log": "536c316a4723e7d3fb9837481abf94de67f17ca5d9a19722b2e7b1c74adead81",
+    "baseline-other-checks.log": "b0ccb2b9d516eaea42f6127c239224dee5649586ed5710a77c38826eeeea013e"
+  },
+  "not_covered": [
+    "Current repair batch",
+    "Latest site/security release checks",
+    "Full V1 requirements"
+  ]
+}

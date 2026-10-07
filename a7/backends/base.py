@@ -3,11 +3,10 @@ Base code generator interface for A7 compiler backends.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Set
 from io import StringIO
+from typing import Dict, Optional
 
 from ..parser import ASTNode
-from ..errors import CodegenError
 
 
 class CodeGenerator(ABC):
@@ -16,8 +15,6 @@ class CodeGenerator(ABC):
     def __init__(self):
         self.output = StringIO()
         self.indent_level = 0
-        self.imports = set()
-        self.current_function = None
 
     @property
     @abstractmethod
@@ -32,37 +29,16 @@ class CodeGenerator(ABC):
         pass
 
     @abstractmethod
-    def generate(self, ast: ASTNode) -> str:
-        """Generate target code from the AST."""
+    def generate(self, ast: ASTNode, type_map: Optional[Dict] = None,
+                 symbol_table=None, backend_plan=None,
+                 profile: str = "debug", no_nonwrap: bool = False) -> str:
+        """Generate target code from the AST and the semantic results."""
         pass
 
     @abstractmethod
     def visit(self, node: ASTNode):
         """Visit an AST node and generate appropriate code."""
         pass
-
-    def generic_visit(self, node: ASTNode):
-        """Default visitor that visits all children.
-
-        Iterative expectation: this loop itself does not recurse, but each
-        self.visit(child) call may recurse through backend visit overrides.
-        Backend visit methods must use explicit worklists for unbounded-depth
-        subtrees (see console_formatter.format_type for the pattern).
-        """
-        for child in node.children:
-            self.visit(child)
-
-    def write(self, text: str):
-        """Write text to the output buffer with automatic indentation."""
-        if (
-            text.startswith("\n")
-            or self.output.tell() == 0
-            or self.output.getvalue().endswith("\n")
-        ):
-            # Add indentation at the start of a new line
-            if text != "\n" and not text.startswith("\n"):
-                self.output.write("    " * self.indent_level)
-        self.output.write(text)
 
     def indent(self):
         """Increase indentation level."""
@@ -77,5 +53,3 @@ class CodeGenerator(ABC):
         """Reset the generator state for a new compilation."""
         self.output = StringIO()
         self.indent_level = 0
-        self.imports.clear()
-        self.current_function = None

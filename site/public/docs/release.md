@@ -28,7 +28,7 @@ Bandit. It creates no tag or publication.
 The compiler gate includes tokenizer, parser, semantic and codegen tests;
 example compile/build/run/output checks; debug and release artifacts; CLI
 error-stage checks; docs style; secrets; packaging and isolated installation.
-Installed programs must build and run under Zig Debug and ReleaseFast. The source
+Installed programs must build and run under Zig Debug and ReleaseSafe. The source
 distribution must build its wheel outside the checkout and pass the same checks.
 
 Python auditing uses exported locked project requirements. A passing site build

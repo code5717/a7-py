@@ -1219,13 +1219,12 @@ class TestTokenizerErrors:
             assert "Invalid string escape sequence" in error.message
 
     def test_unterminated_char_literals(self):
-        """Test unterminated or invalid character literals."""
+        """A char literal with no closing quote on its line is "not closed"."""
         test_cases = [
             ("'", 1, 1),  # Just opening quote
             ("'unterminated", 1, 1),  # No closing quote
-            ("''", 1, 1),  # Empty char literal
-            ("'ab'", 1, 1),  # Multiple characters
             ("x := 'incomplete", 1, 6),  # In context
+            ("'a\n'", 1, 1),  # Closing quote on the next line
         ]
 
         for source, expected_line, expected_col in test_cases:
@@ -1236,6 +1235,7 @@ class TestTokenizerErrors:
 
             error = exc_info.value
             assert "The char is not closed" in error.message
+            assert (error.span.start_line, error.span.start_column) == (expected_line, expected_col)
 
     def test_invalid_numeric_literals(self):
         """Test invalid numeric literal formats."""

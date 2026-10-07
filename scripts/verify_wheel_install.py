@@ -146,7 +146,7 @@ main :: fn() {
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"installed CLI token mode did not emit JSON: {exc}") from exc
 
-        if payload.get("schema_version") != "2.0" or payload.get("status") != "ok":
+        if payload.get("schema_version") != "3.0" or payload.get("status") != "ok":
             raise RuntimeError(f"installed CLI JSON payload is not an ok v2 response: {payload!r}")
 
         before_check = set(work.rglob("*"))

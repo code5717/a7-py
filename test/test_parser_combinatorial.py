@@ -813,7 +813,7 @@ class TestExpressionCombinations:
 
             // Char literals
             c1 := 'a'
-            c2 := '\n'
+            c2 := '\\n'
             c3 := '\x41'
 
             // Boolean literals

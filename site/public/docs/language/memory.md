@@ -74,7 +74,15 @@ Branch joins, loop mutations, reference calls, and deferred effects invalidate
 stale facts. A guard before a mutation or call may no longer prove a later
 operation. These checks do not provide complete alias or lifetime analysis.
 
-`del` releases supported heap allocations. A direct read after deletion is rejected until reassignment reinitializes the binding. `defer` schedules a statement for scope exit; `defer del value_box` keeps cleanup next to allocation. See the complete defer example for ordering and early-return behavior.
+`del` releases supported heap allocations. Direct reference aliases share
+deletion state; repeated deletion and reads after deletion fail until fresh
+reassignment. Guarded reference fields receive the same nil checks, including
+user fields named `ptr`. `defer` schedules a statement for scope exit;
+`defer del value_box` keeps cleanup next to allocation.
+
+Alias tracking remains incomplete for array elements, joined allocation field
+paths, nested aggregates and deletion through borrowed aggregates. Accepted
+programs can still violate allocation lifetimes in these cases.
 
 Slices must not outlive their backing arrays, and references must not outlive referents. These are required programming constraints. Full ownership, alias tracking, and lifetime enforcement remain incomplete. There is no implicit deep-copy guarantee.
 
@@ -88,9 +96,12 @@ Slices must not outlive their backing arrays, and references must not outlive re
 | Slice | Ordered bounds within the length |
 | Reference field access | Non-nil reference |
 | Backend lowering | Approval for that particular operation |
-| Direct use after deletion | Binding reinitialized before reuse |
+| Tracked reference use after deletion | Referenced allocation has not been deleted |
 
-Status: limited. Shift and numeric edge-case checks, union discriminant proofs, and ownership analysis remain active work. The safety contract states the intended fail-closed behavior and separately lists implementation gaps. Do not turn its intended guarantees into claims that every accepted program is safe.
+Status: limited. Runtime shift checks and wrapping signed minimum-value arithmetic
+are implemented. Union discriminant proofs and complete ownership analysis
+remain unfinished. The safety contract states required behavior and lists
+implementation gaps; it does not guarantee that every accepted program is safe.
 
 ## Planned memory model
 

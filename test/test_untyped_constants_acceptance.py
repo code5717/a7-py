@@ -65,7 +65,7 @@ def test_alias_order_and_independent_destinations(tmp_path, zig, forward):
      'main :: fn() { local :: 1e307; x: i32 = DIFF + local - local; '
      'io.println("{} {}", x, BIG == 1e307) }', '0 true\n'),
     ('main :: fn() { x: i32 = -5 / 2; y: f64 = 5 / 2; z: f64 = -5.5 % 2.0; '
-     'io.println("{} {} {} {}", x, y, z, 0.1 + 0.2 == 0.3) }', '-2 2 -1.5 false\n'),
+     'io.println("{} {} {} {}", x, y, z, 0.1 + 0.2 == 0.3) }', '-2 2 -1.5 true\n'),
     ('main :: fn() { x: i64 = 9007199254740993.0; low: i8 = -128.0; '
      'high: u8 = 255.0; io.println("{} {} {}", x, low, high) }', '9007199254740993 -128 255\n'),
     ('main :: fn() { x: u8 = 255; x += 1; '
@@ -79,12 +79,13 @@ def test_exact_values_and_concrete_operations(tmp_path, zig, body, expected):
     assert run_all_profiles(zig, tmp_path, emit(tmp_path, HEADER + body)) == expect_everywhere(expected)
 
 
-def test_infinity_minus_infinity_to_integer_rejected(tmp_path):
-    # Per-operation f64 rounding makes HUGE infinite, so CANCEL is NaN, not
-    # exact zero: a NaN initializer has no i32 representation to materialize.
-    reject(tmp_path, HEADER + 'HUGE :: 1e400\nCANCEL :: HUGE - HUGE\n'
-           'main :: fn() { local :: 1e400; x: i32 = CANCEL + local - local; '
-           'io.println("{} {}", x, HUGE == 1e400) }', ('finite', 'fit'))
+def test_cancellation_beyond_f64_is_exact_zero(tmp_path, zig):
+    # 1e400 has no f64 value, but no operand here needs one: HUGE - HUGE is
+    # the integer-valued zero and the comparison is between exact values.
+    source = (HEADER + 'HUGE :: 1e400\nCANCEL :: HUGE - HUGE\n'
+              'main :: fn() { local :: 1e400; x: i32 = CANCEL + local - local; '
+              'io.println("{} {}", x, HUGE == 1e400) }')
+    assert run_all_profiles(zig, tmp_path, emit(tmp_path, source)) == expect_everywhere('0 true\n')
 
 
 @pytest.mark.parametrize('body, expected', [

@@ -46,8 +46,9 @@ The entry file must define `main :: fn()`; without one, `check` exits 6 and
 names `--lib`. `check --lib` accepts a library file with no entry point.
 Imported modules never need their own `main`.
 Both native commands require exactly Zig 0.16.0. The default profile is `debug`,
-which selects Zig Debug. `release` selects ReleaseFast. Neither profile closes
-the current alias or lifetime safety gaps.
+which selects Zig Debug. `release` selects ReleaseSafe and keeps runtime
+checks. `fast` selects ReleaseFast and removes them. No profile closes the
+current alias or lifetime safety gaps.
 
 `doctor` exits with code 2 for missing or incompatible Zig. It also returns 2
 outside the V1 qualification target of Linux x86_64 and Python 3.13. Package
@@ -102,13 +103,13 @@ uv run a7 examples/001_hello.a7 --mode doc --doc-out /tmp/hello-report.md
 
 ## JSON output
 
-Legacy `--format json` and `check --format json` emit a JSON object with schema version `2.0`. Read the process
+Legacy `--format json` and `check --format json` emit a JSON object with schema version `3.0`. Read the process
 exit code as well as the payload. CLI argument parsing failures use argparse's
 usage text on stderr, even if `--format json` was requested.
 
 | Field | Meaning |
 | --- | --- |
-| `schema_version` | Payload schema, currently `2.0` |
+| `schema_version` | Payload schema, currently `3.0` |
 | `mode` | Requested compiler mode |
 | `status` | `ok` or `error` |
 | `input` | Input path |
@@ -116,7 +117,8 @@ usage text on stderr, even if `--format json` was requested.
 | `timing_ms` | Invocation timing; not a benchmark |
 | `stages` | Stages reached, with tokens, AST, semantic results, or generated source |
 | `artifacts` | Paths actually written by this invocation |
-| `error` | Present on failure, with category, message, details, span, and exception type |
+| `error` | Present on failure, with category, message, details, span, and exception type. Each entry in `details` has `type`, `code` (the diagnostic code or null), `message`, `hint` (or null), `file`, and `span` when known |
+| `layout` | Present with `check --layout --format json`: struct sizes, alignments and field offsets |
 
 The `stages` keys are `tokenize`, `parse`, `semantic`, and `codegen`, when
 reached. Their contents depend on the stage. For example, a successful codegen
@@ -154,7 +156,9 @@ is separate from this website's Markdown reference.
 
 Source recursion is banned. The semantic validator rejects direct and mutual
 recursion and tracked local function-pointer alias cycles. Compiler internals
-have their own ongoing conversion to stacks and worklists.
+have their own ongoing conversion to stacks and worklists. Type-checker
+statements now use a worklist for blocks, branches, loops and match arms.
+Expression checking and type resolution still contain recursive calls.
 
 Safety checks cover narrowing casts, division and modulo denominators, indexing
 and slice bounds, nil reference use, and direct use after `del`. Alias and

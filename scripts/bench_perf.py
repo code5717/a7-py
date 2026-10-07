@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Pin-based performance gate for the A7 bench suite.
 
-Emits Zig per bench via main.py into build/bench/, builds ReleaseFast native
-binaries with `zig build-exe`, times them (median of N runs, stdout captured)
-and compares the medians against the per-host pin in
+Emits Zig per bench via main.py with `--build-profile fast` into build/bench/,
+builds ReleaseFast native binaries with `zig build-exe`, times them (median of
+N runs, stdout captured) and compares the medians against the per-host pin in
 bench/pins/<hostname>.json. Every run's stdout sha256 must be stable across
 runs and equal the pin's hash when one exists.
 
@@ -11,7 +11,7 @@ Modes:
   default   Compare vs pins, print deltas. Exit 0 unless a build/run fails or
             an output hash mismatches.
   --pin     Write bench/pins/<hostname>.json from this run.
-  --gate    Additionally exit 1 if any release median > pin * 1.15.
+  --gate    Additionally exit 1 if any median > pin * 1.15.
   --runs N  Runs per binary (default 3).
   --taskset CPU
             Pin each timed run to one CPU (e.g. 0) with taskset(1) to cut
@@ -86,7 +86,7 @@ def emit_zig(name):
     result = run_cmd(
         [
             "uv", "run", "python", "main.py", str(source),
-            "-o", str(generated), "--build-profile", "release",
+            "-o", str(generated), "--build-profile", "fast",
         ]
     )
     if result.returncode != 0:
@@ -98,7 +98,7 @@ def emit_zig(name):
 
 def build_binary(name):
     generated = BUILD_DIR / f"{name}.zig"
-    binary = BUILD_DIR / f"{name}_release"
+    binary = BUILD_DIR / f"{name}_fast"
     result = run_cmd(
         [
             "zig",
@@ -134,7 +134,7 @@ def variation(times):
 
 
 def time_binary(name, runs, taskset=None):
-    binary = BUILD_DIR / f"{name}_release"
+    binary = BUILD_DIR / f"{name}_fast"
     times = []
     output_hash = None
     for _ in range(runs):
@@ -185,7 +185,7 @@ def load_pin():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pin", action="store_true", help="write pin file from this run")
-    parser.add_argument("--gate", action="store_true", help=f"fail if release median > pin * {GATE_RATIO}")
+    parser.add_argument("--gate", action="store_true", help=f"fail if a median > pin * {GATE_RATIO}")
     parser.add_argument("--runs", type=int, default=3, help="runs per binary (default 3)")
     parser.add_argument("--taskset", default=None, metavar="CPU",
                         help="pin timed runs with taskset -c CPU (default: unpinned)")
@@ -234,6 +234,8 @@ def main():
                 print(f"FAIL {name}: output hash differs from pin")
                 failures.append(name)
                 continue
+        # The pin key stays "release": the pins were measured with ReleaseFast
+        # under that name, and the same binaries are now the `fast` profile.
         results[name] = {"release": median, "output_sha256": digest}
 
     if args.pin and not failures:
@@ -278,7 +280,7 @@ def main():
         print(f"perf: {ok_count}/{total} benches ok (gate exceeded: {', '.join(gate_violations)})")
         return 1
     if compared:
-        print(f"perf: {ok_count}/{total} benches ok (release within pins)")
+        print(f"perf: {ok_count}/{total} benches ok (fast profile within pins)")
     else:
         print(f"perf: {ok_count}/{total} benches ok")
     return 0

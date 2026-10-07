@@ -6,62 +6,57 @@ Uses random generation to find edge cases and ensure robustness.
 import pytest
 import random
 import string
-import itertools
-from typing import List, Optional
+from typing import Optional
 from a7.parser import Parser
-from a7.tokens import Tokenizer, Token, TokenType
+from a7.tokens import Tokenizer, TokenType
 from a7.errors import ParseError, TokenizerError
 from a7.ast_nodes import NodeKind
 
-# Fixed seed so fuzz runs are reproducible. Individual cases may reseed
-# via RandomCodeGenerator(seed=...) for tighter reproducibility.
-random.seed(0)
 
 
 class RandomCodeGenerator:
     """Generate random but semi-valid A7 code for fuzzing."""
 
-    def __init__(self, seed: Optional[int] = None):
-        if seed:
-            random.seed(seed)
+    def __init__(self, seed: int = 0):
+        self.rng = random.Random(seed)
 
     def random_identifier(self, length: Optional[int] = None) -> str:
         """Generate a random identifier."""
         if length is None:
-            length = random.randint(1, 20)
+            length = self.rng.randint(1, 20)
         # First char must be letter or underscore
-        first = random.choice(string.ascii_letters + "_")
+        first = self.rng.choice(string.ascii_letters + "_")
         rest = "".join(
-            random.choice(string.ascii_letters + string.digits + "_")
+            self.rng.choice(string.ascii_letters + string.digits + "_")
             for _ in range(length - 1)
         )
         return first + rest
 
     def random_number(self) -> str:
         """Generate a random number literal."""
-        choice = random.choice(["int", "float", "hex", "binary", "octal"])
+        choice = self.rng.choice(["int", "float", "hex", "binary", "octal"])
 
         if choice == "int":
-            return str(random.randint(-1000000, 1000000))
+            return str(self.rng.randint(-1000000, 1000000))
         elif choice == "float":
-            return f"{random.uniform(-1000, 1000):.6f}"
+            return f"{self.rng.uniform(-1000, 1000):.6f}"
         elif choice == "hex":
-            return f"0x{random.randint(0, 0xFFFF):x}"
+            return f"0x{self.rng.randint(0, 0xFFFF):x}"
         elif choice == "binary":
-            return f"0b{random.randint(0, 255):b}"
+            return f"0b{self.rng.randint(0, 255):b}"
         else:  # octal
-            return f"0o{random.randint(0, 777):o}"
+            return f"0o{self.rng.randint(0, 777):o}"
 
     def random_string(self) -> str:
         """Generate a random string literal."""
-        length = random.randint(0, 50)
+        length = self.rng.randint(0, 50)
         chars = []
         for _ in range(length):
-            if random.random() < 0.1:  # 10% chance of escape sequence
-                chars.append(random.choice(["\\n", "\\t", "\\\"", "\\\\"]))
+            if self.rng.random() < 0.1:  # 10% chance of escape sequence
+                chars.append(self.rng.choice(["\\n", "\\t", "\\\"", "\\\\"]))
             else:
                 # Printable ASCII characters
-                chars.append(random.choice(string.printable.replace('"', '')))
+                chars.append(self.rng.choice(string.printable.replace('"', '')))
         return f'"{""
 
 .join(chars)}"'
@@ -69,16 +64,16 @@ class RandomCodeGenerator:
     def random_type(self, depth: int = 0) -> str:
         """Generate a random type expression."""
         if depth > 3:  # Limit nesting depth
-            return random.choice(["i32", "f64", "bool", "string"])
+            return self.rng.choice(["i32", "f64", "bool", "string"])
 
-        choice = random.choice(["basic", "array", "ref", "generic"])
+        choice = self.rng.choice(["basic", "array", "ref", "generic"])
 
         if choice == "basic":
-            return random.choice(
+            return self.rng.choice(
                 ["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64", "bool", "string"]
             )
         elif choice == "array":
-            size = random.randint(1, 100)
+            size = self.rng.randint(1, 100)
             inner = self.random_type(depth + 1)
             return f"[{size}]{inner}"
         elif choice == "ref":
@@ -90,7 +85,7 @@ class RandomCodeGenerator:
     def random_expression(self, depth: int = 0) -> str:
         """Generate a random expression."""
         if depth > 5:  # Limit nesting depth
-            return random.choice([
+            return self.rng.choice([
                 self.random_number(),
                 self.random_identifier(),
                 "true",
@@ -99,10 +94,10 @@ class RandomCodeGenerator:
                 self.random_string(),
             ])
 
-        choice = random.choice(["literal", "binary", "unary", "call", "field", "array", "paren"])
+        choice = self.rng.choice(["literal", "binary", "unary", "call", "field", "array", "paren"])
 
         if choice == "literal":
-            return random.choice([
+            return self.rng.choice([
                 self.random_number(),
                 self.random_identifier(),
                 "true",
@@ -113,22 +108,22 @@ class RandomCodeGenerator:
         elif choice == "binary":
             left = self.random_expression(depth + 1)
             right = self.random_expression(depth + 1)
-            op = random.choice(["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">=", "and", "or"])
+            op = self.rng.choice(["+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">=", "and", "or"])
             return f"{left} {op} {right}"
         elif choice == "unary":
             expr = self.random_expression(depth + 1)
-            op = random.choice(["-", "!"])
+            op = self.rng.choice(["-", "!"])
             return f"{op}{expr}"
         elif choice == "call":
             func = self.random_identifier()
-            args = ", ".join(self.random_expression(depth + 1) for _ in range(random.randint(0, 3)))
+            args = ", ".join(self.random_expression(depth + 1) for _ in range(self.rng.randint(0, 3)))
             return f"{func}({args})"
         elif choice == "field":
             obj = self.random_identifier()
-            field = random.choice([self.random_identifier(), "adr", "val"])
+            field = self.rng.choice([self.random_identifier(), "adr", "val"])
             return f"{obj}.{field}"
         elif choice == "array":
-            elements = ", ".join(self.random_expression(depth + 1) for _ in range(random.randint(0, 5)))
+            elements = ", ".join(self.random_expression(depth + 1) for _ in range(self.rng.randint(0, 5)))
             return f"[{elements}]"
         else:  # paren
             expr = self.random_expression(depth + 1)
@@ -138,7 +133,7 @@ class RandomCodeGenerator:
         """Generate a random statement."""
         if depth > 3:
             # Simple statements at max depth
-            return random.choice([
+            return self.rng.choice([
                 f"{self.random_identifier()} := {self.random_expression()}",
                 f"{self.random_identifier()} = {self.random_expression()}",
                 "break",
@@ -146,17 +141,17 @@ class RandomCodeGenerator:
                 f"ret {self.random_expression()}",
             ])
 
-        choice = random.choice(["assign", "if", "for", "while", "block", "match", "ret"])
+        choice = self.rng.choice(["assign", "if", "for", "while", "block", "match", "ret"])
 
         if choice == "assign":
             var = self.random_identifier()
             expr = self.random_expression()
-            op = random.choice([":=", "=", "+=", "-=", "*=", "/="])
+            op = self.rng.choice([":=", "=", "+=", "-=", "*=", "/="])
             return f"{var} {op} {expr}"
         elif choice == "if":
             cond = self.random_expression()
             then_stmt = self.random_statement(depth + 1)
-            if random.random() < 0.5:
+            if self.rng.random() < 0.5:
                 else_stmt = self.random_statement(depth + 1)
                 return f"if {cond} {{ {then_stmt} }} else {{ {else_stmt} }}"
             return f"if {cond} {{ {then_stmt} }}"
@@ -168,12 +163,12 @@ class RandomCodeGenerator:
             body = self.random_statement(depth + 1)
             return f"while {cond} {{ {body} }}"
         elif choice == "block":
-            stmts = "\n    ".join(self.random_statement(depth + 1) for _ in range(random.randint(1, 3)))
+            stmts = "\n    ".join(self.random_statement(depth + 1) for _ in range(self.rng.randint(1, 3)))
             return f"{{ {stmts} }}"
         elif choice == "match":
             expr = self.random_expression()
             cases = []
-            for _ in range(random.randint(1, 3)):
+            for _ in range(self.rng.randint(1, 3)):
                 value = self.random_expression()
                 body = self.random_statement(depth + 1)
                 cases.append(f"case {value}: {{ {body} }}")
@@ -183,7 +178,7 @@ class RandomCodeGenerator:
 
     def random_declaration(self) -> str:
         """Generate a random top-level declaration."""
-        choice = random.choice(["const", "var", "func", "struct", "enum"])
+        choice = self.rng.choice(["const", "var", "func", "struct", "enum"])
 
         name = self.random_identifier()
 
@@ -196,25 +191,41 @@ class RandomCodeGenerator:
         elif choice == "func":
             params = ", ".join(
                 f"{self.random_identifier()}: {self.random_type()}"
-                for _ in range(random.randint(0, 3))
+                for _ in range(self.rng.randint(0, 3))
             )
             body = self.random_statement()
-            return_type = "" if random.random() < 0.5 else f" {self.random_type()}"
+            return_type = "" if self.rng.random() < 0.5 else f" {self.random_type()}"
             return f"{name} :: fn({params}){return_type} {{ {body} }}"
         elif choice == "struct":
             fields = "\n    ".join(
                 f"{self.random_identifier()}: {self.random_type()}"
-                for _ in range(random.randint(1, 5))
+                for _ in range(self.rng.randint(1, 5))
             )
             return f"{name} :: struct {{ {fields} }}"
         else:  # enum
-            variants = ", ".join(self.random_identifier() for _ in range(random.randint(1, 5)))
+            variants = ", ".join(self.random_identifier() for _ in range(self.rng.randint(1, 5)))
             return f"{name} :: enum {{ {variants} }}"
 
     def generate_program(self, num_decls: int = 5) -> str:
         """Generate a complete random program."""
         decls = [self.random_declaration() for _ in range(num_decls)]
         return "\n\n".join(decls)
+
+
+def test_generator_seed_zero_is_independent_of_other_generators_and_global_rng():
+    state = random.getstate()
+    try:
+        random.seed(123)
+        expected = RandomCodeGenerator(seed=0)
+        first = expected.generate_program(3)
+        second = expected.generate_program(3)
+        random.seed(456)
+        actual = RandomCodeGenerator(seed=0)
+        assert actual.generate_program(3) == first
+        RandomCodeGenerator(seed=42).generate_program(3)
+        assert actual.generate_program(3) == second
+    finally:
+        random.setstate(state)
 
 
 class TestFuzzing:
@@ -225,7 +236,7 @@ class TestFuzzing:
         gen = RandomCodeGenerator()
 
         for i in range(100):  # Generate 100 random programs
-            code = gen.generate_program(random.randint(1, 10))
+            code = gen.generate_program(gen.rng.randint(1, 10))
 
             try:
                 lexer = Tokenizer(code)
@@ -263,13 +274,13 @@ class TestFuzzing:
 
     def test_deeply_nested_random_structures(self):
         """Test with deeply nested randomly generated structures."""
-        gen = RandomCodeGenerator()
+        rng = random.Random(0)
 
         for depth in [10, 20, 30, 40, 50]:
             # Generate deeply nested parentheses
             expr = "42"
             for _ in range(depth):
-                if random.random() < 0.5:
+                if rng.random() < 0.5:
                     expr = f"({expr})"
                 else:
                     expr = f"f({expr})"
@@ -284,8 +295,8 @@ class TestFuzzing:
                 assert ast is not None
             except RecursionError:
                 pytest.fail(f"Stack overflow at depth {depth}")
-            except (TokenizerError, ParseError):
-                pass  # Some combinations might be invalid
+            except (TokenizerError, ParseError) as error:
+                pytest.fail(f"Valid nested input rejected at depth {depth}: {error}\n{code}")
 
 
 class TestPropertyBased:
@@ -384,12 +395,12 @@ class TestPropertyBased:
 class TestMutationFuzzing:
     """Mutation-based fuzzing tests."""
 
-    def mutate_string(self, s: str) -> str:
+    def mutate_string(self, s: str, rng: random.Random) -> str:
         """Apply random mutations to a string."""
         if not s:
             return s
 
-        mutation = random.choice([
+        mutation = rng.choice([
             "insert",
             "delete",
             "replace",
@@ -397,15 +408,15 @@ class TestMutationFuzzing:
             "swap",
         ])
 
-        pos = random.randint(0, len(s) - 1)
+        pos = rng.randint(0, len(s) - 1)
 
         if mutation == "insert":
-            char = random.choice(string.printable)
+            char = rng.choice(string.printable)
             return s[:pos] + char + s[pos:]
         elif mutation == "delete" and len(s) > 1:
             return s[:pos] + s[pos + 1:]
         elif mutation == "replace":
-            char = random.choice(string.printable)
+            char = rng.choice(string.printable)
             return s[:pos] + char + s[pos + 1:]
         elif mutation == "duplicate":
             return s[:pos] + s[pos] + s[pos:]
@@ -418,6 +429,7 @@ class TestMutationFuzzing:
 
     def test_mutate_valid_programs(self):
         """Mutate valid programs and test parser robustness."""
+        rng = random.Random(0)
         valid_programs = [
             "x :: 42",
             "main :: fn() { ret 0 }",
@@ -428,7 +440,7 @@ class TestMutationFuzzing:
 
         for program in valid_programs:
             for _ in range(10):  # 10 mutations per program
-                mutated = self.mutate_string(program)
+                mutated = self.mutate_string(program, rng)
 
                 try:
                     lexer = Tokenizer(mutated)

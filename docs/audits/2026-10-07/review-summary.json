@@ -1,0 +1,126 @@
+{
+  "recorded_at": "2026-10-06T23:38:07.463503+00:00",
+  "completed_external_reviews": 12,
+  "model_counts": {
+    "zai-coding-plan/glm-5.3": 7,
+    "zai-coding-plan/glm-5.3-flash": 5
+  },
+  "reviews": [
+    {
+      "reviewer": "docs_gpu",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:16:55.964075+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/docs_gpu.log",
+      "log_sha256": "decd9f68450dc64228e9d7e144da4d42d1129f38e354112a1470e5e213d4bd55",
+      "disposition": "Public L73/L75 boundary and forward-global sentence corrected; safety limits expanded; primary GPU source citations corrected/retrieved. Publication evidence digest added."
+    },
+    {
+      "reviewer": "gates_tests",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:11:19.471017+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/gates_tests.log",
+      "log_sha256": "310bf2f9f162173da7a8efbae86087b42c5f09c086330b8c4745a76555c369f4",
+      "disposition": "Combined checkpoint passed full release checks. Later reviewed gate failed two obsolete alias-shadowing expectations and was stopped; original sources are now explicit exit-6 tests and valid renamed fixtures pass native checks. Fresh integration gate passed with 3,374 tests and one expected failure; all 11 compiler/package checks, site, dependency audits and Bandit passed. Literal filter repair passes 22 tests; ignored publication links were replaced with evidence digests."
+    },
+    {
+      "reviewer": "generics_modules",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:17:27.665624+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/generics_modules.log",
+      "log_sha256": "60e0f90782f4d1f272c9260ec73bac889fee252d8bb9367765d6d8a76a2caf4b",
+      "disposition": "Callback assignment/selection and scalar IF/MATCH initializer repairs independently reviewed with 28 paired compile-only probes. Array-arm narrowing remains open in both revisions. Module scopes remain open under L69."
+    },
+    {
+      "reviewer": "safety",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:19:27.875697+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/safety.log",
+      "log_sha256": "638e26eb4145cc689cd7f74ff5bae04fc8e5e65c75f8a8a856dba5629bd0c981",
+      "disposition": "Nested-global summaries, global argument ordering and bounded exact callee effects repaired with source comparisons and valid controls. Joined-child follow-up uses separate lifetime dependencies after first candidate failed review. Loop field-argument deletion, selected/base-store synchronization, joined nil-write invalidation and general lifetime analysis remain open."
+    },
+    {
+      "reviewer": "scalar_ref_packet",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:18:02.141277+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/scalar_ref_packet.log",
+      "log_sha256": "37f8ce59f2c89611aded13bf3a4c7724e25edcf6c99064b5d642dfbf3906f0fa",
+      "disposition": "Six context clarifications incorporated in proposal; user decision pending. No new scalar behavior implemented."
+    },
+    {
+      "reviewer": "continuation_policy",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-06T22:12:21.759445+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/flash-small/continuation_policy.log",
+      "log_sha256": "0b687e23bc86b8edbdabb8ce193f354c34a03edfd4a880ea8ac3ee81f4cb7de3",
+      "disposition": "Missing exact external review guard added to repository AGENTS.md."
+    },
+    {
+      "reviewer": "gpu_inventory_numbers",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-06T22:03:16.447887+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/flash-small/gpu_inventory_numbers.log",
+      "log_sha256": "c9bf49e7ba46a25036a97d6464dcf9eccc7a23b6c50c4da9e61ebdf3f251f4cb",
+      "disposition": "Report values match the saved inventory; GPU execution remains unqualified."
+    },
+    {
+      "reviewer": "new_doc_local_links",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-06T22:04:13.929057+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/flash-small/new_doc_local_links.log",
+      "log_sha256": "78699ee19985627ccf871cb6ccb6d631c0b1ebee1e9826cd981969a9ddc8f5b1",
+      "disposition": "Seven local archive links replaced with the publication digest."
+    },
+    {
+      "reviewer": "exact_effects",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:43:55.518282+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/exact_effects.log",
+      "log_sha256": "5165abc992b1fc1c9f939bf60e8eac33c9059bdad5bff679a29550cb2eb0b0fd",
+      "disposition": "Original joined-child regression reproduced. First follow-up 31e1b0 failed independent review with two valid rejections and one unsafe acceptance; retained as failed. Revised safety d6d414 separates lifetime dependencies from deletion identities; 118 focused tests pass and 18 independent three-variant probes found no introduced regression. Later 27 native controls pass, including selected replacement/complementary values in all profiles. Fresh full integration gate passed; remaining safety gaps stay open. Source-sized budget retained with depth 2/3 behavioral controls; other selected-field gaps remain open."
+    },
+    {
+      "reviewer": "container_packet",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-06T22:42:55.875304+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/glm-parallel/container_packet.log",
+      "log_sha256": "5863a1ecb8b1f1515621657046cc88e5e2d35ec18ae55bda3740b5b50394eea1",
+      "disposition": "Reviewed boundary clarifications incorporated after checking primary source. Unknown-call handling and dynamic correlations remain open. Bounded approval question pending; no container implementation authorized by packet. F6 archive path was plain repository-relative text, not a publication-link defect."
+    },
+    {
+      "reviewer": "latest_doc_contracts",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-06T23:14:55.085263+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/flash-small/latest_doc_contracts.log",
+      "log_sha256": "0dc5e7efe170ec985c4f1c51c479a312915f75d4a604aee0a8c89385b71d61b1",
+      "disposition": "No contradiction in scoped alias-clash, recursion and qualification paragraphs of reviewed snapshot. Read-only source/evidence comparison; no new tests/native/gate qualification. Later index and GPU-deferral doc-only edits are outside this review."
+    },
+    {
+      "reviewer": "stdlib_fixture_repair",
+      "model": "zai-coding-plan/glm-5.3-flash",
+      "finished_at": "2026-10-06T23:26:22.676844+00:00",
+      "exit_code": 0,
+      "log": "tmp/v1-completion-2026-10-07/flash-small/stdlib_fixture_repair.log",
+      "log_sha256": "404a7cfb0cea33cdb761552956a20db657dce3b3f66e12306b9750b1d6732420",
+      "disposition": "No test-patch issue found. Original sources byte-identical as rejection fixtures; dispatch outputs and compiler calls preserved. Correct reviewer count label: 20 is total passing tests, not 20 native; 4 are compile-only. Compiler source unchanged by fixture repair."
+    }
+  ],
+  "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",
+  "current_compiler_hashes": {
+    "a7/compile.py": "4802d338ecb48e7e1473ef9f117e0e10197ce7aee69dcd274c14905659700f2e",
+    "a7/passes/type_checker.py": "977cd1117051a770fa5b79c77412e458ef31f34bff01812e02b56810c08508ce",
+    "a7/passes/safety.py": "d6d414ec58aa7ab84b40953d2654c0aad819e4110c2e0bbb2acb74ed47ee9aa3",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
+  },
+  "updated_at": "2026-10-06T23:56:02.715621+00:00"
+}

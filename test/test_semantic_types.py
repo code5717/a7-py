@@ -10,77 +10,14 @@ Covers:
 - Type inference with := operator
 """
 
-import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
 from a7.ast_nodes import NodeKind
 from a7.passes.name_resolution import NameResolutionPass
-from a7.passes import SafetyProofPass
 from a7.passes.type_checker import TypeCheckingPass
-from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError, CompilerError
 from a7.types import PointerType, PrimitiveType, SliceType
 
 
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
-
-
-def run_semantic_analysis(source: str):
-    """Helper to run full semantic analysis.
-
-    Raises SemanticError if any pass detects errors.
-    """
-    program = parse_program(source)
-
-    # Run name resolution pass
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(program, "<test>")
-    if resolver.errors:
-        raise resolver.errors[0]
-
-    # Run type checking pass
-    type_checker = TypeCheckingPass(symbols)
-    node_types = type_checker.analyze(program, "<test>")
-    if type_checker.errors:
-        raise type_checker.errors[0]
-
-    # Run semantic validation pass
-    validator = SemanticValidationPass(symbols, node_types)
-    validator.analyze(program, "<test>")
-    if validator.errors:
-        raise validator.errors[0]
-
-    safety = SafetyProofPass(symbols, node_types)
-    safety.analyze(program, "<test>")
-    if safety.errors:
-        raise safety.errors[0]
-
-    return symbols, node_types
-
-
-def expect_success(source: str) -> bool:
-    """Helper to expect successful semantic analysis."""
-    try:
-        run_semantic_analysis(source)
-        return True
-    except CompilerError:
-        return False
-
-
-def expect_error(source: str, error_fragment: str = None) -> bool:
-    """Helper to expect semantic error with optional message check."""
-    try:
-        run_semantic_analysis(source)
-        return False
-    except CompilerError as e:
-        if error_fragment:
-            return error_fragment.lower() in str(e).lower()
-        return True
+from conftest import parse_program
+from pipeline_helpers import expect_error, expect_success, pipeline_tmp  # noqa: F401
 
 
 class TestPrimitiveTypes:
@@ -170,7 +107,7 @@ class TestPrimitiveTypes:
             unsigned: usize = signed
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "Type mismatch: expected 'usize', got 'i32'")
 
     def test_explicit_float_types(self):
         """Test explicit float type annotations."""
@@ -182,18 +119,14 @@ class TestPrimitiveTypes:
         """
         assert expect_success(source)
 
-    def test_type_mismatch_integer_to_float(self):
-        """Test type mismatch between integer and float."""
+    def test_integer_literal_fits_float_variable(self):
+        """An integer literal fits a float variable without a cast."""
         source = """
         main :: fn() {
             x: f32 = 42
         }
         """
-        # This might be allowed with implicit conversion, or might error
-        # Depending on language semantics
-        result = expect_success(source)
-        # For now, just run the test - adjust based on actual behavior
-        assert isinstance(result, bool)
+        assert expect_success(source)
 
     def test_type_mismatch_string_to_int(self):
         """Test type mismatch between string and int."""
@@ -202,7 +135,7 @@ class TestPrimitiveTypes:
             x: i32 = "hello"
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "Type mismatch: expected 'i32', got 'string'")
 
 
 class TestArrayAndSliceTypes:
@@ -297,7 +230,7 @@ class TestArrayAndSliceTypes:
             arr: [2]i32 = [1, "two"]
         }
         """
-        assert expect_error(source, "element")
+        assert expect_error(source, "got 'string' (Array element 1)")
 
     def test_nested_array_literal_rejects_incompatible_elements(self):
         """Nested array literal element mismatches are semantic errors."""
@@ -306,7 +239,7 @@ class TestArrayAndSliceTypes:
             matrix: [2][2]i32 = [[1, 2], [3, "four"]]
         }
         """
-        assert expect_error(source, "element")
+        assert expect_error(source, "got 'string' (Array element 1)")
 
     def test_slice_type_declaration(self):
         """Test slice type declarations."""
@@ -460,7 +393,7 @@ class TestArrayAndSliceTypes:
             arr: [3]i32 = [1, 2, 3, 4, 5]
         }
         """
-        assert expect_error(source, "size")
+        assert expect_error(source, "array size mismatch")
 
 
 class TestPointerAndReferenceTypes:
@@ -532,7 +465,7 @@ class TestPointerAndReferenceTypes:
             x: i32 = nil
         }
         """
-        assert expect_error(source, "nil")
+        assert expect_error(source, "Nil only allowed for reference types: got 'i32'")
 
     def test_nil_inferred_variable_requires_explicit_ref_type(self):
         """Untyped nil declarations must state the intended ref type."""
@@ -604,7 +537,7 @@ class TestStructEnumUnionTypes:
             p := Point{x: "hello", y: 20}
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "got 'string' (Field 'x')")
 
     def test_enum_type_declaration(self):
         """Test enum type declaration and usage."""
@@ -711,7 +644,7 @@ class TestTypeCasting:
             vp := cast(ref i64, p)
         }
         """
-        assert expect_error(source, "cast")
+        assert expect_error(source, "casts involving references or functions are forbidden")
 
     def test_signed_to_unsigned_literal_initializer_proves_nonnegative(self):
         """Literal initializer facts can prove signed-to-unsigned casts."""

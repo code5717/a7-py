@@ -19,6 +19,7 @@ build-backend = "setuptools.build_meta"
 dev = [
     "build>=1.6.1",
     "pytest>=9.1.1",
+    "pytest-xdist>=3.8.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -30,3 +31,7 @@ include = ["a7*"]
 # whole tree and picks up test files in scratch directories and worktree copies,
 # which broke a gate run on 2026-09-18.
 testpaths = ["test"]
+markers = [
+    "zig: builds or runs native code with the Zig toolchain",
+    "slow: takes several seconds without Zig",
+]

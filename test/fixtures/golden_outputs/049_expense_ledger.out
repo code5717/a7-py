@@ -1,0 +1,15 @@
+filed stapler as other
+=== Expense Ledger (4 entries) ===
+food:   12
+travel: 40
+tools:  25
+other:  8
+total:  85 / limit 100
+status: within budget
+=== Expense Ledger (5 entries) ===
+food:   12
+travel: 100
+tools:  25
+other:  8
+total:  145 / limit 100
+status: OVER BUDGET

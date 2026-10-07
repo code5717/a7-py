@@ -42,7 +42,7 @@ def test_check_full_pipeline_and_legacy_json_without_zig(tmp_path):
     assert human.returncode == 6 and 'missing_function' in human.stderr
 
 
-@pytest.mark.parametrize('profile', ['debug', 'release'])
+@pytest.mark.parametrize('profile', ['debug', 'release', 'fast'])
 def test_native_build_run_spaces_and_output_protection(tmp_path, profile):
     assert shutil.which('zig'), 'Zig required for CLI native qualification'
     source = program(tmp_path)
@@ -163,3 +163,62 @@ def test_lib_compile_emits_without_main(tmp_path):
     accepted = cli(tmp_path, '--mode', 'compile', '--lib', '--output', str(output), str(module))
     assert accepted.returncode == 0, accepted.stdout + accepted.stderr
     assert 'pub fn answer' in output.read_text(encoding='utf-8')
+
+
+@pytest.mark.parametrize('arguments', [
+    ['--version', '-v'],
+    ['missing.a7', '--version'],
+    ['check', 'missing.a7', '--version'],
+])
+def test_version_works_next_to_other_arguments(tmp_path, arguments):
+    result = cli(tmp_path, *arguments)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.startswith('a7 ') and result.stdout.count('\n') == 1
+
+
+def test_help_lists_the_subcommands(tmp_path):
+    result = cli(tmp_path, '-h')
+    assert result.returncode == 0, result.stderr
+    listed = [line.split()[0] for line in result.stdout.split('commands (see', 1)[1].splitlines()[1:5]]
+    assert listed == ['check', 'build', 'run', 'doctor']
+    assert '--version' in result.stdout
+
+
+LAYOUT_SOURCE = (
+    'io :: import "std/io"\nDot :: struct {\n x: i32\n y: i64\n}\n'
+    'main :: fn() {\n d := Dot{x: 1, y: 2}\n io.println("{}", d.x)\n}\n'
+)
+
+
+def test_check_layout_json_carries_the_layout(tmp_path):
+    source = tmp_path / 'dot.a7'
+    source.write_text(LAYOUT_SOURCE)
+    result = cli(tmp_path, 'check', '--layout', '--format', 'json', source)
+    assert result.returncode == 0, result.stderr + result.stdout
+    payload = json.loads(result.stdout)
+    assert payload['status'] == 'ok'
+    assert payload['layout'] == {
+        'line_bytes': 64,
+        'structs': [{
+            'name': 'Dot', 'size': 16, 'align': 8, 'lines': 1, 'line_use_percent': 25.0, 'note': None,
+            'fields': [
+                {'name': 'y', 'type': 'i64', 'offset': 0, 'size': 8, 'align': 8, 'touched': 0},
+                {'name': 'x', 'type': 'i32', 'offset': 8, 'size': 4, 'align': 4, 'touched': 1},
+            ],
+        }],
+    }
+    plain = cli(tmp_path, 'check', '--format', 'json', source)
+    assert 'layout' not in json.loads(plain.stdout)
+
+
+def test_build_refuses_a7_output_and_names_it(tmp_path):
+    # No Zig is run: the destination is rejected first. A stub passes the
+    # toolchain version check.
+    source = tmp_path / 'dot.a7'
+    source.write_text(LAYOUT_SOURCE)
+    env = fake_zig(tmp_path, 'print("0.16.0")\n')
+    target = tmp_path / 'out.a7'
+    result = cli(tmp_path, 'build', source, '-o', target, env=env)
+    assert result.returncode == 3, result.stdout + result.stderr
+    assert str(target) in result.stderr
+    assert not target.exists()

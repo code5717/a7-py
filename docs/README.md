@@ -53,8 +53,14 @@ before implementation work.
 
 - [Decision ledger](plan/decisions.md): user decisions for v1, including
   superseded research decisions.
+- [Delivery roadmap](plan/delivery-roadmap.md): the current todo list and
+  repair waves.
 - [V1 plan](plan/README.md): order of work, evidence requirements and open
   approval gates.
+- [Array programming proposal](design/array-programming.md): preserved tensor,
+  broadcasting, and accelerator sketches, not implemented syntax.
+- [Zig GPU support research](research/2026-10-07-zig-gpu-support.md): versioned
+  device-compiler and host-API evidence, with local compile-only results.
 - [Memory plan](plan/memory.md): proposed automatic, compile-time memory
   management with value semantics.
 - [Plan research](plan/research/README.md): advisory framework, hardware,

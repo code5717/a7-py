@@ -11,6 +11,8 @@ import tarfile
 from hashlib import sha256
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -46,7 +48,7 @@ def test_installed_cli_entrypoint_works() -> None:
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
-    assert '"schema_version": "2.0"' in result.stdout
+    assert '"schema_version": "3.0"' in result.stdout
     assert '"status": "ok"' in result.stdout
 
 
@@ -78,6 +80,7 @@ def test_wheel_install_smoke_uses_built_artifact(tmp_path: Path) -> None:
     assert "Source distribution install verified: a7_py-" in result.stdout
 
 
+@pytest.mark.zig
 def test_debug_build_script_verifies_single_zig_example(tmp_path: Path) -> None:
     assert shutil.which("zig"), "Zig is required for native release verification"
 

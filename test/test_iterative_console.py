@@ -9,6 +9,7 @@ from rich.tree import Tree
 from a7.ast_nodes import ASTNode, LiteralKind, NodeKind
 from a7.formatters.console_formatter import ConsoleFormatter
 from a7.tokens import Token, TokenType
+from conftest import low_recursion_limit
 
 
 def formatter():
@@ -70,7 +71,7 @@ def test_deep_types_defer_labels_and_tree_render_at_low_recursion_limit():
     view, output = formatter()
     previous = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(100)
+        sys.setrecursionlimit(low_recursion_limit())
         assert view.format_type(type_node) == "Box(fn(" * depth + "i32" + "))" * depth
         label = view.format_statement_label(statement)
         assert label == "[blue]DEFER[/blue] → " * depth + "[blue]RETURN[/blue] [dim](void)[/dim]"

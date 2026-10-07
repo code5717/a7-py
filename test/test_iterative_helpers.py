@@ -47,6 +47,8 @@ def test_mutation_base_depth_and_dereference_boundary():
         import sys
         from a7.ast_nodes import ASTNode, NodeKind
         from a7.backends.zig import ZigCodeGenerator
+        buffer = ASTNode(kind=NodeKind.VAR, name='buffer')
+        pointer = ASTNode(kind=NodeKind.VAR, name='pointer')
         direct = ASTNode(kind=NodeKind.IDENTIFIER, name='buffer')
         indirect = ASTNode(kind=NodeKind.DEREF,
             operand=ASTNode(kind=NodeKind.IDENTIFIER, name='pointer'))
@@ -55,12 +57,15 @@ def test_mutation_base_depth_and_dereference_boundary():
             direct = ASTNode(kind=kind, object=direct)
             indirect = ASTNode(kind=kind, object=indirect)
         root = ASTNode(kind=NodeKind.BLOCK, statements=[
+            buffer,
+            pointer,
             ASTNode(kind=NodeKind.ASSIGNMENT, target=direct),
             ASTNode(kind=NodeKind.ASSIGNMENT, target=indirect),
         ])
         generator = ZigCodeGenerator()
         sys.setrecursionlimit(100)
-        assert generator._collect_mutations(root) == {'buffer'}
+        # A write through a dereference changes the pointee, not the binding.
+        assert generator._collect_mutated_declarations(root) == {id(buffer)}
     ''')
 
 

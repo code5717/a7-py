@@ -36,6 +36,7 @@ def test_incomplete_match_expression_is_a_semantic_error(tmp_path, type_name, pa
     assert not output.exists()
 
 
+@pytest.mark.zig
 def test_native_complete_matches_and_partial_statement_match(tmp_path):
     code, payload, output = compile_source(tmp_path, '''io :: import "std/io"
 Color :: enum { Red, Blue }

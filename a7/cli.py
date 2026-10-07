@@ -15,7 +15,31 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from .backends import list_backends
-from .compile import A7Compiler, CompileMode, OutputFormat
+from .backends.zig import ZIG_OPTIMIZE_MODE
+from .compile import A7Compiler, CompileMode, OutputFormat, _safe_json_dumps, display_failure, error_console
+
+PROFILE_HELP = (
+    "build profiles:\n"
+    "  debug    Zig Debug: unoptimized, runtime checks on (default)\n"
+    "  release  Zig ReleaseSafe: optimized, runtime checks on\n"
+    "  fast     Zig ReleaseFast: optimized, runtime checks off"
+)
+RUN_ARGS_HELP = (
+    "Program arguments follow '--' and are passed through to the built\n"
+    "program (e.g. `a7 run prog.a7 -- --help`). The program's exit code is\n"
+    "returned as-is, so it can collide with compiler exit codes;\n"
+    "distinguishing them needs a gate packet and is intentionally unchanged."
+)
+
+COMMANDS = {
+    "check": "Check FILE through code generation; write nothing (--layout, --lib, --format json)",
+    "build": "Build FILE to a native executable with Zig (-o, --profile)",
+    "run": "Build FILE and run it; arguments after '--' go to the program",
+    "doctor": "Report the Python, platform and Zig toolchain status",
+}
+COMMANDS_HELP = "commands (see `a7 COMMAND -h`):\n" + "\n".join(
+    f"  {name:<8} {summary}" for name, summary in COMMANDS.items()
+)
 
 ZIG_VERSION = "0.16.0"
 
@@ -56,41 +80,24 @@ def package_version() -> str:
         return __version__
 
 
-def print_failure(result) -> None:
-    print(result.failure.message, file=sys.stderr)
-    for detail in result.failure.details:
-        if detail.get("message"):
-            print(detail["message"], file=sys.stderr)
-
-
-def _layout_report(result) -> str:
-    """Layout table from a successful pipeline result."""
-    from .layout import apply_touches, compute_struct_layouts, count_field_touches, format_report
+def _struct_layouts(result) -> list:
+    """Struct layouts, with field touch counts, from a successful pipeline result."""
+    from .layout import apply_touches, compute_struct_layouts, count_field_touches
 
     semantic = result.semantic_results or {}
     layouts = compute_struct_layouts(semantic.get("symbol_table"))
     touches = count_field_touches(result.ast, semantic.get("type_map"))
     apply_touches(layouts, touches)
-    return format_report(layouts)
+    return layouts
 
 
 def workflow(argv: list[str]) -> int:
     command = argv[0]
+    epilogs = {"build": PROFILE_HELP, "run": PROFILE_HELP + "\n\n" + RUN_ARGS_HELP}
     parser = argparse.ArgumentParser(
         prog=f"a7 {command}",
-        **(
-            {
-                "epilog": (
-                    "Program arguments follow '--' and are passed through to "
-                    "the built program (e.g. `a7 run prog.a7 -- --help`). "
-                    "The program's exit code is returned as-is, so it can "
-                    "collide with compiler exit codes; distinguishing them "
-                    "needs a gate packet and is intentionally unchanged."
-                )
-            }
-            if command == "run"
-            else {}
-        ),
+        epilog=epilogs.get(command),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     if command == "doctor":
         parser.parse_args(argv[1:])
@@ -111,7 +118,8 @@ def workflow(argv: list[str]) -> int:
         parser.add_argument("--lib", action="store_true",
                             help="Check as a library: allow no 'main :: fn()' entry point")
     else:
-        parser.add_argument("--profile", choices=["debug", "release"], default="debug")
+        parser.add_argument("--profile", choices=list(ZIG_OPTIMIZE_MODE), default="debug",
+                            help="Build profile (default: debug); see 'build profiles' below")
         parser.add_argument("--no-nonwrap", action="store_true")
         if command == "build":
             parser.add_argument("-o", "--output", help="Native executable path, defaults to ./<source-stem>")
@@ -123,27 +131,35 @@ def workflow(argv: list[str]) -> int:
         options = options[:separator]
     args = parser.parse_args(options)
 
+    compiler = A7Compiler(
+        mode=CompileMode.PIPELINE,
+        output_format=OutputFormat.JSON,
+        build_profile=getattr(args, "profile", "debug"),
+        no_nonwrap=getattr(args, "no_nonwrap", False),
+        is_library=getattr(args, "lib", False),
+    )
     captured = io.StringIO()
     with contextlib.redirect_stdout(captured):
-        result = A7Compiler(
-            mode=CompileMode.PIPELINE,
-            output_format=OutputFormat.JSON,
-            build_profile=getattr(args, "profile", "debug"),
-            no_nonwrap=getattr(args, "no_nonwrap", False),
-            is_library=getattr(args, "lib", False),
-        ).compile_file_detailed(args.file)
+        result = compiler.compile_file_detailed(args.file)
     if command == "check":
-        if args.format == "json":
+        from .layout import format_report, layouts_to_json
+
+        want_layout = result.ok and args.layout
+        if args.format == "json" and want_layout:
+            payload = compiler.to_json_payload(result)
+            payload["layout"] = layouts_to_json(_struct_layouts(result))
+            print(_safe_json_dumps(payload))
+        elif args.format == "json":
             print(captured.getvalue(), end="")
         elif result.ok:
             print(f"Checked {args.file}")
-            if getattr(args, "layout", False):
-                print(_layout_report(result))
+            if want_layout:
+                print(format_report(_struct_layouts(result)))
         else:
-            print_failure(result)
+            display_failure(result.failure, error_console)
         return int(result.exit_code)
     if not result.ok:
-        print_failure(result)
+        display_failure(result.failure, error_console)
         return int(result.exit_code)
 
     zig, message = find_zig()
@@ -156,7 +172,7 @@ def workflow(argv: list[str]) -> int:
     try:
         if destination is not None:
             if destination.suffix == ".a7" or native_output_conflict(result.input_paths, destination):
-                print("Native output conflicts with a source file or directory", file=sys.stderr)
+                print(f"Native output conflicts with a source file or directory: {destination}", file=sys.stderr)
                 return 3
             destination.parent.mkdir(parents=True, exist_ok=True)
         # Same filesystem as the destination permits an atomic replacement.
@@ -166,7 +182,7 @@ def workflow(argv: list[str]) -> int:
             generated.write_text(result.codegen_result["output_code"], encoding="utf-8")
             binary = root / ("program.exe" if os.name == "nt" else "program")
             build = subprocess.run(
-                [zig, "build-exe", str(generated), "-O", "Debug" if args.profile == "debug" else "ReleaseFast",
+                [zig, "build-exe", str(generated), "-O", ZIG_OPTIMIZE_MODE[args.profile],
                  f"-femit-bin={binary}"],
                 capture_output=True, text=True,
             )
@@ -185,18 +201,26 @@ def workflow(argv: list[str]) -> int:
 
 
 def main() -> None:
-    if sys.argv[1:] == ["--version"]:
+    # Arguments after `--` belong to the program started by `a7 run`.
+    own_args = sys.argv[1:]
+    if "--" in own_args:
+        own_args = own_args[:own_args.index("--")]
+    if "--version" in own_args:
         print(f"a7 {package_version()}")
         return
-    if sys.argv[1:2] and sys.argv[1] in {"check", "build", "run", "doctor"}:
+    if sys.argv[1:2] and sys.argv[1] in COMMANDS:
         sys.exit(workflow(sys.argv[1:]))
     available_backends = ", ".join(list_backends())
 
     parser = argparse.ArgumentParser(
-        description="A7 compiler. Commands: check, build, run, doctor. Use --version for the package version.",
+        description="A7 compiler. `a7 FILE` writes Zig source; the commands below build on it.",
         prog="a7",
+        usage="a7 [options] FILE\n       a7 {check,build,run,doctor} [options] [FILE]",
+        epilog=COMMANDS_HELP + "\n\n" + PROFILE_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
+    parser.add_argument("--version", action="store_true", help="Print the package version and exit")
     parser.add_argument("file", help="A7 source file (.a7) to process")
 
     parser.add_argument(
@@ -238,15 +262,15 @@ def main() -> None:
 
     parser.add_argument(
         "--build-profile",
-        choices=["debug", "release"],
+        choices=list(ZIG_OPTIMIZE_MODE),
         default="debug",
-        help="Build profile passed to codegen (default: debug)",
+        help="Build profile passed to codegen (default: debug); see 'build profiles' below",
     )
 
     parser.add_argument(
         "--no-nonwrap",
         action="store_true",
-        help="Force wrapping arithmetic even in release builds",
+        help="Force wrapping arithmetic even in release and fast builds",
     )
 
     parser.add_argument(

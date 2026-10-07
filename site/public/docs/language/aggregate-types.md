@@ -38,6 +38,12 @@ Color :: enum {
 
 Plain enum members receive integer values beginning at zero; explicit values use `Name = integer`. Access members through the enum name, such as `Color.Red`, and match them with `case` patterns. Do not infer payload-carrying `Option` or `Result` support from plain enum support.
 
+Enums with explicit values use the first tag type in `i32`, `u32`, `i64`,
+`u64` that fits all variants, including implicit successors. For example,
+`Big :: enum { A = 4294967295, B }` uses `i64` because `B` is 4294967296.
+If no single supported tag type fits all values, code generation rejects the
+enum. See [wide-enum tests](https://github.com/code5717/a7-py/blob/master/test/test_enum_tag_types.py).
+
 ## Unions
 
 ```a7
@@ -52,9 +58,9 @@ An untagged union literal requires exactly one named field. The field must exist
 
 ## Status and restrictions
 
-Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` and tag inspection are reserved or incomplete workflows, not a qualified tagged-union API. Multiple return values and destructuring remain unavailable; use a named result struct.
+Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` supports leading-dot match arms and copyable payload capture; broader lifetime and payload-safety guarantees remain incomplete. Multiple return values and destructuring remain unavailable; use a named result struct.
 
-Only top-level declarations can use `pub`. Individual fields cannot be public declarations. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](generics.md).
+`pub` on a struct field is accepted without changing field visibility. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](generics.md).
 
 ## Evidence
 

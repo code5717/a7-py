@@ -8,13 +8,13 @@ order: 10
 
 # Syntax and lexical structure
 
-A7 source files use `.a7`. Use ASCII identifiers and spaces for indentation. Newlines or semicolons end statements. Tabs outside literals are rejected. The tokenizer strips a leading UTF-8 byte-order mark. The specification describes ASCII source; broader Unicode source behavior is not a supported portability guarantee.
+A7 source files use `.a7`. Use ASCII identifiers and spaces for indentation. Newlines or semicolons end statements. Tabs outside literals are rejected. The tokenizer strips a leading UTF-8 byte-order mark. Source files are UTF-8. Ordinary identifiers and numeric spellings use ASCII; literal contents and comments can contain non-ASCII characters.
 
 ## Comments and names
 
-`//` and `#` begin line comments. `/* ... */` comments can nest. The current tokenizer accepts end-of-file as the end of an unclosed block comment, so do not rely on it to diagnose a missing `*/`.
+`//` and `#` begin line comments. `/* ... */` comments can nest. An unclosed block comment is a lexical error at its opening delimiter.
 
-Names are case-sensitive. Ordinary identifiers begin with an ASCII letter or underscore, followed by ASCII letters, digits, or underscores. The specification reserves leading underscores for compiler names. The lexer limits identifiers and numeric literal spellings to 100 characters.
+Names are case-sensitive. Ordinary identifiers begin with an ASCII letter or underscore, followed by ASCII letters, digits, or underscores. The approved visibility model makes top-level `_name` private and reserves `__name` for the compiler; enforcement remains incomplete. The lexer limits identifiers and numeric literal spellings to 100 characters.
 
 ```a7
 // A line comment
@@ -29,7 +29,7 @@ answer := 42
 | Integer | `42`, `0x2A`, `0o52`, `0b101010`, `1_000` | The destination type must accommodate the value. |
 | Float | `3.14`, `.5`, `1.`, `2.71e10` | Numeric conversion and range rules still apply. |
 | Boolean | `true`, `false` | Type `bool`. |
-| Character | `'a'`, `'\n'`, `'\x41'` | Public character model is ASCII. |
+| Character | `'a'`, `'\n'`, `'\x41'` | One byte from 0 through 255. |
 | String | `"hello"`, `"a\nb"` | String slicing produces a character slice. |
 | Nil | `nil` | Reference types only, not arrays or other value types. |
 
@@ -43,7 +43,7 @@ The [keyword index](builtins.md#keyword-index) lists the tokenizer's actual rese
 
 ## Status and restrictions
 
-Status: supported for the ordinary ASCII forms shown here. Unicode behavior beyond the documented ASCII model is unverified. Parser grammar and AST node lists describe compiler internals, not additional callable features. Numeric edge cases, diagnostics categories, and implementation limits must be read alongside current compiler evidence.
+Status: ordinary names use ASCII. Character literals above code point 255 are rejected; strings can hold UTF-8 source text. Parser grammar and AST node lists describe compiler internals, not additional callable features. Numeric edge cases, diagnostics categories, and implementation limits must be read alongside current compiler evidence.
 
 ## Evidence
 

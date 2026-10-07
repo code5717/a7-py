@@ -51,11 +51,11 @@ main :: fn() {
     io.println("done")
 }
 ''', "4 0 4\n5 0 4\ndone\n"),
-    "unbraced-and-pattern-binding": ('''
+    "shadowed-binding-and-pattern-binding": ('''
 main :: fn() {
     value :: 3
-    if true unused :: 1
-    if false unused :: 2 else if true unused :: 3 else unused :: 4
+    if true { unused :: 1 }
+    if false { unused :: 2 } else if true { unused :: 3 } else { unused :: 4 }
     { value :: 5; match 5 { case value: io.println("match"); else: io.println("wrong") } }
     match 3 { case value: io.println("outer") }
     io.println("{}", value)

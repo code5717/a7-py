@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "eda6ea03563ea739b06569d81a0f1248e9c42757c8301be9ebbba9de9bb9aaa8"
+    "value": "968ec0cfb1c79253d558517297c68148c4f54ab3d0b0f5b423d5ad6b464d25e1"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -681,7 +681,7 @@
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/operators.md",
         "https://github.com/code5717/a7-py/blob/master/a7/parser.py",
-        "https://github.com/code5717/a7-py/blob/master/a7/const_eval.py",
+        "https://github.com/code5717/a7-py/blob/master/a7/exact_constants.py",
         "https://github.com/code5717/a7-py/blob/master/examples/020_operators.a7",
         "https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md",
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md"
@@ -777,6 +777,11 @@
         },
         {
           "level": 2,
+          "id": "nested-functions",
+          "text": "Nested functions"
+        },
+        {
+          "level": 2,
           "id": "function-types-and-callbacks",
           "text": "Function types and callbacks"
         },
@@ -809,6 +814,7 @@
       "aliases": [],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/functions.md",
+        "https://github.com/code5717/a7-py/blob/master/test/test_nested_function_codegen.py",
         "https://github.com/code5717/a7-py/blob/master/examples/022_function_pointers.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/027_callbacks.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/004_func.a7",
@@ -884,6 +890,7 @@
       "aliases": [],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/arrays-strings.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/examples/012_arrays.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/034_string_utils.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/035_matrix.a7",
@@ -943,6 +950,7 @@
       "aliases": [],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/aggregate-types.md",
+        "https://github.com/code5717/a7-py/blob/master/test/test_enum_tag_types.py",
         "https://github.com/code5717/a7-py/blob/master/examples/009_struct.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/010_enum.a7",
         "https://github.com/code5717/a7-py/blob/master/examples/016_unions.a7",
@@ -1119,7 +1127,9 @@
       "aliases": [],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/modules.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md",
         "https://github.com/code5717/a7-py/blob/master/a7/module_resolver.py",
+        "https://github.com/code5717/a7-py/blob/master/test/test_module_path_identity.py",
         "https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7",
         "https://github.com/code5717/a7-py/blob/master/test/test_module_alias_shadowing.py",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
@@ -1364,6 +1374,7 @@
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md",
         "https://github.com/code5717/a7-py/blob/master/docs/audits/README.md"
       ],
       "examples": []
@@ -2219,6 +2230,32 @@
       "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
     },
     {
+      "id": "example-049-expense-ledger",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-04. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/049_expense_ledger.a7",
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+      ],
+      "title": "049_expense_ledger.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
+      "id": "example-050-tip-split",
+      "status": "supported",
+      "qualification": "Example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-10-04. This establishes this example only.",
+      "topic": "examples",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/examples/050_tip_split.a7",
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+      ],
+      "title": "050_tip_split.a7",
+      "documentationUrl": "https://code5717.github.io/a7-py/examples/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/examples.md"
+    },
+    {
       "id": "ascii-source",
       "status": "supported",
       "qualification": "Lexer-supported ASCII names, spacing, and escapes. This is a lexical disposition, not native-execution evidence for arbitrary source.",
@@ -2577,19 +2614,6 @@
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Appendix D: ASCII Character Set Support",
-      "documentationUrl": "https://code5717.github.io/a7-py/language/syntax/",
-      "markdownUrl": "https://code5717.github.io/a7-py/docs/language/syntax.md"
-    },
-    {
-      "id": "spec-d-1-escape-sequences",
-      "status": "limited",
-      "qualification": "ASCII public model; escape support follows tokenizer, which omits several escapes listed in Appendix D.",
-      "topic": "language/syntax",
-      "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
-        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
-      ],
-      "title": "D.1 Escape Sequences",
       "documentationUrl": "https://code5717.github.io/a7-py/language/syntax/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/syntax.md"
     },
@@ -4080,6 +4104,20 @@
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/functions.md"
     },
     {
+      "id": "spec-nested-functions",
+      "title": "Nested functions",
+      "status": "limited",
+      "qualification": "Capture-free nested functions can be called or returned as function values. Reading an enclosing local or parameter is rejected during code generation with exit 7.",
+      "topic": "language/functions",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/test/test_nested_function_codegen.py",
+        "https://github.com/code5717/a7-py/blob/master/test/test_nested_functions.py"
+      ],
+      "documentationUrl": "https://code5717.github.io/a7-py/language/functions/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/language/functions.md"
+    },
+    {
       "id": "fixed-arrays",
       "status": "supported",
       "qualification": "Native probes verify exactly sized nested/value array literals and zero initialization without an initializer. Scalar-fill initializers such as [3]i32 = 7 are rejected.",
@@ -4172,7 +4210,7 @@
     {
       "id": "spec-9-planned-array-programming-for-ai",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "SPEC section 9 links to the separate historical array-programming proposal; tensor APIs are not current executable support.",
       "topic": "language/arrays-strings",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
@@ -4185,309 +4223,332 @@
     {
       "id": "spec-9-1-multidimensional-arrays",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.1 Multidimensional Arrays",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-tensor-types",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Tensor Types",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-array-literals-and-initialization",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Array Literals and Initialization",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-2-broadcasting-and-vectorized-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.2 Broadcasting and Vectorized Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-automatic-broadcasting",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Automatic Broadcasting",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-vectorized-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Vectorized Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-3-tensor-manipulation-and-reshaping",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.3 Tensor Manipulation and Reshaping",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-shape-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Shape Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-axis-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Axis Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-4-reduction-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.4 Reduction Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-5-linear-algebra-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.5 Linear Algebra Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-6-ai-specific-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.6 AI-Specific Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-neural-network-primitives",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Neural Network Primitives",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-gradient-operations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Gradient Operations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-7-memory-layout-and-performance",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.7 Memory Layout and Performance",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-memory-layout-control",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Memory Layout Control",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-performance-annotations",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Performance Annotations",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-8-indexing-and-slicing",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.8 Indexing and Slicing",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-advanced-indexing",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Advanced Indexing",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-9-built-in-tensor-functions",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.9 Built-in Tensor Functions",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-9-10-array-programming-examples",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "9.10 Array Programming Examples",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-machine-learning-example",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Machine Learning Example",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "spec-scientific-computing-example",
       "status": "planned",
-      "qualification": "Entire tensor/AI section is proposed design, including all APIs and example programs; not current executable support.",
+      "qualification": "Historical array-programming proposal, not implemented syntax or approved API spelling.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "Scientific Computing Example",
+      "source": "docs/design/array-programming.md",
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/arrays-strings.md"
     },
     {
       "id": "planned-tensor-arange",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_arange",
@@ -4497,10 +4558,10 @@
     {
       "id": "planned-tensor-argmax",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_argmax",
@@ -4510,10 +4571,10 @@
     {
       "id": "planned-tensor-argmin",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_argmin",
@@ -4523,10 +4584,10 @@
     {
       "id": "planned-tensor-backward",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_backward",
@@ -4536,10 +4597,10 @@
     {
       "id": "planned-tensor-backward-solve",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_backward_solve",
@@ -4549,10 +4610,10 @@
     {
       "id": "planned-tensor-batch-norm",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_batch_norm",
@@ -4562,10 +4623,10 @@
     {
       "id": "planned-tensor-c-layout",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_c_layout",
@@ -4575,10 +4636,10 @@
     {
       "id": "planned-tensor-cast",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_cast",
@@ -4588,10 +4649,10 @@
     {
       "id": "planned-tensor-clip-grad-norm",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_clip_grad_norm",
@@ -4601,10 +4662,10 @@
     {
       "id": "planned-tensor-clone",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_clone",
@@ -4614,10 +4675,10 @@
     {
       "id": "planned-tensor-concat",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_concat",
@@ -4627,10 +4688,10 @@
     {
       "id": "planned-tensor-contiguous",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_contiguous",
@@ -4640,10 +4701,10 @@
     {
       "id": "planned-tensor-copy",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_copy",
@@ -4653,10 +4714,10 @@
     {
       "id": "planned-tensor-cross",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_cross",
@@ -4666,10 +4727,10 @@
     {
       "id": "planned-tensor-det",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_det",
@@ -4679,10 +4740,10 @@
     {
       "id": "planned-tensor-device",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_device",
@@ -4692,10 +4753,10 @@
     {
       "id": "planned-tensor-dot",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_dot",
@@ -4705,10 +4766,10 @@
     {
       "id": "planned-tensor-dtype",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_dtype",
@@ -4718,10 +4779,10 @@
     {
       "id": "planned-tensor-eig",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_eig",
@@ -4731,10 +4792,10 @@
     {
       "id": "planned-tensor-expand-dims",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_expand_dims",
@@ -4744,10 +4805,10 @@
     {
       "id": "planned-tensor-eye",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_eye",
@@ -4757,10 +4818,10 @@
     {
       "id": "planned-tensor-f-layout",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_f_layout",
@@ -4770,10 +4831,10 @@
     {
       "id": "planned-tensor-flatten",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_flatten",
@@ -4783,10 +4844,10 @@
     {
       "id": "planned-tensor-forward-solve",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_forward_solve",
@@ -4796,10 +4857,10 @@
     {
       "id": "planned-tensor-from-data",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_from_data",
@@ -4809,10 +4870,10 @@
     {
       "id": "planned-tensor-gelu",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_gelu",
@@ -4822,10 +4883,10 @@
     {
       "id": "planned-tensor-grad-enable",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_grad_enable",
@@ -4835,10 +4896,10 @@
     {
       "id": "planned-tensor-inv",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_inv",
@@ -4848,10 +4909,10 @@
     {
       "id": "planned-tensor-layer-norm",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_layer_norm",
@@ -4861,10 +4922,10 @@
     {
       "id": "planned-tensor-linspace",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_linspace",
@@ -4874,10 +4935,10 @@
     {
       "id": "planned-tensor-load",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_load",
@@ -4887,10 +4948,10 @@
     {
       "id": "planned-tensor-lu",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_lu",
@@ -4900,10 +4961,10 @@
     {
       "id": "planned-tensor-lu-pivot",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_lu_pivot",
@@ -4913,10 +4974,10 @@
     {
       "id": "planned-tensor-matmul",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_matmul",
@@ -4926,10 +4987,10 @@
     {
       "id": "planned-tensor-max",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_max",
@@ -4939,10 +5000,10 @@
     {
       "id": "planned-tensor-mean",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_mean",
@@ -4952,10 +5013,10 @@
     {
       "id": "planned-tensor-min",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_min",
@@ -4965,10 +5026,10 @@
     {
       "id": "planned-tensor-ndim",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_ndim",
@@ -4978,10 +5039,10 @@
     {
       "id": "planned-tensor-no-grad",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_no_grad",
@@ -4991,10 +5052,10 @@
     {
       "id": "planned-tensor-norm",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_norm",
@@ -5004,10 +5065,10 @@
     {
       "id": "planned-tensor-ones",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_ones",
@@ -5017,10 +5078,10 @@
     {
       "id": "planned-tensor-operation",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_operation",
@@ -5030,10 +5091,10 @@
     {
       "id": "planned-tensor-print",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_print",
@@ -5043,10 +5104,10 @@
     {
       "id": "planned-tensor-qr",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_qr",
@@ -5056,10 +5117,10 @@
     {
       "id": "planned-tensor-random",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_random",
@@ -5069,10 +5130,10 @@
     {
       "id": "planned-tensor-range",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_range",
@@ -5082,10 +5143,10 @@
     {
       "id": "planned-tensor-relu",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_relu",
@@ -5095,10 +5156,10 @@
     {
       "id": "planned-tensor-reshape",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_reshape",
@@ -5108,10 +5169,10 @@
     {
       "id": "planned-tensor-save",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_save",
@@ -5121,10 +5182,10 @@
     {
       "id": "planned-tensor-shape",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_shape",
@@ -5134,10 +5195,10 @@
     {
       "id": "planned-tensor-sigmoid",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_sigmoid",
@@ -5147,10 +5208,10 @@
     {
       "id": "planned-tensor-size",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_size",
@@ -5160,10 +5221,10 @@
     {
       "id": "planned-tensor-softmax",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_softmax",
@@ -5173,10 +5234,10 @@
     {
       "id": "planned-tensor-split",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_split",
@@ -5186,10 +5247,10 @@
     {
       "id": "planned-tensor-squeeze",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_squeeze",
@@ -5199,10 +5260,10 @@
     {
       "id": "planned-tensor-stack",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_stack",
@@ -5212,10 +5273,10 @@
     {
       "id": "planned-tensor-std",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_std",
@@ -5225,10 +5286,10 @@
     {
       "id": "planned-tensor-strided",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_strided",
@@ -5238,10 +5299,10 @@
     {
       "id": "planned-tensor-sum",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_sum",
@@ -5251,10 +5312,10 @@
     {
       "id": "planned-tensor-svd",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_svd",
@@ -5264,10 +5325,10 @@
     {
       "id": "planned-tensor-to-cpu",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_to_cpu",
@@ -5277,10 +5338,10 @@
     {
       "id": "planned-tensor-to-gpu",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_to_gpu",
@@ -5290,10 +5351,10 @@
     {
       "id": "planned-tensor-trace",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_trace",
@@ -5303,10 +5364,10 @@
     {
       "id": "planned-tensor-transpose",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_transpose",
@@ -5316,10 +5377,10 @@
     {
       "id": "planned-tensor-unsqueeze",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_unsqueeze",
@@ -5329,10 +5390,10 @@
     {
       "id": "planned-tensor-var",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_var",
@@ -5342,10 +5403,10 @@
     {
       "id": "planned-tensor-view",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_view",
@@ -5355,10 +5416,10 @@
     {
       "id": "planned-tensor-where",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_where",
@@ -5368,10 +5429,10 @@
     {
       "id": "planned-tensor-zeros",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "title": "tensor_zeros",
@@ -5408,10 +5469,10 @@
       "id": "planned-tensor-conv2d",
       "title": "tensor_conv2d",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
@@ -5421,10 +5482,10 @@
       "id": "planned-tensor-maxpool2d",
       "title": "tensor_maxpool2d",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
@@ -5434,10 +5495,10 @@
       "id": "planned-tensor-to-f32",
       "title": "tensor_to_f32",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
@@ -5447,10 +5508,10 @@
       "id": "planned-tensor-to-i32",
       "title": "tensor_to_i32",
       "status": "planned",
-      "qualification": "Proposed tensor API in SPEC section 9; no current executable implementation.",
+      "qualification": "Proposed API preserved in docs/design/array-programming.md; no current executable implementation.",
       "topic": "language/arrays-strings",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/design/array-programming.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/arrays-strings/",
@@ -5496,11 +5557,12 @@
     {
       "id": "spec-enums",
       "status": "limited",
-      "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
+      "qualification": "Plain enums support explicit integer values; emitted tag uses the first of i32, u32, i64, u64 that fits all variants. Regression tests cover wide values.",
       "topic": "language/aggregate-types",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
-        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
+        "https://github.com/code5717/a7-py/blob/master/test/test_enum_tag_types.py"
       ],
       "title": "Enums",
       "documentationUrl": "https://code5717.github.io/a7-py/language/aggregate-types/",
@@ -5913,6 +5975,32 @@
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
     },
     {
+      "id": "spec-10-2-1-module-identity-and-resolution",
+      "status": "limited",
+      "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
+      "topic": "language/modules",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+      ],
+      "title": "10.2.1 Module identity and resolution",
+      "documentationUrl": "https://code5717.github.io/a7-py/language/modules/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
+    },
+    {
+      "id": "spec-10-2-2-cycles-and-entry",
+      "status": "limited",
+      "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
+      "topic": "language/modules",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+      ],
+      "title": "10.2.2 Cycles and entry",
+      "documentationUrl": "https://code5717.github.io/a7-py/language/modules/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
+    },
+    {
       "id": "spec-10-3-standard-library-status",
       "status": "limited",
       "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
@@ -5926,7 +6014,7 @@
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
     },
     {
-      "id": "spec-10-4-visibility-rules",
+      "id": "spec-10-4-visibility-rules-staged-intent",
       "status": "limited",
       "qualification": "Documented with current implementation restrictions; SPEC prose alone is not native execution evidence.",
       "topic": "language/modules",
@@ -5934,7 +6022,7 @@
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
       ],
-      "title": "10.4 Visibility Rules",
+      "title": "10.4 Visibility Rules (staged intent)",
       "documentationUrl": "https://code5717.github.io/a7-py/language/modules/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/modules.md"
     },
@@ -6340,6 +6428,32 @@
         "https://github.com/code5717/a7-py/blob/master/test/test_audit_backend_repairs.py"
       ],
       "title": "std.io.eprintln",
+      "documentationUrl": "https://code5717.github.io/a7-py/stdlib/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/stdlib.md"
+    },
+    {
+      "id": "stdlib-io-println-ok",
+      "status": "limited",
+      "qualification": "Registered call. The backend builds a Result value that a statement discards. The checker types the call as void, so matching on it exits 6.",
+      "topic": "stdlib",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/a7/stdlib/io.py",
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+      ],
+      "title": "std.io.println_ok",
+      "documentationUrl": "https://code5717.github.io/a7-py/stdlib/",
+      "markdownUrl": "https://code5717.github.io/a7-py/docs/stdlib.md"
+    },
+    {
+      "id": "stdlib-io-read-line",
+      "status": "limited",
+      "qualification": "Registered call taking a byte slice. The checker rejects the call from the CLI until stdlib calls carry declared types; a second read in one program loses input.",
+      "topic": "stdlib",
+      "evidence": [
+        "https://github.com/code5717/a7-py/blob/master/a7/stdlib/io.py",
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+      ],
+      "title": "std.io.read_line",
       "documentationUrl": "https://code5717.github.io/a7-py/stdlib/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/stdlib.md"
     },

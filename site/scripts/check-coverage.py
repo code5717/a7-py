@@ -96,7 +96,7 @@ def operators(tree: ast.AST) -> list[str]:
 def stdlib_operations() -> list[str]:
     """Follow default registrar calls and inspect their function assignments.
 
-    Handle literal function registration and the current dictionary-driven loop.
+    Handle literal registrations, literal name sequences, and dictionary loops.
     Fail if a registration uses an unknown shape instead of silently skipping it.
     """
     tree = ast.parse((ROOT / 'a7/stdlib/__init__.py').read_text())
@@ -130,6 +130,12 @@ def stdlib_operations() -> list[str]:
             if not isinstance(node, ast.For):
                 continue
             iterator = node.iter
+            if isinstance(iterator, (ast.Tuple, ast.List)) and isinstance(node.target, ast.Name):
+                require(all(isinstance(value, ast.Constant) and isinstance(value.value, str)
+                            for value in iterator.elts),
+                        f'{file}: nonliteral function name in registration loop')
+                loop_values[node.target.id] = [value.value for value in iterator.elts]
+                continue
             require(isinstance(iterator, ast.Call)
                     and isinstance(iterator.func, ast.Attribute)
                     and iterator.func.attr == 'items'
@@ -193,7 +199,8 @@ def main() -> None:
     require(len(ids) == len(set(ids)), 'Duplicate feature IDs')
     spec = (ROOT / 'docs/SPEC.md').read_text()
     spec_records = [f.get('title', '') for f in features
-                    if f['id'].startswith('spec-') and not f['id'].startswith('spec-word-')]
+                    if f['id'].startswith('spec-') and not f['id'].startswith('spec-word-')
+                    and f.get('source') != 'docs/design/array-programming.md']
     same_inventory('SPEC headings', headings(spec), spec_records)
     tokens = ast.parse((ROOT / 'a7/tokens.py').read_text())
     same_inventory('Keywords', assigned_dictionary(tokens, 'KEYWORDS'),
@@ -204,7 +211,11 @@ def main() -> None:
                    [f.get('title', '') for f in features if f['id'].startswith('stdlib-')])
     same_inventory('Examples', [p.name for p in (ROOT / 'examples').glob('*.a7')],
                    [f.get('title', '') for f in features if f['id'].startswith('example-')])
-    tensor = spec.split('## 9. Planned Array Programming for AI', 1)[1].split('## 10.', 1)[0]
+    proposal = (ROOT / 'docs/design/array-programming.md').read_text()
+    tensor = proposal.split('## 9. Planned Array Programming for AI', 1)[1]
+    same_inventory('Array proposal headings', headings(tensor),
+                   [f.get('title', '') for f in features
+                    if f.get('source') == 'docs/design/array-programming.md'])
     same_inventory('Tensor names', sorted(set(re.findall(r'\btensor_[a-zA-Z_]\w*', tensor))),
                    [f.get('title', '') for f in features if f['id'].startswith('planned-tensor-')])
     planned = spec.split('### 11.2 Standard Library Functions', 1)[1].split('## 12.', 1)[0]

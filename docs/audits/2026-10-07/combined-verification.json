@@ -1,0 +1,36 @@
+{
+  "started_at": "2026-10-06T22:31:17.939426+00:00",
+  "command": [
+    "taskset",
+    "-c",
+    "0-15",
+    "env",
+    "A7_PYTEST_WORKERS=6",
+    "./run_release_checks.sh"
+  ],
+  "checkout": "/var/tmp/a7-v1-combined-2026-10-07-b5vz7ldi/checkout",
+  "manifest_sha256": "a7b6b10259b391cb5c58999c8a20ed7f476cf0aef2552bfd4c4d36ca6197cba3",
+  "pid": 1162230,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T23:02:41.993936+00:00",
+  "log_sha256": "03ab251aa521154a4d4338ad491ded171ef294333f28ca42af875cd760ebde81",
+  "snapshot_manifest": "combined-manifest.json",
+  "compiler_package_gate": {
+    "passed_checks": 11,
+    "skipped": 0,
+    "pytest_passed": 3312,
+    "pytest_xfailed": 1,
+    "examples_each_profile": 51
+  },
+  "site_check": "passed;12 tests,2564 assertions,23 pages,1496 local resources,179 search targets",
+  "dependency_audits": "Bun and Python passed; no known vulnerabilities reported",
+  "static_security": "Bandit passed",
+  "key_source_sha256": {
+    "a7/passes/safety.py": "48cb6fa428fc04d08052397192df47b9c25773f4c21cec7cebc0d962824ae4a6",
+    "a7/passes/type_checker.py": "00fb7cfc5506d9d0a9e40c01023d5942f1877efbefeebb1361482e6cec16738a",
+    "a7/compile.py": "4a8c0eeaba5cae0f6ab1056ac55ad8222dc37366f3f46628f963463e455aa0a5",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+    "site/bun.lock": "eefa755ce672f6eb2b7e8c0627d76a5760bf154e5f144149006de3e388852e1c"
+  },
+  "boundary": "Frozen combined checkpoint only. Excludes later checker statement traversal, joined-child dependency repair, importer-local alias clashes and later docs. One known expected failure remains; V1 incomplete."
+}

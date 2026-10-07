@@ -7,21 +7,12 @@ Tests the integration of:
 - Semantic validation
 """
 
-import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
 from a7.passes.name_resolution import NameResolutionPass
 from a7.passes.type_checker import TypeCheckingPass
 from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError
 
-
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
+from conftest import parse_program
+from pipeline_helpers import expect_success, pipeline_tmp  # noqa: F401
 
 
 class TestNameResolution:
@@ -54,13 +45,7 @@ class TestNameResolution:
             }
         }
         """
-        program = parse_program(source)
-
-        resolver = NameResolutionPass()
-        symbols = resolver.analyze(program, "test.a7")
-
-        # Should succeed - shadowing is allowed
-        assert symbols is not None
+        assert expect_success(source)
 
     def test_duplicate_function(self):
         """Test duplicate function declaration."""
@@ -213,17 +198,7 @@ class TestSemanticValidation:
             }
         }
         """
-        program = parse_program(source)
-
-        resolver = NameResolutionPass()
-        symbols = resolver.analyze(program, "test.a7")
-
-        checker = TypeCheckingPass(symbols)
-        checker.analyze(program, "test.a7")
-
-        validator = SemanticValidationPass(symbols, checker.node_types)
-        # Should not raise
-        validator.analyze(program, "test.a7")
+        assert expect_success(source)
 
     def test_continue_outside_loop_error(self):
         """Test continue outside loop is caught."""
@@ -249,7 +224,7 @@ class TestSemanticValidation:
 
 
 class TestIntegration:
-    """Test full semantic analysis pipeline."""
+    """Whole programs through the full compiler pipeline."""
 
     def test_complete_program(self):
         """Test a complete program through all passes."""
@@ -264,22 +239,7 @@ class TestIntegration:
             result := add(x, y)
         }
         """
-        program = parse_program(source)
-
-        # Name resolution
-        resolver = NameResolutionPass()
-        symbols = resolver.analyze(program, "test.a7")
-
-        # Type checking
-        checker = TypeCheckingPass(symbols)
-        checker.analyze(program, "test.a7")
-
-        # Semantic validation
-        validator = SemanticValidationPass(symbols, checker.node_types)
-        validator.analyze(program, "test.a7")
-
-        # All passes should succeed
-        assert symbols is not None
+        assert expect_success(source)
 
     def test_struct_usage(self):
         """Test struct declaration and usage."""
@@ -293,16 +253,4 @@ class TestIntegration:
             p := Point{x: 10, y: 20}
         }
         """
-        program = parse_program(source)
-
-        # Name resolution
-        resolver = NameResolutionPass()
-        symbols = resolver.analyze(program, "test.a7")
-
-        # Type checking
-        checker = TypeCheckingPass(symbols)
-        checker.analyze(program, "test.a7")
-
-        # Should succeed
-        point_symbol = symbols.lookup("Point")
-        assert point_symbol is not None
+        assert expect_success(source)

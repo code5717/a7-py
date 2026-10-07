@@ -370,7 +370,7 @@ main :: fn() {
 
     assert result.returncode == ExitCode.PARSE
     payload = json.loads(result.stdout)
-    assert payload["schema_version"] == "2.0"
+    assert payload["schema_version"] == "3.0"
     assert payload["status"] == "error"
     assert payload["mode"] == "compile"
     assert "error" in payload

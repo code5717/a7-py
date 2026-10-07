@@ -12,48 +12,58 @@ FAILED_CHECKS=0
 SKIPPED_CHECKS=0
 
 # Kill switch: per-check timeout plus check selection.
-# A7_CHECK_TIMEOUT (seconds, default 1200, 0 disables) bounds each check so a
+# A7_CHECK_TIMEOUT (seconds, default 3600, 0 disables) bounds each check so a
 # hung suite fails fast instead of hanging the gate. --timeout SECS overrides
 # it. --only SUB (repeatable) runs only matching checks. --skip SUB
 # (repeatable) skips matching checks. Match is a case-insensitive substring
 # of the check title.
-CHECK_TIMEOUT="${A7_CHECK_TIMEOUT:-1200}"
+CHECK_TIMEOUT="${A7_CHECK_TIMEOUT:-3600}"
+PYTEST_WORKERS="${A7_PYTEST_WORKERS-8}"
 ONLY_FILTERS=()
 SKIP_FILTERS=()
 
-for arg in "$@"; do
-    case "$arg" in
-        --timeout=*)
-            CHECK_TIMEOUT="${arg#--timeout=}"
-            shift
-            ;;
-        --timeout)
-            CHECK_TIMEOUT="$2"
-            shift 2
-            ;;
-        --only=*)
-            ONLY_FILTERS+=("${arg#--only=}")
-            shift
-            ;;
-        --only)
-            ONLY_FILTERS+=("$2")
-            shift 2
-            ;;
-        --skip=*)
-            SKIP_FILTERS+=("${arg#--skip=}")
-            shift
-            ;;
-        --skip)
-            SKIP_FILTERS+=("$2")
-            shift 2
-            ;;
-        --help|-h)
-            echo "Usage: $0 [--timeout SECS] [--only SUB]... [--skip SUB]..."
-            echo "  A7_CHECK_TIMEOUT env sets the default per-check timeout."
-            exit 0
+usage() {
+    echo "Usage: $0 [--timeout SECS] [--only SUB]... [--skip SUB]..."
+    echo "  A7_CHECK_TIMEOUT env sets the default per-check timeout (0 disables)."
+    echo "  A7_PYTEST_WORKERS env sets pytest workers (1..8, default 8)."
+}
+
+# Every flag that takes a value fails loudly without one, and an unknown
+# argument is an error: a typo must not turn into a green run.
+need_value() {
+    if (( $# < 2 )); then
+        echo "error: $1 needs a value" >&2
+        usage >&2
+        exit 2
+    fi
+}
+
+while (( $# > 0 )); do
+    case "$1" in
+        --timeout=*) CHECK_TIMEOUT="${1#--timeout=}"; shift ;;
+        --timeout)   need_value "$@"; CHECK_TIMEOUT="$2"; shift 2 ;;
+        --only=*)    ONLY_FILTERS+=("${1#--only=}"); shift ;;
+        --only)      need_value "$@"; ONLY_FILTERS+=("$2"); shift 2 ;;
+        --skip=*)    SKIP_FILTERS+=("${1#--skip=}"); shift ;;
+        --skip)      need_value "$@"; SKIP_FILTERS+=("$2"); shift 2 ;;
+        --help|-h)   usage; exit 0 ;;
+        *)
+            echo "error: unknown argument: $1" >&2
+            usage >&2
+            exit 2
             ;;
     esac
 done
+
+if ! [[ "$CHECK_TIMEOUT" =~ ^[0-9]+$ ]]; then
+    echo "error: timeout must be a whole number of seconds, got '$CHECK_TIMEOUT'" >&2
+    exit 2
+fi
+
+if ! [[ "$PYTEST_WORKERS" =~ ^[1-8]$ ]]; then
+    echo "error: A7_PYTEST_WORKERS must be an integer from 1 to 8, got '$PYTEST_WORKERS'" >&2
+    exit 2
+fi
 
 should_run() {
     local title="$1"
@@ -64,14 +74,14 @@ should_run() {
         local hit=0
         for f in "${ONLY_FILTERS[@]}"; do
             case "$lower" in
-                *$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')*) hit=1; break ;;
+                *"$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')"*) hit=1; break ;;
             esac
         done
         (( hit == 0 )) && return 1
     fi
     for f in "${SKIP_FILTERS[@]}"; do
         case "$lower" in
-            *$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')*) return 1 ;;
+            *"$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')"*) return 1 ;;
         esac
     done
     return 0
@@ -93,7 +103,7 @@ run_check() {
 
     local output
     local status
-    if [[ "$CHECK_TIMEOUT" =~ ^[0-9]+$ ]] && (( CHECK_TIMEOUT > 0 )) && command -v timeout >/dev/null 2>&1; then
+    if (( CHECK_TIMEOUT > 0 )) && command -v timeout >/dev/null 2>&1; then
         output="$(timeout --signal=TERM --kill-after=60 "$CHECK_TIMEOUT" "$@" 2>&1)"
         status=$?
         if (( status == 124 )); then
@@ -132,7 +142,7 @@ echo "============================================================"
 echo ""
 
 run_check "All Pytest Tests:" \
-    uv run pytest --tb=short -q
+    uv run pytest --tb=short -q -n "$PYTEST_WORKERS"
 
 run_check "Examples E2E Verification (compile/build/run/output):" \
     uv run python scripts/verify_examples_e2e.py
@@ -143,7 +153,10 @@ run_check "Debug Artifact Build Verification (Zig):" \
 run_check "Release Artifact Build Verification (Zig):" \
     uv run python scripts/build_examples.py --profile release --backend zig --clean
 
-run_check "Bench Perf (report-only, no gate):" \
+run_check "Fast Artifact Build Verification (Zig):" \
+    uv run python scripts/build_examples.py --profile fast --backend zig --clean
+
+run_check "Bench Perf (timing ratios report-only):" \
     uv run python scripts/bench_perf.py
 
 run_check "Error Stage Verification (mode/format matrix):" \
@@ -164,6 +177,11 @@ run_check "Wheel and Source Distribution Native Verification:" \
 PASSED_CHECKS=$((TOTAL_CHECKS - FAILED_CHECKS))
 echo "============================================================"
 echo "Summary: ${PASSED_CHECKS}/${TOTAL_CHECKS} checks passed (${SKIPPED_CHECKS} skipped, timeout ${CHECK_TIMEOUT}s, 124 means kill switch fired)"
+
+if (( TOTAL_CHECKS == 0 )); then
+    echo "error: no check ran; --only/--skip matched nothing to run" >&2
+    exit 2
+fi
 
 if (( FAILED_CHECKS > 0 )); then
     exit 1

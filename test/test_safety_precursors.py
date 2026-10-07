@@ -20,6 +20,7 @@ import sys
 import pytest
 
 from a7.compile import ExitCode
+from conftest import shared_zig_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,8 +40,8 @@ def zig():
 
 
 @pytest.fixture(scope="module")
-def zig_cache(tmp_path_factory):
-    return tmp_path_factory.mktemp("zig-cache")
+def zig_cache():
+    return shared_zig_cache()
 
 
 def run_cli(tmp_path, source, name="main"):
@@ -251,9 +252,8 @@ main :: fn() {
 def test_deferred_field_assignment_keeps_the_base_non_nil_proof(tmp_path):
     """`defer box.value = 0` must not discard `box`'s non-nil proof.
 
-    Compile-only: an un-braced deferred assignment still lowers to
-    `defer void;` (B11), which Zig rejects until batch Z4, so there is no
-    `zig build-obj` here and the program is never run.
+    The deferred write is registered after `defer del box`, so it runs first
+    at scope exit, while `box` is still live.
     """
     source = '''io :: import "std/io"
 
@@ -266,14 +266,34 @@ main :: fn() {
     if box == nil {
         ret
     }
+    defer del box
     defer box.value = 0
     box.value = 7
     io.println("{}", box.value)
-    del box
 }
 '''
     code, payload, _ = run_cli(tmp_path, source)
     assert code == ExitCode.SUCCESS, diagnostics(payload)
+
+
+def test_deferred_field_write_after_del_is_a_use_after_delete(tmp_path):
+    """`defer box.value = 0` then `del box`: the write runs after the delete."""
+    source = '''Box :: struct {
+    value: i32
+}
+
+main :: fn() {
+    box := new Box
+    if box == nil {
+        ret
+    }
+    defer box.value = 0
+    del box
+}
+'''
+    code, payload, _ = run_cli(tmp_path, source)
+    assert code == ExitCode.SEMANTIC, diagnostics(payload)
+    assert "use after move or delete" in str(diagnostics(payload)).lower()
 
 
 def test_deferred_identifier_assignment_still_drops_the_non_nil_proof(tmp_path):

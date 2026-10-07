@@ -22,6 +22,25 @@ Value parameters are immutable. To update a local working value, copy a paramete
 
 A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are unavailable in the current backend.
 
+## Nested functions
+
+A function can declare a nested function that uses its own parameters and locals.
+Capture-free nested functions can be called or returned as function values. The
+backend gives them distinct file-scope Zig names, so separate enclosing functions
+can each declare `helper`.
+
+```a7
+outer :: fn(k: i32) i32 {
+    helper :: fn(v: i32) i32 { ret v + 1 }
+    ret helper(k)
+}
+```
+
+Reading an enclosing local or parameter currently fails during code generation
+with exit 7. Pass that value as an argument instead. Nested bodies receive type,
+return-path, and control-flow checks. See the
+[native regression cases](https://github.com/code5717/a7-py/blob/master/test/test_nested_function_codegen.py).
+
 ## Function types and callbacks
 
 A function type uses `fn(i32, i32) i32`. A named alias can describe a callback, and a parameter of that type can be called inside the function. See the complete [function pointer example](https://github.com/code5717/a7-py/blob/master/examples/022_function_pointers.a7) and [callback example](https://github.com/code5717/a7-py/blob/master/examples/027_callbacks.a7).

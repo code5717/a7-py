@@ -1,252 +1,170 @@
-# A7 Programming Language Compiler
+# A7 compiler
 
-A Python-based compiler for A7, a statically-typed systems programming language. A7 combines the simplicity of C-style syntax with modern features like generics, type inference, and compiler-managed reference operations.
+A7 is a statically typed language with type inference, generics and C-style
+syntax. Its Python compiler emits Zig; Zig builds the native executable.
+The compiler is under development. Read [Status](docs/STATUS.md) for known gaps.
 
-The compiler features a complete pipeline: tokenizer, parser, semantic analysis, internal safety proof planning, AST preprocessing, and Zig code generation.
+## Quick start
 
-## Inspired By
-
-A7 draws inspiration from practical systems programming languages that prioritize clarity and programmer productivity:
-
-- **[JAI](https://www.youtube.com/playlist?list=PLmV5I2fxaiCKfxMBrNsU1kgKJXD3PkyxO)** by Jonathan Blow - Design philosophy and compile-time features
-- **[Odin](https://odin-lang.org/)** by Ginger Bill - Simple procedures and data-oriented programming
-
-The V1 target adds automatic memory management with measured C-like performance.
-It is not implemented yet: current heap values still require `del` or `defer del`.
-The Python compiler and Zig backend remain the implementation path. See the
-[V1 delivery roadmap](docs/plan/delivery-roadmap.md) for current gates and the
-later A7-written compiler direction.
-
-## Quick Start
-
-**Requirements:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (recommended package manager). Install [Zig 0.16.0](https://ziglang.org/download/) to build and run generated Zig output; CI pins the same version for repeatable artifact checks.
+Install Python 3.13 or newer, [uv](https://docs.astral.sh/uv/), and
+[Zig 0.16.0](https://ziglang.org/download/). Native qualification currently targets
+Linux x86_64 with Python 3.13. Zig must be on `PATH` for `build` and `run`.
 
 ```bash
-# Install uv (if needed)
-curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux/macOS
-# or: pip install uv
-
-# Clone and setup
 git clone https://github.com/code5717/a7-py.git
 cd a7-py
 uv sync
+uv run a7 doctor
+uv run a7 run examples/001_hello.a7
 ```
 
-## Usage
+[The hello example](examples/001_hello.a7) contains:
 
-Run these commands from the repository checkout after `uv sync`:
+```a7
+io :: import "std/io"
+
+main :: fn() {
+    io.println("Hello, World!")
+}
+```
+
+Its program output is:
+
+```text
+Hello, World!
+```
+
+## Check, build and run
+
+Run these commands from the checkout after `uv sync`:
 
 ```bash
-uv run a7 --version
-uv run a7 doctor
 uv run a7 check examples/001_hello.a7
 uv run a7 check examples/001_hello.a7 --format json
-uv run a7 build examples/001_hello.a7 -o hello
+uv run a7 build examples/001_hello.a7 --profile release -o hello
 ./hello
 uv run a7 run examples/001_hello.a7 --profile release
+uv run a7 --version
 ```
 
-`check` runs the full A7 pipeline without writing files or invoking Zig.
-A file with no `main :: fn()` entry point exits 6; `check --lib` accepts a
-library file without one. Imported modules never need their own `main`.
-`build` creates a native executable, defaulting to `./<source-stem>`.
-`run` builds a temporary executable and runs it in the current working directory.
-Both require Zig 0.16.0. The default `--profile debug` uses Zig Debug;
-`--profile release` uses ReleaseFast. ReleaseFast does not establish complete
-memory safety. Current alias and lifetime limits still apply.
+`check` runs through code generation without writing files or invoking Zig.
+An entry file needs `main :: fn()`; use `check --lib` for a library without an
+entry point. Imported modules do not need `main`.
 
-`doctor` reports the package, Python, platform and Zig versions. It exits with
-code 2 if Zig is missing or has the wrong version, or the environment differs
-from the V1 qualification target of Linux x86_64 and Python 3.13.
+`build` defaults to `./<source-stem>`. `run` builds a temporary executable and
+runs it in the current directory. Arguments after `a7 run FILE --` go to the
+native process. This forwarding does not provide an A7 argument-reading API;
+`main` has no parameters or return value.
 
-Arguments after `a7 run FILE --` go to the native process. `run` returns its exit
-status. This forwarding does not add an A7 argument-reading API; A7 `main` still
-has no parameters or return value.
+`doctor` reports package, Python, platform and Zig versions. It exits 2 for a
+missing or wrong Zig version, or an environment outside the qualification target.
 
-The existing file-first commands remain available. Compile an A7 program to Zig:
-```bash
-uv run python main.py examples/001_hello.a7
-# Output: examples/001_hello.zig
-```
-
-Learn the current language from one commented file:
-```bash
-uv run python main.py examples/037_language_tour.a7
-```
-
-Modes and output formats:
-```bash
-uv run python main.py --mode tokens examples/006_if.a7                     # Tokens only
-uv run python main.py --mode ast examples/004_func.a7                      # Tokens + AST
-uv run python main.py --mode semantic examples/009_struct.a7               # Through semantic passes
-uv run python main.py --mode pipeline examples/014_generics.a7             # Full pipeline, no file write
-uv run python main.py --format json examples/014_generics.a7               # Machine-readable JSON
-uv run python main.py examples/001_hello.a7 --mode compile --doc-out auto  # Compile + auto docs
-uv run python main.py examples/001_hello.a7 --mode compile --doc-out out.md  # Compile + custom docs
-uv run python main.py --mode doc examples/001_hello.a7                     # Doc-only run
-uv run python main.py --verbose examples/009_struct.a7                     # Full pipeline details
-```
-
-Output and documentation destinations must differ from every input module and
-from each other, including symlink and hard-link aliases. JSON `artifacts` lists
-only files written by that invocation. Source diagnostics retain imported modules'
-file locations.
-
-Use the installed console script after `uv sync`:
+To emit Zig source or inspect the compiler stages:
 
 ```bash
 uv run a7 examples/001_hello.a7
-```
-
-Exit codes for automation:
-```text
-0 success, 2 usage/toolchain, 3 io, 4 tokenize, 5 parse, 6 semantic, 7 codegen/native build, 8 internal
-```
-
-Run tests:
-```bash
-PYTHONPATH=. uv run pytest                         # All tests
-PYTHONPATH=. uv run pytest test/test_tokenizer.py  # Specific test file
-PYTHONPATH=. uv run pytest -k "generic" -v         # Targeted tests
-uv run python scripts/verify_examples_e2e.py       # Compile/build/run + output checks for all examples
-uv run python scripts/verify_error_stages.py       # Error-stage audit across modes and formats
-uv run python scripts/build_examples.py --profile debug --backend zig --clean
-uv run python scripts/build_examples.py --profile release --backend zig --clean
-./run_all_tests.sh                                 # Full release-oriented local gate
-```
-
-## Debug and Release Builds
-
-The compiler emits Zig source. `scripts/build_examples.py` is the native artifact builder used for release smoke checks:
-
-```bash
-uv run python scripts/build_examples.py --profile debug --backend zig --clean
-uv run python scripts/build_examples.py --profile release --backend zig --clean
-```
-
-Artifacts are written under `build/debug/` and `build/release/`:
-
-```text
-build/<profile>/zig/src/*.zig
-build/<profile>/zig/bin/*
-```
-
-Each built binary is executed and compared with `test/fixtures/golden_outputs/*.out`.
-
-## Packaging
-
-Build the Python package:
-
-```bash
-rm -rf dist
-uv build
-```
-
-Cleaning `dist/` first prevents stale older package artifacts from being mixed
-with the current release build.
-
-Generate a checksum manifest for release artifacts:
-
-```bash
-uv run python scripts/generate_release_manifest.py dist --output dist/SHA256SUMS
-uv run python scripts/verify_release_manifest.py dist/SHA256SUMS
-uv run python scripts/verify_archive_contents.py dist/a7-docs-site.tar.gz --require dist/llms.txt --require dist/llms-full.txt
-```
-
-The installed CLI entrypoint is `a7`:
-
-```bash
+uv run a7 --mode tokens examples/006_if.a7
+uv run a7 --mode ast examples/004_func.a7
+uv run a7 --mode semantic examples/009_struct.a7
+uv run a7 --mode pipeline --format json examples/014_generics.a7
 uv run a7 --help
 ```
 
-Release tags build distributions and attach them to the draft GitHub release.
-There is no package-registry publishing job in the current workflow.
+The first command writes `examples/001_hello.zig`. `--mode pipeline` writes no
+files. `uv run python main.py` is a compatibility entry point for the same CLI.
+Output destinations cannot overwrite input modules, including filesystem aliases.
+JSON artifact lists describe files written by that invocation.
 
-## Compilation Pipeline
+## Build profiles
 
-```
-Source (.a7) → Tokenizer → Parser → Semantic Analysis → Safety Proof Planning → AST Preprocessing → Zig Codegen → Output (.zig)
-```
+Use `--profile` with `build` or `run`, and `--build-profile` when emitting Zig.
 
-1. **Tokenizer**. Lexes source into tokens. Handles single-token generics (`$T`), nested comments, and number formats.
-2. **Parser**. Uses recursive descent with precedence climbing. Parses all A7 constructs.
-3. **Semantic Analysis**. Runs name resolution, base type checking with inference, control flow validation, and recursion rejection.
-4. **Safety Proof Planning**. Proves or rejects risky operations such as casts, division/modulo, indexing/slicing, reference dereferences, and direct use after `del` before backend lowering.
-5. **AST Preprocessing**. Runs stdlib resolution, struct init normalization, mutation and usage analysis, type inference, shadowing resolution, function hoisting, and constant folding.
-6. **Backend Code Generation**. Translates approved AST operations to valid Zig source code.
+| Profile | Zig mode | Runtime checks |
+| --- | --- | --- |
+| `debug`, default | Debug | Enabled |
+| `release` | ReleaseSafe | Enabled |
+| `fast` | ReleaseFast | Zig safety checks disabled |
 
-Semantic analysis, AST preprocessing, formatter/reporting AST walks, and backend binary-expression emission use explicit stacks. The parser is recursive descent, and backend statement/non-binary expression generation still uses visitor-style recursive emission in some paths. Current low-recursion coverage validates the supported pipeline at Python recursion limit 100 for representative programs. A7 source recursion, including local function-pointer aliases and higher-order callback trampolines, is rejected during semantic validation; use loops, explicit stacks, or index-based worklists instead.
+`fast` can expose undefined behavior if compiler proofs miss an unsafe operation.
+No profile establishes complete memory safety. `--no-nonwrap` disables the
+optimization that uses plain integer operators for proven-range results.
 
-## Integer Type Guidance
+## Current language and limits
 
-Use `usize` for sizes, lengths, capacities, allocation byte counts, and array/slice/string indices. Index and slice-bound variables are required to be `usize`; non-negative integer literals are accepted for simple indexing. `usize` maps directly to Zig `usize`.
+The compiler supports explicit-width numeric types, arrays, slices, structs,
+enums, unions, type aliases, functions, loops, `match` and `defer`. Generics
+include `$T` type parameters, `$N` value parameters and constraints. Generic
+local initializers and bound callback arguments are checked against concrete
+instantiations. String comparison uses byte contents. Read the [language tour](examples/037_language_tour.a7)
+and [specification](docs/SPEC.md) together with [Status](docs/STATUS.md).
 
-Use `isize` only when the value is a signed pointer-sized offset or a difference between positions. It exists for pointer-adjacent signed math, not as the default signed integer type.
+Local bindings cannot reuse an import alias from their own file. This includes
+function parameters, loop bindings and match captures. Full module namespace
+isolation remains unfinished.
 
-Use fixed-width integers such as `i32`, `i64`, `u32`, or `u64` when the data itself has that width or range. Small arithmetic examples can use `i32`; counters and indexes should usually use `usize`.
+Use `usize` for sizes, lengths and indices. Use `isize` for signed pointer-sized
+offsets and position differences. A7 source recursion is rejected; use loops or
+explicit stacks. Safety expression traversal and type-checker statement
+traversal use explicit stacks. Safety statements, parser and other internal
+paths still contain recursion.
 
-## What Works
+Heap values currently require `del` or `defer del`. Pass lvalues directly to
+`ref` parameters and access reference fields after nil checks. There are no
+public address-of or dereference operators. Heap fixed arrays, `new [N]T`, are
+rejected. Direct reference aliases share deletion state, and guarded reference
+fields are checked. Alias and lifetime checks remain incomplete for array
+elements and fields reached through joined allocation sets. Automatic memory
+management is not implemented.
 
-- **Types**: Primitives, arrays, slices, pointers, generics, raw and aliased function types, inline struct return values
-- **Declarations**: Functions, structs, enums, unions, variables, constants, type aliases
-- **Control Flow**: if/else, while, for loops, for-in, labeled loops with break/continue, match statements, defer
-- **Function Rules**: Direct, mutual, alias-mediated, and callback-trampoline recursion are semantic errors
-- **Expressions**: Arithmetic and boolean operators with precedence rules, fixed-array `+` for one-dimensional same-shape numeric arrays, casts, if-expressions, struct/array literals, untagged union field literals/access
-- **Memory**: `ref` parameters use ordinary lvalue arguments, ref struct fields
-  are accessed directly after nil-proofing, and scalar/struct `new` plus `del`
-  support defer cleanup. Heap fixed arrays (`new [N]T`) are rejected until the
-  language model is defined.
-- **Safety proofing**: casts, division/modulo, bounds-sensitive indexing/slicing,
-  reference dereferences, operation-specific backend approvals, and direct use
-  after `del` are checked by internal facts before Zig emission.
-- **Imports**: Virtual `std/io` and `std/math` modules with aliases; simple file-backed alias imports can lower into the same generated Zig file
-- **Generics**: Type parameters (`$T`), constraints, type sets, generic structs, generic struct literals, and simple top-level generic function calls
-- **Code Generation**: A7 → Zig, with generated `std/io` print helpers that preserve stdout/stderr on current Zig toolchains
-- **Standard Library**: Registry with io and math modules, backend-specific mappings
-- **Error Messages**: Rich formatting with source context and structured error types
+The current stdlib provides `io` and `math`. Simple file imports share one
+emitted Zig file; full per-module scopes remain unfinished. Some accepted forms
+still fail later in compilation. The [gap list](docs/STATUS.md) records those
+cases and the remaining generic and numeric limits.
 
-## Project Status
+V1 publication requires automatic memory, useful libraries and tools,
+concurrency, CPU AI, actual GPU execution and self-hosting parity under
+[decision L73](docs/plan/decisions.md#full-v1-completion-boundary-2026-10-07).
+These are unfinished requirements. The [delivery roadmap](docs/plan/delivery-roadmap.md)
+separates approved work, unresolved designs and required evidence.
+GPU execution is deferred under L75. The
+[Zig GPU research](docs/research/2026-10-07-zig-gpu-support.md) records support
+and compile-only evidence; it does not qualify device execution.
 
-- Test status depends on current branch state. Check with `PYTHONPATH=. uv run pytest --tb=no -q`.
-- Example end-to-end verification is available through
-  `uv run python scripts/verify_examples_e2e.py`.
-- Debug/release artifact verification is available through `scripts/build_examples.py`.
-- Tag releases attach package artifacts to a draft GitHub release.
-- Parser covers the implemented language surface, but spec/implementation gaps remain tracked in `docs/STATUS.md`.
-- Zig backend handles the current example suite and most AST node types; unsupported source constructs should continue moving to compiler-side diagnostics.
-- This compiler is not a sandbox. Do not compile and execute untrusted A7 source.
+The compiler is not a sandbox. Compile and execute only source you trust.
 
-## Learn More
+## Exit codes
 
-Start with the [repository documentation index](docs/README.md) for current
-guidance, safety research, and historical artifacts.
+| Code | Meaning |
+| --- | --- |
+| 0 | Success |
+| 2 | Usage or toolchain error |
+| 3 | I/O error |
+| 4 | Tokenization error |
+| 5 | Parse error |
+| 6 | Semantic error |
+| 7 | Code generation or native build error |
+| 8 | Internal error |
 
-- Documentation website: `https://code5717.github.io/a7-py/`
-- Agent/curl.md docs entry point: `https://code5717.github.io/a7-py/llms.txt`
-- Agent docs index: `https://code5717.github.io/a7-py/docs/index.md`
-- Structured page and feature metadata: `https://code5717.github.io/a7-py/docs/manifest.json`
-- Full agent context: `https://code5717.github.io/a7-py/llms-full.txt`
-- `docs/SPEC.md` - Language specification
-- `docs/SAFETY_CONTRACT.md` - Compiler safety contract and proof/backend-plan invariants
-- `docs/STATUS.md` - Current gaps, priorities, and roadmap
-- `docs/RELEASE.md` - Release/debug build checklist
-- `docs/SECURITY.md` - Security policy and trust boundary
-- `examples/` - 43 sample programs
-- `docs/CHANGELOG.md` - Change history
-- `docs/ERROR_ANALYSIS.md` - Historical error-analysis snapshot, not current status
+`run` returns the native process's exit status, which can overlap these codes.
 
-## Docs Development
+## Development and documentation
 
 ```bash
-cd site
-bun install --frozen-lockfile
-bun run dev
+uv run python scripts/project_status.py
+PYTHONPATH=. uv run pytest test/test_tokenizer.py
+./run_release_checks.sh
 ```
 
-After editing documentation, run `bun run sync:exports` and `bun run check` from
-`site/`. The check includes generated-output freshness, publishing contracts,
-and internal links. See [the site guide](site/README.md) for content structure.
+`project_status.py` reports source-derived counts; it does not run tests.
+The [release guide](docs/RELEASE.md) covers full checks, worker limits, native
+artifacts, package builds and release preparation. The [site guide](site/README.md)
+covers documentation development and generated exports.
 
----
-
-Work in progress. Contributions welcome!
+- [Documentation index](docs/README.md), [architecture](docs/ARCHITECTURE.md)
+  and [changelog](docs/CHANGELOG.md).
+- [Safety contract](docs/SAFETY_CONTRACT.md) and [security policy](docs/SECURITY.md).
+- [Published documentation](https://code5717.github.io/a7-py/).
+- [Agent index](https://code5717.github.io/a7-py/llms.txt),
+  [Markdown docs](https://code5717.github.io/a7-py/docs/index.md),
+  [manifest](https://code5717.github.io/a7-py/docs/manifest.json) and
+  [full agent context](https://code5717.github.io/a7-py/llms-full.txt).

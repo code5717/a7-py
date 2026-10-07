@@ -1,10 +1,11 @@
 """
 Name resolution pass for A7 semantic analysis.
 
-Builds symbol tables, resolves names to declarations, and validates
-scoping rules.
+Builds the symbol tables: registers every declaration in its scope and
+reports name collisions. Uses of names are resolved by the type checker.
 """
 
+from collections import deque
 from typing import Optional, List
 
 from a7.ast_nodes import ASTNode, NodeKind
@@ -33,6 +34,11 @@ class NameResolutionPass:
         self.errors: List[SemanticError] = []
         self.current_file: str = "<unknown>"
         self.source_lines: List[str] = []
+        # File-scope declarations whose symbol visit_program already defined,
+        # and those rejected there as duplicates. Keyed by node identity.
+        self._predeclared: set = set()
+        self._rejected: set = set()
+        self._nested_functions = deque()
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> SymbolTable:
         """
@@ -82,13 +88,59 @@ class NameResolutionPass:
             self.add_error(
                 SemanticErrorType.UNEXPECTED_NODE_KIND,
                 node.span,
-                f"Expected program node, got {node.kind}"
+                f"Expected program node, got {node.kind.name}"
             )
             return
 
-        # Process all declarations
+        # Every file-scope name first, then the bodies. A function body can
+        # then tell a constant declared below it from a new name: `case LIMIT:`
+        # compares with LIMIT wherever LIMIT is declared in the file.
+        for decl in node.declarations or []:
+            self._predeclare(decl)
         for decl in node.declarations or []:
             self.visit_declaration(decl)
+        root_stack = self.symbols.scope_stack
+        while self._nested_functions:
+            function, scope_stack = self._nested_functions.popleft()
+            self.symbols.scope_stack = list(scope_stack)
+            self.symbols.current_scope = scope_stack[-1]
+            self.visit_function_decl(function)
+        self.symbols.scope_stack = root_stack
+        self.symbols.current_scope = root_stack[-1]
+
+    def _predeclare(self, node: ASTNode) -> None:
+        """Define a declaration in the current scope without visiting its body."""
+        described = {
+            NodeKind.FUNCTION: (SymbolKind.FUNCTION, "Function", False),
+            NodeKind.STRUCT: (SymbolKind.STRUCT, "Struct", False),
+            NodeKind.ENUM: (SymbolKind.ENUM, "Enum", False),
+            NodeKind.UNION: (SymbolKind.UNION, "Union", False),
+            NodeKind.TYPE_ALIAS: (SymbolKind.TYPE, "Type alias", False),
+            NodeKind.CONST: (SymbolKind.CONSTANT, "Constant", False),
+            NodeKind.VAR: (SymbolKind.VARIABLE, "Variable", True),
+        }.get(node.kind)
+        if described is None:
+            return  # Imports register in file order; anything else is reported by the visit.
+        kind, label, mutable = described
+        fallback = "<unknown>" if node.kind in (NodeKind.CONST, NodeKind.VAR) else "<anonymous>"
+        name = node.name or fallback
+        self._predeclared.add(id(node))
+        symbol = Symbol(name=name, kind=kind, type=UNKNOWN, node=node, is_mutable=mutable)
+        if not self.symbols.define(symbol):
+            self._rejected.add(id(node))
+            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"{label} '{name}'")
+
+    def _define_declaration(self, node: ASTNode, symbol: Symbol, label: str) -> bool:
+        """Define a declaration's symbol unless visit_program already did.
+
+        Returns False when the name is taken; the error is reported once.
+        """
+        if id(node) in self._predeclared:
+            return id(node) not in self._rejected
+        if self.symbols.define(symbol):
+            return True
+        self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"{label} '{symbol.name}'")
+        return False
 
     def visit_declaration(self, node: ASTNode) -> None:
         """Visit a top-level declaration."""
@@ -109,7 +161,7 @@ class NameResolutionPass:
         elif node.kind == NodeKind.VAR:
             self.visit_var_decl(node)
         else:
-            self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"declaration kind: {node.kind}")
+            self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"declaration kind: {node.kind.name}")
 
     def visit_import(self, node: ASTNode) -> None:
         """Visit an import declaration."""
@@ -155,8 +207,7 @@ class NameResolutionPass:
         )
 
         # Register in current scope
-        if not self.symbols.define(func_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Function '{func_name}'")
+        if not self._define_declaration(node, func_symbol, "Function"):
             return
 
         # Enter function scope
@@ -173,6 +224,20 @@ class NameResolutionPass:
             for param in node.parameters:
                 self.visit_parameter(param)
 
+        # Parameters and the body's own declarations share one scope for
+        # naming: a local may not reuse a parameter's name. (A nested block
+        # may shadow it.)
+        if node.body and node.body.kind == NodeKind.BLOCK:
+            parameter_names = {param.name for param in (node.parameters or []) if param.name}
+            for stmt in node.body.statements or []:
+                if stmt.kind in (NodeKind.VAR, NodeKind.CONST) and stmt.name in parameter_names:
+                    label = "Variable" if stmt.kind == NodeKind.VAR else "Constant"
+                    self.add_error(
+                        SemanticErrorType.ALREADY_DEFINED,
+                        stmt.span,
+                        f"{label} '{stmt.name}' (a parameter of '{func_name}' has this name)",
+                    )
+
         # Visit function body
         if node.body:
             self.visit_statement(node.body)
@@ -183,7 +248,7 @@ class NameResolutionPass:
     def visit_generic_param(self, node: ASTNode) -> None:
         """Visit a generic parameter declaration."""
         if node.kind != NodeKind.GENERIC_PARAM:
-            self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"Expected generic param, got {node.kind}")
+            self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"Expected generic param, got {node.kind.name}")
             return
 
         param_name = node.name or "<unknown>"
@@ -204,7 +269,7 @@ class NameResolutionPass:
     def visit_parameter(self, node: ASTNode) -> None:
         """Visit a function parameter."""
         if node.kind != NodeKind.PARAMETER:
-            self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"Expected parameter, got {node.kind}")
+            self.add_error(SemanticErrorType.UNEXPECTED_NODE_KIND, node.span, f"Expected parameter, got {node.kind.name}")
             return
 
         param_name = node.name or "<unknown>"
@@ -234,8 +299,7 @@ class NameResolutionPass:
             is_mutable=False
         )
 
-        if not self.symbols.define(struct_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Struct '{struct_name}'")
+        if not self._define_declaration(node, struct_symbol, "Struct"):
             return
 
         # Enter struct scope for fields
@@ -271,8 +335,7 @@ class NameResolutionPass:
             is_mutable=False
         )
 
-        if not self.symbols.define(enum_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Enum '{enum_name}'")
+        if not self._define_declaration(node, enum_symbol, "Enum"):
             return
 
         # Register variants
@@ -289,7 +352,12 @@ class NameResolutionPass:
                         node=variant,
                         is_mutable=False
                     )
-                    self.symbols.define(variant_symbol)
+                    if not self.symbols.define(variant_symbol):
+                        self.add_error(
+                            SemanticErrorType.DUPLICATE_VARIANT,
+                            variant.span,
+                            f"'{variant_name}' in enum '{enum_name}'",
+                        )
 
     def visit_union_decl(self, node: ASTNode) -> None:
         """Visit a union declaration."""
@@ -304,8 +372,7 @@ class NameResolutionPass:
             is_mutable=False
         )
 
-        if not self.symbols.define(union_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Union '{union_name}'")
+        if not self._define_declaration(node, union_symbol, "Union"):
             return
 
         # Enter union scope for fields
@@ -341,8 +408,7 @@ class NameResolutionPass:
             is_mutable=False
         )
 
-        if not self.symbols.define(alias_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Type alias '{alias_name}'")
+        self._define_declaration(node, alias_symbol, "Type alias")
 
     def visit_const_decl(self, node: ASTNode) -> None:
         """Visit a constant declaration."""
@@ -357,8 +423,7 @@ class NameResolutionPass:
             is_mutable=False
         )
 
-        if not self.symbols.define(const_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Constant '{const_name}'")
+        self._define_declaration(node, const_symbol, "Constant")
 
     def visit_var_decl(self, node: ASTNode) -> None:
         """Visit a variable declaration."""
@@ -373,8 +438,7 @@ class NameResolutionPass:
             is_mutable=True
         )
 
-        if not self.symbols.define(var_symbol):
-            self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"Variable '{var_name}'")
+        self._define_declaration(node, var_symbol, "Variable")
 
     def _enter_match_case_scope(self, case: ASTNode) -> None:
         """Enter a match-case scope and predeclare capture-pattern names."""
@@ -423,12 +487,30 @@ class NameResolutionPass:
                 for stmt in reversed(nd.statements or []):
                     stack.append(('visit', stmt))
 
+            elif nd.kind == NodeKind.FUNCTION:
+                self._predeclare(nd)
+                self._nested_functions.append((nd, tuple(self.symbols.scope_stack)))
+
             elif nd.kind == NodeKind.VAR:
                 self.visit_var_decl(nd)
             elif nd.kind == NodeKind.CONST:
                 self.visit_const_decl(nd)
             elif nd.kind == NodeKind.TYPE_ALIAS:
                 self.visit_type_alias(nd)
+
+            elif nd.kind in (NodeKind.STRUCT, NodeKind.ENUM, NodeKind.UNION):
+                # No pass registers a type declared in a body. Define the
+                # name with an unresolved type so its uses add no error.
+                self.add_error(
+                    SemanticErrorType.UNSUPPORTED_FEATURE,
+                    nd.span,
+                    f"{nd.kind.name.lower()} '{nd.name}' is declared inside a function; "
+                    "type declarations belong at file scope",
+                )
+                self.symbols.define(Symbol(
+                    name=nd.name or "<anonymous>", kind=SymbolKind.TYPE,
+                    type=UNKNOWN, node=nd, is_mutable=False,
+                ))
 
             elif nd.kind == NodeKind.IF_STMT:
                 # Else branch

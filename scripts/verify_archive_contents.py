@@ -63,7 +63,11 @@ def archive_members(path: Path) -> set[str]:
             reason = _is_unsafe_member(member)
             if reason is not None:
                 raise ValueError(f"unsafe archive member: {reason}")
-            members.add(normalize_member(member.name))
+            name = normalize_member(member.name)
+            if member.isfile():
+                members.add(name)
+            else:
+                members.discard(name)
     return members
 
 
@@ -74,14 +78,14 @@ def main() -> int:
         "--require",
         action="append",
         default=[],
-        help="Required archive member path. May be supplied multiple times.",
+        help="Required regular-file path. May be supplied multiple times.",
     )
     parser.add_argument(
         "--require-glob-count",
         action="append",
         default=[],
         metavar="PATTERN=COUNT",
-        help="Required member glob with exact match count, e.g. 'release/zig/src/*.zig=38'.",
+        help="Required regular-file glob with exact match count, e.g. 'release/zig/src/*.zig=38'.",
     )
     args = parser.parse_args()
 

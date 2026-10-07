@@ -1,13 +1,19 @@
 # P-MOD: file modules and compatibility
 
-Status: draft for user decision, 2026-09-20. L25-L31 establish the file-module
-and underscore-visibility direction. They do not approve every compatibility
-change below. No module implementation changed during packet preparation.
+L69 approved implementation of L25-L31 on 2026-10-04, including separate
+file scopes. The measurements and examples below remain the dated
+2026-09-20 proposal evidence. They do not describe every current compiler path.
+Importer-relative resolution and canonical loader identity now have focused
+checks; complete semantic module isolation remains unfinished.
 
-Current source fixtures, commands and results are preserved in the
+The additional proposals to remove directory fallback, reject alias-free
+imports, impose an import-depth limit, or change initialization order remain
+unapproved. Keep current behavior for those choices until their compatibility
+impact receives a disposition. The [ledger](../decisions.md) and
+[roadmap](../delivery-roadmap.md) separate approval from implementation evidence.
+
+The original source fixtures, commands and results remain in the
 [module probe evidence](../../audits/2026-09-20-v1-foundations/module-packet-probes/results.json).
-This packet is not ready for implementation approval until its compatibility
-scan and remaining identity/initialization questions are resolved.
 
 ## Approved direction and unresolved details
 
@@ -30,7 +36,7 @@ struct per module. This packet separates those proposals from current behavior.
 Here, a *bare import statement* means `import "helper"` without an alias. It is
 not the approved stdlib shorthand `io :: import "io"`.
 
-## Current behavior measured for this packet
+## Behavior measured on 2026-09-20
 
 Eleven small fixtures contain only integer constants, integer-returning functions
 and printing. All native builds ran serially with Zig Debug. Seven fixtures built

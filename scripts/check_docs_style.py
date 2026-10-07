@@ -44,6 +44,18 @@ BANNED_PHRASES = {
         re.compile(r"\bdelve\b", re.IGNORECASE),
         re.compile(r"\bjourney\b", re.IGNORECASE),
         re.compile(r"\blandscape\b", re.IGNORECASE),
+        re.compile(r"\badditionally\b", re.IGNORECASE),
+        re.compile(r"\bcrucial\b", re.IGNORECASE),
+        re.compile(r"\bfacilitate\b", re.IGNORECASE),
+        re.compile(r"\bgarner\b", re.IGNORECASE),
+        re.compile(r"\bintricate\b", re.IGNORECASE),
+        re.compile(r"\binterplay\b", re.IGNORECASE),
+        re.compile(r"\bpivotal\b", re.IGNORECASE),
+        re.compile(r"\bshowcase\b", re.IGNORECASE),
+        re.compile(r"\btapestry\b", re.IGNORECASE),
+        re.compile(r"\btestament\b", re.IGNORECASE),
+        re.compile(r"\butilize\b", re.IGNORECASE),
+        re.compile(r"\bvibrant\b", re.IGNORECASE),
     ],
 }
 

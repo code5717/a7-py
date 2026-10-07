@@ -224,6 +224,196 @@ pin now asserts that; named-type aliases remain follow-up work. Not LNG-16:
 the LNG-16 gate is inert when `main` exists, proven by stash isolation
 (passing at HEAD, failing in worktree, fixed by this revert).
 
+L56. The user selected "promote big" for B0 on 2026-10-02: install the 7
+counted-up memory workloads from `tmp/b-benchspec/` into `bench/`, apply
+the BENCHES-list diff, and re-pin on an idle box. Recorded in
+[the handoff](HANDOFF-2026-10-02.md).
+
+L57. The user selected "go" for Wave B on 2026-10-02: build the B1 arena
+interim-lowering prototype and the B2 RC prototype, both behind a flag
+with default behavior unchanged, compare against the 7 workload shapes,
+and return with a B3 memo for mechanism selection. Tracing stays
+documented-not-built, so L37 still stands.
+
+## Audit decisions, 2026-10-04
+
+Source: the [2026-10-04 audit findings](../audits/2026-10-04/findings.md)
+(decision IDs D-A to D-K) and the approved repair plan. L58 to L64 record
+options the user selected from a question that showed the current behavior,
+the proposed behavior and an A7 example. L65 to L70 record choices made after
+the user said "stop asking and decide"; the user did not see those examples
+first, so each stays open to reversal. L71 is delegated the same way.
+
+L58. Bare `break` and `continue` in a match case inside a loop (D-A). The
+user selected "Revert to HEAD (Recommended)". `for ... { match i { case 2: {
+break } ... } }` leaves the loop, as it did at commit `c8face6`. The
+uncommitted exit-6 rejection (`break_in_match_case`,
+`continue_in_match_case`) is removed. No compatibility impact against HEAD.
+
+L59. Same-name functions (D-B). The user selected "Restore exit 6
+(Recommended)". Two `f :: fn` declarations exit 6 with `Already defined`, as
+at HEAD. The uncommitted overload-coexistence work is removed until ranking
+and dispatch exist. No compatibility impact against HEAD.
+
+L60. Codegen changes E3 and E4 (D-C). The user selected "Fix switch, revert
+ref (Recommended)". Native Zig `switch` is kept only for integer, enum, bool
+and char scrutinees with constant arms; every other match keeps the if-chain.
+`ref` parameters lower to `?*T` again, so `if p != nil` on a `ref` parameter
+builds. No compatibility impact against HEAD.
+
+L61. Untyped constant arithmetic (D-D). The user selected "Exact, then fit
+(Recommended)". Constant `+`, `-`, `*` are exact and the result must fit its
+destination. `MONTH_MS :: 30 * 24 * 60 * 60 * 1000` into an `i64` yields
+2592000000 (was -1702967296). `x: i32 = 2147483647 + 1` exits 6 (was
+-2147483648). `0.1 + 0.2 == 0.3` is true (was false). `b: f64 = 1e308 * 10.0`
+exits 6 (was infinity). This supersedes the "i32 wrap for i32-fitting
+operands" contract in L52 and settles the conflict between SPEC 2.5 and SPEC
+4.2.1 in favor of 4.2.1 and L47. Compatibility: programs that relied on a
+wrapped or infinite constant now exit 6 or print the exact value.
+
+L62. Statement terminators and list separators (D-F). The user selected
+"Reject (Recommended)". A statement ends at a newline, `}` or end of file,
+and lists need commas (newline-separated struct fields stay valid).
+`x := 1 2` exits 5 (was exit 0). `p: Pair(i32 i64)` exits 5 (was exit 0).
+A scan of `examples/` and `test/` runs before the change lands.
+
+L63. Declarations without an initializer (D-G). The user selected
+"Zero-initialize (Recommended)". A declaration without an initializer and
+every `new T` start as all zeros (nil for references, empty for slices).
+`c: Counter` then `c.value += 1` prints 1 (was -1431655765). No program is
+rejected.
+
+L64. Release profile (D-K). The user wrote "allow user to build fast, with
+different defaults". Interpretation, not the user's words: `--profile
+release` builds with Zig ReleaseSafe, so release traps where debug traps, and
+a third value `--profile fast` builds with ReleaseFast. This keeps the single
+`--profile` flag from the roadmap. `f(32)` with `ret 1 << n` panics under
+`release` (was a segfault or runaway output). L49's plain-operator lowering
+applies to proven cases under both `release` and `fast`. This answers the
+"-OReleaseFast safety-backstop question" that L52 sent to the Wave B memo.
+
+L65. Stdlib JSON and YAML. The user wrote "add json and yaml parsers into
+stdlib" to the stdlib reviewer and later confirmed it. This reverses the
+roadmap's "JSON later. YAML/TOML NEVER" for JSON and YAML; TOML is unchanged.
+
+L66. Delegated: approval record for shipped work (D-E). The user said "stop
+asking and decide". Recorded as accepted: generic `union(tag)`
+specialization, conflicting `$T` exit 6, `$N` value parameters, minimal
+`where` clauses, dot-arm tagged-union matching (a bare `case tag:` on a
+tagged union stays exit 6), `io.println_ok` and `io.read_line`, codegen E1
+and E2, struct generic constraint enforcement, import-cycle diagnosis,
+duplicate-import rejection and bare-imported-call rejection. Each stays
+subject to the repairs in the audit plan.
+
+L67. Delegated: B0 promotion (D-H). Refines L56. Promote `mem_shared`,
+`mem_returned` and `mem_cleanup`. Rewrite `mem_cache`, `mem_copy`,
+`mem_text` and `mem_cyclic` before promotion: the first two fold away in
+ReleaseFast and the last two run under 0.04 s.
+
+L68. Delegated: stdlib architecture (D-J). Hybrid: typed hooks in the Python
+registry plus `.a7` sources shipped inside the package, with `std/`
+reserved. The open choices U1 to U14 in the stdlib proposal take the
+proposal's recommended option each. Phase A starts after its listed
+prerequisites.
+
+L69. Delegated: modules. Implement L25 to L31 as written: per-module scopes
+replace the flat merge. This closes the P-MOD approval that the scope note
+on L25 to L31 required.
+
+L70. Delegated: GitHub settings (D-I). The repair plan prepares a checklist
+(branch protection, secret scanning, push protection, read-only default
+token). Changing the settings stays a user action.
+
+L71. Delegated: stale facts across calls and `fall` arms (SAF-6, SAF-3).
+On 2026-09-30 the user parked the candidate fix until the IR fact engine,
+because it would reject alias-call programs that compile today. The
+2026-10-04 safety repair closed both holes anyway with a simpler rule: a
+call to anything other than a stdlib function forgets every fact about a
+file-scope variable, and an arm reached by `fall` starts from the join of
+its direct-entry state and the falling arm's exit state. Reproducers for
+both holes panicked with division by zero before the change. No example,
+bench program or fixture changed its exit code (71 programs). Compatibility:
+a program that proves a fact about a file-scope variable, calls any user
+function, then relies on the fact now exits 6 and needs the guard repeated
+after the call. This supersedes the 2026-09-30 parking under L32 and the
+"stop asking and decide" delegation, and stays open to reversal.
+
+L72. Delegated: three typing rules tightened during the 2026-10-04 repair,
+each stricter than the repair plan's wording. (a) A typed integer value no
+longer converts to a float implicitly, in assignment, arithmetic, arguments or
+returns: `x: f64 = a` with `a: i32` exits 6 and the message names
+`cast(f64, a)`. Untyped integer constants still fit a float. Before the
+change `a7` accepted these and the Zig build failed. (b) Arithmetic on two
+`char` values (`a += b`, `a |= b`) exits 6 without a cast; ordering
+comparisons between chars are accepted. Before the change the two compound
+forms built and ran. (c) A struct, enum or union declared inside a function
+body exits 6 with "type declarations belong at file scope". No example or
+bench program changed. Open to reversal.
+
+
+
+## Full V1 completion boundary, 2026-10-07
+
+L73. The user approved the full completion plan. V1 publication now waits for
+core language and automatic memory, useful libraries and tools, structured
+concurrency, CPU AI, actual GPU execution and an A7 compiler that establishes
+self-hosting parity. This replaces L36's core-only publication boundary and
+L44's deferral of self-hosting to V2. It does not claim any of those areas is
+implemented or qualified. Python remains the bootstrap compiler until parity
+justifies replacement.
+
+Unresolved language, memory, concurrency, AI and GPU designs need concrete
+proposals and user approval before dependent implementation. Continue the
+approved work after each decision; keep independent work moving. Existing
+approvals, including L69 for file modules, remain in force.
+
+Use local hardware only. Keep eight logical CPUs free and run at most eight
+pytest workers. Qualification must name the actual CPU and GPU, toolchains,
+source state and workloads. An unavailable local GPU path is an explicit
+release blocker, not permission to substitute an interface or simulation.
+
+The [delivery roadmap](delivery-roadmap.md) records the sequence and required
+evidence. L38's per-workload performance limits remain in force. No mechanism,
+new syntax, hardware purchase or remote compute is authorized by this boundary
+alone. The user authorized V1 publication after every required track and release
+gate passes; publication must wait for that evidence.
+
+The same goal explicitly authorizes organizing verified work into reviewable
+commits and pushing them: "Organize verified work into reviewable commits and
+push them." This authorizes development checkpoints before V1 qualification.
+It does not authorize including unrelated files or creating a V1 tag early.
+
+
+
+## Bounded reference safety repair, 2026-10-07
+
+L74. The user approved the rejection rules in the
+[safety diagnostic proposal](packets/P-REF-bounded-safety.md).
+The response was "Approve these rejection rules and preserve the valid controls".
+A nil user field named `ptr`, repeated deletion of one reference field, use of
+an allocation deleted through an alias, and deletion through both aliases must
+fail with semantic exit 6. Guarded field access, aliases used before deletion,
+separate allocations and fields, and reassignment to fresh allocations must
+remain accepted. The recorded probes establish compiler acceptance before the
+repair; they were not executed as native programs.
+
+This changes acceptance of the four unsafe patterns. It keeps `new` and `del`
+syntax and does not select an automatic-memory mechanism. Broader conservative
+rejections require their own compatibility evidence and disposition. The
+roadmap records implementation and verification separately from this approval.
+
+
+## GPU execution deferred for Zig research, 2026-10-07
+
+L75. The user deferred the proposed local Vulkan execution experiment and
+requested deep research into Zig's GPU support. Continue CPU and compiler work.
+Research must distinguish shipped support, development work and proposals,
+including device-code compilation, host integration and local AMD compatibility.
+No GPU submission is authorized by the
+[experiment packet](packets/P-GPU-local-vulkan.md). Revisit that packet after
+the research; its proposed implementation is deferred. This disposition does
+not waive L73's GPU qualification requirement for V1 publication.
+
 ## Scope limits
 
 - **L5** covers integer `+`, `-`, `*` and their compound assignments: after
@@ -242,9 +432,10 @@ the LNG-16 gate is inert when `main` exists, proven by stash isolation
 - **L20** is read as C's performance and simplicity without C++'s complexity or
   hidden costs. The user has not yet confirmed this reading.
 - **L25-L31** set the module design direction. Their compatibility impact (which
-  programs that compile today change) is shown in packet P-MOD before any of it is
-  implemented. Cycles, the fate of `pub`, `x/mod.a7` directories and named or bare
-  imports are not decided by these rows.
+  programs that compile today change) was subsequently authorized by L69.
+  P-MOD remains evidence for compatibility review. Its extra proposals, including
+  directory fallback, a depth limit and initializer ordering, are not selected
+  merely by L25-L31 or L69.
 - **L24** does not approve any specific fix: the no-approval classes are listed in
   packet P0.1, and every fix still runs a compatibility scan.
 - **L33** covers constant-folded float remainder matching the runtime remainder
@@ -261,9 +452,9 @@ the LNG-16 gate is inert when `main` exists, proven by stash isolation
   planned library operations.
 - **L47** covers the P-TYP selected rules, compatibility changes and
   documented resource limits for exact-fit untyped constants. Ordinary
-  runtime float values still require explicit conversion. The completed
-  behavior and compatibility examples need approval before further compiler
-  changes.
+  runtime float values still require explicit conversion. The implementation
+  authorization recorded under L47 on 2026-09-20 stands; L61 settles the
+  arithmetic rule.
 - **L48** covers the generated print helpers only: stdout buffers through one
   persistent writer, flushed at program exit and before every stderr write;
   stderr keeps flushing after each call. Pipe and file consumers see the same
@@ -273,12 +464,16 @@ the LNG-16 gate is inert when `main` exists, proven by stash isolation
   wrapping form and unproven cases keep wrapping in both profiles, with
   `--no-nonwrap` forcing wrapping everywhere. Wrapping remains the language
   semantic; this refines L5 as a codegen optimization for proven cases.
-- **L50–L55** record the 2026-10-01 session's wave order (C, then E, then B),
-  Wave B mechanism comparison (arena interim lowering plus flagged RC
-  prototype against seven workload shapes, tracing documented but not built),
-  Wave E exact-arithmetic repairs under pinned contracts, and bench-harness
-  fixes with re-pinning on an idle box. L51 compares mechanisms without
+- **L50–L57** record the 2026-10-01 and 2026-10-02 sessions: wave order (C,
+  then E, then B), the Wave B mechanism comparison (arena interim lowering
+  plus flagged RC prototype against seven workload shapes, tracing documented
+  but not built), Wave E exact-arithmetic repairs under pinned contracts,
+  bench-harness fixes with re-pinning on an idle box, the LNG-16 `--lib`
+  choice, B0 promotion and the Wave B go. L51 compares mechanisms without
   selecting one, so L37 still stands; L48 and L49 are not reverted.
+- **L58–L72** record the 2026-10-04 audit decisions. L61 supersedes the i32
+  fold wrap in L52. L64 changes which Zig mode `--profile release` selects.
+  L66 to L72 are delegated choices and stay open to reversal.
 
 ## Implementation dispositions, 2026-09-20
 
@@ -312,8 +507,8 @@ These records are kept, but they no longer define the v1 plan.
   `docs/SAFETY_CONTRACT.md`) refer to git commit `701c679`.
 - `08-decisions.md` and `HANDOFF.md` were reformatted on 2026-09-16 and carry
   dated notes pointing here. Find their entries by ID.
-- The audit files are untracked. The roadmap carries an inline "cited as" marker
-  at the cited passage.
+- The audit files under `docs/audits/` are tracked. The roadmap carries an
+  inline "cited as" marker at the cited passage.
 - `STATUS.md` and `SAFETY_CONTRACT.md` are unchanged. Track 0 updates them. `D.nnn`
 entries are in `docs/lang-safety/08-decisions.md`.
 
@@ -333,13 +528,19 @@ entries are in `docs/lang-safety/08-decisions.md`.
 | Proposed D.040, D.041, D.049: parameter-mode keywords, inferred modes, no storable references | Not accepted; L6 scope limit and gate G2 (now the memory plan) |
 | `docs/lang-safety/HANDOFF.md` Q1 (bignum) and Q3 (`number`) | L3, L4. Q2 (`cast`) stays open under G3 |
 | L1, L7 as V1 release requirements (broader vision, AI, ownership, stdlib, concurrency) | L36, L37: core language, automatic memory, libraries and tools first; AI and concurrency are later delivery work |
+| L36 core-only V1 publication and L44 self-hosting deferred to V2 | L73 requires core, concurrency, CPU AI, actual GPU execution and self-hosting before V1 publication |
 | L15 absolute no-collector restriction | L37 allows compiler-managed runtime tracking when static analysis is insufficient |
 | L5 plain wrapping lowering for proven-range integral `+`, `-`, `*` | L49: wrapping stays the semantic; proven cases lower to the plain operator in release |
 | Per-call stdout flushing in the generated print helpers | L48 C-like buffered stdout |
+| L52 "i32 wrap for i32-fitting operands" in constant folds | L61: exact arithmetic, then fit to the destination |
+| `--profile release` selecting ReleaseFast | L64: `release` is ReleaseSafe; `fast` is ReleaseFast |
+| Roadmap "JSON later. YAML/TOML NEVER" | L65: JSON and YAML parsers go into the stdlib |
 
 ## Pending records
 
-L50–L53 are session-selected, 2026-10-01.
+L50–L55 are session-selected, 2026-10-01. L56 and L57 are session-selected,
+2026-10-02. L58–L72 are recorded above, 2026-10-04. L73 records the
+2026-10-07 full-completion boundary.
 
 ### Gate-to-decision stub
 
@@ -347,8 +548,11 @@ L50–L53 are session-selected, 2026-10-01.
 | --- | --- | --- |
 | G1 | Partial: L16 (IEEE 754 values, strict arithmetic), L33 (runtime-matching float remainder) | Open |
 | G2 | Replaced by the [memory plan](memory.md) | Open |
-| G3 | Partial: L5 (wrapping `+`, `-`, `*`), L35 (reviewed failure repairs), L47–L49 (exact-fit constants, buffered stdout, release arithmetic) | Open |
-| G4–G9 | None | Open |
+| G3 | Partial: L5 (wrapping `+`, `-`, `*`), L35 (reviewed failure repairs), L47 and L49 (exact-fit constants, release arithmetic), L61 (exact constant arithmetic), L64 (checked release profile) | Open |
+| G4 | None | Open |
+| G5 | Partial: L66 (dot-arm matching, `Option`/`Result` as user-declared unions, `io` Result calls) | Open |
+| G6 | Partial: L25–L31 (module design), L54 (`--lib`), L69 (implement L25–L31) | Open |
+| G7–G9 | None | Open |
 | M1–M51 | None; L51 feeds the comparison into M45/M14/M2 without selecting a mechanism | Open |
 
 Gates G1–G9 in the [v1 plan](README.md) and gates M1–M51 in the

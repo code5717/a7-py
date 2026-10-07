@@ -5,11 +5,9 @@ This file tests the parser against the actual A7 example programs
 to identify which ones can be parsed successfully and which fail.
 """
 
-import pytest
 from pathlib import Path
 from a7.parser import parse_a7
 from a7.ast_nodes import NodeKind
-from a7.errors import ParseError
 
 
 # Path to examples directory
@@ -252,70 +250,6 @@ class TestExampleFiles:
         # Contains advanced control flow patterns
         ast = parse_a7(code)
         assert ast is not None
-
-
-class TestExampleFileStatistics:
-    """Generate statistics about which examples work."""
-
-    def test_example_success_rate(self):
-        """Generate a report of which examples can be parsed."""
-        examples = [
-            "000_empty.a7",
-            "001_hello.a7",
-            "002_var.a7",
-            "003_comments.a7",
-            "004_func.a7",
-            "005_for_loop.a7",
-            "006_if.a7",
-            "007_while.a7",
-            "008_switch.a7",
-            "009_struct.a7",
-            "010_enum.a7",
-            "011_memory.a7",
-            "012_arrays.a7",
-            "013_pointers.a7",
-            "014_generics.a7",
-            "015_types.a7",
-            "016_unions.a7",
-            "017_methods.a7",
-            "018_modules.a7",
-            "019_literals.a7",
-            "020_operators.a7",
-            "021_control_flow.a7",
-        ]
-
-        successful = []
-        failed = []
-
-        for example in examples:
-            try:
-                example_path = EXAMPLES_DIR / example
-                if not example_path.exists():
-                    failed.append(example + " (file not found)")
-                    continue
-
-                code = example_path.read_text()
-                parse_a7(code)
-                successful.append(example)
-            except Exception as e:
-                failed.append(f"{example} ({type(e).__name__})")
-
-        print(f"\n=== PARSER EXAMPLE ANALYSIS ===")
-        print(
-            f"Successful: {len(successful)}/{len(examples)} ({len(successful) / len(examples) * 100:.1f}%)"
-        )
-        print(
-            f"Failed: {len(failed)}/{len(examples)} ({len(failed) / len(examples) * 100:.1f}%)"
-        )
-        print(f"\nSuccessful examples:")
-        for example in successful:
-            print(f"  ✓ {example}")
-        print(f"\nFailed examples:")
-        for example in failed:
-            print(f"  ✗ {example}")
-
-        # This test will pass but print the statistics
-        assert True  # Always pass, just print info
 
 
 class TestSpecificParsingIssues:

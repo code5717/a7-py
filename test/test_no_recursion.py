@@ -437,9 +437,6 @@ KNOWN_RECURSIVE_GROUPS = {
         "a7.backends.zig:ZigCodeGenerator.visit",
     ),
     (
-        "a7.backends.zig:ZigCodeGenerator._emit_semantic_type",
-    ),
-    (
         "a7.parser:Parser._parse_call_argument",
         "a7.parser:Parser._parse_inline_struct_init",
         "a7.parser:Parser.parse_array_literal",
@@ -472,16 +469,6 @@ KNOWN_RECURSIVE_GROUPS = {
         "a7.parser:Parser.parse_while_statement",
     ),
     (
-        "a7.passes.semantic_validator:SemanticValidationPass._schedule_parameter_call_positions",
-    ),
-    (
-        "a7.passes.semantic_validator:SemanticValidationPass._schedule_statement_calls",
-    ),
-    (
-        "a7.passes.semantic_validator:SemanticValidationPass.visit_defer_stmt",
-        "a7.passes.semantic_validator:SemanticValidationPass.visit_statement",
-    ),
-    (
         "a7.passes.type_checker:TypeCheckingPass._check_array_initializer_assignable",
         "a7.passes.type_checker:TypeCheckingPass._is_initializer_assignable_to",
         "a7.passes.type_checker:TypeCheckingPass._resolve_pattern_type",
@@ -505,44 +492,31 @@ KNOWN_RECURSIVE_GROUPS = {
         "a7.passes.type_checker:TypeCheckingPass.visit_unary_expr",
     ),
     (
-        "a7.passes.type_checker:TypeCheckingPass._common_array_literal_element_type",
-    ),
-    (
-        "a7.passes.type_checker:TypeCheckingPass._format_match_pattern",
-    ),
-    (
-        "a7.passes.type_checker:TypeCheckingPass._range_const_expr_value",
-        "a7.passes.type_checker:TypeCheckingPass._range_pattern_value",
-    ),
-    (
         "a7.passes.type_checker:TypeCheckingPass._resolve_type_leaf",
         "a7.passes.type_checker:TypeCheckingPass.register_type_alias",
         "a7.passes.type_checker:TypeCheckingPass.resolve_type_node",
     ),
     (
-        "a7.passes.type_checker:TypeCheckingPass._statement_always_returns",
-    ),
-    (
-        "a7.passes.type_checker:TypeCheckingPass._substitute_generic",
-    ),
-    (
-        "a7.passes.type_checker:TypeCheckingPass.visit_for_in_stmt",
-        "a7.passes.type_checker:TypeCheckingPass.visit_for_stmt",
-        "a7.passes.type_checker:TypeCheckingPass.visit_if_stmt",
-        "a7.passes.type_checker:TypeCheckingPass.visit_match_stmt",
-        "a7.passes.type_checker:TypeCheckingPass.visit_statement",
-        "a7.passes.type_checker:TypeCheckingPass.visit_while_stmt",
-    ),
-    (
-        "a7.passes.safety:SafetyProofPass._always_returns",
-    ),
-    (
-        "a7.passes.safety:SafetyProofPass._visit_expr",
-    ),
-    (
         "a7.passes.safety:SafetyProofPass._visit_stmt",
     ),
 }
+
+# Size of each group above, keyed by its first member, and the totals. The
+# group tuples alone do not stop growth: adding a function to a listed group
+# only needs the function appended to its tuple. These numbers may only go
+# down. A change that raises one adds recursion; convert it to an explicit
+# stack instead of editing the number.
+KNOWN_RECURSIVE_GROUP_SIZES = {
+    "a7.backends.zig:ZigCodeGenerator._emit_address_of": 23,
+    "a7.backends.zig:ZigCodeGenerator._emit_fall_case_body": 18,
+    "a7.parser:Parser._parse_call_argument": 20,
+    "a7.parser:Parser.parse_block": 8,
+    "a7.passes.safety:SafetyProofPass._visit_stmt": 1,
+    "a7.passes.type_checker:TypeCheckingPass._check_array_initializer_assignable": 21,
+    "a7.passes.type_checker:TypeCheckingPass._resolve_type_leaf": 3,
+}
+KNOWN_RECURSIVE_GROUP_COUNT = 7      # may only go down
+KNOWN_RECURSIVE_FUNCTION_COUNT = 94  # may only go down
 
 # This list must only shrink (same rule and plan section as above).
 KNOWN_DEEPCOPY_CALLERS = set()
@@ -554,27 +528,12 @@ KNOWN_RECURSIVE_DATACLASS_METHODS = {
     ("a7.ast_nodes:ASTNode", "repr"),
     ("a7.module_resolver:ModuleInfo", "eq"),
     ("a7.module_resolver:ModuleInfo", "repr"),
-    ("a7.passes.safety:BackendPlan", "repr"),
-    ("a7.passes.safety:Obligation", "repr"),
-    ("a7.passes.safety:ProofResult", "repr"),
     ("a7.semantic_context:DeferContext", "eq"),
     ("a7.semantic_context:DeferContext", "repr"),
     ("a7.semantic_context:FunctionContext", "eq"),
     ("a7.semantic_context:FunctionContext", "repr"),
     ("a7.symbol_table:Symbol", "eq"),
     ("a7.symbol_table:Symbol", "repr"),
-    ("a7.types:ArrayType", "repr"),
-    ("a7.types:FunctionType", "repr"),
-    ("a7.types:GenericInstanceType", "repr"),
-    ("a7.types:GenericParamType", "repr"),
-    ("a7.types:PointerType", "repr"),
-    ("a7.types:ReferenceType", "repr"),
-    ("a7.types:SliceType", "repr"),
-    ("a7.types:StructField", "repr"),
-    ("a7.types:StructType", "repr"),
-    ("a7.types:TypeSet", "repr"),
-    ("a7.types:UnionField", "repr"),
-    ("a7.types:UnionType", "repr"),
 }
 
 
@@ -599,6 +558,16 @@ def test_listed_recursive_groups_still_exist(a7_scan):
         "These groups are no longer found in a7/; delete them from KNOWN_RECURSIVE_GROUPS:\n"
         + "\n".join(f"- {', '.join(g)}" for g in gone)
     )
+
+
+def test_listed_recursive_groups_have_not_grown():
+    sizes = {group[0]: len(group) for group in KNOWN_RECURSIVE_GROUPS}
+    assert sizes == KNOWN_RECURSIVE_GROUP_SIZES, (
+        "A listed recursive group changed size. A smaller group: lower its number in "
+        "KNOWN_RECURSIVE_GROUP_SIZES. A larger group: remove the new recursion."
+    )
+    assert len(KNOWN_RECURSIVE_GROUPS) == KNOWN_RECURSIVE_GROUP_COUNT
+    assert sum(sizes.values()) == KNOWN_RECURSIVE_FUNCTION_COUNT
 
 
 def test_no_new_deepcopy_calls_in_a7(a7_scan):

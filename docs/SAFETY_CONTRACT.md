@@ -3,12 +3,14 @@
 This document states the compiler's safety requirements. It is not a guarantee
 that every accepted program is safe. The compiler must reject a risky operation
 when it cannot prove the required condition before emitting Zig. Current gaps
-include shifts, alias and lifetime analysis, and arithmetic edge cases.
+include alias and lifetime analysis.
 
-The language audit reproduced accepted programs that trapped. The current
-repairs invalidate stale facts at branch joins, loop mutations, reference calls,
-and deferred effects. Passing their regression cases does not prove the contract
-for every program.
+Two audits reproduced accepted programs that trapped. The safety pass now
+joins facts at branches, after loops (a loop may run zero times) and at
+every exit of a block that holds a `defer`; it keys facts by declaration;
+and a call to a non-stdlib function forgets facts about file-scope
+variables. Passing the regression cases does not prove the contract for
+every program.
 
 This contract covers compiler safety, not sandboxing. A compiled A7 program can
 still access whatever the host process and Zig toolchain allow.
@@ -38,6 +40,7 @@ track:
 - known array, slice, and string lengths
 - nil/non-nil reference state
 - initialized, moved, and deleted bindings
+- allocation identities shared by direct reference aliases and tracked fields
 - enum or union discriminants
 - operation-specific backend approvals
 
@@ -57,14 +60,33 @@ additional guard inside a loop or after a call.
 | Slicing | `0 <= start <= end <= len` | `slice` |
 | Ref field access or dereference | reference is proven non-nil | `deref` |
 | Assignment through ref | target reference is proven non-nil | `deref` |
-| Use after `del` | deleted binding is not read again before reassignment | semantic rejection |
+| Use after `del` | the referenced allocation has not been deleted | semantic rejection |
 | Integer `+`, `-`, `*` and compound forms | defined wrapping lowering | no overflow proof required |
 | Union payload access | active discriminant is proven | union approval |
 
 The current implementation enforces cast, division/modulo, index, slice, ref
-deref, operation-specific backend approvals, and direct use-after-`del` checks.
-Shift checks, signed division edge cases, signed `abs` at the minimum value,
-union discriminant proofs, and complete ownership analysis remain active work.
+deref, operation-specific backend approvals, and deletion checks for direct
+reference aliases and tracked fields. Array-element aliases and fields reached
+through joined allocation sets remain gaps. The reviewed callee summaries also
+missed deletion through borrowed aggregates and retained stale allocation
+identity after field replacement. They rejected valid parent/sibling uses after
+child-only deletion and parent use after an unrelated local allocation was
+deleted. See [Status](STATUS.md) for the recorded findings.
+
+A bounded ordered-callee-effect candidate addresses direct, local-alias and
+forwarded reference field replacement/deletion, with at most one conditional
+across the known call expansion, source-sized expanded work, block/return exits
+and LIFO defers. It passes focused checks but awaits combined-source qualification; these findings are not closed by earlier passing controls.
+Multiple conditional occurrences, loops, match, new allocations, returned
+references, by-value aggregate parameters/copies, global storage, short-circuit
+expressions, unknown callees and unrepresented standard-library effects remain
+incomplete. Selected reference arguments or descendant facts with multiple
+allocation identities retain the older summaries, whose missed aliases and
+conservative rejections remain unresolved. These checks do not establish
+complete allocation lifetime safety.
+A run-time shift count is checked when the program runs, in every profile.
+Signed `MIN / -1`, `-MIN` and `abs(MIN)` have defined wrapping results. Union
+discriminant proofs and complete ownership analysis remain active work.
 
 ## Reference Surface
 

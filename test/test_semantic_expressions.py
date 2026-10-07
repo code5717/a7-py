@@ -10,69 +10,9 @@ Covers:
 - Member access and indexing
 """
 
-import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
-from a7.passes.name_resolution import NameResolutionPass
-from a7.passes.type_checker import TypeCheckingPass
-from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError, CompilerError
 
 
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
-
-
-def run_semantic_analysis(source: str):
-    """Helper to run full semantic analysis.
-
-    Raises SemanticError if any pass detects errors.
-    """
-    program = parse_program(source)
-
-    # Run name resolution pass
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(program, "<test>")
-    if resolver.errors:
-        raise resolver.errors[0]
-
-    # Run type checking pass
-    type_checker = TypeCheckingPass(symbols)
-    node_types = type_checker.analyze(program, "<test>")
-    if type_checker.errors:
-        raise type_checker.errors[0]
-
-    # Run semantic validation pass
-    validator = SemanticValidationPass(symbols, node_types)
-    validator.analyze(program, "<test>")
-    if validator.errors:
-        raise validator.errors[0]
-
-    return symbols, node_types
-
-
-def expect_success(source: str) -> bool:
-    """Helper to expect successful semantic analysis."""
-    try:
-        run_semantic_analysis(source)
-        return True
-    except CompilerError:
-        return False
-
-
-def expect_error(source: str, error_fragment: str = None) -> bool:
-    """Helper to expect semantic error with optional message check."""
-    try:
-        run_semantic_analysis(source)
-        return False
-    except CompilerError as e:
-        if error_fragment:
-            return error_fragment.lower() in str(e).lower()
-        return True
+from pipeline_helpers import expect_error, expect_success, pipeline_tmp  # noqa: F401
 
 
 class TestArithmeticOperators:
@@ -144,7 +84,7 @@ class TestArithmeticOperators:
             x := 10 + "hello"
         }
         """
-        assert expect_error(source, "type")
+        assert expect_error(source, "Requires numeric type")
 
     def test_compound_assignment_operators(self):
         """Test compound assignment operators."""
@@ -224,7 +164,7 @@ class TestComparisonOperators:
             bad := a < b
         }
         """
-        assert expect_error(source, "operator")
+        assert expect_error(source, "lt between Point and Point")
 
     def test_string_ordering_is_rejected(self):
         """Strings can be equality-compared but not ordered."""
@@ -233,7 +173,7 @@ class TestComparisonOperators:
             bad := "a" < "b"
         }
         """
-        assert expect_error(source, "operator")
+        assert expect_error(source, "lt between string and string")
 
 
 class TestLogicalOperators:
@@ -269,10 +209,7 @@ class TestLogicalOperators:
             x := 10 and 20
         }
         """
-        # This should error - logical operators require boolean operands
-        result = expect_error(source, "bool")
-        # Might not be implemented yet
-        assert isinstance(result, bool)
+        assert expect_error(source, "Requires bool type")
 
 
 class TestBitwiseOperators:
@@ -353,7 +290,7 @@ class TestUnaryOperators:
             inc(1 + 2)
         }
         """
-        assert expect_error(source, "Argument")
+        assert expect_error(source, "Argument type mismatch: expected 'ref i32', got 'i32'")
 
 
 class TestStdlibCallValidation:
@@ -412,8 +349,7 @@ class TestStdlibCallValidation:
             y := x.val
         }
         """
-        result = expect_error(source, "field")
-        assert isinstance(result, bool)
+        assert expect_error(source, "Cannot access field on non-struct type: got 'i32'")
 
 
 class TestMemberAccessAndIndexing:
@@ -491,10 +427,7 @@ class TestMemberAccessAndIndexing:
             z := p.z
         }
         """
-        # This should error - field 'z' doesn't exist
-        result = expect_error(source, "field")
-        # Might not be implemented yet
-        assert isinstance(result, bool)
+        assert expect_error(source, "Struct 'Point' has no field 'z'")
 
 
 class TestComplexExpressions:

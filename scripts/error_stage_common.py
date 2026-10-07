@@ -94,7 +94,7 @@ def verify_error_common(
         return False, err
 
     checks = [
-        ensure(payload.get("schema_version") == "2.0", "schema_version != 2.0"),
+        ensure(payload.get("schema_version") == "3.0", "schema_version != 3.0"),
         ensure(payload.get("status") == "error", "status != error"),
     ]
     for passed, message in checks:

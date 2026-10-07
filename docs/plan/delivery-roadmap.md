@@ -1,15 +1,23 @@
 # V1 delivery roadmap
 
-The delivery target is core V1: a stable Python compiler, consistent numerics,
-automatic memory, errors and collections, useful libraries and installed tools.
+V1 publication requires the core language, automatic memory, useful libraries
+and tools, structured concurrency, CPU AI, actual GPU execution and a self-hosted
+A7 compiler with bootstrap parity. L73 in the [ledger](decisions.md) records the
+2026-10-07 boundary. These are completion requirements, not shipped capabilities.
 Zig handles generated programs, runtime support, native integration, builds and
-linking. Linux x86-64 is the first qualification target. V2 aims to implement the
-compiler in A7 and establish bootstrap parity before replacing Python.
+linking. The Python compiler remains the bootstrap implementation until parity
+supports replacement. Linux x86-64 is the first qualification target.
 
-The user approved this roadmap on 2026-09-20. Decisions L36-L46 in the
-[ledger](decisions.md) supersede the older full-V1 boundary. AI and concurrency
-remain design constraints and later release tracks. GPU execution requires a
-demonstrated Zig-based integration path. No additional platform is qualified.
+The original core-first ordering from 2026-09-20 remains useful. Its core-only
+publication boundary is superseded. New designs need concrete proposals and
+approval before dependent implementation; accepted decisions remain accepted.
+Use local hardware only, keep eight logical CPUs free and use at most eight
+pytest workers. Unavailable GPU support blocks publication until resolved.
+
+GPU execution is deferred under L75. The
+[Zig GPU research](../research/2026-10-07-zig-gpu-support.md) records versioned
+device compilation, host APIs, backend gaps and AMD compatibility. Review those
+boundaries before any later execution proposal. Continue CPU and compiler work.
 
 Static analysis is preferred. Automatic runtime memory help and release-safe
 runtime checks are permitted. Growable lists share identity on assignment;
@@ -41,7 +49,16 @@ and the source-recursion ban. Keep historical evidence and rejected proposals.
 5. Complete modules, generics, tagged values, errors, strings, collections and
    practical input/file/path operations. Add check/build/run/doctor/version.
    Native integration goes through Zig with checked synchronous bindings.
-6. Qualify installed wheel and source distributions through actual native debug
+6. Propose and obtain approval for structured concurrency, then implement task
+   lifetime, cancellation, channels and failure cleanup. Qualify real concurrent
+   workloads before claiming multicore support.
+7. Approve tensor, differentiation, training and checkpoint contracts. Qualify
+   CPU classifier and decoder workloads, then implement and qualify actual GPU
+   execution on local hardware. Record numerical and recovery results.
+8. Implement the compiler in A7 after compiler-building workloads qualify. Build
+   its successor and compare conformance, diagnostics, output and native results
+   against the Python bootstrap compiler.
+9. Qualify installed wheel and source distributions through actual native debug
    and release programs. Unify compiler/site/security checks, verify release
    versions and hashes, and perform browser acceptance and GLM-5.3 review.
 
@@ -66,24 +83,191 @@ reuse. Keep target selection separate from storage ownership and physical
 placement. A shared address model does not establish zero transfer cost.
 
 V1 acceptance includes text scanning, syntax trees, symbol tables and multi-file
-compiler-oriented programs. V2 starts with a compiler written in A7 and built by
+compiler-oriented programs. Self-hosting starts with a compiler written in A7 and built by
 the qualified Python compiler. That first compiler builds its successor. Compare
 both generations across conformance programs, diagnostics, generated output and
 native results. Both A7 source and compiler algorithms retain iterative traversal.
 
+## Full todo (consolidated 2026-10-04, one file)
+
+Status words: DONE, PARTIAL, IN FLIGHT, QUEUED (decided, waits on another row),
+PROPOSED (no decision yet), PARKED (cut or deferred). A row cites its
+ledger entry. A row with no entry is a research verdict, not a decision.
+The 2026-10-03 and 2026-10-04 rows were added after the user approved
+this roadmap on 2026-09-20; L58 to L70 cover them.
+
+### R. Repair waves (from the 2026-10-04 audit)
+
+The audit reproduced regressions in the uncommitted work, safety-proof
+holes, and accept-then-fail-in-Zig defects while the gate was green.
+Its findings live in [the audit record](../audits/2026-10-04/findings.md) (row IDs P0-1,
+P2-52, T-1 and so on) until each is closed here or in STATUS.
+
+- R0 Records and gate. DONE 2026-10-04: ledger L58 to L70; gate
+  rejects unknown arguments, bad timeouts and zero-check runs; site
+  coverage check passes.
+- R1 Test infrastructure. DONE 2026-10-04: parallel run (`-n auto`,
+  25m20s serial to under 5 minutes), shared Zig cache (20 GB to 1.5 GB
+  of temp), fast loop (`-m "not zig and not slow"`, about 10 s),
+  real-pipeline and build-and-run helpers in `test/conftest.py`, the
+  semantic tests and `test_codegen_zig.py` moved onto them, no
+  `zig ast-check` build checks, a stage-boundary test, a size ceiling
+  on the recursion ratchet. Compiler defects the move exposed are
+  strict expected failures that name their finding. Deleting tests
+  that verify nothing and renaming session-named files stay under R7.
+- R2 Regressions in the uncommitted work (L58, L59, L60). DONE
+  2026-10-04: bare `break` in a match case, same-name functions, `ref`
+  lowering, native `switch` conditions, tagged-union match lowering,
+  `$N` checks and emission, `read_line` reader, one `del` emitter.
+- R3 Split verified work into reviewable commits and push. IN PROGRESS:
+  the full-completion goal already authorizes this. Preserve unrelated files;
+  record the passing integration snapshot against the combined commit tip.
+- R4 Soundness (L32, L63, L64, L71, L74). PARTIAL. The 2026-10-04 repairs cover loop, defer,
+  shadowing and callee-identity repairs in the safety pass; SAF-3 and
+  SAF-6; defined `MIN / -1`, `-MIN`, `abs(MIN)` and checked run-time
+  shifts; recursion ban over function values; control flow leaving a
+  `defer`; zero-initialization; `release` as ReleaseSafe plus `fast`;
+  stdout flushing. The October 7 L74 repair rejects SAF-2, SAF-8 and direct
+  reference alias misuse while preserving the approved controls. Open:
+  reference aliases through array elements, selected/base store synchronization
+  and joined-holder nil-write invalidation; callee effects outside bounded exact
+  replay, including loop-head field-argument deletion; the
+  type-based imprecision of the recursion rule, function-pointer
+  locals without an initializer, a `main` exit status. Ordinary heap-scalar
+  reads and printing need the proposed
+  [scalar-read decision](packets/P-REF-scalar-read.md).
+- R5 Language core (L61, L62, L69). PARTIAL: the October 4 repair checkpoint
+  includes statement/list parsing, type registration, `nil`, mutability,
+  exact constants, inline-`$T` codegen and CLI/diagnostic repairs. Per-module
+  scopes remain queued under L69. Importer-local alias clashes now reject under
+  L28; focused and native controls and the integration gate pass. The remaining
+  strict expected failure and
+  audit findings prevent declaring the language core complete.
+- R6 Docs, site and records. PARTIAL: README rewritten; tensor proposals moved
+  out of SPEC; STATUS, CHANGELOG, module guidance and site pages updated.
+  Site coverage, build, exports and links pass. Continue reconciliation as
+  compiler changes land; error catalog, examples and final release review remain.
+- R7 CI, release, cleanup, file splits. QUEUED.
+
+### A. Language chain
+
+- A1 Generics: `$N` value parameters DONE with open repairs under R2
+  (L66); minimal `where` DONE (L66); function overloading PARKED (L59
+  restores the duplicate-name error).
+- A2 Payload matching: dot arms parse, check, lower and run (L66);
+  repairs under R2.
+- A3 Option/Result: user-declared generic unions work; `io` Result
+  calls are registered and emitted; checker-typed stdlib returns
+  QUEUED as part of B2.
+- A4 Numerics: one `--profile` flag with values `debug`, `release`
+  (checked) and `fast` (L64); exact constant arithmetic (L61). The
+  remaining numerics rows from research (NaN, spelling) are PROPOSED.
+- A5 Memory V1: B1 arena and B2 reference-count prototypes behind a
+  flag, then a comparison memo (L51, L57). QUEUED behind R4.
+- A6 Concurrency: REQUIRED by L73; contracts need approval before implementation.
+- A7 Tensors and actual GPU execution: REQUIRED by L73; contracts and local
+  execution evidence remain open.
+- A8 Cuts that are decisions: package registry (CLAUDE.md), function
+  overloading for now (L59). String interpolation, SIMD intrinsics,
+  device placement and lifetimes are research verdicts, PROPOSED as
+  cuts. Runtime tracking stays eligible under L37.
+
+### B. Stdlib
+
+Architecture (L68): typed hooks in the Python registry plus `.a7`
+sources shipped inside the package, with `std/` reserved. The design,
+signatures and open choices are in
+[the stdlib proposal](../audits/2026-10-04/stdlib-proposal.md).
+
+- B1 `Option`/`Result` generic unions. DONE as user-declared unions.
+- B2 Checker types stdlib calls from declared signatures, so
+  `match io.read_line(buf)` works. QUEUED behind R5.
+- B3 Phase A, no heap: `io`, `option`, `result`, `slices`, `strings`,
+  `ascii`, `bytes`, `math`, `conv`, `sort`, `hash`, `random`, `time`,
+  `os`, `fs`, `path`, `testing`, `json`, `yaml` (L65, L68). QUEUED
+  behind B2, per-module type scopes (R5) and string payload binding.
+- B4 Phase B, needs the memory decision: `text`, `list`, `map`, `set`,
+  `data`, `ring`. QUEUED behind A5.
+- B5 Phase C: `process`, `log`, `net`. PARKED.
+- B6 `or {}` and `use` sugars: PARKED until B3 ships.
+- B7 TOML, regex, crypto, C++ interop: research verdicts, PROPOSED as
+  cuts.
+
+### C. Tooling
+
+- C1 Language server, REPL, profiler, coverage, incremental builds:
+  PARKED until V1 qualifies.
+
+### D. Examples, docs, gates
+
+- D1 Examples 049 and 050. DONE. Examples for payload matching,
+  `where`, file imports and labeled breaks QUEUED under R6.
+- D2 Docs sync per landing: SPEC, STATUS, CHANGELOG, `site/public`
+  exports through `sync:exports`.
+- D3 Full gate `./run_all_tests.sh`, then `./run_release_checks.sh`
+  before any tag.
+- D4 File splits (parser, type checker, Zig backend): QUEUED under R7.
+- D5 B0 benchmark promotion (L56, L67): promote `mem_shared`,
+  `mem_returned`, `mem_cleanup`; rewrite the other four first. QUEUED.
+
+### E. Codegen changes of 2026-10-03
+
+- E1 Single parentheses in conditions and chains. DONE (L66).
+- E2 No IO header for programs without IO. DONE; HEAD already did
+  this (L66).
+- E3 `ref` parameters as `*T`. REVERTED under R2 (L60): `*T` cannot
+  express `if p != nil`.
+- E4 Native `switch` for match. Kept for integer, enum, bool and char
+  scrutinees with constant arms only (L60); repairs under R2.
+
+## Completion evidence
+
+A passing aggregate gate covers only the programs it exercises. Every row below
+needs evidence at the final identified source state before publication.
+
+| Requirement | Current disposition | Required evidence |
+| --- | --- | --- |
+| Compiler correctness and iterative traversal | Repairs landed; expected failures and recursive paths remain | Close critical/high findings, execute accepted forms, reject invalid forms and run deep inputs at recursion limit 100 |
+| Modules and language contracts | L69 approved; per-module work remains | Qualified names, visibility, identity, cycles, diagnostics and approved compatibility probes |
+| Automatic memory and collections | Arena/RC comparison approved; mechanism unselected | Shared identity, explicit copies, cycles, bounded retention and exactly-once cleanup; each workload meets L38 |
+| Stdlib and checked native integration | L68 architecture/options approved; delivery incomplete | Installed-package examples and real I/O, parsing, allocation and native failure recovery |
+| Structured concurrency | Required by L73; design unresolved | Task/channel state machines, races, cancellation, blocked-worker wakeup and shutdown cleanup |
+| CPU AI | Required by L73; design and qualification incomplete | Approved classifier/decoder recipes, differentiation, training, inference and checkpoint recovery |
+| Actual GPU execution | Required by L73; local execution not qualified | Named local device, real kernels, CPU agreement, transfers, synchronization and failure handling |
+| Self-hosting | Required by L73; bootstrap parity not established | Python builds A7 compiler, which builds its successor; compare both generations |
+| Publication | Blocked by incomplete requirements above | Frozen source, release gates, installed artifacts, browser checks, documentation and GLM security review |
+
+Prepare decision packets for unresolved memory behavior and mechanism, module
+changes beyond L69, concurrency, AI/GPU and acceptance details. Each packet
+shows current/proposed behavior, runnable examples, compatibility and measurable
+acceptance. Resume dependent work after approval. Do not reopen settled choices
+such as shared-list identity, L38 limits or the L68 stdlib recommendations.
+
 ## Source baseline and evidence
 
-HEAD is `701c67936c70ad2b0608326e23e56cc5d38c9fdb`. The repaired compiler,
+The 2026-09-20 baseline was commit `701c67936c70ad2b0608326e23e56cc5d38c9fdb`
+(HEAD on 2026-10-04 is `c8face6`). The repaired compiler,
 site and research include tracked modifications and untracked files. HEAD alone
 is not the implementation baseline. Preserve the complete working tree when
 creating an isolated checkout. Do not discard or commit unrelated work.
+
+The [October 7 qualification record](../audits/2026-10-07/qualification.md)
+preserves the frozen baseline results and manifest hashes. Its 3,090 tests,
+7 expected failures and ten other compiler/package checks apply to the resumed
+baseline only. The newer integration checkpoint passed the full release gate
+with 3,374 tests and one expected failure, all 51 examples in every profile,
+installed packages, site checks and dependency/security checks. Its manifest
+includes the latest checker, safety and alias-clash repairs. Benchmarks were
+report-only, not L38 qualification.
 
 The earlier 2,087-test, 43-example, nine-check result belongs to the
 [GLM remediation snapshot](../../site/docs/audits/glm-5.3-remediation.md).
 The 2,629-test result in the September 19 cleanup report belongs to another
 snapshot. Neither count is a release criterion or a substitute for a fresh run.
-Current source manifests and gate results belong in the
-[delivery evidence](../audits/2026-09-20-v1-foundations/README.md).
+Current source manifests and gate results are recorded in the
+[October 7 qualification record](../audits/2026-10-07/qualification.md).
+The [September 20 delivery evidence](../audits/2026-09-20-v1-foundations/README.md)
+preserves the earlier foundation checkpoint.
 
 ## Current disposition of historical claims
 
@@ -104,11 +288,11 @@ open in the [audit inventory](audit/open-items.md).
 | Constant float remainder differs from runtime | Verified fixed under L33 for covered regression triggers | `test/test_constant_folding_exact.py`; native repair gate |
 | Deep programs pass at recursion limit 100 | Not established | Existing pipeline tests use shallow nesting; scanner retains recursive groups |
 | NOREC-0b dispatch omissions and false positives | Verified fixed for the listed mechanisms | Scanner before/after tests in delivery evidence; dynamic Python limitations remain |
-| File-module design can be implemented from L25-L31 alone | Awaiting a decision packet | Ledger requires compatibility approval; [P-MOD draft](packets/P-MOD-modules.md) now records measured examples and remaining scan work |
+| File-module implementation requires another approval of L25-L31 | Superseded by L69 | Implement the approved scopes; [P-MOD](packets/P-MOD-modules.md) retains compatibility evidence and extra proposals that need separate disposition |
 | Typed IR and new proof/emission pipeline can replace current passes | Blocked by correctness-first exit | L23 requires critical/high closure or presented decision packets |
 | Memory revision 3 is the selected contract | Awaiting a decision | Revision 3 is explicitly proposed; copies, views and failures remain disputed |
 | Ordinary and advanced code have different memory promises | Awaiting a decision | M48 proposal is not approval |
-| CPU AI and structured concurrency are qualified | Not implemented or qualified | Contracts, compiler foundations and workload thresholds remain prerequisites |
+| CPU AI, GPU execution, concurrency and self-hosting qualify for publication | Not established | L73 requires each; contracts and workload evidence remain prerequisites |
 
 ## Compiler foundation sequence
 
@@ -154,9 +338,11 @@ A rejected packet pauses only its dependent work and requires a revised proposal
 | Usable core | Approved numerics, modules, generics, errors, commands and minimal input/files/arguments | Multi-file calculator or VM and interactive CLI through installed tooling |
 | Automatic memory and collections | Approved ownership/effects, cleanup, strings, lists/maps, placement and reuse | Independent memory corpus and approved rewrite/cost budgets |
 | Standard library and native boundary | Recoverable text/file/path/time/random/process operations, native descriptors and generated bindings | Actual failure recovery, ABI checks and cleanup |
-| Later structured concurrency | Approved tasks, joins, cancellation, channels and sharing rules | Worker pool shutdown, race, blocking and failure scenarios |
-| Later CPU AI | Reference kernels, reverse-mode autodiff, native numeric libraries, mixed precision and complete training state | Classifier and decoder training, checkpoint recovery and inference under approved thresholds |
-| V1 qualification | Integrated applications, docs, packaging, compatibility and security review | All criteria pass at one identified Linux x86-64 source state |
+| Structured concurrency | Approved tasks, joins, cancellation, channels and sharing rules | Worker pool shutdown, race, blocking and failure scenarios |
+| CPU AI | Reference kernels, reverse-mode autodiff, native numeric libraries, mixed precision and complete training state | Classifier and decoder training, checkpoint recovery and inference under approved thresholds |
+| Actual GPU execution | Approved device/runtime contract and local Zig integration | Native device execution, numerical agreement, transfer costs and failure recovery |
+| Self-hosting | A7 compiler built by Python, then its successor built by A7 | Bootstrap parity across conformance, diagnostics, generated output and native results |
+| V1 qualification | Core, memory, concurrency, CPU AI, GPU, self-hosting, docs, packaging and security review | All criteria pass at one identified Linux x86-64 source state |
 
 Introduce replacement memory facilities before removing existing forms. Migrate
 examples only after compatibility approval and before/after behavior checks.
@@ -178,7 +364,7 @@ artifacts, execution and recovery. Compare constants and runtime boundary values
 across supported build profiles. Include modules/generics, cleanup/errors,
 collections/aliasing and tasks/tensors combinations.
 
-Before later AI qualification, freeze recipes, data provenance, seeds, tolerances,
+Before AI qualification, freeze recipes, data provenance, seeds, tolerances,
 quality targets and resource budgets. Keep HTML, Markdown, manifests, search,
 examples and agent exports synchronized, with stale-export checks. Complete
 responsive, keyboard, accessibility, failure-state and agent-retrieval checks.

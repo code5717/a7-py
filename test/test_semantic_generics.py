@@ -16,71 +16,14 @@ not declared as separate parameters. E.g., `fn(x: $T) $T` not `fn($T, x: T) T`.
 """
 
 import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
-from a7.passes.name_resolution import NameResolutionPass
-from a7.passes.type_checker import TypeCheckingPass
-from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError, CompilerError
 from a7.generics import resolve_generic_constraint
 from a7.types import F64, I32, I64, NUMERIC
 
 
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
-
-
-def run_semantic_analysis(source: str):
-    """Helper to run full semantic analysis.
-
-    Raises SemanticError if any pass detects errors.
-    """
-    program = parse_program(source)
-
-    # Run name resolution pass
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(program, "<test>")
-    if resolver.errors:
-        raise resolver.errors[0]
-
-    # Run type checking pass
-    type_checker = TypeCheckingPass(symbols)
-    node_types = type_checker.analyze(program, "<test>")
-    if type_checker.errors:
-        raise type_checker.errors[0]
-
-    # Run semantic validation pass
-    validator = SemanticValidationPass(symbols, node_types)
-    validator.analyze(program, "<test>")
-    if validator.errors:
-        raise validator.errors[0]
-
-    return symbols, node_types
-
-
-def expect_success(source: str) -> bool:
-    """Helper to expect successful semantic analysis."""
-    try:
-        run_semantic_analysis(source)
-        return True
-    except CompilerError:
-        return False
-
-
-def expect_error(source: str, error_fragment: str = None) -> bool:
-    """Helper to expect semantic error with optional message check."""
-    try:
-        run_semantic_analysis(source)
-        return False
-    except CompilerError as e:
-        if error_fragment:
-            return error_fragment.lower() in str(e).lower()
-        return True
-
+from conftest import parse_program
+from pipeline_helpers import (  # noqa: F401
+    expect_error, expect_parse_error, expect_success, pipeline_tmp,
+)
 
 class TestGenericConstraintHelpers:
     """Direct coverage for generic constraint helper internals."""
@@ -127,8 +70,22 @@ class TestGenericFunctions:
         """
         assert expect_success(source)
 
-    def test_generic_function_with_explicit_type(self):
-        """Test generic function returning a generic type."""
+    def test_return_only_generic_parameter_cannot_be_inferred(self):
+        """`$T` that appears only in the return type has no argument to bind it."""
+        source = """
+        create_default($T) :: fn() $T {
+            x: $T
+            ret x
+        }
+
+        main :: fn() {
+            a: i32 = create_default()
+        }
+        """
+        assert expect_error(source, "Could not infer generic parameter '$T'")
+
+    def test_return_only_inline_generic_parameter_cannot_be_inferred(self):
+        """The inline form must name the same cause as the declared form."""
         source = """
         create_default :: fn() $T {
             x: $T
@@ -137,12 +94,9 @@ class TestGenericFunctions:
 
         main :: fn() {
             a: i32 = create_default()
-            b: f64 = create_default()
         }
         """
-        # This tests the concept - might work differently
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_error(source, "Could not infer generic parameter '$T'")
 
     def test_generic_swap_function(self):
         """Test generic function with references."""
@@ -189,9 +143,7 @@ class TestGenericConstraints:
     def test_predefined_numeric_constraint(self):
         """Test generic with Numeric constraint."""
         source = """
-        Numeric :: @type_set(i8, i16, i32, i64, f32, f64)
-
-        abs :: fn(x: $T) $T {
+        abs($T: Numeric) :: fn(x: $T) $T {
             ret if x < 0 { -x } else { x }
         }
 
@@ -205,7 +157,7 @@ class TestGenericConstraints:
     def test_inline_type_set_constraint(self):
         """Test generic with inline type set constraint."""
         source = """
-        process :: fn(value: $T) $T {
+        process($T: @type_set(i32, i64)) :: fn(value: $T) $T {
             ret value * 2
         }
 
@@ -216,11 +168,9 @@ class TestGenericConstraints:
         assert expect_success(source)
 
     def test_constraint_violation(self):
-        """Test constraint violation detection."""
+        """A float argument violates the predefined Integer constraint."""
         source = """
-        IntOnly :: @type_set(i32, i64)
-
-        process :: fn(value: $T) $T {
+        process($T: Integer) :: fn(value: $T) $T {
             ret value * 2
         }
 
@@ -228,9 +178,10 @@ class TestGenericConstraints:
             x := process(3.14)
         }
         """
-        # This should error - f64 not in IntOnly type set
-        result = expect_error(source, "constraint")
-        assert isinstance(result, bool)
+        assert expect_error(
+            source,
+            "Generic constraint violation: Generic parameter '$T' requires Integer, got f64",
+        )
 
     def test_declared_generic_constraint_allows_matching_type(self):
         """Explicit generic declaration constraints should allow matching arguments."""
@@ -260,7 +211,11 @@ class TestGenericConstraints:
             x := process(3.14)
         }
         """
-        assert expect_error(source, "constraint")
+        assert expect_error(
+            source,
+            "Generic constraint violation: Generic parameter '$T' requires "
+            "@type_set(i32, i64), got f64",
+        )
 
     def test_inline_declared_generic_constraint_rejects_mismatched_type(self):
         """Inline type-set constraints should reject non-member arguments."""
@@ -273,24 +228,28 @@ class TestGenericConstraints:
             x := process(3.14)
         }
         """
-        assert expect_error(source, "constraint")
+        assert expect_error(
+            source,
+            "Generic constraint violation: Generic parameter '$T' requires "
+            "@type_set(i32, i64), got f64",
+        )
 
     def test_multiple_constraints(self):
         """Test multiple generic parameters with different constraints."""
         source = """
-        Numeric :: @type_set(i32, i64, f32, f64)
-        Integer :: @type_set(i32, i64)
-
-        combine :: fn(a: $T, b: $U) $T {
-            ret a + cast($T, b)
+        combine($T: Numeric, $U: Integer) :: fn(a: $T, b: $U) $T {
+            ret a + a
         }
 
         main :: fn() {
-            result := combine(3.14, 42)
+            result := combine(3.14, %s)
         }
         """
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source % "42")
+        assert expect_error(
+            source % "4.5",
+            "Generic constraint violation: Generic parameter '$U' requires Integer, got f64",
+        )
 
 
 class TestGenericStructs:
@@ -415,22 +374,24 @@ class TestGenericArrays:
     def test_generic_array_parameter(self):
         """Test generic function with array parameter."""
         source = """
-        first :: fn(arr: []$T) $T {
-            ret arr[0]
+        first :: fn(arr: []$T, i: usize, fallback: $T) $T {
+            if i < arr.len {
+                ret arr[i]
+            }
+            ret fallback
         }
 
         main :: fn() {
-            numbers: []i32
-            x := first(numbers)
+            numbers: [3]i32 = [1, 2, 3]
+            x := first(numbers[0..3], 0, -1)
         }
         """
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source)
 
     def test_generic_array_length(self):
         """Test generic function with fixed-size array."""
         source = """
-        sum_array :: fn(arr: [5]$T) $T {
+        sum_array :: fn(arr: [5]$T) $T where T: Numeric {
             total: $T = 0
             for x in arr {
                 total += x
@@ -487,17 +448,14 @@ class TestGenericTypeInference:
             x := same_type(42, "hello")
         }
         """
-        # This should error - both arguments must be same type
-        result = expect_error(source, "type")
-        # Might not be implemented yet
-        assert isinstance(result, bool)
+        assert expect_error(source, "Conflicting types for $T: string vs i32")
 
 
 class TestGenericEnumsUnions:
     """Test generic enums and unions."""
 
-    def test_generic_enum(self):
-        """Test generic enum declaration with inline $T syntax."""
+    def test_generic_enum_payload_is_a_parse_error(self):
+        """Generic enums are out of scope (SPEC 7.2): a variant takes no payload type."""
         source = """
         Option :: enum {
             Some: $T,
@@ -508,8 +466,10 @@ class TestGenericEnumsUnions:
             opt: Option(i32) = Option(i32).None
         }
         """
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_parse_error(
+            source,
+            "3:17: Expected ',' or a newline between items in enum variants, found ':'",
+        )
 
     def test_generic_union(self):
         """Test generic union declaration with inline $T syntax."""
@@ -523,8 +483,7 @@ class TestGenericEnumsUnions:
             res: Result(i32, string)
         }
         """
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source)
 
 
 class TestComplexGenerics:
@@ -546,8 +505,7 @@ class TestComplexGenerics:
             p := make_pair(42, "hello")
         }
         """
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source)
 
     def test_recursive_generic_type(self):
         """Test recursive generic type."""
@@ -567,7 +525,7 @@ class TestComplexGenerics:
     def test_generic_with_function_type(self):
         """Test generic with function type parameter."""
         source = """
-        apply :: fn(f: fn($T) $U, x: $T) $U {
+        apply($T, $U) :: fn(f: fn($T) $U, x: $T) $U {
             ret f(x)
         }
 
@@ -579,5 +537,4 @@ class TestComplexGenerics:
             result := apply(double, 21)
         }
         """
-        result = expect_success(source)
-        assert isinstance(result, bool)
+        assert expect_success(source)

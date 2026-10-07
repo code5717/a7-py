@@ -2,6 +2,7 @@
 Compiler error types and exception classes with Rich formatting support.
 """
 
+import os
 from typing import Optional, Tuple, List
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -59,6 +60,7 @@ class SemanticErrorType(Enum):
     DUPLICATE_PARAMETER = "duplicate_parameter"
     DUPLICATE_FIELD = "duplicate_field"
     DUPLICATE_VARIANT = "duplicate_variant"
+    DUPLICATE_ENUM_VALUE = "duplicate_enum_value"
     DUPLICATE_GENERIC_PARAM = "duplicate_generic_param"
 
     # Scope errors
@@ -68,6 +70,7 @@ class SemanticErrorType(Enum):
     CONTINUE_UNDEFINED_LABEL = "continue_undefined_label"
     RETURN_OUTSIDE_FUNCTION = "return_outside_function"
     DEFER_OUTSIDE_FUNCTION = "defer_outside_function"
+    DEFER_CONTROL_FLOW = "defer_control_flow"
 
     # Semantic validation
     UNREACHABLE_CODE = "unreachable_code"
@@ -92,6 +95,7 @@ class SemanticErrorType(Enum):
 
     # Generic errors
     GENERIC_PARAM_MISMATCH = "generic_param_mismatch"
+    GENERIC_BINDING_CONFLICT = "generic_binding_conflict"
     CONSTRAINT_VIOLATION = "constraint_violation"
 
     # General
@@ -126,6 +130,7 @@ class TypeErrorType(Enum):
 
     # Field/member access errors
     NO_SUCH_FIELD = "no_such_field"
+    NO_SUCH_TAG = "no_such_tag"
     FIELD_ACCESS_ON_NON_STRUCT = "field_access_on_non_struct"
 
     # Index errors
@@ -145,6 +150,9 @@ class TypeErrorType(Enum):
     MISSING_TYPE_OR_INITIALIZER = "missing_type_or_initializer"
     UNDEFINED_TYPE = "undefined_type"
     INCOMPATIBLE_TYPES = "incompatible_types"
+    INFINITE_SIZE_TYPE = "infinite_size_type"
+    TYPE_USED_AS_VALUE = "type_used_as_value"
+    CANNOT_INFER_TYPE = "cannot_infer_type"
 
     # Cast errors
     INVALID_CAST = "invalid_cast"
@@ -223,6 +231,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.DUPLICATE_PARAMETER: "Duplicate parameter",
         SemanticErrorType.DUPLICATE_FIELD: "Duplicate field",
         SemanticErrorType.DUPLICATE_VARIANT: "Duplicate enum variant",
+        SemanticErrorType.DUPLICATE_ENUM_VALUE: "Duplicate enum value",
         SemanticErrorType.DUPLICATE_GENERIC_PARAM: "Duplicate generic parameter",
 
         # Scope errors
@@ -232,6 +241,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CONTINUE_UNDEFINED_LABEL: "Continue label is not defined",
         SemanticErrorType.RETURN_OUTSIDE_FUNCTION: "Return statement outside function",
         SemanticErrorType.DEFER_OUTSIDE_FUNCTION: "Defer statement outside function",
+        SemanticErrorType.DEFER_CONTROL_FLOW: "Control flow cannot leave a deferred block",
 
         # Semantic validation
         SemanticErrorType.UNREACHABLE_CODE: "Unreachable code",
@@ -244,6 +254,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
         SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Nil requires a reference type",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Missing type annotation",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Non-exhaustive match",
+        SemanticErrorType.INVALID_PATTERN: "Invalid match pattern",
         SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Invalid fallthrough",
         SemanticErrorType.RECURSION_NOT_ALLOWED: "Recursion is not allowed",
 
@@ -255,6 +266,7 @@ def get_semantic_error_message(error_type: SemanticErrorType) -> str:
 
         # Generic errors
         SemanticErrorType.GENERIC_PARAM_MISMATCH: "Generic parameter count mismatch",
+        SemanticErrorType.GENERIC_BINDING_CONFLICT: "Conflicting generic parameter bindings",
         SemanticErrorType.CONSTRAINT_VIOLATION: "Generic constraint violation",
 
         # General
@@ -274,6 +286,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.DUPLICATE_PARAMETER: "Each parameter must have a unique name",
         SemanticErrorType.DUPLICATE_FIELD: "Each field must have a unique name",
         SemanticErrorType.DUPLICATE_VARIANT: "Each enum variant must have a unique name",
+        SemanticErrorType.DUPLICATE_ENUM_VALUE: "Give each variant its own value",
         SemanticErrorType.DUPLICATE_GENERIC_PARAM: "Each generic parameter must have a unique name",
 
         # Scope errors
@@ -283,6 +296,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CONTINUE_UNDEFINED_LABEL: "Define the label on an enclosing loop or drop the label",
         SemanticErrorType.RETURN_OUTSIDE_FUNCTION: "Move the return inside a function body or remove it",
         SemanticErrorType.DEFER_OUTSIDE_FUNCTION: "Move the defer inside a function body or remove it",
+        SemanticErrorType.DEFER_CONTROL_FLOW: "Move the ret, break, continue or fall out of the defer; a deferred block runs to its end",
 
         # Semantic validation
         SemanticErrorType.UNREACHABLE_CODE: "Remove unreachable code or fix control flow",
@@ -295,6 +309,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.NIL_NOT_REFERENCE_TYPE: "Use nil only where a reference type is expected",
         SemanticErrorType.MISSING_TYPE_ANNOTATION: "Add a type annotation or an initializer for this declaration",
         SemanticErrorType.NON_EXHAUSTIVE_MATCH: "Add missing cases or an else/wildcard branch to cover remaining values",
+        SemanticErrorType.INVALID_PATTERN: "Fix the pattern shape or, for a reversed range, swap the endpoints",
         SemanticErrorType.UNSUPPORTED_FALLTHROUGH: "Use fall only as the final statement of a non-final match case",
         SemanticErrorType.RECURSION_NOT_ALLOWED: "Rewrite the function using loops, explicit stacks, or another iterative structure",
 
@@ -306,6 +321,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
 
         # Generic errors
         SemanticErrorType.GENERIC_PARAM_MISMATCH: "Provide the correct number of generic type arguments",
+        SemanticErrorType.GENERIC_BINDING_CONFLICT: "Pass arguments of one type for the generic parameter, or cast one argument",
         SemanticErrorType.CONSTRAINT_VIOLATION: "Ensure the type satisfies the generic constraint",
 
         # General
@@ -342,6 +358,7 @@ def get_type_error_message(error_type: TypeErrorType) -> str:
 
         # Field/member access errors
         TypeErrorType.NO_SUCH_FIELD: "Struct has no such field",
+        TypeErrorType.NO_SUCH_TAG: "Union has no such tag",
         TypeErrorType.FIELD_ACCESS_ON_NON_STRUCT: "Cannot access field on non-struct type",
 
         # Index errors
@@ -361,6 +378,9 @@ def get_type_error_message(error_type: TypeErrorType) -> str:
         TypeErrorType.MISSING_TYPE_OR_INITIALIZER: "Variable requires type annotation or initializer",
         TypeErrorType.UNDEFINED_TYPE: "Undefined type",
         TypeErrorType.INCOMPATIBLE_TYPES: "Incompatible types",
+        TypeErrorType.INFINITE_SIZE_TYPE: "Type has infinite size",
+        TypeErrorType.TYPE_USED_AS_VALUE: "Not a value",
+        TypeErrorType.CANNOT_INFER_TYPE: "Cannot infer a type",
 
         # Cast errors
         TypeErrorType.INVALID_CAST: "Invalid type cast",
@@ -402,6 +422,7 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
 
         # Field/member access errors
         TypeErrorType.NO_SUCH_FIELD: "Fix the field spelling or add the field to the struct",
+        TypeErrorType.NO_SUCH_TAG: "Fix the tag spelling or add the tag to the union",
         TypeErrorType.FIELD_ACCESS_ON_NON_STRUCT: "Field access requires a struct type",
 
         # Index errors
@@ -421,6 +442,9 @@ def get_type_error_advice(error_type: TypeErrorType) -> str:
         TypeErrorType.MISSING_TYPE_OR_INITIALIZER: "Add either a type annotation or an initializer",
         TypeErrorType.UNDEFINED_TYPE: "Fix the spelling or import the module that defines the type",
         TypeErrorType.INCOMPATIBLE_TYPES: "Convert one side to the other side's type with an explicit cast",
+        TypeErrorType.INFINITE_SIZE_TYPE: "Store a reference (ref T) where the type holds itself",
+        TypeErrorType.TYPE_USED_AS_VALUE: "Use a value here: a variable, a literal, a call, or Type{...}",
+        TypeErrorType.CANNOT_INFER_TYPE: "Write the type on the declaration or the parameter",
 
         # Cast errors
         TypeErrorType.INVALID_CAST: "These types cannot be cast to each other",
@@ -489,7 +513,14 @@ class ErrorFormatter:
             error_msg.append(str(error.span.start_column), style="yellow bold")
             error_msg.append("]", style="dim white")
 
-        self.console.print(error_msg)
+        # soft_wrap: the headline, `path:line:col` and the hint each stay on
+        # one line whatever the terminal width, so editors and grep can
+        # match them.
+        self.console.print(error_msg, soft_wrap=True)
+
+        location = error_location(error)
+        if location:
+            self.console.print(Text(f"  --> {location}", style="blue"), soft_wrap=True)
 
         # Show source code context if available
         if error.source_lines and error.span:
@@ -506,22 +537,13 @@ class ErrorFormatter:
             separator_bottom = Rule(characters="─", style="black")
             self.console.print(separator_bottom)
 
-        # Show advice if available (for errors with error_type) - after context
-        if hasattr(error, "error_type") and error.error_type:
-            advice = None
-            if isinstance(error, TokenizerError):
-                advice = get_tokenizer_error_advice(error.error_type)
-            elif isinstance(error, SemanticError):
-                advice = get_semantic_error_advice(error.error_type)
-            elif isinstance(error, TypeCheckError):
-                advice = get_type_error_advice(error.error_type)
-
-            if advice:
-                advice_msg = Text()
-                advice_msg.append("hint", style="cyan bold")
-                advice_msg.append(": ", style="cyan")
-                advice_msg.append(advice, style="cyan dim")
-                self.console.print(advice_msg)
+        advice = error_hint(error)
+        if advice:
+            advice_msg = Text()
+            advice_msg.append("hint", style="cyan bold")
+            advice_msg.append(": ", style="cyan")
+            advice_msg.append(advice, style="cyan dim")
+            self.console.print(advice_msg, soft_wrap=True)
 
         # Add a blank line after each error
         self.console.print()
@@ -705,6 +727,56 @@ class CompilerError(Exception):
             length=length,
         )
         return cls(message, span, filename, source_lines)
+
+
+def display_path(filename: str) -> str:
+    """Path as shown in diagnostics: relative to the working directory when
+    the file is inside it, unchanged otherwise."""
+    if filename.startswith("<"):
+        return filename
+    try:
+        relative = os.path.relpath(filename)
+    except ValueError:
+        # Windows: the file is on another drive.
+        return filename
+    return filename if relative.startswith("..") else relative
+
+
+def error_location(error: "CompilerError") -> Optional[str]:
+    """`path:line:col` of an error, `path` alone without a span, None
+    when the error names no file."""
+    if not error.filename:
+        return None
+    path = display_path(error.filename)
+    if error.span is None:
+        return path
+    return f"{path}:{error.span.start_line}:{error.span.start_column}"
+
+
+def error_code(error: BaseException) -> Optional[str]:
+    """Machine code of an error: the value of its error-type enum."""
+    error_type = getattr(error, "error_type", None)
+    return error_type.value if error_type is not None else None
+
+
+def error_hint(error: BaseException) -> Optional[str]:
+    """Advice shown as `hint:` in human output and as `hint` in JSON.
+
+    An explicit `hint` on the error wins over the advice table of its code.
+    """
+    explicit = getattr(error, "hint", None)
+    if explicit:
+        return explicit
+    error_type = getattr(error, "error_type", None)
+    if error_type is None:
+        return None
+    if isinstance(error, TokenizerError):
+        return get_tokenizer_error_advice(error_type)
+    if isinstance(error, SemanticError):
+        return get_semantic_error_advice(error_type)
+    if isinstance(error, TypeCheckError):
+        return get_type_error_advice(error_type)
+    return None
 
 
 class TokenizerError(CompilerError):

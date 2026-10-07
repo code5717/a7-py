@@ -27,7 +27,7 @@ Choose explicit-width integers for data. Use `usize` for lengths, capacities, al
 | `isize` | Target pointer width | Signed offsets |
 | `f32` | 32 bits | IEEE 754 single precision |
 | `f64` | 64 bits | IEEE 754 double precision |
-| `char` | Byte representation | Public ASCII character model |
+| `char` | 8 bits | Byte character, 0 through 255 |
 | `string` | Composite | Character data and length |
 
 `int`, `uint`, and `number` are not accepted public alternatives to explicit-width integers. Although the lexer reserves `float`, use the documented `f32` and `f64` spellings. This index makes no runtime-support claim for `float`.

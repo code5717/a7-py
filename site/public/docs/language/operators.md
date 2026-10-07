@@ -73,7 +73,7 @@ One-dimensional same-shape numeric fixed-array addition is a supported narrow ar
 ## Evidence
 
 - [a7/parser.py](https://github.com/code5717/a7-py/blob/master/a7/parser.py)
-- [a7/const_eval.py](https://github.com/code5717/a7-py/blob/master/a7/const_eval.py)
+- [a7/exact_constants.py](https://github.com/code5717/a7-py/blob/master/a7/exact_constants.py)
 - [examples/020_operators.a7](https://github.com/code5717/a7-py/blob/master/examples/020_operators.a7)
 - [docs/SAFETY_CONTRACT.md](https://github.com/code5717/a7-py/blob/master/docs/SAFETY_CONTRACT.md)
 - [docs/SPEC.md](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md)

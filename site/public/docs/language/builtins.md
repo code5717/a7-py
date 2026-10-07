@@ -14,7 +14,7 @@ order: 21
 
 | Spelling | Status | Qualification |
 | --- | --- | --- |
-| `@type_set(...)` | Limited | Constraint syntax is recognized; top-level local type-set aliases fail code generation with unsupported `TYPE_SET` |
+| `@type_set(...)` | Limited | Works inline (`$T: @type_set(i32, i64)`) and as a file-scope alias used as a constraint |
 | `cast(Type, value)` | Limited | Primitive conversion needs a safety proof |
 | `@size_of`, `@align_of` | Unavailable | Reserved or parsed; not semantically resolved and backend-lowered |
 | `@type_id`, `@type_name` | Unavailable | No current executable reflection interface |

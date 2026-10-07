@@ -158,10 +158,17 @@ def list_mutants() -> int:
 
 def check_mutants(allow_dirty: bool) -> int:
     if not allow_dirty:
+        git = shutil.which("git")
+        if git is None:
+            print("git is required to check the working tree.", file=sys.stderr)
+            return 2
         status = subprocess.run(
-            ["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True
-        ).stdout.strip()
-        if status:
+            [git, "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True
+        )
+        if status.returncode != 0:
+            print(f"Cannot check the working tree: {status.stderr.strip()}", file=sys.stderr)
+            return 2
+        if status.stdout.strip():
             print("Working tree is not clean. The harness edits files in place.")
             print("Commit or stash first, or pass --allow-dirty.")
             return 2

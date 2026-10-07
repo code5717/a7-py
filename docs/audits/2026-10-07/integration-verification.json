@@ -1,0 +1,40 @@
+{
+  "started_at": "2026-10-06T23:24:46.180735+00:00",
+  "command": [
+    "taskset",
+    "-c",
+    "0-15",
+    "env",
+    "A7_PYTEST_WORKERS=6",
+    "./run_release_checks.sh"
+  ],
+  "checkout": "/var/tmp/a7-v1-integration-2026-10-07-x7cf9vx_/checkout",
+  "manifest_sha256": "b26fa15faf33cd3caf5248d5a5afa61e79e2dc5ee0fd9236b8ede20d1b41b287",
+  "pid": 1277989,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T23:54:11.198827+00:00",
+  "log_sha256": "fd7bc0a571d18809eb52691b3a0c41f2449ed636efcbca3efa7acfe782f07295",
+  "snapshot_manifest": "integration-manifest.json",
+  "compiler_package_gate": {
+    "passed_checks": 11,
+    "skipped": 0,
+    "pytest_passed": 3374,
+    "pytest_xfailed": 1,
+    "examples_each_profile": 51,
+    "error_stage_checks": 61
+  },
+  "site_check": "passed; 12 tests, 2564 assertions, 23 pages, 1496 local resources, 179 search targets, 441 coverage records",
+  "dependency_audits": "Bun and Python passed; no known vulnerabilities reported",
+  "static_security": "Bandit passed",
+  "key_source_sha256": {
+    "a7/passes/safety.py": "d6d414ec58aa7ab84b40953d2654c0aad819e4110c2e0bbb2acb74ed47ee9aa3",
+    "a7/passes/type_checker.py": "977cd1117051a770fa5b79c77412e458ef31f34bff01812e02b56810c08508ce",
+    "a7/compile.py": "4802d338ecb48e7e1473ef9f117e0e10197ce7aee69dcd274c14905659700f2e",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+    "test/test_stdlib_call_resolution.py": "551afe109688451c0045aee3d7a05f0008163d8807b1fd3ea9c1255801f047e4",
+    "test/test_selected_child_native.py": "df4b87061987360206f9cdc2d545f4932a3f222afdfde50c5d8e83f5bed4e261",
+    "site/bun.lock": "eefa755ce672f6eb2b7e8c0627d76a5760bf154e5f144149006de3e388852e1c"
+  },
+  "boundary": "Frozen integration checkpoint. Includes checker statement worklist, joined-child lifetime dependency repair, importer-local alias clashes and repaired stdlib fixtures. One scalar-reference expected failure and documented compiler gaps remain. Benchmarks report-only; no browser or GPU execution acceptance; V1 incomplete.",
+  "post_freeze_changes": "Qualification and review records, STATUS and roadmap documentation only; compiler, tests, scripts, site and dependencies unchanged."
+}

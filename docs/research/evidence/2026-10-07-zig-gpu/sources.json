@@ -1,0 +1,86 @@
+[
+  {
+    "url": "https://ziglang.org/download/index.json",
+    "file": "index.json",
+    "utc": "2026-10-06T21:34:17.943594+00:00",
+    "sha256": "4787934a28d494dc496d93cfa46cabb840158db938cfbea0cde3f3cce63bb936"
+  },
+  {
+    "url": "https://ziglang.org/download/0.16.0/zig-0.16.0.tar.xz",
+    "file": "0.16.0.tar.xz",
+    "utc": "2026-10-06T21:34:28.627367+00:00",
+    "sha256": "43186959edc87d5c7a1be7b7d2a25efffd22ce5807c7af99067f86f99641bfdf"
+  },
+  {
+    "url": "https://ziglang.org/download/0.17.0/zig-0.17.0.tar.xz",
+    "file": "0.17.0.tar.xz",
+    "utc": "2026-10-06T21:34:47.286536+00:00",
+    "sha256": "b6c7f1728f043700d6529bac980800792f824256a9d2f1839b3d62beed0b8abd"
+  },
+  {
+    "url": "https://ziglang.org/builds/zig-0.18.0-dev.35+5e754304d.tar.xz",
+    "file": "master.tar.xz",
+    "utc": "2026-10-06T21:35:09.606134+00:00",
+    "sha256": "3b887a946adb8fbe57a1e77298794a45599c8ac979ee7a0e13d52a94dc84d94c"
+  },
+  {
+    "url": "https://ziglang.org/download/0.16.0/release-notes.html",
+    "file": "0.16.0-release.html",
+    "utc": "2026-10-06T21:35:12.659609+00:00",
+    "sha256": "cdf9482991cfff85bdfe3cf6fcc5242df05c9cd7efebbd8aaf040c8d650d2c80"
+  },
+  {
+    "url": "https://ziglang.org/download/0.17.0/release-notes.html",
+    "file": "0.17.0-release.html",
+    "utc": "2026-10-06T21:35:14.044460+00:00",
+    "sha256": "57570bb65a4fac318ec966719c976d21108cad684637147b64ba995968ad6bb3"
+  },
+  {
+    "url": "https://ziglang.org/devlog/2026/",
+    "file": "devlog.html",
+    "utc": "2026-10-06T21:35:14.949129+00:00",
+    "sha256": "10042c14878ef65466fe38126a174f4559f1fec3b44217b756c9f2d7361a556e"
+  },
+  {
+    "url": "https://docs.vulkan.org/guide/latest/shader_memory_layout.html",
+    "file": "vulkan-layout.html",
+    "utc": "2026-10-06T21:37:30.043732+00:00",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://rocm.docs.amd.com/en/docs-7.14.1/compatibility/compatibility-matrix.html",
+    "file": "rocm-matrix.html",
+    "utc": "2026-10-06T21:37:30.596261+00:00",
+    "sha256": "415fe5cf4e1070ac962f36cb3fb359288acaf80b55bdf475ffd4f78a27b97ed3"
+  },
+  {
+    "url": "https://rocm.docs.amd.com/projects/HIP/en/latest/reference/hip_runtime_api/modules/module_management.html",
+    "file": "hip-modules.html",
+    "utc": "2026-10-06T21:37:31.308227+00:00",
+    "sha256": "c291b7ebba284a7e524ceae369a27f338bd7943ec66072acd80286ae8bed4573"
+  },
+  {
+    "url": "https://docs.nvidia.com/cuda/cuda-driver-api/cuda_driver_api/group__CUDA__MODULE.html",
+    "file": "cuda-modules.html",
+    "utc": "2026-10-06T21:37:32.439825+00:00",
+    "sha256": "a204c1e659f9637207e91f5ecc9916e81a1f8e94a86697e291ad33b40bc9454f"
+  },
+  {
+    "url": "https://github.com/webgpu-native/webgpu-headers",
+    "file": "webgpu-headers.html",
+    "utc": "2026-10-06T21:37:32.986364+00:00",
+    "sha256": "8e137afc36805125d50146a9aeb261267ca6b499c4fc2871feb85b88002cfecc"
+  },
+  {
+    "url": "https://registry.khronos.org/OpenCL/specs/unified/html/OpenCL_API.html",
+    "file": "opencl-api.html",
+    "utc": "2026-10-06T21:37:33.909259+00:00",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "url": "https://codeberg.org/ziglang/zig/pulls/35676",
+    "file": "codeberg-35676.html",
+    "utc": "2026-10-06T21:37:34.414501+00:00",
+    "sha256": "9f986078b02f2ab2fe656dd83f6d687c53d9f3d4984c4a159803c5c0f08c6769"
+  }
+]

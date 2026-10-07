@@ -5,67 +5,9 @@ Tests all semantic rules, type checking, and validation across the entire langua
 Organized by feature category for easy maintenance and debugging.
 """
 
-import pytest
-from a7.tokens import Tokenizer
-from a7.parser import Parser
-from a7.passes.name_resolution import NameResolutionPass
-from a7.passes.type_checker import TypeCheckingPass
-from a7.passes.semantic_validator import SemanticValidationPass
-from a7.errors import SemanticError, CompilerError
 
 
-def parse_program(source: str):
-    """Helper to parse a source program."""
-    tokenizer = Tokenizer(source)
-    tokens = tokenizer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
-
-
-def run_semantic_analysis(source: str):
-    """Helper to run full semantic analysis pipeline.
-
-    Raises SemanticError if any pass detects errors.
-    """
-    program = parse_program(source)
-
-    # Name resolution
-    resolver = NameResolutionPass()
-    symbols = resolver.analyze(program, "test.a7")
-    if resolver.errors:
-        raise resolver.errors[0]
-
-    # Type checking
-    checker = TypeCheckingPass(symbols)
-    checker.analyze(program, "test.a7")
-    if checker.errors:
-        raise checker.errors[0]
-
-    # Semantic validation
-    validator = SemanticValidationPass(symbols, checker.node_types)
-    validator.analyze(program, "test.a7")
-    if validator.errors:
-        raise validator.errors[0]
-
-    return symbols, checker
-
-
-def run_analysis_expect_success(source: str):
-    """Helper that just verifies analysis completes without errors."""
-    try:
-        run_semantic_analysis(source)
-        return True
-    except CompilerError:
-        return False
-
-
-def run_analysis_expect_error(source: str):
-    """Helper that expects analysis to fail with SemanticError."""
-    try:
-        run_semantic_analysis(source)
-        return False  # Should have raised
-    except CompilerError:
-        return True  # Expected
+from pipeline_helpers import expect_error, expect_success, pipeline_tmp  # noqa: F401
 
 
 class TestPrimitiveTypes:
@@ -82,7 +24,7 @@ class TestPrimitiveTypes:
         }
         """
         # Just verify analysis completes without errors
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_float_literals(self):
         """Test float literal type inference."""
@@ -92,7 +34,7 @@ class TestPrimitiveTypes:
             y := 2.5e-10
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_boolean_literals(self):
         """Test boolean type."""
@@ -102,7 +44,7 @@ class TestPrimitiveTypes:
             f := false
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_string_literals(self):
         """Test string type."""
@@ -111,7 +53,7 @@ class TestPrimitiveTypes:
             msg := "hello"
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_char_literals(self):
         """Test character type."""
@@ -120,7 +62,7 @@ class TestPrimitiveTypes:
             c := 'a'
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_type_annotations(self):
         """Test explicit type annotations."""
@@ -138,7 +80,7 @@ class TestPrimitiveTypes:
             y: f64 = 2.0
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestArithmeticOperators:
@@ -155,7 +97,7 @@ class TestArithmeticOperators:
             e := 10 % 3
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_arithmetic_type_compatibility(self):
         """Test arithmetic with compatible types."""
@@ -166,7 +108,7 @@ class TestArithmeticOperators:
             z := x + y
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_unary_operators(self):
         """Test unary operators."""
@@ -177,7 +119,7 @@ class TestArithmeticOperators:
             c := ~0xFF
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestComparisonOperators:
@@ -191,7 +133,7 @@ class TestComparisonOperators:
             b := 5 != 3
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_relational_operators(self):
         """Test <, <=, >, >= operators."""
@@ -203,7 +145,7 @@ class TestComparisonOperators:
             d := 10 >= 10
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestLogicalOperators:
@@ -217,7 +159,7 @@ class TestLogicalOperators:
             b := true or false
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_not_operator(self):
         """Test 'not' operator."""
@@ -226,7 +168,7 @@ class TestLogicalOperators:
             a := not true
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestBitwiseOperators:
@@ -241,7 +183,7 @@ class TestBitwiseOperators:
             c := 0xFF ^ 0x0F
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_bitwise_shifts(self):
         """Test << and >> operators."""
@@ -251,7 +193,7 @@ class TestBitwiseOperators:
             b := 16 >> 2
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestArrayTypes:
@@ -264,7 +206,7 @@ class TestArrayTypes:
             arr: [5]i32
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_array_initialization(self):
         """Test array initialization."""
@@ -273,7 +215,7 @@ class TestArrayTypes:
             arr := [1, 2, 3, 4, 5]
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_array_indexing(self):
         """Test array element access."""
@@ -283,7 +225,7 @@ class TestArrayTypes:
             x := arr[0]
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_multidimensional_arrays(self):
         """Test multi-dimensional arrays."""
@@ -292,7 +234,7 @@ class TestArrayTypes:
             matrix: [3][4]i32
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestSliceTypes:
@@ -305,17 +247,21 @@ class TestSliceTypes:
             slice: []i32
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_slice_indexing(self):
         """Test slice element access."""
         source = """
         main :: fn() {
-            slice: []i32
-            x := slice[0]
+            arr: [3]i32 = [1, 2, 3]
+            slice := arr[0..3]
+            i: usize = 1
+            if i < slice.len {
+                x := slice[i]
+            }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_slice_expression_from_array(self):
         """Test array sub-slicing produces a slice type."""
@@ -326,7 +272,7 @@ class TestSliceTypes:
             x := slice[0]
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_slice_expression_rejects_non_sliceable_values(self):
         """Only arrays and slices may be sliced."""
@@ -336,7 +282,7 @@ class TestSliceTypes:
             y := x[0..1]
         }
         """
-        assert run_analysis_expect_error(source)
+        assert expect_error(source, "Requires array or slice type: got 'i32'")
 
 
 class TestPointerTypes:
@@ -349,7 +295,7 @@ class TestPointerTypes:
             p: ref i32 = nil
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_address_of_operator(self):
         """Test implicit reference passing."""
@@ -362,7 +308,7 @@ class TestPointerTypes:
             touch(x)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_dereference_operator(self):
         """Test implicit ref struct field access."""
@@ -376,7 +322,7 @@ class TestPointerTypes:
             touch(box)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestReferenceTypes:
@@ -389,7 +335,7 @@ class TestReferenceTypes:
             r: ref i32
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestFunctionTypes:
@@ -402,7 +348,7 @@ class TestFunctionTypes:
             ret a + b
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_void_function(self):
         """Test void function (no return type)."""
@@ -410,7 +356,7 @@ class TestFunctionTypes:
         print_hello :: fn() {
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_function_call(self):
         """Test function call type checking."""
@@ -423,7 +369,7 @@ class TestFunctionTypes:
             result := add(5, 10)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_nested_function_calls(self):
         """Test nested function calls."""
@@ -436,7 +382,7 @@ class TestFunctionTypes:
             ret double(double(x))
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestStructTypes:
@@ -450,7 +396,7 @@ class TestStructTypes:
             y: i32
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_struct_initialization(self):
         """Test struct literal initialization."""
@@ -464,7 +410,7 @@ class TestStructTypes:
             p := Point{x: 10, y: 20}
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_struct_field_access(self):
         """Test field access on structs."""
@@ -479,7 +425,7 @@ class TestStructTypes:
             x_val := p.x
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_nested_structs(self):
         """Test nested struct types."""
@@ -494,7 +440,7 @@ class TestStructTypes:
             end: Point
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestEnumTypes:
@@ -509,7 +455,7 @@ class TestEnumTypes:
             Blue
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_enum_with_values(self):
         """Test enum with explicit values."""
@@ -520,7 +466,7 @@ class TestEnumTypes:
             ServerError = 500
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestUnionTypes:
@@ -535,7 +481,7 @@ class TestUnionTypes:
             str_val: string
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestControlFlow:
@@ -551,7 +497,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_if_else_statement(self):
         """Test if-else statement."""
@@ -565,7 +511,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_while_loop(self):
         """Test while loop."""
@@ -577,7 +523,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_for_loop(self):
         """Test C-style for loop."""
@@ -588,7 +534,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_for_in_loop(self):
         """Test for-in loop."""
@@ -600,7 +546,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_for_in_indexed_loop(self):
         """Test for-in loop with index."""
@@ -613,7 +559,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_match_statement(self):
         """Test match statement."""
@@ -627,7 +573,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_break_statement(self):
         """Test break in loop."""
@@ -638,7 +584,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_continue_statement(self):
         """Test continue in loop."""
@@ -649,7 +595,7 @@ class TestControlFlow:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_break_outside_loop_error(self):
         """Test that break outside loop is an error."""
@@ -658,7 +604,7 @@ class TestControlFlow:
             break
         }
         """
-        assert run_analysis_expect_error(source)
+        assert expect_error(source, "Break statement outside loop")
 
     def test_continue_outside_loop_error(self):
         """Test that continue outside loop is an error."""
@@ -667,7 +613,7 @@ class TestControlFlow:
             continue
         }
         """
-        assert run_analysis_expect_error(source)
+        assert expect_error(source, "Continue statement outside loop")
 
 
 class TestVariableScoping:
@@ -684,7 +630,7 @@ class TestVariableScoping:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_variable_shadowing(self):
         """Test variable shadowing (allowed in A7)."""
@@ -697,7 +643,7 @@ class TestVariableScoping:
             }
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_function_scope(self):
         """Test function parameter scoping."""
@@ -706,7 +652,7 @@ class TestVariableScoping:
             y := x + 1
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestNameCollisions:
@@ -718,7 +664,7 @@ class TestNameCollisions:
         foo :: fn() {}
         foo :: fn() {}
         """
-        assert run_analysis_expect_error(source)
+        assert expect_error(source, "Already defined: Function 'foo'")
 
     def test_duplicate_struct_error(self):
         """Test that duplicate structs are detected."""
@@ -726,7 +672,7 @@ class TestNameCollisions:
         Point :: struct { x: i32 }
         Point :: struct { y: i32 }
         """
-        assert run_analysis_expect_error(source)
+        assert expect_error(source, "Already defined: Struct 'Point'")
 
     def test_duplicate_variable_in_scope_error(self):
         """Test that duplicate variables in same scope are detected."""
@@ -736,7 +682,7 @@ class TestNameCollisions:
             x := 2
         }
         """
-        assert run_analysis_expect_error(source)
+        assert expect_error(source, "Already defined: Variable 'x'")
 
 
 class TestMemoryManagement:
@@ -749,7 +695,7 @@ class TestMemoryManagement:
             p := new i32
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_del_statement(self):
         """Test del deallocation."""
@@ -759,7 +705,7 @@ class TestMemoryManagement:
             del p
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_defer_statement(self):
         """Test defer statement."""
@@ -770,7 +716,7 @@ class TestMemoryManagement:
             defer cleanup()
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestTypeInference:
@@ -783,7 +729,7 @@ class TestTypeInference:
             x := 42
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_expression_inference(self):
         """Test expression type inference."""
@@ -793,7 +739,7 @@ class TestTypeInference:
             y := x * 2
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_function_return_inference(self):
         """Test function return type inference."""
@@ -806,7 +752,7 @@ class TestTypeInference:
             x := get_value()
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestCastExpressions:
@@ -820,7 +766,7 @@ class TestCastExpressions:
             y := cast(i64, x)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
 
 class TestComplexPrograms:
@@ -849,7 +795,7 @@ class TestComplexPrograms:
             result := fib(10)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_linked_list_operations(self):
         """Test linked list data structure."""
@@ -872,7 +818,7 @@ class TestComplexPrograms:
             head := create_node(1)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)
 
     def test_calculator(self):
         """Test simple calculator with operators."""
@@ -880,7 +826,10 @@ class TestComplexPrograms:
         add :: fn(a: i32, b: i32) i32 { ret a + b }
         sub :: fn(a: i32, b: i32) i32 { ret a - b }
         mul :: fn(a: i32, b: i32) i32 { ret a * b }
-        div :: fn(a: i32, b: i32) i32 { ret a / b }
+        div :: fn(a: i32, b: i32) i32 {
+            if b == 0 { ret 0 }
+            ret a / b
+        }
 
         main :: fn() {
             x := 10
@@ -891,4 +840,4 @@ class TestComplexPrograms:
             quot := div(x, y)
         }
         """
-        assert run_analysis_expect_success(source)
+        assert expect_success(source)

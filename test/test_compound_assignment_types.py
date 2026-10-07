@@ -15,6 +15,7 @@ import sys
 import pytest
 
 from a7.compile import ExitCode
+from conftest import shared_zig_cache
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -101,6 +102,20 @@ def zig():
             "Requires numeric type",
             id="i32-add-string-rhs",
         ),
+        # char has no arithmetic: `a + b` on two chars was already rejected,
+        # and the compound forms follow the binary operators.
+        pytest.param(
+            "    a: char = 'a'\n    b: char = 'b'\n",
+            "a += b",
+            "Requires numeric type",
+            id="char-add-char",
+        ),
+        pytest.param(
+            "    a: char = 'a'\n    b: char = 'b'\n",
+            "a |= b",
+            "Requires integer type",
+            id="char-or-char",
+        ),
     ],
 )
 def test_compound_assignment_rejects_operand_types_zig_rejects(tmp_path, decls, statement, fragment):
@@ -129,9 +144,7 @@ def test_compound_assignment_rejects_operand_types_zig_rejects(tmp_path, decls, 
         pytest.param("    a: f64 = 1.0\n    b: f64 = 0.0\n", "a *= 2.0", id="f64-mul-literal"),
         pytest.param("    a: u32 = 1\n    b: u8 = 3\n", "a <<= b", id="u32-shl-u8"),
         pytest.param("    a: f64 = 1.0\n    b: f64 = 0.0\n", "a += 2", id="f64-add-int-literal"),
-        # char lowers to u8 and bool supports &, |, ^ in Zig; these build today.
-        pytest.param("    a: char = 'a'\n    b: char = 'b'\n", "a += b", id="char-add-char"),
-        pytest.param("    a: char = 'a'\n    b: char = 'b'\n", "a |= b", id="char-or-char"),
+        # bool supports &, |, ^ in Zig; these build today.
         pytest.param("    a: bool = true\n    b: bool = false\n", "a ^= b", id="bool-xor-bool"),
         pytest.param("    a: bool = true\n    b: bool = false\n", "a &= b", id="bool-and-bool"),
     ],
@@ -154,7 +167,7 @@ def test_compound_assignment_accepts_programs_zig_builds(tmp_path, zig, decls, s
             "--cache-dir",
             str(tmp_path / "cache"),
             "--global-cache-dir",
-            str(tmp_path / "global-cache"),
+            str(shared_zig_cache() / "global"),
         ],
         cwd=tmp_path,
         capture_output=True,

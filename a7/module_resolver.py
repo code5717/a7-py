@@ -50,7 +50,8 @@ class ModuleResolver:
             search_paths: Directories to search for modules
         """
         self.search_paths = search_paths or ["."]
-        self.resolved_search_paths = [Path(path).resolve() for path in self.search_paths]
+        self.entry_root = Path(self.search_paths[0]).resolve()
+        # File keys are root-relative real paths; leading / reserves stdlib cache keys.
         self.loaded_modules: Dict[str, ModuleInfo] = {}
         self.module_table = ModuleTable()
         self.stdlib = StdlibRegistry()
@@ -65,24 +66,24 @@ class ModuleResolver:
     def _is_safe_module_path(self, module_path: str) -> bool:
         # Reject null bytes (would crash Path.exists with ValueError),
         # backslashes (cross-platform path-traversal vector), and any
-        # absolute or parent-relative segments. Empty or whitespace-only
-        # paths are also rejected.
+        # absolute paths. Parent-relative paths are checked against entry_root.
+        # Empty or whitespace-only paths are also rejected.
         if not module_path or not module_path.strip():
             return False
         if "\x00" in module_path or "\\" in module_path:
             return False
         path = Path(module_path)
-        return not path.is_absolute() and ".." not in path.parts
+        return not path.is_absolute()
 
     def _is_within_search_path(self, candidate: Path) -> bool:
         resolved = candidate.resolve()
-        return any(resolved.is_relative_to(search_path) for search_path in self.resolved_search_paths)
+        return resolved.is_relative_to(self.entry_root)
 
     def is_virtual_module(self, module_path: str) -> bool:
         """Return True when an import is provided by the built-in stdlib registry."""
         return module_path in self.virtual_modules
 
-    def _canonical_import_key(self, module_path: str) -> str:
+    def _canonical_import_key(self, module_path: str, importing_file: Optional[str] = None) -> str:
         """Canonical identity for duplicate-import comparison (L26).
 
         File modules key on the resolved absolute file path, so alternate
@@ -94,7 +95,7 @@ class ModuleResolver:
         if self.is_virtual_module(module_path):
             canonical = self.stdlib.canonical_module_name(module_path)
             return f"virtual:{canonical or module_path}"
-        file_path = self.resolve_module_path(module_path)
+        file_path = self.resolve_module_path(module_path, importing_file)
         if file_path is not None:
             return f"file:{file_path}"
         return f"unresolved:{module_path}"
@@ -129,21 +130,25 @@ class ModuleResolver:
                 )
             seen[key] = decl
 
-    def resolve_module_path(self, module_path: str) -> Optional[str]:
+    def resolve_module_path(self, module_path: str, importing_file: Optional[str] = None) -> Optional[str]:
         """
         Resolve a module path to a file path.
 
         Args:
             module_path: Module path (e.g., "io", "math/vector")
+            importing_file: File whose folder supplies the relative import base
 
         Returns:
-            Absolute file path, or None if not found
+            Absolute file path inside the entry root, or None if not found
         """
         if not self._is_safe_module_path(module_path):
             return None
 
-        # Try each search path
-        for search_path in self.search_paths:
+        search_paths = (
+            [Path(importing_file).resolve().parent]
+            if importing_file else [self.entry_root, *self.search_paths]
+        )
+        for search_path in search_paths:
             # Convert module path to file path
             # "io" -> "io.a7"
             # "math/vector" -> "math/vector.a7"
@@ -158,47 +163,45 @@ class ModuleResolver:
 
         return None
 
-    def load_module(self, module_path: str) -> Optional[ModuleInfo]:
+    def load_module(self, module_path: str, importing_file: Optional[str] = None) -> Optional[ModuleInfo]:
         """Load dependencies in source order without using the Python call stack."""
         initial_depth = len(self.loading_stack)
         active = set(self.loading_stack)
         # An exit event completes a cached module after all its imports finish.
         # Enter events carry the importing declaration for unlocated errors.
-        pending = [(False, module_path, None)]
+        pending = [(False, module_path, importing_file, None)]
         try:
             while pending:
-                exiting, path, origin = pending.pop()
+                exiting, path, importer, origin = pending.pop()
                 if exiting:
                     active.remove(self.loading_stack.pop())
                     continue
                 try:
-                    # Check active modules before the cache so cycles cannot
-                    # masquerade as already completed imports.
-                    if path in active:
-                        cycle = " -> ".join(self.loading_stack + [path])
-                        raise SemanticError(f"Circular dependency detected: {cycle}")
-                    if path in self.loaded_modules:
-                        continue
                     if self.is_virtual_module(path):
                         self._load_virtual_module(path)
                         continue
-                    file_path = self.resolve_module_path(path)
+                    file_path = self.resolve_module_path(path, importer)
                     if not file_path:
-                        raise A7ImportError(
-                            f"Module '{path}' not found"
-                        )
-                    self.loading_stack.append(path)
-                    active.add(path)
-                    module_info, imports, source_lines = self._read_module(path, file_path)
+                        raise A7ImportError(f"Module '{path}' not found")
+                    key = Path(file_path).relative_to(self.entry_root).with_suffix("").as_posix()
+                    # Check active identities before the cache, including alternate spellings.
+                    if key in active:
+                        cycle = " -> ".join(self.loading_stack + [key])
+                        raise SemanticError(f"Circular dependency detected: {cycle}")
+                    if key in self.loaded_modules:
+                        continue
+                    self.loading_stack.append(key)
+                    active.add(key)
+                    module_info, imports, source_lines = self._read_module(key, file_path)
                     self._raise_on_duplicate_imports(
                         imports, file_path, source_lines,
-                        self._canonical_import_key,
+                        lambda imported: self._canonical_import_key(imported, file_path),
                     )
-                    self.module_table.register_module(path, module_info.symbols)
-                    self.loaded_modules[path] = module_info
-                    pending.append((True, path, None))
+                    self.module_table.register_module(key, module_info.symbols)
+                    self.loaded_modules[key] = module_info
+                    pending.append((True, key, None, None))
                     for declaration in reversed(imports):
-                        pending.append((False, declaration.module_path or "",
+                        pending.append((False, declaration.module_path or "", file_path,
                                         (declaration, file_path, source_lines)))
                 except CompilerError as error:
                     if error.span is not None or origin is None:
@@ -218,7 +221,7 @@ class ModuleResolver:
                         error.message, span=declaration.span, filename=filename,
                         source_lines=lines,
                     ) from error
-            return self.loaded_modules[module_path]
+            return self.get_module(module_path, importing_file)
         except BaseException:
             # A partially loaded module must not become a successful cache hit
             # on retry. Completed dependencies retain their existing identities.
@@ -281,7 +284,7 @@ class ModuleResolver:
                 elif isinstance(value, (list, tuple)):
                     stack.extend(child for child in value if isinstance(child, ASTNode))
 
-    def process_imports(self, program: ASTNode) -> List[str]:
+    def process_imports(self, program: ASTNode, importing_file: Optional[str] = None) -> List[str]:
         """
         Extract and process all import statements from a program.
 
@@ -302,17 +305,23 @@ class ModuleResolver:
                 module_path = decl.module_path or ""
                 imports.append(module_path)
 
+                resolved = None
+                if not self.is_virtual_module(module_path):
+                    resolved = self.resolve_module_path(module_path, importing_file)
+                table_path = module_path
+                if resolved is not None:
+                    table_path = Path(resolved).relative_to(self.entry_root).with_suffix("").as_posix()
                 # Process different import types
                 if decl.alias:
                     # import "io" as console
-                    self.module_table.add_alias(decl.alias, module_path)
+                    self.module_table.add_alias(decl.alias, table_path)
                 elif decl.is_using:
                     # using import "io"
-                    self.module_table.add_using_import(module_path)
+                    self.module_table.add_using_import(table_path)
                 elif decl.imported_items:
                     # import "vector" { Vec3, dot }
                     for item in decl.imported_items:
-                        self.module_table.add_named_import(item, module_path)
+                        self.module_table.add_named_import(item, table_path)
 
         return imports
 
@@ -327,8 +336,9 @@ class ModuleResolver:
         Returns:
             List of loaded module infos
         """
+        self.entry_root = Path(current_path).resolve().parent
         # Extract imports
-        import_paths = self.process_imports(program)
+        import_paths = self.process_imports(program, current_path)
 
         import_decls = [
             decl for decl in program.declarations or []
@@ -341,21 +351,22 @@ class ModuleResolver:
             source_lines = []
         self._raise_on_duplicate_imports(
             import_decls, current_path, source_lines,
-            self._canonical_import_key,
+            lambda imported: self._canonical_import_key(imported, current_path),
         )
         # Load each imported module and, transitively, every module they
         # import. FIFO order keeps the combined-program merge deterministic:
         # direct imports first, then their dependencies.
         loaded = []
         seen: Set[str] = set()
-        queue = list(import_paths)
+        queue = [(path, current_path) for path in import_paths]
         while queue:
-            module_path = queue.pop(0)
-            if module_path in seen:
+            module_path, importer = queue.pop(0)
+            identity = self._canonical_import_key(module_path, importer)
+            if identity in seen:
                 continue
-            seen.add(module_path)
+            seen.add(identity)
             try:
-                module_info = self.load_module(module_path)
+                module_info = self.load_module(module_path, importer)
             except CompilerError as error:
                 if error.span is not None:
                     raise
@@ -376,18 +387,23 @@ class ModuleResolver:
             if module_info:
                 loaded.append(module_info)
                 for transitive in module_info.dependencies:
-                    if transitive not in seen:
-                        queue.append(transitive)
+                    queue.append((transitive, module_info.file_path))
 
         return loaded
 
-    def get_module(self, module_path: str) -> Optional[ModuleInfo]:
-        """Get a loaded module by path."""
-        return self.loaded_modules.get(module_path)
+    def get_module(self, module_path: str, importing_file: Optional[str] = None) -> Optional[ModuleInfo]:
+        """Look up an import in the same file-relative context used when loading it."""
+        if self.is_virtual_module(module_path):
+            return self.loaded_modules.get(f"/stdlib/{self.stdlib.canonical_module_name(module_path)}")
+        file_path = self.resolve_module_path(module_path, importing_file)
+        if file_path is None:
+            return None
+        key = Path(file_path).relative_to(self.entry_root).with_suffix("").as_posix()
+        return self.loaded_modules.get(key)
 
-    def is_loaded(self, module_path: str) -> bool:
-        """Check if a module is loaded."""
-        return module_path in self.loaded_modules
+    def is_loaded(self, module_path: str, importing_file: Optional[str] = None) -> bool:
+        """Check if an import's canonical module is loaded."""
+        return self.get_module(module_path, importing_file) is not None
 
     def get_module_table(self) -> ModuleTable:
         """Get the module table."""
@@ -395,12 +411,15 @@ class ModuleResolver:
 
     def _load_virtual_module(self, module_path: str) -> ModuleInfo:
         """Load a built-in stdlib module into the same cache/table as file modules."""
-        if module_path in self.loaded_modules:
-            return self.loaded_modules[module_path]
-
         canonical_name = self.stdlib.canonical_module_name(module_path)
         if canonical_name is None:
             raise SemanticError(f"Unknown virtual stdlib module '{module_path}'")
+
+        key = f"/stdlib/{canonical_name}"
+        if key in self.loaded_modules:
+            module_info = self.loaded_modules[key]
+            self.module_table.register_module(module_path, module_info.symbols)
+            return module_info
 
         module = self.stdlib.modules.get(canonical_name)
         if module is None:
@@ -425,7 +444,7 @@ class ModuleResolver:
         self.module_table.register_module(module_path, symbols)
         if canonical_name != module_path:
             self.module_table.register_module(canonical_name, symbols)
-        self.loaded_modules[module_path] = module_info
+        self.loaded_modules[key] = module_info
         return module_info
 
     def topological_sort(self) -> List[str]:
@@ -440,7 +459,14 @@ class ModuleResolver:
         in_degree: Dict[str, int] = {}
 
         for module_path, module_info in self.loaded_modules.items():
-            graph[module_path] = module_info.dependencies
+            graph[module_path] = []
+            for dependency in module_info.dependencies:
+                loaded = self.get_module(dependency, module_info.file_path)
+                if loaded is not None:
+                    key = loaded.path
+                    if self.is_virtual_module(dependency):
+                        key = f"/stdlib/{self.stdlib.canonical_module_name(dependency)}"
+                    graph[module_path].append(key)
             in_degree[module_path] = 0
 
         # Calculate in-degrees
@@ -468,12 +494,13 @@ class ModuleResolver:
                 "Circular dependency detected in module graph"
             )
 
-        return result
+        return [self.loaded_modules[key].path for key in result]
 
     def clear(self) -> None:
         """Clear all loaded modules."""
         self.loaded_modules.clear()
         self.loading_stack.clear()
+        self.module_table = ModuleTable()
 
     def add_search_path(self, path: str) -> None:
         """Add a directory to the module search path."""
