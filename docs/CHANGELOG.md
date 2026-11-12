@@ -5,6 +5,9 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- The docs-site lockfile uses markdown-it 15.0.3, fixing advisory
+  GHSA-gfr2-rv44-r23c.
+
 - CLI agent UX: `a7 --help` lists modes, exit codes and short aliases and
   prefers long flags. `a7 doctor --format json` reports toolchain status plus
   capabilities (commands, modes, backends, profiles, exit codes, flags).
