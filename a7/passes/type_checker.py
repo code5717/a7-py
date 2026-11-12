@@ -3090,7 +3090,7 @@ class TypeCheckingPass:
                                 if not (yield (
                                     '_is_initializer_assignable_to',
                                     (arg, actual, expected, arg.span,
-                                     f'io.{method_name} argument'),
+                                     f'io.{method_name} argument', None),
                                 )):
                                     self.add_type_error(
                                         TypeErrorType.ARGUMENT_TYPE_MISMATCH,

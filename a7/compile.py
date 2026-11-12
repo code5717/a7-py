@@ -841,10 +841,20 @@ class A7Compiler:
                         if canonical is None:
                             # Public types such as IoErr live in stdlib_type_symbols
                             # after prelude load; they are not registry operations.
-                            candidate = symbols.stdlib_type_symbols.get(item)
-                            owner = getattr(getattr(candidate, "node", None), "file_scope", "") or ""
+                            # Keys are (file_scope, name) after the packaged stdlib
+                            # loader; older Dict[str, Symbol] lookups miss IoErr.
                             module_leaf = module_path.rsplit("/", 1)[-1]
-                            if candidate is not None and owner == f"<stdlib/{module_leaf}>":
+                            owner = f"<stdlib/{module_leaf}>"
+                            candidate = symbols.stdlib_type_symbols.get((owner, item))
+                            if candidate is None:
+                                # Tolerate a flat name map if a future pass repacks it.
+                                candidate = symbols.stdlib_type_symbols.get(item)
+                                owner_match = getattr(
+                                    getattr(candidate, "node", None), "file_scope", ""
+                                ) or ""
+                                if candidate is not None and owner_match != owner:
+                                    candidate = None
+                            if candidate is not None:
                                 type_symbol = candidate
                             else:
                                 errors.append(SemanticError.from_type(
