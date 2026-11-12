@@ -18,8 +18,8 @@ def project_status() -> dict[str, object]:
         "example_count": len(examples),
         "golden_output_count": len(goldens),
         "backend": "zig",
-        "zig_version": "0.16.0",
-        "release_archive_prefix": "a7-example-artifacts-linux-x86_64-zig0.16.0",
+        "zig_version": "0.17.1",
+        "release_archive_prefix": "a7-example-artifacts-linux-x86_64-zig0.17.1",
     }
 
 

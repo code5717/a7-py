@@ -1,6 +1,6 @@
 """Tests for the struct layout view (`a7 check --layout`).
 
-Expected sizes and offsets in these tests are pinned to Zig 0.16.0's own
+Expected sizes and offsets in these tests are pinned to Zig 0.17.1's own
 @sizeOf/@offsetOf output for the same shapes, not derived from the layout
 module, so a layout regression cannot silently move them.
 """
@@ -74,7 +74,7 @@ main :: fn() {
 }
 """
     got = layouts_for(tmp_path, source)
-    # Zig 0.16.0 @sizeOf/@offsetOf: Person 24 (age@16), Employee 32
+    # Zig 0.17.1 @sizeOf/@offsetOf: Person 24 (age@16), Employee 32
     # (person@0, id@24), Blob 24 (b@0, d@8, a@20, c@21).
     person = got["Person"]
     assert person.size == 24 and person.align == 8

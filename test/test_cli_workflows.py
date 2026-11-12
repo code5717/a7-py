@@ -115,7 +115,7 @@ def test_wrong_zig_and_native_build_failure(tmp_path):
     env = fake_zig(tmp_path, 'print("0.15.0")\n')
     rejected = cli(tmp_path, 'build', source, env=env)
     assert rejected.returncode == 2 and 'found 0.15.0' in rejected.stderr
-    env = fake_zig(tmp_path, 'import sys\nif sys.argv[1] == "version": print("0.16.0")\nelse:\n print("native build rejected", file=sys.stderr)\n sys.exit(1)\n')
+    env = fake_zig(tmp_path, 'import sys\nif sys.argv[1] == "version": print("0.17.1")\nelse:\n print("native build rejected", file=sys.stderr)\n sys.exit(1)\n')
     output = tmp_path / 'previous-binary'
     output.write_bytes(b'previous good build')
     failed = cli(tmp_path, 'build', source, '-o', output, env=env)
@@ -129,7 +129,7 @@ def test_run_forwards_arguments_cwd_and_exit_at_process_boundary(tmp_path):
     env = fake_zig(tmp_path, '''import sys
 from pathlib import Path
 if sys.argv[1] == 'version':
- print('0.16.0')
+ print('0.17.1')
 else:
  output = Path(next(arg.split('=', 1)[1] for arg in sys.argv if arg.startswith('-femit-bin=')))
  output.write_text('#!' + sys.executable + '\\nimport json, os, sys\\nprint(json.dumps([os.getcwd(), sys.argv[1:]]))\\nsys.exit(23)\\n')
@@ -230,7 +230,7 @@ def test_build_refuses_a7_output_and_names_it(tmp_path):
     # toolchain version check.
     source = tmp_path / 'dot.a7'
     source.write_text(LAYOUT_SOURCE)
-    env = fake_zig(tmp_path, 'print("0.16.0")\n')
+    env = fake_zig(tmp_path, 'print("0.17.1")\n')
     target = tmp_path / 'out.a7'
     result = cli(tmp_path, 'build', source, '-o', target, env=env)
     assert result.returncode == 3, result.stdout + result.stderr

@@ -5,7 +5,7 @@ emitted Zig in Debug and ReleaseFast, runs the binary, and compares output with
 values derived by hand from the A7 source. Nothing is mocked. The programs use
 no heap, references, division, indexing, or overflow-prone arithmetic.
 
-Set A7_TEST_ZIG to a Zig 0.16.0 binary or put zig on PATH. A missing Zig fails
+Set A7_TEST_ZIG to a Zig 0.17.1 binary or put zig on PATH. A missing Zig fails
 the tests.
 """
 
@@ -25,9 +25,9 @@ PROFILES = ("Debug", "ReleaseFast")
 @pytest.fixture(scope="module")
 def zig():
     executable = os.environ.get("A7_TEST_ZIG") or shutil.which("zig")
-    assert executable, "Zig 0.16.0 required: set A7_TEST_ZIG or PATH"
+    assert executable, "Zig 0.17.1 required: set A7_TEST_ZIG or PATH"
     version = subprocess.run([executable, "version"], capture_output=True, text=True)
-    assert version.returncode == 0 and version.stdout.strip() == "0.16.0", version
+    assert version.returncode == 0 and version.stdout.strip() == "0.17.1", version
     return executable
 
 

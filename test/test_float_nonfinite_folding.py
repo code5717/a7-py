@@ -8,7 +8,7 @@ makes infinity and NaN ordinary values of typed f64 arithmetic.
 Each constant program below has a typed twin that moves one operand into an
 `f64` variable. The twin must give the IEEE answer and the constant program
 the exact answer. Expected outputs are derived by hand from the A7 source.
-Programs are built with Zig 0.16.0 in Debug and ReleaseFast.
+Programs are built with Zig 0.17.1 in Debug and ReleaseFast.
 
 NaN is never asserted through its printed text. IEEE 754 does not specify the
 sign bit of a NaN and Zig prints `nan` or `-nan` depending on where the value

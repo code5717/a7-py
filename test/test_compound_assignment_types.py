@@ -1,6 +1,6 @@
 """Compound-assignment operand types through the real CLI and real Zig.
 
-Rejected cases are programs Zig 0.16.0 rejects after A7 emits them (TYP-05).
+Rejected cases are programs Zig 0.17.1 rejects after A7 emits them (TYP-05).
 Accepted cases are programs Zig builds today; they must stay accepted.
 Zig checks are compile-only (`build-obj -fno-emit-bin`); nothing is executed.
 """
@@ -62,9 +62,9 @@ def run_cli(source_path: Path, output_path: Path) -> tuple[subprocess.CompletedP
 @pytest.fixture(scope="module")
 def zig():
     executable = os.environ.get("A7_TEST_ZIG") or shutil.which("zig")
-    assert executable, "Zig 0.16.0 required: set A7_TEST_ZIG or PATH"
+    assert executable, "Zig 0.17.1 required: set A7_TEST_ZIG or PATH"
     version = subprocess.run([executable, "version"], capture_output=True, text=True)
-    assert version.returncode == 0 and version.stdout.strip() == "0.16.0", version
+    assert version.returncode == 0 and version.stdout.strip() == "0.17.1", version
     return executable
 
 

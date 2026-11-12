@@ -547,9 +547,9 @@ def test_native_archive_name_pattern() -> None:
         cwd=ROOT, text=True, capture_output=True, timeout=10,
     )
     assert prefix.returncode == 0, prefix.stderr or prefix.stdout
-    assert prefix.stdout.strip() == "a7-example-artifacts-linux-x86_64-zig0.16.0"
+    assert prefix.stdout.strip() == "a7-example-artifacts-linux-x86_64-zig0.17.1"
 
-    pattern = re.compile(r"^a7-example-artifacts-linux-x86_64-zig0\.16\.0-(debug|release)\.tar\.gz$")
+    pattern = re.compile(r"^a7-example-artifacts-linux-x86_64-zig0\.17\.1-(debug|release)\.tar\.gz$")
     for profile in ("debug", "release"):
         name = f"{prefix.stdout.strip()}-{profile}.tar.gz"
         assert pattern.match(name), name

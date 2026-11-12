@@ -7,7 +7,7 @@ The compiler is under development. Read [Status](docs/STATUS.md) for known gaps.
 ## Quick start
 
 Install Python 3.13 or newer, [uv](https://docs.astral.sh/uv/), and
-[Zig 0.16.0](https://ziglang.org/download/). Native qualification currently targets
+[Zig 0.17.1](https://ziglang.org/download/). Native qualification currently targets
 Linux x86_64 with Python 3.13. Zig must be on `PATH` for `build` and `run`.
 
 ```bash

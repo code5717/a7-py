@@ -25,9 +25,9 @@ artifact naming/provenance.
   import in `a7/` except the Zig keyword table (`zig.py:436`). A7 source
   has no `extern` declaration form; SPEC §Interoperability ("Clean C ABI
   compatibility") is aspiration, not implementation.
-- V1 qualification target is Linux x86-64, Python 3.13, Zig 0.16.0
+- V1 qualification target is Linux x86-64, Python 3.13, Zig 0.17.1
   (`a7/cli.py:100-105`). Release workflow pins
-  `zig-x86_64-linux-0.16.0` (`.github/workflows/release.yml:19`).
+  `zig-x86_64-linux-0.17.1` (`.github/workflows/release.yml:19`).
 
 ## 2. ReleaseFast check-stripping vs L39
 
@@ -113,7 +113,7 @@ Deferred: async completion, zero-copy mapping, custom allocators.
 
 | Tier | Target | Gate |
 |---|---|---|
-| 1 supported | Linux x86-64, Zig 0.16.0 | full gate incl. E2E |
+| 1 supported | Linux x86-64, Zig 0.17.1 | full gate incl. E2E |
 | 2 best-effort | Linux aarch64, macOS arm64 | `build_examples.py` smoke |
 | 3 declared-unsupported | Windows, 32-bit | clear diagnostic, no silent UB |
 
@@ -126,7 +126,7 @@ state the tier.
 
 ## 7. Artifact naming / provenance (current + fix)
 
-- Current: `a7-example-artifacts-linux-x86_64-zig0.16.0-<profile>.tar.gz`
+- Current: `a7-example-artifacts-linux-x86_64-zig0.17.1-<profile>.tar.gz`
   (release.yml:79) — platform/toolchain/profile encoded. Good.
 - Provenance: `scripts/generate_release_manifest.py` → `dist/SHA256SUMS`,
   verified by `verify_release_manifest.py`, plus `gh attestation verify`

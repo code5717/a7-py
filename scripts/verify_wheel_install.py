@@ -115,7 +115,7 @@ def verify_wheel(wheel: Path) -> None:
             raise RuntimeError(f"installed CLI version disagrees with wheel metadata: {version.stdout!r}")
         doctor = run_cmd([str(a7_cli), "doctor"], cwd=work, env=env)
         qualified = sys.version_info[:2] == (3, 13) and sys.platform == "linux" and platform.machine() == "x86_64"
-        if doctor.returncode != (0 if qualified else 2) or "Zig 0.16.0:" not in doctor.stdout:
+        if doctor.returncode != (0 if qualified else 2) or "Zig 0.17.1:" not in doctor.stdout:
             raise RuntimeError(f"installed CLI doctor failed: {doctor.stdout}\n{doctor.stderr}")
         if not qualified and "outside the V1 qualification target" not in doctor.stderr:
             raise RuntimeError("installed CLI doctor omitted the unsupported-environment diagnostic")

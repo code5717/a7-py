@@ -85,7 +85,7 @@ before release. Fetch live Markdown without JavaScript after deployment.
 ## Native artifacts
 
 Archive filenames carry the platform and toolchain, for example
-`a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz`.
+`a7-example-artifacts-linux-x86_64-zig0.17.1-release.tar.gz`.
 The release workflow derives the expected example count through
 `scripts/project_status.py` and verifies archive membership.
 

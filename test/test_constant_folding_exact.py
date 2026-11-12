@@ -1,10 +1,10 @@
 """Constant folding must preserve types and exact integer results.
 
 Programs are compiled with the real CLI (main.py) and built with the real Zig
-0.16.0 toolchain in Debug and ReleaseFast. Expected outputs are written by hand
+0.17.1 toolchain in Debug and ReleaseFast. Expected outputs are written by hand
 from the A7 source, not by running the compiler. Nothing is mocked.
 
-Set A7_TEST_ZIG to a Zig 0.16.0 binary or put zig on PATH. Missing tools fail
+Set A7_TEST_ZIG to a Zig 0.17.1 binary or put zig on PATH. Missing tools fail
 explicitly. A constant its destination cannot represent (a shift past the
 width, an out-of-range sum) must exit 6. Float constants that overflow f64
 are in test_float_nonfinite_folding.py.
@@ -33,9 +33,9 @@ PROFILES = ("Debug", "ReleaseFast")
 @pytest.fixture(scope="module")
 def zig():
     executable = os.environ.get("A7_TEST_ZIG") or shutil.which("zig")
-    assert executable, "Zig 0.16.0 required: set A7_TEST_ZIG or PATH"
+    assert executable, "Zig 0.17.1 required: set A7_TEST_ZIG or PATH"
     version = subprocess.run([executable, "version"], capture_output=True, text=True)
-    assert version.returncode == 0 and version.stdout.strip() == "0.16.0", version
+    assert version.returncode == 0 and version.stdout.strip() == "0.17.1", version
     return executable
 
 

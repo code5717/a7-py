@@ -33,7 +33,7 @@ incomplete.
 
 | Area | Status | Qualification |
 | --- | --- | --- |
-| Zig source emission | supported | Only public backend; targets Zig 0.16.0. |
+| Zig source emission | supported | Only public backend; targets Zig 0.17.1. |
 | Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
 | References and explicit allocation | limited | Nil guards, tracked fields, direct aliases and exact literal-index fixed-array aliases have bounded checks; complete lifetime guarantees remain unavailable. |
 | Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |

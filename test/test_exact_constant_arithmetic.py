@@ -2,7 +2,7 @@
 
 Ledger L61 (`docs/plan/decisions.md`) and SPEC 4.2.1. The first half checks
 `a7/exact_constants.py` directly; the second half runs whole programs through
-the compiler and, where they are accepted, through Zig 0.16.0 in the debug and
+the compiler and, where they are accepted, through Zig 0.17.1 in the debug and
 fast profiles. Expected values are worked out by hand from the A7 source.
 
 Resource-limit contracts are exercised in test_exact_resource_policy.py.

@@ -3,12 +3,18 @@
 This is the single working status document for current gaps, roadmap, and
 implementation priorities. Keep `docs/CHANGELOG.md` short and release-facing.
 
-The 2026-11-12 push checkpoint passed package build, docs style, secrets,
-61 error-stage checks and site checks. The active Zig 0.17.0 conflicts with
-required Zig 0.16.0; native qualification remains incomplete. The non-native
-run passed 4,657 tests and failed five CLI cases on that version check.
-The site dependency audit reports one high-severity markdown-it advisory.
-[Push check record](audits/2026-11-12-push-checks.md).
+The toolchain pin is Zig 0.17.1 (`a7/cli.py` `ZIG_VERSION`, CI/release
+workflows, archive prefix `zig0.17.1`). Native builds require that exact
+version on `PATH`. Local verification on this pin: examples E2E 51/51,
+debug/release/fast artifacts, error-stage 61/61, docs-style, secrets,
+package build, and wheel/sdist native install all passed. Pytest is
+5223 passed / 11 failed / 1 xfailed; the 11 failures match `origin/master`
+(safety alias / generic-origin / callee-note wording) and are not Zig 0.17
+regressions.
+[Zig 0.17.1 upgrade verification](audits/2026-11-12-zig-0.17.1-upgrade.md)
+(commit `e493e11`). The earlier
+[2026-11-12 push checkpoint](audits/2026-11-12-push-checks.md) remains a
+historical record of the host Zig 0.17.0 / required 0.16.0 mismatch.
 
 The checked storage-identity adapter passes all sixteen original caller
 outcomes, including repeated_site_live. Eleven importer invariants, 23 focused

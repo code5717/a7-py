@@ -55,8 +55,8 @@ PROBE = """
 test "a7 layout probe" {
     inline for (.{ %s }) |S| {
         std.debug.print("LAYOUT {s} size={d} align={d}", .{ @typeName(S), @sizeOf(S), @alignOf(S) });
-        inline for (@typeInfo(S).@"struct".fields) |f| {
-            std.debug.print(" {s}@{d}+{d}", .{ f.name, @offsetOf(S, f.name), @sizeOf(f.type) });
+        inline for (@typeInfo(S).@"struct".field_names, @typeInfo(S).@"struct".field_types) |name, field_type| {
+            std.debug.print(" {s}@{d}+{d}", .{ name, @offsetOf(S, name), @sizeOf(field_type) });
         }
         std.debug.print("\\n", .{});
     }
