@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "9157165ae6f4d7dc559befe60007b75834f23720f568dcd6cdbf51a505f991e4"
+    "value": "25773ba15e3ef7b92b58e37330aac6c15291fab8412bda63a6e98570e81f2cf0"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -1408,6 +1408,7 @@
         "https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md",
         "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/plan/packets/P-MEM-mechanism-selection.md",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/decisions.md",
         "https://github.com/code5717/a7-py/blob/master/docs/audits/README.md"
       ],

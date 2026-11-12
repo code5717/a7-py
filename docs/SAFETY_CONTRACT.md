@@ -249,3 +249,10 @@ Codegen must call `BackendPlan.require(node, operation)` before lowering any
 approved risky operation. Approval is operation-specific: a node approved for
 `index` is not approved for `cast`, `deref`, or any other lowering. Missing or
 wrong approvals are compiler bugs and must fail codegen.
+
+## Open alias and discharge work
+
+Alias analysis through array elements and joined allocation field paths,
+global nil-state summaries, and broader formal discharge remain incomplete.
+See [Status](STATUS.md). Separate safety-alias tracks own changes to
+`a7/safety.py`; docs and example sync must not claim those gaps closed.

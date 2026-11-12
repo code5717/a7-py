@@ -1,8 +1,10 @@
 # A7 Programming Language Specification
 
 This reference describes the current compiler where source and regression tests
-establish behavior. Sections marked parsed-only, reserved, or proposed do not
-promise executable programs. Approved rules that are not yet enforced are
+establish behavior. Sections marked cut, reserved, parsed-only, or proposed do
+not promise executable programs. Cut forms (user variadics, multi-declaration /
+destructuring, multi-return) fail closed at parse or semantic exit; do not treat
+them as future runnable syntax. Approved rules that are not yet enforced are
 identified separately.
 
 The [project README](../README.md) and [release checklist](RELEASE.md) are the
