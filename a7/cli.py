@@ -14,16 +14,53 @@ import tempfile
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from time import perf_counter
+from typing import Any
 
 from .backends import list_backends
 from .backends.zig import ZIG_OPTIMIZE_MODE
-from .compile import A7Compiler, CompileMode, OutputFormat, _elapsed_ms, _safe_json_dumps, display_failure, error_console
+from .compile import (
+    A7Compiler,
+    CompileMode,
+    ExitCode,
+    OutputFormat,
+    _elapsed_ms,
+    _safe_json_dumps,
+    display_failure,
+    error_console,
+)
 
 PROFILE_HELP = (
     "build profiles:\n"
     "  debug    Zig Debug: unoptimized, runtime checks on (default)\n"
     "  release  Zig ReleaseSafe: optimized, runtime checks on\n"
     "  fast     Zig ReleaseFast: optimized, runtime checks off"
+)
+MODES_HELP = (
+    "modes (--mode):\n"
+    "  compile   Full pipeline; write Zig (default)\n"
+    "  tokens    Tokenize only\n"
+    "  ast       Tokenize and parse\n"
+    "  semantic  Parse and semantic passes\n"
+    "  pipeline  Full pipeline; write nothing\n"
+    "  doc       Full pipeline; write a markdown report"
+)
+EXIT_CODES_HELP = (
+    "exit codes (stage-specific; JSON still prints diagnostics on failure):\n"
+    "  0  success\n"
+    "  2  usage or toolchain\n"
+    "  3  I/O\n"
+    "  4  tokenize\n"
+    "  5  parse\n"
+    "  6  semantic\n"
+    "  7  codegen or native build\n"
+    "  8  internal\n"
+    "  `a7 run` returns the program exit status after a successful build"
+)
+ALIASES_HELP = (
+    "short aliases (prefer long flags in scripts and agent commands):\n"
+    "  -h  --help\n"
+    "  -o  --output\n"
+    "  -v  --verbose"
 )
 RUN_ARGS_HELP = (
     "Program arguments follow '--' and are passed through to the built\n"
@@ -33,16 +70,29 @@ RUN_ARGS_HELP = (
 )
 
 COMMANDS = {
-    "check": "Check FILE through code generation; write nothing (--layout, --lib, --format json)",
-    "build": "Build FILE to a native executable with Zig (-o, --profile)",
+    "check": "Check FILE through code generation; write nothing (--layout, --lib, --format json, --timings)",
+    "build": "Build FILE to a native executable with Zig (--output, --profile, --timings)",
     "run": "Build FILE and run it; arguments after '--' go to the program",
-    "doctor": "Report the Python, platform and Zig toolchain status",
+    "doctor": "Report toolchain status; --format json lists capabilities for agents",
 }
-COMMANDS_HELP = "commands (see `a7 COMMAND -h`):\n" + "\n".join(
+COMMANDS_HELP = "commands (see `a7 COMMAND --help`):\n" + "\n".join(
     f"  {name:<8} {summary}" for name, summary in COMMANDS.items()
 )
 
 ZIG_VERSION = "0.16.0"
+DOCTOR_SCHEMA_VERSION = "1.0"
+QUALIFICATION_TARGET = "Linux x86_64, Python 3.13, Zig 0.16.0"
+
+EXIT_CODE_NAMES = {
+    int(ExitCode.SUCCESS): "success",
+    int(ExitCode.USAGE): "usage_or_toolchain",
+    int(ExitCode.IO): "io",
+    int(ExitCode.TOKENIZE): "tokenize",
+    int(ExitCode.PARSE): "parse",
+    int(ExitCode.SEMANTIC): "semantic",
+    int(ExitCode.CODEGEN): "codegen_or_native_build",
+    int(ExitCode.INTERNAL): "internal",
+}
 
 
 def find_zig() -> tuple[str | None, str]:
@@ -81,6 +131,112 @@ def package_version() -> str:
         return __version__
 
 
+def doctor_capabilities() -> dict[str, Any]:
+    """Stable discovery surface for agents (`a7 doctor --format json`)."""
+    return {
+        "commands": list(COMMANDS),
+        "modes": [mode.value for mode in CompileMode],
+        "formats": [fmt.value for fmt in OutputFormat],
+        "backends": list(list_backends()),
+        "profiles": list(ZIG_OPTIMIZE_MODE),
+        "exit_codes": {
+            str(code): name for code, name in sorted(EXIT_CODE_NAMES.items())
+        },
+        "flags": {
+            "file_first": [
+                "--mode",
+                "--format",
+                "--output",
+                "--doc-out",
+                "--backend",
+                "--build-profile",
+                "--no-nonwrap",
+                "--lib",
+                "--verbose",
+                "--timings",
+                "--version",
+                "--help",
+            ],
+            "check": ["--format", "--layout", "--lib", "--timings"],
+            "build": ["--output", "--profile", "--no-nonwrap", "--timings"],
+            "run": ["--profile", "--no-nonwrap", "--timings"],
+            "doctor": ["--format"],
+            "short_aliases": {
+                "-h": "--help",
+                "-o": "--output",
+                "-v": "--verbose",
+            },
+        },
+        "json_schema_version": "3.0",
+        "notes": [
+            "Prefer long flags in scripts and agent commands.",
+            "Compiler JSON payloads use schema_version 3.0 with exit_code and diagnostics.",
+            "Nonzero compiler exits stay stage-specific; JSON still emits diagnostics on failure.",
+            "a7 run returns the native process exit status after a successful build.",
+        ],
+    }
+
+
+def doctor_report(*, output_format: str) -> int:
+    """Print toolchain status; JSON includes capabilities for discovery."""
+    zig, message = find_zig()
+    supported = (
+        sys.version_info[:2] == (3, 13)
+        and sys.platform == "linux"
+        and platform.machine() == "x86_64"
+    )
+    exit_code = 0 if zig and supported else 2
+    if output_format == "json":
+        zig_version = None
+        zig_path = None
+        if zig is not None:
+            zig_path = zig
+            zig_version = ZIG_VERSION
+        payload = {
+            "schema_version": DOCTOR_SCHEMA_VERSION,
+            "command": "doctor",
+            "status": "ok" if exit_code == 0 else "error",
+            "exit_code": exit_code,
+            "version": package_version(),
+            "python": {
+                "version": platform.python_version(),
+                "executable": sys.executable,
+            },
+            "platform": {
+                "system": sys.platform,
+                "machine": platform.machine(),
+            },
+            "zig": {
+                "ok": zig is not None,
+                "required_version": ZIG_VERSION,
+                "version": zig_version,
+                "path": zig_path,
+                "message": message,
+            },
+            "qualification": {
+                "target": QUALIFICATION_TARGET,
+                "ok": supported,
+            },
+            "capabilities": doctor_capabilities(),
+        }
+        print(_safe_json_dumps(payload))
+        return exit_code
+
+    print(
+        f"A7 {package_version()}\n"
+        f"Python {platform.python_version()}: {sys.executable}\n"
+        f"Platform {sys.platform}/{platform.machine()}\n"
+        f"{message}\n"
+        f"V1 qualification target: {QUALIFICATION_TARGET}"
+    )
+    if not supported:
+        print(
+            "This Python/platform combination is outside the V1 qualification target",
+            file=sys.stderr,
+        )
+    return exit_code
+
+
 def _struct_layouts(result) -> list:
     """Struct layouts, with field touch counts, from a successful pipeline result."""
     from .layout import apply_touches, compute_struct_layouts, count_field_touches
@@ -94,22 +250,29 @@ def _struct_layouts(result) -> list:
 
 def workflow(argv: list[str]) -> int:
     command = argv[0]
-    epilogs = {"build": PROFILE_HELP, "run": PROFILE_HELP + "\n\n" + RUN_ARGS_HELP}
+    epilogs = {
+        "build": PROFILE_HELP + "\n\n" + ALIASES_HELP,
+        "run": PROFILE_HELP + "\n\n" + RUN_ARGS_HELP + "\n\n" + ALIASES_HELP,
+        "check": ALIASES_HELP,
+        "doctor": (
+            "Use --format json for machine-readable discovery "
+            "(modes, exit codes, backends, flags).\n\n" + ALIASES_HELP
+        ),
+    }
     parser = argparse.ArgumentParser(
         prog=f"a7 {command}",
         epilog=epilogs.get(command),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     if command == "doctor":
-        parser.parse_args(argv[1:])
-        zig, message = find_zig()
-        supported = sys.version_info[:2] == (3, 13) and sys.platform == "linux" and platform.machine() == "x86_64"
-        print(f"A7 {package_version()}\nPython {platform.python_version()}: {sys.executable}\n"
-              f"Platform {sys.platform}/{platform.machine()}\n{message}\n"
-              "V1 qualification target: Linux x86_64, Python 3.13, Zig 0.16.0")
-        if not supported:
-            print("This Python/platform combination is outside the V1 qualification target", file=sys.stderr)
-        return 0 if zig and supported else 2
+        parser.add_argument(
+            "--format",
+            choices=["human", "json"],
+            default="human",
+            help="Output format (default: human). json includes capabilities for agents",
+        )
+        args = parser.parse_args(argv[1:])
+        return doctor_report(output_format=args.format)
 
     parser.add_argument("file", help="A7 source file")
     parser.add_argument(
@@ -118,17 +281,40 @@ def workflow(argv: list[str]) -> int:
         help="Report per-stage wall times (frontend stages; Zig for build/run)",
     )
     if command == "check":
-        parser.add_argument("--format", choices=["human", "json"], default="human")
-        parser.add_argument("--layout", action="store_true",
-                            help="Print struct memory layout (size, 64B line use, field offsets)")
-        parser.add_argument("--lib", action="store_true",
-                            help="Check as a library: allow no 'main :: fn()' entry point")
+        parser.add_argument(
+            "--format",
+            choices=["human", "json"],
+            default="human",
+            help="Output format (default: human). json uses schema 3.0 with exit_code and diagnostics",
+        )
+        parser.add_argument(
+            "--layout",
+            action="store_true",
+            help="Print struct memory layout (size, 64B line use, field offsets)",
+        )
+        parser.add_argument(
+            "--lib",
+            action="store_true",
+            help="Check as a library: allow no 'main :: fn()' entry point",
+        )
     else:
-        parser.add_argument("--profile", choices=list(ZIG_OPTIMIZE_MODE), default="debug",
-                            help="Build profile (default: debug); see 'build profiles' below")
-        parser.add_argument("--no-nonwrap", action="store_true")
+        parser.add_argument(
+            "--profile",
+            choices=list(ZIG_OPTIMIZE_MODE),
+            default="debug",
+            help="Build profile (default: debug); see 'build profiles' below",
+        )
+        parser.add_argument(
+            "--no-nonwrap",
+            action="store_true",
+            help="Force wrapping arithmetic even in release and fast builds",
+        )
         if command == "build":
-            parser.add_argument("-o", "--output", help="Native executable path, defaults to ./<source-stem>")
+            parser.add_argument(
+                "--output",
+                "-o",
+                help="Native executable path (long form preferred); defaults to ./<source-stem>",
+            )
     options = argv[1:]
     program_args: list[str] = []
     if command == "run" and "--" in options:
@@ -171,18 +357,33 @@ def workflow(argv: list[str]) -> int:
         display_failure(result.failure, error_console)
         return int(result.exit_code)
 
+    # Reject source conflicts before the Zig lookup so exit 3 stays
+    # stage-specific even when the toolchain is missing. Keep the check
+    # inside I/O handling: Path.is_dir() can raise OSError (e.g. ENAMETOOLONG).
+    destination = None
+    try:
+        if command == "build":
+            destination = Path(
+                args.output or (Path(args.file).stem + (".exe" if os.name == "nt" else ""))
+            ).absolute()
+            if destination.suffix == ".a7" or native_output_conflict(
+                result.input_paths, destination
+            ):
+                print(
+                    f"Native output conflicts with a source file or directory: {destination}",
+                    file=sys.stderr,
+                )
+                return 3
+    except OSError as exc:
+        print(f"Native {command} failed: {exc}", file=sys.stderr)
+        return 3
+
     zig, message = find_zig()
     if zig is None:
         print(message, file=sys.stderr)
         return 2
-    destination = None
-    if command == "build":
-        destination = Path(args.output or (Path(args.file).stem + (".exe" if os.name == "nt" else ""))).absolute()
     try:
         if destination is not None:
-            if destination.suffix == ".a7" or native_output_conflict(result.input_paths, destination):
-                print(f"Native output conflicts with a source file or directory: {destination}", file=sys.stderr)
-                return 3
             destination.parent.mkdir(parents=True, exist_ok=True)
         # Same filesystem as the destination permits an atomic replacement.
         with tempfile.TemporaryDirectory(prefix="a7-native-", dir=destination.parent if destination else None) as folder:
@@ -226,21 +427,38 @@ def main() -> None:
     available_backends = ", ".join(list_backends())
 
     parser = argparse.ArgumentParser(
-        description="A7 compiler. `a7 FILE` writes Zig source; the commands below build on it.",
+        description=(
+            "A7 compiler. `a7 FILE` writes Zig source; "
+            "`a7 doctor --format json` lists modes, exit codes, backends and flags."
+        ),
         prog="a7",
         usage="a7 [options] FILE\n       a7 {check,build,run,doctor} [options] [FILE]",
-        epilog=COMMANDS_HELP + "\n\n" + PROFILE_HELP,
+        epilog=(
+            COMMANDS_HELP
+            + "\n\n"
+            + MODES_HELP
+            + "\n\n"
+            + PROFILE_HELP
+            + "\n\n"
+            + EXIT_CODES_HELP
+            + "\n\n"
+            + ALIASES_HELP
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument("--version", action="store_true", help="Print the package version and exit")
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="Print the package version and exit",
+    )
     parser.add_argument("file", help="A7 source file (.a7) to process")
 
     parser.add_argument(
         "--mode",
         choices=[mode.value for mode in CompileMode],
         default=CompileMode.COMPILE.value,
-        help="Execution mode (default: compile)",
+        help="Execution mode (default: compile); see 'modes' below",
     )
 
     parser.add_argument(
@@ -248,13 +466,16 @@ def main() -> None:
         dest="output_format",
         choices=[fmt.value for fmt in OutputFormat],
         default=OutputFormat.HUMAN.value,
-        help="Output format (default: human)",
+        help=(
+            "Output format (default: human). "
+            "json uses schema 3.0 with stages, exit_code and diagnostics"
+        ),
     )
 
     parser.add_argument(
-        "-o",
         "--output",
-        help="Output file path for --mode compile (default: auto-generated)",
+        "-o",
+        help="Zig output path for --mode compile (long form preferred; default: auto-generated)",
     )
 
     parser.add_argument(
@@ -293,10 +514,10 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "-v",
         "--verbose",
+        "-v",
         action="store_true",
-        help="Enable verbose output",
+        help="Enable verbose output in human format (long form preferred)",
     )
 
     parser.add_argument(

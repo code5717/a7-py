@@ -89,6 +89,20 @@ def test_build_cannot_replace_inputs_or_directories(tmp_path, kind):
     assert (source.read_bytes(), module.read_bytes()) == before
 
 
+def test_build_too_long_output_name_is_io_exit_without_zig(tmp_path):
+    # native_output_conflict inspects the destination before Zig lookup.
+    # A single path component past NAME_MAX raises OSError on is_dir(); that
+    # must stay exit 3, not an uncaught traceback exit 1.
+    source = program(tmp_path)
+    destination = tmp_path / ('x' * 300)
+    env = {**os.environ, 'PATH': str(tmp_path)}
+    result = cli(tmp_path, 'build', source, '--output', destination, env=env)
+    assert result.returncode == 3, result.stderr + result.stdout
+    assert 'Native build failed:' in result.stderr
+    assert result.returncode != 1
+    assert 'Traceback' not in result.stderr
+
+
 def fake_zig(tmp_path, body):
     executable = tmp_path / 'zig'
     executable.write_text(f'#!{sys.executable}\n' + body)

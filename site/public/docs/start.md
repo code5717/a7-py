@@ -96,9 +96,11 @@ uv run a7 run examples/037_language_tour.a7
 Use `--mode semantic` to stop after semantic checks, `--mode pipeline` to
 exercise code generation without writing Zig, and `--format json` for tooling.
 Neither mode builds a native executable. `a7 check FILE --format json` provides
-the full pipeline without file output. `a7 run FILE -- ARGS` forwards arguments
-to the native process and returns its exit status. A7 `main` still has no
-parameters or return value, and there is no argument-reading API. See [all CLI options](/a7-py/docs/compiler.md).
+the full pipeline without file output. `a7 doctor --format json` lists modes,
+exit codes, backends and flags for agents. `a7 run FILE -- ARGS` forwards
+arguments to the native process and returns its exit status. A7 `main` still has
+no parameters or return value, and there is no argument-reading API. Prefer long
+flags. See [all CLI options](/a7-py/docs/compiler.md).
 
 ## Common setup failures
 

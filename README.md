@@ -42,9 +42,10 @@ Run these commands from the checkout after `uv sync`:
 uv run a7 check examples/001_hello.a7
 uv run a7 check examples/001_hello.a7 --format json
 uv run a7 check examples/001_hello.a7 --timings
-uv run a7 build examples/001_hello.a7 --profile release -o hello
+uv run a7 build examples/001_hello.a7 --profile release --output hello
 ./hello
 uv run a7 run examples/001_hello.a7 --profile release
+uv run a7 doctor --format json
 uv run a7 --version
 ```
 
@@ -53,29 +54,36 @@ An entry file needs `main :: fn()`; use `check --lib` for a library without an
 entry point. Imported modules do not need `main`. `--timings` prints per-stage
 wall times; `build`/`run --timings` also report the Zig hop.
 
-`build` defaults to `./<source-stem>`. `run` builds a temporary executable and
-runs it in the current directory. Arguments after `a7 run FILE --` go to the
-native process. This forwarding does not provide an A7 argument-reading API;
-`main` has no parameters or return value.
+`build` defaults to `./<source-stem>`. Prefer long flags such as `--output` in
+scripts; `-o` remains accepted. `run` builds a temporary executable and runs it
+in the current directory. Arguments after `a7 run FILE --` go to the native
+process. This forwarding does not provide an A7 argument-reading API; `main`
+has no parameters or return value.
 
 `doctor` reports package, Python, platform and Zig versions. It exits 2 for a
 missing or wrong Zig version, or an environment outside the qualification target.
+`doctor --format json` also lists capabilities for agents: supported commands,
+modes, backends, profiles, exit codes and flags. Capabilities remain present
+when Zig is missing.
 
 To emit Zig source or inspect the compiler stages:
 
 ```bash
 uv run a7 examples/001_hello.a7
 uv run a7 --mode tokens examples/006_if.a7
-uv run a7 --mode ast examples/004_func.a7
+uv run a7 --mode ast --format json examples/004_func.a7
 uv run a7 --mode semantic examples/009_struct.a7
-uv run a7 --mode pipeline --format json examples/014_generics.a7
+uv run a7 --mode pipeline --format json --timings examples/014_generics.a7
 uv run a7 --help
 ```
 
 The first command writes `examples/001_hello.zig`. `--mode pipeline` writes no
 files. `uv run python main.py` is a compatibility entry point for the same CLI.
 Output destinations cannot overwrite input modules, including filesystem aliases.
-JSON artifact lists describe files written by that invocation.
+JSON artifact lists describe files written by that invocation. Compiler
+`--format json` uses schema `3.0` with `stages`, `exit_code` and `diagnostics`
+(spans live on each diagnostic). Failures keep stage-specific exit codes and
+still emit JSON.
 
 ## Build profiles
 

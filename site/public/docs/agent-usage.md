@@ -70,6 +70,23 @@ Interpret status consistently:
 | Explain a limitation | `docs/status.md` and the relevant reference topic | Explicit status and qualification, not parser acceptance |
 | Find a program | `docs/examples.md` | Source path, runnable command, golden output, related topic |
 | Interpret compiler failure | `docs/compiler.md` | Exit-code table, JSON schema, diagnostic stage |
+| Discover CLI surface | local `a7 doctor --format json` and `docs/compiler.md` | `capabilities` modes, exit codes, backends, flags; prefer long flags |
+
+## Local compiler discovery
+
+After `uv sync` in a checkout:
+
+```bash
+uv run a7 doctor --format json
+uv run a7 --help
+uv run a7 check examples/001_hello.a7 --format json
+```
+
+`doctor --format json` lists capabilities even when Zig is missing (exit 2).
+Compiler `--format json` uses schema `3.0` with `exit_code`, `stages` and
+`diagnostics`. Failures keep stage-specific exits and still print JSON.
+`--timings` adds human timing lines; JSON always carries `stages.*.ms` when a
+stage ran. Prefer long flags such as `--output` and `--format`.
 
 ## Agent rules
 

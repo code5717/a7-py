@@ -2,7 +2,7 @@
 title: Compiler
 nav: Compiler
 group: Reference
-summary: CLI modes, flags, JSON diagnostics, artifacts, exit codes, and the Zig boundary.
+summary: CLI modes, flags, doctor capabilities JSON, schema 3.0 diagnostics, artifacts, exit codes, timings, and the Zig boundary.
 order: 31
 ---
 
@@ -36,9 +36,9 @@ checks all three steps and compares program output with fixtures.
 | Command | Behavior |
 | --- | --- |
 | `a7 --version` | Print the installed package version. |
-| `a7 doctor` | Report package, Python, platform and Zig versions. |
+| `a7 doctor [--format FORMAT]` | Report package, Python, platform and Zig versions. `json` adds capabilities. |
 | `a7 check FILE [--format FORMAT] [--lib] [--timings]` | Run the full A7 pipeline without writing files or requiring Zig. |
-| `a7 build FILE [-o PATH] [--profile PROFILE] [--timings]` | Build a native executable, defaulting to `./<source-stem>`. |
+| `a7 build FILE [--output PATH] [--profile PROFILE] [--timings]` | Build a native executable, defaulting to `./<source-stem>`. |
 | `a7 run FILE [--profile PROFILE] [--timings] -- [ARGS]` | Build a temporary executable and run it in the caller's working directory. |
 
 `check` accepts `--format human` or `--format json`, with human output by default.
@@ -56,6 +56,10 @@ current alias or lifetime safety gaps.
 `doctor` exits with code 2 for missing or incompatible Zig. It also returns 2
 outside the V1 qualification target of Linux x86_64 and Python 3.13. Package
 installation on another environment does not establish its qualification.
+`a7 doctor --format json` still prints discovery data on exit 2: supported
+commands, modes, backends, profiles, exit codes, flags and short aliases.
+Prefer long flags in scripts and agent commands; `-o`, `-v` and `-h` remain
+accepted.
 
 `run` forwards arguments after `--` and returns the native process exit status.
 A signal termination becomes `128 + signal number` on Unix. This is a process
@@ -87,47 +91,60 @@ source, an imported source, a filesystem alias of either, or a directory.
 | `file` | Required input `.a7` source path |
 | `--mode` | `compile`, `tokens`, `ast`, `semantic`, `pipeline`, `doc` |
 | `--format` | `human` by default, or `json` |
-| `-o`, `--output` | Zig output path; valid only in `compile` mode |
+| `--output`, `-o` | Zig output path; valid only in `compile` mode. Prefer `--output`. |
 | `--doc-out PATH` | Markdown report destination in `compile`, `pipeline`, or `doc` modes |
 | `--doc-out auto` | Replace the input suffix with `.md` |
 | `--backend` | `zig` by default; unknown backends fail |
-| `-v`, `--verbose` | Show detailed compiler output in human format |
+| `--verbose`, `-v` | Show detailed compiler output in human format. Prefer `--verbose`. |
 | `--timings` | Report per-stage wall times; JSON also carries `stages.*.ms` |
-| `-h`, `--help` | Show CLI usage |
+| `--help`, `-h` | Show CLI usage, including modes, exit codes and short aliases |
 
 ```bash
 uv run a7 examples/001_hello.a7 --mode tokens
 uv run a7 examples/001_hello.a7 --mode ast --format json
 uv run a7 examples/001_hello.a7 --mode semantic
-uv run a7 examples/001_hello.a7 --mode pipeline --format json
-uv run a7 examples/001_hello.a7 -o /tmp/hello.zig
+uv run a7 examples/001_hello.a7 --mode pipeline --format json --timings
+uv run a7 examples/001_hello.a7 --output /tmp/hello.zig
 uv run a7 examples/001_hello.a7 --doc-out /tmp/hello.md
 uv run a7 examples/001_hello.a7 --mode doc --doc-out /tmp/hello-report.md
+uv run a7 doctor --format json
 ```
 
 ## JSON output
 
 Legacy `--format json` and `check --format json` emit a JSON object with schema version `3.0`. Read the process
-exit code as well as the payload. CLI argument parsing failures use argparse's
-usage text on stderr, even if `--format json` was requested.
+exit code as well as the payload `exit_code` field. CLI argument parsing failures use argparse's
+usage text on stderr, even if `--format json` was requested. Failures still emit
+JSON with `diagnostics` and keep stage-specific nonzero exits.
 
 | Field | Meaning |
 | --- | --- |
 | `schema_version` | Payload schema, currently `3.0` |
 | `mode` | Requested compiler mode |
 | `status` | `ok` or `error` |
+| `exit_code` | Same integer the process returns for this compiler result |
 | `input` | Input path |
 | `backend` | Backend name |
 | `timing_ms` | Invocation timing; not a benchmark |
-| `stages` | Stages reached, with tokens, AST, semantic results, or generated source |
+| `stages` | Stages reached, with tokens, AST, semantic results, or generated source. Stage objects may include `ms`. |
 | `artifacts` | Paths actually written by this invocation |
-| `error` | Present on failure, with category, message, details, span, and exception type. Each entry in `details` has `type`, `code` (the diagnostic code or null), `message`, `hint` (or null), `file`, and `span` when known |
+| `diagnostics` | Always present. Empty on success. On failure, the same detail objects as `error.details`, each with `type`, `code`, `message`, `hint`, `file`, and `span` when known |
+| `error` | Present on failure, with category, message, details, span, and exception type |
 | `layout` | Present with `check --layout --format json`: struct sizes, alignments and field offsets |
 
-The `stages` keys are `tokenize`, `parse`, `semantic`, and `codegen`, when
-reached. Their contents depend on the stage. For example, a successful codegen
+The `stages` keys are `tokenize`, `parse`, `semantic`, `safety`, and `codegen`,
+when reached. Their contents depend on the stage. For example, a successful codegen
 stage contains `output_code` and `bytes`. An absent stage was not completed.
-An empty `artifacts` object is normal in `pipeline` mode.
+`semantic.ms` excludes safety wall time when `safety` ran; read `stages.safety.ms`
+for that slice. An empty `artifacts` object is normal in `pipeline` mode.
+
+### Doctor JSON
+
+`a7 doctor --format json` uses schema version `1.0` with top-level keys
+`command`, `status`, `exit_code`, `version`, `python`, `platform`, `zig`,
+`qualification` and `capabilities`. The `capabilities` object lists commands,
+modes, formats, backends, profiles, exit-code names, flag groups and short
+aliases. Agents should discover the surface here instead of scraping `--help`.
 
 ## Diagnostics and exit codes
 

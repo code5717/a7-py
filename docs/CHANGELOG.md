@@ -5,6 +5,17 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- The docs-site lockfile uses markdown-it 15.0.3, fixing advisory
+  GHSA-gfr2-rv44-r23c.
+
+- CLI agent UX: `a7 --help` lists modes, exit codes and short aliases and
+  prefers long flags. `a7 doctor --format json` reports toolchain status plus
+  capabilities (commands, modes, backends, profiles, exit codes, flags).
+  Compiler `--format json` keeps schema `3.0` and always includes `exit_code`
+  and `diagnostics` (empty on success; same objects as `error.details` on
+  failure). Stage-specific nonzero exits are unchanged; JSON still prints on
+  failure.
+
 - `--timings` reports per-stage wall times (tokenize, parse, semantic, safety,
   codegen; plus Zig on `build`/`run`). JSON payloads include `stages.*.ms`.
   Emitted Zig is unchanged. Use this to compare frontend cost to the Zig hop;
