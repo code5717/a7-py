@@ -340,6 +340,14 @@ class Parser:
         # Check for identifier followed by declaration operators
         if self.match(TokenType.IDENTIFIER):
             # Look ahead to see what kind of declaration this is
+            if self.peek().type == TokenType.COMMA:
+                raise ParseError.from_token(
+                    "Multiple-declaration and destructuring binding are not "
+                    "supported; declare one name per statement",
+                    self.peek(),
+                    self.filename,
+                    self.source_lines,
+                )
             if self.peek().type == TokenType.DECLARE_CONST:  # name ::
                 return self.parse_const_or_function_decl(is_public)
             elif self.peek().type == TokenType.DECLARE_VAR:  # name :=
@@ -662,6 +670,14 @@ class Parser:
 
             # Function body (required)
             if not self.match(TokenType.LEFT_BRACE):
+                if self.match(TokenType.LEFT_PAREN):
+                    raise ParseError.from_token(
+                        "Multiple return values are not supported; "
+                        "return a named struct instead",
+                        self.current(),
+                        self.filename,
+                        self.source_lines,
+                    )
                 raise ParseError.from_token(
                     "Expected function body after function signature",
                     self.current(),
@@ -724,6 +740,14 @@ class Parser:
                     value = None
                     if not self.match(TokenType.TERMINATOR, TokenType.RIGHT_BRACE):
                         value = self.parse_expression()
+                    if self.match(TokenType.COMMA):
+                        raise ParseError.from_token(
+                            "Multiple return values are not supported; "
+                            "return a named struct instead",
+                            self.current(),
+                            self.filename,
+                            self.source_lines,
+                        )
                     return create_return_stmt(value, create_span_from_token(start_token))
 
                 # Break statement (optionally with label: break outer)
@@ -784,6 +808,14 @@ class Parser:
                 # Variable or constant declarations inside function body
                 if self.match(TokenType.IDENTIFIER):
                     lookahead = self.peek()
+                    if lookahead.type == TokenType.COMMA:
+                        raise ParseError.from_token(
+                            "Multiple-declaration and destructuring binding are not "
+                            "supported; declare one name per statement",
+                            lookahead,
+                            self.filename,
+                            self.source_lines,
+                        )
                     if lookahead.type == TokenType.DECLARE_VAR:
                         # Simple: name := value
                         name_token = self.advance()

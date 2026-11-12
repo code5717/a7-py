@@ -20,7 +20,7 @@ add :: fn(x: i32, y: i32) i32 {
 
 Value parameters are immutable. To update a local working value, copy a parameter into a `:=` variable. A `ref T` parameter modifies caller storage and receives an ordinary lvalue argument. Do not add address-of syntax at a call.
 
-A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are unavailable in the current backend.
+A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are cut: those spellings fail at parse exit 5 with an explicit message.
 
 ## Nested functions
 
@@ -98,11 +98,11 @@ increment :: fn(counter: ref Counter) {
 
 Recursion is unavailable. The compiler rejects direct calls back to the same function, mutual call cycles, and known cycles through local aliases and callback trampolines. Use loops, explicit stacks, or index-based worklists, as in the linked-list and binary-tree examples.
 
-Variadic declaration syntax such as `values: ..i32` is limited to parsing and partial declaration checks. Codegen rejects user variadic parameters before backend emission. The compiler's special handling of `io.println` does not make general variadic functions runnable.
+Variadic declaration syntax such as `values: ..i32` is cut. It still parses so the compiler can reject it at semantic exit 6 and tell the author to pass a slice. The compiler's special handling of `io.println` does not restore user variadics.
 
 ## Status and restrictions
 
-Status: supported for ordinary functions and example-backed callbacks. Generic specialization, variadic lowering, and broader method-style call chains have separate limits. See [generics](generics.md) and [memory](memory.md).
+Status: supported for ordinary functions and example-backed callbacks. Generic specialization and broader method-style call chains have separate limits. Variadics, multi-return, and destructuring are cut. See [generics](generics.md) and [memory](memory.md).
 
 ## Evidence
 

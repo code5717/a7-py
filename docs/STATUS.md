@@ -1471,9 +1471,16 @@ research request. Existing memory and language decisions remain in force.
   one expected failure, 12 native controls and nine direct compiler/package
   checks. The [prerequisite record](audits/2026-10-07/stdlib-source-loader-prerequisites.json)
   preserves the source identities, reviews and predecessor failures.
-- Multiple return values, destructuring, and variadic runtime
-  lowering are not current backend features. Tagged unions match
-  through leading-dot arms (see below); other tag workflows stay open.
+- Multiple return values, destructuring, and user variadic parameters
+  are cut from the runnable surface. Variadic parameters (`values: ..T`)
+  parse then fail at semantic exit 6 with a slice guidance message.
+  Multi-declaration / destructuring (`a, b := …`) and multi-return
+  spellings (`fn() (T, U)`, `ret a, b`) fail at parse exit 5 with an
+  explicit cut message. Return a named struct for several results.
+  Collections / `std/string` / `std/mem` stay deferred pending approval of
+  [P-STD-collections-scope](plan/packets/P-STD-collections-scope.md).
+  Tagged unions match through leading-dot arms (see below); other tag
+  workflows stay open.
 - Tagged-union payload matching works end to end. `case .none:` tests
   a tag, `case .ok(v):` binds a copy of the payload, and `else:` and
   `_` opt out of exhaustiveness. A bare `case tag:` exits 6, and a

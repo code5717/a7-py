@@ -174,9 +174,9 @@ $    // Generic type parameter prefix
 ```
 
 `...` has no token: the tokenizer rejects it with an unsupported-operator
-error, so `0...5` never lexes. Use `..` for slice bounds and variadic
-parameters (§6.6). `?` likewise has no token and is rejected as an
-unexpected character.
+error, so `0...5` never lexes. Use `..` for slice bounds. Variadic
+parameter spellings that reuse `..` are cut (§6.6). `?` likewise has no
+token and is rejected as an unexpected character.
 
 Write ASCII after `@` and `$`. Their continuation checks accept Unicode
 alphanumerics (for example, `@café` lexes as one builtin token), unlike
@@ -589,9 +589,9 @@ age: i32 = 25    // Explicit type, initialized
 name := "John"   // Inferred as string
 buffer: [1024]u8 // Explicit type, no initializer: all zeros
 
-// Multiple declaration/destructuring syntax is planned, not current:
-// a, b, c: i32 = 1, 2, 3
-// x, y := 10, 20
+// Multiple-declaration and destructuring binding are cut, not current:
+// a, b, c: i32 = 1, 2, 3   // parse exit 5
+// x, y := 10, 20           // parse exit 5
 ```
 
 ### 4.2 Declaration Rules
@@ -1185,23 +1185,25 @@ normalize(v)      // Modifies v through checked reference
 
 ### 6.6 Variadic Functions
 
-> **Implementation Status**: Variadic parameter syntax is parsed and partially
-> type-checked for declarations, but runtime iteration and ABI lowering are not
-> implemented. Codegen modes reject variadic parameters before backend emission;
-> do not treat variadic functions as runnable current syntax.
+> **Implementation Status**: Cut from the current language surface. Parameter
+> forms such as `values: ..i32` still parse so the compiler can reject them with
+> semantic exit 6 (`Variadic parameters are not supported; pass a slice instead`).
+> Do not treat variadic functions as runnable. Pass a slice when a variable
+> argument count is needed. Compiler-owned `io.println` formatting is unrelated
+> and does not restore user variadics.
 
 ```a7
-// Planned shape: variadic parameters must be last
-sum :: fn(values: ..i32) i32 {
+// Cut spelling (semantic exit 6):
+// sum :: fn(values: ..i32) i32 { ... }
+
+// Current replacement: pass a slice
+sum :: fn(values: []i32) i32 {
     total := 0
     for val in values {
         total += val
     }
     ret total
 }
-
-// Type-safe printf
-printf :: fn(format: string, args: ..)
 ```
 
 ---

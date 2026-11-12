@@ -121,7 +121,7 @@ controls. This does not qualify full safety or V1.
 | Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
 | Generics | Concrete initializers, nested array arms, `$N` literals/inference/forwarding, substituted fixed-array elements, concrete wrappers, and immutable aliases through same-file, imported, module-global and selected origins are checked. Parameter, mutable, captured and aggregate origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
-| Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
+| Functions | Multiple returns, destructuring, and user variadics are cut (parse exit 5 / semantic exit 6). | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | Prelude `Option`/`Result` and typed I/O are available. Collections and a full memory/string library remain incomplete. | [Standard library](/a7-py/docs/stdlib.md) |
 
 Focused native probes verify escaped IO braces and ordinary signed `math.abs`

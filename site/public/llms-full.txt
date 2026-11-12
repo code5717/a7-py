@@ -642,7 +642,7 @@ Recognized escapes are `\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\0`, and `\xHH` with
 
 ## Punctuation and reserved words
 
-Parentheses group expressions and arguments. Braces contain blocks and aggregate initializers. Brackets express arrays, indexing, and slices. `:` introduces a type, `::` declares a constant, and `:=` declares an inferred variable. `.` selects a field or imported member. `..` separates slice bounds and appears in restricted variadic syntax. `$T` denotes a generic type parameter. `@` introduces type-set intrinsics or loop labels.
+Parentheses group expressions and arguments. Braces contain blocks and aggregate initializers. Brackets express arrays, indexing, and slices. `:` introduces a type, `::` declares a constant, and `:=` declares an inferred variable. `.` selects a field or imported member. `..` separates slice bounds. Variadic parameter spellings that reuse `..` are cut. `$T` denotes a generic type parameter. `@` introduces type-set intrinsics or loop labels.
 
 The [keyword index](/a7-py/docs/language/builtins.md#keyword-index) lists the tokenizer's actual reserved words. Some specification spellings, including `cast`, are context-sensitive identifiers rather than lexer keywords. A token being recognized does not mean every use can run.
 
@@ -716,7 +716,7 @@ Aliases name an existing type. They do not establish a separately owned resource
 
 ## Status and restrictions
 
-Status: supported for ordinary bindings and local shadowing. Multiple declarations, tuple returns, and destructuring are unavailable in the runnable backend. Do not use `var` or `const` as declaration keywords. A7 uses the declaration operators above.
+Status: supported for ordinary bindings and local shadowing. Multiple declarations, tuple returns, and destructuring are cut (parse exit 5). Do not use `var` or `const` as declaration keywords. A7 uses the declaration operators above.
 
 ## Evidence
 
@@ -1050,7 +1050,7 @@ add :: fn(x: i32, y: i32) i32 {
 
 Value parameters are immutable. To update a local working value, copy a parameter into a `:=` variable. A `ref T` parameter modifies caller storage and receives an ordinary lvalue argument. Do not add address-of syntax at a call.
 
-A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are unavailable in the current backend.
+A function returns one value. Return a named struct when several results belong together. Multiple return values and destructuring are cut: those spellings fail at parse exit 5 with an explicit message.
 
 ## Nested functions
 
@@ -1128,11 +1128,11 @@ increment :: fn(counter: ref Counter) {
 
 Recursion is unavailable. The compiler rejects direct calls back to the same function, mutual call cycles, and known cycles through local aliases and callback trampolines. Use loops, explicit stacks, or index-based worklists, as in the linked-list and binary-tree examples.
 
-Variadic declaration syntax such as `values: ..i32` is limited to parsing and partial declaration checks. Codegen rejects user variadic parameters before backend emission. The compiler's special handling of `io.println` does not make general variadic functions runnable.
+Variadic declaration syntax such as `values: ..i32` is cut. It still parses so the compiler can reject it at semantic exit 6 and tell the author to pass a slice. The compiler's special handling of `io.println` does not restore user variadics.
 
 ## Status and restrictions
 
-Status: supported for ordinary functions and example-backed callbacks. Generic specialization, variadic lowering, and broader method-style call chains have separate limits. See [generics](/a7-py/docs/language/generics.md) and [memory](/a7-py/docs/language/memory.md).
+Status: supported for ordinary functions and example-backed callbacks. Generic specialization and broader method-style call chains have separate limits. Variadics, multi-return, and destructuring are cut. See [generics](/a7-py/docs/language/generics.md) and [memory](/a7-py/docs/language/memory.md).
 
 ## Evidence
 
@@ -1363,7 +1363,7 @@ An untagged union literal requires exactly one named field. The field must exist
 
 ## Status and restrictions
 
-Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` supports leading-dot match arms and copyable payload capture; broader lifetime and payload-safety guarantees remain incomplete. Multiple return values and destructuring remain unavailable; use a named result struct.
+Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` supports leading-dot match arms and copyable payload capture; broader lifetime and payload-safety guarantees remain incomplete. Multiple return values and destructuring are cut; use a named result struct.
 
 `pub` on a struct field is accepted without changing field visibility. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](/a7-py/docs/language/generics.md).
 
@@ -2322,7 +2322,7 @@ controls. This does not qualify full safety or V1.
 | Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
 | Generics | Concrete initializers, nested array arms, `$N` literals/inference/forwarding, substituted fixed-array elements, concrete wrappers, and immutable aliases through same-file, imported, module-global and selected origins are checked. Parameter, mutable, captured and aggregate origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
-| Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
+| Functions | Multiple returns, destructuring, and user variadics are cut (parse exit 5 / semantic exit 6). | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | Prelude `Option`/`Result` and typed I/O are available. Collections and a full memory/string library remain incomplete. | [Standard library](/a7-py/docs/stdlib.md) |
 
 Focused native probes verify escaped IO braces and ordinary signed `math.abs`

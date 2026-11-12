@@ -5,6 +5,16 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Variadic parameters, multi-declaration/destructuring, and multi-return
+  spellings are cut from the runnable surface. Variadics still parse so the
+  compiler can reject them at semantic exit 6 with slice guidance.
+  Destructuring and multi-return spellings fail at parse exit 5 with an
+  explicit cut message. Docs and site notes no longer describe these as
+  future runnable syntax. Collections / string / mem remain deferred; see
+  [P-STD-collections-scope](plan/packets/P-STD-collections-scope.md).
+- The docs-site lockfile uses markdown-it 15.0.3, fixing advisory
+  GHSA-gfr2-rv44-r23c.
+
 - Selected imports (`import "m" { A, B }`) bind public file-module and virtual
   stdlib names, including public stdlib types such as `IoErr`. Selected
   MODULE aliases and selected stdlib ops used as function values reject.

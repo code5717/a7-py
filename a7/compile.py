@@ -1320,8 +1320,8 @@ class A7Compiler:
                             filename=filename,
                             source_lines=source_lines,
                             custom_message=(
-                                "Variadic parameters are parsed for future support, "
-                                f"but {self.backend} backend ABI/lowering is not implemented yet"
+                                "Variadic parameters are not supported; "
+                                "pass a slice instead"
                             ),
                         )
                     )
