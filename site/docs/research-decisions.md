@@ -6,7 +6,9 @@ Reviewed 2026-09-19. These decisions implement the user's approved option 2 plan
 
 Use a persistent documentation rail, a readable article column, and an optional page outline. Collapse navigation into native disclosures on smaller screens so it works without JavaScript. Separate the guided tour from exhaustive language reference. This applies the distinction between learning and information retrieval in [Diátaxis](https://diataxis.fr/).
 
-No option 2 concept image was located by the initial repository filename search. The written approved plan is the design authority. Existing screenshots under `docs/audits/2026-09-19/browser/` record the previous site, not acceptance of this rebuild. Do not claim a pixel comparison against an unavailable reference.
+The 2026-11 landing + responsive pass keeps that IA. The home route adds a brand-first hero (large A7, one sentence, two CTAs, full-bleed code visual) before the shared shell. Responsive hardening covers safe-area insets, short landscape heights, local overflow for tables and code, and progressive fold / viewport-segment dual-pane rules. Fold hardware coverage is only as strong as the CSS APIs the browser exposes; record simulations separately from device claims.
+
+No option 2 concept image was located by the initial repository filename search. The written approved plan is the design authority for the docs shell. The Project store brief `site-responsive-redesign.md` (approach 3) is the authority for the landing and fold/responsive additions. Existing screenshots under `docs/audits/2026-09-19/browser/` record the previous site, not acceptance of this rebuild. Do not claim a pixel comparison against an unavailable reference.
 
 ## Typography
 
