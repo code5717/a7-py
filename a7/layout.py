@@ -3,7 +3,7 @@
 Computes the memory layout the Zig backend produces for each named struct:
 field offsets, size, alignment, 64B cache lines touched, and line utilization.
 Zig lays out auto structs by sorting fields by alignment, largest first, with
-ties keeping declaration order (verified against @offsetOf on Zig 0.16.0),
+ties keeping declaration order (verified against @offsetOf on Zig 0.17.1),
 then packing sequentially with natural alignment and padding the total to
 the struct alignment. The numbers are those of a debug or release build;
 `test/test_layout_matches_zig.py` compares them with Zig's @sizeOf and

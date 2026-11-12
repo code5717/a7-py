@@ -12,12 +12,12 @@ order: 1
 
 - Python 3.13 or newer.
 - [uv](https://docs.astral.sh/uv/) for the Python environment.
-- [Zig 0.16.0](https://ziglang.org/download/) on `PATH` to build native programs.
+- [Zig 0.17.1](https://ziglang.org/download/) on `PATH` to build native programs.
 - Git to clone the repository.
 
 The compiler emits Zig source. The `build` and `run` commands invoke Zig.
 `check` validates the full A7 pipeline without writing files or requiring Zig.
-The V1 qualification target is Linux x86_64 with Python 3.13 and Zig 0.16.0.
+The V1 qualification target is Linux x86_64 with Python 3.13 and Zig 0.17.1.
 Bun is only needed for [website contributors](/a7-py/docs/project.md).
 
 ## Install
@@ -31,7 +31,7 @@ uv run a7 doctor
 ```
 
 Run the following commands from the `a7-py` repository root. `zig version`
-should print `0.16.0`, the toolchain version used by this checkout's release gates.
+should print `0.17.1`, the toolchain version used by this checkout's release gates.
 The release workflow attaches package files to GitHub releases; it does not
 publish to a package registry.
 
@@ -111,7 +111,7 @@ flags. See [all CLI options](/a7-py/docs/compiler.md).
 | `a7` not found | Run `uv sync` in the repository root and invoke `uv run a7`. |
 | Input file cannot be read | Confirm the working directory and source path. Compiler exit code 3 means an I/O failure. |
 | `zig` not found | Install Zig and add its executable directory to `PATH`. |
-| Generated code fails with another Zig version | Check `zig version`; the supported toolchain is 0.16.0. |
+| Generated code fails with another Zig version | Check `zig version`; the supported toolchain is 0.17.1. |
 | Compilation succeeds but there is no executable | The file-first command emits `.zig` source. Use `a7 build FILE` or `a7 run FILE` for native execution. |
 | A7 rejects a program from the specification | Check its [feature status](/a7-py/docs/language.md) and the diagnostic stage before assuming executable support. |
 

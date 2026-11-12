@@ -27,7 +27,7 @@ The missing-path probe was `http://127.0.0.1:4174/a7-py/docs/retrieval-missing-p
 
 ### Install and run a first program
 
-Pass. `docs/start.md` states the prerequisites: Python 3.13 or newer, uv, Git, and Zig 0.16.0 on PATH. It supplies the following commands:
+Pass. `docs/start.md` states the prerequisites: Python 3.13 or newer, uv, Git, and Zig 0.17.1 on PATH. It supplies the following commands:
 
 ```bash
 git clone https://github.com/code5717/a7-py.git

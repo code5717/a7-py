@@ -55,7 +55,7 @@ def zig_version(binary: str) -> str:
 @pytest.fixture(scope="session")
 def zig() -> str:
     binary = zig_binary()
-    assert zig_version(binary) == "0.16.0", f"expected zig 0.16.0, got {zig_version(binary)}"
+    assert zig_version(binary) == "0.17.1", f"expected zig 0.17.1, got {zig_version(binary)}"
     return binary
 
 

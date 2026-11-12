@@ -11,7 +11,7 @@ order: 31
 The installed entry point is `a7.cli:main`. Run `uv run a7` from a synced
 checkout, or use the equivalent `uv run python main.py` wrapper. Zig is the
 only public backend. File-first commands emit Zig. The `build` and `run`
-commands also invoke Zig 0.16.0.
+commands also invoke Zig 0.17.1.
 
 ## Pipeline
 
@@ -48,7 +48,7 @@ Imported modules never need their own `main`. `--timings` prints per-stage
 wall times (tokenize, parse, semantic, safety, codegen). On `build` and `run`
 it also reports the Zig `build-exe` hop. JSON payloads always include
 `stages.*.ms` when a stage ran; emitted Zig is unchanged.
-Both native commands require exactly Zig 0.16.0. The default profile is `debug`,
+Both native commands require exactly Zig 0.17.1. The default profile is `debug`,
 which selects Zig Debug. `release` selects ReleaseSafe and keeps runtime
 checks. `fast` selects ReleaseFast and removes them. No profile closes the
 current alias or lifetime safety gaps.
@@ -208,7 +208,7 @@ compilation is not sandboxing. See [memory](/a7-py/docs/language/memory.md) and
 
 ## Zig backend
 
-The public backend targets Zig 0.16.0. Keep compile, build, and run results
+The public backend targets Zig 0.17.1. Keep compile, build, and run results
 separate when reporting a feature's status. Use the debug and release artifact
 builders on [Release](/a7-py/docs/release.md) for native execution checks.
 

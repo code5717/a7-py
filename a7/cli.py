@@ -79,9 +79,9 @@ COMMANDS_HELP = "commands (see `a7 COMMAND --help`):\n" + "\n".join(
     f"  {name:<8} {summary}" for name, summary in COMMANDS.items()
 )
 
-ZIG_VERSION = "0.16.0"
+ZIG_VERSION = "0.17.1"
 DOCTOR_SCHEMA_VERSION = "1.0"
-QUALIFICATION_TARGET = "Linux x86_64, Python 3.13, Zig 0.16.0"
+QUALIFICATION_TARGET = "Linux x86_64, Python 3.13, Zig 0.17.1"
 
 EXIT_CODE_NAMES = {
     int(ExitCode.SUCCESS): "success",

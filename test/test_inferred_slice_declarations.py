@@ -222,7 +222,7 @@ def test_immutable_slice_backend_representation(profile, tmp_path, zig):
         assertion = (
             f"    comptime {{ if (@typeInfo(@TypeOf({name})).pointer.size != .slice) "
             f'@compileError("{name} must be a slice"); '
-            f"if (@typeInfo(@TypeOf({name})).pointer.is_const != {is_const}) "
+            f'if (@typeInfo(@TypeOf({name})).pointer.attrs.@"const" != {is_const}) '
             f'@compileError("{name} backing constness changed"); '
             f"if (@typeInfo(@TypeOf({name})).pointer.child != {element}) "
             f'@compileError("{name} element type changed"); }}\n'

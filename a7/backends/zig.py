@@ -319,8 +319,9 @@ class ZigCodeGenerator(CodeGenerator):
             "        .int, .float => return 0,",
             "        .bool => return false,",
             "        .optional => return null,",
-            '        .@"enum" => |info| return @field(T, info.fields[0].name),',
-            "        // Fill in place. A `**` constant of many structs makes LLVM take",
+            # Zig 0.17: enum/struct/union type info uses field_names/field_types.
+            '        .@"enum" => |info| return @field(T, info.field_names[0]),',
+            "        // Fill in place. A comptime @splat of many structs makes LLVM take",
             "        // minutes on an optimized build.",
             "        .array => |info| {",
             "            var value: T = undefined;",
@@ -332,10 +333,12 @@ class ZigCodeGenerator(CodeGenerator):
             "        .pointer => |info| return if (info.size == .slice) &.{} else undefined,",
             '        .@"struct" => |info| {',
             "            var value: T = undefined;",
-            "            inline for (info.fields) |field| @field(value, field.name) = __a7_zero(field.type);",
+            "            inline for (info.field_names, info.field_types) |name, field_type| {",
+            "                @field(value, name) = __a7_zero(field_type);",
+            "            }",
             "            return value;",
             "        },",
-            '        .@"union" => |info| return @unionInit(T, info.fields[0].name, __a7_zero(info.fields[0].type)),',
+            '        .@"union" => |info| return @unionInit(T, info.field_names[0], __a7_zero(info.field_types[0])),',
             '        else => @compileError("a7: no zero value for " ++ @typeName(T)),',
             "    }",
             "}",
@@ -425,8 +428,8 @@ class ZigCodeGenerator(CodeGenerator):
             lines.append("pub fn main(init: std.process.Init) void {")
             lines.append("    __a7_io = init.io;")
             if "stdout" in self._io_streams_needed:
-                # writerStreaming, not writer: Zig 0.16.0 File.writer starts
-                # in positional mode at offset 0, so each fresh writer
+                # writerStreaming, not writer: File.writer starts in
+                # positional mode at offset 0, so each fresh writer
                 # overwrote earlier output when the stream is a regular file.
                 lines.append("    __a7_stdout_writer = std.Io.File.stdout().writerStreaming(__a7_io.?, &__a7_stdout_buf);")
                 lines.append("    __a7_stdout_is_tty = std.Io.File.stdout().isTty(__a7_io.?) catch false;")
@@ -1872,7 +1875,7 @@ class ZigCodeGenerator(CodeGenerator):
             element_type = self._emit_semantic_type(declaration_type.element_type)
             # Preserve backing constness while normalizing array pointers to slices.
             annotation = (
-                f": (if (@typeInfo(@TypeOf({val})).pointer.is_const) "
+                f': (if (@typeInfo(@TypeOf({val})).pointer.attrs.@"const") '
                 f"[]const {element_type} else []{element_type})"
             )
         name = self._declare_var_in_scope(name) if self._in_function else self._file_scope_name(name)
@@ -1946,7 +1949,7 @@ class ZigCodeGenerator(CodeGenerator):
             element_type = self._emit_semantic_type(declaration_type.element_type)
             # @TypeOf has no runtime side effects; the initializer executes once.
             zig_type = (
-                f"(if (@typeInfo(@TypeOf({initial_value})).pointer.is_const) "
+                f'(if (@typeInfo(@TypeOf({initial_value})).pointer.attrs.@"const") '
                 f"[]const {element_type} else []{element_type})"
             )
         elif concrete_function:
@@ -3616,7 +3619,8 @@ class ZigCodeGenerator(CodeGenerator):
             if "__a7_zero(" in inner_default:
                 # Aggregate elements: let the helper fill the array at run time.
                 return f"__a7_zero({self._emit_type_node(type_node)})"
-            return f"[_]{elem}{{{inner_default}}} ** {size}"
+            # Zig 0.17 removed array multiplication (`a ** b`); use @splat.
+            return f"@as([{size}]{elem}, @splat({inner_default}))"
         elif kind == NodeKind.TYPE_POINTER:
             return "null"
         elif kind == NodeKind.TYPE_SLICE:
@@ -3653,7 +3657,8 @@ class ZigCodeGenerator(CodeGenerator):
         for array in reversed(arrays):
             elem = self._emit_type_node(array.element_type)
             size = self._emit_expr(array.size)
-            value = f"[_]{elem}{{{value}}} ** {size}"
+            # Zig 0.17 removed array multiplication (`a ** b`); use @splat.
+            value = f"@as([{size}]{elem}, @splat({value}))"
         return value
 
     # === I/O special-casing ===

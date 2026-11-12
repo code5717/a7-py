@@ -215,7 +215,7 @@ cut the sentence or mark the claim unchecked per S6.
   or prefix `*` as reference operations; pass lvalues directly to `ref`
   parameters and use ordinary field access after nil checks.
 - Native release archives are named with platform/toolchain context
-  (`a7-example-artifacts-linux-x86_64-zig0.16.0-<profile>.tar.gz`); keep
+  (`a7-example-artifacts-linux-x86_64-zig0.17.1-<profile>.tar.gz`); keep
   any docs or scripts that reference these filenames in sync.
 - This rule applies to A7 source only. Compiler internals follow the separate
   no-recursion rule (no recursion anywhere in `a7/`).

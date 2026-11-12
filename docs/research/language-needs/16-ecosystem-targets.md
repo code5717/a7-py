@@ -4,7 +4,7 @@
 
 - One backend only: `a7/backends/__init__.py` registers `BACKENDS = {"zig": ...}`.
   CLI `--backend` accepts only `zig` (`a7/cli.py:234`).
-- V1 qualification target is Linux x86-64, Python 3.13, Zig 0.16.0 (`a7/cli.py:101`).
+- V1 qualification target is Linux x86-64, Python 3.13, Zig 0.17.1 (`a7/cli.py` `ZIG_VERSION`).
 - Emit path is `zig build-exe` on the host (`scripts/build_examples.py:120`); no
   `--target` passthrough exists in `a7/` or `scripts/`.
 - Stdlib is two virtual modules: `std/io`, `std/math` (`docs/SPEC.md` §10.3).

@@ -1,4 +1,4 @@
-"""Binding and labeled transfer outcomes through A7 CLI and Zig 0.16.0."""
+"""Binding and labeled transfer outcomes through A7 CLI and Zig 0.17.1."""
 
 import pytest
 

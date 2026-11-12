@@ -24,7 +24,7 @@ A release should contain:
 
 - Python 3.13+
 - `uv`
-- Zig 0.16.0 on `PATH`
+- Zig 0.17.1 on `PATH`
 - Bun 1.3+ for the docs site
 
 ## Shared-machine limits
@@ -180,7 +180,7 @@ uv run python scripts/verify_release_manifest.py SHA256SUMS
 gh attestation verify a7_py-*.tar.gz --repo code5717/a7-py
 gh attestation verify a7_py-*.whl --repo code5717/a7-py
 gh attestation verify a7-docs-site.tar.gz --repo code5717/a7-py
-gh attestation verify a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz --repo code5717/a7-py
+gh attestation verify a7-example-artifacts-linux-x86_64-zig0.17.1-release.tar.gz --repo code5717/a7-py
 ```
 
 When building locally, remove `dist/` before `uv build`. The release workflow

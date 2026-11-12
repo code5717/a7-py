@@ -5,7 +5,7 @@ Source: https://code5717.github.io/a7-py/docs/index.md
 # A7 documentation
 
 A7 is an experimental, statically typed systems language. Its Python compiler
-checks `.a7` source and emits a single Zig file. Zig 0.16.0 builds the native
+checks `.a7` source and emits a single Zig file. Zig 0.17.1 builds the native
 program. Start below, then read the tour or the language reference.
 
 ## Start in two minutes
@@ -104,12 +104,12 @@ Source: https://code5717.github.io/a7-py/docs/start.md
 
 - Python 3.13 or newer.
 - [uv](https://docs.astral.sh/uv/) for the Python environment.
-- [Zig 0.16.0](https://ziglang.org/download/) on `PATH` to build native programs.
+- [Zig 0.17.1](https://ziglang.org/download/) on `PATH` to build native programs.
 - Git to clone the repository.
 
 The compiler emits Zig source. The `build` and `run` commands invoke Zig.
 `check` validates the full A7 pipeline without writing files or requiring Zig.
-The V1 qualification target is Linux x86_64 with Python 3.13 and Zig 0.16.0.
+The V1 qualification target is Linux x86_64 with Python 3.13 and Zig 0.17.1.
 Bun is only needed for [website contributors](/a7-py/docs/project.md).
 
 ## Install
@@ -123,7 +123,7 @@ uv run a7 doctor
 ```
 
 Run the following commands from the `a7-py` repository root. `zig version`
-should print `0.16.0`, the toolchain version used by this checkout's release gates.
+should print `0.17.1`, the toolchain version used by this checkout's release gates.
 The release workflow attaches package files to GitHub releases; it does not
 publish to a package registry.
 
@@ -203,7 +203,7 @@ flags. See [all CLI options](/a7-py/docs/compiler.md).
 | `a7` not found | Run `uv sync` in the repository root and invoke `uv run a7`. |
 | Input file cannot be read | Confirm the working directory and source path. Compiler exit code 3 means an I/O failure. |
 | `zig` not found | Install Zig and add its executable directory to `PATH`. |
-| Generated code fails with another Zig version | Check `zig version`; the supported toolchain is 0.16.0. |
+| Generated code fails with another Zig version | Check `zig version`; the supported toolchain is 0.17.1. |
 | Compilation succeeds but there is no executable | The file-first command emits `.zig` source. Use `a7 build FILE` or `a7 run FILE` for native execution. |
 | A7 rejects a program from the specification | Check its [feature status](/a7-py/docs/language.md) and the diagnostic stage before assuming executable support. |
 
@@ -2015,7 +2015,7 @@ Source: https://code5717.github.io/a7-py/docs/compiler.md
 The installed entry point is `a7.cli:main`. Run `uv run a7` from a synced
 checkout, or use the equivalent `uv run python main.py` wrapper. Zig is the
 only public backend. File-first commands emit Zig. The `build` and `run`
-commands also invoke Zig 0.16.0.
+commands also invoke Zig 0.17.1.
 
 ## Pipeline
 
@@ -2052,7 +2052,7 @@ Imported modules never need their own `main`. `--timings` prints per-stage
 wall times (tokenize, parse, semantic, safety, codegen). On `build` and `run`
 it also reports the Zig `build-exe` hop. JSON payloads always include
 `stages.*.ms` when a stage ran; emitted Zig is unchanged.
-Both native commands require exactly Zig 0.16.0. The default profile is `debug`,
+Both native commands require exactly Zig 0.17.1. The default profile is `debug`,
 which selects Zig Debug. `release` selects ReleaseSafe and keeps runtime
 checks. `fast` selects ReleaseFast and removes them. No profile closes the
 current alias or lifetime safety gaps.
@@ -2212,7 +2212,7 @@ compilation is not sandboxing. See [memory](/a7-py/docs/language/memory.md) and
 
 ## Zig backend
 
-The public backend targets Zig 0.16.0. Keep compile, build, and run results
+The public backend targets Zig 0.17.1. Keep compile, build, and run results
 separate when reporting a feature's status. Use the debug and release artifact
 builders on [Release](/a7-py/docs/release.md) for native execution checks.
 
@@ -2257,7 +2257,7 @@ incomplete.
 
 | Area | Status | Qualification |
 | --- | --- | --- |
-| Zig source emission | supported | Only public backend; targets Zig 0.16.0. |
+| Zig source emission | supported | Only public backend; targets Zig 0.17.1. |
 | Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
 | References and explicit allocation | limited | Nil guards, tracked fields, direct aliases and exact literal-index fixed-array aliases have bounded checks; complete lifetime guarantees remain unavailable. |
 | Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |
@@ -2562,7 +2562,7 @@ before release. Fetch live Markdown without JavaScript after deployment.
 ## Native artifacts
 
 Archive filenames carry the platform and toolchain, for example
-`a7-example-artifacts-linux-x86_64-zig0.16.0-release.tar.gz`.
+`a7-example-artifacts-linux-x86_64-zig0.17.1-release.tar.gz`.
 The release workflow derives the expected example count through
 `scripts/project_status.py` and verifies archive membership.
 

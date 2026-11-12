@@ -15,9 +15,9 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ZIG_VERSION: "0.16.0"
-  ZIG_URL: https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
-  ZIG_SHA256: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+  ZIG_VERSION: "0.17.1"
+  ZIG_URL: https://ziglang.org/download/0.17.1/zig-x86_64-linux-0.17.1.tar.xz
+  ZIG_SHA256: 3581863e3cbcfd0fce0efc682ce7e9e93da96668a977791d356a26d2a7e9b17a
 
 jobs:
   python:

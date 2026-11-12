@@ -5,6 +5,11 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Zig toolchain pin moves from 0.16.0 to 0.17.1. CI/release downloads, doctor
+  checks, archive names (`zig0.17.1`), docs, and version-asserting tests
+  follow. Emitted array defaults use `@splat` because Zig 0.17 removed
+  `a ** b` array multiplication.
+
 - Docs, site coverage, README, and feature pins sync cut-surface and
   `--timings` wording after the surface-cut, perf-baseline, and P-MEM packet
   tracks. Safety alias / formal-discharge gaps stay open on their own tracks;

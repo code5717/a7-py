@@ -9,7 +9,7 @@ order: 0
 # A7 documentation
 
 A7 is an experimental, statically typed systems language. Its Python compiler
-checks `.a7` source and emits a single Zig file. Zig 0.16.0 builds the native
+checks `.a7` source and emits a single Zig file. Zig 0.17.1 builds the native
 program. Start below, then read the tour or the language reference.
 
 ## Start in two minutes

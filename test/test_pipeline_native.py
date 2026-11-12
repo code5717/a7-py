@@ -1,6 +1,6 @@
 """Production A7 pipeline plus real Zig builds, with no mocked stages.
 
-Set A7_TEST_ZIG to a Zig 0.16.0 binary or put zig on PATH. Missing tools fail
+Set A7_TEST_ZIG to a Zig 0.17.1 binary or put zig on PATH. Missing tools fail
 explicitly. Compile-only binding checks never execute a generated binary.
 """
 
@@ -18,9 +18,9 @@ from conftest import shared_zig_cache
 @pytest.fixture(scope="module")
 def zig():
     executable = os.environ.get("A7_TEST_ZIG") or shutil.which("zig")
-    assert executable, "Zig 0.16.0 required: set A7_TEST_ZIG or PATH"
+    assert executable, "Zig 0.17.1 required: set A7_TEST_ZIG or PATH"
     version = subprocess.run([executable, "version"], capture_output=True, text=True)
-    assert version.returncode == 0 and version.stdout.strip() == "0.16.0", version
+    assert version.returncode == 0 and version.stdout.strip() == "0.17.1", version
     return executable
 
 
