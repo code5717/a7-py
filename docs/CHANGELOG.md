@@ -5,6 +5,19 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Selected imports (`import "m" { A, B }`) bind public file-module and virtual
+  stdlib names, including public stdlib types such as `IoErr`. Selected
+  MODULE aliases and selected stdlib ops used as function values reject.
+  Selected `read_line` follows the registry fixed signature. Selected
+  constants fold and lower inside generic type arguments. `$N` accepts
+  literal args (`Buf(4)`), infers unique value params at calls under the
+  declared kind/range, forwards matching `$N` into nested generics, and
+  rejects value params in type-parameter slots. `using import` rejects at
+  semantic exit 6 with alias-form guidance. Hardlinks share module identity
+  with symlinks and alternate spellings. Immutable generic aliases preserve
+  body obligations through imported, module-global and selected-import copy
+  chains when still analyzable.
+
 - Safety/diagnostics track: proved-uninitialized function-pointer locals exit 6
   before Zig; bare undefined `case Ident:` patterns are undefined-name errors;
   failed JSON `stages.parse` carries `message` and `span`; readonly entry/callee
@@ -113,7 +126,6 @@ belong in git history, not in long Markdown logs.
   semantic exit 6 instead of codegen exit 7. Statement effects remain valid.
   Existing type errors retain priority. `println_ok` results and ordinary user
   void bindings are unchanged.
-
 - The selected executable entry rejects a known nil
   read through its complete readonly summary. Library mode has no implicit
   execution root. General caller-local and effectful proofs remain incomplete.

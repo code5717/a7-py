@@ -974,16 +974,29 @@ class TypeCheckingPass:
         return name
 
     def _value_arg_for_node(self, node: Optional[ASTNode]) -> Optional[Type]:
-        """Fold a bare constant identifier to a GenericValueArg, if possible.
+        """Fold a literal or bare constant identifier to a GenericValueArg.
 
         Never calls resolve_type_node, so _resolve_type_leaf can call it
-        without forming a call cycle.
+        without forming a call cycle. Accepts `Buf(4)` literals as well as
+        named constants such as `Buf(SIZE)`.
         """
-        if node is None or node.kind != NodeKind.TYPE_IDENTIFIER or node.generic_params:
+        if node is None:
+            return None
+        if node.kind == NodeKind.LITERAL:
+            if node.literal_kind == LiteralKind.INTEGER and isinstance(node.literal_value, int):
+                return GenericValueArg(value=node.literal_value)
+            if node.literal_kind == LiteralKind.BOOLEAN:
+                return GenericValueArg(value=1 if node.literal_value else 0, is_bool=True)
+            return None
+        if node.kind != NodeKind.TYPE_IDENTIFIER or node.generic_params:
             return None
         symbol = self.symbols.lookup(node.name or node.type_name or "")
         if symbol is None or symbol.kind != SymbolKind.CONSTANT or symbol.node is None:
             return None
+        # Record the use so module lowering rewrites selected constants in
+        # annotations such as `Buf(SIZE)` to the emitted identity name.
+        self.symbols.resolved_uses[id(node)] = symbol
+        self.symbols.mark_used(symbol.name)
         return self._extract_value_arg(symbol.node.value)
 
     def _resolve_type_or_value_arg(self, node: Optional[ASTNode]) -> Type:
@@ -1064,6 +1077,19 @@ class TypeCheckingPass:
                         f"got value {concrete}"
                     ),
                 )
+            elif (
+                isinstance(concrete, GenericParamType)
+                and concrete.name in self._active_value_params
+            ):
+                # `$N` must not occupy a type-parameter slot (`Box($N)`).
+                self.add_semantic_error(
+                    SemanticErrorType.CONSTRAINT_VIOLATION,
+                    span,
+                    context=(
+                        f"Generic parameter '${param_name}' of {owner_name} takes a type, "
+                        f"got value parameter '${concrete.name}'"
+                    ),
+                )
 
     def _annotation_arguments_ok(self, node: ASTNode, type_name: str, type_args: List[Type]) -> bool:
         """Check `Name(args)` written as a type: argument count, then kinds.
@@ -1108,6 +1134,28 @@ class TypeCheckingPass:
         span: Optional[SourceSpan],
     ) -> None:
         """Reject value arguments that miss the declared $N kind."""
+        if isinstance(concrete, GenericParamType):
+            forwarded_kind = self._active_value_params.get(concrete.name)
+            if forwarded_kind is None:
+                self.add_semantic_error(
+                    SemanticErrorType.CONSTRAINT_VIOLATION,
+                    span,
+                    context=(
+                        f"Value parameter '${param_name}' of {owner_name} requires "
+                        f"a comptime {expected_kind}, got type parameter '${concrete.name}'"
+                    ),
+                )
+                return
+            if forwarded_kind != expected_kind:
+                self.add_semantic_error(
+                    SemanticErrorType.CONSTRAINT_VIOLATION,
+                    span,
+                    context=(
+                        f"Value parameter '${param_name}' of {owner_name} requires "
+                        f"a comptime {expected_kind}, got '${concrete.name}: {forwarded_kind}'"
+                    ),
+                )
+            return
         if not isinstance(concrete, GenericValueArg):
             self.add_semantic_error(
                 SemanticErrorType.CONSTRAINT_VIOLATION,
@@ -1638,12 +1686,9 @@ class TypeCheckingPass:
                 for arg in node.generic_params:
                     if (arg.kind == NodeKind.TYPE_GENERIC and not arg.type_name and not arg.type_args
                             and arg.name in self._active_value_params):
-                        self._report_value_param_as_type(
-                            arg,
-                            f"Value parameter '${arg.name}' cannot be passed on as a generic "
-                            f"argument of {type_name}; pass a named constant instead",
-                        )
-                        type_args.append(UNKNOWN)
+                        # Forward `$N` into another generic under matching kind
+                        # checks; instantiation substitutes the concrete value.
+                        type_args.append(GenericParamType(name=arg.name))
                         continue
                     value_arg = self._value_arg_for_node(arg)
                     type_args.append(value_arg if value_arg is not None else (yield ("type", arg)))
@@ -2345,8 +2390,11 @@ class TypeCheckingPass:
                 owner = id(node)
             if node.kind in (NodeKind.VAR, NodeKind.CONST, NodeKind.PARAMETER):
                 owners[id(node)] = owner
-                if (owner is not None and node.kind in (NodeKind.VAR, NodeKind.CONST)
-                        and node.value is not None and node.value.kind == NodeKind.IDENTIFIER):
+                if (node.kind in (NodeKind.VAR, NodeKind.CONST)
+                        and node.value is not None
+                        and node.value.kind in (NodeKind.IDENTIFIER, NodeKind.FIELD_ACCESS)):
+                    # Function-local and file-scope immutable copies both qualify
+                    # when the copy chain stays analyzable.
                     declarations[id(node)] = node
             if node.kind in (NodeKind.IDENTIFIER, NodeKind.FIELD_ACCESS):
                 occurrences.append((node, owner))
@@ -2372,7 +2420,10 @@ class TypeCheckingPass:
             binding = self._generic_alias_bindings.get(id(node))
             if binding is not None:
                 declaration = id(binding[0])
-                if declaration in declarations and owners[declaration] != owner:
+                # A local alias captured by another function is not analyzable.
+                # File-scope aliases (owner None) remain visible to every function.
+                if (declaration in declarations and owners[declaration] is not None
+                        and owners[declaration] != owner):
                     blocked.add(declaration)
 
         targets = {}
@@ -2654,7 +2705,10 @@ class TypeCheckingPass:
                     first = current.function
                     # Module operations have backend lowering only at direct call
                     # sites; the callee is typed before its call, so mark it here.
-                    if first is not None and first.kind == NodeKind.FIELD_ACCESS:
+                    if first is not None and first.kind in (
+                        NodeKind.FIELD_ACCESS,
+                        NodeKind.IDENTIFIER,
+                    ):
                         setattr(first, "direct_call_target", True)
                 else:
                     break
@@ -2994,6 +3048,69 @@ class TypeCheckingPass:
                 )
                 return UNKNOWN
 
+            # Selected stdlib imports (`import "std/io" { println }`) bind a
+            # marker symbol; lower them like `io.println` without an alias.
+            if (
+                callee is not None
+                and callee.kind == NodeKind.IDENTIFIER
+                and callee.name
+            ):
+                selected = self.symbols.lookup(callee.name)
+                selected_node = getattr(selected, "node", None) if selected is not None else None
+                canonical = getattr(selected_node, "stdlib_selected_canonical", None)
+                if canonical is not None:
+                    arg_types = []
+                    if node.arguments:
+                        for arg in node.arguments:
+                            arg_types.append((yield ('visit_expression', (arg,))))
+                    node.stdlib_canonical = canonical
+                    self.symbols.resolved_uses[id(callee)] = selected
+                    if canonical.startswith("std.io."):
+                        method_name = getattr(selected_node, "stdlib_selected_name", None) or ""
+                        hook = self.stdlib.modules["io"].functions.get(method_name)
+                        signature = self._stdlib_signatures.get(canonical)
+                        if hook is not None and hook.argument_policy == "format":
+                            self._validate_io_call(node, arg_types)
+                        elif signature is None:
+                            return UNKNOWN
+                        elif len(arg_types) != len(signature.param_types):
+                            self.add_type_error(
+                                TypeErrorType.WRONG_ARGUMENT_COUNT,
+                                node.span,
+                                context=(
+                                    f"io.{method_name} expects "
+                                    f"{len(signature.param_types)} arguments, "
+                                    f"got {len(arg_types)}"
+                                ),
+                            )
+                        else:
+                            for arg, actual, expected in zip(
+                                node.arguments or [], arg_types, signature.param_types
+                            ):
+                                if not (yield (
+                                    '_is_initializer_assignable_to',
+                                    (arg, actual, expected, arg.span,
+                                     f'io.{method_name} argument', None),
+                                )):
+                                    self.add_type_error(
+                                        TypeErrorType.ARGUMENT_TYPE_MISMATCH,
+                                        arg.span,
+                                        expected_type=str(expected),
+                                        got_type=str(actual),
+                                        context=f"io.{method_name} argument",
+                                    )
+                        if signature is not None:
+                            self.set_type(callee, signature)
+                            return (
+                                signature.return_type
+                                if signature.return_type is not None
+                                else VOID
+                            )
+                        return UNKNOWN
+                    if canonical.startswith("std.math."):
+                        return self._validate_math_call(node, canonical, arg_types)
+                    return UNKNOWN
+
             # A bare call that resolves to a function merged in from an imported
             # module is missing its alias: the declaration is emitted with the
             # module prefix while the call site would emit the plain name, which
@@ -3117,6 +3234,18 @@ class TypeCheckingPass:
             # A callback signature already uses its enclosing function's bindings.
             if not bound_callback:
                 self._check_generic_constraints(func_type, generic_mapping, node.span)
+                # Inferred `$N` lengths must still fit the declared value kind
+                # (`fill($N: u8)` rejecting `[300]u8`).
+                if callee_declaration is not None and generic_mapping:
+                    value_kinds = self._value_param_types_from_params(
+                        callee_declaration.generic_params or []
+                    )
+                    owner = callee_declaration.name or "function"
+                    for name, kind in value_kinds.items():
+                        concrete = generic_mapping.get(name)
+                        if concrete is None or isinstance(concrete, UnknownType):
+                            continue
+                        self._check_value_arg(name, owner, kind, concrete, node.span)
             # Substitute generic types in param_types for type checking
             resolved_param_types = [self._substitute_generic(pt, generic_mapping) for pt in func_type.param_types]
             inference_failed = len(self.errors) > errors_before_inference
@@ -3365,6 +3494,8 @@ class TypeCheckingPass:
                             self.add_type_error(TypeErrorType.TYPE_USED_AS_VALUE, node.span,
                                                 context=f"'{node.object.name}.{field_name}' is a type")
                             return UNKNOWN
+                        if target.kind == SymbolKind.FUNCTION and target.node is not None:
+                            self._generic_alias_bindings[id(node)] = (target.node, target.kind)
                         exact = self._binding_exact(node, target.node)
                         if exact is not None:
                             if not self._cache_exact(node, exact):
@@ -4358,6 +4489,20 @@ class TypeCheckingPass:
                     context=f"'{ident_name}' is a type",
                 )
                 return UNKNOWN
+            # Selected stdlib ops lower only at direct call sites.
+            if (
+                getattr(symbol.node, "stdlib_selected_canonical", None) is not None
+                and not getattr(node, "direct_call_target", False)
+            ):
+                self.add_semantic_error(
+                    SemanticErrorType.UNSUPPORTED_FEATURE,
+                    node.span,
+                    context=(
+                        "Standard-library operations must be called directly; "
+                        "function values are unavailable"
+                    ),
+                )
+                return UNKNOWN
         if id(symbol.node) in self._bound_callback_values:
             self._bound_callback_values.add(id(node))
         return symbol.type
@@ -4724,7 +4869,10 @@ class TypeCheckingPass:
             elif isinstance(param_type, PointerType) and isinstance(arg_type, PointerType):
                 stack.append((param_type.pointee_type, arg_type.pointee_type, None))
             elif isinstance(param_type, ArrayType) and isinstance(arg_type, ArrayType):
-                if param_type.size == arg_type.size:
+                if param_type.size_param is not None and arg_type.size is not None:
+                    bind(param_type.size_param, GenericValueArg(value=arg_type.size), arg_node)
+                    stack.append((param_type.element_type, arg_type.element_type, None))
+                elif param_type.size == arg_type.size:
                     stack.append((param_type.element_type, arg_type.element_type, None))
             elif isinstance(param_type, ArrayType) and isinstance(arg_type, SliceType):
                 stack.append((param_type.element_type, arg_type.element_type, None))
@@ -4736,7 +4884,11 @@ class TypeCheckingPass:
                     stack.append((param_type.return_type, arg_type.return_type, None))
             elif isinstance(param_type, GenericInstanceType) and isinstance(arg_type, GenericInstanceType):
                 if param_type.base_name == arg_type.base_name:
-                    stack.extend((p, a, None) for p, a in zip(param_type.type_args, arg_type.type_args))
+                    for p_arg, a_arg in zip(param_type.type_args, arg_type.type_args):
+                        if isinstance(p_arg, GenericParamType):
+                            bind(p_arg.name, a_arg, arg_node)
+                        else:
+                            stack.append((p_arg, a_arg, None))
 
         for name, first, second in conflicts:
             self.add_semantic_error(

@@ -674,16 +674,20 @@ class TestGenericEdgeCases:
         assert [field.name for field in result.declarations[0].fields] == ["data", "process", "compare"]
         assert [stmt.name for stmt in result.declarations[-1].body.statements] == ["h", "n"]
 
-    def test_value_generic_argument_is_rejected_without_dropping_main(self):
-        # Value generics are unavailable. This formerly passed because parser
-        # recovery discarded main and the test only checked PROGRAM kind.
-        with pytest.raises(ParseError):
-            parse_a7("""
+    def test_value_generic_argument_keeps_main(self):
+        # Literal comptime args such as `100` parse in Type(...) lists. The
+        # checker still rejects a value where `$N` is an unconstrained type
+        # parameter; parsing must keep both declarations.
+        result = parse_a7("""
 Buffer($T, $N) :: struct { data: [$N]$T }
 main :: fn() {
     b := Buffer(f64, 100){size: 0}
 }
 """)
+        assert [decl.name for decl in result.declarations] == ["Buffer", "main"]
+        literal = result.declarations[1].body.statements[0].value
+        assert literal.kind.name == "STRUCT_INIT"
+        assert literal.type_arguments[1].kind.name == "LITERAL"
 
 
 class TestStringAndLiteralEdgeCases:

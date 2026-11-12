@@ -558,12 +558,13 @@ class TestPhase1SpeculationAndMatchFixes:
         assert getattr(exc_info.value, "fatal", False) is True
         assert parser._not_generic_literal == set()
 
-    def test_non_fatal_error_falls_back_to_call(self):
-        """`Pair(1){...}` is not a generic struct literal: `1` is no type, so it is a call."""
+    def test_literal_type_argument_parses_as_struct_init(self):
+        """`Pair(1){}` is a generic struct literal: `1` is a comptime value argument."""
         parser = Parser(Tokenizer("Pair(1){}").tokenize())
         node = parser.parse_expression()
-        assert node.kind.name == "CALL"
-        assert parser.current().value == "{"
+        assert node.kind.name == "STRUCT_INIT"
+        assert len(node.type_arguments) == 1
+        assert node.type_arguments[0].kind.name == "LITERAL"
 
     def test_bracket_led_call_argument_is_parsed_without_calling_parse_type(self):
         """An array-literal argument is classified by lookahead, not by a failed type parse."""

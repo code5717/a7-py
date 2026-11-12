@@ -61,3 +61,32 @@ def test_value_parameters_build_and_run(tmp_path, zig):
     assert "fn Flag(comptime _: bool) type" in emitted
     assert "fn scale(comptime _: usize, x: i32) i32" in emitted
     assert run_both_profiles(VALUE_PARAMS, tmp_path, zig) == "4 5 6 7 2\n8\n"
+
+
+LITERAL_FORWARD = IO_IMPORT + """
+Buf($N: usize) :: struct {
+    data: [$N]u8,
+}
+Holder($N: usize) :: struct {
+    inner: Buf($N),
+}
+fill($N: usize) :: fn(buf: [$N]u8) i32 {
+    ret 1
+}
+main :: fn() {
+    h := Holder(4){inner: Buf(4){data: [9, 8, 7, 6]}}
+    b: [4]u8 = [1, 2, 3, 4]
+    io.println("{} {}", h.inner.data[0], fill(b))
+}
+"""
+
+
+def test_literal_forward_and_inference_build_and_run(tmp_path, zig):
+    """Literal `Buf(4)`, matching `$N` forwarding, and unique call inference."""
+    result = expect_ok(LITERAL_FORWARD, tmp_path)
+    emitted = Path(result.output_path).read_text()
+    assert "fn Holder(comptime N: usize) type" in emitted
+    assert "inner: Buf(N)" in emitted
+    assert "Holder(4)" in emitted
+    assert "Buf(4)" in emitted
+    assert run_both_profiles(LITERAL_FORWARD, tmp_path, zig) == "9 1\n"

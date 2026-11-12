@@ -4,7 +4,7 @@ Module resolution system for A7.
 Handles import statements, module loading, and dependency management.
 """
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass
 from pathlib import Path
 from importlib.resources import files
@@ -54,6 +54,8 @@ class ModuleResolver:
         self.entry_root = Path(self.search_paths[0]).resolve()
         # File keys are root-relative real paths; leading / reserves stdlib cache keys.
         self.loaded_modules: Dict[str, ModuleInfo] = {}
+        # Hardlinks share one module identity: first-seen cache key wins.
+        self._inode_to_key: Dict[Tuple[int, int], str] = {}
         self.module_table = ModuleTable()
         self.stdlib = StdlibRegistry()
         # Public source modules are separate from private prelude declarations.
@@ -65,6 +67,29 @@ class ModuleResolver:
         # Built-in stdlib modules are virtual modules backed by StdlibRegistry
         # symbols and backend mappings rather than on-disk .a7 files.
         self.virtual_modules: Set[str] = self.stdlib.public_module_paths()
+
+    @staticmethod
+    def _file_inode(file_path: str) -> Tuple[int, int]:
+        """Device and inode identity for hardlink-aware module keys."""
+        st = Path(file_path).stat()
+        return (st.st_dev, st.st_ino)
+
+    def _cache_key_for_file(self, file_path: str) -> str:
+        """Stable module cache key; hardlinks reuse the first-seen spelling."""
+        inode = self._file_inode(file_path)
+        existing = self._inode_to_key.get(inode)
+        if existing is not None:
+            return existing
+        try:
+            path = Path(file_path).resolve()
+        except OSError as error:
+            raise A7ImportError(f"Cannot resolve module file '{file_path}': {error}") from error
+        if path.is_relative_to(self.source_root):
+            key = "/stdlib-source/" + path.relative_to(self.source_root).with_suffix("").as_posix()
+        else:
+            key = path.relative_to(self.entry_root).with_suffix("").as_posix()
+        self._inode_to_key[inode] = key
+        return key
 
     def _is_safe_module_path(self, module_path: str) -> bool:
         # Reject null bytes (would crash Path.exists with ValueError),
@@ -79,13 +104,8 @@ class ModuleResolver:
         return not path.is_absolute()
 
     def file_module_key(self, file_path: str) -> str:
-        try:
-            path = Path(file_path).resolve()
-        except OSError as error:
-            raise A7ImportError(f"Cannot resolve module file '{file_path}': {error}") from error
-        if path.is_relative_to(self.source_root):
-            return "/stdlib-source/" + path.relative_to(self.source_root).with_suffix("").as_posix()
-        return path.relative_to(self.entry_root).with_suffix("").as_posix()
+        """Public spelling for callers; hardlink-aware via `_cache_key_for_file`."""
+        return self._cache_key_for_file(file_path)
 
     def is_virtual_module(self, module_path: str) -> bool:
         """Return True when an import is provided by the built-in stdlib registry."""
@@ -94,9 +114,9 @@ class ModuleResolver:
     def _canonical_import_key(self, module_path: str, importing_file: Optional[str] = None) -> str:
         """Canonical identity for duplicate-import comparison (L26).
 
-        File modules key on the resolved absolute file path, so alternate
-        spellings (`helper` vs `./helper`), parent-relative segments and
-        symlinks compare equal. Virtual stdlib modules key on their
+        File modules key on device+inode, so alternate spellings
+        (`helper` vs `./helper`), parent-relative segments, symlinks and
+        hardlinks compare equal. Virtual stdlib modules key on their
         canonical registry name. Unresolvable paths fall back to the raw
         spelling; the missing-module diagnostic reports them.
         """
@@ -105,7 +125,8 @@ class ModuleResolver:
             return f"virtual:{canonical or module_path}"
         file_path = self.resolve_module_path(module_path, importing_file)
         if file_path is not None:
-            return f"file:{file_path}"
+            dev, ino = self._file_inode(file_path)
+            return f"file:{dev}:{ino}"
         return f"unresolved:{module_path}"
 
     @staticmethod
@@ -222,8 +243,9 @@ class ModuleResolver:
                     file_path = self.resolve_module_path(path, importer)
                     if not file_path:
                         raise A7ImportError(f"Module '{path}' not found")
-                    key = self.file_module_key(file_path)
-                    # Check active identities before the cache, including alternate spellings.
+                    key = self._cache_key_for_file(file_path)
+                    # Check active identities before the cache, including alternate
+                    # spellings, symlinks and hardlinks of the same inode.
                     if key in active:
                         cycle = " -> ".join(self.loading_stack + [key])
                         raise SemanticError(f"Circular dependency detected: {cycle}")
@@ -350,7 +372,7 @@ class ModuleResolver:
                         resolved = self.resolve_module_path(module_path, importing_file)
                     table_path = module_path
                     if resolved is not None:
-                        table_path = self.file_module_key(resolved)
+                        table_path = self._cache_key_for_file(resolved)
                 except A7ImportError as error:
                     raise A7ImportError(
                         error.message, span=decl.span, filename=importing_file,
@@ -361,8 +383,8 @@ class ModuleResolver:
                     # import "io" as console
                     self.module_table.add_alias(decl.alias, table_path)
                 elif decl.is_using:
-                    # using import "io"
-                    self.module_table.add_using_import(table_path)
+                    # using import is rejected at name resolution; keep no binding.
+                    pass
                 elif decl.imported_items:
                     # import "vector" { Vec3, dot }
                     for item in decl.imported_items:
@@ -448,8 +470,7 @@ class ModuleResolver:
         file_path = self.resolve_module_path(module_path, importing_file)
         if file_path is None:
             return None
-        key = self.file_module_key(file_path)
-        return self.loaded_modules.get(key)
+        return self.loaded_modules.get(self._cache_key_for_file(file_path))
 
     def is_loaded(self, module_path: str, importing_file: Optional[str] = None) -> bool:
         """Check if an import's canonical module is loaded."""

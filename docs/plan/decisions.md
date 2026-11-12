@@ -456,6 +456,20 @@ before/after disposition. L73's publication requirements and L75's GPU execution
 deferral remain unchanged. Goose benchmark claims are research inputs, not A7
 acceptance results.
 
+## Modules and generics Track 2, 2026-11-12
+
+L78. The project Track 2 assignment closes selected imports, hardlink module
+identity, and `using import` rejection without opening `using` semantics.
+File-is-module stays. `import "m" { A, B }` binds public names. `using import`
+parses then exits 6 with alias-form guidance. Hardlinks share inode identity
+with symlinks and alternate spellings. `$N` literal args (`Buf(4)`), unique
+call-site inference, and matching `$N` forwarding complete the existing value-
+parameter feature recorded as open in STATUS; that literal-parse completion is
+an approved-direction finish of the shipped `$N` surface, not a new syntax
+family. Immutable generic obligation preservation extends to imported,
+module-global and selected-import copy chains when still analyzable.
+Parameter, mutable, captured and aggregate origins stay incomplete.
+
 ## Scope limits
 
 - **L5** covers integer `+`, `-`, `*` and their compound assignments: after

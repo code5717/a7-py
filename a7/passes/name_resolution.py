@@ -266,10 +266,16 @@ class NameResolutionPass:
                     f"Import alias '{node.alias}'",
                 )
         elif node.is_using:
-            # using import "io"
-            self.modules.add_using_import(module_path)
+            # Parsed for a clear diagnostic; no names are brought into scope.
+            self.add_error(
+                SemanticErrorType.UNSUPPORTED_FEATURE,
+                node.span,
+                'using import is not supported; write `alias :: import "path"` '
+                "and qualify names as `alias.name`",
+            )
         elif node.imported_items:
-            # import "vector" { Vec3, dot }
+            # import "vector" { Vec3, dot } — symbols are bound after modules
+            # merge (compile._bind_selected_imports); record the intent here.
             for item in node.imported_items:
                 self.modules.add_named_import(item, module_path)
 
