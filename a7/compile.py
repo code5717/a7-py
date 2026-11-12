@@ -28,7 +28,7 @@ from .errors import CompilerError, ImportError as A7ImportError, ParseError, Sem
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
 from .passes import NameResolutionPass, SafetyProofPass, SemanticValidationPass, TypeCheckingPass
-from .proof_discharge import DischargeLedger, check_pinned_constant_fold_congruence
+from .proof_discharge import DischargeLedger
 from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
@@ -534,7 +534,6 @@ class A7Compiler:
                     if tc_ok:
                         self._lower_file_module_bindings(ast, symbol_table)
                         discharge_ledger = DischargeLedger()
-                        check_pinned_constant_fold_congruence(discharge_ledger)
                         validator = SemanticValidationPass(
                             symbol_table,
                             type_checker.node_types,

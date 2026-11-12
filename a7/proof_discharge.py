@@ -150,7 +150,7 @@ class DischargeLedger:
 
 
 def wrap_signed(value: int, bits: int) -> int:
-    """Two's-complement wrap into ``bits`` (pinned integer wrap model)."""
+    """Two's-complement wrap into ``bits`` (independent integer wrap oracle)."""
     mask = (1 << bits) - 1
     return (value & mask) - (1 << bits) if value & (1 << (bits - 1)) else value & mask
 
@@ -159,19 +159,7 @@ def wrap_unsigned(value: int, bits: int) -> int:
     return value & ((1 << bits) - 1)
 
 
-# Pinned congruence cases: (label, width, signed, op, left, right, expected).
-# Expected is the wrapping runtime result for + - * at that width.
-_PINNED_INT_WRAP_CASES: tuple[tuple[str, int, bool, str, int, int, int], ...] = (
-    ("i32-add-overflow", 32, True, "add", 2147483647, 1, -2147483648),
-    ("i32-sub-underflow", 32, True, "sub", -2147483648, 1, 2147483647),
-    ("i32-mul-wrap", 32, True, "mul", 65536, 65536, 0),
-    ("u32-add-wrap", 32, False, "add", 4294967295, 1, 0),
-    ("u8-add-wrap", 8, False, "add", 255, 1, 0),
-    ("i8-add-wrap", 8, True, "add", 127, 1, -128),
-)
-
-
-def _apply_int_op(op: str, left: int, right: int) -> int:
+def apply_int_op(op: str, left: int, right: int) -> int:
     if op == "add":
         return left + right
     if op == "sub":
@@ -181,42 +169,34 @@ def _apply_int_op(op: str, left: int, right: int) -> int:
     raise ValueError(f"unsupported pinned wrap op: {op}")
 
 
-def check_pinned_int_wrap_congruence(ledger: DischargeLedger) -> list[DischargeRecord]:
-    """Discharge CONSTANT_FOLD_CONGRUENCE for the pinned integer wrap table."""
-    written: list[DischargeRecord] = []
-    for label, bits, signed, op, left, right, expected in _PINNED_INT_WRAP_CASES:
-        raw = _apply_int_op(op, left, right)
-        got = wrap_signed(raw, bits) if signed else wrap_unsigned(raw, bits)
-        evidence = f"{label}: ({left} {op} {right}) wrap{bits} -> {got}"
-        if got == expected:
-            written.append(
-                ledger.discharge(
-                    DischargeKind.CONSTANT_FOLD_CONGRUENCE,
-                    evidence,
-                    subject=label,
-                )
-            )
-        else:
-            written.append(
-                ledger.reject(
-                    DischargeKind.CONSTANT_FOLD_CONGRUENCE,
-                    f"{evidence}; expected {expected}",
-                    subject=label,
-                )
-            )
-    return written
+def oracle_int_wrap(bits: int, signed: bool, op: str, left: int, right: int) -> int:
+    """Independent wrap model for pinned + - * cases (not the compiler)."""
+    raw = apply_int_op(op, left, right)
+    return wrap_signed(raw, bits) if signed else wrap_unsigned(raw, bits)
 
 
-# Selected float cases: (label, left, right, op, expected) using Python float
-# as the IEEE f64 oracle for the typed path (exact constants refuse overflow).
-_PINNED_FLOAT_CASES: tuple[tuple[str, float, float, str, float | None], ...] = (
-    ("f64-mul-inf", 1.0e308, 10.0, "mul", float("inf")),
-    ("f64-inf-minus-inf-nan", float("inf"), float("inf"), "sub", None),  # NaN
-    ("f64-add-finite", 1.0, 2.0, "add", 3.0),
+# Pinned native wrap cases: (label, a7_type, op_token, left, right).
+# Expected values come only from ``oracle_int_wrap``, never from this table.
+PINNED_INT_WRAP_CASES: tuple[tuple[str, str, str, int, int], ...] = (
+    ("i32-add-overflow", "i32", "+", 2147483647, 1),
+    ("i32-sub-underflow", "i32", "-", -2147483648, 1),
+    ("i32-mul-wrap", "i32", "*", 65536, 65536),
+    ("u32-add-wrap", "u32", "+", 4294967295, 1),
+    ("u8-add-wrap", "u8", "+", 255, 1),
+    ("i8-add-wrap", "i8", "+", 127, 1),
 )
 
 
-def _apply_float_op(op: str, left: float, right: float) -> float:
+_OP_TOKEN_TO_NAME = {"+": "add", "-": "sub", "*": "mul"}
+
+
+def pinned_int_wrap_oracle(label: str, type_name: str, op_token: str, left: int, right: int) -> int:
+    bits = {"i8": 8, "u8": 8, "i32": 32, "u32": 32}[type_name]
+    signed = type_name.startswith("i")
+    return oracle_int_wrap(bits, signed, _OP_TOKEN_TO_NAME[op_token], left, right)
+
+
+def apply_float_op(op: str, left: float, right: float) -> float:
     if op == "add":
         return left + right
     if op == "sub":
@@ -226,42 +206,34 @@ def _apply_float_op(op: str, left: float, right: float) -> float:
     raise ValueError(f"unsupported pinned float op: {op}")
 
 
-def check_pinned_float_congruence(ledger: DischargeLedger) -> list[DischargeRecord]:
-    """Discharge CONSTANT_FOLD_CONGRUENCE for selected IEEE f64 oracle cases."""
-    written: list[DischargeRecord] = []
-    for label, left, right, op, expected in _PINNED_FLOAT_CASES:
-        got = _apply_float_op(op, left, right)
-        if expected is None:
-            ok = got != got  # NaN
-            evidence = f"{label}: ({left} {op} {right}) -> nan"
-        else:
-            ok = got == expected
-            evidence = f"{label}: ({left} {op} {right}) -> {got}"
-        if ok:
-            written.append(
-                ledger.discharge(
-                    DischargeKind.CONSTANT_FOLD_CONGRUENCE,
-                    evidence,
-                    subject=label,
-                )
-            )
-        else:
-            written.append(
-                ledger.reject(
-                    DischargeKind.CONSTANT_FOLD_CONGRUENCE,
-                    f"{evidence}; expected {expected}",
-                    subject=label,
-                )
-            )
-    return written
+# Selected float oracle cases for the typed IEEE path (exact constants refuse
+# destination overflow). expected=None means NaN.
+PINNED_FLOAT_CASES: tuple[tuple[str, float, float, str, float | None], ...] = (
+    ("f64-mul-inf", 1.0e308, 10.0, "mul", float("inf")),
+    ("f64-inf-minus-inf-nan", float("inf"), float("inf"), "sub", None),
+    ("f64-add-finite", 1.0, 2.0, "add", 3.0),
+)
 
 
-def check_pinned_constant_fold_congruence(ledger: Optional[DischargeLedger] = None) -> DischargeLedger:
-    """Run pinned integer-wrap and float congruence discharges into a ledger."""
-    target = ledger if ledger is not None else DischargeLedger()
-    check_pinned_int_wrap_congruence(target)
-    check_pinned_float_congruence(target)
-    return target
+def record_congruence(
+    ledger: DischargeLedger,
+    subject: str,
+    evidence: str,
+    *,
+    matched: bool,
+) -> DischargeRecord:
+    """Record CONSTANT_FOLD_CONGRUENCE only after an external match decision."""
+    if matched:
+        return ledger.discharge(
+            DischargeKind.CONSTANT_FOLD_CONGRUENCE,
+            evidence,
+            subject=subject,
+        )
+    return ledger.reject(
+        DischargeKind.CONSTANT_FOLD_CONGRUENCE,
+        evidence,
+        subject=subject,
+    )
 
 
 def record_safety_result(ledger: DischargeLedger, result: ProofResult) -> DischargeRecord:

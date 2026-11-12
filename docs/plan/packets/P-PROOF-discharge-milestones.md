@@ -44,8 +44,11 @@ out-of-range destinations reject rather than wrap.
 
 **Discharge kind.** `CONSTANT_FOLD_CONGRUENCE`
 
-**Exit.** Named records for the pinned table; gate tests green. No claim that
-every fold path is externally machine-checked.
+**Exit.** Named records for the pinned table only after an independent oracle
+matches `a7/exact_constants.py` and/or native Zig results
+(`test/test_proof_discharge_milestones.py`). The pipeline does not auto-prove
+this kind from a disconnected Python model. No claim that every fold path is
+externally machine-checked.
 
 ### (b) Recursion-ban call/value graph soundness
 
