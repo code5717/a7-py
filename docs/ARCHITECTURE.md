@@ -13,6 +13,10 @@ Pipeline (orchestrated by `a7/compile.py: A7Compiler`):
 3. `a7/passes/` — Semantic passes run in order:
    `name_resolution.py` → `type_checker.py` → `semantic_validator.py` →
    `safety.py` (internal safety proof planning).
+   `a7/proof_discharge.py` holds the obligation/`BackendPlan` types and the
+   observational discharge ledger (P-PROOF milestones). Safety still collects
+   facts and obligations; discharge records and backend approvals live on the
+   shared boundary.
    Shared state lives in `a7/semantic_context.py` and `a7/symbol_table.py`;
    type machinery lives in `a7/types.py` (including generic constraint
    resolution). Shared integer width/range tables also live in `a7/types.py`;

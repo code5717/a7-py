@@ -28,6 +28,7 @@ from .errors import CompilerError, ImportError as A7ImportError, ParseError, Sem
 from .formatters import ConsoleFormatter, JSONFormatter, MarkdownFormatter
 from .parser import Parser
 from .passes import NameResolutionPass, SafetyProofPass, SemanticValidationPass, TypeCheckingPass
+from .proof_discharge import DischargeLedger
 from .stdlib import StdlibRegistry
 from .tokens import Tokenizer
 
@@ -330,6 +331,7 @@ class A7Compiler:
             symbol_table = None
             type_map = None
             backend_plan = None
+            discharge_ledger = None
             module_aliases: dict[str, str] = {}
             all_errors: list[Any] = []
             semantic_passes: list[dict[str, Any]] = []
@@ -531,8 +533,11 @@ class A7Compiler:
 
                     if tc_ok:
                         self._lower_file_module_bindings(ast, symbol_table)
+                        discharge_ledger = DischargeLedger()
                         validator = SemanticValidationPass(
-                            symbol_table, type_checker.node_types
+                            symbol_table,
+                            type_checker.node_types,
+                            discharge_ledger=discharge_ledger,
                         )
                         validator.source_lines = source_lines
                         validator.analyze(ast, str(input_path))
@@ -548,7 +553,11 @@ class A7Compiler:
                             all_errors.extend(validator.errors)
 
                         if sv_ok:
-                            safety = SafetyProofPass(symbol_table, type_checker.node_types)
+                            safety = SafetyProofPass(
+                                symbol_table,
+                                type_checker.node_types,
+                                discharge_ledger=discharge_ledger,
+                            )
                             safety.source_lines = source_lines
                             backend_plan = safety.analyze(ast, str(input_path), executable_entry=executable_entry)
                             sp_ok = len(safety.errors) == 0
@@ -569,6 +578,7 @@ class A7Compiler:
                     "symbol_table": symbol_table,
                     "type_map": type_map,
                     "backend_plan": backend_plan,
+                    "discharge_ledger": discharge_ledger,
                 }
                 result.stages["semantic"] = {
                     "ok": semantic_ok,

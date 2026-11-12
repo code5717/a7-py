@@ -19,6 +19,16 @@ from a7.cast_classifier import CastClass, CastDecision, classify_cast
 from a7.errors import SourceSpan, TypeCheckError, TypeErrorType
 from a7.symbol_table import SymbolTable
 from a7.passes.readonly_requirements import ReadonlyRequirements
+from a7.proof_discharge import (
+    OBLIGATION_MESSAGES,
+    BackendPlan,
+    DischargeLedger,
+    Obligation,
+    ObligationKind,
+    ProofResult,
+    SafetyError,
+    record_safety_result,
+)
 from a7.types import (
     ArrayType,
     EnumType,
@@ -34,6 +44,17 @@ from a7.types import (
     UnionType,
     UNSIGNED_INTEGER_WIDTHS,
 )
+
+# Compatibility re-exports for callers that imported these from safety.
+__all__ = [
+    "AllocationGraph",
+    "BackendPlan",
+    "Obligation",
+    "ObligationKind",
+    "ProofResult",
+    "SafetyError",
+    "SafetyProofPass",
+]
 
 
 class TypeCategory(Enum):
@@ -69,29 +90,6 @@ DEL_TARGET_BASE_ATTRS = {
 
 EXIT_KINDS = {NodeKind.RETURN, NodeKind.BREAK, NodeKind.CONTINUE}
 LOOP_KINDS = {NodeKind.WHILE, NodeKind.FOR, NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}
-
-# Headline message for each safety obligation kind. Kinds not listed use the
-# message of their diagnostic code. Division, index and slice obligations carry
-# no diagnostic code: no existing TypeErrorType describes them. Their hint
-# comes from the `_error` call site, which knows the operand.
-OBLIGATION_MESSAGES = {
-    "DIVISOR_NONZERO": "Divisor not proven non-zero",
-    "INDEX_IN_BOUNDS": "Index not proven in bounds",
-    "SLICE_IN_BOUNDS": "Slice bounds not proven",
-    "REF_NON_NIL": "Reference not proven non-nil",
-    "INITIALIZED": "Function value may be used before assignment",
-}
-
-
-class SafetyError(TypeCheckError):
-    """A safety obligation the proof pass could not discharge.
-
-    `hint` names the guard shape the pass accepts for this obligation and
-    takes the place of the advice text of the diagnostic code.
-    """
-
-    hint: Optional[str] = None
-
 
 def categorize_type(type_: Type) -> TypeCategory:
     if isinstance(type_, PrimitiveType):
@@ -351,55 +349,6 @@ class FactMap:
         self.by_symbol = saved
 
 
-class ObligationKind(Enum):
-    CAST = auto()
-    DIVISOR_NONZERO = auto()
-    INDEX_IN_BOUNDS = auto()
-    SLICE_IN_BOUNDS = auto()
-    REF_NON_NIL = auto()
-    INTEGER_OVERFLOW = auto()
-    UNION_FIELD = auto()
-    MOVE_VALID = auto()
-    INITIALIZED = auto()
-
-
-@dataclass(frozen=True)
-class Obligation:
-    kind: ObligationKind
-    node_id: int
-    backend_operation: str
-    span: Optional[SourceSpan]
-    operand_type: Optional[Type]
-    required_proof: str
-    diagnostic_code: Optional[TypeErrorType]
-
-
-@dataclass(frozen=True)
-class ProofResult:
-    proven: bool
-    obligation: Obligation
-    reason: str
-
-
-@dataclass
-class BackendPlan:
-    approved: dict[tuple[int, str], ProofResult] = field(default_factory=dict)
-
-    def approve(self, result: ProofResult) -> None:
-        key = (result.obligation.node_id, result.obligation.backend_operation)
-        self.approved[key] = result
-
-    def require(self, node: ASTNode, operation: str) -> ProofResult:
-        result = self.approved.get((id(node), operation))
-        if result is None or not result.proven:
-            raise KeyError(f"backend operation '{operation}' is not approved")
-        return result
-
-    def is_approved(self, node: ASTNode, operation: str) -> bool:
-        result = self.approved.get((id(node), operation))
-        return bool(result and result.proven)
-
-
 class ExitFrame:
     """One block or loop between a statement and its function.
 
@@ -495,9 +444,17 @@ class ParameterEffectState:
 class SafetyProofPass:
     """Collect and prove risky-operation obligations from typed AST facts."""
 
-    def __init__(self, symbols: SymbolTable, node_types: dict[int, Type]):
+    def __init__(
+        self,
+        symbols: SymbolTable,
+        node_types: dict[int, Type],
+        *,
+        discharge_ledger: Optional[DischargeLedger] = None,
+    ):
         self.symbols = symbols
         self.node_types = node_types
+        self._owns_discharge_ledger = discharge_ledger is None
+        self.discharge_ledger = discharge_ledger if discharge_ledger is not None else DischargeLedger()
         self.facts = FactMap()
         self.obligations: list[Obligation] = []
         self.results: list[ProofResult] = []
@@ -565,6 +522,8 @@ class SafetyProofPass:
         self.obligations = []
         self.results = []
         self.backend_plan = BackendPlan()
+        if self._owns_discharge_ledger:
+            self.discharge_ledger = DischargeLedger()
         self.facts = FactMap()
         self.moved_symbols = set()
         self.const_facts = {}
@@ -702,7 +661,9 @@ class SafetyProofPass:
         return self.node_types.get(id(node)) if node is not None else None
 
     def _error(self, obligation: Obligation, reason: str, hint: Optional[str] = None) -> None:
-        self.results.append(ProofResult(False, obligation, reason))
+        result = ProofResult(False, obligation, reason)
+        self.results.append(result)
+        record_safety_result(self.discharge_ledger, result)
         key = (obligation.node_id, obligation.backend_operation)
         if key in self.reported:
             return
@@ -743,6 +704,7 @@ class SafetyProofPass:
         result = ProofResult(True, obligation, reason)
         self.results.append(result)
         self.backend_plan.approve(result)
+        record_safety_result(self.discharge_ledger, result)
 
     def _obligation(
         self,
