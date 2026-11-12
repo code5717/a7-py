@@ -1514,15 +1514,22 @@ class A7Compiler:
                 "error_count": result.stages["safety"].get("error_count", 0),
             }
 
-        if result.codegen_result is not None:
-            codegen_stage = result.stages.get("codegen", {})
+        if "codegen" in result.stages:
+            codegen_stage = result.stages["codegen"]
             payload["stages"]["codegen"] = {
-                "ok": True,
-                "bytes": result.codegen_result.get("bytes", 0),
-                "output_code": result.codegen_result.get("output_code", ""),
+                "ok": codegen_stage.get("ok", False),
             }
             if "ms" in codegen_stage:
                 payload["stages"]["codegen"]["ms"] = codegen_stage["ms"]
+            if result.codegen_result is not None:
+                payload["stages"]["codegen"]["bytes"] = result.codegen_result.get(
+                    "bytes", 0
+                )
+                payload["stages"]["codegen"]["output_code"] = result.codegen_result.get(
+                    "output_code", ""
+                )
+            elif "bytes" in codegen_stage:
+                payload["stages"]["codegen"]["bytes"] = codegen_stage["bytes"]
 
         if result.output_path and Path(result.output_path).exists():
             payload["artifacts"]["output_path"] = result.output_path

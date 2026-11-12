@@ -59,3 +59,30 @@ def test_stage_ms_present_and_zig_unchanged(tmp_path: Path) -> None:
     assert out_a.read_text(encoding="utf-8") == out_b.read_text(encoding="utf-8")
     assert "timings:" in compile_a.stdout
     assert "tokenize=" in compile_a.stdout
+
+
+def test_failed_codegen_json_keeps_stage_ms(tmp_path: Path) -> None:
+    source = tmp_path / "hello.a7"
+    source.write_text(
+        'io :: import "std/io"\n\nmain :: fn() {\n    io.println("hi")\n}\n',
+        encoding="utf-8",
+    )
+    failed = _run(
+        [
+            str(source),
+            "--mode",
+            "pipeline",
+            "--format",
+            "json",
+            "--backend",
+            "nope",
+        ],
+        cwd=tmp_path,
+    )
+    assert failed.returncode == 7, failed.stderr + failed.stdout
+    payload = json.loads(failed.stdout)
+    codegen = payload["stages"]["codegen"]
+    assert codegen["ok"] is False
+    assert isinstance(codegen["ms"], (int, float))
+    assert codegen["ms"] >= 0
+    assert "output_code" not in codegen
