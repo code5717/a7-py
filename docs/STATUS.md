@@ -1657,6 +1657,11 @@ three compilers. It is not approved. Python-specific CLI compatibility needs
 a separate disposition before replacement; four report probes do not establish
 self-hosting.
 
+Safety alias and formal discharge work remains open on separate tracks. This
+docs/tests/examples sync does not rewrite `a7/safety.py`; alias/lifetime gaps
+in Current Surface and the [safety contract](SAFETY_CONTRACT.md) stay as
+recorded until those tracks land.
+
 Compile performance for the rewrite is measured, not optimized here: on the
 2026-11-12 example corpus the Python frontend is ~3–43 ms while
 `zig build-exe` release/fast is ~11–14 s per program. Use `a7 check --timings`

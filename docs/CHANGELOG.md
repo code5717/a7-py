@@ -5,6 +5,11 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Docs, site coverage, README, and feature pins sync cut-surface and
+  `--timings` wording after the surface-cut, perf-baseline, and P-MEM packet
+  tracks. Safety alias / formal-discharge gaps stay open on their own tracks;
+  this sync does not rewrite `a7/safety.py`.
+
 - The docs-site lockfile uses markdown-it 15.0.3, fixing advisory
   GHSA-gfr2-rv44-r23c.
 

@@ -140,6 +140,14 @@ and an A7 compiler that establishes self-hosting parity (decision L73).
 The Python compiler remains the bootstrap until parity justifies replacement;
 Zig handles generated code and runtime/native integration.
 
+Automatic memory has an approval packet only:
+[P-MEM-mechanism-selection](https://github.com/code5717/a7-py/blob/master/docs/plan/packets/P-MEM-mechanism-selection.md).
+No mechanism is selected until ledger approval after L38 measurements.
+Compile-stage timers (`a7 check --timings` / `stages.*.ms`) document rewrite
+baselines; they do not optimize the Python frontend. Safety alias and formal
+discharge remain open on separate tracks; public docs here do not claim those
+gaps closed.
+
 GPU implementation and the proposed local Vulkan experiment remain deferred
 for Zig GPU research under L75. That deferral does not waive V1's GPU
 qualification requirement. No GPU backend or automatic-memory mechanism is
