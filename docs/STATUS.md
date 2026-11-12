@@ -5,9 +5,12 @@ implementation priorities. Keep `docs/CHANGELOG.md` short and release-facing.
 
 The toolchain pin is Zig 0.17.1 (`a7/cli.py` `ZIG_VERSION`, CI/release
 workflows, archive prefix `zig0.17.1`). Native builds require that exact
-version on `PATH`. The 2026-11-12 push checkpoint still records an older
-0.16.0 mismatch against a host 0.17.0 install; that conflict is closed by
-this pin. [Push check record](audits/2026-11-12-push-checks.md).
+version on `PATH`. Local verification on this pin: examples E2E 51/51,
+debug/release/fast artifacts, error-stage 61/61, docs-style, secrets,
+package build, and wheel/sdist native install all passed. Pytest is
+5223 passed / 11 failed / 1 xfailed; the 11 failures match `origin/master`
+(safety alias / generic-origin / callee-note wording) and are not Zig 0.17
+regressions. [Push check record](audits/2026-11-12-push-checks.md).
 
 The checked storage-identity adapter passes all sixteen original caller
 outcomes, including repeated_site_live. Eleven importer invariants, 23 focused
