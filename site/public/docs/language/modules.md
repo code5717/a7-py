@@ -94,10 +94,11 @@ filesystem failure and identifies the import site in the entry or dependency fil
 
 Status: limited. Per-file scopes, underscore privacy, qualified types and
 struct literals, constant array lengths and module-owned generic bodies are
-implemented. Generic function values reached through imported or module-global
-aliases still have checking gaps. Selected imports remain unavailable.
-
-Selected-import syntax such as `import "helper" { answer }` has resolver metadata but is not backend-runnable. `using import` is not a supported public workflow. Parser routines alone are insufficient evidence that a spelling reaches native execution.
+implemented. Selected imports (`import "helper" { answer }`) bind public names
+from file modules and virtual stdlib modules. Hardlinks share module identity
+with symlinks. `using import` rejects at semantic exit 6 with alias-form
+guidance. Parameter, mutable, captured and aggregate generic-alias origins
+still have checking gaps.
 
 `std/string`, `std/mem`, and `std/collections` are planned. There is no current package registry. See the [standard library](../stdlib.md) for the actual registered operations.
 

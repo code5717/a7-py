@@ -116,11 +116,11 @@ controls. This does not qualify full safety or V1.
 
 | Topic | Current restriction | Reference |
 | --- | --- | --- |
-| Modules | Selected imports and `using import` remain unavailable. File scopes and qualified struct literals work. Parsed import forwarding rejects with exit 6; unsupported multi-dot type/literal syntax keeps parser exit 5. | [Modules](/a7-py/docs/language/modules.md) |
+| Modules | Selected imports bind public names; `using import` rejects with alias guidance; hardlinks share identity. File scopes and qualified struct literals work. Parsed import forwarding rejects with exit 6; unsupported multi-dot type/literal syntax keeps parser exit 5. | [Modules](/a7-py/docs/language/modules.md) |
 | Numeric operations | Integer addition, subtraction and multiplication wrap. Runtime shifts are checked; signed minimum-value division, negation and absolute value wrap. | [Operators](/a7-py/docs/language/operators.md) |
 | Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
-| Generics | Concrete initializers, substituted fixed-array elements, concrete wrappers and qualifying immutable local aliases are checked. Imported, module-global, parameter, mutable, selected and captured generic origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
+| Generics | Concrete initializers, nested array arms, `$N` literals/inference/forwarding, substituted fixed-array elements, concrete wrappers, and immutable aliases through same-file, imported, module-global and selected origins are checked. Parameter, mutable, captured and aggregate origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
 | Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | Prelude `Option`/`Result` and typed I/O are available. Collections and a full memory/string library remain incomplete. | [Standard library](/a7-py/docs/stdlib.md) |
 

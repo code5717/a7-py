@@ -1177,6 +1177,16 @@ class Parser:
                 span=create_span_from_token(start_token)
             )
 
+        if action == "parse_type_argument":
+            # Comptime value arguments in Type(...) lists: Buf(4), Flag(true).
+            if self.match(
+                TokenType.INTEGER_LITERAL,
+                TokenType.TRUE_LITERAL,
+                TokenType.FALSE_LITERAL,
+            ):
+                return create_literal_from_token(self.advance())
+            return (yield ("parse_type", ()))
+
         if action == "parse_type":
             self._enter_nesting()
             try:
@@ -1313,12 +1323,13 @@ class Parser:
                         self.advance()
                         type_name += "." + self.consume(TokenType.IDENTIFIER, "Expected a qualified type name").value
 
-                    # Check for generic parameters: Type(T1, T2, ...)
+                    # Check for generic parameters: Type(T1, T2, ...) including
+                    # comptime value arguments such as Buf(4) and Flag(true).
                     if self.match(TokenType.LEFT_PAREN):
                         self.advance()
                         generic_params = []
                         while not self.match(TokenType.RIGHT_PAREN):
-                            generic_params.append((yield ("parse_type", ())))
+                            generic_params.append((yield ("parse_type_argument", ())))
                             self._list_separator(
                                 TokenType.RIGHT_PAREN, "type argument list", newlines=False
                             )
@@ -1624,7 +1635,7 @@ class Parser:
                     self.advance()  # consume '('
                     try:
                         while not self.match(TokenType.RIGHT_PAREN):
-                            type_args.append((yield ("parse_type", ())))
+                            type_args.append((yield ("parse_type_argument", ())))
                             self._list_separator(
                                 TokenType.RIGHT_PAREN, "type argument list", newlines=False
                             )

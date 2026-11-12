@@ -555,6 +555,10 @@ class ZigCodeGenerator(CodeGenerator):
             elif n.kind == NodeKind.TYPE_IDENTIFIER:
                 if n.name:
                     used.add(n.name)
+            elif n.kind == NodeKind.TYPE_GENERIC:
+                # Forwarded `$N` in `Buf($N)` must keep the comptime name.
+                if n.name:
+                    used.add(n.name)
             elif n.kind == NodeKind.PATTERN_IDENTIFIER:
                 # `case limit:` reads `limit`; a capture pattern declares it.
                 if n.name and n.name != "_" and not getattr(n, "is_capture_pattern", False):
@@ -3120,6 +3124,16 @@ class ZigCodeGenerator(CodeGenerator):
                 if node.name in generic_env:
                     return self._quote_identifier(node.name)
                 raise CodegenError(f"Zig backend: unresolved generic type '{node.name or '?'}'", node.span)
+            elif kind == NodeKind.LITERAL:
+                # Comptime value argument written in a type list: Buf(4), Flag(true).
+                if node.literal_kind == LiteralKind.BOOLEAN:
+                    return "true" if node.literal_value else "false"
+                if node.literal_kind == LiteralKind.INTEGER:
+                    return str(node.literal_value)
+                raise CodegenError(
+                    f"Zig backend: unsupported comptime value argument '{node.literal_kind}'",
+                    node.span,
+                )
             elif kind == NodeKind.TYPE_FUNCTION:
                 parameter_parts = []
                 for param in node.parameter_types or []:

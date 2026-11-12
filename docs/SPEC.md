@@ -1324,13 +1324,14 @@ Use a tagged union for payload-bearing alternatives.
 
 `$N` value parameters accept their declared scalar kind, including `usize`,
 `bool`, and small integer types. Structs and unions instantiate from named
-constants, such as `Buf(SIZE)` with `SIZE :: 4`. The backend emits value
-parameters with their declared Zig type, such as `comptime N: usize`.
+constants (`Buf(SIZE)` with `SIZE :: 4`) and from literals (`Buf(4)`,
+`Flag(true)`). Function calls infer `$N` when the binding is unique. A value
+parameter may be forwarded into another generic under matching kind checks,
+as in `Holder($N: usize) :: struct { inner: Buf($N) }`. The backend emits
+value parameters with their declared Zig type, such as `comptime N: usize`.
 [`test_generics_value_param_codegen.py`](../test/test_generics_value_param_codegen.py)
-covers named constants, local constants, struct literals, and reference
-parameter types. Literal value arguments do not parse, and function calls
-cannot infer `$N`; see
-[`test_generics_value_params.py`](../test/test_generics_value_params.py).
+and [`test_generics_value_params.py`](../test/test_generics_value_params.py)
+cover named constants, literals, inference, forwarding, and kind failures.
 
 ### 7.3 Type Sets and Constraints
 
@@ -1399,12 +1400,12 @@ constraints, and generic record fields use their declaring record's bounds.
 
 ### 7.4 Generic Specialization
 
-Local aliases of same-file generic declarations that are never reassigned,
-passed by reference or captured by another function retain
-concrete body obligations. Imported, module-global, parameter, mutable, selected
-and captured origins remain incomplete. This bounded repair does not provide
-general runtime dispatch for generic declarations. See [Status](STATUS.md) for
-the qualification boundary.
+Immutable aliases whose copy chain is never reassigned, passed by reference or
+captured by another function retain concrete body obligations for same-file,
+imported, module-global and selected-import origins. Parameter, mutable,
+captured and aggregate origins remain incomplete when the chain is not
+analyzable. This bounded repair does not provide general runtime dispatch for
+generic declarations. See [Status](STATUS.md) for the qualification boundary.
 
 ```a7
 identity($T) :: fn(value: $T) $T {
@@ -1618,11 +1619,10 @@ io :: import "std/io"
 // Aliases are supported for virtual stdlib imports
 console :: import "std/io"
 
-// Resolver-only selected import metadata; not backend-runnable yet
+// Selected imports bind public names from the module into this file
 import "vector" { Vec3, dot }
 
-// Planned syntax; the parser accepts it but `using` is currently dropped,
-// so it has no using semantics yet (see STATUS Known Gaps)
+// Rejected at semantic exit 6; use an alias and qualify names instead
 // using import "vector"
 
 // Local aliases lower into the same generated Zig output for simple calls
@@ -1640,8 +1640,10 @@ parent :: import "../utils"
   alias from its own file, including a stdlib alias. This check covers
   parameters, loop bindings and match captures. Record fields and aliases in
   other files do not reserve local names. Each file has a separate semantic scope.
-- `using import` and selected imports are parser/resolver metadata. Their
-  presence in the AST does not establish runnable backend support.
+- Selected imports bind each listed public name into the importing file's
+  scope. Private `_name` items and missing names exit 6. `using import`
+  parses, then rejects at semantic exit 6 with guidance to write
+  `alias :: import "path"` and use `alias.name`.
 
 ### 10.2.1 Module identity and resolution
 
@@ -1661,9 +1663,10 @@ the other. Literal `std/` paths select registered virtual modules or bundled
 implementation sources and reject project shadows. Missing reserved modules
 fail resolution with exit 3. Parent segments are allowed only within the
 applicable root. Paths and symlinks escaping it are rejected, as are absolute
-paths, backslashes, null bytes and empty paths. Canonical real paths identify
-loaded files, duplicate imports and cycles. A diamond import shares one loaded
-dependency even when its importers use different relative spellings.
+paths, backslashes, null bytes and empty paths. Device and inode identity
+identify loaded files, duplicate imports and cycles, so symlinks and hardlinks
+of the same file compare equal. A diamond import shares one loaded dependency
+even when its importers use different relative spellings or hardlink paths.
 
 Operating-system errors during module path lookup, including overlong components
 and total paths,
@@ -1671,11 +1674,12 @@ produce a located `ImportError` at resolution exit 3. The diagnostic retains the
 filesystem failure and the import site, including imports in dependency files.
 
 The mechanisms are in [`a7/module_resolver.py`](../a7/module_resolver.py).
-[`test_module_path_identity.py`](../test/test_module_path_identity.py) covers
-relative bases, containment, alternate spellings, cache reuse, and cycle retry.
+[`test_module_path_identity.py`](../test/test_module_path_identity.py) and
+[`test_import_selected_using_hardlink.py`](../test/test_import_selected_using_hardlink.py)
+cover relative bases, containment, alternate spellings, hardlinks, cache reuse,
+and cycle retry.
 [`test_packaged_source_modules.py`](../test/test_packaged_source_modules.py)
 covers bundled source identity, containment and failure origins.
-Hardlink identity is not specified by this realpath rule.
 
 ### 10.2.2 Cycles and entry
 
@@ -1694,13 +1698,14 @@ Hardlink identity is not specified by this realpath rule.
 - Other files' declarations require their import alias. Qualified types,
   struct literals, enum and union members, and constant array lengths resolve
   in the imported file. Generic bodies keep their defining file's private names.
-  Selected imports and `using import` lowering remain open. Under L76, an import
-  alias is local to its declaring file: parsed `a.b.value()` access through a
-  dependency imported by `a` rejects with semantic exit 6. Import that dependency
-  directly in the caller or use an ordinary public wrapper in `a`. Ordinary
-  struct-field chains remain valid. Unsupported multi-dot type annotations
-  (`x:a.b.Box`) and literals (`a.b.Box{...}`) retain parse exit 5; L76 adds no
-  grammar. See the approved [packet](plan/packets/P-MOD-import-forwarding.md).
+  Selected imports bind public names; `using import` rejects with alias
+  guidance. Under L76, an import alias is local to its declaring file: parsed
+  `a.b.value()` access through a dependency imported by `a` rejects with
+  semantic exit 6. Import that dependency directly in the caller or use an
+  ordinary public wrapper in `a`. Ordinary struct-field chains remain valid.
+  Unsupported multi-dot type annotations (`x:a.b.Box`) and literals
+  (`a.b.Box{...}`) retain parse exit 5; L76 adds no grammar. See the approved
+  [packet](plan/packets/P-MOD-import-forwarding.md).
 
 ### 10.3 Standard Library Status
 

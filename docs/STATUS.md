@@ -1365,13 +1365,18 @@ research request. Existing memory and language decisions remain in force.
   constant array lengths and generic bodies resolve in their defining files.
   Reports retain file and lexical owners. One combined Zig output preserves
   existing module and declaration order. L28 still rejects local bindings that
-  reuse their own file's aliases; fields remain independent. Selected imports,
-  `using import` and hardlink identity remain open. L76 keeps import aliases local
-  to their declaring file. Parsed forwarding rejects with semantic exit 6 and
-  direct-import guidance; ordinary public wrappers and struct fields remain
-  valid. Unsupported multi-dot type annotations and literals retain parse exit
-  5. The [approved packet](plan/packets/P-MOD-import-forwarding.md) records this
-  boundary.
+  reuse their own file's aliases; fields remain independent. Selected imports
+  (`import "m" { A, B }`) bind public names from file modules and virtual
+  stdlib modules. `using import` rejects at semantic exit 6 with alias-form
+  guidance. Hardlinks share one module identity with symlinks and realpath
+  spellings (duplicate import exit 6; diamond load shares one ModuleInfo).
+  L76 keeps import aliases local to their declaring file. Parsed forwarding
+  rejects with semantic exit 6 and direct-import guidance; ordinary public
+  wrappers and struct fields remain valid. Unsupported multi-dot type
+  annotations and literals retain parse exit 5. The
+  [approved packet](plan/packets/P-MOD-import-forwarding.md) records this
+  boundary. Pins:
+  `test/test_import_selected_using_hardlink.py`.
   Stage10's full compiler gate exited 1: 3,689 tests passed, one obsolete `__`
   fixture failed and one expected failure remained. The other ten compiler
   checks and all 51 examples in every profile passed; outer release checks did
@@ -1389,11 +1394,14 @@ research request. Existing memory and language decisions remain in force.
   diagnostic-delta external reviews found no scoped blocker. Rendered browser
   checks could not run because no browser connection was available. These
   results do not qualify full V1.
-- Local aliases of same-file generic declarations that are never reassigned,
-  passed by reference or captured by another function now
-  preserve concrete body obligations. Imported, module-global, parameter, mutable,
-  selected and captured origins remain incomplete. General runtime generic
-  dispatch is not implemented.
+- Immutable aliases whose copy chain is never reassigned, passed by reference
+  or captured by another function preserve concrete body obligations for
+  same-file, imported field, module-global and selected-import origins.
+  Parameter, mutable, captured and aggregate origins remain incomplete when the
+  chain is not analyzable; those calls do not claim body proofs. General
+  runtime generic dispatch is not implemented. Pins:
+  `test/test_immutable_generic_aliases.py`,
+  `test/test_generics_obligation_origins.py`.
 - An entry file must define `main :: fn()`; a file without one exits 6 at the
   Entry Point stage. Imported modules are exempt. `a7 check --lib` checks a
   library file without an entry point; `build` and `run` still require one.
@@ -1416,14 +1424,13 @@ research request. Existing memory and language decisions remain in force.
   payload types to specialize). Pinned in
   `test/test_generics_fast_union.py`.
 - `$N` value params (`usize`, `bool`, small ints) work on generic fns,
-  structs, and unions for declarations and named-constant
-  instantiation (`Buf(SIZE)` with `SIZE :: 4`). A bare `$N` as a type,
-  a value of the wrong kind or range, a type for a value param, or a
-  value for a type param exits 6 at annotations and literals.
-  Literal value args (`Buf(4)`) do not parse yet, fn calls cannot
-  infer `$N` yet, and a value param cannot be forwarded to another
-  generic (`inner: Buf($N)` exits 6). Pinned in
-  `test/test_generics_value_params.py`.
+  structs, and unions for declarations, named-constant instantiation
+  (`Buf(SIZE)` with `SIZE :: 4`), and literal args (`Buf(4)`, `Flag(true)`).
+  Function calls infer `$N` when the binding is unique (for example from a
+  fixed array length). Matching forwarding (`inner: Buf($N)`) is accepted
+  under kind checks; mismatched kinds exit 6. A bare `$N` as a type, a value
+  of the wrong kind or range, a type for a value param, or a value for a type
+  param exits 6. Pinned in `test/test_generics_value_params.py`.
 - Minimal `where` conjunctions (`where T: Numeric`,
   `where T: Numeric, U: Float`) work on generic fns, structs, and
   unions. Richer predicates, unknown names, and `where` on enums
@@ -1444,10 +1451,9 @@ research request. Existing memory and language decisions remain in force.
   A further candidate fits literal arms to a concrete typed array arm. Its
   244 focused tests, 13 independent source cases and debug/fast execution of
   both branches pass. GLM review matched 79 independent compile-only programs
-  without an introduced regression. The bounded immutable local-alias repair
-  preserves obligations for same-file aliases whose copy chain is never
-  reassigned, passed by reference or captured by another function.
-  Imported, module-global, parameter, mutable, selected, captured and aggregate
+  without an introduced regression. Immutable alias obligation preservation now
+  covers same-file, imported, module-global and selected-import copy chains that
+  stay unwritten and uncaptured. Parameter, mutable, captured and aggregate
   origins remain incomplete. The earlier local-flow trial stays excluded because
   it loses branch correlations. No general runtime generic representation is
   implemented.
@@ -1458,8 +1464,9 @@ research request. Existing memory and language decisions remain in force.
   wrapper may use ordinary function aliases and parameters after its initializer
   checks are discharged. Unrelated generic parameters do not reopen those checks.
   Newly deferred initializers with unresolved source or destination types still
-  reject unsupported callable escapes. General call-chain propagation of generic
-  inference and runtime generic representation stay open.
+  reject unsupported callable escapes. An unresolved generic element destination
+  such as `[2]$T` still fails before instantiation. General call-chain
+  propagation of generic inference and runtime generic representation stay open.
   The integrated repair on frozen source `4e432638` passes 4,075 tests with
   one expected failure, 12 native controls and nine direct compiler/package
   checks. The [prerequisite record](audits/2026-10-07/stdlib-source-loader-prerequisites.json)

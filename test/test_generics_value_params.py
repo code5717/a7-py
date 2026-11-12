@@ -4,15 +4,15 @@ Covers:
 - Declared value params ($N: usize, fixed-width ints, bool) size arrays; the
   declaration and named-constant instantiation (Buf(SIZE), SIZE :: 4)
   type-check, and distinct values are distinct types.
+- Literal value arguments parse and check: Buf(4), Flag(true).
 - A constant argument folds through the exact evaluator: `NEG :: -1` and
   `SUM :: 2 + 2` are valid value arguments.
 - Misuse is exit 6 at struct/union literals and at type annotations: bare
   $N as a type, a value for a type parameter, a type for a value parameter,
   bool/int confusion, out-of-range values, bool-sized arrays, undeclared $N
-  in size position, and passing $N on as a generic argument.
-- Literal value arguments (Buf(4)) do not parse: the type-argument list
-  only takes types, so values come through named constants.
-- Generic functions may declare $N, but calls cannot infer it.
+  in size position, and forwarding $N with a mismatched kind.
+- Generic functions may declare $N; calls infer it when the binding is unique.
+- Matching `$N` forwarding (`inner: Buf($N)`) is accepted under kind checks.
 """
 
 import subprocess
@@ -305,7 +305,7 @@ class TestValueParamInstantiation:
 
 
 class TestValueParamsOnFunctions:
-    """Functions may declare $N; calls cannot infer it."""
+    """Functions may declare $N; calls infer it when unique."""
 
     def test_function_value_param_declares(self):
         source = """
@@ -315,7 +315,7 @@ class TestValueParamsOnFunctions:
         """
         assert expect_success(source)
 
-    def test_function_value_param_call_needs_instantiation(self):
+    def test_function_value_param_call_infers_unique_size(self):
         source = """
         fill($N: usize) :: fn(buf: [$N]u8) {
         }
@@ -324,7 +324,19 @@ class TestValueParamsOnFunctions:
             fill(b)
         }
         """
-        assert expect_error(source, "Could not infer")
+        assert expect_success(source)
+
+    def test_function_value_param_conflict_rejected(self):
+        source = """
+        same($N: usize) :: fn(a: [$N]u8, b: [$N]u8) {
+        }
+        main :: fn() {
+            x: [2]u8 = [1, 2]
+            y: [4]u8 = [1, 2, 3, 4]
+            same(x, y)
+        }
+        """
+        assert expect_error(source, "Conflicting")
 
 
 class TestWhereClauseStage:
@@ -488,31 +500,45 @@ class TestValueArgFolding:
 
 
 class TestForwardedValueParam:
-    """Passing $N on as a generic argument is one error per use."""
+    """Matching `$N` forwarding is accepted; mismatched kinds and bare `$N` types fail."""
 
-    def test_struct_field_forwarding_reported_once(self, tmp_path):
-        result = expect_exit("""
+    def test_struct_field_forwarding_accepted(self):
+        assert expect_success("""
         Buf($N: usize) :: struct {
             data: [$N]u8,
         }
         Holder($N: usize) :: struct {
             inner: Buf($N),
         }
-        main :: fn() {}
-        """, tmp_path, 6, "Value parameter '$N' cannot be passed on as a generic argument of Buf")
-        assert len(result.failure.details) == 1, failure_text(result)
+        main :: fn() {
+            h := Holder(4){inner: Buf(4){data: [1, 2, 3, 4]}}
+        }
+        """)
 
-    def test_function_parameter_forwarding_reported_once(self, tmp_path):
-        result = expect_exit("""
+    def test_function_parameter_forwarding_accepted(self):
+        assert expect_success("""
         Buf($N: usize) :: struct {
             data: [$N]u8,
         }
         get($N: usize) :: fn(b: ref Buf($N)) u8 {
             ret b.data[0]
         }
+        main :: fn() {
+            b := Buf(4){data: [1, 2, 3, 4]}
+            x := get(b)
+        }
+        """)
+
+    def test_forwarding_mismatched_kind_rejected(self, tmp_path):
+        expect_exit("""
+        Buf($N: usize) :: struct {
+            data: [$N]u8,
+        }
+        Holder($B: bool) :: struct {
+            inner: Buf($B),
+        }
         main :: fn() {}
-        """, tmp_path, 6, "Value parameter '$N' cannot be passed on as a generic argument of Buf")
-        assert len(result.failure.details) == 1, failure_text(result)
+        """, tmp_path, 6, "requires a comptime usize")
 
     def test_bare_value_param_as_function_param_type_reported_once(self, tmp_path):
         result = expect_exit("""
@@ -520,6 +546,50 @@ class TestForwardedValueParam:
         main :: fn() {}
         """, tmp_path, 6, "Value parameter '$N' holds a comptime value, not a type")
         assert len(result.failure.details) == 1, failure_text(result)
+
+
+class TestLiteralValueArgs:
+    """`Buf(4)` and `Flag(true)` parse and check like named constants."""
+
+    def test_literal_usize_instantiates(self):
+        assert expect_success("""
+        Buf($N: usize) :: struct {
+            data: [$N]u8,
+        }
+        main :: fn() {
+            b := Buf(4){data: [1, 2, 3, 4]}
+        }
+        """)
+
+    def test_literal_bool_instantiates(self):
+        assert expect_success("""
+        Flag($B: bool) :: struct {
+            on: bool,
+        }
+        main :: fn() {
+            f := Flag(true){on: true}
+        }
+        """)
+
+    def test_literal_annotation(self):
+        assert expect_success("""
+        Buf($N: usize) :: struct {
+            data: [$N]u8,
+        }
+        main :: fn() {
+            b: Buf(4) = Buf(4){data: [1, 2, 3, 4]}
+        }
+        """)
+
+    def test_literal_out_of_range_rejected(self, tmp_path):
+        expect_exit("""
+        Small($N: u8) :: struct {
+            x: i32,
+        }
+        main :: fn() {
+            s := Small(300){x: 1}
+        }
+        """, tmp_path, 6, "out of range")
 
 
 def test_value_kind_recorded_on_generic_param_node():

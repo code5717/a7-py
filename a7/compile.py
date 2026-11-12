@@ -486,6 +486,17 @@ class A7Compiler:
                 )
                 if backend_feature_errors:
                     all_errors.extend(backend_feature_errors)
+                if import_ok and nr_ok and symbol_table is not None:
+                    selected_import_errors = self._bind_selected_imports(
+                        module_scope_inputs,
+                        symbol_table,
+                        module_resolver,
+                        str(input_path),
+                        source_lines,
+                    )
+                    if selected_import_errors:
+                        name_resolver.errors.extend(selected_import_errors)
+                        nr_ok = False
                 semantic_passes.append(
                     {
                         "name": "Name Resolution",
@@ -795,6 +806,135 @@ class A7Compiler:
                 module = module_resolver.get_module(module_path, importing_file=importing_file)
                 aliases[decl.alias] = module.path
         return aliases
+
+    def _bind_selected_imports(
+        self,
+        module_scope_inputs: list[tuple[ASTNode, str]],
+        symbols: Any,
+        module_resolver: Any,
+        entry_path: str,
+        source_lines: list[str],
+    ) -> list[SemanticError]:
+        """Bind `import \"m\" { A, B }` names into the importing file scope.
+
+        File-module items share the exporting Symbol so later lowering rewrites
+        uses to `module_*__A`. Virtual stdlib items record a selected-call
+        marker for the type checker and backend.
+        """
+        from .symbol_table import Symbol, SymbolKind
+        from .types import UNKNOWN
+
+        errors: list[SemanticError] = []
+        for program, importing_file in module_scope_inputs:
+            if program.kind != NodeKind.PROGRAM:
+                continue
+            for decl in program.declarations or []:
+                if decl.kind != NodeKind.IMPORT or not decl.imported_items:
+                    continue
+                scope_key = getattr(decl, "file_scope", None) or importing_file
+                importer_scope = symbols.file_scopes.get(scope_key)
+                module_path = decl.module_path or ""
+                if module_resolver.is_virtual_module(module_path):
+                    for item in decl.imported_items:
+                        canonical = module_resolver.stdlib.resolve_call(module_path, item)
+                        if canonical is None:
+                            errors.append(SemanticError.from_type(
+                                SemanticErrorType.UNDEFINED_IDENTIFIER,
+                                span=decl.span,
+                                filename=importing_file,
+                                source_lines=source_lines,
+                                context=(
+                                    f"Stdlib module '{module_path}' has no declaration '{item}'"
+                                ),
+                            ))
+                            continue
+                        if importer_scope is not None and item in importer_scope.symbols:
+                            errors.append(SemanticError.from_type(
+                                SemanticErrorType.ALREADY_DEFINED,
+                                span=decl.span,
+                                filename=importing_file,
+                                source_lines=source_lines,
+                                context=f"Selected import '{item}'",
+                            ))
+                            continue
+                        marker = ASTNode(
+                            kind=NodeKind.IMPORT,
+                            module_path=module_path,
+                            span=decl.span,
+                        )
+                        marker.stdlib_selected_name = item
+                        marker.stdlib_selected_canonical = canonical
+                        symbol = Symbol(
+                            name=item,
+                            kind=SymbolKind.FUNCTION,
+                            type=UNKNOWN,
+                            node=marker,
+                            is_mutable=False,
+                        )
+                        if importer_scope is not None:
+                            importer_scope.define(symbol)
+                        else:
+                            symbols.define(symbol)
+                    continue
+                module = module_resolver.get_module(module_path, importing_file)
+                if module is None or module.ast is None:
+                    errors.append(SemanticError.from_type(
+                        SemanticErrorType.UNDEFINED_IDENTIFIER,
+                        span=decl.span,
+                        filename=importing_file,
+                        source_lines=source_lines,
+                        context=f"Selected import from unknown module '{module_path}'",
+                    ))
+                    continue
+                target_scope = symbols.file_scopes.get(module.file_path)
+                if target_scope is None:
+                    errors.append(SemanticError.from_type(
+                        SemanticErrorType.UNDEFINED_IDENTIFIER,
+                        span=decl.span,
+                        filename=importing_file,
+                        source_lines=source_lines,
+                        context=f"Selected import from module '{module_path}' has no scope",
+                    ))
+                    continue
+                for item in decl.imported_items:
+                    if item.startswith("_"):
+                        errors.append(SemanticError.from_type(
+                            SemanticErrorType.UNDEFINED_IDENTIFIER,
+                            span=decl.span,
+                            filename=importing_file,
+                            source_lines=source_lines,
+                            context=(
+                                f"Private declaration '{item}' cannot be selected "
+                                f"from module '{module_path}'"
+                            ),
+                        ))
+                        continue
+                    exported = target_scope.lookup_local(item)
+                    if exported is None:
+                        errors.append(SemanticError.from_type(
+                            SemanticErrorType.UNDEFINED_IDENTIFIER,
+                            span=decl.span,
+                            filename=importing_file,
+                            source_lines=source_lines,
+                            context=(
+                                f"Module '{module_path}' has no declaration '{item}'"
+                            ),
+                        ))
+                        continue
+                    if importer_scope is not None and item in importer_scope.symbols:
+                        errors.append(SemanticError.from_type(
+                            SemanticErrorType.ALREADY_DEFINED,
+                            span=decl.span,
+                            filename=importing_file,
+                            source_lines=source_lines,
+                            context=f"Selected import '{item}'",
+                        ))
+                        continue
+                    if importer_scope is not None:
+                        importer_scope.symbols[item] = exported
+                    else:
+                        symbols.current_scope.symbols[item] = exported
+        return errors
 
     def _module_emit_prefix(self, module_path: str) -> str:
         cleaned = "".join(ch if ch.isalnum() else "_" for ch in module_path)

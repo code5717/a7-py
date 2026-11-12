@@ -33,12 +33,17 @@ callable origin; unsupported escapes of these newly deferred initializers reject
 at semantic exit 6.
 
 Nested array-literal arms inside generic `if`/`match` initializers receive
-contextual fitting. A local generic function alias also carries its declaration's
-body checks when the alias and its copy chain are never reassigned, passed by
-reference or captured by another function.
-Imported, module-global, parameter, mutable, selected and captured generic
-function values still have checking gaps. Runtime generic dispatch is not
-implemented by this repair.
+contextual fitting. An immutable generic function alias carries its
+declaration's body checks when the alias and its copy chain are never
+reassigned, passed by reference or captured by another function, including
+same-file, imported, module-global and selected-import origins. Parameter,
+mutable, captured and aggregate origins still have checking gaps. Runtime
+generic dispatch is not implemented by this repair.
+
+`$N` value parameters accept declared scalar kinds. Instantiation accepts named
+constants (`Buf(SIZE)`) and literals (`Buf(4)`). Calls infer `$N` when the
+binding is unique. Matching forwarding such as `inner: Buf($N)` is accepted
+under kind checks.
 
 Numeric match patterns are checked after concrete substitution. Each
 instantiation retains its own fitted values and overlap checks. Named constants
@@ -96,7 +101,12 @@ example. A file-scope `@type_set` alias works the same way.
 
 ## Status and restrictions
 
-Status: limited. Concrete function and struct examples are implemented. Composite specialization, deeper call-chain propagation, and cross-module generic workflows remain incomplete. Generic tagged unions specialize positionally. Canonical prelude types `Option(T)` and `Result(T, E)` are available in every file. Their names cannot be redeclared; module imports remain explicit. Generic enums remain unsupported.
+Status: limited. Concrete function and struct examples are implemented, including
+`$N` literals, unique inference and matching forwarding. Deeper call-chain
+propagation and unresolved destinations such as `[2]$T` remain incomplete.
+Generic tagged unions specialize positionally. Canonical prelude types
+`Option(T)` and `Result(T, E)` are available in every file. Their names cannot
+be redeclared; module imports remain explicit. Generic enums remain unsupported.
 
 Generic names start with a letter after `$` and may contain digits and underscores after that letter, so `$T1` is a valid spelling and `$123` is not. The tokenizer uses Unicode-aware character checks; ASCII names are the documented forms.
 

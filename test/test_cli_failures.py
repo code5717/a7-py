@@ -272,13 +272,12 @@ main :: fn() {
 
     result = run_cli(["--mode", "semantic", "--format", "json", str(src)])
 
-    assert result.returncode == ExitCode.SEMANTIC
+    assert result.returncode == ExitCode.SUCCESS
     assert "Traceback" not in result.stderr
     payload = json.loads(result.stdout)
-    assert payload["status"] == "error"
+    assert payload["status"] == "ok"
     import_node = payload["stages"]["parse"]["ast"]["declarations"][0]
     assert import_node["imported_items"] == ["println"]
-    assert payload["error"]["category"] == "semantic"
 
 
 def test_cli_unknown_virtual_stdlib_function_returns_semantic_error(tmp_path):
