@@ -25,7 +25,7 @@ Experimental A7 compiler and language reference. Start with the relevant pages b
 - [Modules and visibility](https://code5717.github.io/a7-py/docs/language/modules.md): File imports, aliases, visibility, and combined Zig output.
 - [Builtins and keyword index](https://code5717.github.io/a7-py/docs/language/builtins.md): Current intrinsics, reserved operations, and the complete keyword index.
 - [Standard library](https://code5717.github.io/a7-py/docs/stdlib.md): Every registered std/io and std/math call, its arguments, and current restrictions.
-- [Compiler](https://code5717.github.io/a7-py/docs/compiler.md): CLI modes, flags, JSON diagnostics, artifacts, exit codes, and the Zig boundary.
+- [Compiler](https://code5717.github.io/a7-py/docs/compiler.md): CLI modes, flags, doctor capabilities JSON, schema 3.0 diagnostics, artifacts, exit codes, timings, and the Zig boundary.
 
 ## Project
 

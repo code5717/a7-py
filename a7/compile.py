@@ -39,7 +39,9 @@ error_console = Console(stderr=True)
 # Version of the --format json payload. 3.0: error details carry `code` and
 # `hint`, a detail `message` no longer embeds `file:line:col:`, safety-proof
 # failures have type `SafetyError`, non-compiler exceptions map to a category
-# type. The top-level `error.message` is unchanged.
+# type. The top-level `error.message` is unchanged. Additive stable keys for
+# agents: `exit_code` mirrors the process exit, and `diagnostics` always holds
+# the detail list (empty on success; same objects as `error.details` on failure).
 JSON_SCHEMA_VERSION = "3.0"
 
 # `type` of an error detail built from an exception that is not a
@@ -1464,15 +1466,21 @@ class A7Compiler:
             result.input_path,
         )
 
+        diagnostics: list[dict[str, Any]] = []
+        if not result.ok and result.failure is not None:
+            diagnostics = list(result.failure.details)
+
         payload: dict[str, Any] = {
             "schema_version": JSON_SCHEMA_VERSION,
             "mode": result.mode.value,
             "status": "ok" if result.ok else "error",
+            "exit_code": int(result.exit_code),
             "input": result.input_path,
             "backend": result.backend,
             "timing_ms": result.timing_ms,
             "stages": {},
             "artifacts": {},
+            "diagnostics": diagnostics,
         }
 
         if "tokenize" in result.stages:

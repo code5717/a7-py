@@ -1270,7 +1270,7 @@
     {
       "id": "compiler",
       "title": "Compiler",
-      "summary": "CLI modes, flags, JSON diagnostics, artifacts, exit codes, and the Zig boundary.",
+      "summary": "CLI modes, flags, doctor capabilities JSON, schema 3.0 diagnostics, artifacts, exit codes, timings, and the Zig boundary.",
       "group": "Reference",
       "url": "https://code5717.github.io/a7-py/compiler/",
       "markdown": "https://code5717.github.io/a7-py/docs/compiler.md",
@@ -1304,6 +1304,11 @@
           "level": 2,
           "id": "json-output",
           "text": "JSON output"
+        },
+        {
+          "level": 3,
+          "id": "doctor-json",
+          "text": "Doctor JSON"
         },
         {
           "level": 2,
@@ -1555,6 +1560,11 @@
         },
         {
           "level": 2,
+          "id": "local-compiler-discovery",
+          "text": "Local compiler discovery"
+        },
+        {
+          "level": 2,
           "id": "agent-rules",
           "text": "Agent rules"
         },
@@ -1568,7 +1578,9 @@
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/agent-usage.md"
       ],
-      "examples": []
+      "examples": [
+        "001_hello.a7"
+      ]
     }
   ],
   "features": [
