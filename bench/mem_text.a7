@@ -1,0 +1,32 @@
+// L67 candidate, unqualified. External input: one ASCII byte plus newline.
+// 4096-byte heap-buffer processing proxy; original one million rounds retained.
+// NOT retained parser text: no field outlives its producer or retains a backing buffer.
+// This gap cannot be graded as retained-text qualification.
+io :: import "std/io"
+Text :: struct { data: [4096]u8 }
+run :: fn(seed: usize) {
+    text := new Text
+    if text == nil { io.println("alloc failed"); ret }
+    checksum: usize = 0
+    r: usize = 0
+    while r < 1000000 {
+        if text == nil { ret }
+        slot := (checksum + seed + r) % 4096
+        if slot >= 4096 { ret }
+        if (r + seed) % 2 == 0 { text.data[slot] = 72 } else { text.data[slot] = 105 }
+        total: usize = 0
+        i: usize = 0
+        while i < 4096 { total += cast(usize, text.data[i]); i += 1 }
+        checksum = (checksum + total) % 1000000007
+        r += 1
+    }
+    io.println("result: {}", checksum)
+    del text
+}
+main :: fn() {
+    input: [64]u8
+    match io.read_line(input[0..64]) {
+        case .ok(n): { if n == 0 { io.println("input failed"); ret }; run(cast(usize, input[0])) }
+        case .err(error): { io.println("input failed") }
+    }
+}

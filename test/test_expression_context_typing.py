@@ -89,11 +89,9 @@ def test_context_typing_rejections(tmp_path, body, fragment):
 
 
 def test_index_through_a_reference_to_an_array_type_checks():
-    """Checker only: `a[0]` on `a: ref [4]i32` reads through the reference.
+    """Check reference-array element typing with the type checker alone.
 
-    This calls the type checker alone and leaves the rest unverified. The
-    full pipeline still exits 6 here: the safety pass does not yet prove a
-    bound for an index through a reference (a7/passes/safety.py).
+    Full-pipeline behavior is covered by test_ref_fixed_array_index.py.
     """
     analysis = run_semantic_analysis(
         "first :: fn(a: ref [4]i32) i32 {\n    ret a[0]\n}\n\nmain :: fn() {\n}\n"

@@ -7,6 +7,7 @@ Handles import statements, module loading, and dependency management.
 from typing import Dict, List, Optional, Set
 from dataclasses import dataclass
 from pathlib import Path
+from importlib.resources import files
 
 from a7.ast_nodes import ASTNode, NodeKind
 from a7.symbol_table import Symbol, SymbolKind, SymbolTable, ModuleTable
@@ -55,6 +56,8 @@ class ModuleResolver:
         self.loaded_modules: Dict[str, ModuleInfo] = {}
         self.module_table = ModuleTable()
         self.stdlib = StdlibRegistry()
+        # Public source modules are separate from private prelude declarations.
+        self.source_root = Path(str(files("a7.stdlib").joinpath("sources", "std"))).resolve()
 
         # Track currently loading modules for circular dependency detection
         self.loading_stack: List[str] = []
@@ -75,9 +78,14 @@ class ModuleResolver:
         path = Path(module_path)
         return not path.is_absolute()
 
-    def _is_within_search_path(self, candidate: Path) -> bool:
-        resolved = candidate.resolve()
-        return resolved.is_relative_to(self.entry_root)
+    def file_module_key(self, file_path: str) -> str:
+        try:
+            path = Path(file_path).resolve()
+        except OSError as error:
+            raise A7ImportError(f"Cannot resolve module file '{file_path}': {error}") from error
+        if path.is_relative_to(self.source_root):
+            return "/stdlib-source/" + path.relative_to(self.source_root).with_suffix("").as_posix()
+        return path.relative_to(self.entry_root).with_suffix("").as_posix()
 
     def is_virtual_module(self, module_path: str) -> bool:
         """Return True when an import is provided by the built-in stdlib registry."""
@@ -115,7 +123,13 @@ class ModuleResolver:
         seen: dict[str, object] = {}
         for decl in import_decls:
             module_path = decl.module_path or ""
-            key = key_of(module_path)
+            try:
+                key = key_of(module_path)
+            except A7ImportError as error:
+                raise A7ImportError(
+                    error.message, span=decl.span, filename=filename,
+                    source_lines=source_lines,
+                ) from error
             if key in seen:
                 raise SemanticError.from_type(
                     SemanticErrorType.IMPORT_NAME_CONFLICT,
@@ -139,31 +153,43 @@ class ModuleResolver:
             importing_file: File whose folder supplies the relative import base
 
         Returns:
-            Absolute file path inside the entry root, or None if not found
+            Absolute path inside the entry root or public package sources, or None
         """
         if not self._is_safe_module_path(module_path):
             return None
-        if module_path.startswith("std/"):
+        requested_path = module_path
+        try:
+            if module_path.startswith("std/"):
+                if any(part in {"", ".", ".."} for part in module_path.split("/")):
+                    return None
+                search_paths = [self.source_root]
+                module_path = module_path[4:]
+                boundary = self.source_root
+            elif importing_file and Path(importing_file).resolve().is_relative_to(self.source_root):
+                search_paths = [Path(importing_file).resolve().parent]
+                boundary = self.source_root
+            else:
+                boundary = self.entry_root
+                search_paths = (
+                    [Path(importing_file).resolve().parent]
+                    if importing_file else [self.entry_root, *self.search_paths]
+                )
+            for search_path in search_paths:
+                # Convert module path to file path
+                # "io" -> "io.a7"
+                # "math/vector" -> "math/vector.a7"
+                candidates = [
+                    Path(search_path) / f"{module_path}.a7",
+                    Path(search_path) / module_path / "mod.a7",  # Directory module
+                ]
+
+                for candidate in candidates:
+                    if candidate.exists() and candidate.is_file() and candidate.resolve().is_relative_to(boundary):
+                        return str(candidate.resolve())
+
             return None
-
-        search_paths = (
-            [Path(importing_file).resolve().parent]
-            if importing_file else [self.entry_root, *self.search_paths]
-        )
-        for search_path in search_paths:
-            # Convert module path to file path
-            # "io" -> "io.a7"
-            # "math/vector" -> "math/vector.a7"
-            candidates = [
-                Path(search_path) / f"{module_path}.a7",
-                Path(search_path) / module_path / "mod.a7",  # Directory module
-            ]
-
-            for candidate in candidates:
-                if candidate.exists() and candidate.is_file() and self._is_within_search_path(candidate):
-                    return str(candidate.resolve())
-
-        return None
+        except OSError as error:
+            raise A7ImportError(f"Cannot resolve module '{requested_path}': {error}") from error
 
     def load_module(self, module_path: str, importing_file: Optional[str] = None) -> Optional[ModuleInfo]:
         """Load dependencies in source order without using the Python call stack."""
@@ -182,9 +208,13 @@ class ModuleResolver:
                     if path.startswith("std/"):
                         if not self._is_safe_module_path(path) or any(part in {"", ".", ".."} for part in path.split("/")):
                             raise A7ImportError(f"Invalid reserved module path '{path}'")
-                        parent = Path(importer).resolve().parent if importer else self.entry_root
-                        if any(candidate.is_file() for base in {parent, self.entry_root}
-                               for candidate in (base / (path + ".a7"), base / path / "mod.a7")):
+                        try:
+                            parent = Path(importer).resolve().parent if importer else self.entry_root
+                            shadow = any(candidate.is_file() for base in {parent, self.entry_root}
+                                         for candidate in (base / (path + ".a7"), base / path / "mod.a7"))
+                        except OSError as error:
+                            raise A7ImportError(f"Cannot check reserved module '{path}': {error}") from error
+                        if shadow:
                             raise A7ImportError(f"Module path '{path}' is reserved for the standard library; remove the project shadow")
                     if self.is_virtual_module(path):
                         self._load_virtual_module(path)
@@ -192,7 +222,7 @@ class ModuleResolver:
                     file_path = self.resolve_module_path(path, importer)
                     if not file_path:
                         raise A7ImportError(f"Module '{path}' not found")
-                    key = Path(file_path).relative_to(self.entry_root).with_suffix("").as_posix()
+                    key = self.file_module_key(file_path)
                     # Check active identities before the cache, including alternate spellings.
                     if key in active:
                         cycle = " -> ".join(self.loading_stack + [key])
@@ -314,12 +344,18 @@ class ModuleResolver:
                 module_path = decl.module_path or ""
                 imports.append(module_path)
 
-                resolved = None
-                if not self.is_virtual_module(module_path):
-                    resolved = self.resolve_module_path(module_path, importing_file)
-                table_path = module_path
-                if resolved is not None:
-                    table_path = Path(resolved).relative_to(self.entry_root).with_suffix("").as_posix()
+                try:
+                    resolved = None
+                    if not self.is_virtual_module(module_path):
+                        resolved = self.resolve_module_path(module_path, importing_file)
+                    table_path = module_path
+                    if resolved is not None:
+                        table_path = self.file_module_key(resolved)
+                except A7ImportError as error:
+                    raise A7ImportError(
+                        error.message, span=decl.span, filename=importing_file,
+                        source_lines=getattr(decl.span, "origin_lines", None),
+                    ) from error
                 # Process different import types
                 if decl.alias:
                     # import "io" as console
@@ -367,36 +403,41 @@ class ModuleResolver:
         # direct imports first, then their dependencies.
         loaded = []
         seen: Set[str] = set()
-        queue = [(path, current_path) for path in import_paths]
+        queue = [(path, current_path, import_declarations.get(path)) for path in import_paths]
         while queue:
-            module_path, importer = queue.pop(0)
-            identity = self._canonical_import_key(module_path, importer)
-            if identity in seen:
-                continue
-            seen.add(identity)
+            module_path, importer, declaration = queue.pop(0)
             try:
+                identity = self._canonical_import_key(module_path, importer)
+                if identity in seen:
+                    continue
+                seen.add(identity)
                 module_info = self.load_module(module_path, importer)
             except CompilerError as error:
                 if error.span is not None:
                     raise
-                declaration = import_declarations.get(module_path)
                 if declaration is None:
                     raise
                 if isinstance(error, A7ImportError):
                     raise A7ImportError(
                         error.message, span=declaration.span,
-                        filename=current_path,
+                        filename=importer,
+                        source_lines=getattr(declaration.span, "origin_lines", None),
                     ) from error
                 if isinstance(error, (TokenizerError, ParseError)):
                     raise
                 raise SemanticError(
                     f"Error loading module '{module_path}': {error.message}",
-                    span=declaration.span, filename=current_path,
+                    span=declaration.span, filename=importer,
                 ) from error
             if module_info:
                 loaded.append(module_info)
+                declarations = {
+                    decl.module_path or "": decl
+                    for decl in (module_info.ast.declarations if module_info.ast else []) or []
+                    if decl.kind == NodeKind.IMPORT
+                }
                 for transitive in module_info.dependencies:
-                    queue.append((transitive, module_info.file_path))
+                    queue.append((transitive, module_info.file_path, declarations.get(transitive)))
 
         return loaded
 
@@ -407,7 +448,7 @@ class ModuleResolver:
         file_path = self.resolve_module_path(module_path, importing_file)
         if file_path is None:
             return None
-        key = Path(file_path).relative_to(self.entry_root).with_suffix("").as_posix()
+        key = self.file_module_key(file_path)
         return self.loaded_modules.get(key)
 
     def is_loaded(self, module_path: str, importing_file: Optional[str] = None) -> bool:

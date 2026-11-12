@@ -8,6 +8,28 @@ gates.
 
 Current reconciliation: [Research status, 2026-09-20](research-status-2026-09-20.md).
 
+[Language inspirations](../../inspirations.md) indexes the language comparisons
+and distinguishes research inputs from A7 decisions.
+
+[Lobster lessons for A7, 2026-10-17](lobster-2026-10-17.md) reviews official
+documentation on inferred borrowing, runtime RC, specialization and isolated
+workers. It records proposed experiments and compatibility limits; no Lobster
+compiler or benchmark was run.
+
+[Lisp families for A7, 2026-10-17](lisp-family-2026-10-17.md) compares macros,
+compilation phases, recovery, live development and runtime dependencies using
+primary sources. Its experiments remain proposals; no Lisp runtime or syntax
+is adopted.
+
+[Goose research for A7, 2026-10-17](goose-2026-10-17.md) examines pinned compiler,
+runtime, tests and benchmark sources. It prepares data-stack, compact-layout,
+construction and isolation proposals through Zig. C export is deferred; no
+memory mechanism or new language behavior is selected.
+
+[Scalar-reference reads, 2026-10-16](scalar-reference-reads-2026-10-16.md)
+compares implicit scalar loads with preserved reference identity, records current
+compiler probes and revises P-REF. The behavior remains proposed.
+
 [Global constants and declaration order](global-constants-2026-09-20.md)
 compares A7, Odin, Zig, Go and Rust. L47 selects development of exact-fit
 untyped constants. The [revised packet](../packets/P-TYP-forward-globals.md)

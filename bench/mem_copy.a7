@@ -1,0 +1,42 @@
+// L67 candidate, unqualified. External input: one ASCII byte plus newline.
+// Two independent heap buffers; 64 explicit element copies per original iteration.
+// Mutating source after copying must leave snapshot unchanged.
+// Native optimized inspection must confirm real copy/storage traffic remains.
+io :: import "std/io"
+Buffer :: struct { data: [64]usize }
+run :: fn(seed: usize) {
+    source := new Buffer
+    if source == nil { io.println("alloc failed"); ret }
+    snapshot := new Buffer
+    if snapshot == nil { del source; io.println("alloc failed"); ret }
+    i: usize = 0
+    while i < 64 { source.data[i] = seed + i; i += 1 }
+    checksum: usize = 0
+    r: usize = 0
+    while r < 50000000 {
+        if source == nil { ret }
+        if snapshot == nil { ret }
+        j: usize = 0
+        while j < 64 { snapshot.data[j] = source.data[j]; j += 1 }
+        slot := (checksum + seed) % 64
+        if slot >= 64 { ret }
+        old := source.data[slot]
+        source.data[slot] = (old + 1) % 65521
+        if snapshot.data[slot] != old { io.println("copy failed"); del snapshot; del source; ret }
+        total: usize = 0
+        j = 0
+        while j < 64 { total += snapshot.data[j]; j += 1 }
+        checksum = (checksum + total + source.data[slot]) % 1000000007
+        r += 1
+    }
+    io.println("result: {}", checksum)
+    del snapshot
+    del source
+}
+main :: fn() {
+    input: [64]u8
+    match io.read_line(input[0..64]) {
+        case .ok(n): { if n == 0 { io.println("input failed"); ret }; run(cast(usize, input[0])) }
+        case .err(error): { io.println("input failed") }
+    }
+}

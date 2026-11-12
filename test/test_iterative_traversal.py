@@ -1,21 +1,16 @@
-"""
-Tests verifying the compiler pipeline works without deep recursion.
+"""Selected deep inputs exercise the Python compiler through Zig emission.
 
-The A7 compiler uses iterative (stack-based) traversal in its semantic
-analysis passes and AST preprocessor. These tests confirm that deeply
-nested and large programs compile without hitting Python's recursion
-limit, validating that the iterative implementations are correct.
-
-Two categories of tests:
-1. Low recursion limit tests -- set sys.setrecursionlimit(100) and
-   compile programs that would blow the stack if any pass were recursive.
-2. Deep nesting stress tests -- with the default recursion limit, create
-   programs with extreme nesting depths (20-30+ levels) and verify
-   they compile through the full pipeline.
+Some tests limit stack headroom relative to the caller; another group sets
+Python's recursion limit to 150. Stress tests use the default limit.
+Parse-only and synthetic AST, formatter and backend checks cover separate
+stages. These finite cases do not cover every traversal path or execute the
+emitted native programs.
 """
 
 import os
 import json
+from pathlib import Path
+import subprocess
 import sys
 import tempfile
 
@@ -26,6 +21,72 @@ from a7.backends.zig import ZigCodeGenerator
 from a7.compile import A7Compiler, OutputFormat
 from a7.formatters import JSONFormatter
 from conftest import low_recursion_limit
+
+
+def test_deep_projected_deferred_writes_preserve_counter_proof(tmp_path):
+    depth = 200
+    source = (
+        'Box::struct{value:i32}\n'
+        'reset::fn(n:ref usize){if n==nil{ret};zero:usize=0;n=zero}\n'
+        'run::fn(flag:bool){p:=new Box;if p==nil{ret};p.value=7;buf:[2]usize;i:usize=0\n'
+        'while flag{if i==1{break};del p;i+=1;\n'
+        + '{\ndefer reset(buf[0])\n' * depth + '}\n' * depth
+        + '}\nif !flag{del p}}\nmain::fn(){run(false);run(true)}\n'
+    )
+    path = tmp_path / 'valid.a7'
+    path.write_text(source)
+    emitted = []
+    for limit in (1000, 100):
+        output = tmp_path / f'valid-{limit}.zig'
+        result = subprocess.run(
+            [sys.executable, '-c',
+             f'import sys;from a7.cli import main;sys.setrecursionlimit({limit});main()',
+             str(path), '--mode', 'compile', '--format', 'json', '--output', str(output)],
+            cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert result.stderr == ''
+        assert json.loads(result.stdout)['status'] == 'ok'
+        emitted.append(output.read_bytes())
+        # These calls target the local array, so cleanup must retain i == 1.
+        assert emitted[-1].count(b'reset(&buf[0]);') == depth
+    assert emitted[0] == emitted[1]
+
+
+def test_deep_deferred_delete_rejects_saved_alias(tmp_path):
+    depth = 200
+    source = (
+        'Box::struct{value:i32}\n'
+        'main::fn(){p:=new Box;if p==nil{ret};p.value=7;saved:=p;buf:[2]usize\n'
+        + '{\n' * depth + 'defer del p\n' + '}\n' * depth
+        + 'saved.value=9\n}\n'
+    )
+    path = tmp_path / 'stale_alias.a7'
+    path.write_text(source)
+    failure_line = 2 * depth + 4
+    assert source.splitlines()[failure_line - 1][:5] == 'saved'
+    for limit in (1000, 100):
+        output = tmp_path / f'stale_alias-{limit}.zig'
+        result = subprocess.run(
+            [sys.executable, '-c',
+             f'import sys;from a7.cli import main;sys.setrecursionlimit({limit});main()',
+             str(path), '--mode', 'compile', '--format', 'json', '--output', str(output)],
+            cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True,
+        )
+        assert result.returncode == 6, result.stdout + result.stderr
+        assert result.stderr == ''
+        payload = json.loads(result.stdout)
+        assert payload['status'] == 'error'
+        assert payload['error']['category'] == 'semantic'
+        details = payload['error']['details']
+        assert len(details) == 1
+        assert details[0]['code'] == 'use_after_move'
+        assert details[0]['file'] == str(path)
+        assert details[0]['span'] == {
+            'start_line': failure_line, 'start_column': 1,
+            'end_line': failure_line, 'end_column': 6, 'length': 5,
+        }
+        assert not output.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -218,12 +279,7 @@ def make_chained_calls(count: int) -> str:
 
 
 class TestLowRecursionLimit:
-    """Verify the compiler pipeline works with a very low Python recursion limit.
-
-    A recursion limit of 100 is low enough to catch any pass that uses
-    recursive traversal on even modestly nested inputs, yet high enough
-    for Python's own import machinery and pytest internals to function.
-    """
+    """Compile selected programs with fixed stack headroom below the caller."""
 
     def setup_method(self):
         self.old_limit = sys.getrecursionlimit()
@@ -233,7 +289,7 @@ class TestLowRecursionLimit:
         sys.setrecursionlimit(self.old_limit)
 
     def test_hello_world_compiles(self):
-        """A trivial hello-world program should compile at limit=100."""
+        """A trivial hello-world program compiles with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -244,32 +300,32 @@ class TestLowRecursionLimit:
         assert compile_source(source) is True
 
     def test_nested_ifs_10_levels(self):
-        """10 levels of nested if/else should compile at limit=100."""
+        """10 levels of nested if/else should compile with limited stack headroom."""
         source = make_nested_ifs(10)
         assert compile_source(source) is True
 
     def test_nested_blocks_10_levels(self):
-        """10 levels of nested blocks should compile at limit=100."""
+        """10 levels of nested blocks should compile with limited stack headroom."""
         source = make_nested_blocks(10)
         assert compile_source(source) is True
 
     def test_nested_expressions_10_levels(self):
-        """10 levels of nested binary expressions should compile at limit=100."""
+        """10 levels of nested binary expressions should compile with limited stack headroom."""
         source = make_nested_expressions(10)
         assert compile_source(source) is True
 
     def test_many_statements_50(self):
-        """A function with 50 sequential statements should compile at limit=100."""
+        """A function with 50 sequential statements should compile with limited stack headroom."""
         source = make_many_statements(50)
         assert compile_source(source) is True
 
     def test_multiple_functions_calling_each_other(self):
-        """Multiple functions that call each other should compile at limit=100."""
+        """Multiple functions that call each other should compile with limited stack headroom."""
         source = make_chained_calls(10)
         assert compile_source(source) is True
 
     def test_variables_and_assignments(self):
-        """Variable declarations and assignments should work at limit=100."""
+        """Variable declarations and assignments should work with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -285,7 +341,7 @@ class TestLowRecursionLimit:
         assert compile_source(source) is True
 
     def test_while_loop_with_break_continue(self):
-        """While loop with break/continue should compile at limit=100."""
+        """While loop with break/continue should compile with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -306,7 +362,7 @@ class TestLowRecursionLimit:
         assert compile_source(source) is True
 
     def test_function_with_return_value(self):
-        """Function with return type and return statement at limit=100."""
+        """Function with return type and return statement with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -322,12 +378,12 @@ class TestLowRecursionLimit:
         assert compile_source(source) is True
 
     def test_nested_whiles_5_levels(self):
-        """5 levels of nested while loops should compile at limit=100."""
+        """5 levels of nested while loops should compile with limited stack headroom."""
         source = make_nested_whiles(5)
         assert compile_source(source) is True
 
     def test_struct_declaration_and_init(self):
-        """Struct declaration and initialization at limit=100."""
+        """Struct declaration and initialization with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -344,7 +400,7 @@ class TestLowRecursionLimit:
         assert compile_source(source) is True
 
     def test_enum_declaration(self):
-        """Enum declaration at limit=100."""
+        """Enum declaration with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -362,7 +418,7 @@ class TestLowRecursionLimit:
         assert compile_source(source) is True
 
     def test_constant_declaration(self):
-        """Constant declarations at limit=100."""
+        """Constant declarations with limited stack headroom."""
         source = (
             'io :: import "std/io"\n'
             "\n"
@@ -425,13 +481,7 @@ class TestLowRecursionLimit:
 
 
 class TestDeepNestingStress:
-    """Stress tests with deeply nested structures at the normal recursion limit.
-
-    These tests create programs with 20-30+ levels of nesting. If any pass
-    used naive recursion, these would exceed the default limit of ~1000 only
-    for extremely deep nesting; instead, these tests verify the iterative
-    implementations handle realistic deep nesting gracefully.
-    """
+    """Compile selected nested and large programs at the default recursion limit."""
 
     def test_20_nested_ifs(self):
         """20 levels of nested if/else should compile successfully."""
@@ -658,19 +708,7 @@ class TestParseOnlyDeepNesting:
 
 
 class TestLowLimitDeepNesting:
-    """The most demanding tests: low recursion limit AND deep nesting.
-
-    The A7 parser uses recursive descent, so it needs some stack depth
-    per nesting level. The semantic analysis passes (name resolution,
-    type checking, semantic validation) and the AST preprocessor are
-    fully iterative, so they add zero stack depth regardless of nesting.
-
-    We use a recursion limit of 150 which is low enough that any
-    recursive semantic pass would blow up on 20+ levels of nesting,
-    but gives the recursive-descent parser enough headroom. The pytest
-    framework itself consumes ~30-40 stack frames before the test body
-    runs, further tightening the budget.
-    """
+    """Compile selected nested inputs with Python's recursion limit set to 150."""
 
     LIMIT = 150
 
@@ -682,12 +720,7 @@ class TestLowLimitDeepNesting:
         sys.setrecursionlimit(self.old_limit)
 
     def test_nested_ifs_at_low_limit(self):
-        """Nested ifs should work at a low recursion limit.
-
-        At limit 150, the parser can handle this nesting depth. If the
-        semantic passes were recursive, they would blow up since each
-        pass would add another full traversal on top of the parser.
-        """
+        """Compile ten nested ifs at recursion limit 150."""
         source = make_nested_ifs(10)
         assert compile_source(source) is True
 

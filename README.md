@@ -91,12 +91,35 @@ optimization that uses plain integer operators for proven-range results.
 
 ## Current language and limits
 
+Exact numeric evaluation checks arithmetic growth before allocation and limits
+work, retained exact values and exact binding-chain depth. Resource failures are
+located semantic errors (exit 6). Repeated failures of the same resource category
+within one initializer report its first failure location. Conservative bounds can reject an operation
+whose final result would fit. See [SPEC Appendix C](docs/SPEC.md#appendix-c-implementation-limits)
+for accounting rules and [Status](docs/STATUS.md) for remaining qualification.
+
+Else-if arms preserve lexical shadowing: a local in one arm does not change
+a parent binding or a declaration in another arm. Operating-system errors during
+module path lookup, including overlong paths, report the importing location at exit 3.
+
 The compiler supports explicit-width numeric types, arrays, slices, structs,
-enums, unions, type aliases, functions, loops, `match` and `defer`. Generics
-include `$T` type parameters, `$N` value parameters and constraints. Generic
+enums, unions, type aliases, functions, loops, `match` and `defer`. Integer
+literal/range overlap checks preserve the typed integer value, including values
+beyond 2^53. Generic numeric patterns fit each concrete subject type before
+overlap checking. Generics include `$T` type parameters, `$N` value parameters and constraints. Generic
 local initializers and bound callback arguments are checked against concrete
-instantiations. String comparison uses byte contents. Read the [language tour](examples/037_language_tour.a7)
-and [specification](docs/SPEC.md) together with [Status](docs/STATUS.md).
+instantiations, including fixed-array element types such as `[2]$T`. Concrete
+wrappers preserve fitting and overflow checks; unsupported generic callable
+origins remain limited. A constrained generic argument satisfies a destination
+constraint when its admitted set is nonempty and every member belongs to the
+destination set. Struct and union type annotations enforce these constraints
+as well as construction. String comparison uses byte contents. Read the
+[language tour](examples/037_language_tour.a7) and [specification](docs/SPEC.md)
+together with [Status](docs/STATUS.md).
+
+Inferred slice bindings retain their slice type when initialized from an array
+view. A mutable binding can later select a view of a different length; its
+initializer runs once. Slice lifetime enforcement remains incomplete.
 
 Local bindings cannot reuse an import alias from their own file. This includes
 function parameters, loop bindings and match captures. Each file has its own
@@ -131,24 +154,69 @@ qualification limits.
 Array literals selected by `if` or `match` use the declared element type.
 Concrete generic calls check each literal element for size and range.
 
+Reference-to-fixed-array indexing supports primitive element reads and simple
+or compound writes when bounds and non-nil requirements are proven. Guarded nil
+calls and borrowed-array calls remain valid. Unresolved nil-call conditions,
+effectful indices, selected reference-array fields, mutable or captured callable
+origins, ref slicing and general reference-element ownership remain incomplete.
+
+A resolved function with one Boolean-literal return can supply an indexed guard
+fact through direct or forwarded calls and stable unwritten, uncaptured local
+aliases. The checker preserves call and argument evaluation; indexed uses retain
+optional-reference unwraps. Conditional, effectful and deferred helpers remain
+unknown.
+
+Local Boolean guards, early returns and value copies can prove indexed calls
+safe for every input. Bare, negated and Boolean-literal comparison guards are
+supported. Captured or reference-exposed cells, fields and globals are excluded.
+An unguarded symbolic nil wrapper remains unresolved even with a false caller.
+
+Numeric writes through references apply the scalar destination's exact-fit
+rules. A guarded `ref usize` accepts `n = 3`; overflow and incompatible typed
+values remain semantic errors. Ordinary scalar reads through references remain
+unsupported.
+
 Heap values currently require `del` or `defer del`. Pass lvalues directly to
 `ref` parameters and access reference fields after nil checks. There are no
 public address-of or dereference operators. Heap fixed arrays, `new [N]T`, are
 rejected. Direct reference aliases share deletion state, and guarded reference
-fields are checked. Alias and lifetime checks remain incomplete for array
-elements and fields reached through joined allocation sets. Known direct global
+fields are checked. Literal-index reads of tracked fixed arrays retain reference
+allocation identity on represented straight-line and conditional paths.
+Deleting that allocation invalidates saved aliases and later reads of the
+tracked slot. Fresh slot replacements and
+independent array copies preserve valid uses. Broader array, slice and joined
+reference lifetime checks remain incomplete. Known direct global
 reference stores now propagate allocation identity through calls, so deleting a
 stored allocation invalidates its caller aliases. Simple direct calls with literal
 boolean selectors preserve the selected reference or nil return. Broader return,
 global nil-state and parameter proofs remain incomplete. Automatic memory
 management is not implemented.
 
-The current stdlib provides `io` and `math`. Package-owned `Option(T)` and
+Eligible loop-counter proofs survive represented readonly calls, returned
+reference forwarding and writes to distinct owned storage. Known writes through
+reference parameters still invalidate affected facts. Unknown calls and escaped
+storage remain conservative; these checks do not establish general lifetime
+safety.
+
+Inferred concrete function bindings support reassignment and matching
+reference parameters. Saved function values keep their previous target. Generic
+function aliases remain compile-time aliases; closure support is unchanged.
+
+The current stdlib provides `io` and `math`. Reserved `std/` imports resolve to
+registered hooks or bundled implementation sources. This loader support adds no
+public stdlib modules. Package-owned `Option(T)` and
 `Result(T, E)` are available in every file. Remove old declarations of those
 names or rename custom types. `io.read_line` takes a mutable byte slice, and
 both it and `io.println_ok` return `Result(usize, io.IoErr)`. Import `io` explicitly
-in each file that uses its operations or error type. File imports share one emitted Zig
-file after per-file semantic checking. Selected imports and `using import`
+in each file that uses its operations or error type. The compiler
+rejects value uses of registered `print`, `println` and `eprintln` at semantic
+exit 6, including inferred bindings and array elements. Statement effects stay
+valid, and `println_ok` remains value-bearing. Nine native controls passed across
+debug, release and fast. The combined gate passed on frozen source `e0c6235a`.
+The [verification record](docs/audits/2026-10-07/stdio-integration-verification.json)
+records the complete source hash. Ordinary user void bindings are unchanged.
+
+File imports share one emitted Zig file after per-file semantic checking. Selected imports and `using import`
 remain incomplete. Forwarding another file's import alias is rejected under
 L76. Unsupported multi-dot type annotations and struct literals still fail
 parsing. Some accepted forms

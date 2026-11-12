@@ -55,18 +55,15 @@ def test_ast_mode_emits_the_whole_deep_tree(tmp_path):
 
 @pytest.mark.parametrize("mode", ["semantic", "pipeline", "doc"])
 def test_deep_tree_failure_is_reported_as_json(tmp_path, mode):
-    # `a` is undefined, so the program must fail. Today the type checker
-    # recurses per link and the failure is internal (exit 8); once it walks
-    # iteratively the failure is semantic (exit 6). Either way the report
-    # is valid JSON on stdout whose category matches the exit code.
+    # An undefined root must remain a semantic error at this depth.
     result = run_chain(tmp_path, 2_000, mode)
 
-    assert "Traceback" not in result.stderr
-    categories = {ExitCode.SEMANTIC: "semantic", ExitCode.INTERNAL: "internal"}
-    assert result.returncode in categories, result.stderr[-500:]
+    assert result.returncode == ExitCode.SEMANTIC, result.stderr[-500:]
+    assert result.stderr == ""
     payload = load_deep(result.stdout)
     assert payload["status"] == "error"
-    assert payload["error"]["category"] == categories[result.returncode]
+    assert payload["error"]["category"] == "semantic"
+    assert any(detail["code"] == "undefined_identifier" for detail in payload["error"]["details"])
 
 
 def test_ten_thousand_links_exit_cleanly(tmp_path):

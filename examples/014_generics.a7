@@ -15,6 +15,10 @@ Pair($A, $B) :: struct {
     second: $B
 }
 
+larger :: fn(a: $T, b: $T) $T where T: Integer {
+    ret if a > b { a } else { b }
+}
+
 main :: fn() {
     io.println("=== Generics ===")
 
@@ -29,4 +33,11 @@ main :: fn() {
     io.println("boxed = {}", boxed.value)
     io.println("nested boxed = {}", nested.value.value)
     io.println("pair = {} {}", pair.first, pair.second)
+
+    signed_left: i32 = -4
+    signed_right: i32 = 9
+    unsigned_left: u16 = 300
+    unsigned_right: u16 = 17
+    io.println("larger signed = {}", larger(signed_left, signed_right))
+    io.println("larger unsigned = {}", larger(unsigned_left, unsigned_right))
 }

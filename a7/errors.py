@@ -202,7 +202,7 @@ def get_tokenizer_error_advice(error_type: TokenizerErrorType) -> str:
         TokenizerErrorType.INVALID_CHARACTER: "Remove or replace the character at the reported column",
         TokenizerErrorType.OUT_OF_MEMORY: "Free memory or split the input, then retry",
         TokenizerErrorType.TOO_LONG_IDENTIFIER: "Identifier must not exceed 100 characters",
-        TokenizerErrorType.TOO_LONG_NUMBER: "Number must not exceed 100 digits",
+        TokenizerErrorType.TOO_LONG_NUMBER: "Numeric token must not exceed 100 characters, including separators and prefixes",
         TokenizerErrorType.TOO_LONG_STRING: "Shorten the string literal",
         TokenizerErrorType.NOT_CLOSED_CHAR: "Close the char literal with a quote on the same line",
         TokenizerErrorType.NOT_CLOSED_STRING: "Close the string literal with a double quote",
@@ -317,7 +317,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CIRCULAR_IMPORT: "Break the cycle: move the shared declarations into a third module",
         SemanticErrorType.MODULE_NOT_FOUND: "Fix the module path or add the file to the search path",
         SemanticErrorType.IMPORT_NAME_CONFLICT: "Use an alias for the import or rename the conflicting definition",
-        SemanticErrorType.UNSUPPORTED_IMPORT: "Use a current virtual stdlib import or keep file-backed modules in the same source file until backend linking is implemented",
+        SemanticErrorType.UNSUPPORTED_IMPORT: "Use a supported file-backed or stdlib import; see the module syntax in the language specification",
 
         # Generic errors
         SemanticErrorType.GENERIC_PARAM_MISMATCH: "Provide the correct number of generic type arguments",

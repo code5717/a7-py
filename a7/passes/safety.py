@@ -20,12 +20,14 @@ from a7.symbol_table import SymbolTable
 from a7.passes.readonly_requirements import ReadonlyRequirements
 from a7.types import (
     ArrayType,
+    EnumType,
     FunctionType,
     INTEGER_RANGES,
     PrimitiveType,
     ReferenceType,
     SIGNED_INTEGER_WIDTHS,
     SliceType,
+    StructType,
     Type,
     TypeKind,
     UnionType,
@@ -230,9 +232,66 @@ class AllocationGraph:
         return self.combinations[(operation, left, right)]
 
 
+class AllocationConditions:
+    """Shared Boolean conditions; allocation identity stays in AllocationGraph."""
+
+    def __init__(self):
+        self.nodes = [(None, 0, 0), (None, 1, 1)]
+        self.intern = {}
+        self.cache = {}
+        self.next_variable = 0
+
+    def node(self, variable, low, high):
+        if low == high:
+            return low
+        key = (variable, low, high)
+        if key not in self.intern:
+            self.intern[key] = len(self.nodes)
+            self.nodes.append(key)
+        return self.intern[key]
+
+    def combine(self, operation, left, right):
+        work = [(left, right, False)]
+        while work:
+            a, b, finish = work.pop()
+            key = (operation, a, b)
+            if key in self.cache:
+                continue
+            if a == b:
+                self.cache[key] = 0 if operation == 'xor' else a
+                continue
+            if operation == 'and' and (a in (0, 1) or b in (0, 1)):
+                self.cache[key] = 0 if not a or not b else b if a == 1 else a
+                continue
+            if operation == 'or' and (a in (0, 1) or b in (0, 1)):
+                self.cache[key] = 1 if a == 1 or b == 1 else b if a == 0 else a
+                continue
+            if operation == 'xor' and (not a or not b):
+                self.cache[key] = a or b
+                continue
+            av, al, ah = self.nodes[a]
+            bv, bl, bh = self.nodes[b]
+            variable = bv if av is None else av if bv is None else min(av, bv)
+            low = (al if av == variable else a, bl if bv == variable else b)
+            high = (ah if av == variable else a, bh if bv == variable else b)
+            if not finish:
+                work.append((a, b, True))
+                work.extend((x, y, False) for x, y in (low, high))
+                continue
+            self.cache[key] = self.node(variable, self.cache[(operation, *low)], self.cache[(operation, *high)])
+        return self.cache[(operation, left, right)]
+
+
 @dataclass(frozen=True)
 class AllocationRef:
     root: int
+    condition: int = 1
+
+@dataclass(frozen=True)
+class SlotDeath:
+    key: str
+    condition: int = 1
+
 
 
 @dataclass(frozen=True)
@@ -250,6 +309,10 @@ class ValueFact:
     # Possible children of a selected holder constrain reads, but deleting a
     # selected child must not mark every possible concrete child as freed.
     selected_allocations: frozenset[str | AllocationRef] = frozenset()
+    # Exact slot provenance is local to straight-line control flow.
+    exact_array_alias: bool = False
+    boolean: Optional[bool] = None
+    boolean_condition: Optional[int] = None
 
 
 @dataclass
@@ -357,16 +420,61 @@ class ParameterEffectState:
     written: set[str] = field(default_factory=set)
     places: dict[str, Optional[frozenset[int | AllocationRef]]] = field(default_factory=dict)
     counter_delta: Optional[tuple[int, int]] = (0, 0)
+    current_aliases: dict[str, frozenset[tuple[int | AllocationRef, bool]]] = field(default_factory=dict)
+    current_live: set[str] = field(default_factory=set)
+    current_dead: set[str] = field(default_factory=set)
+    replaced: set[str] = field(default_factory=set)
+    replacement_escaped: bool = False
+    current_nil: set[str] = field(default_factory=set)
+    paths: frozenset[int] = frozenset({1})
+    scalar_values: dict[str, int] = field(default_factory=dict)
+    scalar_cases: dict[str, dict[int, int]] = field(default_factory=dict)
 
     def copy(self) -> ParameterEffectState:
-        return ParameterEffectState(dict(self.aliases), set(self.deleted), set(self.written), dict(self.places), self.counter_delta)
+        return ParameterEffectState(dict(self.aliases), set(self.deleted), set(self.written), dict(self.places), self.counter_delta, dict(self.current_aliases), set(self.current_live), set(self.current_dead), set(self.replaced), self.replacement_escaped, set(self.current_nil), self.paths, dict(self.scalar_values), {key: dict(values) for key, values in self.scalar_cases.items()})
 
     @staticmethod
-    def join(states: list[ParameterEffectState]) -> ParameterEffectState:
+    def join(states: list[ParameterEffectState], conditions: AllocationConditions) -> ParameterEffectState:
         aliases = {key: frozenset().union(*(state.aliases.get(key, frozenset({(-3, True)}) if isinstance(key, tuple) else frozenset())
                                            for state in states))
                    for key in set().union(*(state.aliases.keys() for state in states))}
         result = ParameterEffectState(aliases)
+        result.current_aliases = {key: frozenset().union(*(state.current_aliases.get(key, frozenset()) for state in states))
+                                  for key in set().union(*(state.current_aliases.keys() for state in states))}
+        result.current_nil = set().union(*(state.current_nil for state in states))
+        # Unequal backedge values widen to unknown instead of counting trips.
+        result.scalar_values = {key: value for key, value in states[0].scalar_values.items()
+                                if all(state.scalar_values.get(key) == value for state in states[1:])} if states else {}
+        result.paths = frozenset().union(*(state.paths for state in states))
+        reachable = []
+        for state in states:
+            region = 0
+            for path in state.paths:
+                region = conditions.combine('or', region, path)
+            reachable.append(region)
+        for key in set().union(*(state.scalar_cases.keys() for state in states)):
+            possible, unknown = {}, 0
+            for state, region in zip(states, reachable):
+                covered = 0
+                for value, guard in state.scalar_cases.get(key, {}).items():
+                    guard = conditions.combine('and', guard, region)
+                    covered = conditions.combine('or', covered, guard)
+                    possible[value] = conditions.combine('or', possible.get(value, 0), guard)
+                missing = conditions.combine('and', region, conditions.combine('xor', covered, 1))
+                unknown = conditions.combine('or', unknown, missing)
+            covered, conflict = 0, 0
+            for guard in possible.values():
+                conflict = conditions.combine('or', conflict, conditions.combine('and', covered, guard))
+                covered = conditions.combine('or', covered, guard)
+            valid = conditions.combine('xor', conditions.combine('or', unknown, conflict), 1)
+            values = {value: region for value, guard in possible.items()
+                      if (region := conditions.combine('and', guard, valid))}
+            if values:
+                result.scalar_cases[key] = values
+        result.current_live = set.intersection(*(state.current_live for state in states)) if states else set()
+        result.current_dead = set().union(*(state.current_dead for state in states))
+        result.replaced = set().union(*(state.replaced for state in states))
+        result.replacement_escaped = any(state.replacement_escaped for state in states)
         if any(state.counter_delta is None for state in states):
             result.counter_delta = None
         elif states:
@@ -392,7 +500,7 @@ class SafetyProofPass:
         self.results: list[ProofResult] = []
         self.backend_plan = BackendPlan()
         self.errors: list[TypeCheckError] = []
-        self.moved_symbols: set[str | AllocationRef] = set()
+        self.moved_symbols: set[str | AllocationRef | SlotDeath] = set()
         self.const_facts: dict[str, ValueFact] = {}
         self.current_stmt_span: Optional[SourceSpan] = None
         self.current_file = "<unknown>"
@@ -402,8 +510,13 @@ class SafetyProofPass:
         self.function_deletes: dict[str, bool] = {}
         self.function_field_writes: dict[str, dict[int, set[str]]] = {}
         self.function_parameter_deletes: dict[str, set[int]] = {}
+        self.capture_call_effects: dict[int, set[str]] = {}
+        self.mutable_boolean_captures: set[str] = set()
         self.borrowed_keys: set[str] = set()
+        self.repeated_boolean_keys: set[str] = set()
+        self.escaped_arrays: set[str] = set()
         self.allocation_graph = AllocationGraph()
+        self.allocation_conditions = AllocationConditions()
         self.allocation_places = {}
         self.allocation_place_names = {}
         self.global_origins: dict[int, str] = {}
@@ -420,6 +533,7 @@ class SafetyProofPass:
         self.symbol_types: dict[str, Type] = {}
         self.file_variables: set[str] = set()
         self.allocation_graph = AllocationGraph()
+        self.allocation_conditions = AllocationConditions()
         self.allocation_places = {}
         self.allocation_place_names = {}
         self._reset_bindings()
@@ -455,6 +569,7 @@ class SafetyProofPass:
         self.function_deletes = {}
         self.symbol_types = {}
         self.allocation_graph = AllocationGraph()
+        self.allocation_conditions = AllocationConditions()
         self.allocation_places = {}
         self.allocation_place_names = {}
         self._reset_bindings()
@@ -470,7 +585,10 @@ class SafetyProofPass:
                 origin_span = getattr(origin, "span", None)
                 required = "readonly executable entry field access must remain non-nil"
                 if origin_span is not None:
-                    required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column})"
+                    required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column}"
+                    if origin_span.origin_file:
+                        required += f" in {origin_span.origin_file}"
+                    required += ")"
                 obligation = self._obligation(ObligationKind.REF_NON_NIL, executable_entry,
                     "readonly_entry_precondition", None, required, TypeErrorType.CANNOT_DEREFERENCE)
                 self._error(obligation, "reachable readonly callee read receives nil",
@@ -479,27 +597,46 @@ class SafetyProofPass:
 
     def _origin_set(self, values):
         ordinary = set()
-        fresh = {False: [], True: []}
+        fresh = {}
         for origin, exact in values:
             if isinstance(origin, AllocationRef):
-                fresh[exact].append(origin.root)
+                key = (origin.root, exact)
+                fresh[key] = self.allocation_conditions.combine('or', fresh.get(key, 0), origin.condition)
             else:
                 ordinary.add((origin, exact))
-        for exact, roots in fresh.items():
-            root = self.allocation_graph.union(roots)
-            if root:
-                ordinary.add((AllocationRef(root), exact))
+        grouped = {}
+        for (root, exact), condition in fresh.items():
+            if root and condition:
+                grouped.setdefault((exact, condition), []).append(root)
+        ordinary.update((AllocationRef(self.allocation_graph.union(roots), condition), exact)
+                        for (exact, condition), roots in grouped.items())
         return frozenset(ordinary)
 
     def _origin_intersection(self, values, deleted):
-        result = set(values) & set(deleted)
-        left = self.allocation_graph.union(value.root for value in values if isinstance(value, AllocationRef))
-        right = self.allocation_graph.union(value.root for value in deleted if isinstance(value, AllocationRef))
-        root = self.allocation_graph.combine('intersection', left, right)
-        result = {value for value in result if not isinstance(value, AllocationRef)}
-        if root:
-            result.add(AllocationRef(root))
+        result = {value for value in set(values) & set(deleted) if not isinstance(value, AllocationRef)}
+        for left in values:
+            if not isinstance(left, AllocationRef):
+                continue
+            for right in deleted:
+                if isinstance(right, AllocationRef):
+                    condition = self.allocation_conditions.combine('and', left.condition, right.condition)
+                    root = self.allocation_graph.combine('intersection', left.root, right.root)
+                    if root and condition:
+                        result.add(AllocationRef(root, condition))
         return frozenset(result)
+
+    def _condition_allocations(self, allocations, condition=1):
+        result = {}
+        for value in allocations:
+            root = self._allocation_root((value,))
+            active = self.allocation_conditions.combine('and', value.condition if isinstance(value, AllocationRef) else 1, condition)
+            if root and active:
+                result[root] = self.allocation_conditions.combine('or', result.get(root, 0), active)
+        grouped = {}
+        for root, active in result.items():
+            grouped.setdefault(active, []).append(root)
+        return frozenset(AllocationRef(self.allocation_graph.union(roots), active)
+                         for active, roots in grouped.items())
 
     def _allocation_root(self, allocations):
         roots = []
@@ -539,23 +676,22 @@ class SafetyProofPass:
                 if self.allocation_graph.combine('intersection', root, singleton)]
 
     def _field_allocations(self, key):
-        for prefix in sorted(self.allocation_places, key=len, reverse=True):
-            parent = self.allocation_places[prefix]
-            if key.startswith(prefix + '.'):
-                return frozenset({AllocationRef(self.allocation_graph.prefix(('field', key[len(prefix) + 1:]), parent))})
+        position = key.rfind('.')
+        while position >= 0:
+            prefix = key[:position]
+            if prefix in self.allocation_places:
+                parent = self.allocation_places[prefix]
+                return frozenset({AllocationRef(self.allocation_graph.prefix(('field', key[position + 1:]), parent))})
+            position = key.rfind('.', 0, position)
         return frozenset({f'field:{key}'})
 
     def _move_allocations(self, allocations, moved=None):
         moved = self.moved_symbols if moved is None else moved
-        root = self._allocation_root(allocations)
-        if root:
-            moved.add(AllocationRef(root))
+        moved.update(self._condition_allocations(allocations))
 
     def _allocations_moved(self, allocations, moved=None):
         moved = self.moved_symbols if moved is None else moved
-        root = self._allocation_root(allocations)
-        return any(self.allocation_graph.combine('intersection', root, item.root)
-                   for item in moved if isinstance(item, AllocationRef))
+        return bool(self._origin_intersection(self._condition_allocations(allocations), moved))
 
     def _type(self, node: Optional[ASTNode]) -> Optional[Type]:
         return self.node_types.get(id(node)) if node is not None else None
@@ -645,16 +781,37 @@ class SafetyProofPass:
         bound, so `x := x + 1` reads the outer `x`.
         """
         bound: dict[str, list[str]] = {}
+        function_stack: list[int] = []
+        declaration_owners: dict[str, int] = {}
+        captured: set[str] = set()
+        uses: list[tuple[ASTNode, int]] = []
+        self.local_boolean_keys: set[str] = set()
+        self.local_index_keys: set[str] = set()
+        repeated_scopes: set[int] = set()
         open_scopes: list[tuple[int, list[str]]] = []
         count = 0
         work: list[tuple[str, object]] = [("visit", decl) for decl in reversed(program.declarations or [])]
         while work:
             action, item = work.pop()
+            if action == "repeat_enter":
+                repeated_scopes.add(id(item))
+                continue
+            if action == "repeat_exit":
+                repeated_scopes.discard(id(item))
+                continue
             if action == "open":
                 open_scopes.append((id(item), []))
+                if item.kind in LOOP_KINDS:
+                    repeated_scopes.add(id(item))
+                if item.kind == NodeKind.FUNCTION:
+                    function_stack.append(id(item))
                 continue
             if action == "close":
-                for name in open_scopes.pop()[1]:
+                owner, names = open_scopes.pop()
+                repeated_scopes.discard(owner)
+                if function_stack and owner == function_stack[-1]:
+                    function_stack.pop()
+                for name in names:
                     bound[name].pop()
                 continue
             if action == "declare":
@@ -666,12 +823,26 @@ class SafetyProofPass:
                 bound.setdefault(name, []).append(key)
                 self.keys[(id(node), name)] = key
                 self.scope_keys.setdefault(owner, []).append(key)
+                if function_stack:
+                    declaration_owners[key] = function_stack[-1]
+                    typ = self._type(node)
+                    if node.kind in {NodeKind.VAR, NodeKind.CONST} and isinstance(typ, PrimitiveType) and typ.name == "usize":
+                        self.local_index_keys.add(key)
+                    if (isinstance(typ, PrimitiveType) and typ.name == "bool") or (
+                            node.param_type is not None and node.param_type.kind == NodeKind.TYPE_PRIMITIVE
+                            and node.param_type.type_name == "bool"):
+                        self.local_boolean_keys.add(key)
+                        if repeated_scopes:
+                            self.repeated_boolean_keys.add(key)
                 continue
             node = item
             kind = node.kind
             if kind == NodeKind.IDENTIFIER:
+                if function_stack:
+                    uses.append((node, function_stack[-1]))
                 if bound.get(node.name):
-                    self.keys[(id(node), node.name)] = bound[node.name][-1]
+                    key = bound[node.name][-1]
+                    self.keys[(id(node), node.name)] = key
                 continue
             children = []
             for value in vars(node).values():
@@ -739,7 +910,26 @@ class SafetyProofPass:
                     steps = [*steps, ("open", node), *(("visit", stmt) for stmt in node.else_case), ("close", None)]
             else:
                 steps = children
+            if kind == NodeKind.WHILE:
+                steps = [("repeat_enter", node), *steps, ("repeat_exit", node)]
             work.extend(reversed(steps))
+
+        # Nested bodies resolve after their enclosing declarations. A forward
+        # capture may therefore have no lexical key during the walk above.
+        unresolved_captures = set()
+        for use, owner in uses:
+            symbol = self.symbols.resolved_uses.get(id(use))
+            if symbol is not None and symbol.node is not None:
+                key = self.keys.get((id(symbol.node), symbol.name))
+            else:
+                key = self.keys.get((id(use), use.name))
+            if key is not None and declaration_owners.get(key) != owner:
+                captured.add(key)
+                if self._key(use) != key:
+                    unresolved_captures.add(key)
+        self.readonly_capture_candidates = self.local_boolean_keys & (captured - unresolved_captures)
+        self.local_boolean_keys.difference_update(captured)
+        self.local_index_keys.difference_update(captured)
 
     def _visit_program(self, node: ASTNode) -> None:
         # File-scope `::` constants cannot change, so their facts are computed
@@ -781,7 +971,13 @@ class SafetyProofPass:
         self.function_written_globals = {name: set() for name in bodies}
         calls: dict[str, set[str]] = {}
         self.borrowed_keys = set()
+        assigned_keys = set()
+        capture_own_effects = {}
+        capture_calls = {}
+        callable_copies = {}
         for name, decl in bodies.items():
+            capture_own_effects[name] = set()
+            capture_calls[name] = []
             deletes = False
             deleted_globals: set[str] = set()
             callees: set[str] = set()
@@ -793,6 +989,8 @@ class SafetyProofPass:
                 deletes |= item.kind == NodeKind.DEL
                 if item.kind == NodeKind.ASSIGNMENT and item.target and item.target.kind == NodeKind.IDENTIFIER:
                     key = self._key(item.target)
+                    assigned_keys.add(key)
+                    capture_own_effects[name].add(key)
                     if key in self.file_variables:
                         self.function_written_globals[name].add(key)
                 if item.kind == NodeKind.DEL:
@@ -801,7 +999,13 @@ class SafetyProofPass:
                     deleted_key = self._place_key(item.expression)
                     if deleted_key and deleted_key.split(".")[0] in self.file_variables:
                         deleted_globals.add(deleted_key)
+                if (item.kind in {NodeKind.VAR, NodeKind.CONST} and item.value is not None
+                        and item.value.kind == NodeKind.IDENTIFIER and isinstance(self._type(item), FunctionType)):
+                    callable_copies[self._key(item)] = self._key(item.value)
                 if item.kind == NodeKind.CALL and item.function:
+                    capture_calls[name].append(item)
+                    capture_own_effects[name].update(self._key(arg) for index, arg in enumerate(item.arguments or [])
+                                                    if arg.kind == NodeKind.IDENTIFIER and index in getattr(item, "implicit_ref_args", set()))
                     self.borrowed_keys.update(self._key(arg) for index, arg in enumerate(item.arguments or [])
                                               if arg.kind == NodeKind.IDENTIFIER and index in getattr(item, "implicit_ref_args", set()))
                     callee = item.function
@@ -820,6 +1024,45 @@ class SafetyProofPass:
             self.function_deleted_globals[name] = deleted_globals
             self.function_deletes[name] = deletes
             calls[name] = callees
+        # Captured Boolean versions change at calls, not at declarations.
+        # Unknown calls may invoke any mutable capture through an escaped value.
+        self.mutable_boolean_captures = self.readonly_capture_candidates & (assigned_keys | self.borrowed_keys)
+        targets = {name: name for name in bodies}
+        pending_copies = {key: source for key, source in callable_copies.items()
+                          if key not in assigned_keys and key not in self.borrowed_keys}
+        changed = True
+        while changed:
+            changed = False
+            for key, source in list(pending_copies.items()):
+                if source in targets:
+                    targets[key] = targets[source]
+                    del pending_copies[key]
+                    changed = True
+        call_values = self._captured_callable_targets(bodies, targets)
+        self._build_scalar_borrow_effects(bodies, call_values)
+        capture_effects = {name: keys & self.mutable_boolean_captures for name, keys in capture_own_effects.items()}
+        changed = True
+        while changed:
+            changed = False
+            for name, calls_in_body in capture_calls.items():
+                effects = set(capture_effects[name])
+                for call in calls_in_body:
+                    possible = call_values.get(id(call))
+                    if possible is None:
+                        effects.update(self.mutable_boolean_captures)
+                    else:
+                        for target in possible:
+                            effects.update(capture_effects[target])
+                if effects != capture_effects[name]:
+                    capture_effects[name] = effects
+                    changed = True
+        self.capture_call_effects = {}
+        for calls_in_body in capture_calls.values():
+            for call in calls_in_body:
+                possible = call_values.get(id(call))
+                self.capture_call_effects[id(call)] = (set(self.mutable_boolean_captures) if possible is None
+                    else set().union(*(capture_effects[target] for target in possible)))
+        self.local_boolean_keys.update(self.readonly_capture_candidates)
         own_direct_deletes = dict(self.function_direct_deletes)
         changed = True
         while changed:
@@ -896,9 +1139,916 @@ class SafetyProofPass:
                 self.literal_return_bodies[name] = (function.body, refs, bools)
         self.readonly_requirements = ReadonlyRequirements(self._key, self._type, self.file_variables)
         self.readonly_requirements.build(bodies)
+        # Unknown callable origins must not bypass the requirements of newly
+        # admitted reference-array accesses. Existing field rules are unchanged.
+        self.escaped_index_functions = set()
+        declarations = {id(body): name for name, body in bodies.items()}
+        pending = [(node, False)]
+        while pending:
+            item, direct_callee = pending.pop()
+            symbol = self.symbols.resolved_uses.get(id(item))
+            target = declarations.get(id(symbol.node)) if symbol is not None else None
+            if item.kind == NodeKind.IDENTIFIER:
+                target = self.readonly_requirements.alias_targets.get(self._key(item), target)
+            if target in self.readonly_requirements.index_functions:
+                copied = id(item) in self.readonly_requirements.alias_initializers
+                if not copied and (not direct_callee or item.kind != NodeKind.IDENTIFIER):
+                    self.escaped_index_functions.add(target)
+            for field, value in vars(item).items():
+                if isinstance(value, ASTNode):
+                    pending.append((value, item.kind == NodeKind.CALL and field == 'function'))
+                elif isinstance(value, list):
+                    pending.extend((child, False) for child in value if isinstance(child, ASTNode))
         self._classify_exact_effects(bodies)
         for decl in node.declarations or []:
             self._visit_decl(decl)
+
+    def _captured_callable_targets(self, bodies, immutable_targets):
+        # This domain tracks callable values, not closure environments. None is
+        # unknown; an absent incoming graph state is unreachable.
+        owners = {}
+        uses = []
+        unsupported = set()
+        ordered_initializers = {}
+        supported = {NodeKind.BLOCK, NodeKind.VAR, NodeKind.CONST, NodeKind.ASSIGNMENT,
+                     NodeKind.EXPRESSION_STMT, NodeKind.IF_STMT, NodeKind.IF_EXPR,
+                     NodeKind.WHILE, NodeKind.FOR, NodeKind.RETURN, NodeKind.BREAK,
+                     NodeKind.CONTINUE, NodeKind.DEFER, NodeKind.DEL, NodeKind.CALL,
+                     NodeKind.IDENTIFIER, NodeKind.LITERAL, NodeKind.UNARY,
+                     NodeKind.ADDRESS_OF, NodeKind.BINARY, NodeKind.CAST,
+                     NodeKind.INDEX, NodeKind.SLICE, NodeKind.FIELD_ACCESS,
+                     NodeKind.DEREF, NodeKind.ARRAY_INIT, NodeKind.STRUCT_INIT,
+                     NodeKind.FIELD_INIT, NodeKind.NEW_EXPR}
+        for owner, function in bodies.items():
+            pending = [function.body]
+            while pending:
+                node = pending.pop()
+                if node is None or node.kind == NodeKind.FUNCTION:
+                    continue
+                if node.kind.name.startswith("TYPE_"):
+                    continue
+                if node.kind not in supported:
+                    unsupported.add(owner)
+                if node.kind == NodeKind.STRUCT_INIT:
+                    fields = getattr(self._type(node), "fields", None)
+                    initializers = node.field_inits or []
+                    names = [field.name for field in fields] if fields is not None else []
+                    supplied = [field.name if field.name is not None else names[index] if index < len(names) else None
+                                for index, field in enumerate(initializers)]
+                    if len(set(supplied)) != len(supplied) or any(name not in names for name in supplied):
+                        unsupported.add(owner)
+                    else:
+                        # Safety precedes AST normalization. Named fields still
+                        # appear in source order here; execution uses declaration order.
+                        ordered_initializers[id(node)] = [field.value for _, field in
+                            sorted(zip(supplied, initializers), key=lambda pair: names.index(pair[0]))]
+                if node.kind in {NodeKind.VAR, NodeKind.CONST} and isinstance(self._type(node), FunctionType):
+                    owners[self._key(node)] = owner
+                if node.kind == NodeKind.IDENTIFIER:
+                    uses.append((self._key(node), owner))
+                for value in vars(node).values():
+                    if isinstance(value, ASTNode):
+                        pending.append(value)
+                    elif isinstance(value, list):
+                        pending.extend(child for child in value if isinstance(child, ASTNode))
+        captured = {key for key, owner in uses if key in owners and owners[key] != owner}
+        results = {}
+        for owner, function in bodies.items():
+            if owner in unsupported:
+                pending = [function.body]
+                while pending:
+                    node = pending.pop()
+                    if node is None or node.kind == NodeKind.FUNCTION:
+                        continue
+                    if node.kind == NodeKind.CALL:
+                        target = immutable_targets.get(self._key(node.function)) if node.function and node.function.kind == NodeKind.IDENTIFIER else None
+                        results[id(node)] = frozenset({target}) if target is not None else None
+                    for value in vars(node).values():
+                        if isinstance(value, ASTNode):
+                            pending.append(value)
+                        elif isinstance(value, list):
+                            pending.extend(child for child in value if isinstance(child, ASTNode))
+                continue
+            eligible = {key for key, declared in owners.items() if declared == owner
+                        and key not in captured and key not in self.borrowed_keys}
+            graph = []
+
+            def add(action="jump", node=None, extra=None, successors=()):
+                graph.append((action, node, extra, list(successors)))
+                return len(graph) - 1
+
+            entry, end = add(), add()
+            tasks = [(function.body, entry, end, (), ())]
+            while tasks:
+                node, begin, finish, deferred, loops = tasks.pop()
+                if node is None or node.kind == NodeKind.FUNCTION:
+                    graph[begin][3].append(finish)
+                    continue
+                kind = node.kind
+                if kind == NodeKind.BLOCK:
+                    registered = []
+                    cursor = begin
+                    for statement in node.statements or []:
+                        if statement.kind == NodeKind.DEFER:
+                            registered.append(statement.statement)
+                        else:
+                            after = add()
+                            tasks.append((statement, cursor, after, deferred + tuple(registered), loops))
+                            cursor = after
+                    for statement in reversed(registered):
+                        after = add()
+                        tasks.append((statement, cursor, after, deferred, loops))
+                        cursor = after
+                    graph[cursor][3].append(finish)
+                    continue
+                if kind == NodeKind.DEFER:
+                    tasks.append((node.statement, begin, finish, deferred, loops))
+                    continue
+                if kind in EXIT_KINDS:
+                    target = next((loop for loop in reversed(loops) if node.label in {None, loop[0]}), None) if kind != NodeKind.RETURN else None
+                    destination = end if kind == NodeKind.RETURN else (target[1] if kind == NodeKind.BREAK else target[2])
+                    depth = 0 if target is None else target[3]
+                    cursor = begin
+                    if kind == NodeKind.RETURN and node.value:
+                        after = add()
+                        tasks.append((node.value, cursor, after, deferred, loops))
+                        cursor = after
+                    for statement in reversed(deferred[depth:]):
+                        after = add()
+                        tasks.append((statement, cursor, after, deferred[:depth], loops))
+                        cursor = after
+                    graph[cursor][3].append(destination)
+                    continue
+                if kind in {NodeKind.WHILE, NodeKind.FOR}:
+                    condition, split, body, update = add(), add(), add(), add()
+                    tasks.append((node.init, begin, condition, deferred, loops))
+                    tasks.append((node.condition, condition, split, deferred, loops))
+                    context = (*loops, (node.label, finish, update, len(deferred)))
+                    tasks.append((node.body, body, update, deferred, context))
+                    tasks.append((node.update, update, condition, deferred, loops))
+                    literal = node.condition.literal_value if node.condition and node.condition.kind == NodeKind.LITERAL and node.condition.literal_kind == LiteralKind.BOOLEAN else None
+                    if literal is not False:
+                        graph[split][3].append(body)
+                    if literal is not True:
+                        graph[split][3].append(finish)
+                    continue
+                if kind in {NodeKind.IF_STMT, NodeKind.IF_EXPR} or kind == NodeKind.BINARY and node.operator in {BinaryOp.AND, BinaryOp.OR}:
+                    short = kind == NodeKind.BINARY
+                    condition = node.left if short else node.condition
+                    left = node.right if short else node.then_stmt if kind == NodeKind.IF_STMT else node.then_expr
+                    right = None if short else node.else_stmt if kind == NodeKind.IF_STMT else node.else_expr
+                    split, left_entry, right_entry = add(), add(), add()
+                    tasks.append((condition, begin, split, deferred, loops))
+                    tasks.append((left, left_entry, finish, deferred, loops))
+                    tasks.append((right, right_entry, finish, deferred, loops))
+                    literal = condition.literal_value if condition and condition.kind == NodeKind.LITERAL and condition.literal_kind == LiteralKind.BOOLEAN else None
+                    if short and node.operator == BinaryOp.OR:
+                        left_entry, right_entry = right_entry, left_entry
+                    if literal is not False:
+                        graph[split][3].append(left_entry)
+                    if literal is not True:
+                        graph[split][3].append(right_entry)
+                    continue
+                if kind == NodeKind.CALL:
+                    capture = add("capture", node)
+                    tasks.append((node.function, begin, capture, deferred, loops))
+                    cursor = capture
+                    for argument in node.arguments or []:
+                        after = add()
+                        tasks.append((argument, cursor, after, deferred, loops))
+                        cursor = after
+                    invoke = add("call", node, successors=(finish,))
+                    graph[cursor][3].append(invoke)
+                    continue
+                if kind in {NodeKind.VAR, NodeKind.CONST, NodeKind.ASSIGNMENT}:
+                    target = node.target if kind == NodeKind.ASSIGNMENT else node
+                    key = self._key(target) if target.kind in {NodeKind.IDENTIFIER, NodeKind.VAR, NodeKind.CONST} else None
+                    store = add("store", node, key, (finish,))
+                    if kind == NodeKind.ASSIGNMENT and target.kind != NodeKind.IDENTIFIER:
+                        base = add()
+                        tasks.append((node.value, begin, base, deferred, loops))
+                        tasks.append((target, base, store, deferred, loops))
+                    else:
+                        tasks.append((node.value, begin, store, deferred, loops))
+                    continue
+                finish_value = add("value", node, successors=(finish,))
+                children = []
+                if kind in {NodeKind.UNARY, NodeKind.ADDRESS_OF}:
+                    children = [node.operand]
+                elif kind == NodeKind.BINARY:
+                    children = [node.left, node.right]
+                elif kind in {NodeKind.CAST, NodeKind.EXPRESSION_STMT, NodeKind.DEL}:
+                    children = [node.expression]
+                elif kind == NodeKind.INDEX:
+                    children = [node.object, node.index]
+                elif kind == NodeKind.SLICE:
+                    children = [node.object, node.start, node.end]
+                elif kind == NodeKind.FIELD_ACCESS:
+                    children = [node.object]
+                elif kind == NodeKind.DEREF:
+                    children = [node.pointer]
+                elif kind == NodeKind.ARRAY_INIT:
+                    children = node.elements or []
+                elif kind == NodeKind.STRUCT_INIT:
+                    children = ordered_initializers[id(node)]
+                cursor = begin
+                for child in children:
+                    after = add()
+                    tasks.append((child, cursor, after, deferred, loops))
+                    cursor = after
+                graph[cursor][3].append(finish_value)
+            incoming = {entry: {}}
+            pending = [entry]
+            while pending:
+                index = pending.pop()
+                state = dict(incoming[index])
+                action, node, extra, successors = graph[index]
+                if action == "value" and node.kind == NodeKind.IDENTIFIER and isinstance(self._type(node), FunctionType):
+                    key = self._key(node)
+                    target = immutable_targets.get(key)
+                    state[("value", id(node))] = state.get(key, frozenset({target}) if target is not None else None)
+                elif action == "store":
+                    value = state.pop(("value", id(node.value)), None)
+                    if extra in eligible:
+                        state[extra] = value
+                elif action == "capture":
+                    state[("call", id(node))] = state.pop(("value", id(node.function)), None)
+                elif action == "call":
+                    value = state.pop(("call", id(node)), None)
+                    for argument in node.arguments or []:
+                        state.pop(("value", id(argument)), None)
+                    previous = results.get(id(node), frozenset())
+                    results[id(node)] = None if previous is None or value is None else previous | value
+                for successor in successors:
+                    previous = incoming.get(successor)
+                    if previous is None:
+                        joined = dict(state)
+                    else:
+                        joined = {}
+                        for key in previous.keys() | state.keys():
+                            left, right = previous.get(key), state.get(key)
+                            joined[key] = None if left is None or right is None else left | right
+                    if previous != joined:
+                        incoming[successor] = joined
+                        pending.append(successor)
+        return results
+
+    def _build_scalar_borrow_effects(self, bodies, call_values):
+        # Origin sets contain resolved storage keys. Union every binding version,
+        # so later argument/rebinding effects cannot erase an earlier actual.
+        nodes, owners, parameters, aliases, roots, captures = {}, {}, {}, {}, {}, {}
+        reference_slots, captured_slots = {}, set()
+        storage_tokens, captured_storage = {}, set()
+        for name, function in bodies.items():
+            parameters[name] = {index: self._key(param) for index, param in enumerate(function.parameters or [])
+                                if isinstance(self._type(param), ReferenceType)
+                                or param.param_type is not None and param.param_type.kind == NodeKind.TYPE_POINTER}
+            aliases[name] = {key: {key} for key in parameters[name].values()}
+            roots[name] = set(parameters[name].values())
+            captures[name] = set()
+            reference_slots[name] = set()
+            for param in function.parameters or []:
+                key = self._key(param)
+                owners[key] = name
+                type_node = param.param_type
+                if (type_node is not None and type_node.kind == NodeKind.TYPE_POINTER
+                        and type_node.target_type is not None
+                        and type_node.target_type.kind == NodeKind.TYPE_PRIMITIVE
+                        and type_node.target_type.type_name == "usize"):
+                    reference_slots[name].add(key)
+            storage_tokens[name] = {}
+            nodes[name] = []
+            pending = [function.body]
+            while pending:
+                node = pending.pop()
+                if node is None or node.kind == NodeKind.FUNCTION or node.kind.name.startswith("TYPE_"):
+                    continue
+                nodes[name].append(node)
+                if node.kind in {NodeKind.VAR, NodeKind.CONST}:
+                    key = self._key(node)
+                    owners[key] = name
+                    if key in self.local_index_keys:
+                        roots[name].add(key)
+                    if isinstance(self._type(node), ReferenceType):
+                        aliases[name][key] = set()
+                    slot_type = self._type(node) or self._type(node.value)
+                    if (isinstance(slot_type, ReferenceType)
+                            and isinstance(slot_type.referent_type, PrimitiveType)
+                            and slot_type.referent_type.name == "usize"):
+                        reference_slots[name].add(key)
+                for value in vars(node).values():
+                    if isinstance(value, ASTNode):
+                        pending.append(value)
+                    elif isinstance(value, list):
+                        pending.extend(child for child in value if isinstance(child, ASTNode))
+        for name, statements in nodes.items():
+            for node in statements:
+                if node.kind != NodeKind.IDENTIFIER:
+                    continue
+                symbol = self.symbols.resolved_uses.get(id(node))
+                key = (self.keys.get((id(symbol.node), symbol.name), self._key(node))
+                       if symbol is not None and symbol.node is not None else self._key(node))
+                owner = owners.get(key)
+                checked = self._type(node) or (symbol.type if symbol is not None else None)
+                if owner is not None and (isinstance(checked, (ArrayType, StructType, EnumType, SliceType, FunctionType))
+                        or isinstance(checked, PrimitiveType)
+                        and (checked.is_numeric() or checked.name in {"bool", "char", "string"})
+                        and key not in roots[owner]):
+                    # NUL cannot occur in an A7 declaration key. The owner
+                    # length makes this private namespace unambiguous.
+                    storage_tokens[owner][key] = f"\0storage:{len(owner)}:{owner}:{key}"
+                    if owner != name:
+                        captured_storage.add(key)
+                if owner is not None and owner != name and key in aliases[owner]:
+                    captures[owner].add(key)
+                if owner is not None and isinstance(symbol.type if symbol is not None else None, ReferenceType):
+                    slot_type = symbol.type
+                    if (isinstance(slot_type.referent_type, PrimitiveType)
+                            and slot_type.referent_type.name == "usize"):
+                        reference_slots[owner].add(key)
+                    if owner != name:
+                        captured_slots.add(key)
+
+        all_storage_tokens = {token for values in storage_tokens.values() for token in values.values()}
+        for name in bodies:
+            roots[name].update(storage_tokens[name].values())
+
+        def origins(node, name):
+            result = set()
+            pending = [node]
+            while pending:
+                current = pending.pop()
+                if current is None:
+                    continue
+                if current.kind == NodeKind.IDENTIFIER:
+                    key = self._key(current)
+                    if key in aliases[name]:
+                        result.update(aliases[name][key])
+                    elif key in roots[name]:
+                        result.add(key)
+                    elif isinstance(self._type(current), ReferenceType):
+                        result.update(roots[name])
+                elif current.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX, NodeKind.SLICE}:
+                    pending.append(current.object)
+                elif current.kind == NodeKind.NEW_EXPR:
+                    # Fresh storage cannot alias an existing caller scalar.
+                    continue
+                elif current.kind == NodeKind.LITERAL and current.literal_kind == LiteralKind.NIL:
+                    continue
+                elif isinstance(self._type(current), ReferenceType):
+                    # Returned/unsupported reference values may denote any root.
+                    result.update(roots[name])
+            return result
+
+        # No summary is consumed by scalar eligibility until this union fixed
+        # point includes every alias version, callee effect and captured origin.
+        writes = {name: set() for name in bodies}
+        escapes = {name: set() for name in bodies}
+        call_writes, direct_writes = {}, {}
+        # Parameter effects alone cannot see a no-argument callee deleting a
+        # global that aliases a parameter. This whole-body veto includes those
+        # effects, condition expressions, and deferred statements.
+        reference_veto = {name for name, function in bodies.items() if function.body is None}
+        reference_rebinds = {name: set() for name in bodies}
+        changed = True
+        while changed:
+            changed = False
+            for name, function in bodies.items():
+                new_writes, new_escapes = set(), set()
+                veto = name in reference_veto
+                rebinds = set()
+                if function.body is None:
+                    new_writes.update(parameters[name].values())
+                    new_escapes.update(parameters[name].values())
+                for key in captures[name]:
+                    new_escapes.update(aliases[name][key])
+                for node in nodes[name]:
+                    kind = node.kind
+                    if kind == NodeKind.DEL:
+                        veto = True
+                    if kind == NodeKind.ASSIGNMENT:
+                        target = node.target
+                        if (target.kind == NodeKind.IDENTIFIER
+                                and isinstance(self._type(target), ReferenceType)
+                                and not getattr(node, "implicit_deref_target", False)):
+                            symbol = self.symbols.resolved_uses.get(id(target))
+                            key = (self.keys.get((id(symbol.node), symbol.name), self._key(target))
+                                   if symbol is not None and symbol.node is not None else self._key(target))
+                            rebinds.add(key)
+                        else:
+                            veto |= (getattr(node, "implicit_deref_target", False)
+                                     or target.kind != NodeKind.IDENTIFIER
+                                     or self._key(target) in self.file_variables)
+                    if kind in {NodeKind.VAR, NodeKind.CONST, NodeKind.ASSIGNMENT}:
+                        target = node.target if kind == NodeKind.ASSIGNMENT else node
+                        key = self._key(target) if target and target.kind in {NodeKind.IDENTIFIER, NodeKind.VAR, NodeKind.CONST} else None
+                        if kind == NodeKind.ASSIGNMENT and (getattr(node, "implicit_deref_target", False)
+                                or target.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}):
+                            affected = origins(target, name)
+                            direct_writes.setdefault(id(node), set()).update(affected)
+                            new_writes.update(affected)
+                        elif kind == NodeKind.ASSIGNMENT and target.kind != NodeKind.IDENTIFIER:
+                            direct_writes.setdefault(id(node), set()).update(roots[name])
+                            new_writes.update(roots[name])
+                        if node.value is not None and isinstance(self._type(node.value), ReferenceType):
+                            value = origins(node.value, name)
+                            if key in aliases[name] and not getattr(node, "implicit_deref_target", False):
+                                before = len(aliases[name][key])
+                                aliases[name][key].update(value)
+                                changed |= len(aliases[name][key]) != before
+                            elif self._has_reference_storage(self._type(target)):
+                                new_escapes.update(value)
+                    elif kind == NodeKind.DEL:
+                        affected = origins(node.expression, name)
+                        new_writes.update(affected)
+                        new_escapes.update(affected)
+                    elif kind == NodeKind.RETURN and node.value is not None:
+                        value_type = self._type(node.value)
+                        if node.value.kind == NodeKind.LITERAL and node.value.literal_kind == LiteralKind.NIL:
+                            continue
+                        if isinstance(value_type, ReferenceType):
+                            new_escapes.update(origins(node.value, name))
+                        elif self._has_reference_storage(value_type):
+                            # Unsupported aggregate/callable/unknown results
+                            # cannot establish that a caller origin stays local.
+                            new_escapes.update(roots[name])
+                    elif kind in {NodeKind.ARRAY_INIT, NodeKind.STRUCT_INIT}:
+                        values = node.elements if kind == NodeKind.ARRAY_INIT else [item.value for item in node.field_inits or []]
+                        for value in values or []:
+                            if isinstance(self._type(value), ReferenceType):
+                                new_escapes.update(origins(value, name))
+                    elif kind == NodeKind.CALL:
+                        affected, escaped = set(), set()
+                        possible = call_values.get(id(node))
+                        veto |= (not possible or any(target not in bodies or target in reference_veto
+                                                      for target in possible))
+                        for target in possible or ():
+                            if target in reference_rebinds:
+                                rebinds.update(reference_rebinds[target])
+                        for index, argument in enumerate(node.arguments or []):
+                            if index not in getattr(node, "implicit_ref_args", set()) and not isinstance(self._type(argument), ReferenceType):
+                                continue
+                            actual = origins(argument, name)
+                            if not possible or any(target not in bodies for target in possible):
+                                affected.update(actual)
+                                escaped.update(actual)
+                            else:
+                                for target in possible:
+                                    parameter = parameters[target].get(index)
+                                    if parameter is None:
+                                        # A reference converted to a primitive is a value copy.
+                                        continue
+                                    if parameter in writes[target]:
+                                        affected.update(actual)
+                                    if parameter in escapes[target]:
+                                        escaped.update(actual)
+                        call_writes.setdefault(id(node), set()).update(affected)
+                        new_writes.update(affected)
+                        new_escapes.update(escaped)
+                if veto and name not in reference_veto:
+                    reference_veto.add(name)
+                    changed = True
+                previous_rebinds = len(reference_rebinds[name])
+                reference_rebinds[name].update(rebinds)
+                changed |= previous_rebinds != len(reference_rebinds[name])
+                before = (len(writes[name]), len(escapes[name]))
+                writes[name].update(new_writes)
+                escapes[name].update(new_escapes)
+                changed |= before != (len(writes[name]), len(escapes[name]))
+        # Binding versions are graph states. A missing incoming state is
+        # unreachable; None is an unknown origin value, including a missing
+        # binding on a reachable predecessor. Temporaries identify graph
+        # occurrences, so separate cleanup expansions never share snapshots.
+        supported = {NodeKind.BLOCK, NodeKind.VAR, NodeKind.CONST,
+                     NodeKind.ASSIGNMENT, NodeKind.EXPRESSION_STMT,
+                     NodeKind.IF_STMT, NodeKind.IF_EXPR, NodeKind.WHILE,
+                     NodeKind.FOR, NodeKind.RETURN, NodeKind.BREAK,
+                     NodeKind.CONTINUE, NodeKind.DEFER, NodeKind.DEL,
+                     NodeKind.CALL, NodeKind.IDENTIFIER, NodeKind.LITERAL,
+                     NodeKind.UNARY, NodeKind.BINARY, NodeKind.FIELD_ACCESS,
+                     NodeKind.INDEX, NodeKind.SLICE, NodeKind.NEW_EXPR}
+        graphs, fallback = {}, set()
+        for name, function in bodies.items():
+            if function.body is None:
+                fallback.add(name)
+            for node in nodes[name]:
+                if node.kind not in supported:
+                    fallback.add(name)
+                if node.kind == NodeKind.ASSIGNMENT:
+                    if node.target.kind != NodeKind.IDENTIFIER:
+                        target_type = self._type(node.target)
+                        if (node.target.kind not in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}
+                                or node.operator != AssignOp.ASSIGN
+                                or getattr(node, "implicit_deref_target", False)
+                                or not isinstance(target_type, PrimitiveType)
+                                or not (target_type.is_numeric() or target_type.name == "bool")):
+                            fallback.add(name)
+                    elif getattr(node, "implicit_deref_target", False):
+                        pending = [node.value]
+                        while pending:
+                            item = pending.pop()
+                            if item is None:
+                                continue
+                            if item.kind == NodeKind.CALL:
+                                # Target/RHS sequencing for an effectful scalar
+                                # store is not represented by this graph.
+                                fallback.add(name)
+                            for value in vars(item).values():
+                                if isinstance(value, ASTNode):
+                                    pending.append(value)
+                                elif isinstance(value, list):
+                                    pending.extend(child for child in value if isinstance(child, ASTNode))
+                if (node.kind == NodeKind.RETURN and node.value is not None
+                        and self._has_reference_storage(self._type(node.value))
+                        and not isinstance(self._type(node.value), ReferenceType)
+                        and not (node.value.kind == NodeKind.LITERAL
+                                 and node.value.literal_kind == LiteralKind.NIL)):
+                    fallback.add(name)
+            if name in fallback:
+                continue
+            graph = []
+
+            def add(action="jump", node=None, extra=None, successors=()):
+                graph.append((action, node, extra, list(successors)))
+                return len(graph) - 1
+
+            entry, end = add(), add()
+            tasks = [(function.body, entry, end, (), (), None)]
+            while tasks:
+                node, begin, finish, deferred, loops, output = tasks.pop()
+                if node is None or node.kind == NodeKind.FUNCTION:
+                    graph[begin][3].append(finish)
+                    continue
+                kind = node.kind
+                if kind == NodeKind.BLOCK:
+                    registered, cursor = [], begin
+                    for statement in node.statements or []:
+                        if statement.kind == NodeKind.DEFER:
+                            registered.append(statement.statement)
+                        else:
+                            after = add()
+                            tasks.append((statement, cursor, after, deferred + tuple(registered), loops, None))
+                            cursor = after
+                    for statement in reversed(registered):
+                        after = add()
+                        tasks.append((statement, cursor, after, deferred, loops, None))
+                        cursor = after
+                    graph[cursor][3].append(finish)
+                    continue
+                if kind == NodeKind.DEFER:
+                    tasks.append((node.statement, begin, finish, deferred, loops, output))
+                    continue
+                if kind in EXIT_KINDS:
+                    target = next((loop for loop in reversed(loops) if node.label in {None, loop[0]}), None) if kind != NodeKind.RETURN else None
+                    destination = end if kind == NodeKind.RETURN else (target[1] if kind == NodeKind.BREAK else target[2])
+                    depth, cursor, saved = (0 if target is None else target[3]), begin, None
+                    if kind == NodeKind.RETURN and node.value is not None:
+                        after = add()
+                        saved = ("origin", after)
+                        tasks.append((node.value, cursor, after, deferred, loops, saved))
+                        cursor = after
+                    for statement in reversed(deferred[depth:]):
+                        after = add()
+                        tasks.append((statement, cursor, after, deferred[:depth], loops, None))
+                        cursor = after
+                    if kind == NodeKind.RETURN:
+                        publish = add("return", node, saved, (destination,))
+                        graph[cursor][3].append(publish)
+                    else:
+                        graph[cursor][3].append(destination)
+                    continue
+                if kind in {NodeKind.WHILE, NodeKind.FOR}:
+                    condition, split, body, update = add(), add(), add(), add()
+                    tasks.append((node.init, begin, condition, deferred, loops, None))
+                    tasks.append((node.condition, condition, split, deferred, loops, None))
+                    context = (*loops, (node.label, finish, update, len(deferred)))
+                    tasks.append((node.body, body, update, deferred, context, None))
+                    tasks.append((node.update, update, condition, deferred, loops, None))
+                    literal = node.condition.literal_value if node.condition and node.condition.kind == NodeKind.LITERAL and node.condition.literal_kind == LiteralKind.BOOLEAN else None
+                    if literal is not False:
+                        graph[split][3].append(body)
+                    if literal is not True:
+                        graph[split][3].append(finish)
+                    continue
+                if kind in {NodeKind.IF_STMT, NodeKind.IF_EXPR} or kind == NodeKind.BINARY and node.operator in {BinaryOp.AND, BinaryOp.OR}:
+                    short = kind == NodeKind.BINARY
+                    condition = node.left if short else node.condition
+                    left = node.right if short else node.then_stmt if kind == NodeKind.IF_STMT else node.then_expr
+                    right = None if short else node.else_stmt if kind == NodeKind.IF_STMT else node.else_expr
+                    split, left_entry, right_entry = add(), add(), add()
+                    tasks.append((condition, begin, split, deferred, loops, None))
+                    tasks.append((left, left_entry, finish, deferred, loops, output))
+                    tasks.append((right, right_entry, finish, deferred, loops, output))
+                    literal = condition.literal_value if condition and condition.kind == NodeKind.LITERAL and condition.literal_kind == LiteralKind.BOOLEAN else None
+                    if short and node.operator == BinaryOp.OR:
+                        left_entry, right_entry = right_entry, left_entry
+                    if literal is not False:
+                        graph[split][3].append(left_entry)
+                    if literal is not True:
+                        graph[split][3].append(right_entry)
+                    continue
+                if kind == NodeKind.CALL:
+                    cursor = add()
+                    tasks.append((node.function, begin, cursor, deferred, loops, None))
+                    actuals, exposed_slots = [], []
+                    for argument in node.arguments or []:
+                        after = add()
+                        saved = ("origin", after)
+                        index = len(actuals)
+                        actuals.append(("location", saved) if index in getattr(node, "implicit_ref_args", set()) else saved)
+                        exposed_slots.append(self._key(argument) if (
+                            index in getattr(node, "implicit_ref_args", set())
+                            and argument.kind == NodeKind.IDENTIFIER
+                            and isinstance(self._type(argument), ReferenceType)) else None)
+                        tasks.append((argument, cursor, after, deferred, loops, saved))
+                        cursor = after
+                    invoke = add("call", node, (output, tuple(actuals), tuple(exposed_slots), call_values.get(id(node))), (finish,))
+                    graph[cursor][3].append(invoke)
+                    continue
+                if (kind == NodeKind.ASSIGNMENT
+                        and node.target.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}):
+                    # Capture the selected receiver after RHS effects and before
+                    # index effects. An index call may rebind its source slot.
+                    after_rhs, after_base = add(), add()
+                    receiver = ("origin", after_base)
+                    tasks.append((node.value, begin, after_rhs, deferred, loops, None))
+                    tasks.append((node.target.object, after_rhs, after_base,
+                                  deferred, loops, receiver))
+                    store = add("place_store", node, receiver, (finish,))
+                    if node.target.kind == NodeKind.INDEX:
+                        tasks.append((node.target.index, after_base, store,
+                                      deferred, loops, None))
+                    else:
+                        graph[after_base][3].append(store)
+                    continue
+                if kind in {NodeKind.VAR, NodeKind.CONST, NodeKind.ASSIGNMENT}:
+                    target = node.target if kind == NodeKind.ASSIGNMENT else node
+                    store = add("store", node, None, (finish,))
+                    saved = ("origin", store)
+                    graph[store] = ("store", node, (self._key(target), saved), [finish])
+                    tasks.append((node.value, begin, store, deferred, loops, saved))
+                    continue
+                children = []
+                if kind == NodeKind.UNARY:
+                    children = [node.operand]
+                elif kind == NodeKind.BINARY:
+                    children = [node.left, node.right]
+                elif kind in {NodeKind.EXPRESSION_STMT, NodeKind.DEL}:
+                    children = [node.expression]
+                elif kind == NodeKind.INDEX:
+                    children = [node.object, node.index]
+                elif kind == NodeKind.SLICE:
+                    children = [node.object, node.start, node.end]
+                elif kind == NodeKind.FIELD_ACCESS:
+                    children = [node.object]
+                cursor, child_values = begin, []
+                for child in children:
+                    after = add()
+                    saved = ("origin", after)
+                    child_values.append(saved)
+                    tasks.append((child, cursor, after, deferred, loops, saved))
+                    cursor = after
+                value = add("value", node, (output, tuple(child_values)), (finish,))
+                graph[cursor][3].append(value)
+            graphs[name] = (graph, entry)
+
+        # Slot addresses do not identify backing storage. Certify complete
+        # bodies before monotone effect collection, so provisional uncertainty
+        # cannot permanently pollute a subsequently certified slot replacement.
+        slot_uncertified = set(fallback)
+        slot_dependencies = {name: set() for name in bodies}
+        handle_arguments = set()
+        for name, statements in nodes.items():
+            for node in statements:
+                if node.kind in {NodeKind.DEL, NodeKind.SLICE}:
+                    slot_uncertified.add(name)
+                elif node.kind == NodeKind.IDENTIFIER:
+                    key = self._key(node)
+                    if (key in self.file_variables or key in captured_slots
+                            or key in captured_storage
+                            or key in owners and owners[key] != name):
+                        slot_uncertified.add(name)
+                elif node.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}:
+                    receiver = self._type(node.object)
+                    if isinstance(receiver, ReferenceType):
+                        receiver = receiver.referent_type
+                    if (not isinstance(receiver, (ArrayType, StructType))
+                            or isinstance(self._type(node), ReferenceType)):
+                        slot_uncertified.add(name)
+                elif node.kind == NodeKind.CALL:
+                    possible = call_values.get(id(node))
+                    if not possible or any(target not in bodies for target in possible):
+                        slot_uncertified.add(name)
+                    slot_dependencies[name].update(target for target in possible or () if target in bodies)
+                    for index, argument in enumerate(node.arguments or []):
+                        addressed = self._type(argument)
+                        if index not in getattr(node, "implicit_ref_args", set()):
+                            if not isinstance(addressed, ReferenceType):
+                                continue
+                            addressed = addressed.referent_type
+                        # Inspect inline payloads iteratively. A reference leaf
+                        # or handle inside an aggregate can reach other roots.
+                        pending_types, seen_types = [addressed], set()
+                        while pending_types:
+                            item = pending_types.pop()
+                            if id(item) in seen_types:
+                                continue
+                            seen_types.add(id(item))
+                            if isinstance(item, ArrayType):
+                                pending_types.append(item.element_type)
+                            elif isinstance(item, (StructType, UnionType)):
+                                pending_types.extend(field.field_type for field in item.fields)
+                            elif (isinstance(item, PrimitiveType)
+                                  and item.name != "string") or isinstance(item, EnumType):
+                                continue
+                            else:
+                                handle_arguments.add((id(node), index))
+                                break
+        changed = True
+        while changed:
+            changed = False
+            for name, targets in slot_dependencies.items():
+                if name not in slot_uncertified and targets & slot_uncertified:
+                    slot_uncertified.add(name)
+                    changed = True
+
+        # Unknown return values are distinct from an analyzable function's
+        # provisional empty summary. All channels converge before publication.
+        returned = {name: None if name in fallback else frozenset() for name in bodies}
+        for name in graphs:
+            writes[name] = set()
+            escapes[name] = set().union(*(aliases[name][key] for key in captures[name]))
+            for node in nodes[name]:
+                call_writes.pop(id(node), None)
+                direct_writes.pop(id(node), None)
+        changed = True
+        while changed:
+            changed = False
+            for name, (graph, entry) in graphs.items():
+                incoming = {entry: {key: frozenset({key}) for key in parameters[name].values()}}
+                pending = [entry]
+                new_writes, new_escapes, new_return = set(), set(), frozenset()
+                while pending:
+                    point = pending.pop()
+                    state = dict(incoming[point])
+                    action, node, extra, successors = graph[point]
+                    if action == "value":
+                        output, children = extra
+                        value, location = frozenset(), None
+                        if node.kind == NodeKind.IDENTIFIER:
+                            key = self._key(node)
+                            if isinstance(self._type(node), ReferenceType):
+                                value = state.get(key)
+                            elif key in roots[name] or key in self.file_variables:
+                                value = frozenset({key})
+                            if (key in storage_tokens[name] and key not in captured_storage
+                                    and key not in self.file_variables and owners.get(key) == name):
+                                location = frozenset({storage_tokens[name][key]})
+                            elif key in roots[name] and not isinstance(self._type(node), ReferenceType):
+                                location = frozenset({key})
+                        elif isinstance(self._type(node), ReferenceType) and node.kind != NodeKind.NEW_EXPR:
+                            value = None
+                        if node.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}:
+                            receiver_type = self._type(node.object)
+                            if isinstance(receiver_type, ReferenceType) and isinstance(receiver_type.referent_type, (ArrayType, StructType)):
+                                location = state.get(children[0])
+                            elif isinstance(receiver_type, (ArrayType, StructType)):
+                                location = state.get(("location", children[0]))
+                        if node.kind == NodeKind.DEL:
+                            affected = state.get(children[0])
+                            affected = roots[name] if affected is None else affected
+                            new_writes.update(affected)
+                            new_escapes.update(affected)
+                        if output is not None:
+                            state[output] = value
+                            state[("location", output)] = location
+                    elif action == "place_store":
+                        receiver_type = self._type(node.target.object)
+                        affected = None
+                        if isinstance(receiver_type, ReferenceType) and isinstance(receiver_type.referent_type, (ArrayType, StructType)):
+                            affected = state.get(extra)
+                        elif isinstance(receiver_type, (ArrayType, StructType)):
+                            affected = state.get(("location", extra))
+                        affected = roots[name] if affected is None else affected
+                        direct_writes.setdefault(id(node), set()).update(affected)
+                        new_writes.update(affected)
+                    elif action == "store":
+                        key, saved = extra
+                        target = node.target if node.kind == NodeKind.ASSIGNMENT else node
+                        value = state.get(saved)
+                        if getattr(node, "implicit_deref_target", False):
+                            affected = state.get(key)
+                            affected = roots[name] if affected is None else affected
+                            direct_writes.setdefault(id(node), set()).update(affected)
+                            new_writes.update(affected)
+                        elif (isinstance(self._type(target), ReferenceType)
+                              or isinstance(self._type(node.value), ReferenceType)
+                              or key in reference_slots[name]):
+                            state[key] = value
+                            if key in self.file_variables or owners.get(key) != name or key in captured_slots:
+                                new_escapes.update(roots[name] if value is None else value)
+                    elif action == "return" and node.value is not None:
+                        if isinstance(self._type(node.value), ReferenceType):
+                            value = state.get(extra)
+                            # Returning an origin owned by this frame is not a
+                            # fresh allocation or a caller formal forwarding.
+                            if value is not None and not value <= set(parameters[name].values()):
+                                value = None
+                            new_return = None if new_return is None or value is None else new_return | value
+                    elif action == "call":
+                        output, saved, exposed_slots, possible = extra
+                        # A borrowed reference slot can be rebound by a later
+                        # argument before the callee reads it. Its referent is
+                        # unknown; ordinary reference value snapshots stay fixed.
+                        actuals = [None if exposed is not None else state.get(slot)
+                                   for slot, exposed in zip(saved, exposed_slots)]
+                        affected, escaped, result = set(), set(), frozenset()
+                        unknown = not possible or any(target not in bodies for target in possible)
+                        for index, argument in enumerate(node.arguments or []):
+                            if index not in getattr(node, "implicit_ref_args", set()) and not isinstance(self._type(argument), ReferenceType):
+                                continue
+                            actual = actuals[index]
+                            actual = roots[name] if actual is None else actual
+                            if ((id(node), index) in handle_arguments
+                                    and (unknown or any(target in slot_uncertified for target in possible))):
+                                # Retain raw actuals for return substitution.
+                                # Uncertified backing effects can reach any
+                                # caller root, even through a returned alias.
+                                actual = roots[name]
+                            if unknown:
+                                affected.update(actual)
+                                escaped.update(actual)
+                            else:
+                                for target in possible:
+                                    parameter = parameters[target].get(index)
+                                    if parameter in writes[target]:
+                                        affected.update(actual)
+                                    if parameter in escapes[target]:
+                                        escaped.update(actual)
+                        if unknown:
+                            result = None
+                        else:
+                            for target in possible:
+                                if returned[target] is None:
+                                    result = None
+                                    break
+                                for index, parameter in parameters[target].items():
+                                    if parameter in returned[target]:
+                                        actual = actuals[index] if index < len(actuals) else None
+                                        result = None if result is None or actual is None else result | actual
+                        call_writes.setdefault(id(node), set()).update(affected)
+                        new_writes.update(affected)
+                        new_escapes.update(escaped)
+                        # Calls can change externally accessible slots. Earlier
+                        # actual snapshots remain separate immutable values.
+                        exposed = {key for key in exposed_slots if key is not None}
+                        for key in state.keys() & (self.file_variables | captured_slots | exposed):
+                            state[key] = None
+                        if output is not None:
+                            state[output] = result
+                            # A call result is a value, not an addressable local
+                            # aggregate. Reference projection uses result above.
+                            state[("location", output)] = None
+                    for successor in successors:
+                        previous = incoming.get(successor)
+                        if previous is None:
+                            joined = dict(state)
+                        else:
+                            joined = {}
+                            for key in previous.keys() | state.keys():
+                                left, right = previous.get(key), state.get(key)
+                                joined[key] = None if left is None or right is None else left | right
+                        if previous != joined:
+                            incoming[successor] = joined
+                            pending.append(successor)
+                before = (len(writes[name]), len(escapes[name]), returned[name])
+                writes[name].update(new_writes)
+                escapes[name].update(new_escapes)
+                returned[name] = None if returned[name] is None or new_return is None else returned[name] | new_return
+                changed |= before != (len(writes[name]), len(escapes[name]), returned[name])
+        self.scalar_returned_origins = returned
+        self.scalar_origin_graph_fallback = fallback
+        # Keep owner-local provenance through calls, returns and escapes.
+        # Only the scalar invalidation clients discard disjoint storage tokens.
+        self.scalar_call_writes = {node: values - all_storage_tokens for node, values in call_writes.items()}
+        self.scalar_direct_writes = {node: values - all_storage_tokens for node, values in direct_writes.items()}
+        self.scalar_escaped_keys = set().union(*escapes.values())
+        self.scalar_eligible_keys = self.local_index_keys - self.scalar_escaped_keys
+        self.scalar_parameter_writes = {name: {index for index, key in parameters[name].items() if key in writes[name]}
+                                        for name in bodies}
+        self.scalar_parameter_escapes = {name: {index for index, key in parameters[name].items() if key in escapes[name]}
+                                         for name in bodies}
+
+        self.readonly_scalar_reference_keys = set()
+        for name, function in bodies.items():
+            if (name in reference_veto or self.scalar_parameter_writes[name]
+                    or self.scalar_parameter_escapes[name]):
+                continue
+            # Binding identity proves only slot stability. Referent aliasing
+            # remains covered by the collective write/escape and risk vetoes.
+            self.readonly_scalar_reference_keys.update(
+                reference_slots[name] - self.file_variables - self.borrowed_keys
+                - captured_slots - reference_rebinds[name])
 
     def _classify_exact_effects(self, bodies: dict[str, ASTNode]) -> None:
         # Completeness covers the whole body, including every nested known call.
@@ -1042,7 +2192,7 @@ class SafetyProofPass:
         if isinstance(self._type(arg), ReferenceType) and reference_parameter and self._calls_deleting_function(node) and not direct:
             self._move_allocations(fact.allocations)
             if key and self.facts.symbol(key).allocations == fact.allocations:
-                self.moved_symbols.add(key)
+                self._mark_moved_slot(key, self.facts.symbol(key).allocations)
 
     def _replay_exact_effects(self, call: ASTNode, name: str, arguments: list[tuple[ValueFact, Optional[str]]]) -> None:
         # Actions capture values separately from storage. Each branch owns its
@@ -1151,14 +2301,14 @@ class SafetyProofPass:
                                     bindings[-1].get(self._key(target), self._key(target)))
                     fact = values.get(id(node.value), ValueFact())
                     storage[key] = fact if isinstance(self._type(node.value), ReferenceType) or fact.maybe_nil else ValueFact()
-                    moved.discard(key)
+                    self._clear_moved_slot(key, moved)
                     continue
                 if action == "delete":
                     fact = values.get(id(node.expression), ValueFact())
                     self._move_allocations(fact.allocations, moved)
                     key = places.get(id(node.expression))
                     if key:
-                        moved.add(key)
+                        self._mark_moved_slot(key, fact.allocations, moved)
                     continue
                 if action == "expr":
                     if node is None:
@@ -1168,7 +2318,7 @@ class SafetyProofPass:
                         places[id(node)] = key
                         fact = storage.get(key, ValueFact())
                         values[id(node)] = fact
-                        if key in moved or self._allocations_moved(fact.allocations | fact.selected_allocations, moved):
+                        if self._slot_moved(key, moved) or self._allocations_moved(fact.allocations | fact.selected_allocations, moved):
                             obligation = self._obligation(ObligationKind.MOVE_VALID, node, f"callee_live:{id(call)}", self._type(node), "callee value must still be live", TypeErrorType.USE_AFTER_MOVE)
                             self._error(obligation, f"'{node.name}' was moved or deleted earlier")
                     elif node.kind == NodeKind.LITERAL:
@@ -1202,7 +2352,7 @@ class SafetyProofPass:
                             fact = ValueFact(maybe_nil=True, allocations=self._field_allocations(key)) if isinstance(self._type(node), ReferenceType) else ValueFact()
                             storage[key] = fact
                         values[id(node)] = fact
-                        if key in moved or self._allocations_moved(fact.allocations | fact.selected_allocations, moved):
+                        if self._slot_moved(key, moved) or self._allocations_moved(fact.allocations | fact.selected_allocations, moved):
                             obligation = self._obligation(ObligationKind.MOVE_VALID, node, f"callee_live:{id(call)}", self._type(node), "callee field value must still be live", TypeErrorType.USE_AFTER_MOVE)
                             self._error(obligation, f"'{node.field}' was moved or deleted earlier")
                     continue
@@ -1225,10 +2375,11 @@ class SafetyProofPass:
         if exits:
             joined, dead = exits[0]
             for storage, moved in exits[1:]:
-                joined = self._join_facts(joined, storage)
-                dead |= moved
+                joined, dead = self._join_lifetime_states(joined, dead, storage, moved)
             self.facts.by_symbol = {key: fact for key, fact in joined.items() if not isinstance(key, str) or not key.startswith("effect:")}
-            self.moved_symbols = {key for key in dead if not isinstance(key, str) or not key.startswith("effect:")}
+            self.moved_symbols = {key for key in dead
+                                  if not (isinstance(key, str) and key.startswith("effect:"))
+                                  and not (isinstance(key, SlotDeath) and key.key.startswith("effect:"))}
 
     def _parameter_origins(self, node: Optional[ASTNode], aliases: dict[str | tuple[int, str], frozenset[tuple[int | AllocationRef, bool]]], *, field_places: bool = False, unknown_origins: frozenset[tuple[int | AllocationRef, bool]] = frozenset()) -> frozenset[tuple[int | AllocationRef, bool]]:
         origins: set[tuple[int, bool]] = set()
@@ -1257,6 +2408,52 @@ class SafetyProofPass:
                     pending.append((current.else_case, exact))
         return self._origin_set(origins)
 
+    def _has_reference_storage(self, type_: Optional[Type]) -> bool:
+        """Whether storing this value can expose reference aliases."""
+        pending = [type_]
+        seen = set()
+        while pending:
+            current = pending.pop()
+            if current is None or current.kind in {TypeKind.UNKNOWN, TypeKind.GENERIC_PARAM, TypeKind.GENERIC_INSTANCE}:
+                return True
+            if id(current) in seen:
+                continue
+            seen.add(id(current))
+            if isinstance(current, (ReferenceType, FunctionType)):
+                return True
+            if isinstance(current, (ArrayType, SliceType)):
+                pending.append(current.element_type)
+            elif current.kind in {TypeKind.STRUCT, TypeKind.UNION}:
+                pending.extend(member.field_type for member in current.fields)
+        return False
+
+    def _effect_scalar_value(self, node, values):
+        if node is not None and node.kind == NodeKind.IDENTIFIER:
+            return values.get(self._key(node))
+        if node is not None and node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER:
+            return node.literal_value
+        return None
+
+    def _effect_scalar_condition(self, node, values):
+        if node is not None and node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.BOOLEAN:
+            return node.literal_value
+        if node is not None and node.kind == NodeKind.BINARY:
+            left = self._effect_scalar_value(node.left, values)
+            right = self._effect_scalar_value(node.right, values)
+            if left is not None and right is not None:
+                return {BinaryOp.EQ: left == right, BinaryOp.NE: left != right,
+                        BinaryOp.LT: left < right, BinaryOp.LE: left <= right,
+                        BinaryOp.GT: left > right, BinaryOp.GE: left >= right}.get(node.operator)
+        return None
+
+    def _effect_scalar_cases(self, node, cases, reachable):
+        if node is not None and node.kind == NodeKind.IDENTIFIER:
+            return {value: active for value, guard in cases.get(self._key(node), {}).items()
+                    if (active := self.allocation_conditions.combine('and', reachable, guard))}
+        if node is not None and node.kind == NodeKind.LITERAL and node.literal_kind == LiteralKind.INTEGER:
+            return {node.literal_value: reachable} if reachable else {}
+        return {}
+
     def _parameter_effect_summary(self, function: ASTNode, aliases: Optional[dict[str | tuple[int, str], frozenset[tuple[int | AllocationRef, bool]]]] = None, *, loop_results=None):
         # Local rebinding changes which parameter a field write or direct
         # deletion reaches. Branches join origins; loops iterate a finite set
@@ -1270,6 +2467,50 @@ class SafetyProofPass:
             aliases = {self._key(param): frozenset({(index, True)})
                        for index, param in enumerate(function.parameters or [])}
             aliases.update({key: frozenset({(origin, True)}) for origin, key in self.global_origins.items()})
+        predicate_writes = set()
+        predicate_nodes = []
+        stable_conditions = {}
+        predicate_conditions = {}
+        entry_condition = None
+        if field_places:
+            pending_predicates = [function]
+            while pending_predicates:
+                statement = pending_predicates.pop()
+                if statement.kind == NodeKind.FUNCTION:
+                    continue
+                if statement.kind in {NodeKind.IF_STMT, NodeKind.IF_EXPR, NodeKind.WHILE, NodeKind.FOR}:
+                    predicate_nodes.append(statement.condition)
+                elif statement.kind == NodeKind.BINARY and statement.operator in {BinaryOp.AND, BinaryOp.OR}:
+                    predicate_nodes.append(statement.left)
+                if statement.kind == NodeKind.ASSIGNMENT and statement.target is not None and statement.target.kind == NodeKind.IDENTIFIER:
+                    predicate_writes.add(self._key(statement.target))
+                elif statement.kind == NodeKind.CALL:
+                    predicate_writes.update(self.capture_call_effects.get(id(statement), self.mutable_boolean_captures))
+                    predicate_writes.update(self._key(argument) for index, argument in enumerate(statement.arguments or [])
+                        if argument.kind == NodeKind.IDENTIFIER and index in getattr(statement, 'implicit_ref_args', set()))
+                for value in vars(statement).values():
+                    if isinstance(value, ASTNode):
+                        pending_predicates.append(value)
+                    elif isinstance(value, list):
+                        pending_predicates.extend(child for child in value if isinstance(child, ASTNode))
+            if function.kind == NodeKind.WHILE:
+                entry_condition = self._stable_boolean_condition(function.condition)
+            for predicate_node in predicate_nodes:
+                predicate = self._stable_boolean_condition(predicate_node, predicate_writes)
+                predicate_conditions[id(predicate_node)] = predicate
+                binding = predicate_node
+                while binding is not None and binding.kind == NodeKind.UNARY and binding.operator == UnaryOp.NOT:
+                    binding = binding.operand
+                key = self._key(binding) if binding is not None and binding.kind == NodeKind.IDENTIFIER else None
+                type_ = self._type(binding) if binding is not None else None
+                if (key in self.local_boolean_keys and key not in self.borrowed_keys
+                        and key not in self.file_variables and key not in self.repeated_boolean_keys
+                        and key not in predicate_writes and key in self.facts.by_symbol
+                        and self.facts.symbol(key).initialized
+                        and isinstance(type_, PrimitiveType) and type_.name == "bool"):
+                    stable_conditions[id(predicate_node)] = predicate
+            if loop_results is not None:
+                loop_results["stable_conditions"] = dict(stable_conditions)
         unknown_origins = frozenset().union(*aliases.values()) if field_places else frozenset({(-1, True)})
         # Negative integers distinguish unknown (-1), unchanged fields (-3),
         # and global declarations. Fresh alternatives share allocation graphs.
@@ -1279,11 +2520,77 @@ class SafetyProofPass:
         live = True
         writes: dict[int, set[str]] = {}
         flow = ParameterEffectState(aliases)
+        if field_places:
+            flow.scalar_values = {key: fact.interval.lower for key, fact in self.facts.by_symbol.items()
+                                  if key in self.scalar_eligible_keys
+                                  and fact.interval is not None and fact.interval.lower is not None
+                                  and fact.interval.lower == fact.interval.upper}
+            flow.scalar_cases = {key: {value: 1} for key, value in flow.scalar_values.items()}
+        if field_places:
+            # Current slot validity is separate from historical allocation death.
+            # Rebinding a slot cannot revive another alias to the old object.
+            flow.current_aliases = dict(aliases)
+            flow.current_live = {key for key, fact in self.facts.by_symbol.items()
+                                 if isinstance(key, str) and "." not in key
+                                 and isinstance(self.symbol_types.get(key), ReferenceType)
+                                 and not self._slot_moved(key)
+                                 and not self._allocations_moved(fact.allocations | fact.selected_allocations)}
         loops = []
         frames: list[tuple[ASTNode, list[ASTNode]]] = []
         work = [("visit", function if field_places else function.body, None)]
         while work:
             action, node, state = work.pop()
+            if action == "scalar_invalidate":
+                if live:
+                    for key in self.scalar_direct_writes.get(id(node), ()):
+                        flow.scalar_values.pop(key, None)
+                        flow.scalar_cases.pop(key, None)
+                continue
+            if action == "scalar_clear":
+                if live:
+                    flow.scalar_values = {key: value for key, value in flow.scalar_values.items()
+                                          if key in self.scalar_eligible_keys}
+                    flow.scalar_cases = {key: values for key, values in flow.scalar_cases.items()
+                                         if key in self.scalar_eligible_keys}
+                    if field_places:
+                        flow.written.update(self.capture_call_effects.get(id(node), self.mutable_boolean_captures))
+                continue
+            if action == "scalar_store":
+                if live:
+                    key, operator = state
+                    reachable = 0
+                    for path in flow.paths:
+                        reachable = self.allocation_conditions.combine('or', reachable, path)
+                    values = self._effect_scalar_cases(node.value, flow.scalar_cases, reachable)
+                    if operator != AssignOp.ASSIGN:
+                        combined = {}
+                        if operator in {AssignOp.ADD_ASSIGN, AssignOp.SUB_ASSIGN}:
+                            for previous, left in flow.scalar_cases.get(key, {}).items():
+                                for amount, right in values.items():
+                                    guard = self.allocation_conditions.combine('and', left, right)
+                                    result = previous + amount if operator == AssignOp.ADD_ASSIGN else previous - amount
+                                    if guard:
+                                        combined[result] = self.allocation_conditions.combine('or', combined.get(result, 0), guard)
+                        values = combined
+                    scalar_type = self._type(node.target if node.kind == NodeKind.ASSIGNMENT else node)
+                    values = {value: guard for value, guard in values.items()
+                              if self._range_fits(IntegerInterval.exact(value), scalar_type)}
+                    if values:
+                        flow.scalar_cases[key] = values
+                    else:
+                        flow.scalar_cases.pop(key, None)
+                    value = self._effect_scalar_value(node.value, flow.scalar_values)
+                    if operator != AssignOp.ASSIGN:
+                        previous = flow.scalar_values.get(key)
+                        if value is not None and previous is not None and operator in {AssignOp.ADD_ASSIGN, AssignOp.SUB_ASSIGN}:
+                            value = previous + value if operator == AssignOp.ADD_ASSIGN else previous - value
+                        else:
+                            value = None
+                    if value is not None and self._range_fits(IntegerInterval.exact(value), self._type(node.target if node.kind == NodeKind.ASSIGNMENT else node)):
+                        flow.scalar_values[key] = value
+                    else:
+                        flow.scalar_values.pop(key, None)
+                continue
             if action == "capture_return":
                 state.extend(self._parameter_origins(node.value, flow.aliases, field_places=field_places, unknown_origins=unknown_origins))
                 continue
@@ -1320,9 +2627,18 @@ class SafetyProofPass:
                         flow.counter_delta = (0, 0)
                     condition = node.condition
                     literal = condition.literal_value if condition and condition.kind == NodeKind.LITERAL and condition.literal_kind == LiteralKind.BOOLEAN else None
+                    # This is only the root WHILE's first condition. A body
+                    # write cannot make a known-false first entry reachable.
+                    # FOR initializers and nested tests need their own state.
+                    if (field_places and node is function and node.kind == NodeKind.WHILE
+                            and not context["back"] and entry_condition == 0):
+                        literal = False
+                    predicate = predicate_conditions.get(id(condition)) if field_places else None
                     if literal is not True:
-                        context["false"].append(flow.copy())
-                    if literal is not False:
+                        false_flow = flow.copy()
+                        if predicate is None or self._condition_effect_state(false_flow, self.allocation_conditions.combine('xor', predicate, 1)):
+                            context["false"].append(false_flow)
+                    if literal is not False and (predicate is None or self._condition_effect_state(flow, predicate)):
                         work.extend([("loop_update", node, context), ("visit", node.body, None)])
                     else:
                         live = False
@@ -1334,7 +2650,7 @@ class SafetyProofPass:
                     incoming.append(flow.copy())
                 live = bool(incoming)
                 if live:
-                    flow = ParameterEffectState.join(incoming)
+                    flow = ParameterEffectState.join(incoming, self.allocation_conditions)
                     context["continues"] = []
                     work.extend([("loop_back", node, context), ("visit", node.update, None)])
                 continue
@@ -1346,7 +2662,9 @@ class SafetyProofPass:
                         # An outer defer on a labeled exit never reaches here.
                         flow.counter_delta = None
                     context["back"].append(flow.copy())
-                head = ParameterEffectState.join([context["entry"], *context["back"]])
+                    if field_places and node is function and loop_results is not None and "first_back" not in loop_results:
+                        loop_results["first_back"] = flow.copy()
+                head = ParameterEffectState.join([context["entry"], *context["back"]], self.allocation_conditions)
                 if head != context["head"]:
                     context["head"] = head.copy()
                     flow, live = head, True
@@ -1358,17 +2676,64 @@ class SafetyProofPass:
                 loops.pop()
                 normal_exits = [*context["false"], *context["breaks"]]
                 if field_places and node is function and loop_results is not None:
-                    loop_results.update(back=ParameterEffectState.join(context["back"]),
-                                        exit=ParameterEffectState.join(normal_exits),
+                    loop_results.update(back=ParameterEffectState.join(context["back"], self.allocation_conditions),
+                                        exit=ParameterEffectState.join(normal_exits, self.allocation_conditions),
                                         has_break=bool(context["breaks"]))
                 live = bool(normal_exits)
                 if live:
-                    flow = ParameterEffectState.join(normal_exits)
+                    flow = ParameterEffectState.join(normal_exits, self.allocation_conditions)
+                continue
+            if action == "restrict":
+                if live:
+                    live = self._condition_effect_state(flow, state)
                 continue
             if action == "bind":
                 if live:
                     key, value = state
                     flow.aliases[key] = self._parameter_origins(value, flow.aliases, field_places=field_places, unknown_origins=unknown_origins)
+                    if field_places:
+                        source_live = value is not None and value.kind == NodeKind.IDENTIFIER and self._key(value) in flow.current_live
+                        source_dead = value is not None and value.kind == NodeKind.IDENTIFIER and self._key(value) in flow.current_dead
+                        source_nil = value is not None and value.kind == NodeKind.IDENTIFIER and self._key(value) in flow.current_nil
+                        if value is not None and value.kind == NodeKind.NEW_EXPR:
+                            # Another execution of one allocation site creates a
+                            # distinct object. Preserve older aliases, never revive them.
+                            fresh = self.allocation_graph.atom(("new", id(value)))
+                            prior = self.allocation_graph.prefix(("prior_iteration", id(value)), fresh)
+                            for place, origins in list(flow.current_aliases.items()):
+                                aged = set()
+                                for origin, exact in origins:
+                                    if isinstance(origin, AllocationRef):
+                                        overlap = self.allocation_graph.combine('intersection', origin.root, fresh)
+                                        if overlap:
+                                            remainder = self.allocation_graph.combine('difference', origin.root, fresh)
+                                            origin = AllocationRef(self.allocation_graph.union((remainder, prior)), origin.condition)
+                                    aged.add((origin, exact))
+                                flow.current_aliases[place] = self._origin_set(aged)
+                        flow.current_aliases[key] = self._parameter_origins(value, flow.current_aliases, unknown_origins=unknown_origins)
+                        flow.current_live.discard(key)
+                        flow.current_dead.discard(key)
+                        flow.current_nil.discard(key)
+                        if value is not None and value.kind == NodeKind.LITERAL and value.literal_kind == LiteralKind.NIL:
+                            flow.current_nil.add(key)
+                            flow.current_live.add(key)
+                            flow.replaced.add(key)
+                        elif value is not None and value.kind == NodeKind.NEW_EXPR:
+                            flow.current_live.add(key)
+                            flow.replaced.add(key)
+                        elif source_live:
+                            flow.current_live.add(key)
+                            if source_nil:
+                                flow.current_nil.add(key)
+                        elif source_dead:
+                            flow.current_dead.add(key)
+                        elif isinstance(self._type(value), ReferenceType):
+                            flow.replacement_escaped = True
+                        if "." in key and self._has_reference_storage(self._type(value)):
+                            # Aggregate-held aliases keep the existing aggregate
+                            # analysis; do not project their owners separately.
+                            flow.current_live.clear()
+                            flow.replacement_escaped = True
                 continue
             if action == "store":
                 if live:
@@ -1389,11 +2754,24 @@ class SafetyProofPass:
             if action == "call_effects":
                 if not live:
                     continue
+                for key in self.scalar_call_writes.get(id(node), ()):
+                    flow.scalar_values.pop(key, None)
+                    flow.scalar_cases.pop(key, None)
+                # Escaped storage cannot regain a scalar proof after a call.
+                flow.scalar_values = {key: value for key, value in flow.scalar_values.items()
+                                      if key in self.scalar_eligible_keys}
+                flow.scalar_cases = {key: values for key, values in flow.scalar_cases.items()
+                                     if key in self.scalar_eligible_keys}
                 name, captured = state
                 summary = self.function_field_writes.get(name)
                 stores = self.function_field_stores.get(name, {})
                 if field_places:
+                    # Unknown or summarized calls retain their existing effects;
+                    # this additional replacement proof does not infer effects.
+                    flow.current_live.clear()
+                    flow.replacement_escaped = True
                     flow.written.update(self.file_variables)
+                    flow.written.update(self.capture_call_effects.get(id(node), self.mutable_boolean_captures))
                     signature = self._type(node.function)
                     parameters = signature.param_types if isinstance(signature, FunctionType) else []
                     may_delete = self._calls_deleting_function(node)
@@ -1439,7 +2817,7 @@ class SafetyProofPass:
                             if field_places:
                                 values = frozenset()
                             else:
-                                invocation = AllocationRef(self.allocation_graph.prefix(("call", id(node)), origin.root))
+                                invocation = AllocationRef(self.allocation_graph.prefix(("call", id(node)), origin.root), origin.condition)
                                 values = frozenset({(invocation, True)})
                         else:
                             values = unknown_origins
@@ -1466,7 +2844,7 @@ class SafetyProofPass:
                             elif origin == -1:
                                 translated.update(unknown_origins)
                             elif isinstance(origin, AllocationRef) and not field_places:
-                                invocation = AllocationRef(self.allocation_graph.prefix(("call", id(node)), origin.root))
+                                invocation = AllocationRef(self.allocation_graph.prefix(("call", id(node)), origin.root), origin.condition)
                                 translated.add((invocation, exact))
                             elif origin in self.global_origins:
                                 translated.update(entry_globals.get(self.global_origins[origin], unknown_origins))
@@ -1502,7 +2880,7 @@ class SafetyProofPass:
                 before, branches, before_live = state
                 if live and action != "fall_other":
                     branches.append(flow.copy())
-                flow = ParameterEffectState.join([before, flow]) if action == "fall_other" and live else before.copy()
+                flow = ParameterEffectState.join([before, flow], self.allocation_conditions) if action == "fall_other" and live else before.copy()
                 live = before_live
                 continue
             if action == "join":
@@ -1510,7 +2888,7 @@ class SafetyProofPass:
                 if live:
                     branches.append(flow.copy())
                 live = bool(branches) and before_live
-                flow = ParameterEffectState.join(branches)
+                flow = ParameterEffectState.join(branches, self.allocation_conditions)
                 continue
             if action == "split":
                 if not live:
@@ -1542,13 +2920,23 @@ class SafetyProofPass:
                         then_branch, else_branch = node.then_expr, node.else_expr
                     else:
                         then_branch, else_branch = node.then_stmt, node.else_stmt
-                    if (condition.kind == NodeKind.LITERAL
+                    scalar_condition = self._effect_scalar_condition(condition, flow.scalar_values) if field_places else None
+                    if scalar_condition is not None:
+                        work.append(("visit", then_branch if scalar_condition else else_branch, None))
+                    elif (condition.kind == NodeKind.LITERAL
                             and condition.literal_kind == LiteralKind.BOOLEAN):
                         work.append(("visit", then_branch if condition.literal_value else else_branch, None))
                     else:
                         frame = (flow.copy(), [], live)
-                        work.extend([("join", node, frame), ("visit", else_branch, None),
-                                     ("other", node, frame), ("visit", then_branch, None)])
+                        predicate = predicate_conditions.get(id(condition)) if field_places else None
+                        if predicate is None:
+                            work.extend([("join", node, frame), ("visit", else_branch, None),
+                                         ("other", node, frame), ("visit", then_branch, None)])
+                        else:
+                            work.extend([("join", node, frame), ("visit", else_branch, None),
+                                         ("restrict", node, self.allocation_conditions.combine('xor', predicate, 1)),
+                                         ("other", node, frame), ("visit", then_branch, None),
+                                         ("restrict", node, predicate)])
                 continue
             if not live or node is None or node.kind == NodeKind.FUNCTION:
                 continue
@@ -1587,6 +2975,15 @@ class SafetyProofPass:
                 if not (field_places and node is function):
                     work.extend([("visit", node.init, None), ("visit", node.iterable, None)])
                 continue
+            if field_places and node.kind == NodeKind.ASSIGNMENT:
+                work.append(("scalar_invalidate", node, None))
+            if field_places and node.kind in {NodeKind.ASSIGNMENT, NodeKind.VAR, NodeKind.CONST}:
+                target = node.target if node.kind == NodeKind.ASSIGNMENT else node
+                key = self._key(target) if target is not None and target.kind in {NodeKind.IDENTIFIER, NodeKind.VAR, NodeKind.CONST} else None
+                if key in self.scalar_eligible_keys:
+                    work.append(("scalar_store", node, (key, node.operator if node.kind == NodeKind.ASSIGNMENT else AssignOp.ASSIGN)))
+            if node.kind == NodeKind.CALL and getattr(node, "stdlib_canonical", None):
+                work.append(("scalar_clear", node, None))
             if node.kind == NodeKind.CALL and not getattr(node, "stdlib_canonical", None):
                 callee = node.function
                 name = self._key(callee) if callee and callee.kind == NodeKind.IDENTIFIER else None
@@ -1597,11 +2994,26 @@ class SafetyProofPass:
                 actions.append(("call_effects", node, (name, captured)))
                 work.extend(reversed(actions))
                 continue
+            if field_places and node.kind in {NodeKind.STRUCT_INIT, NodeKind.ARRAY_INIT} and self._has_reference_storage(self._type(node)):
+                flow.current_live.clear()
+                flow.replacement_escaped = True
             targets = []
             deletion_targets = []
             if node.kind == NodeKind.DEL:
                 deletion_targets.append(node.expression)
                 if field_places:
+                    current = self._parameter_origins(node.expression, flow.current_aliases, unknown_origins=unknown_origins)
+                    if node.expression.kind != NodeKind.IDENTIFIER or any(not exact for _, exact in current):
+                        flow.current_live.clear()
+                        flow.replacement_escaped = True
+                    else:
+                        dead = {origin for origin, exact in current if exact}
+                        for place, origins in flow.current_aliases.items():
+                            if self._origin_intersection(tuple(origin for origin, exact in origins if exact), dead):
+                                flow.current_live.discard(place)
+                                flow.current_dead.add(place)
+                        flow.current_live.discard(self._key(node.expression))
+                        flow.current_dead.add(self._key(node.expression))
                     target = node.expression
                     key = self._place_key(target)
                     while key is None and target is not None:
@@ -1618,6 +3030,9 @@ class SafetyProofPass:
             elif node.kind == NodeKind.ASSIGNMENT:
                 targets.append((node.target, ""))
                 if field_places:
+                    if (node.target.kind == NodeKind.INDEX or getattr(node, "implicit_deref_target", False)) and self._has_reference_storage(self._type(node.value)):
+                        flow.current_live.clear()
+                        flow.replacement_escaped = True
                     key = self._place_key(node.target)
                     if key:
                         flow.written.add(key)
@@ -1693,6 +3108,7 @@ class SafetyProofPass:
 
     def _visit_decl(self, node: ASTNode) -> None:
         if node.kind == NodeKind.FUNCTION and node.body:
+            self.escaped_arrays = set()
             self.moved_symbols = set()
             self.symbol_types = {}
             self.frames = []
@@ -1721,11 +3137,61 @@ class SafetyProofPass:
             return True
         return self.function_deletes.get(self._key(callee), True)
 
+    def _stable_boolean_condition(self, node, invalidated=()):
+        positive = True
+        while node is not None and node.kind == NodeKind.UNARY and node.operator == UnaryOp.NOT:
+            positive = not positive
+            node = node.operand
+        if node is None or node.kind != NodeKind.IDENTIFIER:
+            return None
+        key = self._key(node)
+        # Facts carry value versions through copies and branch snapshots.
+        # Repeated declarations and captures do not have a stable local version.
+        if key not in self.local_boolean_keys or key in self.repeated_boolean_keys or key in invalidated:
+            return None
+        fact = self.facts.symbol(key)
+        if fact.boolean is not None:
+            condition = int(fact.boolean)
+        elif fact.boolean_condition is not None:
+            condition = fact.boolean_condition
+        else:
+            variable = self.allocation_conditions.next_variable
+            self.allocation_conditions.next_variable += 1
+            condition = self.allocation_conditions.node(variable, 0, 1)
+            self.facts.set_symbol(key, replace(fact, boolean_condition=condition))
+        return condition if positive else self.allocation_conditions.combine('xor', condition, 1)
+
+    def _condition_effect_state(self, flow, condition):
+        # Collapse alternative paths in the shared condition graph before the
+        # next split; do not enumerate combinations of sequential predicates.
+        reachable = 0
+        for path in flow.paths:
+            reachable = self.allocation_conditions.combine('or', reachable, path)
+        active = self.allocation_conditions.combine('and', reachable, condition)
+        flow.paths = frozenset({active}) if active else frozenset()
+        flow.scalar_cases = {key: restricted for key, values in flow.scalar_cases.items()
+                             if (restricted := {value: guard for value, prior in values.items()
+                                                if (guard := self.allocation_conditions.combine('and', prior, active))})}
+        for mapping in (flow.aliases, flow.current_aliases):
+            for key, values in list(mapping.items()):
+                mapping[key] = self._origin_set(
+                    (origin, exact) for value, exact in values
+                    for origin in (self._condition_allocations((value,), condition)
+                                   if isinstance(value, AllocationRef) else (value,)))
+        flow.deleted = {origin for value in flow.deleted
+                        for origin in (self._condition_allocations((value,), condition)
+                                       if isinstance(value, AllocationRef) else (value,))}
+        for key, values in list(flow.places.items()):
+            if values is not None:
+                flow.places[key] = frozenset(origin for value in values
+                    for origin in (self._condition_allocations((value,), condition)
+                                   if isinstance(value, AllocationRef) else (value,)))
+        return bool(flow.paths)
+
     def _loop_effects(self, loop: ASTNode):
         """Separate effects reaching a body backedge from matching loop exits."""
-        origins = {key: frozenset({(AllocationRef(root), True)}) if root else frozenset()
-                   for key, fact in self.facts.by_symbol.items()
-                   for root in [self._allocation_root(fact.allocations)]}
+        origins = {key: frozenset((origin, True) for origin in self._condition_allocations(fact.allocations))
+                   for key, fact in self.facts.by_symbol.items()}
         results = {}
         self._parameter_effect_summary(loop, origins, loop_results=results)
         back, exit_state = results["back"], results["exit"]
@@ -1736,15 +3202,168 @@ class SafetyProofPass:
                 if isinstance(origin, AllocationRef):
                     deleted[origin] = frozenset({origin})
             deletions.append(deleted)
-        return back.written, deletions[0], exit_state.written, deletions[1], results["has_break"], back.counter_delta
+        current = []
+        initial = self.allocation_graph.union(origin.root for values in origins.values()
+                                              for origin, exact in values if isinstance(origin, AllocationRef))
+        for state in (back, exit_state):
+            projected = {}
+            for key in state.current_live & state.written if state.replaced and not state.replacement_escaped else ():
+                if (key not in self.facts.by_symbol or "." in key or key in self.file_variables
+                        or key in self.borrowed_keys or self._slot_moved(key)
+                        or not self.facts.symbol(key).allocations or self.facts.symbol(key).selected_allocations
+                        or self._allocations_moved(self.facts.symbol(key).allocations | self.facts.symbol(key).selected_allocations)):
+                    continue
+                values = state.current_aliases.get(key, ())
+                if (not values and key not in state.current_nil) or any(not exact or not isinstance(origin, AllocationRef) for origin, exact in values):
+                    continue
+                projected_values = set()
+                for origin, exact in values:
+                    active_dead = self.allocation_graph.union(
+                        item.root for item in state.deleted if isinstance(item, AllocationRef)
+                        and self.allocation_conditions.combine('and', origin.condition, item.condition))
+                    unchanged = self.allocation_graph.combine('difference', initial, active_dead)
+                    retained = self.allocation_graph.combine('intersection', origin.root, unchanged)
+                    changed = self.allocation_graph.combine('difference', origin.root, unchanged)
+                    projected_root = self.allocation_graph.union((retained, self.allocation_graph.prefix(("loop_current", id(loop)), changed)))
+                    projected_values.add(AllocationRef(projected_root, origin.condition))
+                projected[key] = self._condition_allocations(projected_values)
+            # A dead current slot must not fall back to its unrelated entry
+            # allocation. Other aliases to that entry allocation remain live.
+            dead_places = set()
+            for key in state.current_dead & state.written if not state.replacement_escaped else ():
+                values = state.current_aliases.get(key, ())
+                deaths = self._origin_intersection(
+                    tuple(origin for origin, exact in values if exact), state.deleted)
+                condition = 0
+                if values and all(exact and isinstance(origin, AllocationRef) for origin, exact in values):
+                    for death in deaths:
+                        if isinstance(death, AllocationRef):
+                            condition = self.allocation_conditions.combine('or', condition, death.condition)
+                dead_places.add(SlotDeath(key, condition) if condition else key)
+            current.append((projected, dead_places))
+        terminal_reentry = False
+        first_back = results.get("first_back")
+        if first_back is not None and loop.kind in {NodeKind.WHILE, NodeKind.FOR}:
+            condition = loop.condition
+            truth = (condition.literal_value if condition is not None and condition.kind == NodeKind.LITERAL
+                     and condition.literal_kind == LiteralKind.BOOLEAN else None)
+            key = self._key(condition) if condition is not None and condition.kind == NodeKind.IDENTIFIER else None
+            type_ = self._type(condition) if condition is not None else None
+            boolean_header = (key in self.local_boolean_keys and key not in self.borrowed_keys
+                              and key not in self.file_variables and key in self.facts.by_symbol
+                              and self.facts.symbol(key).initialized
+                              and isinstance(type_, PrimitiveType) and type_.name == "bool")
+            if truth is False:
+                terminal_reentry = True
+            elif truth is True or boolean_header:
+                # This prefix cannot register cleanup or reuse a first-trip
+                # dereference, bounds or arithmetic approval on a changed state.
+                conditions = self.allocation_conditions
+                reachable = 0
+                for path in first_back.paths:
+                    reachable = conditions.combine('or', reachable, path)
+                stable_conditions = results.get("stable_conditions", {})
+                outcomes = {id(None): (0, reachable, 0)}
+                pending = [("visit", loop.body, None)]
+                while pending:
+                    action, statement, context = pending.pop()
+                    if action == "sequence":
+                        statements, result = context
+                        if not result[1]:
+                            outcomes[id(statement)] = result
+                            continue
+                        child = next(statements, None)
+                        if child is None:
+                            outcomes[id(statement)] = result
+                        else:
+                            pending.extend([("sequence_after", statement, (statements, result, child)),
+                                            ("visit", child, None)])
+                        continue
+                    if action == "sequence_after":
+                        statements, result, child = context
+                        following = outcomes[id(child)]
+                        result = (conditions.combine('or', result[0], conditions.combine('and', result[1], following[0])),
+                                  conditions.combine('and', result[1], following[1]),
+                                  conditions.combine('or', result[2], conditions.combine('and', result[1], following[2])))
+                        pending.append(("sequence", statement, (statements, result)))
+                        continue
+                    if action == "branches":
+                        children, unknown = context
+                        result = [0, 0, unknown]
+                        for child, mask in children:
+                            for index, region in enumerate(outcomes[id(child)]):
+                                result[index] = conditions.combine('or', result[index], conditions.combine('and', mask, region))
+                        outcomes[id(statement)] = tuple(result)
+                        continue
+                    if id(statement) in outcomes:
+                        continue
+                    if statement.kind == NodeKind.BLOCK:
+                        pending.append(("sequence", statement, (iter(statement.statements or []), (0, reachable, 0))))
+                    elif statement.kind == NodeKind.IF_STMT:
+                        condition = statement.condition
+                        branch = self._effect_scalar_condition(condition, first_back.scalar_values)
+                        unknown = 0
+                        if branch is not None:
+                            masks = (reachable, 0) if branch else (0, reachable)
+                        elif (condition.kind == NodeKind.BINARY and condition.operator in
+                              {BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE}):
+                            left = self._effect_scalar_cases(condition.left, first_back.scalar_cases, reachable)
+                            right = self._effect_scalar_cases(condition.right, first_back.scalar_cases, reachable)
+                            yes, no = 0, 0
+                            for first, left_guard in left.items():
+                                for second, right_guard in right.items():
+                                    region = conditions.combine('and', left_guard, right_guard)
+                                    truth = {BinaryOp.EQ: first == second, BinaryOp.NE: first != second,
+                                             BinaryOp.LT: first < second, BinaryOp.LE: first <= second,
+                                             BinaryOp.GT: first > second, BinaryOp.GE: first >= second}[condition.operator]
+                                    if truth:
+                                        yes = conditions.combine('or', yes, region)
+                                    else:
+                                        no = conditions.combine('or', no, region)
+                            masks = (yes, no)
+                            unknown = conditions.combine('and', reachable, conditions.combine('xor', conditions.combine('or', yes, no), 1))
+                        else:
+                            key = self._key(condition) if condition.kind == NodeKind.IDENTIFIER else None
+                            type_ = self._type(condition)
+                            pure_boolean = (key in self.local_boolean_keys and key not in self.borrowed_keys
+                                            and key not in self.file_variables and key in self.facts.by_symbol
+                                            and self.facts.symbol(key).initialized
+                                            and isinstance(type_, PrimitiveType) and type_.name == "bool")
+                            if not pure_boolean:
+                                outcomes[id(statement)] = (0, 0, reachable)
+                                continue
+                            predicate = stable_conditions.get(id(condition))
+                            masks = ((reachable, reachable) if predicate is None else
+                                     (conditions.combine('and', reachable, predicate),
+                                      conditions.combine('and', reachable, conditions.combine('xor', predicate, 1))))
+                        children = ((statement.then_stmt, masks[0]), (statement.else_stmt, masks[1]))
+                        pending.append(("branches", statement, (children, unknown)))
+                        pending.extend(("visit", child, None) for child, mask in reversed(children))
+                    elif statement.kind == NodeKind.BREAK and statement.label in {None, loop.label}:
+                        outcomes[id(statement)] = (reachable, 0, 0)
+                    else:
+                        outcomes[id(statement)] = (0, 0, reachable)
+                terminal, continuing, unsupported = outcomes[id(loop.body)]
+                terminal_reentry = (bool(reachable)
+                                    and not conditions.combine('and', reachable, conditions.combine('xor', terminal, 1))
+                                    and not conditions.combine('and', reachable, conditions.combine('or', continuing, unsupported)))
+        return (back.written, deletions[0], exit_state.written, deletions[1], results["has_break"], back.counter_delta,
+                current[0], current[1], terminal_reentry)
 
     def _apply_loop_deletions(self, deleted: dict[str | AllocationRef, Optional[frozenset[str | AllocationRef]]]) -> None:
         for key, allocations in deleted.items():
             if allocations is None:
                 self._delete_place(key)
             else:
-                self.moved_symbols.add(key)
+                self._mark_moved_slot(key, allocations)
                 self._move_allocations(allocations)
+
+        # Nil facts describe the slot, not an exemption from allocation death.
+        for key in self.readonly_scalar_reference_keys:
+            fact = self.facts.symbol(key)
+            if (self._slot_moved(key)
+                    or self._allocations_moved(fact.allocations | fact.selected_allocations)):
+                self.facts.set_symbol(key, replace(fact, non_nil=False, maybe_nil=True))
 
     def _invalidate_length_relations(self, key: str) -> None:
         if key not in self.length_targets:
@@ -1753,7 +3372,7 @@ class SafetyProofPass:
             if fact.upper_length_of == key:
                 self.facts.set_symbol(other, replace(fact, upper_length_of=None))
 
-    def _forget_names(self, keys: set[str]) -> None:
+    def _forget_names(self, keys: set[str], preserve_non_nil: bool = False) -> None:
         affected = set(keys)
         for name in self.facts.by_symbol:
             if any(name.startswith(key + ".") for key in keys):
@@ -1762,15 +3381,66 @@ class SafetyProofPass:
             self._invalidate_length_relations(key)
             # A key with no entry is already unknown: a local the loop
             # declares later, or a file-scope variable.
-            if key in self.facts.by_symbol:
-                self.facts.set_symbol(key, replace(self._default_fact_for_type(self.symbol_types.get(key)),
-                                                   allocations=self.facts.symbol(key).allocations,
-                                                   selected_allocations=self.facts.symbol(key).selected_allocations))
+            if ".[" in key:
+                self.facts.by_symbol.pop(key, None)
+                self._clear_moved_slot(key)
+            elif key in self.facts.by_symbol:
+                fact = self.facts.symbol(key)
+                retained = (preserve_non_nil and key in self.readonly_scalar_reference_keys
+                            and fact.initialized and fact.non_nil and not fact.maybe_nil
+                            and not self._slot_moved(key)
+                            and not self._allocations_moved(fact.allocations | fact.selected_allocations))
+                forgotten = replace(self._default_fact_for_type(self.symbol_types.get(key)),
+                                    allocations=fact.allocations, selected_allocations=fact.selected_allocations)
+                if retained:
+                    forgotten = replace(forgotten, non_nil=True, maybe_nil=False)
+                self.facts.set_symbol(key, forgotten)
 
-    def _join_facts(self, left: dict[str, ValueFact], right: dict[str, ValueFact]) -> dict[str, ValueFact]:
+    def _forget_array_aliases(self) -> None:
+        # A loop can replace cells without rebinding scalar references copied
+        # from them. Keep those scalar origins for the ordinary loop effects.
+        for key, fact in list(self.facts.by_symbol.items()):
+            if ".[" in key:
+                self.facts.by_symbol.pop(key)
+                self._clear_moved_slot(key)
+
+    def _join_lifetime_states(self, left, left_moved, right, right_moved, condition=None):
+        if condition is None:
+            variable = self.allocation_conditions.next_variable
+            self.allocation_conditions.next_variable += 1
+            condition = self.allocation_conditions.node(variable, 0, 1)
+        branches = (condition, self.allocation_conditions.combine('xor', condition, 1))
+        states = []
+        moved = set()
+        for facts, deaths, condition in zip((left, right), (left_moved, right_moved), branches):
+            states.append({key: replace(fact,
+                allocations=self._condition_allocations(fact.allocations, condition),
+                selected_allocations=self._condition_allocations(fact.selected_allocations, condition))
+                for key, fact in facts.items()})
+            moved.update(item for item in deaths if not isinstance(item, (AllocationRef, SlotDeath)))
+            for item in deaths:
+                if isinstance(item, SlotDeath):
+                    active = self.allocation_conditions.combine('and', item.condition, condition)
+                    if active:
+                        moved.add(SlotDeath(item.key, active))
+            moved.update(self._condition_allocations((item for item in deaths if isinstance(item, AllocationRef)), condition))
+        return self._join_facts(*states, retain_exact=True), self._normalize_slot_deaths(moved)
+
+    def _join_facts(self, left: dict[str, ValueFact], right: dict[str, ValueFact], *, retain_exact: bool = False) -> dict[str, ValueFact]:
         joined = {}
         for name in left.keys() | right.keys():
             a, b = left.get(name, ValueFact()), right.get(name, ValueFact())
+            # Only paired states with represented identities on both paths
+            # retain literal slots. Missing facts can mean prior invalidation.
+            represented = (retain_exact and name in left and name in right
+                           and bool(a.allocations or a.selected_allocations)
+                           and bool(b.allocations or b.selected_allocations))
+            if ".[" in name and not represented:
+                continue
+            if a.exact_array_alias and not represented:
+                a = replace(a, allocations=frozenset(), selected_allocations=frozenset(), exact_array_alias=False)
+            if b.exact_array_alias and not represented:
+                b = replace(b, allocations=frozenset(), selected_allocations=frozenset(), exact_array_alias=False)
             if a is b:
                 joined[name] = a
                 continue
@@ -1779,42 +3449,73 @@ class SafetyProofPass:
                 lo = min(a.interval.lower, b.interval.lower) if a.interval.lower is not None and b.interval.lower is not None else None
                 hi = max(a.interval.upper, b.interval.upper) if a.interval.upper is not None and b.interval.upper is not None else None
                 interval = IntegerInterval(lo, hi)
-            joined[name] = ValueFact(interval=interval, nonzero=a.nonzero and b.nonzero,
+            joined[name] = ValueFact(boolean=a.boolean if a.boolean == b.boolean else None,
+                                     boolean_condition=a.boolean_condition if a.boolean_condition == b.boolean_condition else None,
+                                     interval=interval, nonzero=a.nonzero and b.nonzero,
                                      known_length=a.known_length if a.known_length == b.known_length else None,
                                      upper_length_of=a.upper_length_of if a.upper_length_of == b.upper_length_of else None,
                                      non_nil=a.non_nil and b.non_nil, maybe_nil=a.maybe_nil or b.maybe_nil,
                                      initialized=a.initialized and b.initialized, moved=a.moved or b.moved,
-                                     allocations=a.allocations | b.allocations,
-                                     selected_allocations=a.selected_allocations | b.selected_allocations)
+                                     exact_array_alias=represented and (a.exact_array_alias or b.exact_array_alias),
+                                     allocations=self._condition_allocations(a.allocations | b.allocations),
+                                     selected_allocations=self._condition_allocations(a.selected_allocations | b.selected_allocations))
         return joined
 
-    def _place_key(self, node: Optional[ASTNode]) -> Optional[str]:
+    def _place_key(self, node: Optional[ASTNode], *, exact_indices: bool = False,
+                   current_indices: bool = False) -> Optional[str]:
         fields = []
-        while node is not None and node.kind == NodeKind.FIELD_ACCESS:
-            fields.append(node)
+        while node is not None and node.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}:
+            index = None
+            if node.kind == NodeKind.INDEX:
+                array_type = self._type(node.object)
+                if not exact_indices or not isinstance(array_type, ArrayType):
+                    return None
+                index = self._int_literal(node.index)
+                if index is None and current_indices and node.index.kind == NodeKind.IDENTIFIER:
+                    index_key = self._key(node.index)
+                    interval = self.facts.symbol(index_key).interval
+                    if (index_key in self.local_index_keys and index_key not in self.borrowed_keys
+                            and interval is not None and interval.lower is not None
+                            and interval.lower == interval.upper and array_type.size is not None
+                            and 0 <= interval.lower < array_type.size):
+                        index = interval.lower
+                if index is None:
+                    return None
+            fields.append((node, index))
             node = node.object
         if node is None or node.kind != NodeKind.IDENTIFIER:
             return None
         key = self._key(node)
-        for access in reversed(fields):
+        for access, index in reversed(fields):
+            if access.kind == NodeKind.INDEX and key in self.escaped_arrays:
+                return None
             if isinstance(self._type(access.object), ReferenceType):
                 allocations = self.facts.symbol(key).allocations
                 if self._allocation_count(allocations) == 1:
                     key = self._allocation_place(allocations)
-            key += "." + access.field
+            key += (".[" + str(index) + "]"
+                    if access.kind == NodeKind.INDEX else "." + access.field)
         return key
 
     def _store_value(self, key: str, value: Optional[ASTNode], fact: ValueFact) -> None:
-        # Struct copies retain the allocation identities of their reference fields.
+        # Aggregate copies retain referent identities, with independent slot cells.
         children = {}
         pending = [(key, value)]
         while pending:
             prefix, current = pending.pop()
-            source_key = self._place_key(current)
+            source_key = self._place_key(current, exact_indices=True, current_indices=True)
             if source_key:
                 children.update({prefix + name[len(source_key):]: item
                                  for name, item in self.facts.by_symbol.items()
-                                 if name.startswith(source_key + ".")})
+                                 if name.startswith(source_key + ".") and prefix not in self.escaped_arrays})
+            if current is not None and current.kind == NodeKind.ARRAY_INIT and prefix not in self.escaped_arrays:
+                for index, element in enumerate(current.elements or []):
+                    child = prefix + ".[" + str(index) + "]"
+                    element_fact = self.facts.node(element)
+                    if isinstance(self._type(element), ReferenceType):
+                        children[child] = element_fact
+                    else:
+                        pending.append((child, element))
             if current is not None and current.kind == NodeKind.STRUCT_INIT:
                 for member in current.field_inits or []:
                     if member.name is None:
@@ -1826,21 +3527,72 @@ class SafetyProofPass:
         for name in list(self.facts.by_symbol):
             if name.startswith(key + "."):
                 del self.facts.by_symbol[name]
-                self.moved_symbols.discard(name)
+                self._clear_moved_slot(name)
         if "." in key and not isinstance(self._type(value), ReferenceType) and not fact.maybe_nil:
             fact = ValueFact()
         self.facts.set_symbol(key, fact)
         self.facts.by_symbol.update(children)
-        self.moved_symbols.discard(key)
+        self._clear_moved_slot(key)
+
+    def _slot_moved(self, key, moved=None):
+        moved = self.moved_symbols if moved is None else moved
+        return key in moved or any(
+            isinstance(item, SlotDeath) and item.key == key and item.condition
+            for item in moved)
+
+    def _clear_moved_slot(self, key, moved=None):
+        moved = self.moved_symbols if moved is None else moved
+        moved.difference_update(item for item in tuple(moved)
+                                if item == key or isinstance(item, SlotDeath) and item.key == key)
+
+    def _normalize_slot_deaths(self, moved):
+        conditions = {}
+        result = set()
+        for item in moved:
+            if isinstance(item, SlotDeath):
+                conditions[item.key] = self.allocation_conditions.combine(
+                    'or', conditions.get(item.key, 0), item.condition)
+            else:
+                result.add(item)
+        result.update(SlotDeath(key, condition) for key, condition in conditions.items() if condition)
+        return result
+
+    def _mark_moved_slot(self, key, allocations, moved=None):
+        moved = self.moved_symbols if moved is None else moved
+        if not isinstance(key, str):
+            moved.add(key)
+            return
+        condition = 0
+        for origin in self._condition_allocations(allocations):
+            condition = self.allocation_conditions.combine('or', condition, origin.condition)
+        moved.add(SlotDeath(key, condition if allocations else 1))
+        normalized = self._normalize_slot_deaths(moved)
+        moved.clear()
+        moved.update(normalized)
+
+    def _restrict_lifetime_state(self, condition):
+        self.facts.by_symbol = {key: replace(fact,
+            allocations=self._condition_allocations(fact.allocations, condition),
+            selected_allocations=self._condition_allocations(fact.selected_allocations, condition))
+            for key, fact in self.facts.by_symbol.items()}
+        moved = {item for item in self.moved_symbols if not isinstance(item, (AllocationRef, SlotDeath))}
+        moved.update(self._condition_allocations(
+            (item for item in self.moved_symbols if isinstance(item, AllocationRef)), condition))
+        for item in self.moved_symbols:
+            if isinstance(item, SlotDeath):
+                active = self.allocation_conditions.combine('and', item.condition, condition)
+                if active:
+                    moved.add(SlotDeath(item.key, active))
+        self.moved_symbols = self._normalize_slot_deaths(moved)
 
     def _delete_place(self, key: str) -> None:
         fact = self.facts.symbol(key)
         self._move_allocations(fact.allocations)
-        self.moved_symbols.add(key)
+        self._mark_moved_slot(key, self.facts.symbol(key).allocations)
 
     def _check_reference_alive(self, node: ASTNode, fact: ValueFact, key: Optional[str]) -> None:
-        if key in self.moved_symbols or self._allocations_moved(fact.allocations | fact.selected_allocations):
-            name = node.name if node.kind == NodeKind.IDENTIFIER else node.field
+        if self._slot_moved(key) or self._allocations_moved(fact.allocations | fact.selected_allocations):
+            name = node.name if node.kind == NodeKind.IDENTIFIER else node.field if node.kind == NodeKind.FIELD_ACCESS else "array element"
             self._error_moved_symbol(node, name, "moved/deleted values cannot be read")
 
     def _visit_stmt(self, node: ASTNode) -> None:
@@ -1885,23 +3637,42 @@ class SafetyProofPass:
                 self.defer_floor = floor
             for key in self.scope_keys.get(id(node), ()):
                 self.facts.by_symbol.pop(key, None)
-                self.moved_symbols.discard(key)
+                self._clear_moved_slot(key)
         elif node.kind in {NodeKind.VAR, NodeKind.CONST}:
             fact = self._visit_expr(node.value) if node.value else self._default_fact_for_type(self._type(node))
             if node.name:
                 key = self._key(node)
                 self._invalidate_length_relations(key)
-                self._store_value(key, node.value, fact)
+                declared_type = self._type(node)
+                value_type = self._type(node.value)
+                if ((id(node), node.name) in self.keys and node.value is not None
+                        and isinstance(declared_type, PrimitiveType)
+                        and (declared_type.is_numeric() or declared_type.name in {"bool", "char"})
+                        and isinstance(value_type, PrimitiveType)
+                        and (value_type.is_numeric() or value_type.name in {"bool", "char"})):
+                    # A typed scalar local has no field or element descendants,
+                    # even when its declaration is revisited by loop analysis.
+                    self.facts.set_symbol(key, fact)
+                else:
+                    self._store_value(key, node.value, fact)
                 self.symbol_types[key] = self._type(node) or self._type(node.value)
-                self.moved_symbols.discard(key)
+                self._clear_moved_slot(key)
         elif node.kind == NodeKind.ASSIGNMENT:
             rhs = self._visit_expr(node.value) if node.value else ValueFact()
             if node.target:
-                target_fact = (
-                    self._visit_expr(node.target.object if node.target.kind == NodeKind.FIELD_ACCESS else node.target)
-                    if getattr(node, "implicit_deref_target", False) or node.target.kind != NodeKind.IDENTIFIER
-                    else self.facts.symbol(self._key(node.target))
-                )
+                # A slot replacement evaluates its address and bounds, not the
+                # lifetime of the old reference stored there.
+                if node.target.kind == NodeKind.INDEX and node.operator == AssignOp.ASSIGN:
+                    obj_fact = self._visit_expr(node.target.object)
+                    idx_fact = self._visit_expr(node.target.index)
+                    self._prove_index(node.target, obj_fact, idx_fact)
+                    target_fact = ValueFact()
+                else:
+                    target_fact = (
+                        self._visit_expr(node.target.object if node.target.kind == NodeKind.FIELD_ACCESS else node.target)
+                        if getattr(node, "implicit_deref_target", False) or node.target.kind != NodeKind.IDENTIFIER
+                        else self.facts.symbol(self._key(node.target))
+                    )
                 if getattr(node, "implicit_deref_target", False):
                     self._prove_ref_non_nil_for_node(
                         node,
@@ -1937,16 +3708,50 @@ class SafetyProofPass:
                         key = self._key(node.target)
                         self._invalidate_length_relations(key)
                         self._store_value(key, node.value, rhs)
-                elif node.target.kind == NodeKind.FIELD_ACCESS:
-                    if node.operator != AssignOp.ASSIGN:
-                        self._visit_expr(node.target)
-                    if getattr(node.target, "implicit_deref_object", False):
-                        self._prove_ref_non_nil_for_node(
-                            node.target, target_fact, self._type(node.target.object),
-                            "reference must be proven non-nil before field assignment", node.target.object)
-                    key = self._place_key(node.target)
+                elif (node.target.kind == NodeKind.FIELD_ACCESS
+                      or (node.target.kind == NodeKind.INDEX and node.operator == AssignOp.ASSIGN)):
+                    if node.target.kind == NodeKind.FIELD_ACCESS:
+                        if node.operator != AssignOp.ASSIGN:
+                            self._visit_expr(node.target)
+                        if getattr(node.target, "implicit_deref_object", False):
+                            self._prove_ref_non_nil_for_node(
+                                node.target, target_fact, self._type(node.target.object),
+                                "reference must be proven non-nil before field assignment", node.target.object)
+                    key = self._place_key(node.target, exact_indices=True, current_indices=True)
                     if key:
                         self._store_value(key, node.value, rhs)
+                    else:
+                        # Match unknown indices while retaining the written field path.
+                        accesses = [node.target]
+                        container = node.target.object
+                        base = self._place_key(container, exact_indices=True, current_indices=True)
+                        while base is None and container.kind in {NodeKind.INDEX, NodeKind.FIELD_ACCESS}:
+                            accesses.append(container)
+                            container = container.object
+                            base = self._place_key(container, exact_indices=True, current_indices=True)
+                        prefixes = {base} if base else set()
+                        for access in reversed(accesses):
+                            next_prefixes = set()
+                            for prefix in prefixes:
+                                if isinstance(self._type(access.object), ReferenceType):
+                                    allocations = self.facts.symbol(prefix).allocations
+                                    if self._allocation_count(allocations) == 1:
+                                        prefix = self._allocation_place(allocations)
+                                if access.kind == NodeKind.FIELD_ACCESS:
+                                    next_prefixes.add(prefix + "." + access.field)
+                                elif self._int_literal(access.index) is not None:
+                                    next_prefixes.add(prefix + ".[" + str(self._int_literal(access.index)) + "]")
+                                else:
+                                    for name in self.facts.by_symbol:
+                                        if name.startswith(prefix + ".["):
+                                            cell = name[len(prefix) + 1:].split(".", 1)[0]
+                                            next_prefixes.add(prefix + "." + cell)
+                            prefixes = next_prefixes
+                        for name in list(self.facts.by_symbol):
+                            if any(name == prefix or name.startswith(prefix + ".") for prefix in prefixes):
+                                self._invalidate_length_relations(name)
+                                self.facts.by_symbol.pop(name)
+                                self._clear_moved_slot(name)
             if node.operator in {AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN} and node.value:
                 self._prove_nonzero_divisor(node, node.value, node.operator.name.lower())
         elif node.kind == NodeKind.EXPRESSION_STMT and node.expression:
@@ -1983,9 +3788,12 @@ class SafetyProofPass:
                 self.moved_symbols = moved
         elif node.kind == NodeKind.IF_STMT:
             self._visit_expr(node.condition)
+            predicate = self._stable_boolean_condition(node.condition)
             saved = self.facts.copy_symbols()
             moved = set(self.moved_symbols)
             self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=True))
+            if predicate is not None:
+                self._restrict_lifetime_state(predicate)
             if node.then_stmt:
                 yield node.then_stmt
             then_state = self.facts.copy_symbols()
@@ -1993,6 +3801,8 @@ class SafetyProofPass:
             self.facts.restore_symbols(dict(saved))
             self.moved_symbols = set(moved)
             self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=False))
+            if predicate is not None:
+                self._restrict_lifetime_state(self.allocation_conditions.combine('xor', predicate, 1))
             if node.else_stmt:
                 yield node.else_stmt
             if node.then_stmt and self._always_returns(node.then_stmt):
@@ -2001,13 +3811,13 @@ class SafetyProofPass:
                 self.facts.restore_symbols(then_state)
                 self.moved_symbols = then_moved
             else:
-                self.facts.by_symbol = self._join_facts(then_state, self.facts.by_symbol)
-                self.moved_symbols.update(then_moved)
+                self.facts.by_symbol, self.moved_symbols = self._join_lifetime_states(then_state, then_moved, self.facts.by_symbol, self.moved_symbols, predicate)
         elif node.kind in {NodeKind.WHILE, NodeKind.FOR}:
+            self._forget_array_aliases()
             self.frames.append(ExitFrame(node))
             if node.init:
                 yield node.init
-            written, deleted, exit_written, exit_deleted, has_break, back_delta = self._loop_effects(node)
+            written, deleted, exit_written, exit_deleted, has_break, back_delta, back_live, exit_live, terminal_reentry = self._loop_effects(node)
             # A counter increment on every backedge can establish at most one
             # active iteration. Integer wrapping must not re-enable the guard.
             single_iteration = False
@@ -2054,9 +3864,13 @@ class SafetyProofPass:
                     active_upper = min(interval.upper, bound - 1)
                     single_iteration = (minimum_step > 0 and interval.lower < bound <= interval.lower + minimum_step
                                         and self._range_fits(IntegerInterval(interval.lower, active_upper + maximum_step), self._type(condition.left)))
-            if not single_iteration:
+            if not single_iteration and not terminal_reentry:
                 self._apply_loop_deletions(deleted)
-                self._forget_names(written)
+                self._forget_names(written, preserve_non_nil=True)
+                for key, allocations in back_live[0].items():
+                    self.facts.set_symbol(key, ValueFact(maybe_nil=True, allocations=allocations))
+                    self._clear_moved_slot(key)
+                self.moved_symbols.update(back_live[1])
             head = self.facts.copy_symbols()
             head_moved = set(self.moved_symbols)
             if node.condition:
@@ -2067,8 +3881,7 @@ class SafetyProofPass:
             frame = self.frames.pop()
             if node.update:
                 for facts, continue_moved in frame.continues:
-                    self.facts.by_symbol = self._join_facts(self.facts.by_symbol, facts)
-                    self.moved_symbols.update(continue_moved)
+                    self.facts.by_symbol, self.moved_symbols = self._join_lifetime_states(self.facts.by_symbol, self.moved_symbols, facts, continue_moved)
                 yield node.update
             # The loop may run zero times, and a `break` leaves from a state
             # the head state covers, so nothing the body established survives.
@@ -2076,20 +3889,29 @@ class SafetyProofPass:
             # can leave with it still true.
             self.facts.restore_symbols(head)
             self.moved_symbols = head_moved
-            self._forget_names(exit_written)
+            self._forget_names(exit_written, preserve_non_nil=True)
             self._apply_loop_deletions(exit_deleted)
+            for key, allocations in exit_live[0].items():
+                self.facts.set_symbol(key, ValueFact(maybe_nil=True, allocations=allocations))
+                self._clear_moved_slot(key)
+            self.moved_symbols.update(exit_live[1])
             if node.condition and not has_break:
                 self.facts.by_symbol.update(self._facts_from_condition(node.condition, positive=False))
             for key in self.scope_keys.get(id(node), ()):
                 self.facts.by_symbol.pop(key, None)
-                self.moved_symbols.discard(key)
+                self._clear_moved_slot(key)
         elif node.kind in {NodeKind.FOR_IN, NodeKind.FOR_IN_INDEXED}:
+            self._forget_array_aliases()
             iterable_fact = self._visit_expr(node.iterable)
             self.frames.append(ExitFrame(node))
-            written, deleted, exit_written, exit_deleted, _, _ = self._loop_effects(node)
+            written, deleted, exit_written, exit_deleted, _, _, back_live, exit_live, _ = self._loop_effects(node)
             if self._object_length(node.iterable, iterable_fact) != 1:
                 self._apply_loop_deletions(deleted)
-                self._forget_names(written)
+                self._forget_names(written, preserve_non_nil=True)
+                for key, allocations in back_live[0].items():
+                    self.facts.set_symbol(key, ValueFact(maybe_nil=True, allocations=allocations))
+                    self._clear_moved_slot(key)
+                self.moved_symbols.update(back_live[1])
             head = self.facts.copy_symbols()
             head_moved = set(self.moved_symbols)
             if node.index_var:
@@ -2105,8 +3927,12 @@ class SafetyProofPass:
             # Same exit rule as `while`: zero iterations are possible.
             self.facts.restore_symbols(head)
             self.moved_symbols = head_moved
-            self._forget_names(exit_written)
+            self._forget_names(exit_written, preserve_non_nil=True)
             self._apply_loop_deletions(exit_deleted)
+            for key, allocations in exit_live[0].items():
+                self.facts.set_symbol(key, ValueFact(maybe_nil=True, allocations=allocations))
+                self._clear_moved_slot(key)
+            self.moved_symbols.update(exit_live[1])
         elif node.kind == NodeKind.MATCH:
             self._visit_expr(node.expression)
             saved = self.facts.copy_symbols()
@@ -2124,8 +3950,7 @@ class SafetyProofPass:
                 if fallen is not None:
                     # The arm above ends in `fall`, so this arm also starts
                     # from that arm's end state.
-                    self.facts.by_symbol = self._join_facts(self.facts.by_symbol, fallen[0])
-                    self.moved_symbols.update(fallen[1])
+                    self.facts.by_symbol, self.moved_symbols = self._join_lifetime_states(self.facts.by_symbol, self.moved_symbols, *fallen)
                 for stmt in statements:
                     yield stmt
                 last = statements[-1] if statements else None
@@ -2136,8 +3961,7 @@ class SafetyProofPass:
                 # Falling arms continue in the next arm; terminal arms leave
                 # this statement. Neither is an ordinary fallthrough state.
                 if not falls and not (last is not None and self._always_returns(last)):
-                    joined = self._join_facts(joined, self.facts.by_symbol)
-                    all_moved.update(self.moved_symbols)
+                    joined, all_moved = self._join_lifetime_states(joined, all_moved, self.facts.by_symbol, self.moved_symbols)
             self.facts.restore_symbols(joined)
             self.moved_symbols = all_moved
         elif node.kind == NodeKind.DEFER and node.statement:
@@ -2149,7 +3973,7 @@ class SafetyProofPass:
                 yield node.statement
         elif node.kind == NodeKind.DEL and node.expression:
             target = node.expression
-            if target.kind == NodeKind.IDENTIFIER and self._key(target) in self.moved_symbols:
+            if target.kind == NodeKind.IDENTIFIER and self._slot_moved(self._key(target)):
                 self._error_moved_symbol(target, target.name, "a value can be deleted only once")
             else:
                 self._visit_expr(target)
@@ -2161,6 +3985,8 @@ class SafetyProofPass:
             saved_moved = self.moved_symbols
             saved_frames = self.frames
             saved_floor = self.defer_floor
+            saved_escaped_arrays = self.escaped_arrays
+            self.escaped_arrays = set()
             self.moved_symbols = set()
             self.frames = []
             self.defer_floor = 0
@@ -2177,6 +4003,9 @@ class SafetyProofPass:
             self.moved_symbols = saved_moved
             self.frames = saved_frames
             self.defer_floor = saved_floor
+            self.escaped_arrays = saved_escaped_arrays
+        if node.kind in LOOP_KINDS:
+            self._forget_array_aliases()
 
     def _call_origin_fact(self, node: ASTNode, captured, origins, global_values=None) -> ValueFact:
         values = []
@@ -2191,8 +4020,8 @@ class SafetyProofPass:
                         if remaining != item.root:
                             self.moved_symbols.remove(item)
                             if remaining:
-                                self.moved_symbols.add(AllocationRef(remaining))
-                values.append(ValueFact(maybe_nil=True, allocations=frozenset({AllocationRef(root)})))
+                                self.moved_symbols.add(AllocationRef(remaining, item.condition))
+                values.append(ValueFact(maybe_nil=True, allocations=frozenset({AllocationRef(root, origin.condition)})))
             elif origin in self.global_origins:
                 key = self.global_origins[origin]
                 values.append(global_values[key] if global_values is not None else self.facts.symbol(key))
@@ -2282,20 +4111,43 @@ class SafetyProofPass:
             if action == "readonly_requirements":
                 name, scalar_captures, captured = context
                 engine = self.readonly_requirements
+                name = engine.call_targets.get(id(node), name)
                 if self._exact_call_name(node, captured) is not None:
                     engine.dispositions.append((id(node), name, "existing exact replay owns requirement"))
                     continue
+                if name in engine.index_functions:
+                    scalar_captures = list(scalar_captures)
+                    for index, arg in enumerate(node.arguments or []):
+                        if isinstance(self._type(arg), ReferenceType):
+                            fact = captured[index][0]
+                            if fact.non_nil:
+                                scalar_captures[index] = False
                 violation, origin, disposition = engine.evaluate(name, scalar_captures)
                 engine.dispositions.append((id(node), name, disposition))
+                if violation is None and name in engine.index_functions:
+                    obligation = self._obligation(ObligationKind.REF_NON_NIL, node,
+                        "index_call_precondition", None,
+                        "reference-array access requires a complete caller nil proof", TypeErrorType.CANNOT_DEREFERENCE)
+                    self._error(obligation, "reference-array caller requirement is unresolved")
                 if violation is True:
                     origin_span = getattr(origin, "span", None)
-                    required = "readonly callee field access must remain non-nil"
+                    required = ("readonly callee indexed access must remain non-nil"
+                                if origin is not None and origin.kind == NodeKind.INDEX
+                                else "readonly callee field access must remain non-nil")
                     if origin_span is not None:
-                        required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column})"
+                        required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column}"
+                        if origin_span.origin_file:
+                            required += f" in {origin_span.origin_file}"
+                        required += ")"
                     obligation = self._obligation(ObligationKind.REF_NON_NIL, node,
                         "readonly_call_precondition", None, required, TypeErrorType.CANNOT_DEREFERENCE)
                     self._error(obligation, "reachable readonly callee read receives nil",
                         "Guard the reference or avoid the callee path that reads it")
+                continue
+            if action == "captured_boolean_effects":
+                for key in self.capture_call_effects.get(id(node), self.mutable_boolean_captures):
+                    if key in self.facts.by_symbol:
+                        self.facts.set_symbol(key, replace(self.facts.symbol(key), boolean=None, boolean_condition=None))
                 continue
             if action == "capture_globals":
                 context.update({key: self.facts.symbol(key) for key in self.global_origins.values()})
@@ -2318,7 +4170,7 @@ class SafetyProofPass:
                     self._move_allocations(fact.allocations)
                 for key in self.reference_globals:
                     if key in dead_globals or self._allocations_moved(self.facts.symbol(key).allocations):
-                        self.moved_symbols.add(key)
+                        self._mark_moved_slot(key, self.facts.symbol(key).allocations)
                 continue
             if action == "call_start":
                 exact_name = self._exact_call_name(node)
@@ -2327,6 +4179,7 @@ class SafetyProofPass:
                 global_values = {}
                 callee = node.function
                 name = self._key(callee) if callee and callee.kind == NodeKind.IDENTIFIER else None
+                pending.append(("captured_boolean_effects", node, None))
                 pending.append(("return_effects", node, (name, captured, global_values)))
                 if exact_name:
                     pending.append(("exact_finish", node, (exact_name, captured, global_values)))
@@ -2352,9 +4205,24 @@ class SafetyProofPass:
                         scalar = arg.literal_value
                 elif i in borrowed:
                     scalar = False
+                elif arg.kind == NodeKind.CALL:
+                    engine = self.readonly_requirements
+                    if engine.call_targets.get(id(node)) in engine.index_functions:
+                        scalar = engine.boolean_results.get(engine.call_targets.get(id(arg)))
+                if scalar is None and self.readonly_requirements.call_targets.get(id(node)) in self.readonly_requirements.index_functions:
+                    scalar = self.facts.node(arg).boolean
                 scalar_captures.append(scalar)
                 fact = self.facts.node(arg)
                 captured.append((replace(fact, non_nil=True) if i in borrowed else fact, self._place_key(arg) if i in borrowed else None))
+                if i in borrowed and isinstance(self._type(arg), ArrayType):
+                    container = arg
+                    key = self._place_key(container, exact_indices=True, current_indices=True)
+                    while key is None and container.kind in {NodeKind.INDEX, NodeKind.FIELD_ACCESS}:
+                        container = container.object
+                        key = self._place_key(container, exact_indices=True, current_indices=True)
+                    if key:
+                        self.escaped_arrays.add(key)
+                        self._forget_names({name for name in self.facts.by_symbol if name.startswith(key + ".[")})
                 if not exact_name:
                     self._apply_legacy_reference_effects(node, i, arg, self.facts.node(arg))
                 arg_fact = self.facts.node(arg)
@@ -2411,7 +4279,16 @@ class SafetyProofPass:
                 fact = self._literal_fact(node)
             elif node.kind == NodeKind.IDENTIFIER:
                 key = self._key(node)
+                # A value copied before its first condition still shares that
+                # version; later assignments and borrows replace the slot fact.
+                predicate = self._stable_boolean_condition(node)
                 fact = self.facts.symbol(key)
+                if key in self.mutable_boolean_captures:
+                    # Preserve lifetime correlation without widening readonly
+                    # caller literal-value proofs for writable captures.
+                    fact = replace(fact, boolean=None, boolean_condition=predicate)
+                elif key not in self.local_boolean_keys or key in self.borrowed_keys:
+                    fact = replace(fact, boolean=None)
                 self._check_reference_alive(node, fact, key)
             elif node.kind == NodeKind.UNARY:
                 operand = self.facts.node(node.operand)
@@ -2431,12 +4308,26 @@ class SafetyProofPass:
                 obj_fact = self.facts.node(node.object)
                 idx_fact = self.facts.node(node.index)
                 self._prove_index(node, obj_fact, idx_fact)
+                key = self._place_key(node, exact_indices=True, current_indices=True)
+                if key and isinstance(self._type(node), ReferenceType):
+                    saved = self.facts.symbol(key)
+                    fact = ValueFact(allocations=saved.allocations, exact_array_alias=bool(saved.allocations))
+                    self._check_reference_alive(node, fact, key if key in self.facts.by_symbol else None)
             elif node.kind == NodeKind.SLICE:
                 obj_fact = self.facts.node(node.object)
                 start_fact = self.facts.node(node.start) if node.start else ValueFact(interval=IntegerInterval.exact(0))
                 end_fact = self.facts.node(node.end) if node.end else ValueFact(interval=IntegerInterval.exact(obj_fact.known_length), known_length=obj_fact.known_length) if obj_fact.known_length is not None else ValueFact()
                 self._prove_slice(node, obj_fact, start_fact, end_fact)
                 fact = self._slice_fact(node, obj_fact, start_fact, end_fact)
+                # A mutable view can write backing slots outside this model.
+                container = node.object
+                key = self._place_key(container, exact_indices=True, current_indices=True)
+                while key is None and container.kind in {NodeKind.INDEX, NodeKind.FIELD_ACCESS}:
+                    container = container.object
+                    key = self._place_key(container, exact_indices=True, current_indices=True)
+                if key:
+                    self.escaped_arrays.add(key)
+                    self._forget_names({name for name in self.facts.by_symbol if name.startswith(key + ".[")})
             elif node.kind == NodeKind.FIELD_ACCESS:
                 obj = self.facts.node(node.object)
                 if getattr(node, "implicit_deref_object", False):
@@ -2447,7 +4338,7 @@ class SafetyProofPass:
                         "reference must be proven non-nil before field access through it",
                         node.object,
                     )
-                key = self._place_key(node)
+                key = self._place_key(node, exact_indices=True, current_indices=True)
                 fact = self.facts.symbol(key)
                 if key and key not in self.facts.by_symbol and isinstance(self._type(node), ReferenceType):
                     fact = ValueFact(maybe_nil=True, allocations=self._field_allocations(key))
@@ -2467,12 +4358,19 @@ class SafetyProofPass:
                         child_key = prefix + "." + node.field
                         child = self.facts.symbol(child_key)
                         if child.allocations or child.selected_allocations:
-                            identities.update(child.allocations | child.selected_allocations)
+                            active = 0
+                            for owner in self._condition_allocations(obj.allocations):
+                                if self.allocation_graph.combine('intersection', owner.root, parent):
+                                    active = self.allocation_conditions.combine('or', active, owner.condition)
+                            identities.update(self._condition_allocations(child.allocations | child.selected_allocations, active))
                             missing = self.allocation_graph.combine('difference', missing, parent)
-                        if child_key in self.moved_symbols:
+                        if self._slot_moved(child_key):
                             alive_key = child_key
                     if missing:
-                        identities.add(AllocationRef(self.allocation_graph.prefix(('field', node.field), missing)))
+                        for owner in self._condition_allocations(obj.allocations):
+                            unknown = self.allocation_graph.combine('intersection', missing, owner.root)
+                            if unknown:
+                                identities.add(AllocationRef(self.allocation_graph.prefix(('field', node.field), unknown), owner.condition))
                     fact = replace(fact, selected_allocations=frozenset(identities))
                     self.facts.set_symbol(key, fact)
                 self._check_reference_alive(node, fact, alive_key)
@@ -2525,6 +4423,8 @@ class SafetyProofPass:
         return ValueFact()
 
     def _literal_fact(self, node: ASTNode) -> ValueFact:
+        if node.literal_kind == LiteralKind.BOOLEAN:
+            return ValueFact(boolean=node.literal_value)
         if node.literal_kind == LiteralKind.INTEGER and isinstance(node.literal_value, int):
             return ValueFact(interval=IntegerInterval.exact(node.literal_value), nonzero=node.literal_value != 0)
         if node.literal_kind == LiteralKind.FLOAT and isinstance(node.literal_value, (int, float)):
@@ -2536,6 +4436,8 @@ class SafetyProofPass:
         return ValueFact()
 
     def _unary_fact(self, node: ASTNode, operand: ValueFact) -> ValueFact:
+        if node.operator == UnaryOp.NOT and operand.boolean is not None:
+            return ValueFact(boolean=not operand.boolean)
         if node.operator == UnaryOp.NEG and operand.interval and operand.interval.lower is not None and operand.interval.upper is not None:
             interval = IntegerInterval(-operand.interval.upper, -operand.interval.lower)
             # `-MIN` wraps to `MIN`, so an interval past the type's maximum
@@ -2622,6 +4524,19 @@ class SafetyProofPass:
     def _prove_index(self, node: ASTNode, obj: ValueFact, idx: ValueFact) -> None:
         obligation = self._obligation(ObligationKind.INDEX_IN_BOUNDS, node, "index", self._type(node.index), "index must satisfy 0 <= index < len", None)
         length = self._object_length(node.object, obj)
+        typ = self._type(node.object)
+        unavailable_requirement = None
+        if isinstance(typ, ReferenceType) and isinstance(typ.referent_type, ArrayType):
+            self._prove_ref_non_nil_for_node(
+                node, obj, typ, "reference must be proven non-nil before indexing through it", node.object,
+            )
+            owner = self.readonly_requirements.index_owners.get(id(node))
+            if (owner in self.escaped_index_functions
+                    or owner not in self.readonly_requirements.summaries):
+                length = None
+                unavailable_requirement = ("callable origin is not trackable"
+                                           if owner in self.escaped_index_functions
+                                           else "function access requirements are unresolved")
         interval = idx.interval
         relative_bound = (idx.upper_length_of is not None and node.object is not None
                           and node.object.kind == NodeKind.IDENTIFIER
@@ -2630,7 +4545,14 @@ class SafetyProofPass:
         if relative_bound or (length is not None and interval is not None and interval.contains(0, length - 1)):
             self._prove(obligation, "index is in bounds")
         else:
-            if node.index is not None and node.index.kind == NodeKind.LITERAL and length is not None:
+            detail = "index bounds are not proven"
+            if unavailable_requirement is not None:
+                detail = "reference-array access requires a complete caller proof: " + unavailable_requirement
+                if owner in self.escaped_index_functions:
+                    hint = "Use direct calls or unwritten, uncaptured local callable aliases; an index guard alone cannot establish the required caller proof."
+                else:
+                    hint = "The current analysis cannot resolve this function's access requirements; an index guard alone cannot establish the required caller proof."
+            elif node.index is not None and node.index.kind == NodeKind.LITERAL and length is not None:
                 hint = f"This array has {length} elements; valid indexes are 0 to {length - 1}"
             else:
                 name, copy_first = self._guard_subject(node.index, "i")
@@ -2642,7 +4564,7 @@ class SafetyProofPass:
                     bound = f"{slice_name}.len"
                     copy_first = copy_slice or copy_first
                 hint = f"{copy_first}Guard the index: 'if {name} < {bound} {{ ... }}' around the access"
-            self._error(obligation, "index bounds are not proven", hint)
+            self._error(obligation, detail, hint)
 
     def _prove_slice(self, node: ASTNode, obj: ValueFact, start: ValueFact, end: ValueFact) -> None:
         obligation = self._obligation(ObligationKind.SLICE_IN_BOUNDS, node, "slice", self._type(node.object), "slice must satisfy 0 <= start <= end <= len", None)
@@ -2684,6 +4606,8 @@ class SafetyProofPass:
 
     def _object_length(self, node: Optional[ASTNode], fact: ValueFact) -> Optional[int]:
         type_ = self._type(node)
+        if isinstance(type_, ReferenceType) and isinstance(type_.referent_type, ArrayType):
+            type_ = type_.referent_type
         if isinstance(type_, ArrayType):
             return type_.size
         if fact.known_length is not None:
@@ -2799,6 +4723,25 @@ class SafetyProofPass:
         return results[id(node)]
 
     def _facts_from_condition(self, condition: Optional[ASTNode], *, positive: bool) -> dict[str, ValueFact]:
+        original_positive = positive
+        predicate = condition
+        while predicate is not None and predicate.kind == NodeKind.UNARY and predicate.operator == UnaryOp.NOT:
+            positive = not positive
+            predicate = predicate.operand
+        subject = predicate
+        value = positive
+        if predicate is not None and predicate.kind == NodeKind.BINARY and predicate.operator in {BinaryOp.EQ, BinaryOp.NE}:
+            for subject, literal in ((predicate.left, predicate.right), (predicate.right, predicate.left)):
+                if literal.kind == NodeKind.LITERAL and literal.literal_kind == LiteralKind.BOOLEAN:
+                    value = literal.literal_value if positive == (predicate.operator == BinaryOp.EQ) else not literal.literal_value
+                    break
+            else:
+                subject = None
+        if subject is not None and subject.kind == NodeKind.IDENTIFIER:
+            key = self._key(subject)
+            if key in self.local_boolean_keys and key not in self.borrowed_keys:
+                return {key: replace(self.facts.symbol(key), boolean=value)}
+        positive = original_positive
         if condition is None or condition.kind != NodeKind.BINARY:
             return {}
         field_guard = condition.left is not None and condition.left.kind == NodeKind.FIELD_ACCESS
@@ -2864,7 +4807,7 @@ class SafetyProofPass:
         return None
 
     def _mark_deleted(self, node: ASTNode) -> None:
-        key = self._place_key(node)
+        key = self._place_key(node, exact_indices=True, current_indices=True)
         if key:
             self._delete_place(key)
 

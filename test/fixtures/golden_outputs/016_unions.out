@@ -1,3 +1,5 @@
 === Unions ===
 int: 42
 float: 3.5
+tagged number: -17
+tagged flag: true

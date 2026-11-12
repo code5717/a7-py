@@ -110,6 +110,8 @@ def test_mutation_check_requires_git_before_editing(tmp_path, monkeypatch, capsy
 
 def test_mutation_check_rejects_failed_git_status(tmp_path, monkeypatch, capsys):
     harness = load_script("scripts/mutation_harness.py")
+    # An invalid gitfile makes real Git fail regardless of parent repositories.
+    (tmp_path / ".git").write_text("not a gitfile\n")
     monkeypatch.setattr(harness, "ROOT", tmp_path)
     assert harness.check_mutants(False) == 2
     assert "Cannot check the working tree" in capsys.readouterr().err

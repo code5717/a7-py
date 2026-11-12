@@ -163,7 +163,7 @@ class TestCustomModuleRegistration:
         custom_mod = StdlibModule(name="custom")
         custom_mod.functions["do_thing"] = StdlibFunction(
             module="custom", name="do_thing",
-            canonical="std.custom.do_thing",
+            canonical="std.custom.do_thing", signature="fn()",
         )
         registry.register_module(custom_mod)
 
@@ -182,6 +182,6 @@ class TestStdlibDataclasses:
     def test_stdlib_module_add_function(self):
         """Adding a function to a module should be retrievable."""
         mod = StdlibModule(name="test")
-        func = StdlibFunction(module="test", name="f", canonical="std.test.f")
+        func = StdlibFunction(module="test", name="f", canonical="std.test.f", signature="fn()")
         mod.functions["f"] = func
         assert mod.functions["f"] is func

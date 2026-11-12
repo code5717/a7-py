@@ -1,8 +1,8 @@
 {
-  "recorded_at": "2026-10-07T09:11:07.080712+00:00",
-  "completed_external_reviews": 51,
+  "recorded_at": "2026-10-07T10:27:06.103071+00:00",
+  "completed_external_reviews": 53,
   "model_counts": {
-    "zai-coding-plan/glm-5.3": 39,
+    "zai-coding-plan/glm-5.3": 41,
     "zai-coding-plan/glm-5.3-flash": 12
   },
   "reviews": [
@@ -508,18 +508,50 @@
       "report_sha256": "48ae6cb590c9ef032163f928d0892b1cfa9032861f3a1680f5993a7f1f0f2248",
       "reconciliation_sha256": "612c9697f8976caa0b6e11705f6098d60275eb874c0247b55511ac534cba1540",
       "disposition": "Bounded source/model review found no confirmed blocker. Reconciliation corrects pool inventory475 rather than460, sampled rather than exhaustive N parsing, and child1830 total comparisons. Remaining-risk-entirely-native claim rejected. Parent native checks are separate and were not reviewed."
+    },
+    {
+      "reviewer": "stdlib_inferred_void",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T09:40:39Z",
+      "exit_code": 0,
+      "manifest_sha256": "a82bf76b9b92c60cb97a87b47444de0d8356dd31347c9685d53a9506253646ea",
+      "report_sha256": "ac3675acca9322fc6e574558b07c4ce74d6b0475300c282dfa8da90576a7cdb0",
+      "reconciliation_sha256": "e526bde4ea9d89a1ba7a3dd6b371f762ca497cc448f1256a68b9b56254422608",
+      "log": "tmp/v1-completion-2026-10-07/stdlib-inferred-void-glm-review/review.log",
+      "log_sha256": "7be2f82c9746f688ae15c8f6682cba279a60d44d9838a6d869dc21382adf7c75",
+      "disposition": "No confirmed blocker in two-file candidatefe65. Actual Rich,3411 copied input hashes/modes unchanged,17fresh accepted Zig pairs identical.121 reported checks mix compile pairs and direct same-instance analyze; counts preserved separately. New type error suppresses later semantic recursion diagnostic, both exit6. Existing type and exact-constant priority preserved. No native or full gate in this review.",
+      "test_expectation_followup": {
+        "manifest_sha256": "57e312dd46828816979e4413785244e82288cb611a847b436de99b657c63a2ee",
+        "report_sha256": "7e235673c596ef82ab7609d88026728c80389bafa3323724818395db9db02b48",
+        "reconciliation_sha256": "17bf3422207898b1c7ebf5ba7e4f081e3616c243f288e002f90e37c436ba1c15",
+        "finished_at": "2026-10-07T10:24:32Z",
+        "exit_code": 0,
+        "disposition": "Same-session continuation approves one-line stale expected-exit/message repair. Original program and span assertion retained; both copied compiler trees report6 atline4.3262 input hashes/modes unchanged. No new review count, pytest or native invocation; fullqualification pending."
+      }
+    },
+    {
+      "reviewer": "memory_w5_managed_source",
+      "model": "zai-coding-plan/glm-5.3",
+      "finished_at": "2026-10-07T10:18:08Z",
+      "exit_code": 0,
+      "manifest_sha256": "fa236ba7fe884ac81d3f68095f6fa001cc8009d90af4a0c5ce0d1c8836245849",
+      "report_sha256": "da4d9919dd3addfa75c8025fde5296f0fa7e95430cdfc77537afa111db14072c",
+      "reconciliation_sha256": "32197895fc0f225133ccc342ee8151c9348046e9dffc47a7078121e9e3093876",
+      "log": "tmp/v1-completion-2026-10-07/memory-w5-managed-glm-review/review.log",
+      "log_sha256": "d28e8a0c1d7cd7dcf7c6a6c24da2760d35292e8815a4632800ce503cd5140cbb",
+      "disposition": "No source/model blocker;89 copied hashes/modes unchanged. Python source transcription matches frozen stream/fault/layout models.940 grid invocations include repeated ordinal cases. No compiled lower-failure builds or observed physical free. Pre-suballocation failures precede layout. Inventory totals are not peak/full memory. Native ABI/link/execution and L38 remain unqualified."
     }
   ],
   "boundary": "Advisory reviews cover distinct earlier snapshots or bounded copied inputs. A completed review is not qualification of every later source revision or complete V1. Raw logs and prompts are host-local ignored archives, not links shipped in a fresh clone.",
   "current_compiler_hashes": {
-    "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
-    "a7/passes/type_checker.py": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
-    "a7/passes/safety.py": "c51f83782921c90d085e8ba4ab913c07ef008107aa1b47620882bd3982bd2a90",
+    "a7/compile.py": "6cb7d50d56d9eb5d563ab7679fe7c2f9201a0bbae8adba24a4353e6a4f78b2aa",
+    "a7/passes/type_checker.py": "061f9976f2c3d9dd569afa968a759a9900dfb5ea4931099dd9bfff17f66e6890",
+    "a7/passes/safety.py": "32cc29cf7dc34909c5a6e9520dd071fc648aac05aeef5015ec3557713b953786",
     "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
     "a7/passes/readonly_requirements.py": "aeefd7cf1fb31ef0748f50bbc49af3b3440db2055f7444bcf3b92033afd97ed6"
   },
-  "updated_at": "2026-10-07T08:12:13.529121+00:00",
-  "current_compiler_hashes_label": "Readonly V3 qualification source matching manifest cf6a985d on the canonical-prelude checkpoint. Final evidence prose is checked separately.",
+  "updated_at": "2026-10-07T17:26:37.042540+00:00",
+  "current_compiler_hashes_label": "Local registered-stdio integration matches qualified source e0c6235a; commit and push restricted by current sandbox.",
   "failed_followup_invocations": [
     {
       "reviewer": "safety_conditional_return_literals",
@@ -558,6 +590,26 @@
         "a7/passes/type_checker.py": "f09984c1fe3d1fb52815c774e691e94345180e94c2ada30f5a175c88491e8ac3",
         "a7/passes/safety.py": "0d8b3938b69b12b732e98e856e7fab0a4578b450e8fc6bbb3ba0267a4d044904",
         "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
+      }
+    },
+    {
+      "label": "Readonly V3 qualification source matching manifest cf6a985d on the canonical-prelude checkpoint. Final evidence prose is checked separately.",
+      "files": {
+        "a7/compile.py": "0163a6b8245ee622ddd38003e891e02d86f64068abc70f5194eb04eece86d434",
+        "a7/passes/type_checker.py": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
+        "a7/passes/safety.py": "c51f83782921c90d085e8ba4ab913c07ef008107aa1b47620882bd3982bd2a90",
+        "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+        "a7/passes/readonly_requirements.py": "aeefd7cf1fb31ef0748f50bbc49af3b3440db2055f7444bcf3b92033afd97ed6"
+      }
+    },
+    {
+      "label": "Pushed executable-entry integration0d51042; separate stdio candidate not integrated.",
+      "files": {
+        "a7/compile.py": "6cb7d50d56d9eb5d563ab7679fe7c2f9201a0bbae8adba24a4353e6a4f78b2aa",
+        "a7/passes/type_checker.py": "a96e95a490fab0706c2e557066cc663ade2f022f739e805bd309bbb7705682bd",
+        "a7/passes/safety.py": "32cc29cf7dc34909c5a6e9520dd071fc648aac05aeef5015ec3557713b953786",
+        "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf",
+        "a7/passes/readonly_requirements.py": "aeefd7cf1fb31ef0748f50bbc49af3b3440db2055f7444bcf3b92033afd97ed6"
       }
     }
   ]

@@ -72,6 +72,13 @@ main :: fn() {
 capture or recursive callbacks. For an event-dispatch example with a no-argument
 `fn()` callback, see `027_callbacks.a7`.
 
+An inferred concrete binding such as `f := add` retains its checked function
+type. A mutable binding can be reassigned or passed to a matching `ref fn(...)`
+parameter. A saved value such as `saved := f` keeps its earlier target when `f`
+is replaced. Explicit type annotations take precedence. Generic declaration
+aliases remain compile-time aliases, not runtime generic dispatch. This does
+not add capturing closures or a callable-versus-argument evaluation-order rule.
+
 Function references and nullable heap references are not interchangeable. A declared `ref fn(...) ...` can represent a nullable function reference; ordinary function values have their declared function type.
 
 ## Receiver-style functions

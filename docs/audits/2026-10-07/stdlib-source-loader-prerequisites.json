@@ -1,0 +1,2438 @@
+{
+  "recorded_at": "2026-10-07T18:23:20.572370+00:00",
+  "status": "R13/R21 and exact-array compiler prerequisites integrated; Phase A and full V1 remain incomplete",
+  "authority": "L68 adopts package-owned hybrid stdlib and U10; Phase A prerequisite gate remains",
+  "baseline_manifest": "tmp/v1-completion-2026-10-07/stdlib-source-loader-baseline/manifest.json",
+  "baseline_manifest_sha256": "8194664184ec9a953054e99e01a6983dda5e695125b28cca264c2d99bf0a133d",
+  "baseline_source_files": 1638,
+  "unrelated_output_preserved": true,
+  "current_prerequisites": {
+    "R1_existing_hook_signatures": "integrated and qualified",
+    "R9_module_scopes": "integrated and qualified",
+    "R21_general_bundled_source_loader": "not implemented in live compiler",
+    "R5_string_payload_binding": "still rejects; not required by match-based ASCII, retained for dependent APIs",
+    "R3_generic_construct_and_return": "October4 D6 failure is stale for seven tested forms: check/emission and21native executions pass. General specialization remains incomplete.",
+    "R13_typed_registry_and_snippets": "Incomplete: typed I/O signatures exist; math typing and backend bodies are hard-coded. Packaged snippet stage in isolated development; full typed registry/backend mapping remains open."
+  },
+  "current_probe": {
+    "record": "tmp/v1-completion-2026-10-07/stdlib-ascii-independent-controls/baseline.json",
+    "sha256": "5e411e0cf6d000c339ed70a60c8be6e61975e3a790997d939a1a07519b2feb55",
+    "exit": 3,
+    "message": "Module 'std/ascii' not found"
+  },
+  "independent_controls": {
+    "path": "tmp/v1-completion-2026-10-07/stdlib-ascii-independent-controls",
+    "byte_inputs": 256,
+    "requirements_per_input": 7,
+    "status": "passed all256values in Debug,ReleaseSafe,ReleaseFast",
+    "is_space_interpretation": [
+      9,
+      10,
+      11,
+      12,
+      13,
+      32
+    ],
+    "run": "tmp/v1-completion-2026-10-07/stdlib-ascii-native-controls/run.json",
+    "run_sha256": "45139fae1931f9e945ce91de232ecf4734a3311adb0a229cdda17b70c41898c3",
+    "commands": 8,
+    "streams": 16,
+    "final_input_integrity": "unchanged"
+  },
+  "review": {
+    "reviewer": "builtin stdlib_prerequisites",
+    "scope": "read-only authority and live prerequisite evidence",
+    "result": "R21 is approved next prerequisite; per-module-scope blocker stale; do not infer string binding approval"
+  },
+  "limits": [
+    "Candidate remains isolated; live std/ascii still missing.",
+    "Installed direct wheel and sdist-rebuilt wheel passed scoped ASCII Debug controls; broader installed behavior requires full gate.",
+    "Full release gate, external review and Phase A promotion remain pending.",
+    "Byte-exhaustive ASCII results do not prove general module loading or performance.",
+    "Nested package layout and zip import remain unqualified."
+  ],
+  "candidate": {
+    "manifest": "tmp/v1-completion-2026-10-07/stdlib-source-loader-candidate/manifest.json",
+    "manifest_sha256": "8ae15c9b91c9c261ddf365b8bd7c30d3b2095989a8b3a4ff337c5625de8d2b3a",
+    "source_files": 1640,
+    "changed_files": 5,
+    "python_checks": "196 passed,28 deselected before one redundant test assertion removal; final new-test suite15passed after removal",
+    "review": "Separate read-only source review found no blocker for current flat std/ascii; parent recomputed all frozen file hashes/modes before and after native execution"
+  },
+  "packaging": {
+    "record": "tmp/v1-completion-2026-10-07/stdlib-source-loader-package/result.json",
+    "sha256": "542bab48ee25bc9d3dd3b3f49a9b5a1b2a99dc1c60240b5853d64cf5af4fd22f",
+    "artifacts": "tmp/v1-completion-2026-10-07/stdlib-source-loader-package/artifacts.json",
+    "result": "Wheel, sdist and sdist-rebuilt wheel include exact frozen ASCII source; wheel bytes identical. Parent independently rehashed all three archives and 1640 frozen source files/modes.",
+    "environment_limit": "Packaging worker overrode HOME for child commands with a private directory, contrary to controller instruction. Evidence retained; no global home configuration changed. Subsequent checks inherit HOME.",
+    "installation": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-source-loader-install/run.json",
+      "sha256": "686399cd00fa0de731a396cedfecdac27d3033e9b37dc1e9aaa5a0c5befa5d30",
+      "commands": 14,
+      "result": "Separate clean direct-wheel and sdist-rebuilt-wheel installations outside checkout passed package/resource origin assertions, installed CLI compilation and native Debug execution. Each matched all 256 expected stdout rows with empty stderr.",
+      "parent_verification": "Rehashed 28 command streams and 1640 frozen source files/modes; checked exact stdout/stderr and recorded installed origins.",
+      "dependencies": "Four locally repacked cached pure-Python distributions; original registry wheel identities and network installation unqualified.",
+      "environment": "HOME inherited; PYTHONPATH removed; offline, no index, no cache; CPU affinity 0-3."
+    }
+  },
+  "site_qualification": {
+    "record": "tmp/v1-completion-2026-10-07/stdlib-loader-site-check/result.json",
+    "sha256": "fd4d395b35901f9486f5166a0c4f526fb6fe91d0ed36ea2d5b595823dc42a76d",
+    "full_check_exit": 1,
+    "failure": "Preview test: EPERM operation not permitted, listen",
+    "passed": "Lint, TypeScript, coverage441; 11 tests/2551 assertions; separate build23pages, exports and links1503resources182targets",
+    "boundary": "Existing node_modules reused. No locked dependency install or preview HTTP acceptance. All1640manifestsourcefiles unchanged per worker; parent rehashed8streams."
+  },
+  "full_pytest": {
+    "record": "tmp/v1-completion-2026-10-07/stdlib-loader-full-pytest/run.json",
+    "sha256": "ead87798fad6796e3bda0c51a97ddbb11a64ec2ebd104b0828130cfd3983d083",
+    "exit": 1,
+    "passed": 3948,
+    "failed": 1,
+    "xfailed": 1,
+    "seconds": 595.29,
+    "failure": "test_wheel_install_smoke_uses_built_artifact: offline uv build cannot resolve setuptools>=84 and wheel",
+    "source_integrity": "1640 source hashes and modes unchanged in frozen candidate and external copy",
+    "followup": "Unchanged failed package test passed with local backend wheels:1passed26.54s. All10followupcommands exited0. Original full-suite failure retained; no clean full-suite rerun or release-wrapper pass claimed."
+  },
+  "integration_boundary_review": {
+    "reviewer": "builtin loader_gate_review",
+    "authority": "L68 and stdlib-proposal.md:1322 preserve Phase0-2/R1/R9/R13/R21 before Phase A; roadmap requires prerequisite qualification before promotion.",
+    "conclusion": "Loader infrastructure is approved prerequisite work. Original five-file candidate also publishes std/ascii and cannot be integrated unchanged while Phase A remains gated.",
+    "next_action": "Prepare separately hashed loader-only candidate, retaining ASCII as test fixture and preserving earlier prototype evidence. New source needs its own qualification; no live changes authorized by test results alone.",
+    "limits": "External review remains pending; full site preview unavailable; R13 and Phase0-2 gate mapping required before public module delivery. Whitespace bytes9-13,32 are controller interpretation, not explicit user-defined contract."
+  },
+  "loader_only_candidate": {
+    "manifest": "tmp/v1-completion-2026-10-07/stdlib-loader-prerequisite-candidate/manifest.json",
+    "manifest_sha256": "4faf615b0e6f85ef2fc0be9c77285f447880e327b048d81d32ba3b5a8a59b82c",
+    "patch": "tmp/v1-completion-2026-10-07/stdlib-loader-prerequisite-candidate/candidate.patch",
+    "patch_sha256": "13daf1717f9e3a504d5d1a94f24b18816959bd7ccf014ad56925b186206d6c36",
+    "files": 1640,
+    "changed_files": 5,
+    "production_files": "Same three production files as original prototype; public ASCII moved to test fixture.",
+    "tests": "197 passed,28 deselected,7.20s on final source; existing private-prelude sentinel restored after parent review",
+    "parent_integrity": "Rehashed all1640sourcefiles and modes; public ASCII absent.",
+    "limits": "No live integration, exact-source native/package/fullgate/external review or PhaseA promotion.",
+    "independent_review": {
+      "report": "tmp/v1-completion-2026-10-07/stdlib-loader-split-review/REPORT.md",
+      "sha256": "21968eef39761cef36d9e3ae2e535ef22dd3c259804ce504d3992569877a8bac",
+      "source_result": "No confirmed production loader defect; source hashes and patch verified; independent197passed28deselected; private-source/symlink probes passed",
+      "packaging_defect": "P2: sdist includes loader tests but omits conftest.py and ASCII fixture. Direct collection fails; explicit external helper exposes3fixturefailures/1pass; restoringonlyfixture yields4pass.",
+      "disposition": "Revision2 narrow MANIFEST.in inclusion in progress. No live integration."
+    },
+    "packaging": "Builds and production archive bytes passed; sdist test completeness failed independent review. Earlier package report does not close this defect."
+  },
+  "prototype_remaining_checks": {
+    "record": "tmp/v1-completion-2026-10-07/stdlib-loader-full-pytest/remaining.json",
+    "sha256": "488f76cc2ae219edb248a7c8f59c621465a40456cb7d514240ef00fe40bf883c",
+    "exit": 0,
+    "commands": 10,
+    "source_files_unchanged": 1640,
+    "parent_verification": "20commandstreams and1640frozen source hashes/modes rechecked",
+    "scope": "Package pytest recovery, examples, Debug/Release/Fast artifacts, benchmark report, error stages, docs style, package build and installed wheel/sdist",
+    "limits": "Existing dependencies and local repacks; no locked install or release wrapper; site preview remains EPERM; v2loaderonly is separate source."
+  },
+  "loader_only_v2": {
+    "manifest": "tmp/v1-completion-2026-10-07/stdlib-loader-prerequisite-v2/manifest.json",
+    "manifest_sha256": "986c70e09342ca51397fa8a65d090ae353ca1a701eaa066979e3ff0f5bdcbbeb",
+    "source_files": 1641,
+    "change": "Only MANIFEST.in added relative to loader-only v1; exact conftest and ASCII fixture sdist includes.",
+    "packaging_record": "tmp/v1-completion-2026-10-07/stdlib-loader-only-package-v2/run.json",
+    "packaging_record_sha256": "2d65a2f4252f14c09e83d97033df93781c0aeac06923ae728f2e80a01c928c73",
+    "sdist_test_record": "tmp/v1-completion-2026-10-07/stdlib-loader-only-package-v2/sdist-tests.json",
+    "sdist_test_record_sha256": "d8b9d40fdeb034a19b51505a7a75839028e84151462803a7692da5706bbac2e4",
+    "result": "16source tests and16actualunpacked-sdist tests passed; bothpackage/test origins asserted in sdist. Parent rehashed3archives, checkedtwoexactsdistinputs andwheeltest/publicASCIIabsence.",
+    "reproducibility": "Wheel members identical; ZIP metadata timestamps differ. Archives not byte-identical.",
+    "full_pytest": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-loader-v2-full-pytest/run.json",
+      "sha256": "b5c12d29293c5974806377dbc25c640b168acac399717aaaf9a22078f75e841f",
+      "exit": 0,
+      "passed": 3950,
+      "xfailed": 1,
+      "seconds": 613.36,
+      "source_integrity": "All1641frozen/copyfiles unchanged perrunner; parent rehashed1641frozenfiles and2streams",
+      "boundary": "Full pytest includes existing native/package tests using localdependencies; not full releasewrapper or external review. Separate prototype gate records retained."
+    },
+    "limits": "No live integration or full releasewrapper; external review pending. Full pytest includes native/package tests but no claim of fullsdisttestcoverage or registrydownload acceptance.",
+    "independent_closure": {
+      "report": "tmp/v1-completion-2026-10-07/stdlib-loader-split-review/v2-closure/REPORT.md",
+      "sha256": "e02e6955a2be4404c566626cc40c8b37f236ad30558f23d258812a3336b30036",
+      "record": "tmp/v1-completion-2026-10-07/stdlib-loader-split-review/v2-closure/verification.json",
+      "sha256_record": "06aad72fde11cf7ace657e5c130b48bc012e9121a6cd2b98a797588f1e0e0da0",
+      "result": "Same independent reviewer reproduced missing-input defect, then verified v2 archive/member/source hashes, exactmanifestdelta and freshsdist16tests with originassertions; P2closed for scopedtests.",
+      "limits": "Not GLM review, fullsdisttests, native acceptance or releasegate."
+    },
+    "remaining_checks": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-loader-v2-full-pytest/remaining.json",
+      "sha256": "ce1d0eda260b8573b757f90c63a9860fecdcce432053058291eaadfb10d11cd7",
+      "status": "passed",
+      "commands": 9,
+      "streams_verified": 18,
+      "source_integrity": "Runner reports all 1,641 source hashes and modes unchanged.",
+      "observed": "Example E2E, Debug/Release/Fast artifacts, benchmark, error stages, docs style, package build and installed wheel/sdist checks all exit 0.",
+      "limits": "Scans excluded per user instruction. No full release-wrapper, locked dependency installation, live integration or external-review acceptance.",
+      "independent_review": {
+        "report": "tmp/v1-completion-2026-10-07/stdlib-loader-v2-full-pytest/independent-final-review/REPORT.md",
+        "sha256": "fb4ae2f0c17f043d9fe0a2822eba81d3c63b326d42fa812b212c68f85f8305ec",
+        "result": "Nine exits, 18 streams and 1,641 files in each of two source trees verified; no discrepancies."
+      }
+    }
+  },
+  "r3_current_probe": {
+    "record": "tmp/v1-completion-2026-10-07/stdlib-r3-current-probes/evidence.json",
+    "sha256": "0c31a62d2bf6646c46fc62d6e51db53a155c94555e3cd4c177f08dada67bc6de",
+    "cases": 7,
+    "commands": 14,
+    "result": "All check/emission exits0 with generatedfiles; parent verified source/artifact/compiler hashes. Explicit and inline Box, canonical Option, swappedPair, concreteOption control and cross-file wrappers/module-qualified types.",
+    "historical_probe_limit": "Custom Option declarations now conflict with compiler prelude; original exit6 diagnostics preserved in initial-evidence.json. Current forms use canonical prelude Option.",
+    "native": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r3-native-verification/run.json",
+      "sha256": "a488631321442e6721000539c370845a684114bca36c679a8e50a0eec09928a8",
+      "baseline_manifest_sha256": "8194664184ec9a953054e99e01a6983dda5e695125b28cca264c2d99bf0a133d",
+      "cases": 7,
+      "profiles": [
+        "Debug",
+        "ReleaseSafe",
+        "ReleaseFast"
+      ],
+      "executions": 21,
+      "result": "All exits0, exact manuallyspecified stdout and empty stderr. No retries.",
+      "parent_verification": "21outputs,128rawstreams,21generatedZigfiles,21binaries,36productionfiles againstlive, and1638baseline hashes/modes rechecked.",
+      "limits": "Selected construct/return forms only; no genericruntime dispatch, ownership, PhaseA completion or performance claim."
+    }
+  },
+  "r13_audit": {
+    "report": "tmp/v1-completion-2026-10-07/stdlib-r13-current-audit/report.md",
+    "sha256": "95de1c8192d237a57c2151b18d9932be31db648575f20b80a9debca6dc3a6c2f",
+    "authority": "L68/U12 and stdlib-proposal section4 approve typed registry and packaged Zig snippets, no user-defined hooks/newsyntax.",
+    "verification": "69 focused tests passed,9deselected. Wider run71passed2failed25deselected; failures are absolute-path assertions with in-repository basetemp causing intentional relative diagnostic paths.",
+    "next_scope": "Isolated I/O snippet extraction preserving byte-identical generated Zig; no math type/API changes or fullR13claim.",
+    "native": "No native audit work; parent v2remaininggate session81451 owns native slot."
+  },
+  "r13_snippet_candidate": {
+    "manifest": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-candidate/manifest.json",
+    "manifest_sha256": "18a65612e7e125c4e2831a99a0c717e5ce574b32cda3fdb4ad8c31e3ef1140fa",
+    "patch": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-candidate/candidate.patch",
+    "patch_sha256": "5ffd7c930c920719d4ed1d55dbd5af9fdd3acd4cb916a1d77d22748d383c3f0d",
+    "source_files": 1648,
+    "changed_files": 9,
+    "result": "133 focused tests passed; 25 native tests were deselected. Parent rehashed 1648 source files and modes, then compared 105 Zig outputs and 12 error diagnostics against the base.",
+    "mechanism": "Six packaged Zig fragments load through the existing emitter. Use flags, dynamic type names, ordering and conditional flushing are unchanged. No new API, math typing or registry dispatch.",
+    "limits": "Candidate remains isolated. Native qualification, full gate and external review are pending. R13 still needs the general typed registry, backend mapping and math migration.",
+    "packaging": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-package/verification.json",
+      "sha256": "bdb59a1048bc2b8e2256e5cb194cec958541c8df182ce04bb8d8c176589710cc",
+      "evidence_hashes": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-package/evidence-hashes.json",
+      "evidence_hashes_sha256": "4940621af65d7b11f944f44df57be5b9f11aedd35ccb939c49a0bf47244f49b9",
+      "result": "Three archives each contain 42 exact production files, including six runtime fragments. Direct and rebuilt wheel installations each pass 105 emission comparisons outside the checkout with venv origins verified. Eight resource tests pass from the actual sdist.",
+      "parent_verification": "Parent rechecked 676 evidence file hashes, three archives, all 42 production members and 210 emitted files against the candidate.",
+      "failures_preserved": "Verifier output-directory collision and missing private pytest cache directory; the latter exited 3. Driver setup was corrected without changing source or fixtures.",
+      "limits": "Offline local dependency repacks were used. Wheel archive bytes differ although member contents match. No native execution, full R13 completion or release acceptance."
+    },
+    "independent_review": {
+      "report": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-review/REPORT.md",
+      "sha256": "4af1914a1eb319da0730591d5c67ef1a610d35a0dd90ba0363f78072b4b8a99f",
+      "reviewer": "Builtin stdlib_r3_prerequisite_probe, independent of snippet author",
+      "result": "No established findings. Fresh base and candidate each reproduce 105 exact Zig outputs and 12 exact rejections; 44 selected tests pass. All 1648 candidate and 1641 base hashes and modes remained unchanged.",
+      "failure_preserved": "Reviewer comparator initially compared exception objects with JSON strings. Correcting the serialization boundary preserved source and oracles.",
+      "limits": "Not an external GLM review, native test or full R13 qualification."
+    },
+    "native": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-native/verification.json",
+      "sha256": "1188e119e704dd0bf2da54d109b7c98db80133c2b7a1d000c9766ae8fededc68",
+      "result": "Eight existing native I/O tests passed in 14.67 seconds on an external source copy.",
+      "parent_verification": "Two trees of 1,648 source hashes/modes and 40 recorded subprocess streams match.",
+      "limits": "Selected source-based native controls only; no installed-native, full candidate gate, complete R13 or release claim."
+    },
+    "full_pytest": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r13-snippet-full-pytest/run.json",
+      "sha256": "5a73e70bf300069c7efc1e6f074241b43f4af3e7de12bc24937d6034a0e5a520",
+      "status": "passed",
+      "exit": 0,
+      "passed": 3958,
+      "xfailed": 1,
+      "seconds": 641.78,
+      "parent_verification": "Both 1,648-file source trees match hashes/modes; both output stream hashes match.",
+      "boundary": "Frozen snippet candidate only, existing local dependencies and offline child package builds. Not successor registry candidate, release wrapper or live integration."
+    }
+  },
+  "r13_math_migration_contract": {
+    "identity": "tmp/v1-completion-2026-10-07/stdlib-r13-math-contract/baseline-identity.json",
+    "sha256": "58d975e8c13e7321daacdc8a15cd0bc4fbe207a5dfa49b578b02e883a1f7f42a",
+    "report": "tmp/v1-completion-2026-10-07/stdlib-r13-math-contract/REPORT.md",
+    "result": "96 independently stated compile expectations pass: 36 successful emissions and 60 semantic rejections. Includes fixed result bindings, numeric-family constraints, arity and both orders of min/max width promotion.",
+    "limits": "Baseline contract only, before registry migration; selected types and debug emissions, no native accuracy claim.",
+    "additional_edges": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r13-math-contract/edges-baseline/results.json",
+      "sha256": "1cc13a22764635435f097f3c4437f46be53e090307efb6f68f317bf759f7f08b",
+      "probe_sha256": "6b4a72c67fd34a0d0f5558fc25174d6b7e7833b4d670e0a71eee99ae8802cb9f",
+      "result": "21 expectations pass: 9 successful emissions and 12 intended common-type rejections. Signed-minimum abs emits typed bitCast for i8/i16/i32/i64/isize. Mixed signed/unsigned and typed integer/float cases preserve existing widening and rejection rules.",
+      "limits": "Compile and code-generation controls only; no native execution."
+    }
+  },
+  "r13_registry_migration": {
+    "design": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-design/REPORT.md",
+    "design_sha256": "d3c839113b98fd2b669f261ed019264a88e794a4bcdfe646b7235e5754467698",
+    "authority": "L68 and stdlib proposal section 4/U12; internal migration preserving current behavior.",
+    "status": "Isolated v2 repair frozen and selected native routing verified; independent review pending.",
+    "boundary": "Parsed module-owned signatures, registry-driven backend mapping and used snippets; preserve numeric policies and I/O behavior; no new public hook API.",
+    "manifest": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-candidate/manifest.json",
+    "manifest_sha256": "361e10aed6077eafcfd545ecabaae093dfcea16c148e304f2f5fa40b2ae6b87c",
+    "source_files": 1649,
+    "focused_tests": "144 passed,25 deselected",
+    "parity": "Author reports234 exact corpus outcomes plus6 UNKNOWN/constrained-generic controls. Parent rehashed234 corpus outputs and all1649 source files/modes. Independent review pending.",
+    "native": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-native/run.json",
+      "sha256": "f43f9d8bce2d86dcaa86493322a730ab4b493b2cdab44b0e1818c4c54c4fe60d",
+      "result": "Synthetic fixed hooks, mapped target/local collision, void hook and two owner-specific nominal values pass native Debug/ReleaseSafe/ReleaseFast with exact stdout6 8\\ntrue true\\n and empty stderr.",
+      "boundary": "Test-only registry/resource injection and hashed emitted Zig. Not installed public API, full registry gate or live integration."
+    },
+    "confirmed_finding": {
+      "review": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-review/REPORT.md",
+      "native_record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-native/collision-build.json",
+      "native_record_sha256": "c9b4242e912958e6b1959560bdda3d18e533c590369979f6590f145e0e7553cc",
+      "result": "Internal plain hook mapped to mapped_twice plus same-spelled A7 global emits duplicate Zig definitions. Compiler emission exits 0; Zig0.16.0 rejects duplicate struct member name with exit1.",
+      "scope": "Synthetic internal hook with non-reserved target; no established shipped-hook regression. General R13 mechanism requires repair."
+    },
+    "packaging": {
+      "record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-package/verification.json",
+      "sha256": "982fd2cf0efafd34d78c080544922e4a42dc84b8ad5d993148fc76d5f99b1255",
+      "reported_result": "Author reports all42production files in3archives,300installed emissions,19selectedsdist tests and all1649sourcefiles unchanged.",
+      "limits": "Sdist retains predecessor64 omitted test-support files; selectedtests do not establish fullsdisttesting. Firstcandidate evidence does not qualify v2.",
+      "parent_verification": "938 evidence hashes, three archives with42production members each, and300 actual installed outputs checked against frozen candidate."
+    },
+    "v2": {
+      "manifest": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2/manifest.json",
+      "manifest_sha256": "c1597726240c9f7a65251d76741f57cf04836d405e0a617d950e3d7c1c7fdef5",
+      "patch_sha256": "43f480529f0428a04b0ce3ffc4e553a92e7409a3a5987d1b5470e4513e0a0b71",
+      "source_files": 1649,
+      "change": "Used mapped hook targets are reserved by the existing global-name allocator; one compiler regression test covers global and local collisions.",
+      "focused": "145 passed,25 deselected",
+      "author_parity": "234 exact outcomes:150 emitted files,84 rejections",
+      "native_record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-native/run.json",
+      "native_record_sha256": "73c8dfdb8af44d1c96ebf048528f30fb92041e938b45eeb0a35bd33d6a739c38",
+      "native": "Debug/ReleaseSafe/ReleaseFast produce exact6 5 14 newline, empty stderr,exit0. Parent verified all1649source hashes/modes.",
+      "limits": "Full v2 pytest failed under disk-quota errors. The corrected package driver passed. No live integration or full release qualification.",
+      "qualification_interruption": {
+        "pytest_record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-full-pytest/run.json",
+        "pytest_exit": 1,
+        "passed": 2511,
+        "failed": 1436,
+        "errors": 23,
+        "xfailed": 1,
+        "seconds": 182.63,
+        "reported_cause": "Owning worker parsed 1459 failure/error blocks: 1458 explicitly report quota exhaustion; the remaining git-init fixture lacks a captured cause. /tmp has usrquota despite free global capacity.",
+        "package_note": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-package/CONTROLLER-NOTE.md",
+        "next_step": "Inspect completed-run cache ownership and active references before cleanup and unchanged-source retry. Preserve failed-run evidence."
+      },
+      "independent_review": {
+        "report": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-review/REPORT.md",
+        "sha256": "1d1e967f5150d931b8872ece85c3154dfc2ed9dbf9cf2d34513de3e333324cf2",
+        "result": "No established finding in two-file repair.48targetedtests pass. Occupied-suffix,second-hook/imported-symbol controls preservebinding; no-hook Zig stays identical.",
+        "boundary": "Reviewer authored predecessor but not repair; no native/package/fullgate in this review."
+      },
+      "full_pytest": {
+        "record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-full-pytest/run.json",
+        "sha256": "556989caf28fcb70fca60eb1d9c7b31d5af4512101185ffb1d9b40f6236e1491",
+        "status": "failed",
+        "exit": 1,
+        "cause": "Resource-limited failure; owningworker identifies1458of1459failure/error blocks with explicitquotaerrors.",
+        "parent_verified": "Both terminal output stream hashes match actualfiles.",
+        "retry": "Not restarted; qualification of combined final source will follow alias repair checks."
+      },
+      "packaging": {
+        "packet": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-package",
+        "status": "failed",
+        "cause": "Driver used edge fixture directory instead of math-edges; no source defect established.",
+        "retry_script": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-package-retry/qualify.py",
+        "retry_status": "passed",
+        "retry_record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-package-retry/verification.json",
+        "retry_record_sha256": "ad18e0a94911d114db6a1c7a50cdac0ee22aac7e27efd668bde70399bbf59f7c",
+        "result": "Threearchives match42production members each,300installed emissions match frozenv2,20actual-sdist tests pass;311commands exit0; original/copied1649sourcefilesunchanged.",
+        "parent_checks": "622command streams and300actualoutputs rechecked.",
+        "limits": "No native installedrun/fullsdisttesting/fullrelease; original faileddriverattempt retained."
+      },
+      "quota_recovery": {
+        "record": "tmp/v1-completion-2026-10-07/stdlib-r13-registry-v2-full-pytest/quota-investigation/removal.json",
+        "sha256": "9e8f733ed08ae00105035df64927c982e70fe5ab37761ac043c2a72ad829f3f8",
+        "archive_sha256": "04e71b51f9aa97f475a0ecbeec1f6d4682b3aea3ba4f8f348f419e97c0ee87c6",
+        "archived_members": 30308,
+        "freed_bytes": 14766338048,
+        "parent_post_cleanup_source_verification": [
+          {
+            "root": "/tmp/a7-loader-full-pytest-5i3uzf4n/checkout",
+            "files": 1640
+          },
+          {
+            "root": "/tmp/a7-loader-v2-full-pytest-0kuf4f7b/checkout",
+            "files": 1641
+          },
+          {
+            "root": "/tmp/a7-r13-full-pytest-29bilhaq/checkout",
+            "files": 1648
+          }
+        ],
+        "boundary": "Only sandbox-visible processes checked; parent confirms owning task handles terminal; no host-wide clearance claim"
+      }
+    }
+  },
+  "exact_array_alias_candidate": {
+    "manifest": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-candidate/manifest.json",
+    "manifest_sha256": "49f4fc2de9daff28efe784dd5df3c5d056dafffcf655a90529155b7fb44e3be5",
+    "patch_sha256": "b3dc382243327e7054d192c1cfc57164f218cd7ce80b8d8ea85194842a384c0d",
+    "base_manifest_sha256": "c1597726240c9f7a65251d76741f57cf04836d405e0a617d950e3d7c1c7fdef5",
+    "authority": "L74 permits rejection of known deleted-allocation aliases. Uncertain container identities remain outside this repair.",
+    "changed_files": [
+      "a7/passes/safety.py",
+      "test/test_exact_array_aliases.py"
+    ],
+    "focused_result": "276 passed, 23 native/slow cases deselected",
+    "paired_record": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-candidate/paired-final.json",
+    "paired_result": "50 compile-only runs: eight intended acceptance-to-semantic-exit-6 changes; 17 unchanged cases retain identical Zig or error payloads.",
+    "parent_verification": "Rehashed all 1650 source files and modes, manifest, patch, 16 logs and all 100 paired output streams.",
+    "boundary": "Frozen failed candidate preserved. Repair is assigned to a separate successor. No integration or full qualification; no unsafe fixture executed.",
+    "status": "rejected candidate; nested invalidation regressions",
+    "parent_reproduction": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-review/parent-reproduction/results.json",
+    "finding": "Nested array borrow and slice mutation fail to invalidate saved slot facts: both valid programs change from exit 0 to exit 6. Parent reproduced all four outcomes through the CLI.",
+    "independent_review": {
+      "report": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-review/REPORT.md",
+      "sha256": "c1bcbb090768ad832090dd3894b44246a0f34567b2ff853a45f4e1087a649c40",
+      "result": "35 paired programs: 19 preserved accepted outputs, five preserved rejections, seven intended stale-alias rejections and four nested invalidation regressions.",
+      "boundary": "Compile-only review; no unsafe native execution. Parent separately reproduced the borrow and view regressions through the CLI."
+    },
+    "successor": {
+      "manifest": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-v2/manifest.json",
+      "manifest_sha256": "9164ac098162d1dfe8cde165fd4b4b956afd43ba778e50ff6290a925974113ca",
+      "patch_sha256": "0653e50f45aa3f778fc76fdf206802b432f45c0a9f3e0bcfa81003fc6bbf3f61",
+      "change": "Nested borrow, view and dynamic-write invalidation use the nearest known containing storage key.",
+      "focused": "287 passed, 23 deselected; 72 author paired compilations match expectations.",
+      "parent_source_checks": "All 1650 file hashes and modes, manifest, patch and six logs match frozen records.",
+      "independent_review": {
+        "report": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-v2-review/REPORT.md",
+        "sha256": "3ea400a9d3b37b83f849b17b065bf2e49eb4415325b730067970940713a5fb8b",
+        "result": "45 paired programs: 31 accepted pairs with identical Zig, five retained rejections and nine intended known-alias rejections. All four predecessor false rejections fixed. 72 focused/no-recursion tests pass.",
+        "boundary": "No general uncertain-container identity proof or broader policy approval."
+      },
+      "native_record": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-v2-native/run.json",
+      "native_status": "passed",
+      "boundary": "Compiler/test/packaging changes integrated and match qualified source. Documentation and generated exports updated after compiler gate. Full V1 and release qualification remain incomplete.",
+      "native_record_sha256": "dfb0eba5f53fda1b1bf5627b76e31785531a7fee404059c29ed2b859378ce306",
+      "native_result": "Four valid controls across three profiles: 12 builds and 12 runs passed. Exact stdout 11, 22, 33 and 11/22 lines respectively; all execution stderr empty.",
+      "native_parent_checks": "Verified all 24 exits/expectations and 48 output stream hashes; all 1650 candidate files and modes remain unchanged.",
+      "full_pytest": {
+        "record": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-v2-full-pytest/run.json",
+        "status": "passed",
+        "session_id": 80636,
+        "boundary": "Fresh external copy; eight workers on CPUs 0-11. No release-wrapper or scan claim.",
+        "exit": 0,
+        "passed": 4006,
+        "xfailed": 1,
+        "seconds": 601.09,
+        "record_sha256": "ce144d9cbc23f8c6112aba0e6ff70f5c9c41ac2ae7fbc99b3e15bc38edf8ad30",
+        "parent_verification": "Both output stream hashes and all 1650 hashes/modes in each of original and copied source match."
+      },
+      "remaining_checks": {
+        "record": "tmp/v1-completion-2026-10-07/stdlib-exact-container-alias-v2-full-pytest/remaining.json",
+        "status": "passed",
+        "session_id": 16425,
+        "boundary": "Nine direct compiler/package checks, with scans excluded. No full release-wrapper claim.",
+        "verified_completed_checks": [
+          "examples",
+          "debug",
+          "release",
+          "fast",
+          "bench",
+          "error-stages",
+          "docs-style",
+          "package",
+          "installed"
+        ],
+        "commands": 9,
+        "record_sha256": "9cd9fd05c631cb9357ebda9ae70a4936614b803c1810a5bb8b122be37bf95c68",
+        "parent_verification": "All nine exits,18 stream hashes and1650 files/modes in each source copy verified."
+      },
+      "integration_preparation": {
+        "comparison": "tmp/v1-completion-2026-10-07/stdlib-combined-integration-audit/comparison.json",
+        "comparison_sha256": "7a0c5c03a6a077c7ba73fb566acfe6027558905076cef2ecf01c62c51f4e325a",
+        "source_paths": 24,
+        "status": "Reviewed source and documentation patches applied; originals backed up.",
+        "docs": {
+          "manifest": "tmp/v1-completion-2026-10-07/stdlib-combined-doc-candidate/manifest.json",
+          "manifest_sha256": "ad18be81ba2c37f7f98999a7ed8efe76cbfb85b5b6035e5986615e4e482a08c1",
+          "patch_sha256": "6784b23f8e2e429e78add5a898e265516047df0a620e014239c4f92af3ffdd70",
+          "files": 10,
+          "status": "Reviewed patch applied to ten live files; parent then added the STATUS qualification paragraph and regenerated exports. Draft and before-state manifests remain preserved.",
+          "review": {
+            "path": "tmp/v1-completion-2026-10-07/stdlib-combined-doc-candidate/independent-review.md",
+            "sha256": "ee8abe8b1e4490d1c422e68aeaa22f94a75d51d1ab5f0cee23c3c5b16434d24f",
+            "result": "No blocking inaccuracy or introduced broken link established. Independent review verified ten draft/live hashes and modes, patch reconstruction and preserved stdio/math/public module behavior."
+          }
+        },
+        "driver_review": {
+          "path": "tmp/v1-completion-2026-10-07/stdlib-combined-integration-audit/integration-driver-review.md",
+          "sha256": "ce89ac51bdce31d2bfe30e0cb3209388dad1f18282af988b644e52236b873c00",
+          "result": "Qualification identity and pre-copy checks repaired; no locking or transaction guarantee."
+        }
+      },
+      "integration": {
+        "source_record": "tmp/v1-completion-2026-10-07/stdlib-combined-integration-audit/integration.json",
+        "source_record_sha256": "4693126df294e5c7ce3c8317319940ccf6a499ca5f62c253a5acc75222e4cc77",
+        "docs_record": "tmp/v1-completion-2026-10-07/stdlib-combined-doc-candidate/integration.json",
+        "source_paths_applied": 24,
+        "doc_paths_applied": 10,
+        "current_qualified_files_verified": 315,
+        "site_record": "tmp/v1-completion-2026-10-07/stdlib-combined-site-check/verification.json",
+        "site_result": "Exports synchronized. Lint/typecheck/coverage and11 publication tests passed; preview test failed EPERM on listen. Separate build/export/link checks passed.",
+        "limits": "No preview/rendered-site, full release-wrapper, external GLM, commit, push or release acceptance.",
+        "independent_review": {
+          "path": "tmp/v1-completion-2026-10-07/stdlib-combined-integration-audit/final-review.md",
+          "sha256": "ab4ba68bc84169c63ebc22abd09330a2fea8a9749bfb3ab7d90a1bc0939dba41",
+          "result": "315 qualified live files,24 applied paths,12 source backups,10 doc backups and20 gate output streams verified. Nine draft docs match exactly; STATUS has the documented parent qualification paragraph. No source-copy discrepancy.",
+          "site_boundary": "Six separate build/export/link streams verified. Full-site preview failure is controller-observed; no raw full-check stream file or rendered-site acceptance."
+        }
+      },
+      "temporary_storage": {
+        "archive_record": "tmp/v1-completion-2026-10-07/completed-alias-pytest-capacity/archive-result.json",
+        "removal_record": "tmp/v1-completion-2026-10-07/completed-alias-pytest-capacity/removal.json",
+        "removal_record_sha256": "10d799d6e235f252357e2a37c1059f9ccba01b314c1db953c94de5cbb3677343",
+        "archive_sha256": "b8d193331cdca6b8b2f33701053d3534a305aaf4c59b0103741fe0f49c8c2463",
+        "archived_entries": 10488,
+        "removed_allocated_bytes": 4923240448,
+        "scope": "Only completed task-owned pytest-of-cx89 root removed after archive/content verification, fresh10488-entrymetadata check and limited process-reference check. Parent owning handles terminal. Checkout/logs/build/other paths preserved.",
+        "parent_post_removal_source_check": "All1650 external checkout file hashes/modes still match."
+      }
+    }
+  },
+  "phase2_reconciliation": {
+    "artifacts": {
+      "REPORT.md": {
+        "path": "tmp/v1-completion-2026-10-07/stdlib-phase2-reconciliation/REPORT.md",
+        "sha256": "ed2854921651a78213c1f68ab25f2a9f6e0162ae26023d324b72d150577deb11"
+      },
+      "ROWS.md": {
+        "path": "tmp/v1-completion-2026-10-07/stdlib-phase2-reconciliation/ROWS.md",
+        "sha256": "1491fb8bbadd4d6fd56c4c1a892cd7352ee44d4947f13ff42a2dc7f00864c6dc"
+      },
+      "inventory.json": {
+        "path": "tmp/v1-completion-2026-10-07/stdlib-phase2-reconciliation/inventory.json",
+        "sha256": "c15eb308e98f11271ab6d5ef883a8cb2bd4f135a7d5bf40ab09c3cad4e73c006"
+      },
+      "probes.json": {
+        "path": "tmp/v1-completion-2026-10-07/stdlib-phase2-reconciliation/probes.json",
+        "sha256": "961c209aa4f8ffb61865e9f87a59fc2ade3053279acc335823c3b5e781229b55"
+      }
+    },
+    "scope": "All 82 historical Phase 2 rows mapped; existing test contracts inspected, not rerun by this audit. Six fresh compile-only probes on frozen9164.",
+    "result": "One generic local array initializer defect affects three historical row families. Full Phase 2 closure is not established.",
+    "authority_boundary": "L47 implementation authorization applies to selected P-TYP rules, including declared-element fitting and known concrete generic expectations. Parent confirmed visit_var_decl already records obligations for types containing generic names. Extending those existing obligations through fixed ArrayType wrapping is treated as a bounded repair; no new inference, runtime representation or callable-origin eligibility is selected.",
+    "next_work": "Continue Phase2 reconciliation; import-path and benchmark corrections remain isolated candidates.",
+    "generic_repair_progress": {
+      "candidate": "tmp/v1-completion-2026-10-07/generic-array-initializer-candidate",
+      "status": "frozen candidate not qualified; four valid concrete wrapper routes remain rejected",
+      "first_failure": "Initial fitting draft emitted overflow through mutable/global aliases and changed captured-origin rejection from semantic6 to codegen7. First guard also missed wrapper-carried obligations.",
+      "parent_probe": "tmp/v1-completion-2026-10-07/generic-array-wrapper-parent-probes/results.json",
+      "probe_boundary": "Parent reproduced one-wrapper6-to-0 with a stable checker hash. Two-wrapper run used a later draft revision; no same-revision depth comparison claimed.",
+      "current_action": "Generic4e432638 integrated;site exports updated andboundedchecks recorded. Continue isolatedpath/benchmark/elseifrepairs.",
+      "manifest_sha256": "9b310b49f9daca1a9b6acd7cf43a5d5302033f09e420bfcacb393f1b7980763c",
+      "patch_sha256": "dd92c06f3c3a1de44ed3487375887e290d82520116346722565fd07f308939a6",
+      "focused": "271 passed,25 deselected",
+      "parent_checks": {
+        "source_files": 1651,
+        "evidence_hashes": 16
+      },
+      "independent_review": {
+        "path": "tmp/v1-completion-2026-10-07/generic-array-initializer-review/REPORT.md",
+        "sha256": "41b2f333b19cf0a9cbed9bf298569754bc49802c56c6f37b37a138b7369fbebb",
+        "result": "84 paired programs.68 prepared controls match; four of16 concrete-wrapper comparisons remain valid but rejected.28 old whole-type controls retain exact output/diagnostics. No0-to6 regression claimed."
+      },
+      "successor": {
+        "path": "tmp/v1-completion-2026-10-07/generic-array-initializer-v2",
+        "manifest_sha256": "4e43263866f2c8a00dd01054abca2d1599f191cf3788b4e2fff529cfd6ea0ea2",
+        "patch_sha256": "5cf1f566e98d8ed6b9036ded77858b3cc16ed7e6a6b3e3f4d5ef764e8061ffaa",
+        "focused": "283 passed, 25 deselected; author session 52154 terminal exit 0",
+        "parent_source_verification": "All 1651 frozen hashes and modes verified. Combined delta from integrated 9164 is type_checker.py and the new focused test only.",
+        "independent_review": {
+          "path": "tmp/v1-completion-2026-10-07/generic-array-initializer-v2-review/REPORT.md",
+          "sha256": "b8b77cbe5a1d25c55cccbfb622f091525d070e381d937cf2728607dfbb0522cb",
+          "result": "99 paired controls match; 23 intended semantic rejection to success changes; 28 old whole-type outputs unchanged. No scoped blocker. Compiler-only review."
+        },
+        "qualification": {
+          "path": "tmp/v1-completion-2026-10-07/generic-array-initializer-v2-full-pytest",
+          "session_id": 78231,
+          "status": "full pytest,12nativecontrols,nine direct compiler/package checks passed",
+          "scope": "Full pytest; scans excluded by user. Native controls and remaining direct compiler/package checks pending.",
+          "full_pytest": "4075 passed, 1 xfailed in 601.46s; owning session78231 terminal0",
+          "run_record_sha256": "a961bbf1de8d38f84842a9f1763fead588ac7e0d972de0c0a17e584439c91834",
+          "native_session_id": 89981,
+          "native": "12 builds and12 runs pass exactstdout/empty stderr; session89981 terminal0",
+          "native_record_sha256": "a6b30aa3bc9a79b983671699e4eb1958cdb8e7193434d3626607955cd6f4a300",
+          "parent_verification": "All48 native streams and24 outcomes verified; frozen and external1651source files/modes rechecked.",
+          "remaining_session_id": 73259,
+          "remaining": "nine checks exit0; owning session73259 terminal0",
+          "remaining_record_sha256": "8b17748f0e7ff3991b40c1d8eeb976834ebf4a367cd4ddfa2a0fb04d960368b8"
+        },
+        "integration": {
+          "status": "applied",
+          "path": "tmp/v1-completion-2026-10-07/generic-array-initializer-v2-integration-audit/integration.json",
+          "sha256": "003d670c6f6b475be6a1d78ef203de8c423d07e529fe62a49606f9bb24e5c0c2",
+          "source_paths_checked": 316,
+          "docs_applied": 6,
+          "changed_files": 8,
+          "backups": 7,
+          "boundary": "Working-tree integration;site build,exports,links pass; previewEPERM. No rendered/externalGLM/fullrelease/push claim."
+        },
+        "site": {
+          "path": "tmp/v1-completion-2026-10-07/generic-array-initializer-v2-site-check/verification.json",
+          "sha256": "2a0c579dea750d0b857e5b8657226fa476100596eb5d775cb9a6cc3dc51ed769",
+          "observation": "Fullcheck exits1: preview socket binding EPERM;11publicationtests pass,1previewfails,2551assertions. Lint,typecheck,coverage441 pass; separatebuild,exports,links pass. No rendered/live acceptance.",
+          "parent_verification": "All10rawstreams rehashed;316live compiler/test/script/package hashes/modes matchqualifiedcandidate aftersitebuild."
+        }
+      }
+    },
+    "successor_diagnostic_probes": {
+      "path": "tmp/v1-completion-2026-10-07/generic-array-successor-phase2-diagnostics/REPORT.md",
+      "sha256": "e218710b92d6c54057e642c689e5ed616c6937a13064b2f4ff21e91f98691477",
+      "scope": "43 corrected compile/semantic/tokens commands; 86 streams and frozen1651 source identities verified by worker. No native execution.",
+      "result": "P2-19 overlong import path still internal8; isolated correction in preparation. Selected-import P2-68 policy remains separate. Other scoped historical diagnostic triggers have corrected controls."
+    },
+    "import_path_repair": {
+      "status": "Integrated in combined source158a after independent review,fullpytest and nine direct compiler/package checks.",
+      "manifest_sha256": "828ec58efd3763950f2c0a06fd1a6710feed45fda61837137cf50c63498f5279",
+      "candidate": "tmp/v1-completion-2026-10-07/import-path-diagnostics-candidate",
+      "patch_sha256": "6c375983afd9e121ac612afcb460a0575139ab30c6076836834be4e6420da843",
+      "delta": [
+        "a7/module_resolver.py",
+        "test/test_import_path_diagnostics.py"
+      ],
+      "authority": "L24 diagnostic/compiler recovery repairs; no import syntax, path-boundary or selected-import policy change.",
+      "focused": "182 passed, 11 deselected; author session9618 terminal0",
+      "independent_review": {
+        "path": "tmp/v1-completion-2026-10-07/import-path-diagnostics-review/REPORT.md",
+        "sha256": "66ca883f52b447aab91cba8271001ef489dadd78d8faf7690d4e9303edda3468",
+        "result": "17 paired compiler-only cases; eight internal8 to located import3 repairs; nine unchanged output/diagnostic controls."
+      },
+      "parent_source_verification": "1652 hashes/modes verified; only resolver and new focused test differ from qualified generic source4e432638."
+    },
+    "benchmark_gate_repair": {
+      "status": "Integrated in combined source158a after independent review,fullpytest and nine direct compiler/package checks.",
+      "review_preparation": {
+        "path": "tmp/v1-completion-2026-10-07/bench-missing-pin-review/PREPARATION.md",
+        "sha256": "5d852fa72a96883da345884bd6a69e40a9ad3cdacb401b3cc25fa0f50efc5a7f",
+        "oracle_path": "tmp/v1-completion-2026-10-07/bench-missing-pin-review/oracle.json",
+        "oracle_sha256": "29855881f51896e20b265c866bcff69c1a61e0d8a910d8bd50b5cfd67208c80c"
+      },
+      "observed": "16 controlled benchmark CLI cases; missing,empty,partial,malformed,unreadable,null and missing-timing pins can return0 in explicitgate. Report-only regression summary falsely says within pins. Combined pin/gate rewrites without comparison.",
+      "scope": "Named emit/build/timing/toolchain boundaries controlled; actual CLI arguments, pin files and output/exit observed. No native performance measurement.",
+      "disposition": "Explicitgate requires complete usable baseline; preserve defaultreport-only return and standalonepin behavior; combined--pin/--gate usage2 before native work/pinmutation. Tooling correction, no A7language-policy change.",
+      "manifest_sha256": "c87b51e9da13f6ee0d9e70244e900ae06240cc1b2538ef99ae8092226693ae11",
+      "patch_sha256": "bee5678ed014f06f25594ba152160cea396cdb0800983dff3dce3e7a4cf9c09f",
+      "focused": "18 passed",
+      "independent_review": {
+        "path": "tmp/v1-completion-2026-10-07/bench-missing-pin-review/REPORT.md",
+        "sha256": "f496c06469ea00214e9455f0bae587e7144a68c16154d763b67abbef1b5aa1b5",
+        "scope": "16 workflow controls plus8invalid timing/hash controls; named external boundaries controlled, no native performance claim."
+      },
+      "parent_source_verification": "1653source hashes/modes verified."
+    },
+    "elseif_scope_repair": {
+      "status": "Integrated158a after independent review,12nativecontrols,fullpytest4124passed1xfailed,and9directchecks.",
+      "diagnosis": {
+        "path": "tmp/v1-completion-2026-10-07/elseif-symbol-report-diagnosis/EXTENDED-REPORT.md",
+        "sha256": "62477e137444333ef591aea2510329212d5d07ca141e5c3bad2e15934c1d3aa9",
+        "scope": "12 corrected compile-only controls; parent types and resolved bindings can change incorrectly in else-if chains."
+      },
+      "live_reproduction": {
+        "path": "tmp/v1-completion-2026-10-07/elseif-live-baseline/result.json",
+        "sha256": "9e3368473131905443e1ac92f75545e609bdb202f810e8cac5730f5b0574010d",
+        "result": "Current integrated4e checker c464d27d reproduces valid parent-string tail rejection at semantic6."
+      },
+      "authority": "Existing lexical-scope/declaration-identity rules; align checker traversal with name-resolution scopes. No new shadowing/syntax policy."
+    },
+    "combined_corrections": {
+      "manifest_sha256": "158a84233d1d8961f182db7c7ef6d250a920138413448169a2626587ca1611bc",
+      "source_files": 1654,
+      "scope": "Import-path diagnostics, complete benchmark gate baselines, and else-if checker scope alignment on integrated generic source.",
+      "status": "Integrated and qualified on158a; site preview blocked by socket permission.",
+      "full_pytest": {
+        "path": "tmp/v1-completion-2026-10-07/compiler-corrections-full-pytest",
+        "session_id": 49914,
+        "cwd": "/tmp/a7-compiler-corrections-full-pytest-nax8nb7d/checkout",
+        "result": "4124 passed, 1 xfailed in 627.50s; owning session49914 terminal0.",
+        "run_sha256": "bfcc7a291576862689668a5143d3e203f314ed6b803e287694e4daa239a7e6f7",
+        "parent_verification": "Both raw streams and all1654 isolated source hashes/modes verified after completion."
+      },
+      "native": {
+        "path": "tmp/v1-completion-2026-10-07/elseif-scope-native/run.json",
+        "sha256": "bde163da7c924ab0bd47628050b13782d8e81cdfa68051dddb33874d6ee76346",
+        "result": "12 valid else-if controls pass in three profiles with exact output and empty stderr; owning session2233 terminal0.",
+        "parent_verification": "All24 command outcomes and48 raw stream hashes verified."
+      },
+      "scope_review": {
+        "path": "tmp/v1-completion-2026-10-07/elseif-scope-review/REPORT.md",
+        "sha256": "dd7a1264f7e5a9b0b8ea5e54ddcfb2fbbadad580e6066fecdb8e6619b689580e",
+        "result": "12 paired controls, original declaration/scope identities and20 lexical uses checked."
+      },
+      "temporary_storage": {
+        "removal_record": "tmp/v1-completion-2026-10-07/completed-generic-pytest-capacity/removal.json",
+        "sha256": "8f23566cda529566a1ad45f1fda0337b2715973dc4caf18328a7827eaf866ff4",
+        "result": "Only archived completed generic pytest root removed after fresh metadata/process checks;4,923,703,296 allocated bytes recovered. Checkout/logs/caches/builds preserved.",
+        "archive_sha256": "08ec0e4ecc3ff3acb0e8c46225b4ab681605764b7ff7b48143aa0a7789fb92df",
+        "boundary": "Limited sandbox process visibility; no host-wide clearance claim."
+      },
+      "documentation": {
+        "path": "tmp/v1-completion-2026-10-07/compiler-corrections-docs-v2",
+        "hashes": {
+          "manifest.json": "c381fcd4d6599a667d4ab25e0f7cbeb9c1f42c5d4423812b89c03107ffa4bf25",
+          "candidate.patch": "c90e20fc33d2bc153f7665a56923c076e56cfe3c623369accc12ad27eb21d400",
+          "independent-review.md": "cc6194d4078e3ffcb7929062c55ba586434d5b964c2de1692a946115aa58ba77"
+        },
+        "status": "Seven-file draft integrated. SPEC later corrected under L60; STATUS updated with current qualification.",
+        "scope": "Existing lexical scope, located module path errors and complete benchmark gate baselines; no new language policy or release qualification claim."
+      },
+      "excluded_checks": "Cyber, secrets and dependency-vulnerability scans excluded by user. Direct compiler/package checks avoid the unchanged release wrapper; downstream command paths independently inspected.",
+      "remaining_checks": {
+        "path": "tmp/v1-completion-2026-10-07/compiler-corrections-full-pytest/remaining.json",
+        "session_id": 55123,
+        "status": "All nine direct checks passed; owning session55123 terminal0.",
+        "sha256": "102f653b870307f426a25d317a8b6e44ac6b0de7aed172a9d6d22262f44b22a3",
+        "parent_verification": "18rawstreams rehashed; all1654qualifiedsource files verified by integration driver."
+      },
+      "integration_preparation": {
+        "path": "tmp/v1-completion-2026-10-07/compiler-corrections-integration-audit/parent-driver-review.json",
+        "driver_sha256": "74087db091ac6304c1f9361694d3d9271c66d63c1d618125c73726ec49473cda",
+        "status": "Driver independently prepared and parent reviewed, not executed."
+      },
+      "integration": {
+        "path": "tmp/v1-completion-2026-10-07/compiler-corrections-integration-audit/integration.json",
+        "sha256": "fd75ec5b3f17ce26abb7f6812979153d679965e9fafc2e84e367e4e2ba664e06",
+        "result": "13files applied,10original backups verified;319livecompiler paths and7docs verified. Later SPEC/STATUS/roadmap edits separately recorded."
+      },
+      "site": {
+        "path": "tmp/v1-completion-2026-10-07/compiler-corrections-site-check/verification.json",
+        "sha256": "3c3a1a3e5c2f570e3ae946d072ccc83028239fd056ff017d7a9fd5543557f642",
+        "result": "sync0,check1,build0,exports0,links0; previewlistenEPERM;11publicationtests passed,1failed,2551assertions;1503resources/182searchtargets checked.",
+        "parent_verification": "All10stream hashes and319live source files verified.",
+        "boundary": "No preview/browser acceptance or full release-gate claim."
+      }
+    },
+    "ref_fixed_array_bounds_diagnosis": {
+      "status": "Diagnosis frozen and parent verified; isolated repair candidate in progress, no live change.",
+      "source_manifest_sha256": "158a84233d1d8961f182db7c7ef6d250a920138413448169a2626587ca1611bc",
+      "packet": "tmp/v1-completion-2026-10-07/ref-fixed-array-bounds-probe",
+      "observations": [
+        "Guarded ref [4]i32 literal indices0 and3 reject6 solely for unproven bounds; ordinary fixed-array index0 emits successfully.",
+        "Safety object length ignores ReferenceType(ArrayType); type checker marks implicit reference indexing, but Zig index lowering ignores that marker.",
+        "A length-only repair would be insufficient: preserve rejection of index4 and unguarded nil indexing, while allowing a guarded literal-nil caller."
+      ],
+      "boundary": "Compile/emission only; no native qualification or general reference lifetime claim. Guarded nil call acceptance and unguarded nil read rejection are required controls.",
+      "report_sha256": "185f9a94f8a8ebbbbadfc392e28dc223d16ccfe8e4dd9066e98c3187d462b496",
+      "parent_verification": "11 compiler command outcomes,22 raw stream hashes and1654source file hashes/modes verified.",
+      "independent_design_review": {
+        "reviewer": "built-in r13_package; read-only, not GLM",
+        "finding": "Indexed assignment bypasses expression INDEX proof; readonly summary indexed assignments remain incomplete. Repair must cover read and write paths without treating an incomplete summary as safe.",
+        "required_controls": [
+          "simple and compound indexed writes",
+          "guarded and unguarded nil writer calls",
+          "borrowed-array writer calls",
+          "nested indices and call-containing indices with preserved evaluation order",
+          "ordinary array/slice acceptance and reference-element facts preserved"
+        ],
+        "boundary": "Source review only; no new native evidence."
+      }
+    },
+    "ref_parameter_documentation_correction": {
+      "status": "Applied with backup after combined integration; no compiler behavior change.",
+      "packet": "tmp/v1-completion-2026-10-07/ref-parameter-doc-correction",
+      "manifest_sha256": "f9b31d780d4807214ee2d5730889d7623b67eef26ec7f92de70d17945849dc37",
+      "authority": "L60 optional reference parameter representation and existing codegen tests; no new behavior.",
+      "scope": "Correct SPEC6.3 nonoptional boundary-check claim; reviewed requested current docs for same contradiction.",
+      "integration_sha256": "045d2684019bb3a9f9d783f9651b3288b5ec8e356e62dfa838aff2c7c5008b0a"
+    },
+    "ref_fixed_array_index_candidate": {
+      "status": "Rejected for integration: confirmed new nil-index acceptance through unknown call-result condition. Immutable84c6 retained; successor repair required.",
+      "manifest_sha256": "84c6c20cc5f8712ed891e7f603a25c3da2466db05ca6f89f13c04a9c209978fc",
+      "source_files": 1655,
+      "report_sha256": "4b7212046aa735eb39af3d4395b5ca73e65968df27ec9a3cf89ba0ba38160d3b",
+      "native": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-native/run.json",
+        "sha256": "afda67e83ecce0e8e70d0362dea1e42c12fe1c30d631ff7b5cea63ec5af70369",
+        "session_id": 88259,
+        "result": "Terminal0;12validcontrols across3profiles, exactstdout/emptystderr. Parent verified24outcomes/48streams/1655sourcefiles."
+      },
+      "boundary": "12validnativecontrols passed but do not overcome blockingcounterexample; no fullpytest or integration. Earlier no-blocker review superseded.",
+      "blocking_review": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-review/final-extra/REPORT.md",
+        "sha256": "0588a83a42786e71ef11d0aa94eb8c94a02ee1cd11f6e20305c8684ce9db44e8",
+        "observations": "Baseline all six controls reject6. Candidate call_true and forward_true emit0 with reachable nil index; literal_true remains6. False-condition controls emit0. No native unsafe execution.",
+        "parent_verification": "12observations/24stream hashes,source and emitted Zig hashes verified; inspected flag returningtrue and read(null,flag())/a.?[0]."
+      }
+    },
+    "ref_fixed_array_index_successor": {
+      "status": "Integrated b26d source and seven docs after full pytest,12nativecontrols and verified nine-check aggregate; later docstring and diagnostic overlays recorded separately.",
+      "manifest_sha256": "b26d502a1bab6ba960c2dd2f45e6f80344ba0ebecca377eda1a5aa61988add27",
+      "source_files": 1655,
+      "report_sha256": "0fecf11b570a2b095cd227a833b407da186b41d43599c7c21ec3d600ac0030a9",
+      "repair": "Call-site indexed requirements must discharge; existing captured nonnil reference facts preserve valid forwarding. No entry-only guard or new boolean-return inference.",
+      "review": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-review/REPORT.md",
+        "sha256": "9035103379c37a35726262646b637884e85bbbbe1333ebd78428d27a2b80584e",
+        "scope": "47pairedcontrols including priorblockers across normal/library/imported/uncalled forms; incomplete casesexplicit."
+      },
+      "native": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-native/run.json",
+        "sha256": "ea172ed76baade20c87fa91d61ebcec0d61a4d30cc010c395da900649615e27f",
+        "session_id": 87864,
+        "result": "Terminal0;12validcontrols in3profiles, exactstdout/emptystderr. Parentverified24outcomes/48streams."
+      },
+      "full_pytest": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-full-pytest",
+        "session_id": 90353,
+        "cwd": "/tmp/a7-ref-fixed-array-index-v2-full-pytest-5bgvwmao/checkout",
+        "status": "passed",
+        "terminal_exit": 0,
+        "result": "4194 passed, 1 xfailed in 610.30s",
+        "parent_verification": "Four streams and all 1655 source hashes and modes in candidate and qualified copy verified."
+      },
+      "limits": "Opaque false-returning boolcall withnil, symbolicnilwrapper(false), effectfulindex, selectedreffield roots and unresolvedcallable origins remain incomplete. No fullP2/V1acceptanceclaim.",
+      "remaining_checks": {
+        "session_id": 3328,
+        "status": "failed",
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-full-pytest/remaining.json",
+        "boundary": "Nine direct compiler/package checks; no cyber scans or release wrapper.",
+        "observed_completed": [
+          "examples",
+          "debug",
+          "release",
+          "docs-style"
+        ],
+        "observed_active": null,
+        "terminal_exit": 1,
+        "record_sha256": "3eba2e1b308d3749685000f63f0810580f2bee8372a1b8302629bad3b6773b1d",
+        "failed_checks": [
+          "fast",
+          "bench",
+          "error-stages",
+          "package",
+          "installed"
+        ],
+        "cause": "fast: Errno 122 Disk quota exceeded; bench and package cache writes fail, error stages cannot create temporary directory, install lacks wheel.",
+        "verification": "Parent rehashed all 18 streams; record reports all 1655 source files unchanged. Recovery preparation only; original failures preserved."
+      },
+      "prepared_integration": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-integration-audit/integrate.py",
+        "sha256": "b73083342c610d5eb94877534da633f1f4bf196549f19f02f8a961a219799d3c",
+        "status": "Parent reviewed; awaits remaining qualification. Not executed."
+      },
+      "storage_recovery": {
+        "path": "tmp/v1-completion-2026-10-07/completed-corrections-pytest-capacity",
+        "status": "Completed old158a pytest subtree archived, verified and removed; current b26d evidence preserved.",
+        "archive_sha256": "b3d447f4d99eea4b454b2f43c41bdfb971a22e81affa182984d8d74d0c5edd52",
+        "archive_bytes": 1226157529,
+        "members_verified": 10823,
+        "independent_comparison": "GNU tar compare session75552 terminal0, empty stdout/stderr",
+        "removal_session": 95265,
+        "removal_exit": 0,
+        "freed_bytes": 4923912192,
+        "boundary": "Only /tmp/a7-compiler-corrections-full-pytest-nax8nb7d/pytest-of-cx89 removed after exact inventory and hash comparison. Prior checkout/cache/build/log siblings and current b26d root preserved. Namespace-limited process visibility recorded."
+      },
+      "remaining_recovery": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-remaining-recovery",
+        "session_id": 60742,
+        "status": "passed",
+        "checks": [
+          "fast",
+          "bench",
+          "error-stages",
+          "package",
+          "installed"
+        ],
+        "retained_successes": [
+          "examples",
+          "debug",
+          "release",
+          "docs-style"
+        ],
+        "run_sha256": "d097fe6fac0d1c569562dcbe2474a510e9ed578a27ecdda3630019820759af99",
+        "boundary": "Original failed records/streams retained; failed fast artifacts copied before cleanup. Terminal retry exit and regenerated verified aggregate required before integration.",
+        "terminal_exit": 0,
+        "aggregate_sha256": "c9268289c9c9319de60e473f860a293936447ed5efe50f08e50cf43d27d78776",
+        "result": "fast51/51,bench10/10,errorstages61/61,package and wheel/sdist install passed. Combined with four original successes; original quota failure retained."
+      },
+      "integration": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-integration-audit/integration.json",
+        "status": "applied",
+        "sha256": "0c2e519adca3af4828e11a093514a3bd6a71910a18aab795e5d9ca8e6183a46c",
+        "copied": 11,
+        "backed_up": 10,
+        "source_paths_verified": 320,
+        "doc_paths_verified": 7
+      },
+      "docstring_overlay": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-docstrings/integration.json",
+        "status": "applied",
+        "boundary": "Two __doc__ changes; remaining AST identical; source bytes differ from frozen b26d."
+      },
+      "site": {
+        "path": "tmp/v1-completion-2026-10-07/ref-fixed-array-index-v2-site-check/verification.json",
+        "result": "sync/build/exports/links0; check1 solely previewlistenEPERM. 11publishingtests pass,1previewfails,2553assertions;441coverage records;1506resources183searchtargets. Parent rehashed10streams.",
+        "boundary": "No preview/browser acceptance. Latest status prose separately rechecked in ref-index-live-validation."
+      },
+      "live_composed_verification": {
+        "path": "tmp/v1-completion-2026-10-07/ref-index-live-validation/verification.json",
+        "session_id": 62136,
+        "terminal_exit": 1,
+        "result": "111 focused tests passed; sync/build/exports/links/docsstyle/diff passed. Sitecheck alone failed at socketlistenEPERM;11publicationtests passed,1previewfailed.",
+        "source_paths_unchanged": 321,
+        "parent_verification": "16streams rehashed; actualEPERM inspected. Independent currentdocs review foundno blockingcontradiction; earlier158a roadmaplabel clarified.",
+        "boundary": "95dfa diagnostic source plus docstringoverlay composedlive; this is focused/site verification, notnewfullnativequalification."
+      }
+    },
+    "callee_origin_diagnostic_probe": {
+      "status": "Reproduced on frozen b26d; isolated diagnostic-only candidate in preparation, not integrated.",
+      "report": "tmp/v1-completion-2026-10-07/post-ref-index-origin-probe/REPORT.md",
+      "report_sha256": "4396fdbe920ee62bff7def4256d5762e55de5d3e584d429dda051242e537d395",
+      "observation": "Primary imported caller main.a7:3:5 is correct; secondary actual helper.a7:5:37 use note omits filename. Guarded nil and borrowed controls emit successfully.",
+      "verification": "Parent verified all source hashes and 24 raw streams for 12 observations. Four initial unsupported console-format invocations exit 2 and are preserved; corrected human mode and JSON give expected 6/0/0/6.",
+      "boundary": "No native execution or proof-policy change. Executable-entry counterpart still needs direct reproduction."
+    },
+    "callee_origin_diagnostic_candidate": {
+      "status": "Diagnostic-only overlay integrated after b26d and docstring overlay; focused evidence scope retained.",
+      "manifest_sha256": "95dfa29982e8fa9399ba4e218658ec238e4ec4fa6187752acd558a9a88ca7ed2",
+      "patch_sha256": "f8f1e07dc0cfee988d7685cd45eedc73d853398a66ff77db45df6d092a077f69",
+      "report": "tmp/v1-completion-2026-10-07/post-ref-index-origin-candidate/REPORT.md",
+      "focused_result": "630 passed, 57 deselected; deduplicated argv, terminal session 67896 exit 0.",
+      "parent_verification": "1656 frozen source hashes/modes and two unique-focused streams verified; source diff read.",
+      "review": "tmp/v1-completion-2026-10-07/post-ref-index-origin-review/REPORT.md",
+      "review_sha256": "77d78c91f614a772ba6c7f507d29e7fc7f548b24581072ac5cffc229f94ab9ea",
+      "review_scope": "24 paired compile observations; primary fields/exits/fallback and accepted Zig preserved. No scoped blocker.",
+      "boundary": "Diagnostic-only candidate, no new native or full-suite qualification. Main b26d qualification remains running.",
+      "prepared_integration": {
+        "path": "tmp/v1-completion-2026-10-07/post-ref-index-origin-integration/apply.py",
+        "sha256": "4730eb6bb82a5a3e6a9abd4a2a55c213bf24b64c9cacdcfe41799b07a5084798",
+        "status": "Parent and independent driver review complete; no execution. Requires applied main b26d integration."
+      },
+      "integration": {
+        "path": "tmp/v1-completion-2026-10-07/post-ref-index-origin-integration/run.json",
+        "status": "passed",
+        "sha256": "45767655acf55982775b09070723820b3ae1226fd5267ec97b509ba450683687"
+      }
+    },
+    "exact_resource_policy_work": {
+      "status": "Isolated implementation in progress; not integrated.",
+      "authority": "L47 explicitly authorizes documented resource limits; L61 exact then fit preserved.",
+      "static_review": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-review/REPORT.md",
+      "reproduction": "tmp/v1-completion-2026-10-07/exact-policy-preflight-probe/REPORT.md",
+      "observation": "Default product with conservative operand bound131073bits>C3=131072 currently emits1 aftershift; nearvalid/actualoversize/fitcontrols preserved in12compileobservations.",
+      "candidate_scope": "exact_constants.py,type_checker.py,focusedtests on95dfa snapshot; C3-C10 accounting/preflight/retention/depth/diagnostics, C2/C11 audit. No native or completion claim.",
+      "interpretations": "Preserve current C2 semanticexit6 beforeFraction despite historical tokenization wording. C7 explicit component-byte formula. Rational cache valuebits=sum component magnitudes, ceilonce/min1, recorded as implementation interpretation, not quoted policy. Asymmetric cross comparison charges the sum of actual two product costs, generalizing the equal-cost table row; explicit implementation interpretation.",
+      "candidate_progress": {
+        "status": "Accounting source frozen at9fecb00e37d328f9c558c262c3f45909bfb612908e2c902ae986b3bf49b831d4;1657 listed hashes/modes parent verified. Independent frozen review underway. Not integrated or full-qualified.",
+        "path": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate",
+        "focused_result": "Second run208passed25deselected, terminal23714exit0; parent verified both streams. First205passed3renderassertionfailures retained.",
+        "limits": "Mutable source changed between runs; these results do not qualify current bytes. Full policy qualification, native controls, and integration remain outstanding. Failed runs are preserved.",
+        "additional_runs": [
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/resource-fourth.json",
+            "record_sha256": "dadc9d7b8d1df865daca90ac7483456901c0b72feacf56bc471523cee2a4e279",
+            "exit": 0,
+            "summary": "221 passed, 25 deselected in 10.23s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/default-work.json",
+            "record_sha256": "5612a3db13fc0d2221aad2ccc34d86a8e905d113c8ec931a0f5c2a76ecb0e66d",
+            "exit": 0,
+            "summary": "222 passed, 25 deselected in 10.30s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/dependency-first.json",
+            "record_sha256": "a9ec988dbb1dee40588d26d653bea359b5411d8ffc9019791802f48b5fa0a133",
+            "exit": 1,
+            "summary": "1 failed, 224 passed, 25 deselected in 10.35s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/fitting-first.json",
+            "record_sha256": "e93759f809143496cc17320dde3f779760934ff21c9a151e694e70fa5955e17a",
+            "exit": 0,
+            "summary": "225 passed, 25 deselected in 10.32s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/contexts-first.json",
+            "record_sha256": "722a1849a1878003be1471eb3eaab3dbad360ba041b553cd7208aa3075b7fa24",
+            "exit": 1,
+            "summary": "1 failed, 227 passed, 25 deselected in 10.33s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/broader-first.json",
+            "record_sha256": "f9bb534fc9d1d31c65ce65da0779794b795b546c7750061f9b8f4212eb072126",
+            "exit": 1,
+            "summary": "1 failed, 281 passed, 54 deselected in 13.09s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/scope-first.json",
+            "record_sha256": "3491d6ab82742191ead06079d3863d4f7973cb5482f3931d037e0c4176cf9efa",
+            "exit": 2,
+            "summary": "54 deselected, 1 error in 0.34s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/scope-second.json",
+            "record_sha256": "05dba385eabb640fdab6f929c6cd27f357d62c9be3b660bfe969c3e216d74a58",
+            "exit": 0,
+            "summary": "286 passed, 54 deselected in 13.05s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/generic-retention.json",
+            "record_sha256": "5f6a6f7590dfb120280a364453deff63aa6173fd70349a4568a15538463f4d00",
+            "exit": 0,
+            "summary": "290 passed, 54 deselected in 13.17s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/operation-audit.json",
+            "record_sha256": "9bd1db90a31193aa08f615ddbb3521b6c3389e24b9694f55eba2579095a92389",
+            "exit": 0,
+            "summary": "295 passed, 54 deselected in 13.12s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/fitting-audit.json",
+            "record_sha256": "9535a1ec44d59096c1a6980ed5e4c59611ce18250e64bd6ccc361fb90c2c28eb",
+            "exit": 0,
+            "summary": "295 passed, 54 deselected in 13.15s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/local-depth-before.json",
+            "record_sha256": "78c97a84f2ecede9adb58dc02f77445e8d1c61cdc61c0cbf656730e5eae3fc37",
+            "exit": 1,
+            "summary": "1 failed, 295 passed, 54 deselected in 13.17s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/local-depth-after.json",
+            "record_sha256": "4399fa87a28c8f5f9773afb6d0e5201538e99eb30c9a7062b687c8c360a45b27",
+            "exit": 0,
+            "summary": "296 passed, 54 deselected in 13.10s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/local-decimal.json",
+            "record_sha256": "8ad7c89f50b3d1002d6697b135993fe9e8b316c1aa6158b38ffb689b2bd4c381",
+            "exit": 0,
+            "summary": "302 passed, 54 deselected in 13.06s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/final-routes.json",
+            "record_sha256": "7a8d1840b96afec5135cf0a111caca84a4ab412f5698dc5dbc664ce33794362b",
+            "exit": 0,
+            "summary": "306 passed, 54 deselected in 13.13s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/rational-scratch-before.json",
+            "record_sha256": "851201d369d5d53fe5bdead1e4fea3b53e8b484dd8e55a949f1d4e9bbfb98661",
+            "exit": 1,
+            "summary": "1 failed, 306 passed, 54 deselected in 13.13s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/lifecycle.json",
+            "record_sha256": "8d34317f2496ac5b800bf4dd73d6d497697b1b3038884b271f59c1dd2027f257",
+            "exit": 0,
+            "summary": "313 passed, 54 deselected in 13.18s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/low-recursion.json",
+            "record_sha256": "8029c64d32e05cc2197b8623bd4d57076ac22db2f687a7269a6c037998d9ad35",
+            "exit": 0,
+            "summary": "314 passed, 54 deselected in 13.37s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/focused-final.json",
+            "record_sha256": "466d6b86421da8894b494a22bee55e27e28d0c3ec9e36fd44e622da59c347d8b",
+            "exit": 0,
+            "summary": "315 passed, 54 deselected in 14.24s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/focused-qualification.json",
+            "record_sha256": "f5189511d185b0a578e35a0bad72105ae3d36679890e27d036065bc4bba66ec0",
+            "exit": 0,
+            "summary": "315 passed, 54 deselected in 13.46s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/compilation-reset.json",
+            "record_sha256": "e61ad5ab76d1a06a45d4e5043dc84ed4c92362632fcb69dd2bfdd2e24464a0a2",
+            "exit": 0,
+            "summary": "315 passed, 54 deselected in 13.49s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/final-accounting.json",
+            "record_sha256": "b50b9db5f0b2e54dfa30f182e50ba1e792fd08e04e5173789dfa3fbda04486f2",
+            "exit": 0,
+            "summary": "315 passed, 54 deselected in 13.48s",
+            "parent_streams_verified": true
+          },
+          {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/freeze-focused.json",
+            "record_sha256": "ae42ca93e5a3e5a15824b9b7effd232c6de7e92aca5bd85e612aa70877e20701",
+            "exit": 0,
+            "summary": "316 passed, 54 deselected in 13.45s",
+            "parent_streams_verified": true
+          }
+        ],
+        "parent_review": "Broader-first failure is a stale decimal diagnostic assertion; actual semantic exit 6 retained. Draft C8 applies to ordinary global dependencies and needs scope correction. Integer remainder computes an unused quotient and charges avoidable work; author notified. Context, retention, generic fitting, and operation audit remain in progress.",
+        "author_report": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/REPORT.md",
+          "sha256": "80fb9f65d99bea4e27d5eaa77b361f1fa8a6bd8623627e739abf292613ebe6f7",
+          "parent_read": true
+        }
+      },
+      "context_review": "tmp/v1-completion-2026-10-07/exact-policy-context-review/REPORT.md",
+      "native_preparation": {
+        "path": "tmp/v1-completion-2026-10-07/exact-policy-native-controls",
+        "status": "Prepared only; candidate manifest unbound. Four source programs and12planned profile executions, including archived IEEEbit oracles. No compiler emission/native execution."
+      },
+      "test_quality_review": "tmp/v1-completion-2026-10-07/exact-policy-context-review/test-quality-review.md",
+      "qualification_storage_preparation": {
+        "report": "tmp/v1-completion-2026-10-07/exact-policy-qualification-prep/storage-review.md",
+        "control": "tmp/v1-completion-2026-10-07/exact-policy-qualification-prep/split-storage-control.json",
+        "control_sha256": "040c59a710a29230a6e13ec45840f838192590edde39ba47d8f9f6b0ea610c4d",
+        "result": "Two existing Git-boundary tests passed with external pytest basetemp, workspace TMPDIR and private Zig caches; HOME unchanged. Source hashes and streams verified.",
+        "limits": "No native execution, candidate qualification, package-temp behavior proof, or quota headroom guarantee. Keep source checkout and pytest basetemp outside live Git ancestry.",
+        "prepared_driver": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-full-pytest/run.py",
+          "sha256": "6560bf1079525971a0899f1f65a9116fba303b955acbc59cb98a2656a9e77091",
+          "review": "tmp/v1-completion-2026-10-07/exact-policy-qualification-prep/driver-review.md",
+          "correction": "Post-run terminal exit and streams saved before verification. Missing/unreadable manifests and source I/O errors record failures.",
+          "control": "tmp/v1-completion-2026-10-07/exact-policy-full-pytest/recording-control.json",
+          "control_result": "Four post-run replay controls passed; no subprocess/native/compiler launched by these controls.",
+          "status": "Still unbound and unexecuted. Fresh native-slot confirmation required.",
+          "review_resolution": "Independent reviewer reread corrected post-run block and replay records; earlier manifest-recording issue addressed. Driver still unbound and unexecuted."
+        }
+      },
+      "operation_review": {
+        "report": "tmp/v1-completion-2026-10-07/exact-policy-context-review/operation-audit.md",
+        "boundary": "Static captured source review; fixes under development, no qualification.",
+        "fresh_findings": [
+          "Float mantissa conversion precedes its work charge.",
+          "Rounding can execute two comparisons after one charge."
+        ],
+        "parent_integer_fitting_inventory": "tmp/v1-completion-2026-10-07/exact-policy-context-review/integer-fitting-caller-inventory.json",
+        "remaining": "Complete operation fixes, classify integer-fitting callers, verify local-scope dependency-chain limits, complete independent re-review and artifact parity, then freeze and qualify.",
+        "captured_reproduction": {
+          "report": "tmp/v1-completion-2026-10-07/exact-policy-context-review/operation-reproduction/REPORT.md",
+          "execution": "tmp/v1-completion-2026-10-07/exact-policy-context-review/operation-reproduction/execution.json",
+          "parent_artifact_hashes_verified": 5,
+          "exit": 0,
+          "scope": "Helper-level reproduction on captured6f8b2e6a source. Conversion precedes exhausted-budget refusal; below-half/tie rounding executes two comparisons for one charge. Numeric oracles remain correct. No current-candidate/native qualification."
+        },
+        "local_depth_reproduction": "Injected depth3: main { A::1; B::A; C::B; D::C } returns0 instead of semantic6. Preserved local-depth-before:1failed295passed54deselected. Local-scope C8 omission confirmed; author repairing common accounting. No live integration.",
+        "correction_review": {
+          "execution": "tmp/v1-completion-2026-10-07/exact-policy-context-review/operation-correction/execution.json",
+          "parent_artifacts_verified": 5,
+          "exit": 0,
+          "scope": "Saved9233339a helper correction: exhausted budget rejects before mantissa conversion; executed rounding comparisons charged2/2/1 for below/tie/above; independent numeric bits unchanged.",
+          "remaining": "20-digit64-bit mantissa scan overcharges2 instead of1 from conservative bit bound; author instructed to preserve actual-limb pricing with preconversion threshold checks. Exponent ingestion precedes scan and remains separately bounded by token length."
+        },
+        "decimal_threshold_control": {
+          "record": "tmp/v1-completion-2026-10-07/exact-policy-context-review/decimal-threshold-control/result.json",
+          "record_sha256": "3b9265cfaebe4d839f691a2fca1037025f1bf31ae800ccd598ce51fc9ad4c28e",
+          "driver_sha256": "b30c62248459bf571c93ca671eb61255d2aacb6dc91d04d375822e666d80fcd7",
+          "source_sha256": "965c165d0e47cd342bfe1155eaba4aa3e88265b6141a85a1afeb3123c1661b3d",
+          "exit": 0,
+          "result": "15 cases around2^64,2^128,2^192,2^256,2^320 preserve exact values and actual limb charges;15 underfunded calls reject before mantissa conversion. Exponent ingestion remains separate.",
+          "limits": "Saved-source helper evidence only. No full compiler/native qualification. Terminal stdout observed directly; no separate raw stream artifact."
+        },
+        "additional_author_finding": "Preserved rational-scratch-before reproduces erroneous C3 scratch rejection for float-category128\u2212128 under injectedC3=8/C4=16. Lifecycle includes correction and313passed54deselected. Helper category control does not bypass literal-ingestion constraints by claiming a real-source acceptance."
+      },
+      "acceptance_mapping": {
+        "report": "tmp/v1-completion-2026-10-07/exact-policy-context-review/acceptance-map.md",
+        "scope": "Mutable read-time T1\u2013T14 and C3\u2013C11 mapping; test presence is not current-source qualification.",
+        "reconciliation": "Final-routes supplies later enum/pattern failure controls. Remaining distinct checks include reused compiler reset versus combined modules, mixed exact dependency chains, borrowed AST cleanup, diagnostic and recursion boundaries, frozen artifact parity and C11 encoding/native validation."
+      },
+      "lifecycle_review": "Compilation-reset now exhaustsC6=64, asserts its diagnostic, and reuses the same A7Compiler to emit consumed1;315passed54deselected. Standalone helper/consumer passatC6=4 while importedcombination rejects. Mutable-source checks are not fullqualification.",
+      "c11_review": {
+        "report": "tmp/v1-completion-2026-10-07/exact-policy-context-review/c11-emission-audit.md",
+        "observation": "Current frozen backend emits decimal floats or typed bitcasts; no exact-hex default. Target payload bound relies on prior fit checks. Static review establishes neither oversized public emission nor wrong bits.",
+        "next_evidence": "Separate isolated hexadecimal emission proposal requested; accounting candidate backend unchanged. Native parse-path qualification and bounded emitted-form audit still required.",
+        "isolated_proposal": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-hex-emission-proposal",
+          "patch_sha256": "4e3386dac0f50e7976d7276f8461d90029e07db2c09520c27bcae8cd62f9746f",
+          "report_sha256": "b7ae6a1c51314955fc470e96c14d1e1d3a8dad6428aabfdaea9adecc883e1cf1",
+          "parent_disposition": "Pursue a separate isolated successor implementing linked research hex-default spelling under L47. Preserve A7 numeric semantics, integer/nonfinite routes and independent stored-bit oracles. Accounting baseline/backend and its artifact-parity evidence stay separate.",
+          "limits": "Static review and syntax compilation only. No emission or native acceptance; no live integration."
+        },
+        "successor_status": "Separate exact-policy-hex-candidate checkout created from frozen9fec; author verified1657 copied files and applied proposed backend e21dbe5d174014b912b7e1248ce605729a61be5afa8e35311108515b24163cdb. Fixed-spelling tests in progress. No native/fullgate/liveintegration.",
+        "native_ieee": {
+          "record": "tmp/v1-completion-2026-10-07/exact-policy-hex-native-ieee/run.json",
+          "record_sha256": "18d5d0ca9f845e1d1b1d8479706ab739f26f56c1d9e9a474905c3b05aa9ec5ca",
+          "session": 73065,
+          "terminal_exit": 0,
+          "result": "Existing17fixedstored-bitrows passed Debug and ReleaseFast in one selectedtest;1passed12.67s. Source1658filesunchanged. Parentverifiedstdout/stderrhashes.",
+          "boundary": "Native stored-bit observations for stated corpus; no ordinaryfloatformatting/fullgate/releaseclaim.",
+          "profile_claim_correction": "Earlier three-profile description was incorrect: frozen test/test_constant_folding_exact.py:30 defines PROFILES=(Debug,ReleaseFast). ReleaseSafe remains unverified by session73065. Original raw records retained; successor explicitly tests all three."
+        },
+        "frozen_successor": "786079722430488f5e1e393a10f93cac0248242d09f1ce865e1d383b9e2ad0e9;1658files;325focusedpassed54deselected; independentincrementreview reports no established blocker.",
+        "hex_increment_independent_report": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-hex-review/REPORT.md",
+          "sha256": "e1a9e08f8f0eac3cfbbaed3db40cc487add30176a0e90c5005dbb46f540c88c6",
+          "parent_read": true,
+          "result": "No blocking defect established by static source and emission-artifact review. Native observations recorded separately."
+        }
+      },
+      "accepted_artifact_parity": {
+        "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/parity/results.json",
+        "record_sha256": "9419ec581f27b347bb801151ce11ab0f4312c8daba1df124e65aff6b36e4c481",
+        "commands": 20,
+        "parent_streams_verified": 40,
+        "parent_output_hashes_verified": true,
+        "result": "Seven accepted baseline/candidate artifacts identical; one intended conservative-product0\u21926 and two retained6 rejections create no candidate artifact. Before/after candidate inventory equal in record.",
+        "limits": "No nativeexecution; generic and importedconstant artifactpair extensions requested separately. Candidate notyetfrozen.",
+        "final_successor": {
+          "record": "tmp/v1-completion-2026-10-07/exact-policy-enforcement-candidate/parity-final/results.json",
+          "commands": 24,
+          "accepted_equal_pairs": 9,
+          "parent_streams_verified": 48,
+          "parent_output_hashes_verified": true,
+          "candidate_inventory_matches_frozen_manifest": true,
+          "limits": "Compile/emission only; no native/fullsuitequalification."
+        }
+      },
+      "documentation_preparation": {
+        "path": "tmp/v1-completion-2026-10-07/exact-policy-docs-draft/proposed-text.md",
+        "status": "Conditional unapplied prose; style check passed; eight live preimage hashes recorded. Final qualification and C11 disposition required before application.",
+        "review_corrections": "Persistent initializerfittingcounter, absoluteexponentmagnitude, exactevaluationthenfloatrounding, and diagnosticmessagefieldscope clarified; stylecheckpassed. Concreteconditionalcopies delegated; no liveapply.",
+        "concrete_candidate": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-docs-candidate",
+          "manifest_sha256": "51966176671b8e6baf70da2841475897055a0b40527b7832193979538151bfa5",
+          "patch_sha256": "f432bb1ca245ea69004ee16f53f6a479e1b5c19b7af192f27fc0d1c03e8a9267",
+          "report_sha256": "d7601acc00b5e6de4e7b31de68caaa50df78aae48357a3ed17a1d98acac777cc",
+          "parent_files_verified": 8,
+          "status": "Conditional v6 remains unapplied and preserved. Match repair integration changed five overlapping live docs; rebase before any application. Prior hash verification is historical.",
+          "known_correction_required": "Update pending status only afteractualfinalqualification. Oldprofileoverclaim alreadycorrected."
+        }
+      },
+      "frozen_independent_review": {
+        "path": "tmp/v1-completion-2026-10-07/exact-policy-frozen-review",
+        "selected_result": "23passed31deselected; selected.jsonexit0",
+        "paired_commands": 8,
+        "parent_streams_verified": 18,
+        "parent_output_hashes_verified": true,
+        "source_identity": "9fecb00e37d328f9c558c262c3f45909bfb612908e2c902ae986b3bf49b831d4",
+        "scope": "Selected nonnative tests plus four paired CLI controls. Report still being finalized; no native/fullgate/release claim.",
+        "report": "tmp/v1-completion-2026-10-07/exact-policy-frozen-review/REPORT.md",
+        "report_sha256": "96c08861ab82d4674c4911c6dee4fef97abf1922fd04e8c996c8dea5a8d556b5",
+        "parent_read": true,
+        "disposition": "No blocking accounting defect established; supports separate combined-successor qualification. No native/fullgate/complete-policy/release result."
+      },
+      "full_pytest": {
+        "path": "tmp/v1-completion-2026-10-07/exact-policy-full-pytest/run.json",
+        "session": 33860,
+        "status": "Terminal failed; parent observed session33860 exit1.",
+        "source_manifest_sha256": "786079722430488f5e1e393a10f93cac0248242d09f1ce865e1d383b9e2ad0e9",
+        "cpu_affinity": "0-11",
+        "workers": 8,
+        "storage": "Externalcheckout/basetemp; workspaceTMPDIR/privateZigcaches; HOMEunchanged. Native4programrunner waits for terminalfullgate.",
+        "terminal_exit": 1,
+        "result": "40failed,4222passed,1xfailed,2warnings in562.48s",
+        "record_sha256": "8f84a1d8268da71974a78268ed7046ef2b66dd56db6bd25e221ab39186ed01bd",
+        "parent_verified_source_files_per_tree": 1658,
+        "parent_verified_streams": 2,
+        "findings": "Example002_var ordinary float output regression; three obsolete decimal-emission assertions; later explicit quota errors and SIGBUS crashes requiring separate classification. SIGBUS cause not established.",
+        "next_action": "Separate format-correction successor delegated; frozen786079 preserved. Native slot assigned only to correction author on0-3; four-program runner remains unexecuted.",
+        "classification": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-full-pytest/failure-classification.json",
+          "sha256": "878cf2ae2a21c0f3f7f8a9cf05e3a396eae64fca4960b0931a278d8e6ef36a33",
+          "counts": {
+            "float_format_regression": 1,
+            "stale_spelling": 3,
+            "explicit_quota": 29,
+            "SIGBUS_cause_unproven": 7
+          },
+          "parent_read_report": true
+        },
+        "capacity_recovery": {
+          "record": "tmp/v1-completion-2026-10-07/exact-policy-failed-pytest-capacity/removal.json",
+          "record_sha256": "d1f4dbff3bc432475089a30766f82071a7b94bd3a2aa42bbcc0af58bfb76dc5a",
+          "archive_sha256": "87109325002573bfaae867437ba3e5b19ee0baaa5277d3e78f471743db3d2ac6",
+          "result": "Archived and verified11107entries including2hardlinks and every file content; current visibleprocscan found no references. Removed only terminal task-ownedpytest subtree, recovered4626386944allocatedbytes. Frozen source/externalcheckout/logs preserved. Initial verifier rejected hardlink members; successor verified extracted bytes before removal."
+        },
+        "format_successor": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-hex-format-correction",
+          "status": "Frozen44acf840; source matches27commandnative run except two later test-only files. Finalactualsuccessor fixture/hexcheck33passed1deselected; parentverifiedstreams.",
+          "focused": {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-hex-format-correction/focused.json",
+            "sha256": "2dad21907f7d68b0a10c36238f4beb1721d08ec4995df666c2612ca8e8ca78a3",
+            "result": "246passed50deselected; parentverifiedexit0andstreams"
+          },
+          "selected": {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-hex-format-correction/native.json",
+            "sha256": "a328a293c03a58c3da9886202dfcb02978aa766c8421d92dff5d6ed223887145",
+            "result": "12passed; nativehelpercoversDebug/ReleaseFast, separate3profilerunstillpending"
+          },
+          "paired_native_streams_verified": 18,
+          "literal_bound": "C11 limits the emitted numeric literal to32characters; explicit target-type wrapper is a separate expression. Parent checked researchtableC11 wording.",
+          "three_profile_native": {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-hex-format-correction/profiles/results.json",
+            "sha256": "38f63c1128fd5249a96c9c59b7d362d62253baa4b9f568f4aae284eaffbb520b",
+            "commands": 27,
+            "outputs": 9,
+            "parent_verified_streams": 54,
+            "parent_verified_observer_substitutions": 51,
+            "result": "17fixedIEEEbitrows, fiveformatcontexts and unchangedexample002golden passedDebug/ReleaseSafe/ReleaseFast. Mutable sourcebeforeafter1658equal; later test-only fixture correction still pending freeze."
+          },
+          "manifest_sha256": "44acf840edb7bed281262b2a49441eb05af4bcc4a6c454f402c47d84836a5374",
+          "source_files": 1658,
+          "parent_verified_frozen_source": true,
+          "independent_frozen_review": {
+            "report": "tmp/v1-completion-2026-10-07/exact-policy-format-frozen-review/REPORT.md",
+            "sha256": "efb525fb037708f44fbc1f4f128e6a3ae88d21bb884d5f810545e7d85584e464",
+            "scope": "Static source/artifact review;1658files6pathincrement,27nativecommandrecords54streams9outputs51observer substitutions verified. No scopedblocker; not independent execution or fullgatepass."
+          }
+        },
+        "successor_driver_preparation": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-format-full-pytest/run.py",
+          "sha256": "5742b0b146f3bf83810952c089e78bed3e6fc88eca68d4d03e935517c5ad5c3e",
+          "status": "Unbound/unexecuted; workspacebasetemp requires corrected realGitfailurefixture verification. Source checkout remains external; HOME unchanged."
+        },
+        "workspace_fixture_correction": {
+          "patch": "tmp/v1-completion-2026-10-07/exact-policy-git-temp-correction/candidate.patch",
+          "patch_sha256": "3ec190fe8664ba11260a61c0bb566410dc68375dc57871bad7a6990af54f94d1",
+          "draft_sha256": "72b074b80c5c83842bf90f3eff3b594e3be0bfde11c9de0836152ce6d93d45af",
+          "parent_verified_streams": 16,
+          "outcomes": "Old test fails with workspace ancestry and passes outside; corrected realGitinvalidfile test passes both. RealGitexit128, unchanged harnessfailure assertions. No envGitoverride/HOMEchange.",
+          "disposition": "Approved for isolated successor inclusion; no liveapply."
+        }
+      },
+      "remaining_checks_preparation": {
+        "runner": "tmp/v1-completion-2026-10-07/exact-policy-remaining-checks/run.py",
+        "sha256": "7e698d2e3903da06a4231a6e298e6005f0ae8e81f7e4972918a599528cc90bb3",
+        "parent_read": true,
+        "independent_review": "Prior full-pytest argv validation omission corrected; reviewer confirmed exact command, checkout and import-origin checks. Static review only.",
+        "status": "Prepared and unexecuted. Requires future passed full-pytest evidence and fresh native-slot release. Current33860 has failures and cannot qualify."
+      },
+      "format_successor_full_pytest": {
+        "record": "tmp/v1-completion-2026-10-07/exact-policy-format-full-pytest/run.json",
+        "session": 87344,
+        "status": "Terminalfailed;parentobserved87344exit1.",
+        "manifest_sha256": "44acf840edb7bed281262b2a49441eb05af4bcc4a6c454f402c47d84836a5374",
+        "runner_sha256": "5742b0b146f3bf83810952c089e78bed3e6fc88eca68d4d03e935517c5ad5c3e",
+        "workers": 8,
+        "affinity": "0-11",
+        "storage": "External sourcecopy; workspacepytestbasetemp/TMPDIR/privateZigcaches. HOMEunchanged. Alltests included; cyber scans excluded.",
+        "integration_preflight": {
+          "record": "tmp/v1-completion-2026-10-07/exact-policy-integration-preflight/preimages.json",
+          "sha256": "225b81d95b1764cb2ce65b3df1c746312da9a079df9a31d2f4a898b0bd7d9446",
+          "result": "All11affected livepathspreimagesmatch95dfa or expectedabsence. No liveedits; recheckafterqualification."
+        },
+        "remaining_driver": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-format-remaining-checks/run.py",
+          "sha256": "2ecfaf157de7f47885da596c1e7c4b0044f658cf61adfa1095b86e58dc46c169",
+          "parent_review": "Reviewed2lineprerequisitepathdelta; preparedunbound. No execution beforefullpytestpasses."
+        },
+        "terminal_exit": 1,
+        "result": "3failed4262passed1xfailed in640.74s",
+        "record_sha256": "b6aa3543101d86acac5738d6fd188fceaf0bf38c6874fcd2b21ee9eebc92f5d0",
+        "parent_verified_source_files_per_tree": 1658,
+        "parent_verified_streams": 2,
+        "failures": [
+          "example043sqrt2outputchangesaftertypedargument;contractreviewpending",
+          "remainingdecimalspellingassertioninfloatwidthruntime test",
+          "release-toolingerrorfixtureancestorGitdiscoveryassumption"
+        ],
+        "next_action": "Preserve44acf; investigate mathcontractbeforegoldenchange. Proposefixtureisolationwithoutscannerexecution. Native slotassignedonlymathdiagnostic0-3; preparedfourcontrolsheld.",
+        "release_fixture_proposal": {
+          "path": "tmp/v1-completion-2026-10-07/exact-policy-release-fixture-proposal",
+          "report_sha256": "779274e0089ac7bd0f37ccc679f40ce7b9c8fdac454c62f2512c07589b772959",
+          "disposition": "Parentreviewedtwo-line invalidgitfilefixture; acceptedforisolatedsuccessor. No scannerexecution; realGiterror-onlyprimitive verificationdelegated.",
+          "git_primitive": {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-release-fixture-proposal/git-enumeration.json",
+            "sha256": "340413f6416b1a769c476d4f24f223949634537f72ffb5f59fb2918edc1a9ba0",
+            "exit": 128,
+            "parent_verified_streams": 2,
+            "scope": "RealGitinvalidfixtureerroronly; no scanner/testmoduleexecution."
+          }
+        },
+        "math_precision_decision": {
+          "status": "Userquestionpending; no goldenupdateapproved.",
+          "current": "Directsqrt(2.0)prints1.414213562373095048801688724209698; checkedf64routeprints1.4142135623730951.",
+          "proposed": "Preservecheckedfloatwidthinmathcallarguments/results, makingdirectcallconsistentwithf64. Preserveexplicitf32/f64/nonfinitecontrols.",
+          "authority_boundary": "Registryfn($T)$Tandcheckerfloating_unarysupporttypedresult; AGENTSrequiresapprovalforvisiblebehaviorchange. L61doesnotbyitselfapprovearbitrarymathoutputchange.",
+          "diagnostic": {
+            "record": "tmp/v1-completion-2026-10-07/exact-policy-sqrt-context-diagnosis/results.json",
+            "sha256": "e73174b2d81570acb1dcf4b3150fbb6be3707488f217b8527ec71e3bf79343a5",
+            "parent_verified_streams": 32,
+            "observation": "Bothcheckerresultsf64; oldZigcomptime_float/directlong versus typedf64/directshort. Boundf64bits4609047870845172685 andf32bits1068827891match; no goldenchangeapproved."
+          }
+        },
+        "float_width_test_repair": {
+          "record": "tmp/v1-completion-2026-10-07/exact-policy-final-test-candidate/float-width-native/result.json",
+          "sha256": "51fbae4b52ec2bdc502c98f4b0a3d0a28b2a213bc206c0e60bc9a1ad48bef2ae",
+          "session": 43104,
+          "terminal_exit": 0,
+          "parent_verified_streams": 4,
+          "parent_verified_artifacts": 4,
+          "result": "Repairedemissionassertionsretainf32/f64typeandvalues; existingnativeDebug/ReleaseFast output1.5 2.5 passes. Compilerunchanged, no scannerexecution; mutabletestsuccessornotfullqualification."
+        },
+        "post_match_integration_boundary": "Matcher integration changed live checker and portableGitfixture; original exact-policy preflight is historical. Any future combined candidate must preserve matcher fix, live hints and docs and receive fresh qualification."
+      },
+      "format_successor_native_preparation": {
+        "path": "tmp/v1-completion-2026-10-07/exact-policy-format-native-controls",
+        "runner_sha256": "041d8eca2e45dc8baa046b1b6ef5ae1b92e4558ad3fe81c83610125a27b454ad",
+        "preparation_sha256": "788e7e91a8e56e194dc97aa92d6bbaee20d37038b6c7fb6d07bd7ab6fbba58eb",
+        "emission_sha256": "6a8b8b7a5877a119231ceb3d461b740812edf5336bfb16ed3b6d97117af2696a",
+        "independent_review": "tmp/v1-completion-2026-10-07/exact-policy-format-native-controls/review.md",
+        "parent_verified_input_hashes": 35,
+        "parent_read_runner_and_review": true,
+        "status": "Nativevalidationpassed; parentobserved27498terminal0.",
+        "session": 27498,
+        "terminal_exit": 0,
+        "record": "tmp/v1-completion-2026-10-07/exact-policy-format-native-controls/run.json",
+        "record_sha256": "2267810de6773f60ea632bbe9af523c815185ed7a5fd01c0f01146a3a68ae898",
+        "parent_verified_streams": 50,
+        "result": "Fourprograms eachDebug/ReleaseSafe/ReleaseFast:12exactstdout runtimechecks,12builds,pinnedversioncheckall0. Source1658/artifact35 postchecksclear; no fullgatepass/mathapproval claim."
+      },
+      "live_diagnostic_hint_overlay": {
+        "record": "tmp/v1-completion-2026-10-07/diagnostic-hint-correction/integration.json",
+        "sha256": "9dc5618d48dadd797c9b6658802bc0dc553ca5610050ccf85845c2314af40f0d",
+        "source_sha256": "1520f8853d121b5cfe5639ab2867f2bb3db783545b55f7ade2b83c9476f2cee3",
+        "result": "63passed1.02s",
+        "integration_boundary": "Onlytwohintstringschanged. No fullgateclaim; frozen44acf unchanged. Includeoverlayexplicitlyinfuturecombinedqualification."
+      }
+    },
+    "integer_match_range_precision": {
+      "path": "tmp/v1-completion-2026-10-07/match-pattern-candidate",
+      "status": "Integrated and compiler/package qualified. Site build,exports,links pass; preview remains blocked by listenEPERM.",
+      "manifest_sha256": "79555ee48e566638d4770be2302c6130f6c15c5f2a16c4b90c67ebeb495be0f6",
+      "patch_sha256": "69e26d794b34b002af4f7fb1710fb471cbd156507eb5a1444f09fa0498f2d1da",
+      "report_sha256": "67c0156238ddc6618591c7f37014f114b77e7a7df3da7b3bfdbf78b354230c73",
+      "run_sha256": "f252423e6752482edea08f258d1ca25133d33e41dc9de2a17cf2568badbbeebc",
+      "approval": "L47; P-TYP numeric patterns fit before overlap checks.",
+      "reproduction": "13 compile-only probes; four mismatches in integer literal/range comparisons in both orders. Parent verified all source and 26 stream hashes.",
+      "result": "90 passed, 7 deselected in 7.47s; worker confirmed session37679 terminal exit0.",
+      "parent_verification": "Read checker diff and 21 new CLI cases; verified 1657 source hashes/modes, unchanged before/after inventories, four streams and candidate import origin.",
+      "independent_review": {
+        "reviewer": "/root/stdlib_r3_prerequisite_probe",
+        "result": "No scoped blocker; static review only. Integer and character keys remain exact; float conversion unchanged; no recursion added.",
+        "limits": "No independent execution; reverse-order u64 and i64 minimum lack explicit new cases."
+      },
+      "limits": "No native/full-suite/package qualification, external GLM review or live integration. First test JSON assertion failure retained.",
+      "qualification": {
+        "path": "tmp/v1-completion-2026-10-07/match-pattern-qualification",
+        "session": 88786,
+        "status": "Passed; parent observed session88786 terminal exit0.",
+        "manifest_sha256": "0772bfa065212e448228809f77436e6b3034100b6a7cf576e8fd4c90ba3f8b82",
+        "runner_sha256": "7058a0dd35f0d456b8f36df510182769fc0b8c0b04aa3556b61019173eaf1239",
+        "binding_sha256": "463fbbc3825ca047ff880e9046f9b3062de7cd6b7c1d3455b71ba0087b20bf38",
+        "source_files": 1657,
+        "source_delta": "Reviewed portable Git-failure fixture added to match candidate; compiler unchanged.",
+        "scope": "Permitted pytest, eight workers CPU0-11; four explicit scanner tests deselected. External source checkout, workspace caches and basetemp, inherited HOME.",
+        "parent_verification": "All snapshot hashes and modes verified; sole fixture delta matches reviewed draft; runner diff and four excluded nodes inspected.",
+        "result": "4216 passed, 1 xfailed in621.70s; four scanner tests explicitly deselected.",
+        "parent_final_verification": "Both1657-file source inventories and four streams verified; no source drift or verification errors.",
+        "run_sha256": "b1adb7cabe63ecbcae47dd1dae133062971e4b8e328de45fc3f532443fae2e05",
+        "independent_review": "r13_package verified4216pass1xfail, four scanner deselections, both1657source trees/modes, four streams and sole fixture delta. No scoped blocker; read-only review."
+      },
+      "prepared_followup_checks": {
+        "native": {
+          "path": "tmp/v1-completion-2026-10-07/match-pattern-native",
+          "runner_sha256": "6f58a6a67b65f93e3c87b5cd5bf174b4ab5899a9df9eddfa94fa41806475c350",
+          "preparation_sha256": "d68854e8e29cb4017aa2326ca72d560d50a3cf3eb0fb8b5992b804fd868dccc7",
+          "review": "Parent read six functions,18calls and literal output oracle; three build profiles and record/source verification reviewed.",
+          "status": "Unbound and unexecuted; awaits session88786 terminal and native slot."
+        },
+        "remaining": {
+          "path": "tmp/v1-completion-2026-10-07/match-pattern-remaining-checks",
+          "runner_sha256": "1c3e86577adbc1f9cd89c0cca32908ad5c29688f00982976655a1650cc57b12d",
+          "review": "Parent read runner diff; nine commands unchanged, exact four scanner exclusions added to prior command requirement.",
+          "status": "Unbound and unexecuted; passed prior pytest required."
+        }
+      },
+      "native_result": {
+        "path": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/match-pattern-native",
+        "session": 88093,
+        "status": "Parent observed terminal0; all10commands passed.",
+        "run_sha256": "2f894f67a502461f9740a0d2146ff137e6d4eab03e913ae6eb74c7043c53b388",
+        "scope": "Six functions,18branch/fallback calls per profile, Debug/ReleaseSafe/ReleaseFast.",
+        "parent_verification": "20streams,3binary/generated-source pairs and all post hashes verified;1657source files unchanged."
+      },
+      "remaining_checks": {
+        "path": "tmp/v1-completion-2026-10-07/match-pattern-remaining-checks",
+        "session": 9875,
+        "status": "Passed; parent observed session9875 terminal0; native slot released.",
+        "scope": "Nine direct compiler/package checks, CPU0-11, no cyber scans; not release acceptance.",
+        "binding_sha256": "b870312a504a58c4b0d0184da09575811be522d087354051bc2ff634e175b1ba",
+        "run_sha256": "dad624ca1395d0aba9870b86a9dcda07838eef00a9e371084586aa9000299571",
+        "parent_verification": "Nine exit0commands,18streams, all post hashes and both1657-file source inventories verified.",
+        "independent_review": "r13_package independently verified9commands,18streams,10posthashes,bothsource inventories and wheel/sdist success. No scoped blocker; no rerun."
+      },
+      "integration": {
+        "path": "tmp/v1-completion-2026-10-07/match-pattern-integration/integration.json",
+        "sha256": "c68292fb079a4d5ca373088b026c4f7aff6d220093b347a51177d1571b863401",
+        "status": "Integrated3source and6docs files after qualifying snapshot0772bfa; existing preimages backed up.",
+        "verification": "All compiler-related paths match qualified snapshot; independent review confirmed3source/6docs. Site output and verification recorded separately.",
+        "limits": "No release acceptance; existing scalar-read expected failure remains. Four scanner tests excluded. External GLM capability remains unavailable; this batch has built-in independent review only."
+      },
+      "site": {
+        "path": "tmp/v1-completion-2026-10-07/match-pattern-site",
+        "results_sha256": "b088ef749da15be53c2a6c0fcc6ed7bf76a5d11ccde99616fcf702ebff73a8ec",
+        "remaining_sha256": "4ccae36002e58e5d3b1c1cd9d60db43fc3f9a3c9fd00d507fb045ec787b99a83",
+        "status": "Exports synchronized; lint/typecheck/coverage passed,11publication tests passed. Preview test failed: EPERM listen atserve.test.ts19. Separate build/export/link checks passed.",
+        "parent_verification": "10stream hashes and all canonical/export hashes+modes verified; only llms-full.txt and docs/manifest.json changed.",
+        "limits": "No successful preview/browser acceptance; no bypass or full-check pass claimed."
+      },
+      "release_identity": {
+        "command": "taskset -c12-15 .venv/bin/python scripts/verify_release_version.py",
+        "exit": 0,
+        "result": "release-version: 0.3.0, untagged qualification",
+        "stdout_sha256": "2a99392ea4bade86e0db0ee334ce305432f72e02f1c73484341f56413b831387",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "generic_match_pattern_probes": {
+      "path": "tmp/v1-completion-2026-10-07/match-generic-pattern-probes",
+      "results_sha256": "4ec46d51900fb1370be08f76a0d51c02cd17bf868d9cc53ae0c286512f488bd7",
+      "report_sha256": "98271581031302d74d015d91ac0b15241b108bd4ed69eb91fdd312e6436b5116",
+      "scope": "10trusted compile-only programs,CPU12-15; no native execution.",
+      "result": "Three valid generic f32/f64/i64 programs rejected at unresolved$T template checks. Genericround-equal also rejects for type mismatch, not overlap validation. Direct/named concrete controls behave as expected. Two arithmeticpatterns fail parsing and establish no semantic defect.",
+      "parent_verification": "All10source and20stream hashes verified; relevant compiler hashes unchanged.",
+      "next": "Review concrete-instantiation checking and preserve shared generic templates before implementing approved fitting rules.",
+      "implementation_preparation": {
+        "status": "Frozen isolated candidate fcd32382; 501 selected checks passed, 59 deselected. Independent constrained wrapper control failed. No native execution or live integration.",
+        "candidate": "tmp/v1-completion-2026-10-07/generic-match-candidate/",
+        "owner": "/root/stdlib_r3_prerequisite_probe",
+        "independent_controls_owner": "/root/r13_package",
+        "authorization": "L47 explicitimplementationauthorization; P-TYP numericpatternfitting.",
+        "scope": "Per-instantiation immutable pattern obligations, iterativecallworklist/originchecks andtarget-aware sharedZiggenericbody. Preserve directmathformatting and existing parser syntax.",
+        "boundary": "Currentlive baseline includes qualifiedintegermatchfix. Pending exactpolicy/typedhex remains separate, requires latercombinedqualification.",
+        "parent_preliminary_review": [
+          "Correct is_float typo to is_floating and preserve optional statement scrutinee handling; worker acknowledged.",
+          "Delayed overlap checks must preserve defining bindings for nonexact/runtime patterns, not re-resolve names after scope exit.",
+          "Target-aware float-bit branches preserve independent rounding; unbounded integer formatting in unused templates needs checking.",
+          "Focused third run reports 23 passed; compatibility first run reports 478 passed, 59 deselected. Later edits require fresh verification.",
+          "Typed constant syntax A: $T : 1 is parse-rejected. Runtime variables and immutable exact constants require separate controls; parse failures do not establish overlap defects.",
+          "Separate match substitution worklist needs deduplication of equivalent target mappings to avoid repeated wrapper DAG expansion.",
+          "Concrete numeric-or-char range admissibility must remain enforced when generic ranges have only runtime endpoints."
+        ],
+        "manifest_sha256": "fcd323823e53270b96fc228f620946233dd691efe858a5374b6ccb4b9746481e",
+        "source_files": 1658
+      },
+      "independent_controls": {
+        "path": "tmp/v1-completion-2026-10-07/generic-match-review-controls",
+        "preparation_sha256": "9762606735a00eb5204cc9501d94aff0a3c138f5139300bee4c9e6e6375c9c50",
+        "status": "Executed against frozen candidate. Six of seven compile controls met their oracles; constrained wrapper alias rejected unexpectedly.",
+        "parent_verification": "All8source hashes verified. Fraction q=1+2^-24+2^-60 is above f32midpoint but converts to exactmidpoint in f64; directf32bits3f800001 versus double-rounded3f800000. No compiler used fororacle.",
+        "scope": "Rounding, instantiationorder, lexicalshadowing, wrapper/alias, directimport and unsupportedmutablealias.",
+        "runner": {
+          "path": "tmp/v1-completion-2026-10-07/generic-match-review-controls/review.py",
+          "sha256": "60c5a4836dc83681f29711c4db417a00275dde7ae579d06d7b00b3914ee90bc4",
+          "status": "Executed, terminal exit 1, session 74146. All 16 stream hashes verified by parent.",
+          "checks": "Manifest/sourcepre/posthashes, importorigin,7compileonly cases; mixedcallorder requires locatedunreachable_code and excludes prematuretype_mismatch. Mutableguardoracle must bind to reviewedfrozen source."
+        },
+        "result": {
+          "path": "tmp/v1-completion-2026-10-07/generic-match-review-controls/review.json",
+          "sha256": "fbd56c3d66daaf08ac92b2bb7e4f6b9d56bed5a92ee1a8b554e8d6b4471a1878",
+          "unexpected_diagnostic": "Generic constraint violation: Generic parameter '$T' requires Float, got $T: Float",
+          "next": "Preserve the oracle and reproduce constrained wrapper without match against live and frozen source before changing scope."
+        }
+      },
+      "constraint_diagnosis": {
+        "status": "Preexisting defect reproduced against live compiler and frozen fcd32382. Eleven sources, 22 compile commands and 44 streams verified by parent; both compiler inventories unchanged.",
+        "records": {
+          "tmp/v1-completion-2026-10-07/generic-match-candidate/constraint-diagnosis/results.json": "362e4bafccdc2bf68bd9982e159a5653129eb297208fb649585ad8f3e161c28f",
+          "tmp/v1-completion-2026-10-07/generic-match-candidate/constraint-nominal-diagnosis/results.json": "25ee20976b8c927b2a1cf4f97c513c95289abd7a67a42e20a98cae335ce5d16d"
+        },
+        "scope": "Repair approved L66 constraints at function and nominal instantiation checks. Accept constrained source only when every admitted member satisfies destination membership. Preserve concrete membership and reject broader, overlapping or unconstrained arguments.",
+        "successor": "tmp/v1-completion-2026-10-07/generic-match-constraint-candidate/",
+        "boundary": "Implementation authorized for isolated successor. Original frozen source and failed control remain preserved; no native qualification or live integration."
+      },
+      "constraint_successor": {
+        "manifest_sha256": "e4e2b74b42ba8e390ea453e74fb8538f172c59cee2f0bc7ebf83086980bcabe9",
+        "source_files": 1659,
+        "selected_tests": "520 passed,59 deselected; parent verified final source hashes and stdout/stderr.",
+        "independent_controls": {
+          "record": "tmp/v1-completion-2026-10-07/generic-match-constraint-review-controls/review.json",
+          "sha256": "bb2e8df7c511de325ca0ed6f68093f5c8df4e52cff9bc718d2ed2fc72459cf07",
+          "result": "All seven compile controls passed; session77079 terminal0. Original oracles unchanged."
+        },
+        "native_controls": {
+          "record": "tmp/v1-completion-2026-10-07/generic-match-constraint-review-controls/native.json",
+          "session": 77874,
+          "status": "Passed, session77874 terminal0. All56steps,112streams andposthashes verified; source1659files unchanged.",
+          "sha256": "0fef1d089474dd5fb255efa6f35c220eed00697d28ccfe7a737a4c10bdcb126d"
+        },
+        "annotation_gap": {
+          "record": "tmp/v1-completion-2026-10-07/generic-match-constraint-candidate/concrete-annotation-probe/results.json",
+          "verification": "Four paired commands; parent verified all eight streams. Annotation accepts, constructor rejects, on original and successor source.",
+          "expanded_probe": {
+            "path": "tmp/v1-completion-2026-10-07/generic-annotation-analysis/probe/results.json",
+            "sha256": "6c4fa522dac06e87fc7634654cd025645797cee85e0bb4d57de4b26c9f52f34b",
+            "result": "Eight invalid annotation forms accept: variable, parameter, return, array alias, function alias, narrower-owner field mismatch, unconstrained field and imported owner. Three valid controls and one forward type-set-member investigation also accept.",
+            "verification": "Parent verified12entry sources,24streams andall16fixture/dependency hashes; before/after1659source inventories agree.",
+            "untested": "Forward-union and nested-alias-shadow fixtures remain unexecuted. No native execution or implementation."
+          },
+          "next_candidate": {
+            "path": "tmp/v1-completion-2026-10-07/generic-annotation-candidate",
+            "status": "Isolated implementation authorized under L66 after reviewed queue design. Must copy e4e2 source before editing; no live integration. Tests must wait for fullpytest5721 worker release.",
+            "scope": "Checker and focused tests; explicit owner registration state, lexical binder preservation, argument error priority, per-node diagnostics, no recursion or parser/backend/type representation changes."
+          }
+        },
+        "docs_draft": "tmp/v1-completion-2026-10-07/generic-match-docs/manifest.json",
+        "boundary": "Integrated generic match and constraint forwarding repair e4e2. Annotation-only constraints remain a separate isolated repair.",
+        "permitted_pytest": {
+          "record": "tmp/v1-completion-2026-10-07/generic-match-qualification/run.json",
+          "session": 5721,
+          "status": "Passed, session5721 terminal0. 4281 passed,1xfailed625.92s. Parent verified both1659source inventories andfourstreams. Four scanner tests remain explicitly excluded.",
+          "sha256": "3b90fe28ef236e3f6ad6fb82d3f8ded2f49d674551a56ceee0a7fc26c886e3e0"
+        },
+        "remaining_checks": {
+          "runner": "tmp/v1-completion-2026-10-07/generic-match-remaining-checks/run.py",
+          "sha256": "c577281df3c56d8882e4543723cd6947edd7d01390545bbb612bdfd576f025e6",
+          "status": "Passed, session 91921 terminal 0. All nine direct compiler/package checks passed, including 51 examples per artifact profile and clean wheel/source-distribution installs. No scans or release wrapper."
+        },
+        "integer_native_controls": {
+          "packet": "tmp/v1-completion-2026-10-07/generic-match-integer-native",
+          "runner_sha256": "6be7f9ad05595d7246eea9e6254b66485753724a0d68224b8ba4f924c3c4f699",
+          "preparation_sha256": "75ae4c5884ed4c41d02e73e610f053415a8f82d786e9ae8fae8bedecceefdb7e",
+          "status": "Passed, session21574 terminal0. Eighteen exact integer branches/fallbacks in each of three profiles. Parent verified10steps,20streams,3generated/binarypairs andposthashes.",
+          "record_sha256": "922e031814f2a747401ac6dc00cf080e21687c9934a0fec5d031f86cf36624b9"
+        },
+        "integration": {
+          "record": "tmp/v1-completion-2026-10-07/generic-match-integration/integration.json",
+          "status": "Applied four source/test files and seven docs; 381 core paths match qualified source. Release identity remains 0.3.0, untagged.",
+          "site": "tmp/v1-completion-2026-10-07/generic-match-site/results.json",
+          "site_remaining": "tmp/v1-completion-2026-10-07/generic-match-site/remaining.json",
+          "site_boundary": "Exports synced. Build, exports and links passed. Site check failed at preview listen with EPERM; live preview remains unverified.",
+          "independent_review": {
+            "record": "tmp/v1-completion-2026-10-07/generic-match-integration/independent-verification.json",
+            "sha256": "c590873080b2dda812a6ce485d737fe5fb512f0c040de52e6875d41302c7ed79",
+            "result": "Independent read-only review verified all nine check exits, 18 streams, both 1,659-file frozen trees, 381 live core paths and all 11 applied files. Annotation native verification covered 10 exits, 20 streams and 1,660 frozen files."
+          }
+        }
+      }
+    },
+    "generic_annotation_constraints": {
+      "authorization": "L66 adopted constraint enforcement. Queue annotation checks; resolve record constraints after record/alias types to avoid capturing an incomplete type set. Function constraints and reordered constructor establish intended membership for the same alias.",
+      "manifest": "tmp/v1-completion-2026-10-07/generic-annotation-candidate/manifest.json",
+      "manifest_sha256": "3421237df5247fbc9ebbdce5d3dd1a6137532f159067be375a5841396bced23f",
+      "source_files": 1660,
+      "scope": "Checker and one new test file with 34 cases, based on immutable e4e2. No parser, backend, type representation or local record syntax changes.",
+      "selected_tests": "Final run: 554 passed, 59 deselected in 37.83 seconds. Parent verified all 1,660 source hashes and modes, plus the final test source and streams.",
+      "compatibility": "Eight reproduced invalid annotations change from exit 0 to exit 6. Four accepted controls retain identical Zig. The valid forward type-set-member constructor changes from exit 6 to exit 0 after owner constraints resolve against completed aliases. Invalid membership controls still reject with exit 6.",
+      "independent_review": {
+        "record": "tmp/v1-completion-2026-10-07/generic-annotation-review-controls/results.json",
+        "sha256": "3da22418bfe63f0305cce0abc072123818a7be4cc49c12b0b02075a86ded61bb",
+        "result": "Six independent compile controls passed. Parent verified all six entry hashes and 14 streams.",
+        "import_supplement": "tmp/v1-completion-2026-10-07/generic-annotation-review-controls/import-supplement/results.json",
+        "import_supplement_sha256": "8441178fece8bd00d171d326a92ce4b32fb9bcd4ad8b8e9a01ab5e45feac34a6",
+        "boundary": "Parent also verified the import supplement: unchanged entry and helper hashes and modes, plus six streams. No native or full-suite result is claimed."
+      },
+      "native": {
+        "packet": "tmp/v1-completion-2026-10-07/generic-annotation-native",
+        "status": "Passed, session 80253 terminal 0. Independent verification confirmed 10 command exits, 20 streams and unchanged 1,660-file source. All three profiles output 0 followed by 7 9 on separate lines.",
+        "record": "tmp/v1-completion-2026-10-07/generic-annotation-native/run.json",
+        "independent_review": {
+          "record": "tmp/v1-completion-2026-10-07/generic-match-integration/independent-verification.json",
+          "sha256": "c590873080b2dda812a6ce485d737fe5fb512f0c040de52e6875d41302c7ed79",
+          "result": "Independent read-only review verified all nine check exits, 18 streams, both 1,659-file frozen trees, 381 live core paths and all 11 applied files. Annotation native verification covered 10 exits, 20 streams and 1,660 frozen files."
+        }
+      },
+      "permitted_pytest": {
+        "packet": "tmp/v1-completion-2026-10-07/generic-annotation-qualification",
+        "status": "Passed, session 40595 terminal 0. 4315 passed, one expected failure in 629.06 seconds. Parent and independent reviewer verified both 1660-file inventories, modes and four streams. Four scanner tests excluded.",
+        "independent_review": "tmp/v1-completion-2026-10-07/generic-annotation-qualification/independent-verification.json",
+        "independent_review_sha256": "dae18a4367ec38bee09299ac62bbf47fa9569dcd34f88d79a7bf495a5f611249"
+      },
+      "integration": {
+        "record": "tmp/v1-completion-2026-10-07/generic-annotation-integration/integration.json",
+        "status": "Applied2source/test files and6docs. All382corepaths match3421237. Independent reviewer verified eightappliedfiles.",
+        "independent_review": "tmp/v1-completion-2026-10-07/generic-annotation-integration/independent-verification.json",
+        "site": "tmp/v1-completion-2026-10-07/generic-annotation-site/results.json",
+        "site_remaining": "tmp/v1-completion-2026-10-07/generic-annotation-site/remaining.json",
+        "site_result": "Exports synced; build,exports,links passed. Preview test fails EPERM listen; live preview remains unverified."
+      },
+      "remaining_checks": {
+        "runner": "tmp/v1-completion-2026-10-07/generic-annotation-remaining-checks/run.py",
+        "sha256": "159ea66fc8ce2c6a9b090a153b0709f663089dbb76367be03d2fdbda0138b70a",
+        "status": "Passed, session47498 terminal0. All nine direct checks passed; 51 examples in each artifact profile, error stages, package and clean installs verified. Parent and independent reviewer checked18streams,posthashes,and both1660source inventories."
+      },
+      "docs_draft": {
+        "manifest": "tmp/v1-completion-2026-10-07/generic-annotation-docs/manifest.json",
+        "sha256": "8715826ac6c75eebf239d9ef49ab3dbc121e751257101943169d02c772ce2f54",
+        "status": "Applied after qualification and verified preimages.",
+        "independent_review": {
+          "record": "tmp/v1-completion-2026-10-07/generic-annotation-docs/independent-review.json",
+          "sha256": "d097637c74ffcd9963c323e8dfc5ffc416cfbcb0d8e0086d59218831723f2a3d"
+        }
+      },
+      "integration_preflight": {
+        "record": "tmp/v1-completion-2026-10-07/generic-annotation-integration/preflight.json",
+        "result": "All 381 live core paths match e4e2. Proposed source delta is checker plus one new test file. No application; recheck preimages after qualification."
+      }
+    },
+    "exact_accounting_rebase": {
+      "authority": "L47 implementation approval; accounting-only continuation of 9fec on immutable annotation source 3421237. C11 emission and pending math precision remain separate required work.",
+      "packet": "tmp/v1-completion-2026-10-07/exact-accounting-rebase",
+      "status": "Integrated six source/test files and seven docs after permitted qualification. All nine compiler/package checks passed. Site build/exports/links pass; preview test fails EPERM on listen. C11 and math-output decision remain open.",
+      "interactions": "New generic match paths require shared-budget charges for copied literal fitting and exact comparisons. Existing backend separately computes both float widths and does not share compilation accounting; design review is pending.",
+      "execution_boundary": "Serial nonnative author tests permitted on CPUs 12-15 after pytest40595 completion. Native gate47498 owns CPUs0-11. No concurrent native or full gate.",
+      "design_review": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/design-review.md",
+        "sha256": "874b58e3300162574069a7a412290272b727fc6b0d92c11f3797c5b9fb455414",
+        "disposition": "Parent authorized checker precomputation of both generic-pattern float widths under L47, using shared budget and original initializer ownership. Backend may consume prepared bits/ordinary-overflow markers while preserving emitted bytes. Resource errors remain located semantic exit 6, including unused widths/templates.",
+        "boundary": "Narrow accounting-only backend adaptation; no pending math output or hexadecimal emission change. Native qualification and C11 completion remain open."
+      },
+      "reproduction_verification": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/default-probe/parent-verification.json",
+        "result": "Parent verified six commands, twelve streams, three inputs and five emitted artifacts. Before/after inventories equal. C3 witness changes 0 to 6; two accepted controls retain identical Zig. Draft evidence predates backend accounting adaptation."
+      },
+      "first_focused": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/focused-first/run.json",
+        "sha256": "6e06b97b833dc7860e57ea1839c57f69c283590ef24f308ee919fd914c66aca3",
+        "result": "436 passed, 54 deselected in 36.16 seconds. Parent verified recorded before/after equality for 1661 files and both test streams. First tested source retained separately; this result predates backend accounting adaptation.",
+        "boundary": "Serial nonnative selection; no native, full-suite or live integration claim."
+      },
+      "second_focused": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/focused-second/run.json",
+        "sha256": "e77bd8bac0315f34bc012179d7a5869d45c42e66c38e471f2e0a768807b52cf9",
+        "result": "443 passed, 54 deselected in 36.83 seconds. Parent verified recorded before/after equality and test stream hashes. Includes checker-precomputed encodings and backend consumption; further interaction tests and emitted-byte parity remain in progress.",
+        "boundary": "Author-side nonnative selection, not frozen qualification."
+      },
+      "diagnostic_followup": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/diagnostic-first/run.json",
+        "sha256": "c9dd46e2b885ab3e9f7c3193f9732347fa18f9b0a96c8f4a018275efb913940e",
+        "result": "Stricter one-primary-diagnostic assertion failed: two identical resource diagnostics at line 2 column 44 across generic instantiations. First result preserved: one failed, 63 passed. Author repair and final-source rerun pending.",
+        "boundary": "Earlier 446-test result predates this stricter diagnostic assertion; it does not close this failure."
+      },
+      "final_focused": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/final-focused/run.json",
+        "sha256": "30906f06b7eeeea6dc66fbe7dad301403dfc59eee44bb1f3cb2213813bdf429a",
+        "result": "446 passed, 54 deselected in 36.98 seconds after duplicate-diagnostic repair. Parent verified test streams and recorded before/after equality. Freeze and independent execution remain pending."
+      },
+      "frozen": {
+        "manifest": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/manifest.json",
+        "sha256": "3fbb40dddd3b9356d6aa5eacdfc61a1b9503bfc147c669087af6094f6d230e3e",
+        "source_count": 1661,
+        "patch_sha256": "1b947a4880fee36f0ded7f360a68d3fb6ec20ec2550bca68c0b438e1e5be12ed",
+        "author_result": "446 focused tests passed, 54 deselected. Parent verified 42 paired compiler runs, 84 streams and 15 byte-identical accepted artifact pairs.",
+        "limits": "No native, full-suite, package or release qualification. C11 and math precision remain open.",
+        "parent_parity_verification": "tmp/v1-completion-2026-10-07/exact-accounting-rebase/parent-parity-verification.json"
+      },
+      "independent_review": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-review-controls/execution/results.json",
+        "sha256": "4d3c9919a160760ee3612592b69ee8e1f489a3c6f851dfe74a6e5ca3f6f600f7",
+        "report": "tmp/v1-completion-2026-10-07/exact-accounting-review-controls/FINAL-REVIEW.md",
+        "result": "No scoped blocker established. Four default programs preserve emitted Zig; four injected C5/C6 width failures are located exit 6. Reviewer checked 111 primitive charges against operand-based formulas and four selected cleanup/comparison/reset tests. Parent verified four fixtures, 28 streams and eight default artifacts.",
+        "limits": "Bounded observation does not reconstruct every scan or total compilation charge. No native, full-policy, C11 or math precision completion claim."
+      },
+      "qualification_preparation": {
+        "runner": "tmp/v1-completion-2026-10-07/exact-accounting-qualification/run.py",
+        "sha256": "ac615b0081cc20f455bb1e9ef425a39befa70814ce7d6bd91c7bd7460c41f932",
+        "status": "Passed, session 74155 terminal 0: 4379 passed, one expected failure in 659.10 seconds. Four scanner tests excluded. Parent verified both 1661-file source inventories and four streams; independent verification pending.",
+        "independent_review": {
+          "record": "tmp/v1-completion-2026-10-07/exact-accounting-qualification/independent-verification.json",
+          "sha256": "1c84b48c2fc38b57320cfbc34b9663703a11267188112f93e52d2ebeca068ebc",
+          "result": "Independent verification confirms 4379 passed and one expected failure, both 1661-file inventories/modes, four streams, exact argv, four exclusions, inherited HOME and import origin."
+        }
+      },
+      "native_preparation": {
+        "packet": "tmp/v1-completion-2026-10-07/exact-accounting-native",
+        "runner_sha256": "d37c489d80b76e980aab1c8e176c0b2077ede20afe5ea3a8e5a784ac52619332",
+        "status": "Passed, session 57544 terminal 0. All 47 commands and 94 streams match expected results. Parent verified artifact/input posthashes. Independent artifact review pending.",
+        "independent_review": {
+          "record": "tmp/v1-completion-2026-10-07/exact-accounting-native/independent-verification.json",
+          "sha256": "52190d5c60c6cbb444cf28bd9a8c68461e35dc6a03d2f6265fcde389aeaf9a1c",
+          "result": "Independent verification confirms 47 zero exits, 94 streams, all artifact/input posthashes and 1661 source hashes/modes. Reconstructed all 51 IEEE observer substitutions across three profiles.",
+          "boundary": "IEEE observers measure stored bits, not ordinary formatting or C11 completion."
+        }
+      },
+      "docs_preparation": {
+        "packet": "tmp/v1-completion-2026-10-07/exact-accounting-docs",
+        "manifest_sha256": "def9356d1dc4fcd863efe25670d6317d3678dd8a691b9463751977b2b99fcf74",
+        "status": "Seven conditional files; author verified all before hashes/modes match live after annotation integration. Parent reviewed claims and requested completed layout corrections. Docs style passed; no application.",
+        "independent_review": {
+          "record": "tmp/v1-completion-2026-10-07/exact-accounting-docs/independent-review.json",
+          "sha256": "8aa148155047b47a0c2be873c8d6dd8ede42a7dfe0660ec8ffe1985b987c5469",
+          "result": "No scoped blocker. Seven live preimages and all before/draft hashes and modes match. C11 and qualification boundaries remain explicit."
+        }
+      },
+      "remaining_checks_preparation": {
+        "runner": "tmp/v1-completion-2026-10-07/exact-accounting-remaining-checks/run.py",
+        "sha256": "a762584ff8b53b49091560c8d075d98b20a09eedb3474b133dba62eaa289b040",
+        "status": "Session12580 terminal0; nine checks and eighteen streams verified by parent and independent reviewer.",
+        "run_sha256": "b0b6e30b66a5c242daf78ec1547e6d4082a4a9aceb471a43852f50cc5f89f559",
+        "independent_verification_sha256": "bf674ff4c60ed4770bbbf8c42588d83acbce79f20ba06b04eab0f9c9100096f2"
+      },
+      "integration_preflight": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-integration/preflight.json",
+        "status": "All 382 live core paths match baseline; six source/test changes identified. No application; recheck after remaining qualification."
+      },
+      "integration": {
+        "record": "tmp/v1-completion-2026-10-07/exact-accounting-integration/integration.json",
+        "sha256": "bd519b189f6ef89cfa22d4ced90ca96f2c55d50a3140e2af63016ee664529de8",
+        "core_paths_verified": 383,
+        "site_results_sha256": "02f0c15e80def0a085eaa4a912b276d92afe0b819a32cd0879cce8df988a7f83",
+        "site_remaining_sha256": "37c1e47229004aea646aa6832726fc3719999b4ed42343d803fe5dd70ca6d679",
+        "site_result": "Sync, build, exports and links exit0. Check exits1: 11 tests pass, preview test fails EPERM listening. No rendered preview evidence.",
+        "independent_verification_sha256": "f365e9d184380fbda12e6b8e3211b4efacfad1fac1ed22888c45985b97ceb019"
+      }
+    },
+    "ref_array_boolean_guard": {
+      "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-analysis",
+      "source_manifest_sha256": "3fbb40dddd3b9356d6aa5eacdfc61a1b9503bfc147c669087af6094f6d230e3e",
+      "reproduction": "Parent verified 16 compiler commands, 34 streams including origin, four accepted artifacts and twelve rejected cases without artifacts. Direct/forwarded false-return nil calls reject6 in both modes; literalfalse and borrowedtrue accept. True,opaque and unsafehelper controls reject.",
+      "status": "Live integrated: four source/test files and seven docs. Permitted pytest and bounded native controls passed; nine logical direct checks passed across preserved original34047 and retry60311. Site preview remains EPERM; build, exports and links pass.",
+      "boundary": "Return-value facts must not erase evaluation, defer work, access requirements or effects. Symbolic nil-wrapper support remains separate.",
+      "design_review": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-analysis/independent-design-review.md",
+        "sha256": "c31b9bd3eb871250a0f7326cf1b7c47cc88e83249227c12d421bc5444ac5e279",
+        "disposition": "Parent authorized isolated implementation of the existing guarded-nil contract, beginning with complete straight Boolean-literal return bodies and declaration identity. No new syntax, conditional return inference, purity/effect policy or symbolic nil-wrapper admission."
+      },
+      "mutation_baseline": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-candidate/baseline-controls/results.json",
+        "sha256": "4586149fc728bbbd3c18e4375534c0522dea12c4a77a3fe6fcb5515c223eb613",
+        "result": "Parent verified six baseline commands, fourteen streams including origin and unchanged source inventory. Effectful/defer helpers passed as guard arguments reject; standalone effectful call followed by literal-false access and fresh guard accepts. Unsafe argument rejects.",
+        "disposition": "Initial return-fact eligibility is one Boolean-literal RETURN body. Effectful/defer, incomplete and mixed bodies stay unknown; preserve baseline outcomes."
+      },
+      "candidate": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-candidate",
+        "manifest_sha256": "4abb3b09f0082d9519a3c242a3fade276a2dc89a4dcb8f74b82ee36aa3919020",
+        "patch_sha256": "1dbc7e9c8ca098b89cb3f8a568704ca23f50fdc750b8b2af2107305ba8acf8f1",
+        "report_sha256": "db8c07341331260b1a11e2984486e65dbfb56b6d7ad4fdef59f1a0e8890d34ca",
+        "parent_verification_sha256": "eed395c0a53bc1e3613265edddcc3b5fa9ba8f38598b4a8c091cb40bb1dddc17",
+        "independent_review_sha256": "5fadb4ad7926e4f7c2e45d5d403c603203ce0854be5c06b77a571186eb2ef9a2",
+        "results": "122 focused passed; 548 broad passed with 45 deselected. Parent verified 1662 source files and 52 streams; 22 probes include four intended acceptances, five identical accepted artifacts and thirteen retained rejections. Independent reviewer ran four further compile-only controls.",
+        "limits": "Single Boolean-literal RETURN only. Effectful/deferred/conditional bodies and symbolic nil wrappers remain incomplete. Subsequent qualification and integration are recorded below."
+      },
+      "native": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-native",
+        "status": "passed",
+        "session": 90864,
+        "terminal_exit": 0,
+        "native_record_sha256": "795165554b2a4dbd846357824e6bf3235f4eb0c0509939384e900d69c88f1b01",
+        "source_files_verified": 1662,
+        "steps_verified": 29,
+        "streams_verified": 58,
+        "expected_native_outputs": "core:1/2/3/4/11; argument counter:1 in all three profiles",
+        "boundary": "Bounded native controls passed; later permitted pytest, nine logical direct checks and integration are recorded separately.",
+        "independent_verification_sha256": "4b7df40a7504279dbdf2031db040b6b6be6335fc1fdf94fbc167034dc787bada"
+      },
+      "qualification": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-qualification",
+        "session": 13568,
+        "status": "Session13568 terminal0:4395passed1xfailed621.57s, four scanner exclusions. Parent verified both1662trees and4streams.",
+        "runner_sha256": "fe24e20d9704c49295e49210f238be26adb76b1af943637da3101114c46ef23d",
+        "binding_sha256": "c6a0ed7b0d90217206cc7eae4daad55e1abd5a3944177c46dbf37c620fad75b4",
+        "source_manifest_sha256": "4abb3b09f0082d9519a3c242a3fade276a2dc89a4dcb8f74b82ee36aa3919020",
+        "source_files": 1662,
+        "run_sha256": "db8bd3ab3c8ce42535b5da152a5742c53af28a050d6214ca0a403cf3138e25f0",
+        "parent_verification_sha256": "34def86fbefc589bc3811efc8b9aa5d65d5c02ba4e5249744e5c65625bbbddab",
+        "independent_verification_sha256": "005904560af57db417cae5bde2a0dd280aa8d4dd6f55e8b016ce968077dea6a9"
+      },
+      "docs": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-docs",
+        "manifest_sha256": "3e803c88c3b9509b9c34173ba24cba75404428877f0354a92fa6c63525480950",
+        "status": "Seven files applied with Boolean source integration; source qualification and site limits recorded below."
+      },
+      "integration_preflight": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-integration/preflight.json",
+        "sha256": "753ea0bcf8cec69e19d2030c15ceb265fef028793ab2a065a4c4cef1f6d3e649",
+        "core_paths_verified": 383
+      },
+      "remaining_checks_preparation": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-remaining-checks",
+        "runner_sha256": "6820add981e42cd32893a53b5072ca665c9fd561820d8507ed046bf2e27ecd98",
+        "preparation_sha256": "1e452f0a76abab529e137142719f3a86c714bc22106e281885971f7f90c052c5",
+        "status": "Session34047 terminal1: examples/debug/error-stages/docs-style pass; release/fast/bench fail; package exits2; installed skipped after package failure. Release log records Zig BUS then output writes quota122; package quota122. Source1662 unchanged.",
+        "session": 34047,
+        "binding_sha256": "e790f1680bd50dc38114f2e3617bb1a18397506d529bdd684029c440a1cd2ec2",
+        "run_sha256": "c6e29387e75fe30e7a379e09d9200c91a855d2e2921fe2e4ff9abfc020e66ea6"
+      },
+      "remaining_retry": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-remaining-retry",
+        "session": 60311,
+        "status": "Session60311 terminal0: release/fast/bench/package/installed passed. Combined with four original34047 successes, all nine logical checks passed; original failed run remains preserved.",
+        "runner_sha256": "0bcf77628d8f8ffee74a1c67f8a2223cd8ee98248637323add35485fa619de44",
+        "binding_sha256": "bdc7882e9ac47720e45b166e56e83c2807351231396b7a9387283b7a85908655",
+        "terminal_exit": 0,
+        "run_sha256": "bab74a5bc0d6897ed9a1ef07404eb8e652b53fa10819c672e2c166a2eb6ff294",
+        "parent_verification_sha256": "b142dc7b6465ef3f90a434375d16ecc91c8c32c4d1aba0f00f9c36241afa89bf",
+        "logical_checks_passed": 9,
+        "actual_streams_verified": 26
+      },
+      "quota_recovery": {
+        "record": "tmp/v1-completion-2026-10-07/quota-recovery-accounting-artifacts/recovery.json",
+        "sha256": "110d3ad517b2fdad97d918c2cf6f26453ff91e1dcafb8d361ba5424a99023492",
+        "result": "Archived and verified326generatedfiles from completed accountinggate12580, then removed temporary copies1040070728bytes. No source files removed; no activeprocessrefs or unreadableprocpaths. Archive retained.",
+        "causal_limit": "Quota failures reproduced in writes and sandbox launches. The preceding Zig BUS is recorded; no rootcause asserted."
+      },
+      "integration": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-integration/integration.json",
+        "sha256": "06b4c5f3aa7623000d98f3405b71df073e4ed269db97668a6fd2c44bfadeb1d0",
+        "status": "integrated",
+        "source_test_files": 4,
+        "docs_files": 7,
+        "live_core_paths_verified": 384,
+        "backups_verified": 10,
+        "independent_verification": {
+          "record": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-integration/independent-verification.json",
+          "sha256": "989c70e8e438747e4e007883eba231fab6a1041749d335753b5db70f7657344f",
+          "result": "Both1662 source inventories,26 command streams,384 live core paths,11 copies,10 backups and10 site streams verified. Original failures preserved."
+        }
+      },
+      "site": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-boolean-guard-site",
+        "results_sha256": "03aafa384f383981f25b89ba5adb3d1146b746d3e3233f563e91325b1151d5ec",
+        "remaining_sha256": "d372d0a83b3ea03d06f4ce13cc40b2600b698a6d936e9a2374c09ed4c124b57d",
+        "exits": {
+          "sync": 0,
+          "check": 1,
+          "build": 0,
+          "exports": 0,
+          "links": 0
+        },
+        "failure": "Preview test fails EPERM: operation not permitted, listen at site/scripts/serve.test.ts:19:24.",
+        "inputs": "Canonical inputs unchanged; generated export hashes independently verified.",
+        "boundary": "No general release or full V1 completion claim."
+      }
+    },
+    "ref_array_symbolic_wrapper": {
+      "packet": "tmp/v1-completion-2026-10-07/ref-array-symbolic-wrapper-analysis",
+      "reproduction": {
+        "status": "verified",
+        "record_sha256": "1d147a3a803ed52d2e06b3a323956c72c80f7596d52a021fef3e9142dceae057",
+        "commands": 12,
+        "streams": 26,
+        "exit_counts": {
+          "6": 8,
+          "0": 4
+        },
+        "boundary": "Compile-only diagnosis; no implementation or public/library precondition decision."
+      },
+      "finding": "Composed requirements already reach callers; independent body validation emits an unresolved inner-call error before caller substitution. Public or escaping conditional obligations require a contract decision. Explicit local-guard cases remain under investigation.",
+      "local_guards": {
+        "record_sha256": "9777e92731e1155339ddd8847437bf810b61a4c10b0a99657c182b4d95916b20",
+        "commands_verified": 14,
+        "streams_verified": 28,
+        "finding": "Four universally guarded safe forms reject6 in both modes; reassignment and field effect negatives reject6; literalfalse accepts0. No implementation."
+      },
+      "local_guard_design": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-symbolic-wrapper-analysis/local-guards/DESIGN.md",
+        "sha256": "7487563b9e92807a975cabc87affb1de9887f7ebc1466e3ab549563c08f4a151",
+        "disposition": "Parent reviewed existing safety mechanisms and authorized isolated implementation of universally guarded local Boolean facts under the established guarded-index contract. No new caller preconditions, public closed-world exemption, field/global/capture proof policy or general effect inference.",
+        "ownership": "New ref-array-local-guard-candidate only: safety.py and focused tests. Frozen baseline4abb3b09,1662files.",
+        "qualification_boundary": "Serial nonnative only while full13568 is active. Independent review and native/full qualification required before live integration."
+      },
+      "local_guard_draft_failure": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-local-guard-candidate/forward-capture-before/run.json",
+        "sha256": "be6b265ed4aae28debc35cc0b739c878d54f10e62d6f30342925e5eb4554fc5b",
+        "streams_verified": 4,
+        "status": "Forward nested capture regression reproduced on mutable draft; eligibility repair and rerun pending. Earlier broad624 pass does not qualify corrected source.",
+        "scope": "Do not change caller preconditions or safety binding identities; use resolved declaration identity to exclude captured Boolean cells."
+      },
+      "local_guard_candidate": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-guard-candidate",
+        "status": "source and final broad evidence verified",
+        "manifest_sha256": "6167395f77bf6f70ca8676bc57cc0edb64fc2966b920c17c3e933a0c93a86b9d",
+        "source_files": 1663,
+        "broad_run_sha256": "ac732a84acaa8609ccfad5784c4b4ea506bd367fd855d3b1581d418fb6d16fd4",
+        "streams": 4,
+        "boundary": "Independent shadow/capture controls and combined-source qualification pending."
+      }
+    },
+    "ref_array_diagnostic": {
+      "packet": "tmp/v1-completion-2026-10-07/correctness-next-triage/ref-array-diagnostics",
+      "reproduction": {
+        "record_sha256": "24cbe1881115bf8027aa1323a6dc2bcec4892fdfd60017c115911c879c556fb2",
+        "commands_verified": 8,
+        "streams_verified": 16,
+        "source_inventory_before_after_equal": 1662,
+        "accepted": 2,
+        "rejected": 6
+      },
+      "disposition": "Parent authorized isolated diagnostic-only correction under L24/L35. Preserve acceptance, obligations, primary span and semantic6; no effectful-index admission or ordering policy. Separate candidate pending review/qualification.",
+      "candidate": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-diagnostic-candidate",
+        "manifest_sha256": "fe162d74e00aae8478985ac663622542d646626d4c86dc3af1a27f01b9e1b3f3",
+        "source_files_verified": 1663,
+        "test_runs_verified": 2,
+        "compiler_replays_verified": 8,
+        "streams_verified": 24,
+        "result": "Scope review found unchanged proof predicates. Paired errors differ only in intended indexed-use message/hint fields; other structured fields match. Independent review and combined qualification pending."
+      }
+    },
+    "ref_array_local_diagnostic_combined": {
+      "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-combined",
+      "status": "Live integrated: three source/test files and seven docs. Permitted pytest4442pass1xfail; nine logical direct checks verified across original95729 and retry84011. Site preview EPERM remains.",
+      "manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "patch_sha256": "9c679b4c9d09638bfe76b129f457db2a0998c2f5b239ef63c07bf838204183b6",
+      "source_files": 1664,
+      "changed": [
+        "a7/passes/safety.py",
+        "test/test_ref_array_diagnostics.py",
+        "test/test_ref_array_local_boolean_guards.py"
+      ],
+      "broad_run_sha256": "1a9529523c0209bd514a914abc011500258703abbef5bfc8a0faa8b5dacec7fe",
+      "test_result": "631 passed,45 deselected in24.63s",
+      "terminal_session": 91811,
+      "terminal_exit": 0,
+      "composition_verified": "_prove_index matches diagnostic candidate exactly; all remaining safety text matches local-guard candidate exactly.",
+      "boundary": "Scoped compiler qualification and live integration verified; no general release or full V1 completion claim.",
+      "independent_verification_sha256": "27ee06a27d63236eda3a5e71563b7141c607cedba8d808d774e050639ae4afd8",
+      "conditional_docs": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-guard-docs",
+        "manifest_sha256": "1d98af522a78ba5a140a20f488ee52aa95550a678b380f8430dbe09be0ec3ff4",
+        "status": "Seven reviewed documentation files applied with qualified combined source.",
+        "independent_review": {
+          "record": "tmp/v1-completion-2026-10-07/ref-array-local-guard-docs/independent-review.md",
+          "sha256": "d4f245b2029e571e21c7833a0716a023bfe8510c4b565e3a8b5d0e3b8fe64592",
+          "status": "No factual corrections needed; conditional docs only."
+        }
+      },
+      "native_preparation": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-native",
+        "runner_sha256": "b77a871717d80d66cd34ba8a16dfbe42790d8b6b32b319842bec8ac4bf022c38",
+        "preparation_sha256": "4c8ff7047ef0183c5fc24fb5fd48a57646650f563811ebc3f97ca483778044fc",
+        "status": "Session80219 failed after core passed all three profiles and18 negative cases passed. Exact diagnostic harness expected string omitted the existing index-requirement prefix; parent preparing a separate corrected packet. No combined native success claim.",
+        "independent_preflight": {
+          "record": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-native/independent-preflight.md",
+          "sha256": "39d48f92701ba31efb6e2a90728666f8ac0b0ff0be9437743233ffed1d2fb8cd",
+          "status": "No scoped blocker; static verification only. Native execution still pending."
+        }
+      },
+      "full_pytest_preparation": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-qualification",
+        "runner_sha256": "82236c73c298ea5e436e53d0a79e928ba7d878fdaea50d0d7d5f994feecdfc0a",
+        "preparation_sha256": "86a678d683afbdde83c34c07016be3a6723f3962da010377839c0d0803c33b82",
+        "status": "Session16066 terminal0:4442passed1xfailed617.97s with four scanner exclusions. Parent verified both1664 source trees and four streams; independent verification also confirms both inventories, streams, command, origin, exclusions and native pins.",
+        "session": 16066,
+        "binding_sha256": "a6bac9a819c418f5dc4cd292928680ba53b8d259b28dd95e7561526d2bf30c3f",
+        "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+        "terminal_exit": 0,
+        "run_sha256": "319a2dd1ac71c7a6d9f0af5437ffc5f87a23ead02b9b287b4ad89402fb19de2b",
+        "parent_verification_sha256": "c9320fe06edfe8195bacf3bff70321da0b688e134cedb5b85ddd0268a279e951",
+        "passed": 4442,
+        "xfailed": 1,
+        "independent_verification_sha256": "b04f07261a74797985562e8dcb984b10884f3389ba8ef36b3a4677b5a78839ff"
+      },
+      "native_attempt": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-native",
+        "session": 80219,
+        "status": "failed",
+        "record_sha256": "fd9ad088208166649bd908be0158865cdd2a6585290ea7dca590d85cc3842aca",
+        "steps_recorded": 30,
+        "negative_cases_completed": 18,
+        "failure": "Expected diagnostic string omitted preexisting index must satisfy 0 <= index < len: prefix. Original failure preserved; correction belongs in a new packet.",
+        "boundary": "Core Debug/ReleaseSafe/ReleaseFast outputs passed; no complete combined native/full qualification or integration."
+      },
+      "native_qualification": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-native-retry/native-qualification.json",
+        "sha256": "47a7edd8a055f43b77a327f0f0c6657150eb95c23560e7b3273d616a5054d29c",
+        "status": "passed scoped aggregate",
+        "parent_verification_sha256": "4306e72f6c5832c4e60d90e9120ad884d1378056cbb09cf8d6f96407c76892d2",
+        "streams_verified": 66,
+        "artifacts_verified": 6,
+        "source_files_verified": 1664,
+        "logical_steps": 32,
+        "composition": "29 successful original steps plus three corrected diagnostic retries. Original80219 failed record remains preserved; no core rerun.",
+        "boundary": "No full-gate or integration claim."
+      },
+      "remaining_checks_preparation": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-remaining-checks",
+        "status": "Session95729 terminal1: examples/debug/error-stages/docs-style passed; release/fast/bench write quota122; package quota122 exit2; installed skipped. Failed record preserved.",
+        "runner_sha256": "3f3e3b7a1306789006b1754bcf2b2c6292a558e3666585dfcf2bf5a345f43f80",
+        "preparation_sha256": "ada081ad27426b0fb3818091cc978c3bdfb2561cb4ddb41f71f5068d6b9651f7",
+        "independent_review_sha256": "711acdbcedd46a4cb72c9088549b367b40d4598f2885fff28215bf122fb8d958",
+        "scope": "Nine direct checks; four scanner exclusions in prior pytest validation; no release wrapper or scans.",
+        "session": 95729,
+        "binding_sha256": "969b7ea909934e71b6d315e137f90a4a288e11ff75fa3c7f5ce81b1f99477d65",
+        "terminal_exit": 1,
+        "run_sha256": "707ace34537b8fb3d470465768790661211ef9dc11f642e9dd16cb3ea48656ba",
+        "parent_verification_sha256": "e5b9b5fb4de207608dedef0b4c38aeee1e79ceebd6847ae35c2b0300bc999d56",
+        "streams_verified": 16,
+        "source_files_each_tree": 1664,
+        "source_unchanged": true,
+        "verification_errors": []
+      },
+      "integration_preflight": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-integration/preflight.json",
+        "sha256": "3f674d5e34a31b76ed60848333feb342c35449d1bc8c66e56b0cb1445f8628bc",
+        "status": "Preflight only, not applied. Parent scope with six root files verifies386 existing baseline paths and388 candidate paths; seven documentation preimages verified.",
+        "boundary": "Integration awaits all nine direct checks and fresh preimage verification.",
+        "independent_record": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-integration/independent-preflight.json",
+        "independent_sha256": "7c1bb1ce226e7fe867d9760c6e708c1a54f499b5b3e7fd68ae6c87712f1e8370",
+        "scope_count_reconciliation": "Both scopes include a7/test/scripts/examples. Earlier four-root-file scope counts384 baseline/386 candidate; parent six-root-file scope counts386 baseline/388 candidate."
+      },
+      "remaining_retry": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-remaining-retry",
+        "status": "Session84011 terminal0, all five retries passed. Four original95729 successes plus five retries cover nine logical checks; original failures preserved.",
+        "runner_sha256": "e194eb0f0d9d27c9c14f8447aaa76382d28ac66346575cd1751ad2fa5755197e",
+        "preparation_sha256": "d94f91eeb8b6f070c1bcd4445d34bce0559b67fa22835314ef9e9065bd52d1f0",
+        "session": 84011,
+        "binding_sha256": "62b4583a55a6007683b124c65e7927a0bb11baa3954780560f5c74910667db80",
+        "independent_static_review_sha256": "2e035b7b20ccd4e53cae85872a89bb836feab59bc8a53c04ae2f99dea7cd5865",
+        "terminal_exit": 0,
+        "run_sha256": "4ff53e16dc7b4cabd4b3de5cf05b9c9cfa9ecef1a781a16e6de402b1bdf3acd9",
+        "independent_verification_sha256": "182ad85b86a21b69868efba48a70a9543b57e92e18ce3639b61063f4f727877a"
+      },
+      "quota_recovery": {
+        "record": "tmp/v1-completion-2026-10-07/quota-recovery-boolean-artifacts/recovery.json",
+        "sha256": "a96c0621cc4ece826a2db6092b8400c71e997683c9787e49791f904cae555b75",
+        "session": 7491,
+        "terminal_exit": 0,
+        "archive_sha256": "7821909732cbd989ad8cbc6bd0d9e10583c2200541f53addf976902f0a4bedd6",
+        "files": 326,
+        "bytes": 1040073120,
+        "result": "Closed Boolean gate generated artifacts archived, member hashes verified, originals reverified and removed. No source-manifest files removed.",
+        "boundary": "Task-owned generated outputs only; no general cleanup or host-wide process-clearance claim."
+      },
+      "integration": {
+        "record": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-integration/integration.json",
+        "sha256": "daa0786e440838564c561db0547cb2f6ce2b6095b3529d9c23998dd0cb7aeaa5",
+        "status": "integrated",
+        "source_test_files": 3,
+        "docs_files": 7,
+        "copies_verified": 10,
+        "backups_verified": 8,
+        "live_core_paths_verified": 388,
+        "core_scope": "a7/test/scripts/examples plus six root files",
+        "independent_verification_sha256": "166745cf9140aae7367426a1483ffbc9cdd9cd365398145135237ce4c21cd1f1",
+        "apply_sha256": "e23acd3e33380779e54af538f86052c1e409ea2c2869cd7de208ea3934b769a8"
+      },
+      "site": {
+        "packet": "tmp/v1-completion-2026-10-07/ref-array-local-diagnostic-site",
+        "results_sha256": "da4c22cdf7c29f1b471b0181255528b5caf869e2c2c24220b2ab7497d09d0f3a",
+        "remaining_sha256": "a504c19d6176ff3c76a21de71c9c4c30a9d4708f4cfe2dce53994ccfa71c5e1d",
+        "exits": {
+          "sync": 0,
+          "check": 1,
+          "build": 0,
+          "exports": 0,
+          "links": 0
+        },
+        "result": "Ten streams and canonical input/export hashes independently verified.11pass1fail; preview listen EPERM. Build, exports and links pass.",
+        "boundary": "Canonical inputs unchanged during site commands; no full site/release pass."
+      }
+    },
+    "successor_reconciliation": {
+      "packet": "tmp/v1-completion-2026-10-07/phase2-successor-reconciliation",
+      "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "source_status": "Integrated after retry84011 completed successfully; see ref_array_local_diagnostic_combined.integration and remaining_retry. Historical reconciliation report remains unchanged.",
+      "source_status_at_reconciliation": "Frozen, not integrated; remaining five-check retry84011 active.",
+      "rows_sha256": "0fe3d329bd967c3a8d4783075cec4d8970a23e8252b6c1ca3cae9c83c77e5901",
+      "report_sha256": "f89c783f141625cf6f08be88f9c4b80213fbbef042c6eb7f091a0cd7a3dd8978",
+      "parent_verification_sha256": "3d81337967cddb3b8be0595c93d8640e4bf78bdb77c53b325e43cdd55c033e2f",
+      "historical_rows": 20,
+      "scoped_repair_rows": [
+        "P2-15",
+        "P2-16",
+        "P2-19",
+        "P2-20",
+        "P2-26",
+        "P2-38",
+        "P2-40",
+        "P2-46",
+        "P2-49",
+        "P2-59",
+        "P2-63",
+        "P2-82"
+      ],
+      "decision_or_verification_remainders": [
+        "P2-42",
+        "P2-68",
+        "P2-72",
+        "P2-73",
+        "P2-74",
+        "P2-75",
+        "P2-76",
+        "P2-81"
+      ],
+      "result": "Original requirements, successor reports and actual frozen test assertions reconciled. Twelve scoped repairs and eight composite decision/verification remainders. No new current defect established and no B3 clearance.",
+      "limits": "Historical U labels do not prove current defects. Selected imports, function initialization and main exit status remain decision boundaries; stack/debug mapping/portability/complexity measurements remain scoped verification gaps. No tests/compiler/native executed. Parent initial raw-unparse comparison failure retained separately; normalized AST verification passed.",
+      "followup_p2_75": {
+        "status": "Bounded current defect reproduced after historical reconciliation; no fix or design adopted.",
+        "packet": "tmp/v1-completion-2026-10-07/phase2-debug-source-lifetime/cli-probe",
+        "result_sha256": "8c339e423d4457da3c0bb5e8e76a8654c0b28a3e62ec89945cf4b567c7646c8d",
+        "parent_verification_sha256": "294b4a1a31d345884ea96706bd6386f5a7330a6bc295727bc6d29d9109278d0c",
+        "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+        "source_files_unchanged": 1664,
+        "terminal_session": 28440,
+        "terminal_exit": 0,
+        "steps": 6,
+        "streams": 12,
+        "binary_sha256": "0775fe210123aeea72f2c9006300fac7423e218004a7d6095bef5318444ae98e",
+        "observation": "Successful CLI Debug build leaves a saved binary referring to a7-native-6cv2ys8i/program.zig, which is absent after CLI return. Decoded line output contains no A7 filename.",
+        "source_path": "a7/cli.py:179-195",
+        "limits": "Binary not executed; debugger behavior and full A7 source mapping remain untested. The original twelve scoped repairs and eight remainders are unchanged; one remainder now contains this verified bug. No B3 clearance.",
+        "historical_evidence": "Original rows.json and REPORT.md remain unchanged; this is successor evidence."
+      }
+    },
+    "debug_source_retention_proposal": {
+      "packet": "docs/plan/packets/P-CLI-debug-source.md",
+      "sha256": "f5ee4cd4d4c6fafda2bada3eac976a8b2828600402a86c891b6c584efc0f0b03",
+      "status": "Proposed; user decision requested 2026-10-08; no answer or implementation recorded.",
+      "review": "tmp/v1-completion-2026-10-07/phase2-debug-source-lifetime/packet-review.md",
+      "review_sha256": "5a1316d0773f5572425d03abddb27cb637732a15aa51bd899e6eef6bc6e55a23",
+      "review_followup": "Parent adopted generic short directory prefix, post-replacement retention commit, long-name and post-staging failure acceptance cases; removed unlinked Zig-help attribution.",
+      "contract": "Successful native builds retain exact generated Zig path in unique sibling a7-debug directory; preserve prior artifacts on failure and keep older successful sources. No A7 mapping claim."
+    },
+    "safety_scaling": {
+      "packet": "tmp/v1-completion-2026-10-07/phase2-safety-scaling",
+      "status": "Nine input distributions and bounded attribution reconciled across preserved original and corrected-loop attempts. No optimization or V1 performance claim.",
+      "manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "runner_sha256": "52b603c30b6557df15f9b183e13970609d550404b8cec446675d4ed7245d2131",
+      "preparation_sha256": "7f44e26f556531545222982b518b7ba62f8c06781b0f14ac8c91d1a6d9becacd",
+      "binding_sha256": "d468aeea5112a03c4b15a488e7af3caa229b0eac6f2f2186f19f97014325f214",
+      "independent_preparation_sha256": "44f7040ac30eb186e4796ccdde1ead578b272cbe4b339e4b347ebdab006ec074",
+      "scope": "Nine fixed inputs, each five warmups and thirty measured compiler processes; one separate profile each. CPU12-15; no A7 execution or native build.",
+      "validation": "Three smallest fixtures passed semantic checking; source1664 unchanged. Larger fixtures first checked during measurement.",
+      "original_result": {
+        "sha256": "202a5f3bf05e2d60672bb289bf9827ec63a151a99659579f99590accabcd3588",
+        "parent_verification_sha256": "653ba952f414bf0e5584b6be0d05ab143a04273a957dc8cee3bc084525ac0b20",
+        "commands": 254,
+        "streams_verified": 508,
+        "profile_artifacts_verified": 14,
+        "source_files_unchanged": 1664,
+        "failure": "loops-16-warmup-0 exits5 at line10:1 because i8 is a reserved builtin type token used as a counter. Fixture error, no compiler defect inferred.",
+        "completed_inputs": [
+          {
+            "input": "sources/locals-250.a7",
+            "family": "locals",
+            "size": 250,
+            "samples": 30,
+            "median_wall_seconds": 0.26158988098904956,
+            "median_compiler_ms": 60.0,
+            "scope": "completed family input"
+          },
+          {
+            "input": "sources/locals-500.a7",
+            "family": "locals",
+            "size": 500,
+            "samples": 30,
+            "median_wall_seconds": 0.3461001630057581,
+            "median_compiler_ms": 121.0,
+            "scope": "completed family input"
+          },
+          {
+            "input": "sources/locals-1000.a7",
+            "family": "locals",
+            "size": 1000,
+            "samples": 30,
+            "median_wall_seconds": 0.5295002515049418,
+            "median_compiler_ms": 251.0,
+            "scope": "completed family input"
+          },
+          {
+            "input": "sources/allocations-100.a7",
+            "family": "allocations",
+            "size": 100,
+            "samples": 30,
+            "median_wall_seconds": 0.31406610600242857,
+            "median_compiler_ms": 110.0,
+            "scope": "completed family input"
+          },
+          {
+            "input": "sources/allocations-200.a7",
+            "family": "allocations",
+            "size": 200,
+            "samples": 30,
+            "median_wall_seconds": 0.4937498530052835,
+            "median_compiler_ms": 256.0,
+            "scope": "completed family input"
+          },
+          {
+            "input": "sources/allocations-400.a7",
+            "family": "allocations",
+            "size": 400,
+            "samples": 30,
+            "median_wall_seconds": 0.9871151819825172,
+            "median_compiler_ms": 683.0,
+            "scope": "completed family input"
+          },
+          {
+            "input": "sources/loops-8.a7",
+            "family": "loops",
+            "size": 8,
+            "samples": 30,
+            "median_wall_seconds": 0.20738434749364387,
+            "median_compiler_ms": 28.0,
+            "scope": "original loop-8 retained as historical setup; use uniformly renamed loop family for comparison"
+          }
+        ]
+      },
+      "local_attribution": {
+        "path": "tmp/v1-completion-2026-10-07/phase2-safety-scaling/local-attribution-review.md",
+        "sha256": "451d25a858547f1dd99b734d7db21497d141f38628006cf680f10ba18151f26c",
+        "result": "Source proves quadratic fact-map entry visits in _store_value descendant scans for same-block scalar-copy fixtures; profiles corroborate the mechanism. Does not prove quadratic whole-compiler or whole-safety-pass runtime.",
+        "disposition": "No optimization approval or implementation."
+      },
+      "loop_retry": {
+        "packet": "tmp/v1-completion-2026-10-07/phase2-safety-scaling/loop-retry",
+        "runner_sha256": "f6066fdaf5f31e5a64c13374e5e40f3782d098c0c6c5395f50f4e4e884da9865",
+        "preparation_sha256": "e5005b299c541b8b8f4d69a822156c82d9b2bf467f24a7534c98619cc75a55fe",
+        "validation_result_sha256": "6c9fcc807051cb8084b43faf8849e27ca4dea52d9a53a6fd5244a82d4e582fe4",
+        "status": "Session72178 terminal0; three corrected loop inputs each five warmups, thirty measured checks and separate profile. Parent verified218streams6profile artifacts and1664unchanged source files.",
+        "failure_history": "First retry incorrectly renamed unrelated body type i32 to counter_32; failed input/runner/preparation and validation streams preserved. Corrected substitution changes only declared loop counters.",
+        "scope": "Only corrected loops: five warmups/thirty measurements/one separate profile per input. No rerun of local/allocation inputs.",
+        "binding_sha256": "aae242aad44c488382f5de412b03b884253d699c431cbce69d78c36a9a27235a",
+        "independent_preparation_sha256": "bfd3067378bafa3015c026e3f65ea1f1dc9a9a39b003785f9343d25a34c9ee8e",
+        "session": 72178,
+        "result_sha256": "69d9ec2bf9b8d87ddba631d8e686b1ded6d68ba1a5f7c159703154ca9895bf06",
+        "parent_verification_sha256": "0715c6abd0efe08adea520aab10f2468eb1dea4a88a34f7ea6d839717d907c35",
+        "terminal_exit": 0,
+        "compiler_medians_ms": {
+          "depth8": 28.0,
+          "depth16": 109.0,
+          "depth32": 682.5
+        }
+      },
+      "final_attribution": {
+        "report": "tmp/v1-completion-2026-10-07/phase2-safety-scaling/MEASUREMENTS.md",
+        "report_sha256": "8fff1fdf81264120bf8c4d3121a38994f8094e323fbba04cb08464b722778fdd",
+        "summary": "tmp/v1-completion-2026-10-07/phase2-safety-scaling/measurement-summary.json",
+        "summary_sha256": "5912a4785ea22b046e1ccdbc60768fce50690afcb23e4d2a3d20e208aaa1a4bf",
+        "reviewer": "r13_package",
+        "selected_groups": 9,
+        "selected_measured_samples": 270,
+        "streams_verified_by_reviewer": 726,
+        "profile_artifacts_verified_by_reviewer": 20,
+        "parent_verification": "Rehashed both deliverables, all five linked records, twenty profile artifacts and nine selected inputs; checked sample counts and source mechanisms. Prior parent verification of both measurement attempts remains applicable.",
+        "finding": "Quadratic scalar-copy descendant scan work is source-proven. Allocation identity comparisons and nested loop summaries contribute growing work; profiles do not establish whole-compiler asymptotic complexity.",
+        "disposition": "Measurement and attribution complete. P2-81 optimization and V1 performance acceptance remain open; L46 deferral preserved."
+      }
+    },
+    "stack_evidence": {
+      "report": "tmp/v1-completion-2026-10-07/phase2-stack-evidence/REPORT.md",
+      "report_sha256": "99ad9ec5a1f576dcb5608b9da1eb8e3fece2b22b69eef66bdd7a23948afad59e",
+      "evidence": "tmp/v1-completion-2026-10-07/phase2-stack-evidence/evidence.json",
+      "evidence_sha256": "70b51dfcc71e56c6c3eb1aedeb1e307cc94debc28e93cbe0fd762d8939087bf5",
+      "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "status": "Static evidence reconciled. Historical 200 MB crash and diagnostics remain unverified on current source.",
+      "parent_verification": "Rehashed nine source/test files and three supporting inputs; inspected exact length fitting, backend default array emission, CLI signal mapping and historical F11 text.",
+      "boundary": "Initializer credits bound compiler exact-evaluation work, not native stack bytes. No stack cap or automatic allocation change selected. No compiler or native execution performed."
+    },
+    "selected_import_evidence": {
+      "report": "tmp/v1-completion-2026-10-07/phase2-selected-import-evidence/REPORT.md",
+      "report_sha256": "0496d38ecbea7669e66167831692ab72d9074883eda284721520c913c8342026",
+      "evidence": "tmp/v1-completion-2026-10-07/phase2-selected-import-evidence/evidence.json",
+      "evidence_sha256": "4c061e2befe1a73bcfb355b0b2d05330dfcbc1b6e97e8736872f9dc3cf8d2a21",
+      "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "status": "Current compiler-only behavior verified; selected-import contract remains undecided.",
+      "parent_verification": "Rehashed1664 source files with modes,6 inputs,22 streams and3 generated artifacts. Checked JSON diagnostic messages/spans and source routing.",
+      "observations": {
+        "unused_missing_name": [
+          0,
+          0
+        ],
+        "unused_existing_name": [
+          0,
+          0
+        ],
+        "unqualified_selected_call": [
+          6,
+          6
+        ],
+        "ordinary_alias": [
+          0,
+          0
+        ],
+        "alias_plus_list": [
+          5,
+          5
+        ]
+      },
+      "boundary": "Semantic/compile exits only. No native build or execution. L76 does not define selected bindings.",
+      "proposal": "docs/plan/packets/P-MOD-selected-imports.md",
+      "proposal_status": "Independently reviewed and presented to user; answer pending. No implementation.",
+      "proposal_sha256": "a79f89f9856df7689eae87fe3a7378dd4c234b89204b751881ac3c95f6585858",
+      "proposal_review": "tmp/v1-completion-2026-10-07/phase2-selected-import-evidence/packet-review.md",
+      "proposal_review_sha256": "807452aa00026bc86529cd2fb346fa5d7ae8db63c694253f9c093ce778e961d9"
+    },
+    "exact_slice_alias_probe": {
+      "report": "tmp/v1-completion-2026-10-07/exact-slice-alias-probe/REPORT.md",
+      "report_sha256": "92bf18099ba5b4cb4bdddbdafea9f13f95f50e66517c2dc847c59eb5c1dfc801",
+      "evidence": "tmp/v1-completion-2026-10-07/exact-slice-alias-probe/evidence.json",
+      "evidence_sha256": "2e1a95ee8a2dab603ed33334904e19ee06a2be6a373917dc15e341f8fc97d6b4",
+      "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "status": "Exact constant-bound slice stale alias still accepts in semantic and compile modes; fixed-array twin rejects6. Six valid before-deletion/distinct/fresh controls accept.",
+      "parent_verification": "Rehashed1664source files/modes,8inputs,34streams and7emitted artifacts; seventeen recorded commands.",
+      "authority": "L74 known deleted allocation alias rejection; no uncertain-index or correlated-branch rejection policy inferred.",
+      "boundary": "No native build or execution. Isolated repair work is in progress; live source remains unchanged.",
+      "design_review": {
+        "path": "tmp/v1-completion-2026-10-07/continuation-readiness-2026-10-08/slice-design.md",
+        "sha256": "573bcaf2df0afd5bc3a4185da52b28a5a324f86e7ea8a2f68d128e865761dfc3",
+        "mechanism": "Exact slice descriptor identifies shared backing cells with literal offset/length; fixed-array copies retain independent cells. Unsupported mutation/escape/join invalidates backing precision across views.",
+        "status": "Parent reviewed; isolated candidate assigned. No live compiler change or qualification."
+      },
+      "candidate": {
+        "packet": "tmp/v1-completion-2026-10-07/exact-slice-alias-candidate",
+        "manifest_sha256": "a8d7cd604b428a44aa8ba77be0ce6e724918183b38840087caa1f403ca9adece",
+        "source_files": 1665,
+        "patch_sha256": "1908a509dedb255e057b6b4e3127ce8ca66e0e47aac6e567dc82b4ca852bbb2e",
+        "report_sha256": "86f98ce2d9323f322fd7713d5a579111c4bbdd4d8a643b7ab463500e61bd865b",
+        "focused_run_sha256": "46e3d4bfb22c4885f2a18b1ec2e802ac6043e38badb45b0ed3a6f34ee928eaee",
+        "focused_result": "422 passed,34 deselected; session65647terminal0. Includes no-recursion and existing array/callee/loop/readonly controls.",
+        "parent_verification": "Full1665file hashes/modes and exact2file delta verified;4focusedstreams and changed-source before/after pins rehashed.",
+        "status": "Rejected for integration: independent review confirms valid inline-aggregate mutation falsely rejects. Frozen predecessor preserved; V2 repair in progress. Native preparation unbound.",
+        "history": "First fixture/bounds failures, baseline pairing and intermediate checks preserved in candidate packet.",
+        "independent_review": {
+          "report": "tmp/v1-completion-2026-10-07/exact-slice-alias-review/candidate/REPORT.md",
+          "report_sha256": "c94adb35da6b74dbedec8ed4c6affe97d668cb4b0deeff90565c4cb98def5595",
+          "supplement_result_sha256": "b11632ce9e4d45197affd843103f9ff7ec9d2ef32a5f6c3b06c3870d43a61725",
+          "finding": "Inline replace(Views{items:view},r) compiles0 on de578 and falsely rejects6 on a8d7 after known backing replacement. Stored aggregate twin remains0.",
+          "parent_verification": "Rehashed supplemental inputs/streams and both fullsource inventories/modes; inspected source and diagnostic mechanism.",
+          "qualification": "422 focused passes remain valid historical evidence but do not override this failure."
+        }
+      },
+      "candidate_v2": {
+        "packet": "tmp/v1-completion-2026-10-07/exact-slice-alias-candidate-v2",
+        "manifest_sha256": "52c13fb11b9cd212eb95bf22711a57a3cc43e598ceaf7a6d816a6597762297ec",
+        "source_files": 1665,
+        "report_sha256": "d52b3d9a05a6f37f51fab517e32b3ba669afe26b904b5732b6149242f4db7674",
+        "combined_patch_sha256": "d253fc06efbd2b601bb46f70169935921da4f5f5be246f4b184c7ea73f489920",
+        "incremental_patch_sha256": "9d35335757c3cdc69750c35ab579da8efa1372f4dac5d9f3c3fee90751ceddd5",
+        "focused_run_sha256": "5d68a4dd2601fac6cc40573425f7925de7974a88f30d0eda122eaddd5f08cfbb",
+        "focused_result": "427 passed,34 deselected; session88307terminal0.",
+        "parent_verification": "Full1665file inventory/modes and exact2file delta checked. Focusedstream/sourcebeforeafter pins rehashed.",
+        "status": "Frozen isolated candidate. Independent review invocation failed before completion. No native execution or integration.",
+        "review_failure_record": "tmp/v1-completion-2026-10-07/exact-slice-alias-review/v2-invocation-failure.json",
+        "review_failure_sha256": "8542eb1a9e420cdbca7ea8c68050b398eb988d09faa4b9eda21f615c9b78b299",
+        "native_preparation": {
+          "packet": "tmp/v1-completion-2026-10-07/exact-slice-alias-native-v2",
+          "runner_sha256": "65f7a2cd02ac0964c3fe91196accea46d63e03fd86fc006a135994c811901125",
+          "preparation_sha256": "0d5bed6e13775bceae403e410614e1dfdecb4c44a2474e31a89da13ef84ea607",
+          "report_sha256": "be48c71c034155323ea6f41631224959ee905a639f54ddd7d1e09993d2ff4814",
+          "status": "Prepared and unbound. Author reports7compiler-onlycommands and6emittedoutputs; no native execution. IndependentV2review incomplete."
+        }
+      }
+    },
+    "main_exit_proposal": {
+      "report": "tmp/v1-completion-2026-10-07/main-exit-proposal-evidence/REPORT.md",
+      "report_sha256": "d696d424197c606c5718eee07fb2babe3866ebb434f2cf8ede8790d96ad89101",
+      "evidence": "tmp/v1-completion-2026-10-07/main-exit-proposal-evidence/evidence.json",
+      "evidence_sha256": "25a3feb3ad80319a3881775024912e9dcb66ab8e0780e596932f2e015e3d6208",
+      "source_manifest_sha256": "de578138acedf82141a6b17c508956a37a7bed0ba5aef7e8383593cfd1e2aed0",
+      "parent_verification": "Rehashed1664source files/modes,6inputs,42streams and5artifacts. Twenty compiler calls and one import-origin check.",
+      "current_behavior": "Voidmain accepts; u8/i32 root main rejects6 both normal andlib. Importedmain doesnot supply executableentry.",
+      "proposal": "docs/plan/packets/P-CLI-main-exit.md",
+      "status": "Independently reviewed proposal presented to user; answer pending. No implementation or nativeexecution.",
+      "proposal_sha256": "0d91864a10b9b8ba87e5c519bd56a24db1563951743f3505a4f16c84476404a4",
+      "independent_review": "tmp/v1-completion-2026-10-07/main-exit-proposal-evidence/proposal-review.md",
+      "independent_review_sha256": "b5b3f4a643474de606baf387b329252a8961f1061757f77744d76d7c4f6817c1",
+      "parent_followup": "Made existing broken-pipe exit0 and other stdout panic paths explicit after checking stdout.zig5-7. Review covers preceding packet; final addition states its reviewed caveat."
+    }
+  }
+}

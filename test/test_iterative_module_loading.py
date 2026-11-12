@@ -13,15 +13,42 @@ from a7.module_resolver import ModuleResolver
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def compile_low_limit(source, output):
+def compile_low_limit(source, output, recursion_limit=100):
     # Import the CLI before reducing the limit so this checks the compiler,
     # rather than Python's module-import machinery.
     return subprocess.run(
         [sys.executable, '-c',
-         'import sys; from a7.cli import main; sys.setrecursionlimit(100); main()',
+         f'import sys; from a7.cli import main; sys.setrecursionlimit({recursion_limit}); main()',
          str(source), '--format', 'json', '--output', str(output)],
         cwd=ROOT, capture_output=True, text=True,
     )
+
+
+def test_deep_canonical_array_in_imported_generic_preserves_emission(tmp_path):
+    dimensions = '[1]' * 200
+    (tmp_path / 'payload.a7').write_text(
+        'Payload :: struct { rows: ' + dimensions + 'Option(Result(i32, i32)) }\n'
+        'identity :: fn(value: $T) $T { ret value }\n'
+        'accept :: fn(value: Payload) { copied := identity(value.rows) }\n'
+    )
+    source = tmp_path / 'main.a7'
+    source.write_text('payload :: import "payload"\nmain :: fn() {}\n')
+    outputs = []
+    for limit in (1000, 100):
+        output = tmp_path / f'main-{limit}.zig'
+        result = compile_low_limit(source, output, recursion_limit=limit)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert json.loads(result.stdout)['status'] == 'ok'
+        outputs.append(output.read_text())
+    assert outputs[0] == outputs[1]
+    emitted = outputs[1]
+    payload_type = dimensions + 'user__a7_Option_1(user__a7_Result_1(i32, i32))'
+    assert f'rows: {payload_type}' in emitted
+    assert f'const copied = module_payload__identity({payload_type}, value.rows);' in emitted
+    assert 'fn module_payload__accept(' in emitted
+    assert 'fn module_payload__identity(' in emitted
+    assert 'fn user__a7_Option_1(' in emitted
+    assert 'fn user__a7_Result_1(' in emitted
 
 
 def test_1100_module_chain_compiles_at_recursion_limit_100(tmp_path):

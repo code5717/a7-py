@@ -1047,7 +1047,7 @@ class A7Compiler:
                 decl.module_index = index
                 decl.module_entry = program is ast
                 if decl.name and program is not ast:
-                    module_path = Path(path).relative_to(module_resolver.entry_root).with_suffix("").as_posix()
+                    module_path = module_resolver.file_module_key(path)
                     identity = self._module_emit_prefix(module_path) + decl.name
                     while identity in written_names:
                         identity += "_"

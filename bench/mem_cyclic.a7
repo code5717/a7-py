@@ -1,0 +1,42 @@
+// L67 candidate, unqualified. External input: one ASCII byte plus newline.
+// Two heap nodes with integer peer IDs; original thirty million rounds retained.
+// NOT an actual reference cycle and NOT evidence of RC cycle reclamation.
+io :: import "std/io"
+HNode :: struct { value: usize, peer: usize }
+run :: fn(seed: usize) {
+    a := new HNode
+    if a == nil { io.println("alloc failed"); ret }
+    b := new HNode
+    if b == nil { del a; io.println("alloc failed"); ret }
+    a.value = seed
+    a.peer = 1
+    b.value = seed + 1
+    b.peer = 0
+    current: usize = 0
+    checksum: usize = 0
+    i: usize = 0
+    while i < 30000000 {
+        if a == nil { ret }
+        if b == nil { ret }
+        if current == 0 {
+            a.value = (a.value + seed + i % 251) % 65521
+            checksum = (checksum + a.value) % 1000000007
+            current = (a.peer + checksum % 2) % 2
+        } else {
+            b.value = (b.value + seed + i % 251) % 65521
+            checksum = (checksum + b.value) % 1000000007
+            current = (b.peer + checksum % 2) % 2
+        }
+        i += 1
+    }
+    io.println("result: {}", checksum)
+    del b
+    del a
+}
+main :: fn() {
+    input: [64]u8
+    match io.read_line(input[0..64]) {
+        case .ok(n): { if n == 0 { io.println("input failed"); ret }; run(cast(usize, input[0])) }
+        case .err(error): { io.println("input failed") }
+    }
+}

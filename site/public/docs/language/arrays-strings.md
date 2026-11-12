@@ -26,6 +26,39 @@ with a type mismatch. Use an exactly sized literal or a loop to fill an array. `
 
 Indexed iteration, `for index, value in numbers`, gives a `usize` index. Same-shape numeric fixed-array addition is implemented. Other tensor operations must not be inferred from this one operation.
 
+## Indexing through fixed-array references
+
+Indexing through `ref [N]T` uses the declared fixed-array length and requires a
+non-nil reference proof as well as a bounds proof. Supported operations read
+primitive elements or update them with simple or compound assignment, including
+nested fixed arrays and `usize` indices with a proven bound. The Zig backend
+keeps the optional reference and unwraps it at the indexed use.
+
+Known calls, forwarding and stable unwritten, uncaptured local callable copies
+retain indexed access requirements. Borrowed arrays and guards that avoid the
+access on nil remain valid. Reachable nil accesses and out-of-bounds indices
+fail at semantic exit 6, in executable and library modes.
+
+Resolved functions whose body contains one Boolean-literal return supply indexed
+guard facts. This covers direct and forwarded calls and stable unwritten,
+uncaptured local aliases. The checker preserves call and argument evaluation;
+indexed uses retain optional-reference unwraps. Conditional, effectful and
+deferred helpers remain unknown.
+
+Eligible local Boolean cells and value parameters supply indexed guard facts
+from bare or negated conditions and comparisons with Boolean literals. Early
+returns retain the surviving branch fact; copies retain their evaluated value.
+Captured or reference-exposed cells, fields and globals are excluded. Assignments
+replace facts; joins require matching values. Loop write invalidation also
+clears affected Boolean facts.
+True or unknown guards with nil reject at semantic exit 6. An unguarded symbolic
+`read(nil, b)` wrapper still rejects even if its only caller passes false.
+Effectful index expressions, indexing through selected reference-array fields,
+mutable or captured callable origins, ref slicing and general reference-element
+ownership
+remain outside this support. Access requirements do not certify that a function
+is pure or that its effects are fully modeled.
+
 ## Array storage
 
 1. The fixed array owns four elements, `[10, 20, 30, 40]`, at positions 0 through 3.
@@ -45,6 +78,19 @@ A slice type is `[]T`. `values[start..end]` selects the half-open interval begin
 | Slice length | 2 | Number of elements in the view |
 
 A slice shares its backing storage. It must not outlive that storage. Full lifetime and alias enforcement remain incomplete, so a successful compile is not a complete lifetime proof.
+
+An inferred slice binding retains the slice type even when its initializer
+views a fixed array. A mutable binding can select a view of a different length:
+
+```a7
+backing: [3]i32 = [7, 8, 9]
+state := backing[0..3]
+state = backing[1..2]
+// state.len is 1; state[0] is 8.
+```
+
+An immutable `::` binding cannot be reassigned. Initializers execute once.
+The backing storage must still remain alive for each use.
 
 ## Strings and characters
 

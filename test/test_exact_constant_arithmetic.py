@@ -5,8 +5,7 @@ Ledger L61 (`docs/plan/decisions.md`) and SPEC 4.2.1. The first half checks
 the compiler and, where they are accepted, through Zig 0.16.0 in the debug and
 fast profiles. Expected values are worked out by hand from the A7 source.
 
-Not covered: the work-credit and cache-size caps of SPEC Appendix C, which the
-evaluator does not enforce.
+Resource-limit contracts are exercised in test_exact_resource_policy.py.
 """
 
 from fractions import Fraction
@@ -158,9 +157,14 @@ def test_a_finite_value_beyond_the_float_range_is_refused():
 def test_render_elides_the_middle_of_a_long_integer():
     assert render(Fraction(-2147483649)) == "-2147483649"
     assert render(Fraction(5, 2)) == "5/2"
-    assert render(Fraction(7 * 10 ** 3000 + 123456789012)) == "700000000000...123456789012 (3001 digits)"
-    # 40000 digits is past the length Python's str() accepts for an integer.
-    assert render(Fraction(-(10 ** 39999 + 1))) == "-100000000000...000000000001 (40000 digits)"
+    for value in (7 * 10 ** 3000 + 123456789012, -(10 ** 39999 + 1)):
+        text = render(Fraction(value))
+        assert len(text) <= 256
+        assert "0x" in text and "..." in text
+        assert f"{(abs(value).bit_length() + 3) // 4} hex digits" in text
+        assert f"{abs(value).bit_length()} bits" in text
+        assert "~10^" in text
+
 
 
 # ---------------------------------------------------------------------------
@@ -327,8 +331,8 @@ def test_an_exponent_past_the_cap_is_rejected_without_evaluating_it(tmp_path):
     ("1e4300", "Float literal exponent exceeds the limit of 4096"),
     # 12345678901234567890 is about 10**19.0915, so the product of 240 of
     # them has 4582 digits, more than Python's str() will format.
-    (" * ".join(["12345678901234567890"] * 240), "(4582 digits) is out of range for i32"),
-    ("1e4000", "(4001 digits) is out of range for i32"),
+    (" * ".join(["12345678901234567890"] * 240), "is out of range for i32"),
+    ("1e4000", "is out of range for i32"),
 ], ids=["exponent-cap", "long-product", "long-literal"])
 def test_a_huge_constant_is_a_located_error_not_an_internal_one(tmp_path, initializer, fragment):
     result = expect_exit(

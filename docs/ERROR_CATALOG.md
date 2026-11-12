@@ -1,6 +1,7 @@
 # Error catalog
 
-Every compiler diagnostic: code, stage, exit code, span, trigger, fix.
+Diagnostic enum codes and common non-enum failures: stage, exit code, span,
+trigger, fix. Enum membership does not guarantee a reachable public-source error.
 Counts: 21 tokenizer + 37 semantic + 36 type = 94 enum codes, plus ad-hoc
 `ParseError`, `CodegenError`, `ImportError`, entry-point, and internal rows.
 Exits live in `a7/compile.py` (`ExitCode`); messages and hints in `a7/errors.py`.
@@ -9,9 +10,9 @@ Exits live in `a7/compile.py` (`ExitCode`); messages and hints in `a7/errors.py`
 | --- | --- | --- |
 | tokenize | 4 | lexer failure |
 | parse | 5 | syntax failure |
-| semantic | 6 | name, type, safety, import, entry-point failure |
+| semantic | 6 | name, type, safety, circular import, entry-point failure |
 | codegen | 7 | backend failure (incl. unknown backend), Zig build failure in `build`/`run` |
-| io | 3 | missing input, output conflict (incl. native output over an input), doc-write failure |
+| io | 3 | missing input/module, module path lookup errors, output conflict (incl. native output over an input), doc-write failure |
 | usage | 2 | bad CLI flags (`--output` outside compile mode), Zig missing for `build`/`run`, `doctor` failures |
 | internal | 8 | unexpected exception (bug) |
 
@@ -31,7 +32,7 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | out_of_memory | resource exhaustion → free memory, retry | — |
 | invalid_character | stray char (e.g. `@`) → remove it | tok |
 | too_long_identifier | name over 100 chars → shorten it | tok |
-| too_long_number | digits over 100 → shorten it | tok |
+| too_long_number | numeric token text over 100 characters, including separators and prefixes → shorten it | tok |
 | too_long_string | oversize literal → shorten it | tok |
 | not_closed_char | `'a` → close with `'` on the same line | tok |
 | not_closed_string | `"abc` → close with `"` | matrix, tok |
@@ -59,6 +60,7 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | duplicate_parameter | `fn(a: i32, a: i32)` → unique names | — |
 | duplicate_field | struct field twice → unique names | — |
 | duplicate_variant | enum variant twice → unique names | — |
+| duplicate_enum_value | two variants share a value → give each its own value | — |
 | duplicate_generic_param | `$T` listed twice → unique names | — |
 | break_outside_loop | `break` in plain block → move into a loop | sem |
 | break_undefined_label | `break 'nope` → label an enclosing loop | — |
@@ -83,7 +85,7 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | circular_import | `a` imports `b` imports `a` → extract a third module | pins |
 | module_not_found | `import "nosuch"` → fix the path or search path (live CLI path raises ImportError, exit 3; see ad-hoc rows) | — |
 | import_name_conflict | import shadows a name → alias the import | — |
-| unsupported_import | exotic import form → use a virtual stdlib import | — |
+| unsupported_import | reserved diagnostic enum; file-backed and virtual stdlib imports are supported → follow the module syntax in [SPEC](SPEC.md#10-modules-and-visibility) | — |
 | generic_param_mismatch | `$T` or `$N` cannot be inferred, or a generic type gets the wrong number of arguments → pass every declared parameter | — |
 | generic_binding_conflict | one `$T` bound to two types at a call → pass one type, or cast | — |
 | constraint_violation | type misses the bound → use a conforming type | — |
@@ -112,7 +114,6 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | argument_type_mismatch | arg type differs → match parameter types | sem |
 | no_such_field | `p.nope` → fix spelling or add the field | sem |
 | no_such_tag | `case .nope:` on a tagged union → fix the tag spelling or add the tag | — |
-| duplicate_enum_value | two variants share a value → give each its own value | — |
 | infinite_size_type | a struct holds itself by value → hold a `ref` instead | — |
 | type_used_as_value | a type or module name where a value is needed → use a value of that type | — |
 | cannot_infer_type | `x := []` or `[nil, nil]` → declare the type | — |
@@ -120,7 +121,7 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | cannot_index_type | index into scalar → index arrays/slices only | sem |
 | index_not_integer | `a["k"]` → index with a `usize` value | — |
 | cannot_dereference | deref of non-`ref` → use a proven reference | sem |
-| address_of_rvalue | address of temporary → use a variable or field | — |
+| address_of_rvalue | internal address operation on a temporary → report unsupported lowering; public A7 has no address-of syntax | — |
 | use_after_move | read after `del` → assign before re-reading | — |
 | nil_not_allowed | `nil` for non-nilable → provide a value | — |
 | nil_only_for_references | `nil` for plain type → use a `ref` type | — |
@@ -131,6 +132,7 @@ test_parser_error_handling_improvements, `mmod` = test_multi_file_modules,
 | unsafe_cast | lossy cast → narrow the source type first | — |
 | operator_type_mismatch | `1 + "s"` → use compatible operand types | sem |
 | unknown_type | type cannot be inferred → annotate it | — |
+| unknown | unknown type error → report it | — |
 
 ## Ad-hoc rows (no enum code)
 

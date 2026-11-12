@@ -33,7 +33,7 @@ io :: import "std/io"
 main :: fn() {
     x := io.println("a")
 }
-""", tmp_path, 7, "io.println is a void call and has no value")
+""", tmp_path, 6, "std.io.println returns no value and cannot be used in a value expression")
     assert result.failure.details[0]["span"]["start_line"] == 4
 
 

@@ -12,12 +12,33 @@ A7 combines a typed hook registry with packaged A7 declarations. `std/io` and
 `std/math` are the registered modules. Their short spellings `io` and `math`
 remain recognized. Literal `std/` paths are reserved for shipped modules;
 project replacements and unavailable reserved modules fail with exit 3.
+The loader supports package-owned A7 implementation sources and their relative
+dependencies. No public implementation module is shipped yet; `std/ascii` remains
+unavailable. The registry maps existing hook signatures and argument policies to
+Zig calls and packaged runtime fragments. Current I/O and math contracts are
+unchanged.
 
 `Option(T)` and `Result(T, E)` are canonical tagged unions available in every
 file. `Option` has `some: T` and `none: bool`; `Result` has `ok: T` and `err: E`.
 User declarations of those names fail with exit 6. Remove equivalent declarations
 or rename custom types. This prelude does not import modules or provide planned
 `std/option` and `std/result` helper functions.
+
+## Registered printing effects
+
+The compiler rejects registered `io.print`, `io.println` and
+`io.eprintln` when they supply inferred/container values, `if`/`match` results
+or format arguments. These uses fail at semantic exit 6 instead of codegen
+exit 7. Direct statement effects, including deferred and FOR-header statements,
+remain valid. `println_ok` still returns a value that can be saved or matched.
+Renamed imports follow the same registration; ordinary user void bindings are
+unchanged. Broader user-function void consumption remains unresolved.
+
+Existing type and exact-constant errors retain priority. Later semantic-validator
+messages may appear only after the consuming call is fixed. Nine valid native
+controls passed across debug, release and fast with exact output and unchanged
+emitted Zig. The combined full gate passed on frozen source
+`e0c6235a43632839d50be28d2128af666be78634e8a5c50c8fcf317ef6915470`.
 
 ## Implemented modules
 

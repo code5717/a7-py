@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-07T17:32:50.898566+00:00",
+  "source_sha256": "9d5c04f655efa541f1daf53b8b095e5feaa77a73b86078840f20727673a3d760",
+  "exact_reproduction": {
+    "run": "tmp/v1-completion-2026-10-07/memory-w5-zig-crash-reproduction-prep/attempts/20261007T173043.986147Z/run.json",
+    "sha256": "24f72455b775c679910eff3ac448f261c799159e6243cca701ae76093290088a",
+    "exit_code": -11,
+    "stdout_bytes": 0,
+    "stderr_bytes": 0,
+    "input_integrity": "unchanged"
+  },
+  "backend_diagnostic": {
+    "run": "tmp/v1-completion-2026-10-07/memory-w5-zig-backend-diagnostic/run.json",
+    "sha256": "62c663063db77f3f2e5b97a589a97ab0953f8096668de733cc328658ff5e5ec7",
+    "exit_code": 0,
+    "change": "Only backend flag changes from -fllvm to -fno-llvm; output/cache/temp paths are fresh.",
+    "artifacts": {
+      "artifacts/w5.o": {
+        "sha256": "0925ca288b769487ee9a5cfda0d5c08048d1887e00d9ac6b22bc87ad7047ad06",
+        "mode": 420
+      }
+    },
+    "input_integrity": "unchanged"
+  },
+  "observer_source_review": {
+    "manifest_sha256": "f790d142fd6faf6a1038cdd4a654a34b608742230e8c7c6308d3471a1745012a",
+    "result": "prior pretouch source blocker closed; native evidence outstanding"
+  },
+  "failed_review": {
+    "reviewer": "builtin zig_reduction",
+    "result": "automatic safety filter rejected read-only source analysis as possible cybersecurity risk; no completed review and no retry"
+  },
+  "limits": [
+    "No compiler subsystem or root cause identified.",
+    "Backend differential is diagnostic only; no production backend or memory policy selected.",
+    "No linking or workload execution in these two runs.",
+    "No ABI, actual free, performance or full-memory qualification.",
+    "No cyber scan or GPU execution."
+  ]
+}

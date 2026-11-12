@@ -5,6 +5,22 @@ Value :: union {
     float_val: f64
 }
 
+Payload :: union(tag) {
+    number: i32
+    flag: bool
+}
+
+show_payload :: fn(value: Payload) {
+    match value {
+        case .number(number): {
+            io.println("tagged number: {}", number)
+        }
+        case .flag(flag): {
+            io.println("tagged flag: {}", flag)
+        }
+    }
+}
+
 main :: fn() {
     int_value := Value{int_val: 42}
     float_value := Value{float_val: 3.5}
@@ -12,4 +28,7 @@ main :: fn() {
     io.println("=== Unions ===")
     io.println("int: {}", int_value.int_val)
     io.println("float: {}", float_value.float_val)
+
+    show_payload(Payload{number: -17})
+    show_payload(Payload{flag: true})
 }

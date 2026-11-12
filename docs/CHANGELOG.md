@@ -5,6 +5,100 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Report repeated exact-resource failures once per initializer and resource
+  category, preserving the first location, unrelated errors and budget accounting.
+
+- Apply existing exact numeric fitting to writes through concrete numeric
+  references. Guarded `ref usize` writes accept fitting literals and named exact
+  constants. Out-of-range constants and incompatible typed values reject as
+  assignment errors; reference binding and scalar-read behavior are unchanged.
+
+- Retain allocation identities through represented conditional fixed-array
+  slots, reference replacement and cleanup paths. Preserve eligible loop-counter
+  proofs across readonly calls, returned-reference forwarding and distinct owned
+  storage writes. Known deleted aliases still reject; unknown and escaped
+  storage retain conservative handling. General lifetime analysis is incomplete.
+- Lower inferred concrete function bindings with their checked runtime function
+  type. Reassignment, matching reference parameters and saved function targets
+  work without an explicit annotation. Generic aliases remain compile-time
+  aliases; capturing closures and callable evaluation-order policy are unchanged.
+- Emit the checked slice type for inferred mutable and immutable bindings.
+  Array-backed views retain slice representation through aliases, reassignment
+  and reference parameters. String views retain their backing constness, and
+  effectful initializers run once.
+- Benchmark pinning and gating use seven samples by default and require at
+  least five. Reject raw-sample coefficient of variation above 0.10 and enforce
+  a permitted CPU affinity. Failed measurements leave existing pins unchanged.
+
+- Prove indexed calls from eligible local Boolean guards, early returns and
+  value copies. Track assignment and branch changes; captured and
+  reference-exposed cells remain excluded.
+- Distinguish missing reference-array access requirements and untrackable
+  callable origins from numeric bounds failures in index diagnostics. Preserve
+  rejection behavior and existing out-of-bounds hints.
+- Prove indexed guards from resolved single Boolean-literal-return functions,
+  including forwarded calls and stable local aliases. Preserve argument safety,
+  call evaluation and rejection of true or unresolved nil access.
+- Enforce exact-evaluation growth, work, logical retention, dependency-depth and
+  diagnostic limits. Generic pattern conversions use compilation and initializer
+  accounts, preserving shared templates and existing emitted spelling. Resource
+  failures remain located semantic errors; ordinary math-call output is unchanged.
+- Enforce struct and union constraints in type annotations, including unused
+  signatures, fields and type aliases. Resolve record constraints after named
+  type aliases so forward members use their resolved types in annotations and
+  construction. Imported owners retain their defining constraints.
+- Fit generic numeric match patterns after concrete substitution. Preserve
+  defining constant bindings and check overlap separately for each float width
+  or integer type. Runtime ranges retain numeric or character subject checks.
+- Accept equivalent or narrower constraints when forwarding generic arguments
+  to constrained functions and nominal constructors. Broader and unconstrained
+  arguments remain rejected.
+
+- Fix false overlap rejection and missed overlap diagnostics between large
+  integer literals and range patterns. Comparisons preserve fitted integer
+  values in either pattern order.
+- Numeric-length diagnostics describe the 100-character token limit, including
+  separators and prefixes. Import advice no longer claims that file-backed
+  modules lack backend support.
+
+- Callee non-nil requirement diagnostics name the originating source file when
+  available, while preserving the primary caller location and line/column
+  fallback for originless spans.
+
+- Reference-to-fixed-array indexing uses declared lengths and non-nil proofs
+  for primitive element reads and simple or compound writes. Nested arrays,
+  bounded indices, guarded nil calls and supported forwarding retain their
+  access requirements. Unresolved nil-call predicates remain rejected; broader
+  callable, effectful-index and reference-element ownership support is incomplete.
+
+- Else-if checking preserves distinct arm declarations and parent bindings.
+  Semantic reports retain the original declaration scopes.
+- Overlong module paths report the import location and filesystem failure at
+  resolution exit 3.
+- Benchmark `--gate` fails for missing or unusable workload baselines.
+  `--pin --gate` exits 2 before building or changing pins. Report-only runs
+  describe exceeded timing thresholds without failing for timing alone.
+
+- Generic fixed-array initializers such as `[2]$T = [1, 2]` fit their elements
+  after concrete substitution, including nested arrays and concrete wrappers.
+  Overflow, wrong lengths and typed narrowing remain rejected. Unresolved
+  initializer checks still require supported generic callable origins.
+
+- Reserved `std/` imports support package-owned A7 implementation sources.
+  Existing hook signatures, numeric policies and Zig runtime mappings now come
+  from the registry and packaged resources. Public stdlib modules remain `io`
+  and `math`.
+- Known fixed-array reference aliases read through literal indices reject use
+  after deletion at semantic exit 6. Fresh slot replacements and independent
+  array copies preserve valid uses. General slice and uncertain container
+  lifetime checks remain incomplete.
+
+- Registered `print`, `println` and `eprintln` used as
+  inferred or aggregate values, conditional results or format arguments fail at
+  semantic exit 6 instead of codegen exit 7. Statement effects remain valid.
+  Existing type errors retain priority. `println_ok` results and ordinary user
+  void bindings are unchanged.
+
 - The selected executable entry rejects a known nil
   read through its complete readonly summary. Library mode has no implicit
   execution root. General caller-local and effectful proofs remain incomplete.
@@ -57,7 +151,8 @@ This does not qualify full V1.
 - The L74 safety repair rejects nil reference-field access, repeated field
   deletion, and direct reference alias use after deletion with exit 6. Guarded
   access, distinct allocations and fresh reassignment remain accepted. Aliases
-  through array elements and joined allocation field paths remain unqualified.
+  through general array elements and joined allocation field paths remain
+  unqualified; the represented literal-slot subset is described above.
 - File imports resolve relative to the importing file. Parent paths work within
   the entry directory; paths and symlinks that escape it remain rejected.
   Canonical file identity unifies alternate spellings for caches and cycles.

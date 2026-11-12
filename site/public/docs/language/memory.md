@@ -68,6 +68,12 @@ main :: fn() {
 
 This demonstrates reference passing, not a general alias-safety guarantee.
 
+Numeric references also support writes to scalar storage. After a nil guard,
+`n: ref usize` accepts `n = 3`, a fitting named exact constant or `n = 3.0`.
+Overflow, fractional integer values and incompatible typed numeric values remain
+semantic errors. The caller observes the mutation through its ordinary scalar
+local. Reading or printing the scalar through the reference remains unsupported.
+
 ## Deletion, defer, and lifetimes
 
 Branch joins, loop mutations, reference calls, and deferred effects invalidate
@@ -85,9 +91,18 @@ through calls. Deleting the stored allocation invalidates tracked caller
 aliases. Simple direct calls with literal boolean selectors preserve a selected
 reference or nil return. A nil result needs its own guard before field access.
 Broader return paths, global nil-state summaries and callee non-nil requirements remain
-incomplete. Alias tracking also has gaps for array elements, selected or joined
-field paths, nested aggregates, borrowed aggregates and direct deletion of call
-results. Accepted programs can still violate allocation lifetimes.
+incomplete. Literal-index fixed-array aliases retain known allocation identity
+on represented straight-line and conditional paths. Array copies preserve
+reference identities in independent slot cells; replacing a slot does not retarget a saved reference. These checks
+supply no additional nonnil proof. Eligible loop counters retain facts across
+proved readonly calls, represented returned-reference forwarding and writes to
+distinct owned storage. Projected lvalues passed to reference parameters retain
+their storage mutation effects. A local handle slot does not imply disjoint
+backing storage. Unknown writes, uncertain joins, unrepresented loop effects and
+storage exposed through views or mutable array borrows do not gain general
+lifetime analysis. Alias tracking still has gaps for general array/slice paths,
+selected or joined field paths, nested aggregates, borrowed aggregates and direct
+deletion of call results. Accepted programs can still violate allocation lifetimes.
 
 Represented readonly calls reject known nil field reads across branches,
 read-only defers and certified loops. The executable-entry check evaluates the

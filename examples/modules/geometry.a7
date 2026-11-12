@@ -1,0 +1,8 @@
+Rectangle :: struct {
+    width: i32
+    height: i32
+}
+
+area :: fn(rectangle: Rectangle) i32 {
+    ret rectangle.width * rectangle.height
+}

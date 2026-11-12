@@ -1,5 +1,9 @@
 # Language facilities for a live, inspectable system: research
 
+Current related evidence: the [October 17 Lisp-family study](../lisp-family-2026-10-17.md)
+examines macros, phase separation, conditions/restarts and live runtimes. The
+numbered reports listed below remain an agenda, not completed reports.
+
 Started 2026-09-18, third batch of material from the user (verbatim in
 `tmp/research/language-facilities/claims.md`). More is expected; new batches go
 into the same file with a date, and each becomes rows in the audit below.

@@ -8,10 +8,12 @@ import math
 import re
 import struct
 from io import StringIO
+from importlib.resources import files
 from typing import Optional, Dict, Set
 
 from ..ast_nodes import ASTNode, NodeKind, LiteralKind, BinaryOp, UnaryOp, AssignOp
 from ..cast_classifier import CastClass
+from ..stdlib import StdlibRegistry
 from ..errors import CodegenError
 from ..passes.safety import BackendPlan
 from ..types import (
@@ -66,6 +68,9 @@ class ZigCodeGenerator(CodeGenerator):
         self._fall_context_stack: list[tuple[str, str]] = []
         self._name_counter = 0
         self._io_streams_needed: Set[str] = set()
+        self._stdlib = StdlibRegistry()
+        self._io_runtime = {}
+        self._hook_snippets = {}
         # Preamble helpers (`__a7_zero`, `__a7_shl`, ...) the emitted code calls.
         self._helpers: Set[str] = set()
         self._global_names: Set[str] = set()
@@ -114,6 +119,8 @@ class ZigCodeGenerator(CodeGenerator):
         self._fall_context_stack = []
         self._name_counter = 0
         self._io_streams_needed = set()
+        self._io_runtime = {}
+        self._hook_snippets = {}
         self._helpers = set()
         self._global_renames = self._plan_global_renames(ast)
         # Every file-scope Zig name a local must not shadow: the user's
@@ -287,24 +294,21 @@ class ZigCodeGenerator(CodeGenerator):
                 self._needs_std = True
 
             if node.kind == NodeKind.CALL:
-                # Check for stdlib io print calls.
-                canonical = getattr(node, "stdlib_canonical", None)
-                if canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}:
-                    self._needs_std = True
-                    field = canonical.split(".")[-1]
-                    self._io_streams_needed.add("stderr" if field == "eprintln" else "stdout")
-                elif canonical == "std.io.println_ok":
-                    self._needs_std = True
-                    self._io_streams_needed.update(("stdout", "print_ok"))
-                elif canonical == "std.io.read_line":
-                    self._needs_std = True
-                    self._io_streams_needed.update(("stdin", "read_line"))
+                lowering = self._hook_lowering(node)
+                if lowering is not None:
+                    if not lowering.target.startswith("@"):
+                        self._global_names.add(lowering.target)
+                    self._io_runtime.update(lowering.io_runtime)
+                    self._io_streams_needed.update(lowering.io_runtime)
+                    self._needs_std |= bool(lowering.io_runtime)
+                    for resource in lowering.snippets:
+                        self._hook_snippets[resource] = None
 
         self._walk_ast(root, visitor)
         if {"print_ok", "read_line"} & self._io_streams_needed:
             self._stdlib_types_needed.update((
                 self._symbol_table.prelude_symbols["Result"].type.name,
-                self._symbol_table.stdlib_type_symbols["IoErr"].type.name,
+                self._symbol_table.stdlib_type_symbols[("<stdlib/io>", "IoErr")].type.name,
             ))
 
     _HELPER_SOURCE = {
@@ -389,72 +393,34 @@ class ZigCodeGenerator(CodeGenerator):
         for helper, source in self._HELPER_SOURCE.items():
             if helper in self._helpers:
                 lines.extend(source)
+        if self._hook_snippets:
+            runtime = files("a7.stdlib").joinpath("rt")
+            for resource in self._hook_snippets:
+                lines.extend(runtime.joinpath(resource).read_text(encoding="utf-8").splitlines())
         if self._io_streams_needed:
+            io_runtime = files("a7.stdlib").joinpath("rt")
             lines.append("var __a7_io: ?std.Io = null;")
         if "stdout" in self._io_streams_needed:
-            lines.append("var __a7_stdout_buf: [4096]u8 = undefined;")
-            lines.append("var __a7_stdout_writer: ?std.Io.File.Writer = null;")
-            lines.append("var __a7_stdout_is_tty = false;")
-            lines.append("// A reader that closed the pipe ends the program quietly, as SIGPIPE does in C.")
-            lines.append("fn __a7_stdout_failed(comptime what: []const u8) noreturn {")
-            lines.append("    if (__a7_stdout_writer.?.err) |err| if (err == error.BrokenPipe) std.process.exit(0);")
-            lines.append('    @panic("a7 stdout " ++ what ++ " failed");')
-            lines.append("}")
-            lines.append("fn __a7_stdout_flush() void {")
-            lines.append('    __a7_stdout_writer.?.interface.flush() catch __a7_stdout_failed("flush");')
-            lines.append("}")
-            lines.append("fn __a7_stdout_print(comptime fmt: []const u8, args: anytype) void {")
-            lines.append("    const out = &__a7_stdout_writer.?.interface;")
-            lines.append('    out.print(fmt, args) catch __a7_stdout_failed("write");')
-            lines.append("    // A terminal is line-buffered: a finished line is shown at once.")
-            lines.append("    if (__a7_stdout_is_tty and std.mem.indexOfScalar(u8, out.buffered(), '\\n') != null) __a7_stdout_flush();")
-            lines.append("}")
-            lines.append("// Text printed before a panic reaches stdout before the panic message.")
-            lines.append("fn __a7_panic(msg: []const u8, first_trace_addr: ?usize) noreturn {")
-            lines.append("    if (__a7_stdout_writer) |*writer| writer.interface.flush() catch {};")
-            lines.append("    std.debug.defaultPanic(msg, first_trace_addr orelse @returnAddress());")
-            lines.append("}")
-            lines.append("pub const panic = std.debug.FullPanic(__a7_panic);")
+            lines.extend(io_runtime.joinpath(self._io_runtime["stdout"][0]).read_text(encoding="utf-8").splitlines())
         if "stderr" in self._io_streams_needed:
-            lines.append("fn __a7_stderr_print(comptime fmt: []const u8, args: anytype) void {")
+            lines.extend(io_runtime.joinpath(self._io_runtime["stderr"][0]).read_text(encoding="utf-8").splitlines())
             if "stdout" in self._io_streams_needed:
                 lines.append("    __a7_stdout_flush();")
-            lines.append("    var __a7_stream_buf: [1024]u8 = undefined;")
-            lines.append("    var __a7_writer = std.Io.File.stderr().writerStreaming(__a7_io.?, &__a7_stream_buf);")
-            lines.append('    __a7_writer.interface.print(fmt, args) catch @panic("a7 stderr write failed");')
-            lines.append('    __a7_writer.interface.flush() catch @panic("a7 stderr flush failed");')
-            lines.append("}")
+            lines.extend(io_runtime.joinpath(self._io_runtime["stderr"][1]).read_text(encoding="utf-8").splitlines())
         if {"print_ok", "read_line"} & self._io_streams_needed:
             result_name = self._emit_semantic_type(self._symbol_table.prelude_symbols["Result"].type)
-            error_name = self._emit_semantic_type(self._symbol_table.stdlib_type_symbols["IoErr"].type)
+            error_name = self._emit_semantic_type(self._symbol_table.stdlib_type_symbols[("<stdlib/io>", "IoErr")].type)
             lines.append(f"const __a7_IoResult = {result_name}(usize, {error_name});")
         if "print_ok" in self._io_streams_needed:
-            lines.append("fn __a7_stdout_print_ok(comptime fmt: []const u8, args: anytype) __a7_IoResult {")
-            lines.append("    __a7_stdout_writer.?.interface.print(fmt, args) catch return .{ .err = .WriteFailed };")
-            lines.append("    __a7_stdout_writer.?.interface.flush() catch return .{ .err = .FlushFailed };")
-            lines.append("    return .{ .ok = std.fmt.count(fmt, args) };")
-            lines.append("}")
+            lines.extend(io_runtime.joinpath(self._io_runtime["print_ok"][0]).read_text(encoding="utf-8").splitlines())
         if "read_line" in self._io_streams_needed:
             # One reader for the whole program: a reader made per call would
             # drop the bytes it buffered past the first newline.
-            lines.append("var __a7_stdin_buf: [4096]u8 = undefined;")
-            lines.append("var __a7_stdin_reader: ?std.Io.File.Reader = null;")
-            lines.append("fn __a7_stdin_read_line(buf: []u8) __a7_IoResult {")
+            lines.extend(io_runtime.joinpath(self._io_runtime["read_line"][0]).read_text(encoding="utf-8").splitlines())
             if "stdout" in self._io_streams_needed:
                 # A prompt written with `io.print` must reach the terminal first.
                 lines.append("    __a7_stdout_flush();")
-            lines.append("    var n: usize = 0;")
-            lines.append("    while (n < buf.len) {")
-            lines.append("        const b = __a7_stdin_reader.?.interface.takeByte() catch |e| switch (e) {")
-            lines.append("            error.EndOfStream => if (n == 0) return .{ .err = .EndOfStream } else break,")
-            lines.append("            error.ReadFailed => return .{ .err = .ReadFailed },")
-            lines.append("        };")
-            lines.append("        buf[n] = b;")
-            lines.append("        n += 1;")
-            lines.append("        if (b == '\\n') break;")
-            lines.append("    }")
-            lines.append("    return .{ .ok = n };")
-            lines.append("}")
+            lines.extend(io_runtime.joinpath(self._io_runtime["read_line"][1]).read_text(encoding="utf-8").splitlines())
         if self._io_streams_needed:
             lines.append("pub fn main(init: std.process.Init) void {")
             lines.append("    __a7_io = init.io;")
@@ -726,12 +692,22 @@ class ZigCodeGenerator(CodeGenerator):
         A declaration of an imported file keeps its module prefix.
         """
         names = {d.name for d in (ast.declarations or []) if d.name}
+        hook_targets = set()
+
+        def collect_hook_target(node):
+            if node.kind == NodeKind.CALL:
+                lowering = self._hook_lowering(node)
+                if lowering is not None and not lowering.target.startswith("@"):
+                    hook_targets.add(lowering.target)
+
+        self._walk_ast(ast, collect_hook_target)
+        names.update(hook_targets)
         renames: Dict[str, str] = {}
         for decl in (ast.declarations or []):
             name = decl.name
             if not name or name in renames or getattr(decl, "module_emit_prefix", ""):
                 continue
-            if name == "main" or not (name in self._PREAMBLE_NAMES or name.startswith("__a7_")):
+            if name == "main" or not (name in self._PREAMBLE_NAMES or name in hook_targets or name.startswith("__a7_")):
                 continue
             base = self._user_base_name(name)
             suffix = 1
@@ -1884,9 +1860,20 @@ class ZigCodeGenerator(CodeGenerator):
             return
         name = node.name or "unnamed"
         val = self._emit_expr(node.value)
+        declaration_type = (
+            self._type_map.get(id(node.value)) if not node.explicit_type else None
+        )
+        annotation = ""
+        if isinstance(declaration_type, SliceType):
+            element_type = self._emit_semantic_type(declaration_type.element_type)
+            # Preserve backing constness while normalizing array pointers to slices.
+            annotation = (
+                f": (if (@typeInfo(@TypeOf({val})).pointer.is_const) "
+                f"[]const {element_type} else []{element_type})"
+            )
         name = self._declare_var_in_scope(name) if self._in_function else self._file_scope_name(name)
         self._write_indent()
-        self.output.write(f"const {self._quote_identifier(name)} = {val};\n")
+        self.output.write(f"const {self._quote_identifier(name)}{annotation} = {val};\n")
         if self._in_function:
             self._write_indent()
             self.output.write(self._pending_discard(name) + "\n")
@@ -1914,12 +1901,53 @@ class ZigCodeGenerator(CodeGenerator):
             initial_value = self._emit_expr(value)
 
         declaration_type = self._type_map.get(id(node))
+        concrete_function = not explicit_type and isinstance(declaration_type, FunctionType)
+        pending_types = [declaration_type] if concrete_function else []
+        seen_types = set()
+        while pending_types and concrete_function:
+            inferred = pending_types.pop()
+            if id(inferred) in seen_types:
+                continue
+            seen_types.add(id(inferred))
+            if isinstance(inferred, FunctionType):
+                if inferred.generic_param_order or inferred.is_variadic:
+                    concrete_function = False
+                else:
+                    pending_types.extend(inferred.param_types)
+                    if inferred.return_type is not None:
+                        pending_types.append(inferred.return_type)
+            elif isinstance(inferred, (PrimitiveType, GenericValueArg)):
+                continue
+            elif isinstance(inferred, ArrayType):
+                concrete_function = isinstance(inferred.size, int)
+                pending_types.append(inferred.element_type)
+            elif isinstance(inferred, (PointerType, ReferenceType)):
+                pending_types.append(inferred.pointee_type if isinstance(inferred, PointerType) else inferred.referent_type)
+            elif isinstance(inferred, SliceType):
+                pending_types.append(inferred.element_type)
+            elif isinstance(inferred, GenericInstanceType):
+                pending_types.extend(inferred.type_args)
+            elif isinstance(inferred, (StructType, EnumType, UnionType)):
+                concrete_function = bool(inferred.name) and not getattr(inferred, 'generic_params', ())
+            else:
+                concrete_function = False
         if explicit_type:
             zig_type = self._emit_type_node(explicit_type)
         elif isinstance(declaration_type, PrimitiveType):
             # Semantic analysis owns inferred scalar widths. Zig would infer
             # comptime_int/float for literal initializers, which cannot be
             # mutated and can disagree with A7 even for immutable bindings.
+            zig_type = self._emit_semantic_type(declaration_type)
+        elif isinstance(declaration_type, SliceType):
+            element_type = self._emit_semantic_type(declaration_type.element_type)
+            # @TypeOf has no runtime side effects; the initializer executes once.
+            zig_type = (
+                f"(if (@typeInfo(@TypeOf({initial_value})).pointer.is_const) "
+                f"[]const {element_type} else []{element_type})"
+            )
+        elif concrete_function:
+            # Mutable Zig function values need pointer types. Generic and
+            # variadic declarations retain their existing comptime lowering.
             zig_type = self._emit_semantic_type(declaration_type)
         elif node.resolved_type:
             zig_type = self._emit_type_node(node.resolved_type)
@@ -2490,6 +2518,20 @@ class ZigCodeGenerator(CodeGenerator):
             if node is None:
                 raise CodegenError("Zig backend: internal error: missing expression node")
 
+            deferred = getattr(node, "generic_pattern_exact", None)
+            if deferred is not None:
+                target, exact = deferred
+                target_name = self._emit_semantic_type(target)
+                encodings = []
+                for width, bits in zip((32, 64), node.generic_pattern_encodings):
+                    encoded = (f"@as(f{width}, @bitCast(@as(u{width}, {bits})))" if bits is not None
+                               else '@compileError("match pattern does not fit target float")')
+                    encodings.append(encoded)
+                integer = (f"@as({target_name}, {exact[0].numerator})" if exact[0].denominator == 1 and -(1 << 63) <= exact[0].numerator < (1 << 64)
+                           else '@compileError("match pattern does not fit an integer target")')
+                return (f"(if ({target_name} == f32) {encodings[0]} "
+                        f"else if ({target_name} == f64) {encodings[1]} else {integer})")
+
             kind = node.kind
 
             if kind == NodeKind.LITERAL:
@@ -2599,25 +2641,25 @@ class ZigCodeGenerator(CodeGenerator):
             # (a helper method would join the _emit_call/_emit_expr cycle and
             # trip the no-recursion ratchet, so the emission stays inline).
             if self._is_io_result_call(node):
-                canonical = getattr(node, "stdlib_canonical", None) or ""
+                lowering = self._hook_lowering(node)
                 args = node.arguments or []
-                if canonical == "std.io.read_line":
+                if lowering.call_kind == "buffer_result":
                     buf = (yield ("_emit_expr", (args[0],))) if args else "&[_]u8{}"
-                    return f"__a7_stdin_read_line({buf})"
+                    return f"{lowering.target}({buf})"
                 if not args:
-                    return '__a7_stdout_print_ok("\\n", .{})'
+                    return lowering.target + '("\\n", .{})'
                 fmt_str = self._convert_format_string((yield ("_emit_expr", (args[0],))), args[1:])
-                if fmt_str.endswith('"'):
+                if lowering.newline and fmt_str.endswith('"'):
                     fmt_str = fmt_str[:-1] + '\\n"'
                 if len(args) == 1:
-                    return f"__a7_stdout_print_ok({fmt_str}, .{{}})"
+                    return f"{lowering.target}({fmt_str}, .{{}})"
                 argument_parts = []
                 for arg in args[1:]:
                     argument_parts.append((yield ("_emit_expr", (arg,))))
                 zig_args = ", ".join(argument_parts)
                 if self._has_top_level_comma(zig_args):
-                    return f"__a7_stdout_print_ok({fmt_str}, .{{ {zig_args} }})"
-                return f"__a7_stdout_print_ok({fmt_str}, .{{{zig_args}}})"
+                    return f"{lowering.target}({fmt_str}, .{{ {zig_args} }})"
+                return f"{lowering.target}({fmt_str}, .{{{zig_args}}})"
 
             file_module_call = getattr(node, "file_module_call", None)
             if file_module_call:
@@ -2631,23 +2673,19 @@ class ZigCodeGenerator(CodeGenerator):
                         args_list.append((yield ("_emit_expr", (arg,))))
                 return f"{prefix}{field}({', '.join(args_list)})"
 
-            canonical = getattr(node, "stdlib_canonical", None)
-            if canonical and canonical.startswith("std.math."):
-                short = canonical.split(".")[-1]
-                if short in ('sqrt', 'abs', 'floor', 'ceil', 'sin', 'cos', 'tan',
-                             'log', 'exp', 'min', 'max'):
-                    argument_parts = []
-                    for arg in node.arguments or []:
-                        argument_parts.append((yield ("_emit_expr", (arg,))))
-                    args = ", ".join(argument_parts)
-                    if short == "abs":
-                        result_type = self._type_map.get(id(node))
-                        if isinstance(result_type, PrimitiveType) and result_type.is_integral() and result_type.name.startswith("i"):
-                            # @bitCast wraps `abs(MIN)` to MIN; @intCast would trap or be
-                            # undefined. The inner @as types a literal argument.
-                            zig_type = self._emit_semantic_type(result_type)
-                            return f"@as({zig_type}, @bitCast(@abs(@as({zig_type}, {args}))))"
-                    return f"@{short}({args})"
+            lowering = self._hook_lowering(node)
+            if lowering is not None:
+                argument_parts = []
+                for arg in node.arguments or []:
+                    argument_parts.append((yield ("_emit_expr", (arg,))))
+                args = ", ".join(argument_parts)
+                if lowering.call_kind == "signed_abs":
+                    result_type = self._type_map.get(id(node))
+                    if isinstance(result_type, PrimitiveType) and result_type.is_integral() and result_type.name.startswith("i"):
+                        # Preserve wrapping abs(MIN), including typed literal arguments.
+                        zig_type = self._emit_semantic_type(result_type)
+                        return f"@as({zig_type}, @bitCast({lowering.target}(@as({zig_type}, {args}))))"
+                return f"{lowering.target}({args})"
 
             func = (yield ("_emit_expr", (node.function,)))
 
@@ -2664,7 +2702,12 @@ class ZigCodeGenerator(CodeGenerator):
         if action == "_emit_index":
             node, = payload
             self._require_backend_approval(node, "index")
-            obj = (yield ("_emit_expr", (node.object,)))
+            typ = self._type_map.get(id(node.object))
+            if isinstance(typ, ReferenceType) and isinstance(typ.referent_type, ArrayType):
+                self._require_backend_approval(node, "deref")
+                obj = (yield ("_emit_implicit_ref_field_base", (node.object,)))
+            else:
+                obj = (yield ("_emit_expr", (node.object,)))
             if node.object is not None and node.object.kind == NodeKind.ARRAY_INIT:
                 obj = self._typed_array_literal(node.object, obj)
             if (
@@ -3601,23 +3644,26 @@ class ZigCodeGenerator(CodeGenerator):
 
     # === I/O special-casing ===
 
+    def _hook_lowering(self, node: ASTNode):
+        canonical = getattr(node, "stdlib_canonical", None)
+        if canonical is None:
+            return None
+        hook = self._stdlib.hooks[canonical]
+        if "zig" not in hook.backend_map:
+            raise CodegenError(f"Zig backend: no lowering for {canonical}", node.span)
+        return hook.backend_map["zig"]
+
     def _is_io_call(self, node: ASTNode) -> bool:
-        """Check if this is an stdlib io print call."""
         if node.kind != NodeKind.CALL:
             return False
-        canonical = getattr(node, "stdlib_canonical", None)
-        return canonical in {"std.io.println", "std.io.print", "std.io.eprintln"}
+        lowering = self._hook_lowering(node)
+        return lowering is not None and lowering.call_kind == "format_void"
 
     def _is_io_result_call(self, node: ASTNode) -> bool:
-        """Check if this is a Result-returning stdlib io call.
-
-        A leaf on purpose: it reads node attributes only, so the
-        no-recursion call-graph ratchet is unaffected.
-        """
         if node is None or node.kind != NodeKind.CALL:
             return False
-        canonical = getattr(node, "stdlib_canonical", None)
-        return canonical in {"std.io.println_ok", "std.io.read_line"}
+        lowering = self._hook_lowering(node)
+        return lowering is not None and lowering.call_kind in {"format_result", "buffer_result"}
 
     def _emit_io_call(self, node: ASTNode) -> None:
         """Emit an io.println/io.print call as a statement."""
@@ -3630,13 +3676,12 @@ class ZigCodeGenerator(CodeGenerator):
         Called from statement positions only (`_emit_call` must not call it:
         that would join the expression emitters' recursive group).
         """
-        field = node.stdlib_canonical.split(".")[-1]
-        stream = "stderr" if field == "eprintln" else "stdout"
-        newline = field in {"println", "eprintln"}
+        lowering = self._hook_lowering(node)
+        newline = lowering.newline
         args = node.arguments or []
         if not args:
             empty = '"\\n"' if newline else '""'
-            return f"__a7_{stream}_print({empty}, .{{}})"
+            return f"{lowering.target}({empty}, .{{}})"
 
         # First arg is the format string; `{}` becomes a typed Zig placeholder.
         fmt_str = self._convert_format_string(self._emit_expr(args[0]), args[1:])
@@ -3649,7 +3694,7 @@ class ZigCodeGenerator(CodeGenerator):
             rendered = f".{{ {zig_args} }}"
         else:
             rendered = f".{{{zig_args}}}"
-        return f"__a7_{stream}_print({fmt_str}, {rendered})"
+        return f"{lowering.target}({fmt_str}, {rendered})"
 
     def _emit_io_call_expr(self, node: ASTNode) -> str:
         """io.print, io.println and io.eprintln return nothing."""

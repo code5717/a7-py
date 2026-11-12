@@ -11,20 +11,24 @@ Modes:
   default   Compare vs pins, print deltas. Exit 0 unless a build/run fails or
             an output hash mismatches.
   --pin     Write bench/pins/<hostname>.json from this run.
-  --gate    Additionally exit 1 if any median > pin * 1.15.
-  --runs N  Runs per binary (default 3).
+  --gate    Require a complete usable host pin; exit 1 if any median > pin * 1.15.
+            Cannot be combined with --pin.
+  --runs N  Runs per binary (default 7; pin/gate require at least 5).
   --taskset CPU
             Pin each timed run to one CPU (e.g. 0) with taskset(1) to cut
-            scheduler noise. Ignored with a warning when taskset is missing.
+            scheduler noise. Invalid or unavailable requested affinity fails.
+            Pin/gate choose one inherited allowed CPU when omitted.
 
 Timing uses the median for fewer than 5 runs and a trimmed median (fastest
 and slowest dropped) for 5 or more. A coefficient of variation above 0.10
-prints a warning: the host was loaded, not the bench slow.
+rejects pin/gate measurements. Report-only runs warn without qualifying timings.
 """
 
 import argparse
 import hashlib
 import json
+import math
+import os
 import platform
 import re
 import shutil
@@ -49,7 +53,21 @@ BENCHES = [
     "soa_walk",
     "stride_walk",
     "kv_append",
+    "mem_shared",
+    "mem_returned",
+    "mem_cleanup",
+    "mem_cache",
+    "mem_copy",
+    "mem_text",
+    "mem_cyclic",
 ]
+# Seed A oracles derived independently at the original workload counts.
+MEMORY_OUTPUTS = {
+    "mem_cache": b"result: 6616666665 49999999 50000001\n",
+    "mem_copy": b"result: 942376503\n",
+    "mem_text": b"result: 98811553\n",
+    "mem_cyclic": b"result: 757942091\n",
+}
 GATE_RATIO = 1.15
 RUN_TIMEOUT = 300.0
 
@@ -148,6 +166,7 @@ def time_binary(name, runs, taskset=None):
                 cwd=ROOT,
                 capture_output=True,
                 timeout=RUN_TIMEOUT,
+                **({"input": b"A\n"} if name in MEMORY_OUTPUTS else {}),
             )
         except subprocess.TimeoutExpired:
             return None, None, f"run timed out after {RUN_TIMEOUT}s", 0.0
@@ -160,6 +179,9 @@ def time_binary(name, runs, taskset=None):
                 0.0,
             )
         out = result.stdout
+        if name in MEMORY_OUTPUTS:
+            if out != MEMORY_OUTPUTS[name] or result.stderr:
+                return None, None, "memory workload output differs from the seed A oracle", 0.0
         last_line = out.rstrip(b"\n").rsplit(b"\n", 1)[-1]
         if not last_line.startswith(b"result: "):
             return None, None, f"last output line is not a result line: {last_line[:60]!r}", 0.0
@@ -185,27 +207,62 @@ def load_pin():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pin", action="store_true", help="write pin file from this run")
-    parser.add_argument("--gate", action="store_true", help=f"fail if a median > pin * {GATE_RATIO}")
-    parser.add_argument("--runs", type=int, default=3, help="runs per binary (default 3)")
+    parser.add_argument("--gate", action="store_true", help=f"require a complete host pin; fail if a median > pin * {GATE_RATIO}")
+    parser.add_argument("--runs", type=int, default=7, help="runs per binary (default 7; pin/gate minimum 5)")
     parser.add_argument("--taskset", default=None, metavar="CPU",
-                        help="pin timed runs with taskset -c CPU (default: unpinned)")
+                        help="one inherited allowed CPU; pin/gate select one automatically")
     args = parser.parse_args()
+    if args.pin and args.gate:
+        parser.error("--pin and --gate cannot be combined; update with --pin, then run --gate separately")
     if args.runs < 1:
         print("perf: --runs must be >= 1", file=sys.stderr)
         return 2
-    if args.taskset is not None and shutil.which("taskset") is None:
-        print("perf: taskset not found; running unpinned", file=sys.stderr)
-        args.taskset = None
+    if (args.pin or args.gate) and args.runs < 5:
+        print("perf: --pin and --gate require at least 5 runs", file=sys.stderr)
+        return 2
+    if args.taskset is not None or args.pin or args.gate:
+        try:
+            allowed = os.sched_getaffinity(0)
+        except (AttributeError, OSError) as error:
+            print(f"perf: cannot inspect inherited CPU affinity: {error}", file=sys.stderr)
+            return 2
+        if args.taskset is None:
+            args.taskset = str(min(allowed))
+        elif not args.taskset.isdecimal() or int(args.taskset) not in allowed:
+            print("perf: --taskset must name one CPU in the inherited affinity mask", file=sys.stderr)
+            return 2
+        else:
+            args.taskset = str(int(args.taskset))
+        if shutil.which("taskset") is None:
+            print("perf: taskset required for requested or pin/gate affinity", file=sys.stderr)
+            return 2
 
-    BUILD_DIR.mkdir(parents=True, exist_ok=True)
     pin = None if args.pin else load_pin()
+    if args.gate:
+        unusable = []
+        for name in BENCHES:
+            entry = pin.get(name) if isinstance(pin, dict) else None
+            if not isinstance(entry, dict):
+                unusable.append(name)
+                continue
+            timing = entry.get("release")
+            digest = entry.get("output_sha256")
+            if (not isinstance(timing, (int, float)) or isinstance(timing, bool)
+                    or timing <= 0 or timing > sys.float_info.max or not math.isfinite(timing)
+                    or not isinstance(digest, str) or not digest):
+                unusable.append(name)
+        if unusable:
+            print(f"perf: --gate requires a complete usable host pin at {pin_path().relative_to(ROOT)}; "
+                  f"missing or invalid timing/hash baseline for: {', '.join(unusable)}", file=sys.stderr)
+            return 1
+    BUILD_DIR.mkdir(parents=True, exist_ok=True)
     zig = zig_version()
 
     print(
-        f"perf: {len(BENCHES)} benches, runs={args.runs}, zig={zig}, host={host_name()}"
+        f"perf: {len(BENCHES)} benches, runs={args.runs}, zig={zig}, host={host_name()}, cpu={args.taskset or 'unpinned'}"
     )
     if not args.pin and pin is None:
-        print(f"perf: no pin at {pin_path().relative_to(ROOT)}; reporting times only")
+        print(f"perf: no usable pin at {pin_path().relative_to(ROOT)}; reporting times only")
     print("")
 
     results = {}
@@ -227,7 +284,10 @@ def main():
             failures.append(name)
             continue
         if cv > 0.10:
-            print(f"perf: {name}: high run variation (CV {cv:.2f}); host may be loaded")
+            print(f"perf: {name}: high run variation (CV {cv:.2f}); measurement is not qualified")
+            if args.pin or args.gate:
+                failures.append(name)
+                continue
         if pin is not None and name in pin:
             pinned = pin[name].get("output_sha256")
             if pinned is not None and pinned != digest:
@@ -236,7 +296,7 @@ def main():
                 continue
         # The pin key stays "release": the pins were measured with ReleaseFast
         # under that name, and the same binaries are now the `fast` profile.
-        results[name] = {"release": median, "output_sha256": digest}
+        results[name] = {"release": median, "output_sha256": digest, "cv": cv}
 
     if args.pin and not failures:
         PINS_DIR.mkdir(parents=True, exist_ok=True)
@@ -248,6 +308,9 @@ def main():
                 "release": round(results[name]["release"], 4),
                 "output_sha256": results[name]["output_sha256"],
                 "zig": zig,
+                "runs": args.runs,
+                "cpu": int(args.taskset),
+                "cv": results[name]["cv"],
             }
         pin_path().write_text(
             json.dumps(payload, indent=2) + "\n", encoding="utf-8"
@@ -276,11 +339,12 @@ def main():
     if failures:
         print(f"perf: {ok_count}/{total} benches ok (failures: {', '.join(failures)})")
         return 1
-    if args.gate and gate_violations:
-        print(f"perf: {ok_count}/{total} benches ok (gate exceeded: {', '.join(gate_violations)})")
-        return 1
+    if gate_violations:
+        label = "gate exceeded" if args.gate else "report only, pin threshold exceeded"
+        print(f"perf: {ok_count}/{total} benches ok ({label}: {', '.join(gate_violations)})")
+        return 1 if args.gate else 0
     if compared:
-        print(f"perf: {ok_count}/{total} benches ok (fast profile within pins)")
+        print(f"perf: {ok_count}/{total} benches ok (fast profile within pins; compared {compared}/{total})")
     else:
         print(f"perf: {ok_count}/{total} benches ok")
     return 0

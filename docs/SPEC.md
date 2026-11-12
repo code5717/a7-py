@@ -311,7 +311,8 @@ Array literals must match the declared array length when a target type is
 present. Each element is checked against the declared element type, including
 nested array literals and literal arms selected by `if` or `match`. Generic
 initializers and bound callback arguments apply those checks at each concrete
-instantiation. Typed array values still require compatible element types;
+instantiation, including declared fixed-array types such as `[2]$T` and nested
+fixed arrays. Typed array values still require compatible element types;
 a typed `[2]i32` does not narrow implicitly to `[2]i8`. In an `if` or `match`,
 a concrete typed numeric array arm supplies the element type for literal arms
 of the same shape.
@@ -375,6 +376,37 @@ c = a + b
 array properties. Create a slice to read its `.len`; the checker currently
 provides `.len` and `.ptr` on slice values, not fixed-array values.
 
+Indexing through `ref [N]T` uses the declared fixed-array length and requires a
+non-nil reference proof as well as a bounds proof. Supported operations read
+primitive elements or update them with simple or compound assignment, including
+nested fixed arrays and `usize` indices with a proven bound. The Zig backend
+keeps the optional reference and unwraps it at the indexed use.
+
+Known calls, forwarding and stable unwritten, uncaptured local callable copies
+retain indexed access requirements. Borrowed arrays and guards that avoid the
+access on nil remain valid. Reachable nil accesses and out-of-bounds indices
+fail at semantic exit 6, in executable and library modes.
+
+Resolved functions whose body contains one Boolean-literal return supply indexed
+guard facts. This covers direct and forwarded calls and stable unwritten,
+uncaptured local aliases. The checker preserves call and argument evaluation;
+indexed uses retain optional-reference unwraps. Conditional, effectful and
+deferred helpers remain unknown.
+
+Eligible local Boolean cells and value parameters supply indexed guard facts
+from bare or negated conditions and comparisons with Boolean literals. Early
+returns retain the surviving branch fact; copies retain their evaluated value.
+Captured or reference-exposed cells, fields and globals are excluded. Assignments
+replace facts; joins require matching values. Loop write invalidation also
+clears affected Boolean facts.
+True or unknown guards with nil reject at semantic exit 6. An unguarded symbolic
+`read(nil, b)` wrapper still rejects even if its only caller passes false.
+Effectful index expressions, indexing through selected reference-array fields,
+mutable or captured callable origins, ref slicing and general reference-element
+ownership
+remain outside this support. Access requirements do not certify that a function
+is pure or that its effects are fully modeled.
+
 #### Slices
 ```a7
 // Dynamic view into array
@@ -384,6 +416,21 @@ slice: []i32
 slice.ptr      // Pointer to first element
 slice.len      // Number of elements (usize)
 ```
+
+An inferred binding initialized from a slice expression has the slice type,
+including when the backing value is a fixed array. Reassigning a mutable slice
+binding can change its length without changing the backing array. A `::`
+binding cannot be reassigned. Initializers execute once.
+
+```a7
+backing: [3]i32 = [7, 8, 9]
+state := backing[0..3]
+state = backing[1..2]
+// state.len is 1; state[0] is 8.
+```
+
+These declarations do not establish that the backing storage outlives every
+use. General slice lifetime enforcement remains incomplete.
 
 #### Strings
 ```a7
@@ -585,7 +632,7 @@ can_exit := !running and cleanup_done
 
 This section describes implemented exact arithmetic and destination fitting.
 See [the packet](plan/packets/P-TYP-forward-globals.md) for the approved contract
-and Appendix C for resource requirements whose enforcement remains incomplete.
+and Appendix C for enforced accounting limits and the remaining emission requirement.
 
 Numeric literals and numeric `::` bindings made entirely from supported constant
 expressions retain their exact value until a use needs a concrete type. A use
@@ -636,8 +683,10 @@ as `2.0` remains in the floating category even though its value is integral.
 Untyped shifts require a nonnegative integer-category count. Left shift
 multiplies exactly by a power of two; right shift preserves the sign, so
 `-3 >> 1` is -2. Bitwise `~` is a typed operator and is not folded as an
-untyped constant. Compiler resource limits still apply: a float literal
-exponent above 4,096 or a constant wider than 131,072 bits exits 6.
+untyped constant. Compiler resource limits still apply. A float literal exponent
+whose absolute magnitude exceeds 4,096 exits 6 before exact-value construction.
+This remains a semantic check. Component, work, retention and dependency limits
+are listed in [Appendix C](#appendix-c-implementation-limits).
 
 An inferred runtime value defaults to `i32` for the integer category or `f64`
 for the floating category. Formatting and generic inference without a concrete
@@ -808,6 +857,12 @@ reports one exit-6 error listing each missing tag. Only copyable
 payloads bind: binding a `string` payload exits 6. Test-only arms over
 owning payloads stay allowed. Untagged unions and non-union
 scrutinees keep the prior rules.
+
+Generic numeric literals, named exact constants and range endpoints fit each
+concrete subject type before overlap checking. The checker retains the defining
+scope and checks each instantiation separately. Float patterns round directly
+to the concrete width. Runtime range endpoints require a numeric or character
+subject. Deferred checks require a supported generic callable origin.
 
 A statement `match` stores its `else` body as a statement list (`else_case`);
 an expression `match` stores one expression (`else_expr`). JSON output exposes
@@ -1013,9 +1068,27 @@ factorial_iter :: fn(n: i32) i32 {
 **All value function parameters in A7 are immutable by design.** `ref`
 parameters can mutate the caller's storage, but the reference binding itself is
 compiler-managed and not exposed as an assignable pointer value. The Zig
-backend lowers a `ref T` parameter to `*T` with one null check at the
-function boundary; nullable locals unwrap once at the same boundary,
-and the body uses the pointer directly with no per-use unwrap.
+backend lowers a `ref T` parameter to the optional pointer `?*T`. Reference
+values pass through calls without a boundary unwrap. Field access and supported
+mutation through the reference unwrap at each use. Nil comparisons remain valid
+inside the function. A literal `nil` argument is accepted when a supported callee
+guard avoids the reference read; this does not establish complete checking of
+all nil call effects.
+
+Writes through a concrete numeric reference use the referent's existing
+assignment rules. Exact numeric constants fit the destination when in range and
+integral where required. For example, a guarded `ref usize` accepts `n = 3` and
+`n = 3.0`. A typed `i32` value assigned there remains incompatible and reports
+an assignment type mismatch. These rules also apply to numeric compound writes;
+operator requirements still apply. Reference and nil assignments keep existing
+binding rules. They do not copy scalar values through references.
+
+```a7
+set_three :: fn(n: ref usize) {
+    if n == nil { ret }
+    n = 3
+}
+```
 
 ```a7
 // Parameters cannot be reassigned
@@ -1057,6 +1130,27 @@ apply :: fn(op: BinaryOp, x: i32, y: i32) i32 {
 
 result := apply(add, 10, 20)
 ```
+
+An inferred binding to a concrete function retains its checked function type.
+A mutable binding can be reassigned or passed to a matching `ref fn(...)`
+parameter. A saved function value keeps its target when the original binding
+changes. Explicit type annotations take precedence.
+
+```a7
+io :: import "std/io"
+first :: fn(x: i32) i32 { ret x + 1 }
+second :: fn(x: i32) i32 { ret x + 2 }
+main :: fn() {
+    f := first
+    saved := f
+    f = second
+    io.println("{} {}", saved(40), f(40)) // Prints: 41 42
+}
+```
+
+Generic declaration aliases remain compile-time aliases, not runtime generic
+dispatch. These declarations do not implement capturing closures or establish
+a new callable-versus-argument evaluation-order guarantee.
 
 ### 6.5 Methods
 
@@ -1164,6 +1258,18 @@ literals do not yet receive every nested contextual fit. For example, `z: $T = 0
 instantiated as `string`, and a branch producing 300 cannot fit an i8 destination.
 A typed integer value does not gain an implicit narrowing conversion merely
 because another branch is an untyped constant.
+
+A declared fixed-array initializer such as `values: [2]$T = [1, 2]` checks
+its elements after substituting the concrete type. An i8 instantiation accepts
+1 and 2, but rejects 128. Array length mismatches still reject before
+instantiation. A concrete wrapper that calls this generic function with i8
+retains those checks through ordinary function aliases and parameters.
+An unrelated generic parameter does not reopen a fully concrete initializer
+check. If either the source or destination element type remains unresolved,
+the initializer still requires a supported callable origin. Direct calls and
+qualifying immutable local aliases preserve these checks. Unsupported escapes
+of a newly deferred initializer reject at semantic exit 6; this does not add
+general runtime generic dispatch or implicit typed narrowing.
 
 A function-valued parameter has the concrete signature selected by its enclosing
 instantiation. Calls through its local aliases, assignments and `if`/`match`
@@ -1276,6 +1382,20 @@ Each bound resolves like a declared `$T: Set` constraint (predefined
 sets, inline `@type_set(...)`, local aliases). Richer predicates,
 unknown names, duplicate bounds, bounds on value params, non-set
 bounds, and `where` on enums exit 6.
+
+A constrained generic argument satisfies another constraint only when every
+type admitted by its nonempty source constraint belongs to the destination set.
+For example, `Float` satisfies `Numeric`; `Numeric` does not satisfy `Float`. An
+unconstrained argument does not satisfy a constrained destination. These rules
+apply to function calls, constrained struct or union construction, and nominal
+type annotations. An annotation such as `b: Box(i32)` exits 6 when `Box` requires
+`Float`, including in unused signatures, fields and type aliases. Argument count
+and type/value-kind errors retain their own diagnostics.
+
+Record constraints resolve in their defining file after named type aliases are
+registered. A type-set member may name a later type alias; declaration order
+does not capture an incomplete set. Imported annotations use the owner's
+constraints, and generic record fields use their declaring record's bounds.
 
 ### 7.4 Generic Specialization
 
@@ -1390,7 +1510,19 @@ Current implementation:
 1. `new` and `del` parse, type-check, and lower for the implemented backends.
 2. `del` is validated for reference-like values. Direct reference aliases share
    allocation deletion state; repeated deletion and reads after deletion fail
-   until reassignment to a fresh allocation.
+   until reassignment to a fresh allocation. On represented straight-line and
+   conditional paths, tracked fixed-array reference elements retain allocation
+   identity through literal indices. Array copies preserve referent identities
+   in independent slot cells.
+   Replacing a slot does not retarget a saved reference. A read or deletion of a
+   known deleted allocation through a tracked element fails at semantic exit 6.
+   This tracking does not supply a nonnil proof. Computed indices, slice elements
+   and uncertain joins do not gain general lifetime analysis. Eligible loop
+   counters retain facts across represented readonly calls, returned-reference
+   forwarding and writes to distinct owned storage. Primitive projected lvalues
+   passed to reference parameters retain their storage mutation effects. Local
+   slot replacement does not imply that reachable slice backing is disjoint.
+   Unknown calls, escaped storage and unsupported projections remain conservative.
 3. Known direct global reference stores retain allocation identity across calls.
    Deleting a stored allocation invalidates represented caller aliases. Unknown
    and indirect effects retain the existing incomplete fallback.
@@ -1430,8 +1562,8 @@ Effectful entries, ordered mutation and general caller-local truth remain open.
 Not yet implemented:
 
 1. Ownership, borrowing, or lifetime analysis that proves absence of dangling pointers.
-2. Complete alias tracking through array elements and fields reached through
-   joined allocation sets. These gaps prevent a general double-free or
+2. Complete alias tracking through general array-element paths and fields
+   reached through joined allocation sets. These gaps prevent a general double-free or
    use-after-free safety claim.
 3. Complete propagation of global nil state and parameter proof obligations.
 4. General array/slice bounds-check insertion by the A7 compiler.
@@ -1522,16 +1654,27 @@ importing file, first as `<path>.a7`, then through the retained
 `<path>/mod.a7` directory fallback. A nested file's `import "helper"` does
 not fall back to the entry directory.
 
-Resolved file paths must stay inside the entry file's folder. Parent segments
-such as `../shared` are allowed within that boundary. Symlinks and parent paths
-that escape it are rejected, as are absolute paths, backslashes, null bytes,
-and empty paths. Canonical real paths identify loaded files, duplicate imports,
-and cycles. A diamond import shares one loaded dependency even when its two
-importers use different relative spellings.
+Local source imports must resolve inside the entry file's folder. Bundled
+implementation imports resolve inside `a7/stdlib/sources/std`; their relative
+dependencies stay inside that package directory. Neither domain falls back to
+the other. Literal `std/` paths select registered virtual modules or bundled
+implementation sources and reject project shadows. Missing reserved modules
+fail resolution with exit 3. Parent segments are allowed only within the
+applicable root. Paths and symlinks escaping it are rejected, as are absolute
+paths, backslashes, null bytes and empty paths. Canonical real paths identify
+loaded files, duplicate imports and cycles. A diamond import shares one loaded
+dependency even when its importers use different relative spellings.
+
+Operating-system errors during module path lookup, including overlong components
+and total paths,
+produce a located `ImportError` at resolution exit 3. The diagnostic retains the
+filesystem failure and the import site, including imports in dependency files.
 
 The mechanisms are in [`a7/module_resolver.py`](../a7/module_resolver.py).
 [`test_module_path_identity.py`](../test/test_module_path_identity.py) covers
 relative bases, containment, alternate spellings, cache reuse, and cycle retry.
+[`test_packaged_source_modules.py`](../test/test_packaged_source_modules.py)
+covers bundled source identity, containment and failure origins.
 Hardlink identity is not specified by this realpath rule.
 
 ### 10.2.2 Cycles and entry
@@ -1572,6 +1715,11 @@ Current implementation:
   and simple alias-qualified function calls lower into the same generated Zig
   output file.
 
+The loader supports package-owned A7 implementation modules. This release ships
+no public implementation module in that directory; `std/ascii` remains
+unavailable. The ASCII source used by loader tests is a fixture, not a shipped
+module.
+
 Planned, not implemented as public stdlib modules yet:
 
 - `std/string`
@@ -1598,7 +1746,9 @@ The compiler then lowers resolved uses to unique names for whole-program checks
 and one Zig output. It preserves module load order and declaration order within
 each file. Diagnostics for imported constant writes identify the qualified
 binding, such as `a.VALUE`. Semantic reports retain each declaration's file and
-lexical scope.
+lexical scope. Each `else if` arm has its own declaration scope. A local
+shadow in an arm leaves the parent binding unchanged after the conditional;
+branch-local declarations remain unavailable outside their scope.
 
 ---
 
@@ -1633,8 +1783,11 @@ semantically resolved or backend-lowered yet:
 
 Generation 1 (current, virtual, backend-lowered): `io.print`,
 `io.println`, `io.eprintln` lower to `__a7_stdout_print` /
-`__a7_stderr_print` with the persistent-writer preamble in
-`a7/backends/zig.py`. Typed recoverable I/O is described below. `std/io` and `io` (likewise
+`__a7_stderr_print` with persistent-writer runtime fragments packaged under
+`a7/stdlib/rt/`. The registry associates hooks with declared signatures, explicit
+argument policies and Zig mappings. The backend emits only required fragments.
+Current formatting checks, numeric-family rules and flush behavior are preserved.
+Typed recoverable I/O is described below. `std/io` and `io` (likewise
 `std/math` and `math`) are alternate public spellings of the same
 virtual module (`a7/stdlib/__init__.py`). Current virtual
 modules also provide math calls such as `math.sqrt`, `math.abs`,
@@ -1650,6 +1803,23 @@ its newline. `io.read_line(buf[0..])` requires one mutable `[]u8` argument and
 returns the same type. Save, forward or match either result with ordinary
 leading-dot match arms. Wrong arity and incompatible argument types fail at
 semantic exit 6. Fixed arrays need an explicit slice.
+
+Registered `io.print`, `io.println` and `io.eprintln`
+have no result. The compiler rejects their use in inferred
+bindings, container elements, `if`/`match` results and format arguments at
+semantic exit 6. Those forms previously passed semantic checking and failed at
+codegen exit 7. The diagnostic points to the consuming call's source location.
+Existing type and exact-constant errors keep priority. Later semantic
+validation does not run after this type-check failure, so its diagnostics, such
+as source-recursion errors, may appear only after the consuming call is fixed.
+
+Discarded direct statement calls remain valid, including statements in `defer`,
+FOR initialization/update, nested functions and generic bodies. Discarding an
+outer expression does not permit a no-result call to supply one of its values.
+`println_ok` still returns a value that can be saved or matched. This rule uses
+resolved stdlib registration and signature identity, so renamed imports follow
+the same rule. Same-spelled user functions and ordinary user void bindings are
+unchanged. General user-function void-value policy remains unresolved.
 
 Import `io` in every file that names `io.IoErr`. Its variants are
 `WriteFailed`, `FlushFailed`, `ReadFailed` and `EndOfStream`. Reading preserves
@@ -2277,11 +2447,11 @@ Import depth 32 is an unapproved proposal. L69 does not authorize that cap.
 The loader uses an explicit stack; the low-recursion regression loads 1,100
 modules in [`test_iterative_module_loading.py`](../test/test_iterative_module_loading.py).
 
-The approved exact-constant policy specifies the following caps.
-`a7/exact_constants.py` enforces decimal-exponent and integer-component limits.
-The credit budgets, retained-payload budget, dependency-depth cap, and diagnostic
-caps below remain policy requirements; this table does not claim their full
-enforcement. See [P-TYP](plan/packets/P-TYP-forward-globals.md).
+Exact evaluation enforces the following accounting limits. Each evaluated
+initializer retains its work counter across fitting and repeated checks. All
+modules share one compilation account; a new compilation starts with fresh
+counters. Limit failures are located semantic errors (exit 6), without an
+approximate value or silent fallback. See [P-TYP](plan/packets/P-TYP-forward-globals.md).
 
 | Exact evaluation limit | Cap |
 | --- | --- |
@@ -2293,17 +2463,38 @@ enforcement. See [P-TYP](plan/packets/P-TYP-forward-globals.md).
 | Retained bindings and exact-value cache | 16 MiB of logical payload |
 | Constant dependency-chain depth | 65,536 bindings |
 | Rendered diagnostic value | 256 characters |
-| Whole exact-evaluation diagnostic | 2,048 characters |
+| Exact-evaluation diagnostic message field | 2,048 characters |
 | Rendered dependency chain | At most 32 links |
 
 Credits measure deterministic work under the
 [resource policy](plan/research/untyped-constant-resource-policy-2026-09-20.md).
-They do not measure elapsed time. Logical payload counts integer-component bytes
-and an entry allowance; it does not measure process memory. The policy requires
-conservative growth checks before operations, so a
-computation may exceed a limit even when its final reduced value would fit.
-Enforced limit errors do not substitute an approximate value. Target emission
-uses the destination's bounded encoding.
+Credits count executed exact arithmetic, comparisons, fitting and cache/reference
+work, not elapsed time. Growth checks precede arithmetic allocation. Conservative
+size bounds can reject an operation whose final reduced value would fit.
+
+The checker reports the first classified resource failure for each initializer
+and resource category. Repeated failures in that category retain their failed
+evaluation state without repeating the diagnostic. Separate initializers, other
+categories, unclassified failures and ordinary arithmetic errors still report.
+This reporting rule does not change resource accounting or limits.
+
+Retained bindings and AST cache entries count separately. Each entry contributes
+64 bytes plus the rounded-up byte lengths of its numerator and denominator
+magnitudes. Replacement and release update this logical total; it is not process
+RSS. Exact binding depth covers local, global and imported exact numeric bindings,
+not ordinary runtime dependencies. Long chain diagnostics retain the first and
+last 16 links. The message cap excludes file/span metadata and source excerpts.
+
+Generic pattern conversions share the compilation account and original initializer
+counter. The checker prepares both float-width encodings that the generic body
+emits, including unused templates. Resource exhaustion is an error even in an
+unused width; ordinary target overflow remains a separate representability result.
+Temporary fitted copies are released without changing the shared exact template.
+
+These rules implement C3–C10 accounting. The existing C2 exponent check remains
+semantic exit 6 before exact-value allocation. Full C11 emission qualification
+remains open. This accounting change preserves existing math-call output and
+emitted numeric spelling.
 
 ---
 
@@ -2341,6 +2532,9 @@ feature list does not establish that the current tree passes these checks.
    - Exact duplicate bool, enum, and scalar literal patterns are diagnosed.
    - Wildcard-first and fully covered bool/enum cases make later cases and else branches unreachable.
    - Literal and compile-time constant numeric/char range overlaps are diagnosed.
+   - Integer literal/range comparisons retain integer precision after fitting to
+     the subject type, including values beyond 2^53. Distinct adjacent values
+     remain distinct; a literal equal to a singleton range endpoint overlaps it.
    - Conservative non-constant symbolic interval overlaps are diagnosed when
      inclusive ranges share an endpoint symbol.
    - Identifier capture patterns bind the scrutinee in branch-local scope when

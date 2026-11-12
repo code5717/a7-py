@@ -1,0 +1,23 @@
+{
+  "status": "First stdio gate failed one stale test expectation; repaired full gate running separately",
+  "source_manifest_sha256": "7f5fd941478fd1382585dbdab994e91263590601b37fb0de58cb508b0f88ee30",
+  "run_sha256": "0f686715c2182b05678a6ec969d8d1d3c2742a2b4dcc3debb8f79ef017aeebf7",
+  "log_sha256": "83fa7ce4a35607b21062221bf828a769427897bb5a6f65d6f0bb7c5488698386",
+  "started_at": "2026-10-07T10:01:09.412902+00:00",
+  "finished_at": "2026-10-07T10:29:17.216728+00:00",
+  "exit_code": 1,
+  "changed_sources": [],
+  "pytest": {
+    "passed": 3932,
+    "failed": 1,
+    "xfailed": 1
+  },
+  "compiler_package_checks": "10/11",
+  "failure": "test_print_call_has_no_value expected codegen7; candidate correctly emits semantic6. Program and line4 assertion unchanged in one-line test repair.",
+  "boundary": "All51 examples and debug/release/fast artifacts, benchmark/error-stage/package checks passed. Outer site/dependency/security checks not reached because compiler gate failed. No full qualification claimed.",
+  "repair_source_manifest_sha256": "bd4f981188b249bdd423fb8faa14d9eb78cd295affdefcf03e24ec117a2a4c87",
+  "repair_focused_tests": 52,
+  "repair_independent_manifest_sha256": "5ab5446b298bd7862f6330db36de975ada74c9a79ec2d33521129ec3e7ddc0b7",
+  "repair_same_session_glm_manifest_sha256": "57e312dd46828816979e4413785244e82288cb611a847b436de99b657c63a2ee",
+  "renewed_source_manifest_sha256": "e0c6235a43632839d50be28d2128af666be78634e8a5c50c8fcf317ef6915470"
+}

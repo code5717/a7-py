@@ -1,0 +1,62 @@
+{
+  "recorded_at": "2026-10-07T17:49:02.450949+00:00",
+  "status": "positive full Python compiler pipeline regression passed",
+  "test": "test/test_iterative_module_loading.py::test_deep_canonical_array_in_imported_generic_preserves_emission",
+  "test_file_sha256": "09bafdd4a88cca5e473bd179b6e8f8b555a719d7deebab4222f177db740f1b7e",
+  "case": "Imported struct field with 200 fixed-array dimensions containing Option(Result(i32,i32)); local inferred generic identity receives the field.",
+  "requirements_checked": [
+    "Both real file compilations succeed at Python recursion limits1000 and100.",
+    "Emitted Zig bytes identical at both limits.",
+    "All200 dimensions, canonical prelude declarations and imported functions remain emitted.",
+    "Imported struct field retains exact deep type; emitted generic invocation retains inferred type and value.rows argument."
+  ],
+  "focused_result": "1 passed in0.29s after final assertion strengthening",
+  "related_result": "91 passed,9 deselected in5.32s before final assertion-only strengthening; strengthened case passed separately.",
+  "related_command": "taskset -c 12-15 .venv/bin/python -m pytest -q test/test_iterative_module_loading.py test/test_iterative_type_resolution.py test/test_stdlib_signature_typing.py test/test_no_recursion.py -m 'not zig and not slow'",
+  "compiler_sources": {
+    "a7/__init__.py": "004b4df2d71f04771a073dfc3f4a12a70b95cb2b2372315855d79df6b3ecd5da",
+    "a7/ast_nodes.py": "21c85515ee9978a0c42a8a55e48d2fe1070fc029ac22d0ecb317232b281fe108",
+    "a7/ast_preprocessor.py": "8a80410cf01a73504852683882e337b900bacd7bd1649d8d32a99c8bf9760470",
+    "a7/backends/__init__.py": "132179f771bf2839eb6c79163c81ce376ca81d37d79380d874494e81e4dfbcc7",
+    "a7/backends/base.py": "b853273e8f05daf12e9560aa33b625cbc69b7eda041015e718625200a3cb393b",
+    "a7/backends/zig.py": "e86cf8dbd37cbe16e0af109c63302c6ad34d6f14ff791f4a2e79e61074f09c8c",
+    "a7/cast_classifier.py": "48727ca11d8f0540e2a6a3e740a4938b2791015ca856f2525296613b275c45e0",
+    "a7/cli.py": "b4d542e4fe125872951e3287d957e314492eb6097492ba4966c2c2b998e5db3d",
+    "a7/compile.py": "6cb7d50d56d9eb5d563ab7679fe7c2f9201a0bbae8adba24a4353e6a4f78b2aa",
+    "a7/errors.py": "3603c90d0b6298b03802aee9de446394ac07370d90acb342831c809592d2cb4e",
+    "a7/exact_constants.py": "47a1891aa898b70181457b5eae23e8ba2125593054105d0195b7ecf8b2e272d0",
+    "a7/formatters/__init__.py": "0d3fb9cf156390a59f9c357a57b776138300d80abb0de708d5f3f5bcf069c1a4",
+    "a7/formatters/ast_walk.py": "c1018bd0f7de054387249b693b80650d65da77800aa7933b34e7678dfd2147ad",
+    "a7/formatters/console_formatter.py": "03bc0fe3f9ddbd9ba72e3da79cc62f7cb32d2cd72e520fff278587af062893f4",
+    "a7/formatters/json_formatter.py": "6d4277a9c70f02d525d0e4bb5613feabc76e6a8a92926994706f8bed529f5c94",
+    "a7/formatters/markdown_formatter.py": "c12d4dd0e76888ebda59398d83be89d62dc3553103b6311aa15be775e7f35f86",
+    "a7/formatters/scope_walk.py": "4b776e77afa08c848920ba889b0e205f88ecba646226173b4d7bcb1969845a43",
+    "a7/generics.py": "2fda7f0b81ca17436a6ba4627a660d1e7fc056eacf17227a3d44281c19a4b062",
+    "a7/layout.py": "feb6d59ba02b2b4d5e1360387d45395ce65c7f8f1d9f836658c5fa9126995b36",
+    "a7/module_resolver.py": "a789b52989370bbcd5242f0c2408a2d83be28122a587c235eba3c82c86d982ee",
+    "a7/parser.py": "4bd5970244f9022a65190629738839755e4a7f8a008c3958731c9972c08f7bb6",
+    "a7/passes/__init__.py": "8facac3f58f69203c3910fb1051e9aa13ae8b4c018e003d0d4049ad5f29a9ca7",
+    "a7/passes/name_resolution.py": "8cacc76f894b132b37b2b2a8726abf8b4502e005c655bb7a72c754453545031c",
+    "a7/passes/readonly_requirements.py": "aeefd7cf1fb31ef0748f50bbc49af3b3440db2055f7444bcf3b92033afd97ed6",
+    "a7/passes/safety.py": "32cc29cf7dc34909c5a6e9520dd071fc648aac05aeef5015ec3557713b953786",
+    "a7/passes/semantic_validator.py": "ed9a5db56aae1a86340de90c381208d3ab985be3e2e176847b5c4029648ac060",
+    "a7/passes/type_checker.py": "061f9976f2c3d9dd569afa968a759a9900dfb5ea4931099dd9bfff17f66e6890",
+    "a7/semantic_context.py": "b2e921c8f8c26f88cf847880e640e787ff8c0aa3acf4ec69d7a50fc221a5c293",
+    "a7/stdlib/__init__.py": "55d6ac3a2c7cf0fe2b608d29966f64a1e28c45baca0f58e523440f78e07f6451",
+    "a7/stdlib/io.py": "3c4f7a10324a349f3a99d23083ee0ff28278351d32618221fd13bad685ca052c",
+    "a7/stdlib/math.py": "e94d3f5a569ace8f90f9aa5a639a95dda51d5b15ba2e34b981a2f901fc4a29e7",
+    "a7/symbol_table.py": "a46a5635b1d7a0e15608ca0128fd6cfcb2020c1accc7f98783da731732520589",
+    "a7/tokens.py": "817595d8f5c293a5369255a0369d0aa1c2f72aa85993c311c0e349e63851b4e0",
+    "a7/types.py": "1c22640868d5809571443e937e352a05e15781d291446abe44971b53ad3a5fcf"
+  },
+  "limitations": [
+    "Compile-to-Zig only; no new native execution.",
+    "Existing supported behavior; no compiler or language policy change.",
+    "One named positive combination does not prove every deep input.",
+    "Prior frozen3933-test qualification predates this new test; no new full gate claimed."
+  ],
+  "review": {
+    "reviewer": "builtin iterative_coverage",
+    "result": "No blocking finding; full Python compiler pipeline through Zig emission claim supported. Suggested explicit call-site assertion added and passed."
+  }
+}

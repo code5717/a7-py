@@ -1,6 +1,8 @@
 # P-REF: ordinary scalar reads through references
 
-Status: proposed, not approved. This packet asks for a bounded scalar-read
+Status: revised after research on 2026-10-16, not approved.
+The [research report](../research/scalar-reference-reads-2026-10-16.md) explains
+the comparison and proof corrections. This packet asks for a bounded scalar-read
 contract. It changes accepted programs and printed output, so implementation
 requires an explicit disposition in the [decision ledger](../decisions.md).
 It selects no automatic-memory mechanism and introduces no public address-of or
@@ -88,7 +90,7 @@ ref parameters; it does not make ref parameter bindings assignable.
 ```a7
 io :: import "std/io"
 read :: fn(x: i32) { io.println("{}", x) }
-mutate :: fn(x: ref i32) { x = 6 }
+mutate :: fn(x: ref i32) { if x == nil { ret }; x = 6 }
 main :: fn() {
     p := new i32
     if p == nil { ret }
@@ -99,7 +101,8 @@ main :: fn() {
     read(p)
     mutate(p)
     io.println("{} {}", saved, p)
-    io.println("{} {}", p == 6, p == q)
+    current: i32 = p
+    io.println("{} {}", current == 6, p == q)
     del p
 }
 ```
@@ -119,16 +122,18 @@ again. The example is proposed behavior, not executed evidence.
 
 | Context | Proposed behavior | Compatibility effect |
 | --- | --- | --- |
-| Concrete scalar initialization or assignment (`v: i32 = p`, `v = p`), scalar return, concrete scalar parameter | Load once, then apply existing scalar fit/conversion rules | Previously rejected reference-to-value forms become accepted when proven safe |
-| Arithmetic, scalar ordering, mixed reference/scalar equality in either operand order | Load the scalar reference operand; retain normal operand-type rules | `p + 1`, `p < 7`, `7 > p`, `p == 5`, `5 == p` gain scalar meaning |
+| Concrete scalar initialization or assignment (`v: i32 = p`, `v = p`), typed aggregate scalar fields/elements, scalar return, concrete scalar parameter | Load once, then apply existing scalar fit/conversion rules | Previously rejected reference-to-value forms become accepted when proven safe |
+| Arithmetic, bitwise and shift operands with scalar referents | Load each consumed scalar once; retain normal operand-type rules | `p + 1` and `p + q` gain scalar meaning; no pointer arithmetic |
 | Scalar compound-assignment right operand (`v += p`) | Load the right operand; preserve existing target rules | Newly accepts a proven scalar load; `p += 1` remains existing write-through |
 | Unary numeric negation, boolean `not`, bitwise-not | Load once, then apply existing operator/type rules | `-p`, `not p`, `~p` follow their scalar equivalents |
 | Match scrutinee of scalar-reference type | Load once, then apply existing scalar pattern and exhaustiveness rules | Numeric, bool and char matching gain the same scalar value used by operators |
-| Bool condition with `ref bool` in `if` or loops | Load bool after a non-nil proof | Heap locals need a guard; checked ref parameters already have the boundary proof |
+| Binary bool `and` / `or` operands of `ref bool` | Load only reached operands, with live/non-nil proof at each reached read | Preserve short-circuit evaluation; an unreachable right operand is not loaded |
+| Bool condition with `ref bool` in `if` or loops | Load bool after a non-nil proof | Require the same live/non-nil proof for heap locals and ref parameters; guarded nil calls remain valid |
 | Ordinary print argument of `ref S` | Load S; select its existing scalar formatter | Address output changes to value output; no address-print replacement is included |
 | `q := p`, inferred const/return-generic argument, explicit `ref S` destination | Preserve reference identity | Existing alias construction stays valid |
 | `p == q`, `p != q` for compatible references | Compare identities; no scalar load | Equal-valued distinct allocations remain unequal |
 | `p == nil`, `p != nil` | Compare nullness | Existing guards remain unchanged |
+| Mixed reference/scalar equality and any reference ordering | Keep rejected; use typed scalar copies for value comparisons | `p == 5`, `5 == p`, `p < 7` and `p < q` do not gain implicit loads |
 | Argument to `ref S`, `del p` | Preserve reference/lifetime operation | No copied scalar can replace the reference here |
 | Local `p = 5` | Existing write-through | Continues to change referenced storage |
 | Local `p = q` or `p = nil` where rebinding is allowed today | Preserve existing reference assignment rules | Does not become a scalar copy assignment |
@@ -141,17 +146,37 @@ mutating a shared AST across instantiations. A constrained generic still infers
 `ref S` from the argument. No load is inserted to satisfy a constraint such as
 `Numeric`, so a constraint excluding references rejects that instantiation.
 
-Both-reference arithmetic such as `p + q` loads both scalar referents, but
-both-reference equality preserves identity. To compare their scalar values,
-use explicit scalar copies before comparison. Ref-versus-ref ordering remains
-rejected; it must not silently become address ordering. These asymmetries are
-part of the proposed compatibility contract and require approval.
+Classify comparisons from their original operand types before inserting loads.
+A bool result expectation does not make their operands scalar-consuming.
+Both-reference arithmetic such as `p + q` loads both scalar referents, while
+`p == q` preserves identity. All reference comparisons keep their existing
+rules. For value comparison, write `a: i32 = p; b: i32 = q; a == b` or `a < b`.
+This avoids mixing identity and value equality: distinct p and q storing 5 must
+not make `p == 5` and `5 == q` true while `p == q` is false. Ref bool follows the
+same rule: `if flag` loads a bool, but `flag == true` needs a scalar copy first.
+These operator-family distinctions remain part of the proposed contract.
+
+Concrete scalar expectations propagate into typed aggregate initializers and
+conditional or match result arms. Only the selected branch evaluates its load.
+Inferred arrays, conditional joins and generic arguments retain reference types;
+do not add loads merely to reconcile otherwise incompatible inferred types.
+Repeated `$T` arguments must produce consistent bindings before conversion.
+A concrete scalar parameter after substitution can request a load, but that
+conversion belongs to its instantiation, never a shared generic AST mutation.
+
+For `p += q`, preserve the existing write-through target and load the scalar
+right operand once. For `p = q`, preserve reference rebinding where currently
+allowed. For `p = 5`, preserve scalar write-through. No new rule makes an
+immutable ref parameter binding assignable.
 
 ## Safety, diagnostics and scope limits
 
 A nil guard proves nullness only. It does not revive an allocation deleted
 through p or an alias. Every inserted load participates in the existing safety
-pass before Zig emission. Unguarded or deleted scalar loads must exit 6, using
+pass before Zig emission. Ref parameters carry reachable caller obligations;
+they are not unconditionally non-nil. Extend the applicable call requirements
+for new scalar reads or establish a local guard. Guarded nil calls that avoid
+all reads must remain accepted. Unguarded or deleted scalar loads must exit 6, using
 the existing primary diagnostic families `Reference not proven non-nil` and
 `Use after move or delete`. The implementation must not defer these failures to
 Zig, print a pointer as fallback, or manufacture a default scalar value.
@@ -166,10 +191,16 @@ fails. Existing scalar borrowing invalidation rules remain unchanged.
 This proposal does not add recursive dereference. `ref ref i32`, reference-to-
 record/slice/string/function/enum reads, reference selection through untracked
 containers, and an address-printing interface are outside the proposed new
-contract. Their existing behavior remains unchanged. Cast contexts and index
-contexts load once when the reference has the required concrete scalar referent;
+contract. Their existing behavior remains unchanged. Cast contexts, index contexts and slice bounds
+load once when the reference has the required concrete scalar referent;
 all existing cast/range/usize obligations still apply. A nil proof alone does
 not establish a valid index or safe narrowing conversion.
+
+A deferred load uses its cleanup-time state. A reference selected through a
+represented field can load when its origin, liveness and nullness are proven;
+unknown container selections do not gain safety assumptions. All ordinary
+print hooks and their aliases use the same scalar-load rule. Generic printing
+must select the rule after substitution without changing other instances.
 
 For an assignment target that itself is a ref parameter, current parameter
 immutability and write-through rules remain authoritative. Approval does not
@@ -185,7 +216,7 @@ of an ordinary scalar lvalue into a ref parameter also remains unchanged.
 | Keep reference expressions unchanged | Retains pointer representation | Requires explicitly rejecting the stage test's expected value contract; leaves ordinary heap-scalar reads unresolved |
 
 The recommended choice is the bounded scalar-consuming contract, including its
-explicit alias and identity-comparison exceptions. It remains a proposal.
+explicit alias and reference-comparison rules. It remains a proposal.
 No alternative authorizes public `.adr`, `.val`, prefix address-of, or prefix
 dereference syntax.
 
@@ -199,8 +230,12 @@ For the bounded choice, acceptance requires semantic exit 6 for nil/deleted load
 the original stage row's value output, scalar-copy-versus-alias controls,
 identity-versus-value comparison controls, immutable parameter/borrow controls,
 and argument-order controls. Cover declaration and later assignment, compound
-assignment, unary operators, both mixed operand orders, scalar match and bool
-conditions. Test numeric, bool and char formatters and concrete versus generic
+assignment, unary operators, both arithmetic operand orders, scalar match and
+bool conditions. Keep mixed equality and all reference ordering rejected.
+Cover typed aggregate elements, inferred-reference joins, cleanup-time reads
+and the same generic body instantiated with scalar and reference types in both
+call orders. Test reachable nil reads and guarded nil calls through wrappers
+and saved aliases. Test numeric, bool and char formatters and concrete versus generic
 call contexts, including constraints that reject reference types. Valid native controls must run debug, release and
 fast; no unsafe program needs native execution. Remove the strict xfail only
 when the chosen behavior passes, and update SPEC and public documentation to

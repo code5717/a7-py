@@ -4,3 +4,5 @@ identity string = ok
 boxed = 7
 nested boxed = 5
 pair = 7 ok
+larger signed = 9
+larger unsigned = 300

@@ -1,0 +1,115 @@
+// ASCII whitespace is HT, LF, VT, FF, CR, and space.
+
+is_digit :: fn(c: char) bool {
+    match c {
+        case '0'..'9': { ret true }
+        else: { ret false }
+    }
+}
+
+is_alpha :: fn(c: char) bool {
+    match c {
+        case 'A'..'Z': { ret true }
+        case 'a'..'z': { ret true }
+        else: { ret false }
+    }
+}
+
+is_space :: fn(c: char) bool {
+    match c {
+        case '\x09': { ret true }
+        case '\x0a': { ret true }
+        case '\x0b': { ret true }
+        case '\x0c': { ret true }
+        case '\x0d': { ret true }
+        case '\x20': { ret true }
+        else: { ret false }
+    }
+}
+
+is_upper :: fn(c: char) bool {
+    match c {
+        case 'A'..'Z': { ret true }
+        else: { ret false }
+    }
+}
+
+to_upper :: fn(c: char) char {
+    match c {
+        case 'a': { ret 'A' }
+        case 'b': { ret 'B' }
+        case 'c': { ret 'C' }
+        case 'd': { ret 'D' }
+        case 'e': { ret 'E' }
+        case 'f': { ret 'F' }
+        case 'g': { ret 'G' }
+        case 'h': { ret 'H' }
+        case 'i': { ret 'I' }
+        case 'j': { ret 'J' }
+        case 'k': { ret 'K' }
+        case 'l': { ret 'L' }
+        case 'm': { ret 'M' }
+        case 'n': { ret 'N' }
+        case 'o': { ret 'O' }
+        case 'p': { ret 'P' }
+        case 'q': { ret 'Q' }
+        case 'r': { ret 'R' }
+        case 's': { ret 'S' }
+        case 't': { ret 'T' }
+        case 'u': { ret 'U' }
+        case 'v': { ret 'V' }
+        case 'w': { ret 'W' }
+        case 'x': { ret 'X' }
+        case 'y': { ret 'Y' }
+        case 'z': { ret 'Z' }
+        else: { ret c }
+    }
+}
+
+to_lower :: fn(c: char) char {
+    match c {
+        case 'A': { ret 'a' }
+        case 'B': { ret 'b' }
+        case 'C': { ret 'c' }
+        case 'D': { ret 'd' }
+        case 'E': { ret 'e' }
+        case 'F': { ret 'f' }
+        case 'G': { ret 'g' }
+        case 'H': { ret 'h' }
+        case 'I': { ret 'i' }
+        case 'J': { ret 'j' }
+        case 'K': { ret 'k' }
+        case 'L': { ret 'l' }
+        case 'M': { ret 'm' }
+        case 'N': { ret 'n' }
+        case 'O': { ret 'o' }
+        case 'P': { ret 'p' }
+        case 'Q': { ret 'q' }
+        case 'R': { ret 'r' }
+        case 'S': { ret 's' }
+        case 'T': { ret 't' }
+        case 'U': { ret 'u' }
+        case 'V': { ret 'v' }
+        case 'W': { ret 'w' }
+        case 'X': { ret 'x' }
+        case 'Y': { ret 'y' }
+        case 'Z': { ret 'z' }
+        else: { ret c }
+    }
+}
+
+digit_value :: fn(c: char) i32 {
+    match c {
+        case '0': { ret 0 }
+        case '1': { ret 1 }
+        case '2': { ret 2 }
+        case '3': { ret 3 }
+        case '4': { ret 4 }
+        case '5': { ret 5 }
+        case '6': { ret 6 }
+        case '7': { ret 7 }
+        case '8': { ret 8 }
+        case '9': { ret 9 }
+        else: { ret -1 }
+    }
+}

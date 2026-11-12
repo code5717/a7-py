@@ -78,6 +78,15 @@ Statements after a terminating `ret`, valid jump, or fully terminating branch ar
 
 `match value { case pattern: body ... else: body }` supports literal, enum, range, wildcard, and identifier patterns. A visible identifier names an existing constant or value pattern. An otherwise unresolved identifier captures the matched value as an immutable branch-local binding and covers the remaining values. A capture must be the only pattern in its case.
 
+Integer literal/range overlap checks preserve the fitted integer value,
+including values beyond 2^53. Adjacent values remain distinct, while a literal
+equal to a singleton range endpoint overlaps it.
+
+Generic numeric patterns fit each concrete subject type before overlap checks.
+Named exact constants keep their defining bindings. Float patterns round
+directly to the concrete width. Runtime range endpoints require a numeric or
+character subject; deferred checks require a supported generic callable origin.
+
 A comma separates alternatives in one case; `4..10` is a range pattern:
 
 ```a7

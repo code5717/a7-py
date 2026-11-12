@@ -18,6 +18,17 @@ buffer: [4]u8
 count = count + 1
 ```
 
+Exact numeric constants fit their destination at each use. Arithmetic growth,
+work, retained exact values and exact binding depth have compiler limits across
+local, global and imported bindings. Logical retained payload is not process
+memory. See the [specification limits](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md#appendix-c-implementation-limits).
+
+The compiler reports the first classified exact-resource failure for each
+initializer and limit category. Repeated failures in that same group do not
+add diagnostics. Other initializers, other categories, unclassified failures
+and ordinary arithmetic errors keep their diagnostics. Resource accounting
+and limits remain unchanged.
+
 ## Initialization and assignment
 
 Constants cannot be reassigned. Variables support `=` and the compound assignments listed in [operators](operators.md). Fixed arrays can be zero-initialized or initialized with an exactly sized

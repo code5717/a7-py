@@ -1,0 +1,21 @@
+io :: import "std/io"
+Box :: struct { value: i64 }
+main :: fn() {
+    freed := 0
+    leaked := 0
+    for i := 0; i < 10000000; i += 1 {
+        b := new Box
+        if b == nil {
+            io.println("alloc failed")
+            ret
+        }
+        b.value = cast(i64, i)
+        if i % 100000 == 0 {
+            leaked += 1
+            continue
+        }
+        del b
+        freed += 1
+    }
+    io.println("result: {} {}", freed, leaked)
+}

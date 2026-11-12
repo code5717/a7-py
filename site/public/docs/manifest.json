@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceRevision": {
     "kind": "documentation-sha256",
-    "value": "5174e70470a7055d7c1c3da4c9f263ab593b7e8e4266f0f83a8b4183ceeb8ab6"
+    "value": "428d747d696416d406d91a55be950ed5b28c7a9b3dbbaf0889057b7c7c71848c"
   },
   "qualification": "Documentation content digest, not a compiler verification result. Evidence links identify the source authority.",
   "pages": [
@@ -558,6 +558,7 @@
       "aliases": [],
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/language/declarations.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md#appendix-c-implementation-limits",
         "https://github.com/code5717/a7-py/blob/master/a7/parser.py",
         "https://github.com/code5717/a7-py/blob/master/a7/passes/semantic_validator.py",
         "https://github.com/code5717/a7-py/blob/master/test/test_semantic_analysis.py",
@@ -845,6 +846,11 @@
           "level": 2,
           "id": "fixed-and-nested-arrays",
           "text": "Fixed and nested arrays"
+        },
+        {
+          "level": 2,
+          "id": "indexing-through-fixed-array-references",
+          "text": "Indexing through fixed-array references"
         },
         {
           "level": 2,
@@ -1221,6 +1227,11 @@
         },
         {
           "level": 2,
+          "id": "registered-printing-effects",
+          "text": "Registered printing effects"
+        },
+        {
+          "level": 2,
           "id": "implemented-modules",
           "text": "Implemented modules"
         },
@@ -1388,6 +1399,7 @@
       "sources": [
         "https://github.com/code5717/a7-py/blob/master/site/public/docs/status.md",
         "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
+        "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md#appendix-c-implementation-limits",
         "https://github.com/code5717/a7-py/blob/master/docs/plan/delivery-roadmap.md",
         "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-07/readonly-entry-verification.json",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
@@ -1759,10 +1771,11 @@
     {
       "id": "example-014-generics",
       "status": "supported",
-      "qualification": "Fresh example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-09-19. This establishes this example only.",
+      "qualification": "The where-constrained example passed compilation, native builds and normalized merged-output comparison in Debug, ReleaseSafe and ReleaseFast on 2026-10-08. This establishes this example only.",
       "topic": "examples",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/examples/014_generics.a7",
+        "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-08-generics-example.md",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
         "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
       ],
@@ -1787,12 +1800,13 @@
     {
       "id": "example-016-unions",
       "status": "supported",
-      "qualification": "Fresh example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-09-19. This establishes this example only.",
+      "qualification": "Updated example passed compilation, native builds and normalized merged-output comparison in Debug, ReleaseSafe and ReleaseFast on 2026-10-08. The combined example E2E run passed 51/51.",
       "topic": "examples",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/examples/016_unions.a7",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
-        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json",
+        "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-08-payload-module-examples.md"
       ],
       "title": "016_unions.a7",
       "documentationUrl": "https://code5717.github.io/a7-py/examples/",
@@ -1815,12 +1829,13 @@
     {
       "id": "example-018-modules",
       "status": "supported",
-      "qualification": "Fresh example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-09-19. This establishes this example only.",
+      "qualification": "Updated example passed compilation, native builds and normalized merged-output comparison in Debug, ReleaseSafe and ReleaseFast on 2026-10-08. The combined example E2E run passed 51/51.",
       "topic": "examples",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7",
         "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
-        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+        "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json",
+        "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-08-payload-module-examples.md"
       ],
       "title": "018_modules.a7",
       "documentationUrl": "https://code5717.github.io/a7-py/examples/",

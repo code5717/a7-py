@@ -40,7 +40,8 @@ track:
 - known array, slice, and string lengths
 - nil/non-nil reference state
 - initialized, moved, and deleted bindings
-- allocation identities shared by direct reference aliases and tracked fields
+- allocation identities shared by direct aliases, tracked fields and tracked
+  literal-index fixed-array elements on straight-line paths
 - enum or union discriminants
 - operation-specific backend approvals
 
@@ -64,23 +65,76 @@ additional guard inside a loop or after a call.
 | Integer `+`, `-`, `*` and compound forms | defined wrapping lowering | no overflow proof required |
 | Union payload access | active discriminant is proven | union approval |
 
+Reference-to-fixed-array indexing requires separate `index` and `deref`
+approvals for the same access. The declared array length supplies the bound;
+a guarded or borrowed non-nil reference supplies the dereference proof. Primitive
+element writes retain caller-visible mutation. Indexed call summaries describe
+access requirements, not purity or complete effect replay. An unresolved indexed
+call requirement is rejected even when a summary exists, including in library
+mode. Existing incomplete ordinary-field summaries keep their prior scope.
+
+Resolved functions whose body contains one Boolean-literal return supply indexed
+guard facts. This covers direct and forwarded calls and stable unwritten,
+uncaptured local aliases. The checker preserves call and argument evaluation;
+indexed uses retain optional-reference unwraps. Conditional, effectful and
+deferred helpers remain unknown.
+
+Eligible local Boolean cells and value parameters supply indexed guard facts
+from bare or negated conditions and comparisons with Boolean literals. Early
+returns retain the surviving branch fact; copies retain their evaluated value.
+Captured or reference-exposed cells, fields and globals are excluded. Assignments
+replace facts; joins require matching values. Loop write invalidation also
+clears affected Boolean facts.
+True or unknown guards with nil reject at semantic exit 6. An unguarded symbolic
+`read(nil, b)` wrapper still rejects even if its only caller passes false.
+
+Unresolved nil-call conditions, effectful indices, selected reference-array
+fields, mutable or captured callable origins, ref slicing and general
+reference-element ownership remain incomplete.
+
 The current implementation enforces cast, division/modulo, index, slice, ref
 deref, operation-specific backend approvals, and deletion checks for direct
-reference aliases and tracked fields. Array-element aliases and fields reached
-through joined allocation sets remain gaps. The reviewed callee summaries also
+reference aliases, tracked fields and exact literal-index fixed-array reference
+elements. These slot facts retain allocation identity through reference and array
+copies and represented conditional paths. Replacing a slot does not retarget a
+saved reference. Represented replacement and cleanup paths preserve known
+allocation identity; accesses to known deleted allocations still reject.
+Unrepresented joins and loop effects do not gain general lifetime proofs.
+Unknown writes, views and mutable array borrows prevent stale exact slot identities from causing
+new rejections. General array/slice lifetime analysis and fields reached through
+joined allocation sets remain incomplete. Earlier reviewed callee summaries
 missed deletion through borrowed aggregates and retained stale allocation
 identity after field replacement. They rejected valid parent/sibling uses after
 child-only deletion and parent use after an unrelated local allocation was
-deleted. See [Status](STATUS.md) for the recorded findings.
+deleted. These are historical findings; the represented repairs below do not
+resolve every aggregate or joined-field case. See [Status](STATUS.md) for the
+remaining findings.
+
+Eligible loop counters retain facts across proved readonly calls, represented
+returned-reference forwarding and writes to distinct owned storage. Reassigning
+a reference alias changes the effects of later uses without changing references
+already captured for earlier arguments or returns. Deferred statements retain
+their established last-in, first-out behavior. This describes represented safety
+analysis; it does not select a new callable-versus-argument evaluation order.
+
+Primitive field and index lvalues passed to reference parameters publish writes
+to their storage. The analysis distinguishes replacing an owned local slot from
+mutating storage reached through that slot. Only proved slot-only effects retain
+local-slot precision across handle calls; reachable slice or reference backing
+may still alias other storage. Unknown calls, escaped storage and unsupported
+projections remain conservative. These bounded repairs preserve the valid and
+unsafe controls approved in [L74](plan/decisions.md); they do not supply general
+lifetime safety or select automatic memory management.
 
 The bounded ordered-callee-effect repair addresses direct, local-alias and
 forwarded reference field replacement/deletion, with at most one conditional
 across the known call expansion, source-sized expanded work, block/return exits
-and LIFO defers. It passed the earlier integration gate. That qualification applies to the represented paths.
-Multiple conditional occurrences, loops, match, new allocations, returned
-references, by-value aggregate parameters/copies, short-circuit
-expressions, unknown callees and unrepresented standard-library effects remain
-incomplete. Selected reference arguments or descendant facts with multiple
+and LIFO defers. It passed the earlier integration gate. That qualification
+applies to those represented paths. The later loop and returned-reference
+precision described above extends only its stated subset. General combinations
+of multiple conditionals, loops, match, new allocations, returned references,
+by-value aggregate parameters/copies, short-circuit expressions, unknown callees
+and unrepresented standard-library effects remain incomplete. Selected reference arguments or descendant facts with multiple
 allocation identities retain the older summaries, whose missed aliases and
 conservative rejections remain unresolved. These checks do not establish
 complete allocation lifetime safety.

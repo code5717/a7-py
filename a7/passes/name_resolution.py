@@ -12,6 +12,7 @@ from typing import Optional, List
 from a7.ast_nodes import ASTNode, NodeKind
 from a7.symbol_table import SymbolTable, Symbol, SymbolKind, ModuleTable
 from a7.types import Type, UNKNOWN, get_primitive_type, GenericParamType
+from a7.stdlib import StdlibRegistry
 from a7.errors import SemanticError, SemanticErrorType, SourceSpan
 
 
@@ -100,8 +101,12 @@ class NameResolutionPass:
                     decl.file_scope = filename
             program.entry_file_scope = (program.declarations[-1].file_scope
                                         if program.declarations else filename)
-            for source_name in ("prelude", "io"):
-                resource = files("a7.stdlib").joinpath("sources", source_name + ".a7")
+            registry = StdlibRegistry()
+            self.symbols.stdlib_module_aliases = dict(registry.aliases)
+            type_sources = [("prelude", "prelude.a7")]
+            type_sources.extend((module.name, module.type_source) for module in registry.modules.values() if module.type_source)
+            for source_name, resource_name in type_sources:
+                resource = files("a7.stdlib").joinpath("sources", resource_name)
                 source = resource.read_text(encoding="utf-8")
                 owner = "<stdlib/" + source_name + ">"
                 declarations = Parser(Tokenizer(source, owner).tokenize(), owner, source.splitlines()).parse().declarations
@@ -200,7 +205,7 @@ class NameResolutionPass:
             if node.name in {"Option", "Result"}:
                 self.symbols.prelude_symbols[node.name] = symbol
             else:
-                self.symbols.stdlib_type_symbols[node.name] = symbol
+                self.symbols.stdlib_type_symbols[(node.file_scope, node.name)] = symbol
         if not self.symbols.define(symbol):
             self._rejected.add(id(node))
             self.add_error(SemanticErrorType.ALREADY_DEFINED, node.span, f"{label} '{name}'")

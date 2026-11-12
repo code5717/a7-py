@@ -348,7 +348,7 @@ main :: fn() {
 
 @pytest.mark.parametrize("statement, fragment", [
     # 2**20000 has 6021 decimal digits; the message elides the middle.
-    ("x: i64 = 1 << 20000", "(6021 digits) is out of range for i64"),
+    ("x: i64 = 1 << 20000", "(5001 hex digits, 20001 bits, ~10^6021) is out of range for i64"),
     ("x: i32 = 2147483647 + 1", "Exact constant 2147483648 is out of range for i32"),
 ], ids=["shift-past-width", "sum-past-i32"])
 def test_unrepresentable_constant_is_rejected(tmp_path, statement, fragment):

@@ -24,7 +24,10 @@ An alias is local: `console.println(...)` calls the same virtual module as `io.p
 and `io.IoErr` still require an explicit import in each file. Literal paths
 starting with `std/` select shipped modules; project replacements or unavailable
 reserved modules fail with exit 3. Explicit relative paths such as
-`./std/helper` keep ordinary file resolution and containment rules.
+`./std/helper` keep ordinary file resolution and containment rules. Bundled
+implementation sources and their relative dependencies resolve inside the
+package's `a7/stdlib/sources/std` directory. They do not fall back to project
+files. This loader support adds no public module; `std/ascii` remains unavailable.
 
 Local file aliases use forms such as `helper :: import "./helper"` or `helper :: import "subfolder/helper"`. Qualified calls, types, constants and struct literals use each file's own scope and emit into the same generated Zig source. Paths resolve relative to the importing file. A nested file may use `../utils`
 when the target stays inside the entry file's folder. Paths and symlinks that
@@ -81,6 +84,11 @@ These snippets assume `b.a7` defines `value :: fn() i32`. Ordinary struct fields
 remain accessible, including a field named `b`. Unsupported multi-dot type
 annotations and literals, such as `x:a.b.Box` and `a.b.Box{}`, already fail
 parsing with exit 5; the import-visibility rule does not extend that grammar.
+
+Operating-system errors during module path lookup, including overlong components
+and total paths,
+report a located `ImportError` at resolution exit 3. The diagnostic retains the
+filesystem failure and identifies the import site in the entry or dependency file.
 
 ## Status and restrictions
 

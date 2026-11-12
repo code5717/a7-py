@@ -1,0 +1,17 @@
+{
+  "status": "Both C sources passed bounded large O0 correctness; performance and full memory remain unqualified",
+  "attempt": "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/memory-w5-c-large-native-prep/attempts/20261007T094917Z-aeefcb02",
+  "run_sha256": "50949e43cb95b909dd5390a223a8cf696fa5a27bbd03b86c8234beb7f2943ea7",
+  "preparation_manifest_sha256": "6738e554f1e98c03ff36edd55f5c15333115b61e98adea85f7daf4dbe2ede3f5",
+  "audit_manifest_sha256": "eb0001fe16a2742b8287191a22614b9a93d9fe984e1622c48352f465b5854b90",
+  "report_sha256": "61799a899ab7b3cff89ecd57547ba8b34e55606fee384244b31dc3448e1135de",
+  "results_sha256": "008cee9af3b31c626b1cfc032111b9c3eb8bbfdf00b91509b1e6f13326be0adc",
+  "commands": 31,
+  "cases": 24,
+  "full_traces": 20,
+  "summary_traces": 4,
+  "case_stream_bytes": 162447636,
+  "scope": "Both sources at10000/100000accesses:normal,first/middle/last/unreachable loader failures,plusnormal summary. Every row and stdout independently replayed; all raw outputs retained.",
+  "audit_independence": "Auditor authored original inline C and reviewed pool. Fresh MRU-list replay is reconciliation, not a newly independent C implementation; contract/layout oracle shared.",
+  "boundary": "No native rerun by auditor. StrictC11O0 only; no allocator interposition,sanitizer,optimized retained-work,timing,fullmemory or L38 acceptance."
+}

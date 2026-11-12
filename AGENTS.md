@@ -11,6 +11,8 @@ agent-readable docs entry points derived from the authoritative docs.
 - Language, gaps, safety, releases: `docs/SPEC.md`, `docs/STATUS.md`,
   `docs/SAFETY_CONTRACT.md`, `docs/RELEASE.md`, `docs/CHANGELOG.md`.
 - Architecture: `docs/ARCHITECTURE.md`. Docs index: `docs/README.md`.
+- Language inspirations: `docs/inspirations.md`. Add new language comparisons
+  with their research links and adoption status; keep detailed studies separate.
 - Plan, decisions, gates: `docs/plan/README.md`, `docs/plan/decisions.md`,
   `docs/plan/delivery-roadmap.md`. Session handoffs: `docs/plan/HANDOFF-<date>.md`.
 - Todos live in the delivery roadmap and `docs/STATUS.md`, nowhere else.
@@ -220,6 +222,16 @@ cut the sentence or mark the claim unchecked per S6.
 
 ## Post-Change Checklist
 
+Maintain documentation as part of each task. When implementation, decisions,
+verification results or repository structure change, update the affected current
+docs in the same task. Keep implemented behavior separate from proposals and
+bind verification claims to the source and checks that produced them. Preserve
+historical records; correct current guidance and link to newer evidence.
+
+Before finishing, check affected examples, commands and local links. Follow the
+docs map above for ownership and the checklist below for synchronized pages and
+generated exports. Report any documentation that remains stale or unverified.
+
 When language features, backends, or user-facing behavior change, update:
 
 1. **docs/CHANGELOG.md** — add a short release-facing entry
@@ -238,6 +250,17 @@ Keep examples and docs aligned across `README.md`, `docs/SPEC.md`,
 treated as a bug.
 
 ## Subagents
+
+Use separate Claude CLI reviewers for each major language feature, including
+unimplemented V1 tracks. At major design milestones, after substantial integration,
+and before release qualification, also request a full-project review of interactions
+between features. Follow [the feature review protocol](docs/plan/claude-feature-reviews.md)
+when preparing or reconciling these reviews. Give each reviewer a pinned source
+snapshot, detailed feature scope, decisions, tests and evidence boundaries.
+Retain its identity through follow-ups and apply the external-review guard below.
+Reconcile findings against source and local checks. Failed invocations and unread
+areas remain explicit gaps. Claude advice supplements GLM reviews and local
+verification; it does not approve language changes.
 
 Use GLM-5.3 for substantive external reviews, with at most five runs in parallel.
 Use GLM-5.3-Flash for very small tasks, with at most 25 runs in parallel. Give

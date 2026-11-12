@@ -309,6 +309,9 @@ L67. Delegated: B0 promotion (D-H). Refines L56. Promote `mem_shared`,
 `mem_returned` and `mem_cleanup`. Rewrite `mem_cache`, `mem_copy`,
 `mem_text` and `mem_cyclic` before promotion: the first two fold away in
 ReleaseFast and the last two run under 0.04 s.
+The [October 16 implementation record](../audits/2026-10-16-l67-promotion.md)
+records promotion of the rewritten public-input sources. This remains host
+regression coverage; automatic-memory selection and L38 qualification are open.
 
 L68. Delegated: stdlib architecture (D-J). Hybrid: typed hooks in the Python
 registry plus `.a7` sources shipped inside the package, with `std/`
@@ -434,6 +437,25 @@ remain separate from this approval. Unsupported multi-dot type annotations and
 struct literals already fail parsing with exit 5. Their grammar is unchanged;
 this decision does not add syntax solely to change that existing error stage.
 
+## Goose preparation and backend scope, 2026-10-17
+
+L77. The user requested preparation for Goose-like memory, layout, construction,
+error-control, worker-isolation and generic-function features, then requested
+"deep research this pl: https://github.com/aardappel/goose". The user also said
+"ignore the C export part" and "maybe eventually we will make C export".
+Research and concrete design preparation are authorized. Zig remains the backend;
+C export and TinyCC integration are deferred.
+
+The [pinned research](research/goose-2026-10-17.md) and
+[preparation packet](packets/P-GOOSE-direction.md) translate the feature goals
+into candidate contracts and experiments. This does not select data stacks as
+production memory, revoke L37 runtime-help permission, replace L38 measurements,
+change L42 list identity, remove L68 Result/Option, or weaken L74 deletion rules.
+New syntax, failure behavior and compatibility changes require their own
+before/after disposition. L73's publication requirements and L75's GPU execution
+deferral remain unchanged. Goose benchmark claims are research inputs, not A7
+acceptance results.
+
 ## Scope limits
 
 - **L5** covers integer `+`, `-`, `*` and their compound assignments: after
@@ -558,6 +580,16 @@ entries are in `docs/lang-safety/08-decisions.md`.
 
 ## Pending records
 
+The direct math-call precision question is pending, 2026-10-08. Both checked
+versions classify `math.sqrt(2.0)` as `f64`. Existing generated Zig prints
+`1.414213562373095048801688724209698` when that call is printed directly;
+storing it in `f64` prints `1.4142135623730951`. The isolated typed-emission
+candidate makes the direct call print the latter value too. The user has been
+asked whether to approve that visible change or preserve the existing direct
+output. No answer or golden-output change is recorded. The
+[diagnostic](../../tmp/v1-completion-2026-10-07/exact-policy-sqrt-context-diagnosis/REPORT.md)
+separates checked types, generated Zig types, stored bits and print output.
+
 L50–L55 are session-selected, 2026-10-01. L56 and L57 are session-selected,
 2026-10-02. L58–L72 are recorded above, 2026-10-04. L73 records the
 2026-10-07 full-completion boundary.
@@ -579,3 +611,107 @@ Gates G1–G9 in the [v1 plan](README.md) and gates M1–M51 in the
 [memory plan](memory.md) are not decisions until the user chooses. Record each
 choice here with its time, the example the user approved and the compatibility
 impact.
+
+## Pending bootstrap comparison proposal, 2026-10-07
+
+[P-BOOTSTRAP](packets/P-BOOTSTRAP-parity.md) proposes exact emitted-Zig parity
+between the Python bootstrap compiler and both A7 generations, together with
+full behavior and diagnostic parity. The alternative permits reviewed Python
+emission differences while retaining exact A7-generation equality. Neither is
+approved. L73's full self-hosting requirement remains unchanged; Python-specific
+CLI compatibility still needs a separate disposition before implementation.
+
+## Pending native build source retention, 2026-10-08
+
+[P-CLI-debug-source](packets/P-CLI-debug-source.md) proposes retaining the exact
+generated Zig source path for each successful native build, in a fresh sibling
+`a7-debug-<unique-id>` directory. Earlier successful source directories remain;
+failed staging is removed. Binary replacement commits retention even if later
+output reporting fails. Program semantics, `a7 run` cleanup and compile-only
+output stay unchanged. This changes the successful build artifact contract and
+is outside P0.1's named repair list. No approval or implementation is recorded.
+
+## Pending selected-import rule, 2026-10-08
+
+[P-MOD-selected-imports](packets/P-MOD-selected-imports.md) proposes rejecting
+parsed selected import lists, including empty lists, with semantic exit 6.
+Callers use ordinary aliases and qualified names. Current unused lists emit Zig
+even for nonexistent names; selecting a valid function does not bind it for
+unqualified calls. The alternatives retain metadata-only behavior or develop a
+complete usable-binding contract before implementation. L76 does not settle this
+choice. The user has been asked; no answer, approval or implementation is recorded.
+
+## Pending main return codes, 2026-10-08
+
+[P-CLI-main-exit](packets/P-CLI-main-exit.md) proposes parameterless
+`main::fn()u8` alongside existing void main. Normal termination returns its
+0–255 value after ordinary defers and stdout flushing. Compiler command success
+still returns 0. Existing abnormal I/O behavior remains, including broken-pipe
+exit 0. The same explicit u8 signature becomes accepted under `--lib`, without
+selecting an implicit execution root or redesigning library emission. Other main
+return types remain rejected. Alternatives keep void-only behavior or design a
+wider status API first. The user has been asked; no answer, approval or
+implementation is recorded.
+
+## Pending consuming-result spelling, 2026-10-08
+
+[P-RESULT-consuming-surface](packets/P-RESULT-consuming-surface.md) proposes
+`match results.take(r)` through a reserved `std/results` module. The user has
+been asked to choose this explicit spelling, inferred consumption, or dedicated
+syntax. No answer is recorded. This is a design-direction question, not approval
+of implementation or general consumption semantics. Alias visibility, partial
+consumption, cleanup and failure delivery still require a complete contract.
+Ordinary matches and user-defined functions named `take` would remain unchanged.
+
+## Pending tensor value contract, 2026-10-08
+
+[P-AI-tensor-values](packets/P-AI-tensor-values.md) proposes an immutable,
+automatically retained opaque tensor handle, copying constructors, checked
+`usize` shapes, read-only views and explicit materialization. The four storage
+formats follow L11; this packet does not qualify their arithmetic. Ordinary
+arrays and slices keep their current behavior. The user has been asked for
+scoped value-contract approval; no answer or implementation is recorded.
+Arithmetic, AD, native kernels, workloads and the runtime memory mechanism
+remain separate decisions and qualification requirements.
+
+## Pending tensor conversion rules, 2026-10-08
+
+[P-AI-tensor-casts](packets/P-AI-tensor-casts.md) proposes explicit conversion
+between L11's four tensor formats. It rounds directly nearest-even, preserves
+signed zero and subnormals, and maps finite overflow to signed infinity.
+Cross-format NaNs become a fixed positive quiet NaN; same-format identity
+preserves bits. The user has been asked for scoped approval; no answer or
+implementation is recorded. This depends on the tensor API and does not select
+arithmetic promotion, accumulation, AD or training behavior. Exact reference
+vectors and parser checks do not establish A7 runtime conformance.
+
+## Pending strict tensor reductions, 2026-10-08
+
+[P-AI-strict-reductions](packets/P-AI-strict-reductions.md) proposes fixed-order
+sum, dot and matmul with separate nearest-even product/add rounding. F16/BF16
+inputs use F32 products, accumulation and output; F32/F64 retain their width.
+FMA or changed reduction trees require a separate explicit opt-in policy.
+The user has been asked for scoped approval; no answer or implementation is
+recorded. Exact witnesses and one parser-accepted example support the proposal,
+not native qualification. L16, L38 and full CPU AI acceptance remain in force.
+
+## Pending proven stack-reference expiration, 2026-10-18
+
+[P-REF-stack-expiration](packets/P-REF-stack-expiration.md) proposes semantic
+exit6 at a proven dereference after its referent frame or lexical scope has
+ended. Current revision9 accepts the frozen escaped-local and live-caller
+controls in both semantic and emission modes. The proposal preserves active
+caller borrows, heap-owned returns, references used before expiration and
+publication without later stale use. Cleanup precedes expiration. It changes
+previously accepted dangling-reference uses and selects no automatic-memory
+mechanism. This is pending explicit approval; no rejection is implemented.
+
+## Pending proven skipped reference calls, 2026-10-19
+
+[P-REF-proven-skipped-call](packets/P-REF-proven-skipped-call.md) proposes
+accepting `read(nil,false)` when a complete call proof shows that a field read
+inside `if f` is skipped. The working compiler currently rejects both false
+and true arguments with semantic exit 6. The true case must remain rejected.
+This expands acceptance and changes an explicit conservative-rejection test;
+isolated candidate acceptance is not approval. The user is being asked for
+this bounded disposition. No approval or production change is recorded.

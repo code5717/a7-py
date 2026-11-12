@@ -1,0 +1,100 @@
+{
+  "recorded_at": "2026-10-07T17:37:48.797209+00:00",
+  "status": "six Debug native controls passed; broader qualification open",
+  "run": "tmp/v1-completion-2026-10-07/memory-w5-zig-selfhost-smoke-prep/attempts/20261007T173731.314899Z/run.json",
+  "run_sha256": "ba15c42d335315fa3eedae7824d9382984c8ce9b3ea8494285b48fdc7f77e3aa",
+  "packet_manifest_sha256": "4b5fc20685013bb17bd15ac05cf43bd00b6318b856ab57ade783cb474e09a41f",
+  "runner_sha256": "e397b2c4f6745db8bbc6282e2f1d529730a9893e191ad4fdea9506d5351e6911",
+  "matrix_sha256": "3796825167ad89ca3e3928c774a9cc504c2c49da6cad00c14248cbcfbe0ab2cd",
+  "source_sha256": "9d5c04f655efa541f1daf53b8b095e5feaa77a73b86078840f20727673a3d760",
+  "bridge_sha256": "e4e6db4cf1a8bbbece90201c4f80c066b378d5cb50321effc5b65b4468baeeb1",
+  "commands_passed": 11,
+  "cases": [
+    {
+      "id": "arena-0-0",
+      "exact_stdout": true,
+      "exact_complete_stderr": true,
+      "exit": 0,
+      "expected_rows": 62
+    },
+    {
+      "id": "arena-6-0",
+      "exact_stdout": true,
+      "exact_complete_stderr": true,
+      "exit": 0,
+      "expected_rows": 95
+    },
+    {
+      "id": "arena-6-1",
+      "exact_stdout": true,
+      "exact_complete_stderr": true,
+      "exit": 0,
+      "expected_rows": 96
+    },
+    {
+      "id": "rc-0-0",
+      "exact_stdout": true,
+      "exact_complete_stderr": true,
+      "exit": 0,
+      "expected_rows": 67
+    },
+    {
+      "id": "rc-6-0",
+      "exact_stdout": true,
+      "exact_complete_stderr": true,
+      "exit": 0,
+      "expected_rows": 101
+    },
+    {
+      "id": "rc-6-1",
+      "exact_stdout": true,
+      "exact_complete_stderr": true,
+      "exit": 0,
+      "expected_rows": 102
+    }
+  ],
+  "final_integrity": "unchanged",
+  "artifacts": {
+    "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/memory-w5-zig-selfhost-smoke-prep/attempts/20261007T173731.314899Z/artifacts/bridge.o": {
+      "sha256": "23eaf9e98f6851597626aa8fba0c33d7b71c67af802a0ead2982019315b0cadd",
+      "mode": 420
+    },
+    "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/memory-w5-zig-selfhost-smoke-prep/attempts/20261007T173731.314899Z/artifacts/w5.o": {
+      "sha256": "6a4c5b326b2c5d9ddc48a5680be0842e98da4618fe2775a2a1cbde51dd9295f9",
+      "mode": 420
+    },
+    "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/memory-w5-zig-selfhost-smoke-prep/attempts/20261007T173731.314899Z/artifacts/w5": {
+      "sha256": "72fad646597b80aa2c99c97110612a3fa0119b9e1c5f98bc55f5834c7df778ce",
+      "mode": 493
+    }
+  },
+  "backend_boundary": "Zig0.16.0 -fno-llvm object with original LLVM/LLD object-link flags. This is a prototype build experiment, not A7 self-hosting or a production backend choice.",
+  "limits": [
+    "Only arena/RC N0 normal, N6 normal, and N6 loader failure at1 in Debug.",
+    "Exact complete streams and C ABI call path checked; no allocator observer or independent physical-free witness.",
+    "Startup faults, trace-write faults and OS output failures remain unexecuted for this managed source.",
+    "Large workloads, optimized profiles, timings and full peak-memory accounting remain unqualified.",
+    "The original LLVM compiler crash remains unresolved."
+  ],
+  "review": {
+    "reviewer": "builtin observer_review",
+    "scope": "Evidence reconciliation by preparation author, not independent source implementation",
+    "verified_input_paths": 19583,
+    "verified_tools": 6,
+    "verified_streams": 22,
+    "verified_artifacts": 3,
+    "trace_rows": {
+      "arena": [
+        62,
+        95,
+        96
+      ],
+      "rc": [
+        67,
+        101,
+        102
+      ]
+    },
+    "result": "all raw streams/exits match original matrix; all pinned hashes and modes unchanged"
+  }
+}

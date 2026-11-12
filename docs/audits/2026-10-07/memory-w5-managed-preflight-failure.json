@@ -1,0 +1,17 @@
+{
+  "status": "Initial managed native preflight failed in Zig object compiler before linking or workload execution",
+  "source_manifest_sha256": "76a059b3edb051c40e69ec76cfc15746cbefeaca69004437488da6b002cfc843",
+  "preflight_manifest_sha256": "22c8e07eac69a5e285dac6283e09061e99edd25a2300cef37ad37a395bf95180",
+  "attempt": "tmp/v1-completion-2026-10-07/memory-w5-zig-managed-native-preflight/attempts/20261007T103046.374050Z",
+  "run_sha256": "e2a7b0bafdbc4f94dba8bf477ead482e52b33a635319a976670b4fbcdea67ae5",
+  "commands_reached": 4,
+  "workload_executions": 0,
+  "compiler_pid": 2985275,
+  "compiler_exit": -11,
+  "compiler_signal": 11,
+  "final_integrity": "unchanged",
+  "diagnosis_manifest_sha256": "b2a417b69332e7b5b98263effdb23f7c10c188de8183b4e2f4b19aa786eb7168",
+  "diagnosis_report_sha256": "a3d9bcaf8813338aecf2263472975f3475ac6d501d96546ceebe699514a49eb5",
+  "observation": "Core confirms SEGV_MAPERR during a read in a memory-copy-shaped loop. Stripped static binary leaves compiler subsystem and root cause unresolved. No logged OOM event in bounded journal window.",
+  "boundary": "Private extracted core deleted; original system core preserved. No source repair, compiler re-run, native ABI/correctness, physical cleanup, performance or L38 proof."
+}

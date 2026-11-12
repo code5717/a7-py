@@ -1,0 +1,2 @@
+include test/conftest.py
+include test/fixtures/packaged_source/sources/std/ascii.a7

@@ -1,0 +1,64 @@
+// L67 candidate, unqualified. External input: one ASCII byte plus newline.
+// Capacity-three manual LRU proxy with named references, no reference container.
+// Three initial empty records; misses free the selected record before replacement.
+// No actual growable-container or automatic-memory semantics are assumed.
+io :: import "std/io"
+Entry :: struct { key: usize, value: usize, age: usize }
+run :: fn(seed: usize) {
+    p0 := new Entry
+    if p0 == nil { io.println("alloc failed"); ret }
+    p0.key = 4
+    p1 := new Entry
+    if p1 == nil { del p0; io.println("alloc failed"); ret }
+    p1.key = 4
+    p2 := new Entry
+    if p2 == nil { del p0; del p1; io.println("alloc failed"); ret }
+    p2.key = 4
+    requests: [6]usize = [0, 1, 2, 0, 3, 1]
+    hits: usize = 0
+    misses: usize = 0
+    checksum: usize = 0
+    i: usize = 0
+    while i < 100000000 {
+        if p0 == nil { io.println("alloc failed"); ret }
+        if p1 == nil { io.println("alloc failed"); ret }
+        if p2 == nil { io.println("alloc failed"); ret }
+        pos := i % 6
+        if pos >= 6 { ret }
+        key := requests[pos]
+        slot: usize = 3
+        if p0.key == key { slot = 0 }
+        if p1.key == key { slot = 1 }
+        if p2.key == key { slot = 2 }
+        if slot == 3 {
+            misses += 1
+            if p0.key == 4 { slot = 0 } else {
+                if p1.key == 4 { slot = 1 } else {
+                    if p2.key == 4 { slot = 2 } else {
+                        if p0.age <= p1.age and p0.age <= p2.age { slot = 0 } else {
+                            if p1.age <= p2.age { slot = 1 } else { slot = 2 }
+                        }
+                    }
+                }
+            }
+            if slot == 0 { del p0; p0 = new Entry; if p0 == nil { del p1; del p2; io.println("alloc failed"); ret }; p0.key = key; p0.value = seed + key }
+            if slot == 1 { del p1; p1 = new Entry; if p1 == nil { del p0; del p2; io.println("alloc failed"); ret }; p1.key = key; p1.value = seed + key }
+            if slot == 2 { del p2; p2 = new Entry; if p2 == nil { del p0; del p1; io.println("alloc failed"); ret }; p2.key = key; p2.value = seed + key }
+        } else { hits += 1 }
+        if slot == 0 { if p0 == nil { ret }; p0.age = i + 1; checksum += p0.value }
+        if slot == 1 { if p1 == nil { ret }; p1.age = i + 1; checksum += p1.value }
+        if slot == 2 { if p2 == nil { ret }; p2.age = i + 1; checksum += p2.value }
+        i += 1
+    }
+    io.println("result: {} {} {}", checksum, hits, misses)
+    del p2
+    del p1
+    del p0
+}
+main :: fn() {
+    input: [64]u8
+    match io.read_line(input[0..64]) {
+        case .ok(n): { if n == 0 { io.println("input failed"); ret }; run(cast(usize, input[0])) }
+        case .err(error): { io.println("input failed") }
+    }
+}

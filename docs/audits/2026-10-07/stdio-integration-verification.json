@@ -1,0 +1,95 @@
+{
+  "recorded_at": "2026-10-07T17:24:08.697553+00:00",
+  "status": "qualified compiler and tests integrated locally; final documentation checked separately",
+  "source_manifest_sha256": "e0c6235a43632839d50be28d2128af666be78634e8a5c50c8fcf317ef6915470",
+  "source_paths_verified": 1625,
+  "changed_frozen_sources": [],
+  "gate_finished_at": "2026-10-07T11:01:06.301120+00:00",
+  "gate_exit_code": 0,
+  "gate_log_sha256": "b795102848638d64f78ce2a8091903c32079a07655c6879832d8611b5320bc2c",
+  "gate_log": "tmp/v1-completion-2026-10-07/stdlib-inferred-void-qualification-repaired/full-release.log",
+  "pytest": {
+    "passed": 3933,
+    "xfailed": 1
+  },
+  "compiler_package_checks": "11/11",
+  "examples": {
+    "e2e": "51/51",
+    "debug": "51/51",
+    "release": "51/51",
+    "fast": "51/51"
+  },
+  "error_stages": "61/61",
+  "frozen_site": {
+    "tests_passed": 12,
+    "assertions": 2570,
+    "coverage_records": 441,
+    "pages": 23,
+    "resources": 1503,
+    "search_targets": 182
+  },
+  "integrated_source_files": {
+    "a7/passes/type_checker.py": {
+      "sha256": "061f9976f2c3d9dd569afa968a759a9900dfb5ea4931099dd9bfff17f66e6890",
+      "mode": 420
+    },
+    "test/test_statement_forms_codegen.py": {
+      "sha256": "e5b57fd4108eca166a724019dcb242b099ca240a43411458dda933f87512806d",
+      "mode": 420
+    },
+    "test/test_stdio_no_value_contexts.py": {
+      "sha256": "20d077428b9088a636dae2ae168b05506466d631b986a20bbf566894695840b5",
+      "mode": 420
+    }
+  },
+  "integration_focused_tests": {
+    "passed": 52,
+    "scope": "stdio contexts, recursion scanner, existing no-value assertion"
+  },
+  "prior_failure_record": "docs/audits/2026-10-07/stdio-first-gate-verification.json",
+  "external_review_ledger": "docs/audits/2026-10-07/review-summary.json",
+  "native_controls": {
+    "accepted": 9,
+    "profiles": [
+      "debug",
+      "release",
+      "fast"
+    ],
+    "boundary": "Exact stdout/stderr and emitted Zig equivalence; no performance or retained-work proof"
+  },
+  "limitations": [
+    "Full gate ran on frozen source, not the later documentation overlay.",
+    "No general user-function void policy change.",
+    "No V1 completion or publication claim.",
+    "No new cyber scan was run during integration.",
+    "Git writes and push are restricted in the current environment.",
+    "Current preview-server test failed with sandbox EPERM on listen; other 11 site tests and static build/export/link checks passed. No rendered browser verification."
+  ],
+  "documentation_overlay_checks": {
+    "docs_style": "passed",
+    "diff_check": "passed",
+    "site_check": "failed: preview server listen EPERM under sandbox",
+    "site_tests": {
+      "passed": 11,
+      "failed": 1,
+      "assertions": 2551
+    },
+    "site_lint": "passed",
+    "site_typecheck": "passed",
+    "coverage_records": 441,
+    "build_pages": 23,
+    "export_consistency": "passed",
+    "local_resources": 1503,
+    "search_targets": 182,
+    "logs": {
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/build.log": "fa35723bc47eb06b8350edd8878ffb6cbf211de8455a081195b138936f3da921",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/check-exports.log": "641c994f33ca65a10c27f37dd082a16397ab3f479b061345043683aa1a68457d",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/check-links.log": "b6d6b5c2a2560eb076eefc1e8e5b082de8fa4fc1ee0a43b384923a3be8bb0b48",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/exports-final.log": "681f8ccee36dfe1c6d7597e6ee2db194dc44b8f4c8e93417d3033778ebf23f6a",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/exports.log": "681f8ccee36dfe1c6d7597e6ee2db194dc44b8f4c8e93417d3033778ebf23f6a",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/site-check.log": "3358d72b06e136c746efdc76f1e170f8a77420ac81b38f54091307cbea4ed55b",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/style-final.log": "d12d047ebe0db5b77af193556f2f57f1da1edce1543a85464dcd884fd296f4d8",
+      "tmp/v1-completion-2026-10-07/stdio-local-integration-docs/style.log": "d12d047ebe0db5b77af193556f2f57f1da1edce1543a85464dcd884fd296f4d8"
+    }
+  }
+}

@@ -4377,10 +4377,11 @@
  {
   "id": "example-014-generics",
   "status": "supported",
-  "qualification": "Fresh example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-09-19. This establishes this example only.",
+  "qualification": "The where-constrained example passed compilation, native builds and normalized merged-output comparison in Debug, ReleaseSafe and ReleaseFast on 2026-10-08. This establishes this example only.",
   "topic": "examples",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/examples/014_generics.a7",
+   "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-08-generics-example.md",
    "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
    "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
   ],
@@ -4401,12 +4402,13 @@
  {
   "id": "example-016-unions",
   "status": "supported",
-  "qualification": "Fresh example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-09-19. This establishes this example only.",
+  "qualification": "Updated example passed compilation, native builds and normalized merged-output comparison in Debug, ReleaseSafe and ReleaseFast on 2026-10-08. The combined example E2E run passed 51/51.",
   "topic": "examples",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/examples/016_unions.a7",
    "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
-   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json",
+   "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-08-payload-module-examples.md"
   ],
   "title": "016_unions.a7"
  },
@@ -4425,12 +4427,13 @@
  {
   "id": "example-018-modules",
   "status": "supported",
-  "qualification": "Fresh example-suite verification passed A7 compile, Zig validation/build, native run, and golden-output comparison on 2026-09-19. This establishes this example only.",
+  "qualification": "Updated example passed compilation, native builds and normalized merged-output comparison in Debug, ReleaseSafe and ReleaseFast on 2026-10-08. The combined example E2E run passed 51/51.",
   "topic": "examples",
   "evidence": [
    "https://github.com/code5717/a7-py/blob/master/examples/018_modules.a7",
    "https://github.com/code5717/a7-py/blob/master/site/docs/content-verification.md",
-   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json"
+   "https://github.com/code5717/a7-py/blob/master/site/docs/examples-verification.json",
+   "https://github.com/code5717/a7-py/blob/master/docs/audits/2026-10-08-payload-module-examples.md"
   ],
   "title": "018_modules.a7"
  },

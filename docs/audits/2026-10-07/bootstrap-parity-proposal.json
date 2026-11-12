@@ -1,0 +1,114 @@
+{
+  "recorded_at": "2026-10-07T17:57:38.205752+00:00",
+  "status": "proposal only; no A7-written compiler built or qualified",
+  "packet": "docs/plan/packets/P-BOOTSTRAP-parity.md",
+  "raw_probes": "tmp/v1-completion-2026-10-07/bootstrap-parity-proposal",
+  "runs": [
+    {
+      "label": "first",
+      "case": "valid",
+      "argv": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "a7.cli",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/first/valid.a7",
+        "--format",
+        "json",
+        "--output",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/first/valid.zig"
+      ],
+      "exit": 0,
+      "stdout_sha256": "2d80a50224741565e204b82661308bea6aa790e3333043d5f541365d8e83e274",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "first",
+      "case": "invalid",
+      "argv": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "a7.cli",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/first/invalid.a7",
+        "--format",
+        "json",
+        "--output",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/first/invalid.zig"
+      ],
+      "exit": 6,
+      "stdout_sha256": "3af6d5fc78e7a6bb69144712251b7c9b4eb24837105a5864504046618dbee56a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "second",
+      "case": "valid",
+      "argv": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "a7.cli",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/second/valid.a7",
+        "--format",
+        "json",
+        "--output",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/second/valid.zig"
+      ],
+      "exit": 0,
+      "stdout_sha256": "85608652135cf5a7c129aac9f307b181cd7f448e640d12521c5ad67cd2737015",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "second",
+      "case": "invalid",
+      "argv": [
+        "/home/cx89/Projects/pl-dev/a7-py/.venv/bin/python",
+        "-m",
+        "a7.cli",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/second/invalid.a7",
+        "--format",
+        "json",
+        "--output",
+        "/home/cx89/Projects/pl-dev/a7-py/tmp/v1-completion-2026-10-07/bootstrap-parity-proposal/second/invalid.zig"
+      ],
+      "exit": 6,
+      "stdout_sha256": "d67db199ba4e11343496b1229acead6d211d6cc2f03e395aa60dd78dfdaa0296",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "observed_report_differences": {
+    "valid": [
+      "/artifacts/output_path",
+      "/input"
+    ],
+    "invalid": [
+      "/error/details/0/file",
+      "/input",
+      "/stages/semantic/errors/0/file"
+    ]
+  },
+  "valid_zig_equal": true,
+  "valid_zig_sha256": "7f98d1aa6435f2b3936fcb00cac01e2fd345aecf1cded70cbddb62779646c0a4",
+  "source_evidence": {
+    "a7/compile.py": "schema/status; timing and structured compilation reports",
+    "a7/cli.py": "doctor Python metadata; native temporary paths",
+    "scripts/verify_examples_common.py": "existing E2E merges stdout/stderr and normalizes output",
+    "scripts/error_stage_common.py": "selected-property stage checks are not full diagnostic equality",
+    "docs/plan/decisions.md": "L41,L43,L44,L73",
+    "docs/plan/delivery-roadmap.md": "generation chain and full V1 requirement"
+  },
+  "source_hashes": {
+    "a7/compile.py": "6cb7d50d56d9eb5d563ab7679fe7c2f9201a0bbae8adba24a4353e6a4f78b2aa",
+    "a7/cli.py": "b4d542e4fe125872951e3287d957e314492eb6097492ba4966c2c2b998e5db3d",
+    "scripts/verify_examples_common.py": "fad233c84b3d694baab30548b032beb1673cd42d88e719cd5c5e7a81e72edbc5",
+    "scripts/error_stage_common.py": "0fc70f4d91849526193a6cd3676b134fcde6d0cc6c0a7340ad6a958545b116da"
+  },
+  "review": {
+    "reviewer": "builtin selfhost_acceptance_review",
+    "scope": "read-only source authority and proposal review",
+    "result": "no critical contradiction or gap; evidence record not inspected by reviewer"
+  },
+  "limits": [
+    "Four Python compile-only probes, not a determinism or complete normalization test.",
+    "Both observed timing values happened to match; timing exclusion recommendation comes from elapsed-time implementation, not these differences.",
+    "No native build, new CLI behavior, bootstrap implementation or publication acceptance.",
+    "Comparison choice and Python-specific CLI compatibility remain unapproved."
+  ]
+}

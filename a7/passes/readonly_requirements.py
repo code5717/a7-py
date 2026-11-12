@@ -1,7 +1,8 @@
-"""Rejection-only requirements for a certified readonly statement fragment."""
+"""Bounded non-nil access requirements, not certificates of purity."""
+from collections import deque
 from dataclasses import dataclass, field
 from a7.ast_nodes import ASTNode, AssignOp, BinaryOp, LiteralKind, NodeKind, UnaryOp
-from a7.types import INTEGER_RANGES, PrimitiveType, ReferenceType
+from a7.types import ArrayType, INTEGER_RANGES, PrimitiveType, ReferenceType
 
 
 @dataclass(eq=False, repr=False)
@@ -25,9 +26,18 @@ class ReadonlyRequirements:
         self.true = self.node('constant', True)
         self.unknown = self.node('unknown')
         self.summaries = {}
+        self.boolean_results = {}
         self.reasons = {}
         self.origins = {}
         self.dispositions = []
+        self.index_functions = set()
+        self.index_owners = {}
+        self.call_owners = {}
+        self.call_targets = {}
+        self.alias_targets = {}
+        self.alias_initializers = set()
+        self.index_format_calls = set()
+        self.format_literals = set()
 
     def node(self, tag, *parts):
         key = (tag, *parts)
@@ -74,6 +84,99 @@ class ReadonlyRequirements:
         return self.node('choice', condition, yes, no)
 
     def build(self, bodies):
+        # Callable copies are usable only while local, unwritten and uncaptured.
+        literal_results = {}
+        for name, function in bodies.items():
+            statements = function.body.statements if function.body.kind == NodeKind.BLOCK else []
+            if len(statements or []) == 1:
+                statement = statements[0]
+                value = statement.value if statement.kind == NodeKind.RETURN else None
+                if value is not None and value.kind == NodeKind.LITERAL and value.literal_kind == LiteralKind.BOOLEAN:
+                    literal_results[name] = value.literal_value
+        declarations = {}
+        owners = {}
+        occurrences = []
+        calls = []
+        blocked = set()
+        for name, function in bodies.items():
+            pending = [function.body]
+            while pending:
+                item = pending.pop()
+                if item is None or item.kind == NodeKind.FUNCTION:
+                    continue
+                if item.kind in {NodeKind.VAR, NodeKind.CONST}:
+                    key = self.key(item)
+                    owners[key] = name
+                    if item.value is not None and item.value.kind == NodeKind.IDENTIFIER:
+                        declarations[key] = item
+                if item.kind == NodeKind.IDENTIFIER:
+                    occurrences.append((self.key(item), name))
+                if item.kind == NodeKind.INDEX:
+                    typ = self.node_type(item.object)
+                    if isinstance(typ, ReferenceType) and isinstance(typ.referent_type, ArrayType):
+                        self.index_functions.add(name)
+                roots = []
+                if item.kind == NodeKind.ASSIGNMENT and item.target is not None:
+                    roots.append(item.target)
+                elif item.kind == NodeKind.CALL:
+                    calls.append(item)
+                    self.call_owners[id(item)] = name
+                    roots.extend(item.arguments[i] for i in getattr(item, 'implicit_ref_args', ()))
+                for root in roots:
+                    while root.kind in {NodeKind.FIELD_ACCESS, NodeKind.INDEX}:
+                        root = root.object
+                    blocked.add(self.key(root))
+                for value in vars(item).values():
+                    if isinstance(value, ASTNode):pending.append(value)
+                    elif isinstance(value, list):pending.extend(v for v in value if isinstance(v, ASTNode))
+        blocked.update(key for key, owner in occurrences if key in owners and owners[key] != owner)
+        dependents = {}
+        ready = deque()
+        for key, declaration in declarations.items():
+            if key in blocked:
+                continue
+            source = self.key(declaration.value)
+            if source in bodies:
+                self.alias_targets[key] = source
+                ready.append(key)
+            elif source in declarations and source not in blocked:
+                dependents.setdefault(source, []).append(key)
+        while ready:
+            source = ready.popleft()
+            for key in dependents.get(source, ()):
+                self.alias_targets[key] = self.alias_targets[source]
+                ready.append(key)
+        callers = {}
+        for call in calls:
+            key = self.key(call.function) if call.function and call.function.kind == NodeKind.IDENTIFIER else None
+            target = self.alias_targets.get(key, key)
+            callers.setdefault(target, set()).add(self.call_owners[id(call)])
+        ready = deque(self.index_functions)
+        while ready:
+            target = ready.popleft()
+            for owner in callers.get(target, ()):
+                if owner not in self.index_functions:
+                    self.index_functions.add(owner)
+                    ready.append(owner)
+        # Alias resolution is new only for reference-array requirements. Keep
+        # the old behavior of unrelated field/ordinary-array callables.
+        boolean_aliases = {key: target for key, target in self.alias_targets.items()
+                           if target in literal_results}
+        self.alias_targets = {key: target for key, target in self.alias_targets.items()
+                              if target in self.index_functions}
+        self.alias_initializers = {id(declarations[key].value) for key in self.alias_targets}
+        for call in calls:
+            key = self.key(call.function) if call.function and call.function.kind == NodeKind.IDENTIFIER else None
+            target = self.alias_targets.get(key, key)
+            if self.call_owners[id(call)] in self.index_functions:
+                target = boolean_aliases.get(key, target)
+            self.call_targets[id(call)] = target
+        for call in calls:
+            if (self.call_owners[id(call)] in self.index_functions
+                    and getattr(call, 'stdlib_canonical', None) in {'std.io.print', 'std.io.println', 'std.io.eprintln'}):
+                self.index_format_calls.add(id(call))
+                self.format_literals.update(id(arg) for arg in call.arguments or []
+                                            if arg.kind == NodeKind.LITERAL)
         dependencies = {}
         counts = {}
         for name, function in bodies.items():
@@ -88,8 +191,15 @@ class ReadonlyRequirements:
                 if item.kind == NodeKind.FUNCTION:
                     continue
                 if item.kind == NodeKind.CALL:
-                    target = self.key(item.function) if item.function and item.function.kind == NodeKind.IDENTIFIER else None
-                    dependencies[name].append(target)
+                    target = self.call_targets.get(id(item))
+                    if id(item) not in self.index_format_calls:
+                        dependencies[name].append(target)
+                    self.call_owners[id(item)] = name
+                if item.kind == NodeKind.INDEX:
+                    typ = self.node_type(item.object)
+                    if isinstance(typ, ReferenceType) and isinstance(typ.referent_type, ArrayType):
+                        self.index_functions.add(name)
+                        self.index_owners[id(item)] = name
                 for value in vars(item).values():
                     if isinstance(value, ASTNode):
                         pending.append(value)
@@ -107,6 +217,8 @@ class ReadonlyRequirements:
                 break
             for name in ready:
                 remaining.remove(name)
+                if any(c in self.index_functions for c in dependencies[name]):
+                    self.index_functions.add(name)
                 reasons = set()
                 cost = counts[name]
                 for callee in dependencies[name]:
@@ -148,6 +260,8 @@ class ReadonlyRequirements:
                         reasons.add('expanded requirement graph exceeds squared source-node certificate')
                     else:
                         self.summaries[name] = root
+                        if name in literal_results:
+                            self.boolean_results[name] = literal_results[name]
         self.expanded_work = work
 
     def expression(self, root, state, failures, reasons):
@@ -165,6 +279,8 @@ class ReadonlyRequirements:
                 children = [node.operand]
             elif kind == NodeKind.FIELD_ACCESS:
                 children = [node.object]
+            elif kind == NodeKind.INDEX:
+                children = [node.object, node.index]
             elif kind == NodeKind.CALL:
                 children = list(node.arguments or [])
             if not finish:
@@ -178,7 +294,7 @@ class ReadonlyRequirements:
                 elif node.literal_kind in {LiteralKind.BOOLEAN, LiteralKind.INTEGER}:
                     # Tagged constants distinguish Python's equal bool/int keys.
                     result = self.node('constant', node.literal_value) if node.literal_kind == LiteralKind.BOOLEAN else self.node('integer', int(node.literal_value))
-                else:
+                elif id(node) not in self.format_literals:
                     reasons.add('unsupported literal')
             elif kind == NodeKind.IDENTIFIER:
                 key = self.key(node)
@@ -195,6 +311,20 @@ class ReadonlyRequirements:
                     failures.append(self.node('read', failing, origin))
                 else:
                     reasons.add('aggregate field root')
+            elif kind == NodeKind.INDEX:
+                typ = self.node_type(node.object)
+                if (isinstance(typ, ReferenceType) and isinstance(typ.referent_type, ArrayType)
+                        and node.object.kind == NodeKind.IDENTIFIER
+                        and not isinstance(self.node_type(node), ReferenceType)):
+                    origin = id(node)
+                    self.origins[origin] = node
+                    failing = self.combine('and', state.guard, values[id(node.object)])
+                    failures.append(self.node('read', failing, origin))
+                elif node.object.kind == NodeKind.INDEX and isinstance(typ, ArrayType):
+                    # The inner indexed access already records its reference use.
+                    pass
+                else:
+                    reasons.add('unsupported indexed reference access')
             elif kind == NodeKind.UNARY and node.operator == UnaryOp.NOT:
                 result = self.negate(values[id(node.operand)])
             elif kind == NodeKind.BINARY:
@@ -219,8 +349,12 @@ class ReadonlyRequirements:
                 else:
                     reasons.add('unrepresented arithmetic')
             elif kind == NodeKind.CALL:
-                target = self.key(node.function) if node.function and node.function.kind == NodeKind.IDENTIFIER else None
-                if target not in self.summaries:
+                target = self.call_targets.get(id(node))
+                if id(node) in self.index_format_calls:
+                    # All arguments were visited above. These known format
+                    # statements do not write reference or predicate storage.
+                    pass
+                elif target not in self.summaries:
                     reasons.add('unknown or incomplete callee')
                 else:
                     # An implicit borrow contributes a non-nil address, not its scalar value.
@@ -228,6 +362,9 @@ class ReadonlyRequirements:
                     args = tuple(self.false if index in borrowed else values[id(arg)]
                                  for index, arg in enumerate(node.arguments or []))
                     failures.append(self.combine('and', state.guard, self.node('apply', self.summaries[target], args)))
+                    if (self.call_owners.get(id(node)) in self.index_functions
+                            and target in self.boolean_results):
+                        result = self.node('constant', self.boolean_results[target])
                     if isinstance(self.node_type(node), ReferenceType):
                         reasons.add('reference-returning call')
             else:
@@ -252,7 +389,20 @@ class ReadonlyRequirements:
         elif kind in {NodeKind.VAR, NodeKind.CONST}:
             state.values[self.key(node)] = self.expression(node.value, state, failures, reasons)
         elif kind == NodeKind.ASSIGNMENT:
-            if node.target is None or node.target.kind != NodeKind.IDENTIFIER or self.key(node.target) in self.globals or getattr(node, 'implicit_deref_target', False) or node.operator != AssignOp.ASSIGN:
+            if node.target is not None and node.target.kind == NodeKind.INDEX:
+                root = node.target.object
+                while root.kind == NodeKind.INDEX:
+                    root = root.object
+                typ = self.node_type(root)
+                if (isinstance(typ, ReferenceType) and isinstance(typ.referent_type, ArrayType)
+                        and isinstance(self.node_type(node.target), PrimitiveType)):
+                    # Scalar element writes cannot rebind a reference or change
+                    # the predicates represented by this requirement graph.
+                    self.expression(node.target, state, failures, reasons)
+                    self.expression(node.value, state, failures, reasons)
+                else:
+                    reasons.add('unsupported indexed assignment')
+            elif node.target is None or node.target.kind != NodeKind.IDENTIFIER or self.key(node.target) in self.globals or getattr(node, 'implicit_deref_target', False) or node.operator != AssignOp.ASSIGN:
                 reasons.add('nonlocal or compound assignment')
             else:
                 state.values[self.key(node.target)] = self.expression(node.value, state, failures, reasons)

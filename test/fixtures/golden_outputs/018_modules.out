@@ -1,3 +1,4 @@
 === Modules ===
 sqrt(9) = 3
 abs(-5) = 5
+local module area = 42

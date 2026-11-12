@@ -1,0 +1,13 @@
+{
+  "commit": "0d5104210bebfab9c9ed40c7800e46359ca30cd3",
+  "remote": "origin/master",
+  "deploy_docs_run": 37603714649,
+  "deployment": "success",
+  "http_resources": 61,
+  "http_byte_identical": 61,
+  "ci_run": 37603714615,
+  "ci_status_at_review": "pending",
+  "audit_manifest_sha256": "7ea2882bda74e16d54a337598036d2191467aca039f67f6048422151efd93c7a",
+  "report_sha256": "67285343365e52cc3092b57601869fbcee071505c8bb56a01a568329e1f5dcc2",
+  "boundary": "HTTP parity only; no rendered browser or accessibility qualification. Bare gh initially invoked a mise wrapper; no pre-call config snapshot, effects unknown. Subsequent checks used existing absolute binary."
+}

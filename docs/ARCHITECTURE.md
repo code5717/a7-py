@@ -27,14 +27,26 @@ Pipeline (orchestrated by `a7/compile.py: A7Compiler`):
 
 Surrounding modules: `a7/cli.py` (argparse entrypoint → `compile.A7Compiler`,
 including the Zig toolchain lookup), `a7/module_resolver.py` (import
-resolution; virtual `std/*` plus file-backed local imports that are merged
-into the single Zig output), `a7/stdlib/` (registry of `std/io` and
-`std/math`, typed call policies and package-owned A7 declaration sources).
-The compiler installs one canonical `Option`/`Result` prelude identity per
+resolution for registered virtual imports, package-owned implementation sources
+and local files), `a7/stdlib/` (module aliases, hook signatures, argument
+policies, module-owned declaration resources and backend mappings). Package
+sources use a separate canonical identity domain and containment root. Fixed
+hooks type-check from parsed declarations in their owner namespace; explicit
+policies preserve current formatting and numeric-family behavior. The Zig
+backend emits mapped calls and their required packaged runtime fragments. Its
+global/local name allocation keeps mapped helper names distinct from user
+bindings. The compiler installs one canonical `Option`/`Result` prelude identity per
 compilation and exposes `IoErr` through explicit I/O module imports.
 `a7/formatters/` (console/JSON/markdown output for
 tokens/AST/semantic dumps and the `--doc-out` report), `a7/errors.py`
 (typed errors and rich display).
+
+Exact fixed-array slots use declaration-owned paths and allocation identities.
+Array value copies get independent slot paths. The safety pass drops the new
+precision at uncertain joins and loop boundaries, and excludes storage exposed
+by mutable views or array borrowing for the rest of that function. Nested escapes
+and unknown nested writes invalidate affected descendant facts. Existing loop
+and interprocedural summaries keep their earlier place-key rules.
 
 ## File-module scopes and lowering
 

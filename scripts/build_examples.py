@@ -11,7 +11,7 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
+from verify_examples_common import find_examples, first_error_text, normalize_output, run_cmd
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -54,40 +54,6 @@ class BuildResult:
             and self.run_ok
             and self.output_match
         )
-
-
-def run_cmd(
-    cmd: list[str],
-    *,
-    cwd: Path,
-    timeout: Optional[float] = None,
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        cwd=cwd,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-    )
-
-
-def first_error_text(proc: subprocess.CompletedProcess[str]) -> str:
-    output = (proc.stderr or proc.stdout or "").strip()
-    if not output:
-        return "command failed without output"
-    return "\n".join(output.splitlines()[:10])
-
-
-def normalize_output(raw: str) -> str:
-    text = raw.replace("\r\n", "\n").replace("\r", "\n")
-    lines = [line.rstrip() for line in text.split("\n")]
-    if lines and lines[-1] == "":
-        lines = lines[:-1]
-    return "" if not lines else "\n".join(lines) + "\n"
-
-
-def find_examples(examples_dir: Path) -> list[Path]:
-    return sorted(path for path in examples_dir.glob("*.a7") if path.is_file())
 
 
 def compile_source(example: Path, backend: str, profile: str, source_path: Path) -> subprocess.CompletedProcess[str]:

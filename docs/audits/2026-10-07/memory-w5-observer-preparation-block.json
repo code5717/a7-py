@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-10-07T17:49:02.450949+00:00",
+  "requested_action": "Prepare normal OBS_EXHAUST=0 allocator observer build packet, without native execution",
+  "result": "builtin observer_native_prep rejected by automatic safety filter as possible cybersecurity risk",
+  "completed_review": false,
+  "build_executed": false,
+  "dependent_run_preparation": "interrupted before build or execution",
+  "disposition": "No retry or alternative execution of rejected preparation; preserve successful six-case smoke evidence; continue independent compiler work."
+}

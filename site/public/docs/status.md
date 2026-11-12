@@ -14,13 +14,28 @@ support or complete safety. The repository's
 [status document](https://github.com/code5717/a7-py/blob/master/docs/STATUS.md)
 is the current implementation authority.
 
+Exact evaluation enforces growth, work, logical retention, exact binding-depth
+and diagnostic limits. Generic pattern conversions share those accounts. C11
+emission qualification remains open, and math-call output is unchanged. Injected
+limits and default C3/C5 witnesses cover different accounting boundaries; neither
+alone qualifies the full policy. See the [specification limits](https://github.com/code5717/a7-py/blob/master/docs/SPEC.md#appendix-c-implementation-limits).
+
 ## Current surface
+
+Integer literal/range overlap checks preserve fitted integer precision beyond
+2^53 in either pattern order. Generic numeric patterns fit concrete subject
+types before overlap checks and preserve named exact constants. Runtime ranges
+require numeric or character subjects. General runtime generic dispatch remains
+unimplemented. Struct and union constraints also apply to type annotations,
+including unused signatures, fields and aliases. Forward type-set members resolve
+after named aliases in the owner's file. Broader generic propagation remains
+incomplete.
 
 | Area | Status | Qualification |
 | --- | --- | --- |
 | Zig source emission | supported | Only public backend; targets Zig 0.16.0. |
 | Primitive values, functions, loops, structs | supported | See the reference and runnable examples for restrictions. |
-| References and explicit allocation | limited | Nil guards, tracked field deletion and direct alias deletion checks exist; complete lifetime guarantees remain unavailable. |
+| References and explicit allocation | limited | Nil guards, tracked fields, direct aliases and exact literal-index fixed-array aliases have bounded checks; complete lifetime guarantees remain unavailable. |
 | Generic functions and structs | limited | Simple top-level specialization works; call-chain propagation is incomplete. |
 | File modules | limited | Separate file scopes, qualified declarations and underscore privacy emit one combined Zig file; import aliases stay local. |
 | Fixed arrays and slices | limited | Bounds checking exists; heap fixed-array allocation is rejected. |
@@ -30,6 +45,38 @@ is the current implementation authority.
 Constant floating remainder follows the runtime truncation rule, including the
 dividend sign and negative zero. Diagnostics retain imported module locations.
 Output paths cannot overwrite input modules; artifact reports exclude stale files.
+
+Else-if arms preserve separate declaration scopes and parent bindings after
+shadowing. Overlong module paths report the import location and filesystem
+failure at resolution exit 3.
+
+The benchmark `--gate` requires a positive finite timing and a nonempty output
+hash for every workload in the host pin. Missing or unusable baselines exit 1.
+Combining `--pin` and `--gate` exits 2 before building or updating pins. Default
+report-only runs describe timing threshold violations without failing for timing
+alone; output hash mismatches still fail.
+
+Reference-to-fixed-array indexing supports primitive element reads and simple
+or compound writes when bounds and non-nil requirements are proven. Guarded nil
+calls and borrowed-array calls remain valid. Unresolved nil-call conditions,
+effectful indices, selected reference-array fields, mutable or captured callable
+origins, ref slicing and general reference-element ownership remain incomplete.
+
+Resolved functions whose body contains one Boolean-literal return supply indexed
+guard facts. This covers direct and forwarded calls and stable unwritten,
+uncaptured local aliases. The checker preserves call and argument evaluation;
+indexed uses retain optional-reference unwraps. Conditional, effectful and
+deferred helpers remain unknown.
+
+Eligible local Boolean cells and value parameters supply indexed guard facts
+from bare or negated conditions and comparisons with Boolean literals. Early
+returns retain the surviving branch fact; copies retain their evaluated value.
+Captured or reference-exposed cells, fields and globals are excluded. Assignments
+replace facts; joins require matching values. Loop write invalidation also
+clears affected Boolean facts.
+True or unknown guards with nil reject at semantic exit 6. An unguarded symbolic
+`read(nil, b)` wrapper still rejects even if its only caller passes false.
+These facts do not certify purity or complete effect modeling.
 
 ## Work and verification
 
@@ -50,9 +97,11 @@ incomplete. See the [qualification record](https://github.com/code5717/a7-py/blo
 for the first failed test-hook integration, its repair and the bounded native
 controls. This does not qualify full safety or V1.
 
-- Safety remains incomplete for aliases through array elements and selected
-  fields, loop field-argument deletion and unsupported callee effects. A bounded
-  exact-callee repair covers represented field replacement/deletion paths.
+- Literal-index fixed-array aliases retain known allocation identity on tracked
+  straight-line paths. Independent array copies and fresh slot replacements
+  preserve valid uses. General array/slice and selected-field identities,
+  loop field-argument deletion and unsupported callee effects remain incomplete.
+  A bounded exact-callee repair covers represented field replacement/deletion paths.
   Direct global reference stores now propagate allocation identity. Global nil
   state and callee non-nil requirements remain incomplete; these checks do not
   establish full lifetime safety.
@@ -71,7 +120,7 @@ controls. This does not qualify full safety or V1.
 | Numeric operations | Integer addition, subtraction and multiplication wrap. Runtime shifts are checked; signed minimum-value division, negation and absolute value wrap. | [Operators](/a7-py/docs/language/operators.md) |
 | Unions | Tagged-union payload matching works. Complete discriminant proofs remain unfinished. | [Aggregate types](/a7-py/docs/language/aggregate-types.md) |
 | Memory | Full `ref`/`del` alias behavior and ownership/lifetime guarantees remain incomplete. | [Memory](/a7-py/docs/language/memory.md) |
-| Generics | Concrete initializers, nested array arms and qualifying immutable local aliases are checked. Imported, module-global, parameter, mutable, selected and captured generic origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
+| Generics | Concrete initializers, substituted fixed-array elements, concrete wrappers and qualifying immutable local aliases are checked. Imported, module-global, parameter, mutable, selected and captured generic origins remain incomplete. | [Generics](/a7-py/docs/language/generics.md) |
 | Functions | Multiple returns, destructuring, and user-defined variadic runtime lowering are unavailable. | [Functions](/a7-py/docs/language/functions.md) |
 | Standard library | Prelude `Option`/`Result` and typed I/O are available. Collections and a full memory/string library remain incomplete. | [Standard library](/a7-py/docs/stdlib.md) |
 

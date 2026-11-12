@@ -95,8 +95,13 @@ uv run pytest test/test_rejected_examples.py
 ## Choose a learning path
 
 Use `001_hello` for setup, `037_language_tour` for a guided overview, and
-`014_generics` for direct generic calls and generic structs. The linked list and
+`014_generics` for direct generic calls, `where T: Integer` constraints and
+generic structs. The linked list and
 binary tree examples use iterative algorithms because source recursion is banned.
+`016_unions` binds scalar tagged-union payloads. `018_modules` imports
+`modules/geometry.a7` and uses its public record and function. Keep that helper
+beside the example when copying the program. `036_control_flow_edges` shows
+labeled `break` and `continue`.
 The later inventory, text analyzer, task board, route simulation, and gradebook
 examples combine several language facilities into small programs.
 

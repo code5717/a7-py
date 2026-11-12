@@ -166,7 +166,8 @@ class SymbolTable:
         self.identity_symbols: Dict[str, Symbol] = {}
         self.resolved_uses: Dict[int, Symbol] = {}
         self.prelude_symbols: Dict[str, Symbol] = {}
-        self.stdlib_type_symbols: Dict[str, Symbol] = {}
+        self.stdlib_type_symbols: Dict[tuple[str, str], Symbol] = {}
+        self.stdlib_module_aliases: Dict[str, str] = {}
 
     def select_file_scope(self, key: str) -> None:
         scopes = self.stdlib_scopes if key.startswith("<stdlib/") else self.file_scopes
@@ -244,8 +245,10 @@ class SymbolTable:
             alias, field = name.split(".", 1)
             imported = self.current_scope.lookup(alias)
             path = getattr(imported.node, "target_file_scope", None) if imported else None
-            if imported is not None and imported.kind == SymbolKind.MODULE and getattr(imported.node, "module_path", None) in {"io", "std/io"}:
-                return self.stdlib_type_symbols.get(field)
+            if imported is not None and imported.kind == SymbolKind.MODULE:
+                module = self.stdlib_module_aliases.get(getattr(imported.node, "module_path", None))
+                if module is not None:
+                    return self.stdlib_type_symbols.get(("<stdlib/" + module + ">", field))
             target = self.file_scopes.get(path)
             if target is None or field.startswith("_"):
                 return None

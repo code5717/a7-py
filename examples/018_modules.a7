@@ -2,6 +2,7 @@
 
 io :: import "std/io"
 math :: import "std/math"
+geometry :: import "./modules/geometry"
 
 main :: fn() {
     io.println("=== Modules ===")
@@ -9,4 +10,7 @@ main :: fn() {
     x := 9.0
     io.println("sqrt({}) = {}", x, math.sqrt(x))
     io.println("abs(-5) = {}", math.abs(-5.0))
+
+    rectangle: geometry.Rectangle = geometry.Rectangle{width: 6, height: 7}
+    io.println("local module area = {}", geometry.area(rectangle))
 }

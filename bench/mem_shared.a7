@@ -1,0 +1,18 @@
+io :: import "std/io"
+Box :: struct { value: i64 }
+main :: fn() {
+    total: i64 = 0
+    for i := 0; i < 10000000; i += 1 {
+        a := new Box
+        if a == nil {
+            io.println("alloc failed")
+            ret
+        }
+        a.value = 1
+        b := a
+        b.value = cast(i64, i)
+        total += a.value
+        del a
+    }
+    io.println("result: {}", total)
+}

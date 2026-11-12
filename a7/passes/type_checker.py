@@ -5,6 +5,8 @@ Performs type inference, type checking, and type compatibility validation.
 """
 
 from collections import deque
+from copy import copy
+import struct
 from typing import Any, Optional, List, Dict, Set, Tuple
 
 from a7.ast_nodes import ASTNode, NodeKind, BinaryOp, UnaryOp, AssignOp, LiteralKind
@@ -24,7 +26,7 @@ from a7.types import (
 )
 from a7.errors import SemanticError, TypeCheckError, TypeErrorType, SemanticErrorType, SourceSpan
 from a7.stdlib import StdlibRegistry
-from a7.exact_constants import evaluate, compare, render, materialize, ieee_bits, ExactArithmeticError, expression_span
+from a7.exact_constants import evaluate, compare, render, materialize, ieee_bits, ExactArithmeticError, ExactResourceError, ExactResourceCategory, ExactBudget, expression_span
 
 _COMPARISON_OPS = frozenset({BinaryOp.EQ, BinaryOp.NE, BinaryOp.LT, BinaryOp.LE, BinaryOp.GT, BinaryOp.GE})
 # The operators the exact evaluator folds.
@@ -97,17 +99,31 @@ class TypeCheckingPass:
         self._reported_value_param_types: Set[int] = set()
         # Count check result for each `Name(args)` type node already checked.
         self._annotation_argument_results: Dict[int, bool] = {}
+        self._annotation_constraints = {}
+        self._record_constraint_states = {}
+        self._annotation_record_owner = None
         self._nonnegative_vars: Set[str] = set()
         self.stdlib = StdlibRegistry()
         self._stdlib_signatures: Dict[str, FunctionType] = {}
         self.exact_bindings = {}
+        self.exact_budget = ExactBudget()
+        self._reported_exact_resources = set()
+        self._exact_depths = {}
+        self._exact_parents = {}
+        self._exact_declarations = {}
         self._nested_functions = deque()
         self._generic_initializers: dict = {}
         self._generic_calls: dict = {}
+        self._deferred_array_initializers = set()
+        self._generic_matches = {}
+        self._deferred_match_patterns = {}
+        self._deferred_match_ranges = {}
         self._generic_alias_bindings = {}
         self._generic_alias_calls = []
         self._bound_callback_values: Set[int] = set()
         self._generic_callback_arguments: dict = {}
+        self._discarded_expression: Optional[ASTNode] = None
+        self._consumed_stdlib_calls: Dict[int, ASTNode] = {}
 
     def analyze(self, program: ASTNode, filename: str = "<unknown>") -> Dict[int, Type]:
         """
@@ -126,6 +142,9 @@ class TypeCheckingPass:
         """
         self.current_file = filename
         self.errors = []
+        self._reported_exact_resources = set()
+        self._discarded_expression = None
+        self._consumed_stdlib_calls = {}
         self._scope_reuse_positions = {}
         self._resolving_type_aliases = set()
         self._resolved_type_aliases = set()
@@ -133,16 +152,72 @@ class TypeCheckingPass:
         self._active_value_params = {}
         self._reported_value_param_types = set()
         self._annotation_argument_results = {}
+        self._annotation_constraints = {}
+        self._record_constraint_states = {}
+        self._annotation_record_owner = None
         self._nonnegative_vars = set()
         self._generic_initializers = {}
         self._generic_calls = {}
+        self._deferred_array_initializers = set()
+        self._generic_matches = {}
+        self._deferred_match_patterns = {}
+        self._deferred_match_ranges = {}
         self._generic_alias_bindings = {}
         self._generic_alias_calls = []
         self._bound_callback_values = set()
         self._generic_callback_arguments = {}
 
+        # Initializer accounts persist across revisits, including generic fits.
+        work = [(program, None)]
+        seen = set()
+        while work:
+            item, owner = work.pop()
+            if id(item) in seen:continue
+            seen.add(id(item))
+            if item.kind in {NodeKind.CONST, NodeKind.VAR} or owner is None:
+                owner = id(item)
+                self.exact_budget.labels[owner] = item.name or 'expression'
+            self.exact_budget.owners[id(item)] = owner
+            for value in vars(item).values():
+                if isinstance(value, ASTNode):
+                    work.append((value, None if item.kind in {NodeKind.PROGRAM, NodeKind.BLOCK, NodeKind.FUNCTION} else owner))
+                elif isinstance(value, list):
+                    work.extend((child, None if item.kind in {NodeKind.PROGRAM, NodeKind.BLOCK, NodeKind.FUNCTION} else owner) for child in value if isinstance(child, ASTNode))
         # Visit the program
         self.visit_program(program)
+        # Validate captured annotations after their owner constraints are complete.
+        for node, owner, arguments, binder in self._annotation_constraints.values():
+            owner_name = getattr(owner, "module_identity_name", owner.name) or "<anonymous>"
+            if id(owner) not in self._record_constraint_states:
+                self.add_semantic_error(
+                    SemanticErrorType.CONSTRAINT_VIOLATION, node.span,
+                    context=f"Constraints of nominal type '{owner_name}' were not resolved",
+                )
+                continue
+            state = self._record_constraint_states[id(owner)]
+            if state is None:
+                continue  # The owner already reported its invalid declaration.
+            params, constraints = state
+            if binder is not None:
+                if id(binder) not in self._record_constraint_states:
+                    self.add_semantic_error(
+                        SemanticErrorType.CONSTRAINT_VIOLATION, node.span,
+                        context=f"Constraints of record parameter owner '{binder.name}' were not resolved",
+                    )
+                    continue
+                binder_state = self._record_constraint_states[id(binder)]
+                if binder_state is None:
+                    continue
+                names, admitted = binder_state
+                mapping = {name: GenericParamType(name=name, constraint=admitted.get(name)) for name in names}
+                arguments = tuple(self._substitute_generic(arg, mapping) for arg in arguments)
+            for name, actual in zip(params, arguments):
+                constraint = constraints.get(name)
+                if constraint is not None and not self._constraint_accepts(constraint, actual):
+                    self.add_semantic_error(
+                        SemanticErrorType.CONSTRAINT_VIOLATION, node.span,
+                        context=f"Generic parameter '${name}' of {owner_name} requires {constraint}, got {actual}",
+                    )
         if getattr(program, "entry_file_scope", None):
             self.symbols.select_file_scope(program.entry_file_scope)
 
@@ -203,6 +278,30 @@ class TypeCheckingPass:
                                 {name: self._substitute_generic(value, mapping)
                                  for name, value in nested_mapping.items()}, lineage))
 
+        # A match depends on its subject type, not unrelated generic parameters.
+        pending = [(target, mapping, frozenset())
+                   for calls in self._generic_calls.values()
+                   for call, target, mapping in calls]
+        checked_matches = set()
+        visited_match_calls = set()
+        while pending:
+            target, mapping, ancestors = pending.pop()
+            call_key = (id(target), tuple(sorted(mapping.items())))
+            if id(target) in ancestors or call_key in visited_match_calls:
+                continue
+            visited_match_calls.add(call_key)
+            for match, expected in self._generic_matches.get(id(target), ()):
+                concrete = self._substitute_generic(expected, mapping)
+                unresolved = []
+                self._collect_generic_type_names(concrete, unresolved)
+                key = (id(match), concrete)
+                if not unresolved and not self._has_unknown(concrete) and key not in checked_matches:
+                    checked_matches.add(key)
+                    self._check_instantiated_match(match, concrete, mapping)
+            for call, nested, bindings in self._generic_calls.get(id(target), ()):
+                pending.append((nested, {name: self._substitute_generic(value, mapping)
+                                         for name, value in bindings.items()}, ancestors | {id(target)}))
+
         # Only use sites acquire runtime representation. Exact bindings are erased.
         stack = [program]
         seen = set()
@@ -212,6 +311,27 @@ class TypeCheckingPass:
                 continue
             seen.add(id(node))
             if getattr(node, 'untyped_binding', False):
+                continue
+            deferred = getattr(node, 'generic_pattern_exact', None)
+            if deferred is not None:
+                if not self.errors:
+                    exact = deferred[1]
+                    encodings = []
+                    try:
+                        budget = self.exact_budget.bind(node)
+                        budget.hit(exact)
+                        for width in (32, 64):
+                            try:
+                                encodings.append(ieee_bits(exact, width, budget))
+                            except ExactResourceError:
+                                raise
+                            except ExactArithmeticError:
+                                encodings.append(None)
+                        node.generic_pattern_encodings = tuple(encodings)
+                    except ExactResourceError as error:
+                        node.exact_failed = True
+                        node.exact_diagnosed = True
+                        self._report_exact_error(error, expression_span(node))
                 continue
             exact = getattr(node, 'exact_constant', None)
             if (
@@ -232,18 +352,111 @@ class TypeCheckingPass:
                 elif isinstance(value, list):
                     stack.extend(child for child in value if isinstance(child, ASTNode))
 
+        # Existing diagnostics, including final constant checks, keep priority.
+        if not self.errors:
+            for call in self._consumed_stdlib_calls.values():
+                self.add_error(
+                    f"{call.stdlib_canonical} returns no value and cannot be used in a value expression",
+                    call.span,
+                )
+
         # Return the node types map for use by later passes
         return self.node_types
+
+    def _report_exact_error(self, error, span):
+        if (isinstance(error, ExactResourceError)
+                and isinstance(error.category, ExactResourceCategory)
+                and error.initializer_owner is not None):
+            key = (error.initializer_owner, error.category)
+            if key in self._reported_exact_resources:
+                return
+            self._reported_exact_resources.add(key)
+        self.add_error(str(error), span)
 
     def _evaluate_exact(self, node, lookup, bindings):
         if node is None or getattr(node, 'exact_failed', False):
             return None
         try:
-            return evaluate(node, lookup, bindings)
+            return evaluate(node, lookup, bindings, self.exact_budget.bind(node))
         except ExactArithmeticError as error:
             node.exact_failed = True
-            self.add_error(str(error), expression_span(node))
+            self._report_exact_error(error, expression_span(node))
             return None
+
+    def _cache_exact(self, node, exact):
+        try:
+            self.exact_budget.bind(node).retain(('ast', id(node)), exact, node)
+        except ExactResourceError as error:
+            node.exact_failed = True
+            node.exact_constant = None
+            self.exact_budget.retain(('ast', id(node)), None)
+            self._report_exact_error(error, expression_span(node))
+            return False
+        node.exact_constant = exact
+        return True
+
+    def _bind_exact(self, node, exact):
+        key = id(node)
+        self._exact_declarations[key] = node
+        children = [child for child in self.exact_budget.references.get(key, ()) if child in self._exact_depths]
+        parent = max(children, key=self._exact_depths.get) if children else None
+        depth = 1 + (self._exact_depths[parent] if parent is not None else 0)
+        self._exact_parents[key] = parent
+        try:
+            if depth > self.exact_budget.policy.dependency_depth:
+                chain = []
+                cursor = key
+                while cursor is not None:
+                    chain.append(cursor)
+                    cursor = self._exact_parents[cursor]
+                raise ExactResourceError('Exact constant dependency depth exceeds ' + str(self.exact_budget.policy.dependency_depth) + ': ' + self._dependency_text(chain, self._exact_declarations),
+                    category=ExactResourceCategory.DEPENDENCY_DEPTH,
+                    initializer_owner=self.exact_budget.owners.get(key, key))
+            self.exact_budget.bind(node).retain(('binding', key), exact)
+        except ExactResourceError as error:
+            node.exact_failed = True
+            self._report_exact_error(error, expression_span(node.value))
+            return False
+        self.exact_bindings[key] = exact
+        self._exact_depths[key] = depth
+        return True
+
+    def _binding_exact(self, use, declaration):
+        exact = self.exact_bindings.get(id(declaration))
+        if exact is not None:
+            try:
+                self.exact_budget.bind(use).hit(exact)
+            except ExactResourceError as error:
+                use.exact_failed = True
+                self._report_exact_error(error, expression_span(use))
+                return None
+        return exact
+
+    def _exact_integral_fits(self, node, exact, target):
+        try:
+            budget = self.exact_budget.bind(node)
+            budget.hit(exact)
+            budget.charge(max(1, (exact[0].denominator.bit_length() + 63) // 64), 'integral denominator comparison')
+            if exact[0].denominator != 1:
+                return False
+            return self._integer_literal_fits_type(exact[0].numerator, target, budget)
+        except ExactResourceError as error:
+            node.exact_failed = True
+            node.exact_diagnosed = True
+            self._report_exact_error(error, expression_span(node))
+            return False
+
+    def _materialize_exact(self, node, exact, integer=False, width=None):
+        try:
+            self.exact_budget.bind(node).hit(exact)
+            materialize(node, exact, integer=integer, width=width, budget=self.exact_budget)
+        except ExactResourceError as error:
+            if not getattr(node, 'exact_failed', False):
+                self._report_exact_error(error, expression_span(node))
+            node.exact_failed = True
+            node.exact_diagnosed = True
+            return False
+        return True
 
     def _report_default_overflow(self, node: ASTNode) -> bool:
         """Report an integer constant with no destination that exceeds i32.
@@ -252,11 +465,15 @@ class TypeCheckingPass:
         the i32 default (SPEC 4.2.1); none of them widens to fit the value.
         """
         exact = getattr(node, 'exact_constant', None)
-        if exact is None or exact[1] or self._integer_literal_fits_type(exact[0].numerator, I32):
+        if exact is None or exact[1]:
             return False
+        if self._exact_integral_fits(node, exact, I32):
+            return False
+        if getattr(node, 'exact_failed', False):
+            return True
         if not getattr(node, 'exact_diagnosed', False):
             self.add_error(
-                f"Exact constant {render(exact[0])} does not fit default i32; use an explicit destination type",
+                f"Exact constant {render(exact[0], self.exact_budget.policy)} does not fit default i32; use an explicit destination type",
                 expression_span(node),
             )
             node.exact_diagnosed = True
@@ -264,6 +481,10 @@ class TypeCheckingPass:
 
     def add_error(self, message: str, span: Optional[SourceSpan] = None) -> None:
         """Add a type checking error (legacy - prefer add_type_error)."""
+        if message.startswith(("Exact constant", "Global value dependency")):
+            limit = self.exact_budget.policy.diagnostic_characters
+            if len(message) > limit:
+                message = message[:limit//2-2] + "..." + message[-(limit-limit//2-1):]
         error = SemanticError(message, span, self.current_file)
         self.errors.append(error)
 
@@ -335,6 +556,23 @@ class TypeCheckingPass:
 
     # Visitor methods
 
+    def _dependency_text(self, chain, declarations):
+        maximum = self.exact_budget.policy.dependency_links
+        selected = chain if len(chain)<=maximum else chain[:maximum//2]+[None]+chain[-(maximum//2):]
+        per_link = max(8, (self.exact_budget.policy.diagnostic_characters-128)//max(1,len(selected))-4)
+        links = []
+        for key in selected:
+            if key is None:
+                links.append('...')
+                continue
+            decl = declarations[key]
+            span = decl.span
+            location = f':{span.start_line}:{span.start_column}' if span is not None else ''
+            name = decl.name + location
+            if len(name)>per_link:name=name[:per_link//2-2]+'...'+name[-(per_link-per_link//2-1):]
+            links.append(name)
+        return ' -> '.join(links)
+
     def visit_program(self, node: ASTNode) -> None:
         """Visit program root."""
         if node.kind != NodeKind.PROGRAM:
@@ -371,6 +609,7 @@ class TypeCheckingPass:
             dependencies[id(decl)] = edges
         state = {}
         ordered = []
+        dependency_pops = {}
         for root in globals_:
             if state.get(id(root)) == 2:
                 continue
@@ -379,6 +618,7 @@ class TypeCheckingPass:
             work = [(id(root), False)]
             while work:
                 key, ready = work.pop()
+                dependency_pops[key] = dependency_pops.get(key, 0) + 1
                 if ready:
                     active.pop()
                     positions.pop(key, None)
@@ -389,25 +629,32 @@ class TypeCheckingPass:
                     continue
                 if state.get(key) == 1:
                     chain = active[positions[key]:] + [key]
-                    links = [declarations[k].name for k in chain]
-                    if len(links) > 32:
-                        links = links[:16] + ['...'] + links[-16:]
-                    self.add_error('Global value dependency cycle: ' + ' -> '.join(links), declarations[key].span)
+                    self.add_error('Global value dependency cycle: ' + self._dependency_text(chain, declarations), declarations[key].span)
                     return
                 state[key] = 1
                 positions[key] = len(active)
                 active.append(key)
                 work.append((key, True))
                 work.extend((child, False) for child in reversed(dependencies[key]))
+        # Only successfully evaluated binding values form an exact dependency
+        # chain. Runtime global ordering above retains its existing contract.
         # Exact constants can supply lengths in signatures and aggregate types.
         for decl in ordered:
             if getattr(decl, "file_scope", None):
                 self.symbols.select_file_scope(decl.file_scope)
             if decl.kind == NodeKind.CONST and not decl.explicit_type:
                 exact = self._evaluate_exact(decl.value, self.symbols.lookup, self.exact_bindings)
+                if exact is not None or getattr(decl.value, 'exact_failed', False):
+                    key = id(decl)
+                    try:
+                        self.exact_budget.bind(decl).charge(dependency_pops[key], 'exact dependency worklist visits', True)
+                    except ExactResourceError as error:
+                        if not getattr(decl.value, 'exact_failed', False):
+                            self._report_exact_error(error, decl.span)
+                        return
                 if exact is not None:
-                    self.exact_bindings[id(decl)] = exact
-                    decl.untyped_binding = True
+                    if self._bind_exact(decl, exact):
+                        decl.untyped_binding = True
         # Type names first, then fields: a field may name a type declared
         # later in the file, or the type that holds it (through `ref`).
         type_decls = [
@@ -426,18 +673,46 @@ class TypeCheckingPass:
                 self.symbols.select_file_scope(decl.file_scope)
             if decl.kind != NodeKind.ENUM:
                 self.register_type_decl(decl)
+        # Constraint members can name aliases declared after their record.
+        # Resolve each owner once after all record and alias types are ready.
+        for decl in type_decls:
+            if decl.kind not in {NodeKind.STRUCT, NodeKind.UNION}:
+                continue
+            if getattr(decl, "file_scope", None):
+                self.symbols.select_file_scope(decl.file_scope)
+            symbol = self.symbols.lookup(decl.name or "")
+            params = tuple(symbol.type.generic_params or ())
+            owner = getattr(decl, "module_identity_name", decl.name) or "<anonymous>"
+            if decl.kind == NodeKind.STRUCT:
+                value_kinds = self._struct_value_param_types.get(owner, {})
+                table = self._struct_generic_constraints
+                label = "struct"
+            else:
+                value_kinds = self._union_value_param_types.get(owner, {})
+                table = self._union_generic_constraints
+                label = "union"
+            error_count = len(self.errors)
+            constraints = self._merge_where_constraints(
+                decl, set(params), set(value_kinds), f"{label} {owner}")
+            # None is invalid; an empty map is a completed unconstrained owner.
+            self._record_constraint_states[id(decl)] = (
+                (params, constraints) if len(self.errors) == error_count else None)
+            if constraints:
+                table[owner] = constraints
         self._report_by_value_type_cycles(type_decls)
 
         # Signatures resolve in their package owner, not the importing file.
         from a7.tokens import Tokenizer
         from a7.parser import Parser
         previous_stack = self.symbols.scope_stack
-        self.symbols.select_file_scope("<stdlib/io>")
         self._stdlib_signatures = {}
-        for hook in self.stdlib.modules["io"].functions.values():
-            source = hook.signature
-            annotation = Parser(Tokenizer(source, "<stdlib/io signatures>").tokenize(), "<stdlib/io signatures>", [source]).parse_type()
-            self._stdlib_signatures[hook.canonical] = self.resolve_type_node(annotation)
+        for module in self.stdlib.modules.values():
+            self.symbols.select_file_scope("<stdlib/" + module.name + ">")
+            owner = "<stdlib/" + module.name + " signatures>"
+            for hook in module.functions.values():
+                source = hook.signature
+                annotation = Parser(Tokenizer(source, owner).tokenize(), owner, [source]).parse_type()
+                self._stdlib_signatures[hook.canonical] = self.resolve_type_node(annotation)
         self.symbols.scope_stack = previous_stack
         self.symbols.current_scope = previous_stack[-1]
 
@@ -816,7 +1091,11 @@ class TypeCheckingPass:
         ok = self._generic_argument_count_matches(type_name, params, type_args, node.span)
         if ok:
             value_kinds = self._value_param_types_from_params(symbol.node.generic_params or [])
+            error_count = len(self.errors)
             self._check_generic_argument_kinds(type_name, params, value_kinds, type_args, node.span)
+            if len(self.errors) == error_count and not any(self._has_unknown(arg) for arg in type_args):
+                self._annotation_constraints[id(node)] = (
+                    node, symbol.node, tuple(type_args), self._annotation_record_owner)
         self._annotation_argument_results[id(node)] = ok
         return ok
 
@@ -1014,6 +1293,8 @@ class TypeCheckingPass:
         if value_param_types:
             self._struct_value_param_types[struct_name] = value_param_types
         previous_value_params = self._active_value_params
+        previous_record_owner = self._annotation_record_owner
+        self._annotation_record_owner = node
         self._active_value_params = value_param_types
         try:
             # Field types resolve here. A type declared later already has
@@ -1028,6 +1309,7 @@ class TypeCheckingPass:
                         fields.append(StructField(name=field_name, field_type=field_type))
         finally:
             self._active_value_params = previous_value_params
+            self._annotation_record_owner = previous_record_owner
 
         # Create struct type
         generic_params = tuple(gp.name for gp in (node.generic_params or []))
@@ -1039,13 +1321,6 @@ class TypeCheckingPass:
             generic_params = tuple(dict.fromkeys(discovered))
         struct_type = self._fill_record_shell(
             node, StructType(name=struct_name, fields=tuple(fields), generic_params=generic_params))
-
-        # Struct generic parameters may declare constraints
-        # ($T: Numeric). Function call sites validate theirs; struct
-        # instantiation validates against this table.
-        constraints = self._merge_where_constraints(node, set(generic_params), set(value_param_types), f"struct {struct_name}")
-        if constraints:
-            self._struct_generic_constraints[struct_name] = constraints
 
     def register_enum_type(self, node: ASTNode) -> None:
         """Register an enum type."""
@@ -1099,6 +1374,8 @@ class TypeCheckingPass:
         if value_param_types:
             self._union_value_param_types[union_name] = value_param_types
         previous_value_params = self._active_value_params
+        previous_record_owner = self._annotation_record_owner
+        self._annotation_record_owner = node
         self._active_value_params = value_param_types
         try:
             # Create union fields
@@ -1111,6 +1388,7 @@ class TypeCheckingPass:
                         fields.append(UnionField(name=field_name, field_type=field_type))
         finally:
             self._active_value_params = previous_value_params
+            self._annotation_record_owner = previous_record_owner
 
         # Generic parameters mirror structs: declared params first, else
         # $T names discovered in field encounter order.
@@ -1123,19 +1401,24 @@ class TypeCheckingPass:
         union_type = self._fill_record_shell(
             node, UnionType(name=union_name, fields=tuple(fields), generic_params=generic_params))
 
-        constraints = self._merge_where_constraints(node, set(generic_params), set(value_param_types), f"union {union_name}")
-        if constraints:
-            self._union_generic_constraints[union_name] = constraints
-
     def _enum_tag_value(self, node: ASTNode) -> Optional[int]:
         """Fit an explicit enum value to a supported integer tag width."""
         exact = self._evaluate_exact(node, self.symbols.lookup, self.exact_bindings)
         if exact is None:
-            return self.extract_int_value(node)
-        node.exact_constant = exact
-        target = next((kind for kind in (I32, U32, I64, U64)
-                       if self._integer_literal_fits_type(exact[0].numerator, kind)),
-                      I64 if exact[0] < 0 else U64)
+            return None if getattr(node, 'exact_failed', False) else self.extract_int_value(node)
+        if not self._cache_exact(node, exact):
+            return None
+        try:
+            budget = self.exact_budget.bind(node)
+            budget.hit(exact)
+            target = next((kind for kind in (I32, U32, I64, U64)
+                           if self._integer_literal_fits_type(exact[0].numerator, kind, budget)),
+                          I64 if exact[0].numerator < 0 else U64)
+        except ExactResourceError as error:
+            node.exact_failed = True
+            node.exact_diagnosed = True
+            self._report_exact_error(error, expression_span(node))
+            return None
         if not self._is_initializer_assignable_to(node, target, target, expression_span(node)):
             return None
         return exact[0].numerator
@@ -1248,6 +1531,8 @@ class TypeCheckingPass:
             self._resolving_type_aliases.add(alias_key)
             previous_scope = self.symbols.current_scope
             previous_stack = self.symbols.scope_stack
+            previous_record_owner = self._annotation_record_owner
+            self._annotation_record_owner = None
             if getattr(node, "file_scope", None):
                 self.symbols.select_file_scope(node.file_scope)
             symbol = self.symbols.lookup(alias_name)
@@ -1257,6 +1542,7 @@ class TypeCheckingPass:
                 self._resolving_type_aliases.remove(alias_key)
                 self.symbols.current_scope = previous_scope
                 self.symbols.scope_stack = previous_stack
+                self._annotation_record_owner = previous_record_owner
 
             if symbol:
                 symbol.type = alias_type
@@ -1294,11 +1580,12 @@ class TypeCheckingPass:
                             continue
                         exact = self._evaluate_exact(current.size, self.symbols.lookup, self.exact_bindings)
                         if exact is not None:
-                            current.size.exact_constant = exact
-                            if self._fit_exact_usize(current.size, "Array length"):
+                            if self._cache_exact(current.size, exact) and self._fit_exact_usize(current.size, "Array length"):
                                 size = exact[0].numerator
                             else:
                                 size = None
+                        elif getattr(current.size, "exact_failed", False):
+                            size = None
                         else:
                             size = self.extract_int_value(current.size)
                             if size is None or not self._integer_literal_fits_type(size, USIZE):
@@ -1645,8 +1932,8 @@ class TypeCheckingPass:
                 lambda: self._evaluate_exact(node.value, self.symbols.lookup, self.exact_bindings),
             )
             if exact is not None:
-                self.exact_bindings[id(node)] = exact
-                node.untyped_binding = True
+                if self._bind_exact(node, exact):
+                    node.untyped_binding = True
                 self.set_type(node, UNKNOWN)
                 return
 
@@ -1723,6 +2010,8 @@ class TypeCheckingPass:
                     explicit_type,
                     node.span,
                     context=f"Variable '{var_name}'",
+                    deferred_initializer=(node if generic_names and isinstance(explicit_type, ArrayType)
+                                          and self.context.current_function is not None else None),
                 )
                 and not self._already_reported(node.value)
             ):
@@ -1855,9 +2144,17 @@ class TypeCheckingPass:
                     self.context.exit_loop()
                     self.symbols.exit_scope()
                     continue
+                if action == 'if_else':
+                    if nd.kind != NodeKind.BLOCK:
+                        self._enter_matching_scope("if_else")
+                        region = ('scope', None)
+                        protected.append(region)
+                        pending.append(('finish', region))
+                    pending.append(('visit', nd))
+                    continue
                 if action == 'if_then':
                     if nd.else_stmt:
-                        pending.append(('visit', nd.else_stmt))
+                        pending.append(('if_else', nd.else_stmt))
                     if nd.then_stmt:
                         region = ('facts', set(self._nonnegative_vars))
                         self._nonnegative_vars.update(self._facts_from_positive_condition(nd.condition))
@@ -1947,7 +2244,12 @@ class TypeCheckingPass:
                     self.register_type_alias(nd)
                 elif nd.kind == NodeKind.EXPRESSION_STMT:
                     if nd.expression:
-                        self.visit_expression(nd.expression)
+                        saved_discarded = self._discarded_expression
+                        self._discarded_expression = nd.expression
+                        try:
+                            self.visit_expression(nd.expression)
+                        finally:
+                            self._discarded_expression = saved_discarded
                 elif nd.kind == NodeKind.ASSIGNMENT:
                     self.visit_assignment(nd)
                 elif nd.kind == NodeKind.IF_STMT:
@@ -2003,6 +2305,7 @@ class TypeCheckingPass:
                         pending.append(('visit', nd.body))
                 elif nd.kind == NodeKind.MATCH:
                     scrutinee_type = self.visit_expression(nd.expression) if nd.expression else UNKNOWN
+                    self._record_generic_match(nd, scrutinee_type)
                     # Coverage and redundancy belong to this match's continuation.
                     state = {"type": scrutinee_type, "bools": set(), "enums": set(),
                              "patterns": {}, "ranges": [], "wildcard": None,
@@ -2045,7 +2348,7 @@ class TypeCheckingPass:
                 if (owner is not None and node.kind in (NodeKind.VAR, NodeKind.CONST)
                         and node.value is not None and node.value.kind == NodeKind.IDENTIFIER):
                     declarations[id(node)] = node
-            if node.kind == NodeKind.IDENTIFIER:
+            if node.kind in (NodeKind.IDENTIFIER, NodeKind.FIELD_ACCESS):
                 occurrences.append((node, owner))
             roots = []
             if node.kind == NodeKind.ASSIGNMENT and node.target is not None:
@@ -2098,6 +2401,82 @@ class TypeCheckingPass:
             if target is not None and owner is not None:
                 self._generic_calls.setdefault(id(owner), []).append((call, target, mapping))
 
+        # Deferred array elements and match patterns require known callable origins.
+        # Escaping values cannot carry these checks.
+        eligible_uses = {id(declarations[identity].value) for identity in targets}
+        eligible_uses.update(id(call.function) for calls in self._generic_calls.values()
+                             for call, target, mapping in calls)
+        callers = {}
+        for owner, calls in self._generic_calls.items():
+            for call, target, mapping in calls:
+                callers.setdefault(id(target), []).append((owner, mapping))
+        initializers = {}
+        obligations = {}
+        for owner, declarations in self._generic_initializers.items():
+            for declaration, actual, expected in declarations:
+                if id(declaration) in self._deferred_array_initializers:
+                    initializers[id(declaration)] = (declaration, actual, expected)
+                    obligations.setdefault(owner, set()).add((id(declaration), actual, expected))
+        for owner, matches in self._generic_matches.items():
+            for match, expected in matches:
+                for case in match.cases or []:
+                    for pattern in case.patterns or []:
+                        if id(pattern) in self._deferred_match_ranges:
+                            obligations.setdefault(owner, set()).add((id(pattern), expected, expected))
+                        values = (pattern.start, pattern.end) if pattern.kind == NodeKind.PATTERN_RANGE else (pattern,)
+                        for value in values:
+                            requirement = self._deferred_match_patterns.get(id(value))
+                            if requirement is not None:
+                                actual = requirement[1]
+                                obligations.setdefault(owner, set()).add((id(value), actual, expected))
+        ready = deque((owner, identity, actual, expected, frozenset())
+                      for owner, requirements in obligations.items()
+                      for identity, actual, expected in requirements)
+        while ready:
+            target, identity, actual, expected, ancestors = ready.popleft()
+            if target in ancestors:
+                continue  # Source call cycles are rejected by semantic validation.
+            for owner, mapping in callers.get(target, ()):
+                instantiated = self._substitute_generic(expected, mapping)
+                value_type = self._substitute_generic(actual, mapping)
+                unresolved: List[str] = []
+                self._collect_generic_type_names(instantiated, unresolved)
+                self._collect_generic_type_names(value_type, unresolved)
+                requirement = (identity, value_type, instantiated)
+                if ((unresolved or self._has_unknown(instantiated) or self._has_unknown(value_type))
+                        and requirement not in obligations.get(owner, set())):
+                    obligations.setdefault(owner, set()).add(requirement)
+                    ready.append((owner, identity, value_type, instantiated, ancestors | {target}))
+        unsupported = set()
+        for node, owner in occurrences:
+            binding = self._generic_alias_bindings.get(id(node))
+            symbol = self.symbols.resolved_uses.get(id(node))
+            if binding is None and symbol is not None:
+                binding = (symbol.node, symbol.kind)
+            if binding is None:
+                continue
+            source, kind = binding
+            target = source if kind == SymbolKind.FUNCTION else targets.get(id(source))
+            if id(target) in obligations and id(node) not in eligible_uses:
+                unsupported.update(identity for identity, actual, expected in obligations[id(target)])
+        for identity in unsupported:
+            if identity in self._deferred_match_ranges:
+                pattern, expected = self._deferred_match_ranges[identity]
+                self.add_type_error(TypeErrorType.TYPE_MISMATCH, pattern.span,
+                                    expected_type="numeric or char", got_type=str(expected),
+                                    context="Range pattern requires a known generic callable origin")
+                continue
+            if identity in self._deferred_match_patterns:
+                pattern, actual, expected = self._deferred_match_patterns[identity]
+                self._report_mismatch(TypeErrorType.TYPE_MISMATCH, pattern.span,
+                                      self._pattern_value_node(pattern), actual, expected,
+                                      context="Match pattern requires a known generic callable origin")
+                continue
+            declaration, actual, expected = initializers[identity]
+            self._is_initializer_assignable_to(
+                declaration.value, actual, expected, declaration.span,
+                context=f"Variable '{declaration.name}'")
+
     def visit_assignment(self, node: ASTNode) -> None:
         """Visit an assignment statement."""
         # Type check both sides
@@ -2108,7 +2487,11 @@ class TypeCheckingPass:
         if (
             isinstance(lhs_type, ReferenceType)
             and not isinstance(rhs_type, (ReferenceType, NilType, UnknownType))
-            and rhs_type.is_assignable_to(lhs_type.referent_type)
+            and (rhs_type.is_assignable_to(lhs_type.referent_type)
+                 or (isinstance(lhs_type.referent_type, PrimitiveType)
+                     and lhs_type.referent_type.is_numeric()
+                     and ((isinstance(rhs_type, PrimitiveType) and rhs_type.is_numeric())
+                          or self._is_untyped_numeric(node.value))))
         ):
             if node.target and self._is_lvalue_expression(node.target):
                 setattr(node, "implicit_deref_target", True)
@@ -2303,7 +2686,14 @@ class TypeCheckingPass:
                     left = pending if first is not None else self._evaluate_exact(current.left, self.symbols.lookup, self.exact_bindings)
                     right = self._evaluate_exact(current.right, self.symbols.lookup, self.exact_bindings)
                     if left is not None and right is not None:
-                        current.literal_value = compare(current.operator, left, right)
+                        try:
+                            current.literal_value = compare(current.operator, left, right, self.exact_budget.bind(current))
+                        except ExactResourceError as error:
+                            current.exact_failed = True
+                            self._report_exact_error(error, expression_span(current))
+                            self.set_type(current, UNKNOWN)
+                            first_type, pending = UNKNOWN, None
+                            continue
                         current.kind = NodeKind.LITERAL
                         current.literal_kind = LiteralKind.BOOLEAN
                         current.raw_text = 'true' if current.literal_value else 'false'
@@ -2317,22 +2707,26 @@ class TypeCheckingPass:
                         lent = pending is not None
                         if lent:
                             # Lend the link below its value for this one evaluation.
-                            first.exact_constant = pending
+                            if not self._cache_exact(first, pending):
+                                current.exact_failed = True
+                                self.set_type(current, UNKNOWN)
+                                first_type, pending = UNKNOWN, None
+                                continue
                         try:
-                            exact = evaluate(current, self.symbols.lookup, self.exact_bindings)
+                            exact = evaluate(current, self.symbols.lookup, self.exact_bindings, self.exact_budget.bind(current))
                         except ExactArithmeticError as error:
                             # Report at the outermost link this constant reaches.
                             while index >= 0 and chain[index].kind == NodeKind.BINARY and chain[index].operator in _FOLDABLE_OPS:
                                 index -= 1
                             outermost = chain[index + 1]
                             outermost.exact_failed = True
-                            self.add_error(str(error), expression_span(outermost))
+                            self._report_exact_error(error, expression_span(outermost))
                             self.set_type(outermost, UNKNOWN)
                             first_type, pending = UNKNOWN, None
                             continue
                         finally:
                             if lent:
-                                first.exact_constant = None
+                                self._cache_exact(first, None)
                 elif first is None:
                     exact = self._evaluate_exact(current, self.symbols.lookup, self.exact_bindings)
                 if exact is not None:
@@ -2344,7 +2738,7 @@ class TypeCheckingPass:
                     first_type, pending = UNKNOWN, None
                     continue
                 if pending is not None:
-                    first.exact_constant = pending
+                    self._cache_exact(first, pending)
                     first.span = expression_span(first)
                     first_type = F64 if pending[1] else I32
                     self.set_type(first, first_type)
@@ -2352,7 +2746,7 @@ class TypeCheckingPass:
                 first_type = (yield ('_visit_expression_impl', (current, first_type if first is not None else None,)))
                 self.set_type(current, first_type)
             if pending is not None:
-                node.exact_constant = pending
+                self._cache_exact(node, pending)
                 node.span = expression_span(node)
                 first_type = F64 if pending[1] else I32
                 self.set_type(node, first_type)
@@ -2419,16 +2813,16 @@ class TypeCheckingPass:
                 constant = node.left if left_exact is not None else node.right
                 concrete = right_type if left_exact is not None else left_type
                 if isinstance(concrete, PrimitiveType) and concrete.is_numeric():
-                    (yield ('_is_initializer_assignable_to', (constant, self.get_type(constant), concrete, constant.span, 'Initializer',)))
+                    (yield ('_is_initializer_assignable_to', (constant, self.get_type(constant), concrete, constant.span, 'Initializer', None)))
                     if left_exact is not None:
                         left_type = concrete
                     else:
                         right_type = concrete
             if op in {BinaryOp.BIT_SHL, BinaryOp.BIT_SHR}:
                 if left_exact is not None:
-                    (yield ('_is_initializer_assignable_to', (node.left, left_type, left_type, node.left.span, 'Initializer',)))
+                    (yield ('_is_initializer_assignable_to', (node.left, left_type, left_type, node.left.span, 'Initializer', None)))
                 if right_exact is not None:
-                    (yield ('_is_initializer_assignable_to', (node.right, right_type, right_type, node.right.span, 'Initializer',)))
+                    (yield ('_is_initializer_assignable_to', (node.right, right_type, right_type, node.right.span, 'Initializer', None)))
 
             # Arithmetic operators: +, -, *, /, %
             if op in {BinaryOp.ADD, BinaryOp.SUB, BinaryOp.MUL, BinaryOp.DIV, BinaryOp.MOD}:
@@ -2462,10 +2856,20 @@ class TypeCheckingPass:
                 # A literal takes its peer's type when representable. Otherwise use
                 # existing safe widening rules so recorded types match native values.
                 if isinstance(right_type, PrimitiveType) and self._integer_literal_value(node.left) is not None:
-                    if self._integer_literal_fits_type(self._integer_literal_value(node.left), right_type):
+                    exact = getattr(node.left, 'exact_constant', None)
+                    fits = (self._exact_integral_fits(node.left, exact, right_type) if exact is not None
+                            else self._integer_literal_fits_type(self._integer_literal_value(node.left), right_type))
+                    if getattr(node.left, 'exact_failed', False):
+                        return UNKNOWN
+                    if fits:
                         return right_type
                 if isinstance(left_type, PrimitiveType) and self._integer_literal_value(node.right) is not None:
-                    if self._integer_literal_fits_type(self._integer_literal_value(node.right), left_type):
+                    exact = getattr(node.right, 'exact_constant', None)
+                    fits = (self._exact_integral_fits(node.right, exact, left_type) if exact is not None
+                            else self._integer_literal_fits_type(self._integer_literal_value(node.right), left_type))
+                    if getattr(node.right, 'exact_failed', False):
+                        return UNKNOWN
+                    if fits:
                         return left_type
                 if self._is_float_literal(node.left) and right_type.is_floating():
                     return right_type
@@ -2794,7 +3198,7 @@ class TypeCheckingPass:
                     self._generic_callback_arguments.setdefault(id(owner.node), []).append(
                         (argument, arg_type, param_type, i + 1, False))
                     continue
-                if not (yield ('_is_initializer_assignable_to', (argument, arg_type, param_type, node.span, f"Argument {i+1}",))) and not (
+                if not (yield ('_is_initializer_assignable_to', (argument, arg_type, param_type, node.span, f"Argument {i+1}", None))) and not (
                     # Generic inference already reported an untyped argument
                     # that exceeds its default type.
                     isinstance(func_type.param_types[i], GenericParamType)
@@ -2852,25 +3256,25 @@ class TypeCheckingPass:
                 return UNKNOWN
 
             node.stdlib_canonical = canonical
-            if canonical.startswith("std.io."):
-                hook = self.stdlib.modules["io"].functions[method_name]
-                signature = self._stdlib_signatures[canonical]
-                if hook.argument_policy == "format":
-                    self._validate_io_call(node, arg_types)
-                elif len(arg_types) != len(signature.param_types):
-                    self.add_type_error(TypeErrorType.WRONG_ARGUMENT_COUNT, node.span,
-                                        context=f"io.{method_name} expects {len(signature.param_types)} arguments, got {len(arg_types)}")
-                else:
-                    for arg, actual, expected in zip(node.arguments or [], arg_types, signature.param_types):
-                        if not (yield ('_is_initializer_assignable_to', (arg, actual, expected, arg.span, f'io.{method_name} argument'))):
-                            self.add_type_error(TypeErrorType.ARGUMENT_TYPE_MISMATCH, arg.span,
-                                                expected_type=str(expected), got_type=str(actual),
-                                                context=f"io.{method_name} argument")
-                self.set_type(function, signature)
-                return signature.return_type if signature.return_type is not None else VOID
-            if canonical.startswith("std.math."):
-                return self._validate_math_call(node, canonical, arg_types)
-            return UNKNOWN
+            hook = self.stdlib.hooks[canonical]
+            signature = self._stdlib_signatures[canonical]
+            if hook.argument_policy in {"floating_unary", "numeric_unary", "numeric_common"}:
+                return self._validate_math_call(node, hook, signature, arg_types)
+            if hook.argument_policy == "format":
+                self._validate_io_call(node, arg_types)
+            elif len(arg_types) != len(signature.param_types):
+                self.add_type_error(TypeErrorType.WRONG_ARGUMENT_COUNT, node.span,
+                                    context=f"{hook.module}.{method_name} expects {len(signature.param_types)} arguments, got {len(arg_types)}")
+            else:
+                for arg, actual, expected in zip(node.arguments or [], arg_types, signature.param_types):
+                    if not (yield ('_is_initializer_assignable_to', (arg, actual, expected, arg.span, f'{hook.module}.{method_name} argument', None))):
+                        self.add_type_error(TypeErrorType.ARGUMENT_TYPE_MISMATCH, arg.span,
+                                            expected_type=str(expected), got_type=str(actual),
+                                            context=f"{hook.module}.{method_name} argument")
+            self.set_type(function, signature)
+            if signature.return_type is None and node is not self._discarded_expression:
+                self._consumed_stdlib_calls[id(node)] = node
+            return signature.return_type if signature.return_type is not None else VOID
         elif action == 'visit_index_expr':
             node, obj_type = args
             if obj_type is None:
@@ -2961,9 +3365,10 @@ class TypeCheckingPass:
                             self.add_type_error(TypeErrorType.TYPE_USED_AS_VALUE, node.span,
                                                 context=f"'{node.object.name}.{field_name}' is a type")
                             return UNKNOWN
-                        exact = self.exact_bindings.get(id(target.node))
+                        exact = self._binding_exact(node, target.node)
                         if exact is not None:
-                            node.exact_constant = exact
+                            if not self._cache_exact(node, exact):
+                                return UNKNOWN
                             return F64 if exact[1] else I32
                         return target.type
                     module_path = getattr(getattr(obj_symbol, "node", None), "module_path", None)
@@ -3199,11 +3604,12 @@ class TypeCheckingPass:
         elif action == 'visit_match_expr':
             node, = args
             scrutinee_type = (yield ('visit_expression', (node.expression,))) if node.expression else UNKNOWN
+            self._record_generic_match(node, scrutinee_type)
             has_catch_all = isinstance(node.else_case, ASTNode)
             bool_coverage: Set[bool] = set()
             enum_coverage: Set[str] = set()
             seen_patterns: Dict[Tuple[str, Any], ASTNode] = {}
-            seen_ranges: List[Tuple[str, float, float, ASTNode]] = []
+            seen_ranges: List[Tuple[str, int | float, int | float, ASTNode]] = []
             wildcard_pattern: Optional[ASTNode] = None
 
             branch_types: List[Type] = []
@@ -3357,7 +3763,7 @@ class TypeCheckingPass:
                     return None
             ok = True
             for branch, branch_type, literal in zip(branch_nodes, branch_types, untyped):
-                if literal and not (yield ('_is_initializer_assignable_to', (branch, branch_type, expected, branch.span, "Array expression branch",))):
+                if literal and not (yield ('_is_initializer_assignable_to', (branch, branch_type, expected, branch.span, "Array expression branch", None))):
                     self._report_mismatch(TypeErrorType.TYPE_MISMATCH, branch.span, branch,
                                           branch_type, expected, context="Array expression branch")
                     ok = False
@@ -3381,8 +3787,10 @@ class TypeCheckingPass:
                 return ("wildcard", None)
 
             if pattern.kind == NodeKind.PATTERN_RANGE:
+                if isinstance(scrutinee_type, GenericParamType) and not self._is_numeric_compatible(scrutinee_type):
+                    self._deferred_match_ranges[id(pattern)] = (pattern, scrutinee_type)
                 if scrutinee_type.kind != TypeKind.UNKNOWN and not (
-                    self._is_numeric_compatible(scrutinee_type) or scrutinee_type.equals(CHAR)
+                    isinstance(scrutinee_type, GenericParamType) or self._is_numeric_compatible(scrutinee_type) or scrutinee_type.equals(CHAR)
                 ):
                     self.add_type_error(
                         TypeErrorType.TYPE_MISMATCH,
@@ -3396,24 +3804,30 @@ class TypeCheckingPass:
                     if endpoint is None:
                         continue
                     endpoint_type = (yield ('_resolve_pattern_type', (endpoint, scrutinee_type,)))
+                    if self._defer_match_value(endpoint, endpoint_type, scrutinee_type):
+                        pattern.generic_pattern_deferred = True
+                        continue
                     if (
                         endpoint_type.kind != TypeKind.UNKNOWN
                         and scrutinee_type.kind != TypeKind.UNKNOWN
-                        and not (yield ('_is_initializer_assignable_to', (self._pattern_value_node(endpoint), endpoint_type, scrutinee_type, endpoint.span, "Range pattern endpoint type mismatch",)))
+                        and not (yield ('_is_initializer_assignable_to', (self._pattern_value_node(endpoint), endpoint_type, scrutinee_type, endpoint.span, "Range pattern endpoint type mismatch", None)))
                     ):
                         self._report_mismatch(
                             TypeErrorType.TYPE_MISMATCH, endpoint.span, self._pattern_value_node(endpoint),
                             endpoint_type, scrutinee_type, context="Range pattern endpoint type mismatch",
                         )
 
-                self._reject_reversed_constant_range(pattern)
+                if not getattr(pattern, "generic_pattern_deferred", False):
+                    self._reject_reversed_constant_range(pattern)
                 return (None, None)
 
             pattern_type = (yield ('_resolve_pattern_type', (pattern, scrutinee_type,)))
+            if self._defer_match_value(pattern, pattern_type, scrutinee_type):
+                return (None, None)
             if (
                 pattern_type.kind != TypeKind.UNKNOWN
                 and scrutinee_type.kind != TypeKind.UNKNOWN
-                and not (yield ('_is_initializer_assignable_to', (self._pattern_value_node(pattern), pattern_type, scrutinee_type, pattern.span, "Match pattern type mismatch",)))
+                and not (yield ('_is_initializer_assignable_to', (self._pattern_value_node(pattern), pattern_type, scrutinee_type, pattern.span, "Match pattern type mismatch", None)))
             ):
                 self._report_mismatch(
                     TypeErrorType.TYPE_MISMATCH, pattern.span, self._pattern_value_node(pattern),
@@ -3523,12 +3937,13 @@ class TypeCheckingPass:
                         return UNKNOWN
                     self.symbols.resolved_uses[id(pattern)] = symbol
                     self.symbols.mark_used(pattern_name)
-                    exact = self.exact_bindings.get(id(symbol.node)) if symbol.node else None
+                    exact = self._binding_exact(pattern, symbol.node) if symbol.node else None
                     if exact is not None:
                         # A named constant pattern is a use site. Replacing this
                         # node must not specialize the shared declaration.
                         pattern.kind = NodeKind.IDENTIFIER
-                        pattern.exact_constant = exact
+                        if not self._cache_exact(pattern, exact):
+                            return UNKNOWN
                         pattern_type = F64 if exact[1] else I32
                         self.set_type(pattern, pattern_type)
                         return pattern_type
@@ -3691,7 +4106,7 @@ class TypeCheckingPass:
                     # Type check the value
                     if field_init.value:
                         actual_type = (yield ('visit_expression', (field_init.value,)))
-                        if expected_type and not (yield ('_is_initializer_assignable_to', (field_init.value, actual_type, expected_type, field_init.span, f"Field '{field_name}'",))):
+                        if expected_type and not (yield ('_is_initializer_assignable_to', (field_init.value, actual_type, expected_type, field_init.span, f"Field '{field_name}'", None))):
                             self._report_mismatch(
                                 TypeErrorType.TYPE_MISMATCH, field_init.span, field_init.value,
                                 actual_type, expected_type, context=f"Field '{field_name}'",
@@ -3719,7 +4134,7 @@ class TypeCheckingPass:
 
             if field_init.value:
                 actual_type = (yield ('visit_expression', (field_init.value,)))
-                if not (yield ('_is_initializer_assignable_to', (field_init.value, actual_type, expected_field.field_type, field_init.span, f"Union field '{field_name}'",))):
+                if not (yield ('_is_initializer_assignable_to', (field_init.value, actual_type, expected_field.field_type, field_init.span, f"Union field '{field_name}'", None))):
                     self._report_mismatch(
                         TypeErrorType.TYPE_MISMATCH, field_init.span, field_init.value,
                         actual_type, expected_field.field_type, context=f"Union field '{field_name}'",
@@ -3770,18 +4185,22 @@ class TypeCheckingPass:
                     elem_type = common_type
             return ArrayType(element_type=elem_type, size=len(elements))
         elif action == '_is_initializer_assignable_to':
-            value_node, actual_type, expected_type, span, context = args
+            value_node, actual_type, expected_type, span, context, deferred_initializer = args
             if self._has_unknown(expected_type):
                 self._silence_constants(value_node)
                 return True
             if self._is_nil_literal(value_node):
                 return isinstance(expected_type, ReferenceType)
+            if (deferred_initializer and isinstance(expected_type, GenericParamType)
+                    and not actual_type.is_assignable_to(expected_type)):
+                self._deferred_array_initializers.add(id(deferred_initializer))
+                return True  # The owning initializer is checked at each concrete use.
             if (
                 value_node
                 and value_node.kind == NodeKind.ARRAY_INIT
                 and isinstance(expected_type, ArrayType)
             ):
-                return (yield ('_check_array_initializer_assignable', (value_node, expected_type, span, context,)))
+                return (yield ('_check_array_initializer_assignable', (value_node, expected_type, span, context, deferred_initializer)))
             if self._has_unknown(actual_type):
                 return True
             if (value_node is not None and isinstance(expected_type, ArrayType)
@@ -3798,7 +4217,7 @@ class TypeCheckingPass:
                     if branch is None:
                         continue
                     branch_type = self.get_type(branch)
-                    if not (yield ('_is_initializer_assignable_to', (branch, branch_type, expected_type, branch.span, context,))):
+                    if not (yield ('_is_initializer_assignable_to', (branch, branch_type, expected_type, branch.span, context, deferred_initializer))):
                         self._report_mismatch(
                             TypeErrorType.TYPE_MISMATCH, branch.span, branch,
                             branch_type, expected_type, context=context,
@@ -3823,7 +4242,7 @@ class TypeCheckingPass:
 
             return actual_type.is_assignable_to(expected_type)
         elif action == '_check_array_initializer_assignable':
-            node, expected_type, span, context = args
+            node, expected_type, span, context, deferred_initializer = args
             elements = node.elements or []
             ok = True
 
@@ -3846,11 +4265,11 @@ class TypeCheckingPass:
                     element.kind == NodeKind.ARRAY_INIT
                     and isinstance(expected_type.element_type, ArrayType)
                 ):
-                    if not (yield ('_check_array_initializer_assignable', (element, expected_type.element_type, element.span, f"{context} element {index}",))):
+                    if not (yield ('_check_array_initializer_assignable', (element, expected_type.element_type, element.span, f"{context} element {index}", deferred_initializer))):
                         ok = False
                     continue
 
-                if not (yield ('_is_initializer_assignable_to', (element, actual_element_type, expected_type.element_type, element.span, f"{context} element {index}",))):
+                if not (yield ('_is_initializer_assignable_to', (element, actual_element_type, expected_type.element_type, element.span, f"{context} element {index}", deferred_initializer))):
                     self._report_mismatch(
                         TypeErrorType.TYPE_MISMATCH, element.span, element,
                         actual_element_type, expected_type.element_type,
@@ -4075,9 +4494,9 @@ class TypeCheckingPass:
                 context=f"io format string expects {placeholder_count} values, got {actual_count}",
             )
 
-    def _validate_math_call(self, node: ASTNode, canonical: str, arg_types: List[Type]) -> Type:
-        name = canonical.rsplit(".", 1)[-1]
-        expected_count = 2 if name in {"min", "max"} else 1
+    def _validate_math_call(self, node: ASTNode, hook, signature: FunctionType, arg_types: List[Type]) -> Type:
+        name = hook.name
+        expected_count = len(signature.param_types)
         if len(arg_types) != expected_count:
             self.add_type_error(
                 TypeErrorType.WRONG_ARGUMENT_COUNT,
@@ -4095,7 +4514,7 @@ class TypeCheckingPass:
                     context=f"math.{name} argument {index}",
                 )
                 return UNKNOWN
-            if name in {"sqrt", "floor", "ceil", "sin", "cos", "tan", "log", "exp"} and not arg_type.is_floating():
+            if hook.argument_policy == "floating_unary" and not arg_type.is_floating():
                 self.add_type_error(
                     TypeErrorType.ARGUMENT_TYPE_MISMATCH,
                     (node.arguments or [node])[index - 1].span,
@@ -4105,11 +4524,11 @@ class TypeCheckingPass:
                 )
                 return UNKNOWN
 
-        if name in {"min", "max"} and len(arg_types) == 2:
+        if hook.argument_policy == "numeric_common":
             if arg_types[0].is_assignable_to(arg_types[1]):
-                return arg_types[1]
+                return self._substitute_generic(signature.return_type, {"T": arg_types[1]})
             if arg_types[1].is_assignable_to(arg_types[0]):
-                return arg_types[0]
+                return self._substitute_generic(signature.return_type, {"T": arg_types[0]})
             self.add_type_error(
                 TypeErrorType.ARGUMENT_TYPE_MISMATCH,
                 node.span,
@@ -4118,7 +4537,7 @@ class TypeCheckingPass:
                 context=f"math.{name} arguments",
             )
             return UNKNOWN
-        return arg_types[0] if arg_types else UNKNOWN
+        return self._substitute_generic(signature.return_type, {"T": arg_types[0]})
 
     def _count_format_placeholders(self, fmt: str) -> int:
         count = 0
@@ -4138,6 +4557,13 @@ class TypeCheckingPass:
                 continue
             index += 1
         return count
+
+    def _constraint_accepts(self, constraint: TypeSet, actual: Type) -> bool:
+        if isinstance(actual, GenericParamType):
+            admitted = actual.constraint
+            return (admitted is not None and bool(admitted.types)
+                    and all(constraint.contains(member) for member in admitted.types))
+        return constraint.contains(actual)
 
     def _check_generic_constraints(
         self,
@@ -4166,7 +4592,7 @@ class TypeCheckingPass:
                     )
                 elif self._has_unknown(concrete):
                     pass  # The argument that binds this parameter already has its error.
-                elif current.constraint and not current.constraint.contains(concrete):
+                elif current.constraint and not self._constraint_accepts(current.constraint, concrete):
                     self.add_semantic_error(
                         SemanticErrorType.CONSTRAINT_VIOLATION,
                         span,
@@ -4220,10 +4646,7 @@ class TypeCheckingPass:
                 return True
             if not target.is_integral():
                 return False
-            value, _floating = exact
-            if value.denominator != 1:
-                return False
-            return self._integer_literal_fits_type(value.numerator, target)
+            return self._exact_integral_fits(node, exact, target)
 
         def coerce(node: Optional[ASTNode], target: Type) -> None:
             if node is None:
@@ -4232,11 +4655,11 @@ class TypeCheckingPass:
             if exact is None or not isinstance(target, PrimitiveType):
                 return
             if target.name in {'f32', 'f64'}:
-                materialize(node, exact, width=int(target.name[1:]))
-                self.set_type(node, target)
+                if self._materialize_exact(node, exact, width=int(target.name[1:])):
+                    self.set_type(node, target)
             elif target.is_integral():
-                materialize(node, exact, integer=True)
-                self.set_type(node, target)
+                if self._materialize_exact(node, exact, integer=True):
+                    self.set_type(node, target)
 
         def bind(name: str, concrete: Type, node: Optional[ASTNode]) -> None:
             existing = mapping.get(name)
@@ -4264,10 +4687,14 @@ class TypeCheckingPass:
                 return
             elif node is not None and exact_fits(node, existing):
                 coerce(node, existing)
+            elif node is not None and getattr(node, 'exact_failed', False):
+                return
             elif origins.get(name) is not None and exact_fits(origins[name], concrete):
                 coerce(origins[name], concrete)
                 mapping[name] = concrete
                 origins[name] = node
+            elif getattr(origins.get(name), 'exact_failed', False):
+                return
             else:
                 conflicts.append((name, existing, concrete))
 
@@ -4387,15 +4814,21 @@ class TypeCheckingPass:
 
     def _fit_exact_usize(self, node: ASTNode, context: str) -> bool:
         """Fit a size use without re-entering expression or type traversal."""
-        exact = node.exact_constant
+        exact = getattr(node, "exact_constant", None)
+        if exact is None or getattr(node, "exact_failed", False):
+            return False
         value = exact[0]
+        fits = self._exact_integral_fits(node, exact, USIZE)
+        if getattr(node, 'exact_failed', False):
+            return False
         if value.denominator != 1:
             self.add_error(f"{context} is fractional and cannot fit usize", node.span)
             return False
-        if not self._integer_literal_fits_type(value.numerator, USIZE):
+        if not fits:
             self.add_error(f"{context} is out of range for usize", node.span)
             return False
-        materialize(node, exact, integer=True)
+        if not self._materialize_exact(node, exact, integer=True):
+            return False
         self.set_type(node, USIZE)
         return True
 
@@ -4603,13 +5036,106 @@ class TypeCheckingPass:
         """Visit a match expression and infer a unified result type."""
         return self._expression_work('visit_match_expr', (node,))
 
+    def _record_generic_match(self, node: ASTNode, expected: Type) -> None:
+        if isinstance(expected, GenericParamType) and self.context.current_function is not None:
+            self._generic_matches.setdefault(id(self.context.current_function.node), []).append((node, expected))
+
+    def _defer_match_value(self, pattern: ASTNode, actual: Type, expected: Type) -> bool:
+        if not isinstance(expected, GenericParamType):
+            return False
+        value = self._pattern_value_node(pattern)
+        exact = getattr(value, "exact_constant", None)
+        if exact is None:
+            pattern.generic_pattern_lexical_value = (self._range_pattern_value(pattern, set())
+                                                     or self._range_symbolic_value(pattern))
+            return False
+        # Preserve the lexical value before another call selects a different width.
+        value.generic_pattern_exact = (expected, exact)
+        pattern.generic_pattern_deferred = True
+        self._deferred_match_patterns[id(pattern)] = (pattern, actual, expected)
+        return True
+
+    def _check_instantiated_match(self, match: ASTNode, expected: Type, mapping: dict) -> None:
+        copied_literals = []
+        try:
+            seen = {}
+            ranges = []
+            wildcard = None
+            for case in match.cases or []:
+                for original in case.patterns or []:
+                    if (id(original) in self._deferred_match_ranges
+                            and not (expected.is_numeric() or expected.equals(CHAR))):
+                        self.add_type_error(TypeErrorType.TYPE_MISMATCH, original.span,
+                                            expected_type="numeric or char", got_type=str(expected),
+                                            context="Range patterns require a numeric or char match type")
+                        continue
+                    if not getattr(original, "generic_pattern_deferred", False):
+                        continue  # Scope-dependent and wildcard checks ran in the defining scope.
+                    pattern = copy(original)
+                    pattern.generic_pattern_deferred = False
+                    sources = (original.start, original.end) if original.kind == NodeKind.PATTERN_RANGE else (original,)
+                    fitted = []
+                    valid = True
+                    for source in sources:
+                        value = self._pattern_value_node(source)
+                        deferred = getattr(value, "generic_pattern_exact", None)
+                        if deferred is None:
+                            item = copy(source)
+                            item.instantiated_pattern_value = getattr(source, "generic_pattern_lexical_value", None)
+                            fitted.append(item)
+                            continue
+                        if getattr(value, 'exact_failed', False):
+                            valid = False
+                            continue
+                        exact = deferred[1]
+                        actual = self._deferred_match_patterns[id(source)][1]
+                        if not self._instantiated_value_fits(value, actual, actual, expected, mapping):
+                            self._report_mismatch(TypeErrorType.TYPE_MISMATCH, source.span, value,
+                                                  actual, expected, context="Match pattern type mismatch")
+                            valid = False
+                            continue
+                        literal = copy(value)
+                        copied_literals.append(literal)
+                        self.exact_budget.owners[id(literal)] = self.exact_budget.owners.get(id(value), id(value))
+                        if not self._materialize_exact(
+                                literal, exact, integer=expected.is_integral(),
+                                width=int(expected.name[1:]) if expected.is_floating() else None):
+                            value.exact_failed = True
+                            value.exact_diagnosed = True
+                            valid = False
+                            continue
+                        item = copy(source)
+                        if source.kind == NodeKind.PATTERN_LITERAL:
+                            item.literal = literal
+                        else:
+                            item = literal
+                        item.generic_pattern_deferred = False
+                        fitted.append(item)
+                    if not valid:
+                        continue
+                    if original.kind == NodeKind.PATTERN_RANGE:
+                        pattern.start, pattern.end = fitted
+                        self._reject_reversed_constant_range(pattern)
+                    else:
+                        pattern = fitted[0]
+                    kind = "wildcard" if original.kind == NodeKind.PATTERN_WILDCARD else None
+                    wildcard = self._check_match_pattern_redundancy(pattern, kind, None, seen, ranges, wildcard, None)
+        finally:
+            for literal in copied_literals:
+                key = ('ast', id(literal))
+                self.exact_budget.retain(key, None)
+                watcher = self.exact_budget.watched.pop(key, None)
+                if watcher is not None:
+                    watcher.detach()
+                self.exact_budget.owners.pop(id(literal), None)
+
     def _check_match_pattern_redundancy(
         self,
         pattern: ASTNode,
         pattern_kind: Optional[str],
         pattern_value: Optional[object],
         seen_patterns: Dict[Tuple[str, Any], ASTNode],
-        seen_ranges: List[Tuple[str, float, float, ASTNode]],
+        seen_ranges: List[Tuple[str, int | float, int | float, ASTNode]],
         wildcard_pattern: Optional[ASTNode],
         full_coverage_reason: Optional[str],
     ) -> Optional[ASTNode]:
@@ -4623,6 +5149,40 @@ class TypeCheckingPass:
                     "because a previous wildcard pattern covers all values"
                 ),
             )
+            return wildcard_pattern
+
+        if getattr(pattern, "generic_pattern_deferred", False):
+            endpoints = (pattern.start, pattern.end) if pattern.kind == NodeKind.PATTERN_RANGE else (pattern, pattern)
+            values = [getattr(self._pattern_value_node(endpoint), "generic_pattern_exact", None)
+                      for endpoint in endpoints]
+            if all(value is not None for value in values):
+                low, high = (value[1] for value in values)
+                try:
+                    budget = self.exact_budget.bind(pattern)
+                    budget.hit(low)
+                    budget.hit(high)
+                    if compare(BinaryOp.LE, low, high, budget):
+                        for previous, prior in seen_patterns.items():
+                            if previous[0] != "generic_exact":
+                                continue
+                            prior_endpoints = (prior.start, prior.end) if prior.kind == NodeKind.PATTERN_RANGE else (prior, prior)
+                            prior_low, prior_high = (
+                                self._pattern_value_node(endpoint).generic_pattern_exact[1]
+                                for endpoint in prior_endpoints)
+                            budget.hit(prior_low)
+                            budget.hit(prior_high)
+                            if (compare(BinaryOp.LE, low, prior_high, budget)
+                                    and compare(BinaryOp.LE, prior_low, high, budget)):
+                                self.add_semantic_error(
+                                    SemanticErrorType.UNREACHABLE_CODE, pattern.span,
+                                    context=f"redundant match pattern '{self._format_match_pattern(pattern)}' overlaps previous pattern '{self._format_match_pattern(prior)}'",
+                                )
+                                return wildcard_pattern
+                        # Keep declaration identity, not an uncharged Fraction hash.
+                        seen_patterns[("generic_exact", id(pattern))] = pattern
+                except ExactResourceError as error:
+                    pattern.exact_failed = True
+                    self._report_exact_error(error, expression_span(pattern))
             return wildcard_pattern
 
         key = self._match_pattern_key(pattern, pattern_kind, pattern_value)
@@ -4695,7 +5255,7 @@ class TypeCheckingPass:
 
         return wildcard_pattern
 
-    def _match_pattern_range(self, pattern: ASTNode) -> Optional[Tuple[str, float, float]]:
+    def _match_pattern_range(self, pattern: ASTNode) -> Optional[Tuple[str, int | float, int | float]]:
         """Return a comparable inclusive range for statically-known numeric/char ranges."""
         if pattern.kind != NodeKind.PATTERN_RANGE:
             return None
@@ -4902,6 +5462,8 @@ class TypeCheckingPass:
 
     def _range_pattern_value(self, pattern: Optional[ASTNode], resolving: Set[str]) -> Optional[Tuple[str, int | float]]:
         """Resolve literal patterns, constant aliases and exact range endpoints."""
+        if pattern is not None and hasattr(pattern, "instantiated_pattern_value"):
+            return pattern.instantiated_pattern_value
         current = pattern
         seen = set(resolving)
         pattern_position = True
@@ -4927,8 +5489,13 @@ class TypeCheckingPass:
             if not exact[1] and exact[0].denominator == 1:
                 return ("number", exact[0].numerator)
             try:
-                return ("number", float(exact[0]))
-            except OverflowError:
+                bits = ieee_bits(exact, 64, self.exact_budget.bind(current))
+                return ("number", struct.unpack(">d", bits.to_bytes(8, "big"))[0])
+            except ExactResourceError as error:
+                current.exact_failed = True
+                self._report_exact_error(error, expression_span(current))
+                return None
+            except ExactArithmeticError:
                 return None
         return None
 
@@ -4936,6 +5503,8 @@ class TypeCheckingPass:
         """Resolve runtime-symbolic range endpoints backed by local variables."""
         if node is None:
             return None
+        if hasattr(node, "instantiated_pattern_value"):
+            return node.instantiated_pattern_value
 
         if node.kind in {NodeKind.IDENTIFIER, NodeKind.PATTERN_IDENTIFIER}:
             name = node.name or ""
@@ -4970,7 +5539,7 @@ class TypeCheckingPass:
     def _literal_covered_by_seen_range(
         self,
         key: Tuple[str, Any],
-        seen_ranges: List[Tuple[str, float, float, ASTNode]],
+        seen_ranges: List[Tuple[str, int | float, int | float, ASTNode]],
     ) -> Optional[ASTNode]:
         """Return a previous range that covers this literal key, if any."""
         literal = self._literal_key_range_value(key)
@@ -4984,28 +5553,30 @@ class TypeCheckingPass:
 
         return None
 
-    def _literal_key_range_value(self, key: Tuple[str, Any]) -> Optional[Tuple[str, float]]:
+    def _literal_key_range_value(self, key: Tuple[str, Any]) -> Optional[Tuple[str, int | float]]:
         """Normalize a literal pattern key for range containment checks."""
         if len(key) != 3 or key[0] != "literal":
             return None
 
         literal_kind = key[1]
         literal_value = key[2]
-        if literal_kind in {LiteralKind.INTEGER, LiteralKind.FLOAT}:
+        if literal_kind == LiteralKind.INTEGER:
+            return ("number", int(literal_value))
+        if literal_kind == LiteralKind.FLOAT:
             return ("number", float(literal_value))
 
         if literal_kind == LiteralKind.CHAR:
             value = str(literal_value or "")
             if len(value) != 1:
                 return None
-            return ("char", float(ord(value)))
+            return ("char", ord(value))
 
         return None
 
     def _find_overlapping_match_range(
         self,
-        range_key: Tuple[str, float, float],
-        seen_ranges: List[Tuple[str, float, float, ASTNode]],
+        range_key: Tuple[str, int | float, int | float],
+        seen_ranges: List[Tuple[str, int | float, int | float, ASTNode]],
     ) -> Optional[ASTNode]:
         """Return a previous range pattern that overlaps this range, if any."""
         current_kind, current_low, current_high = range_key
@@ -5025,7 +5596,7 @@ class TypeCheckingPass:
 
     def _find_seen_literal_in_range(
         self,
-        range_key: Tuple[str, float, float],
+        range_key: Tuple[str, int | float, int | float],
         seen_patterns: Dict[Tuple[str, Any], ASTNode],
     ) -> Optional[ASTNode]:
         """Return a previous literal pattern that falls inside this range, if any."""
@@ -5309,7 +5880,8 @@ class TypeCheckingPass:
         if exact is None:
             return None
         if expected_type.name in {'f32', 'f64'}:
-            materialize(value_node, exact, width=int(expected_type.name[1:]))
+            if not self._materialize_exact(value_node, exact, width=int(expected_type.name[1:])):
+                return False
             self.set_type(value_node, expected_type)
             # The final traversal reports value overflow at the operand.
             # Its numeric type is valid, so do not add a type mismatch.
@@ -5321,15 +5893,19 @@ class TypeCheckingPass:
             # Already reported once, with a better message. Reporting
             # again here would give the same value two located causes.
             return False
+        fits = self._exact_integral_fits(value_node, exact, expected_type)
+        if getattr(value_node, 'exact_failed', False):
+            return False
         if value.denominator != 1:
-            self.add_error(f"Exact constant {render(value)} is fractional and cannot fit {expected_type}", value_node.span)
+            self.add_error(f"Exact constant {render(value, self.exact_budget.policy)} is fractional and cannot fit {expected_type}", value_node.span)
             value_node.exact_diagnosed = True
             return False
-        if not self._integer_literal_fits_type(value.numerator, expected_type):
-            self.add_error(f"Exact constant {render(value)} is out of range for {expected_type}", value_node.span)
+        if not fits:
+            self.add_error(f"Exact constant {render(value, self.exact_budget.policy)} is out of range for {expected_type}", value_node.span)
             value_node.exact_diagnosed = True
             return False
-        materialize(value_node, exact, integer=True)
+        if not self._materialize_exact(value_node, exact, integer=True):
+            return False
         self.set_type(value_node, expected_type)
         return True
 
@@ -5403,12 +5979,19 @@ class TypeCheckingPass:
             if (exact is not None and isinstance(source_type, PrimitiveType) and source_type.is_numeric()
                     and isinstance(expected, PrimitiveType)):
                 if expected.is_integral():
-                    if exact[0].denominator != 1 or not self._integer_literal_fits_type(exact[0].numerator, expected):
+                    if not self._exact_integral_fits(value, exact, expected):
                         return False
                     continue
                 if expected.is_floating():
                     try:
-                        ieee_bits(exact, int(expected.name[1:]))
+                        budget = self.exact_budget.bind(value)
+                        budget.hit(exact)
+                        ieee_bits(exact, int(expected.name[1:]), budget)
+                    except ExactResourceError as error:
+                        value.exact_failed = True
+                        value.exact_diagnosed = True
+                        self._report_exact_error(error, expression_span(value))
+                        return False
                     except ExactArithmeticError:
                         return False
                     continue
@@ -5423,13 +6006,15 @@ class TypeCheckingPass:
         expected_type: Type,
         span: Optional[SourceSpan],
         context: str = "Initializer",
+        *,
+        deferred_initializer: Optional[ASTNode] = None,
     ) -> bool:
         """Check assignment with literal-specific validation for composite types.
 
         A type left unresolved by an earlier error fits anything: that error
         is the one report the mistake gets.
         """
-        return self._expression_work('_is_initializer_assignable_to', (value_node, actual_type, expected_type, span, context,))
+        return self._expression_work('_is_initializer_assignable_to', (value_node, actual_type, expected_type, span, context, deferred_initializer))
 
     def _is_nil_literal(self, value_node: Optional[ASTNode]) -> bool:
         return (
@@ -5458,7 +6043,7 @@ class TypeCheckingPass:
             return -value_node.operand.literal_value
         return None
 
-    def _integer_literal_fits_type(self, value: int, target: PrimitiveType) -> bool:
+    def _integer_literal_fits_type(self, value: int, target: PrimitiveType, budget=None) -> bool:
         ranges = {
             'i8': (-(2**7), 2**7 - 1),
             'i16': (-(2**15), 2**15 - 1),
@@ -5473,7 +6058,13 @@ class TypeCheckingPass:
         }
         if target.name in ranges:
             lo, hi = ranges[target.name]
-            return lo <= value <= hi
+            if budget is not None:
+                budget.charge(max(1, (max(lo.bit_length(), value.bit_length()) + 63) // 64), 'integral lower bound comparison')
+            if lo > value:
+                return False
+            if budget is not None:
+                budget.charge(max(1, (max(hi.bit_length(), value.bit_length()) + 63) // 64), 'integral upper bound comparison')
+            return value <= hi
         return target.name in {'f32', 'f64'}
 
     def _is_float_literal(self, value_node: Optional[ASTNode]) -> bool:
@@ -5490,7 +6081,7 @@ class TypeCheckingPass:
         span: Optional[SourceSpan],
         context: str,
     ) -> bool:
-        return self._expression_work('_check_array_initializer_assignable', (node, expected_type, span, context,))
+        return self._expression_work('_check_array_initializer_assignable', (node, expected_type, span, context, None))
 
     def visit_new_expr(self, node: ASTNode) -> Type:
         """Visit a new expression."""
@@ -5673,7 +6264,7 @@ class TypeCheckingPass:
             if param_name in value_kinds or isinstance(concrete, GenericValueArg):
                 continue
             constraint = constraints.get(param_name)
-            if constraint is not None and not constraint.contains(concrete):
+            if constraint is not None and not self._constraint_accepts(constraint, concrete):
                 self.add_semantic_error(
                     SemanticErrorType.CONSTRAINT_VIOLATION,
                     span,
