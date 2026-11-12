@@ -1643,7 +1643,11 @@ the earlier failures. Current repairs have regressions in `test/test_audit_type_
 ## Planned work
 
 Automatic memory is required for V1. Runtime help is allowed, but no production
-mechanism is selected. The Python compiler remains the bootstrap implementation;
+mechanism is selected. The approval packet
+[P-MEM-mechanism-selection](plan/packets/P-MEM-mechanism-selection.md)
+compares static reuse, RC with cycle policy, tracing and hybrid options and
+states the L38 measurement protocol; it needs ledger approval before any
+runtime implementation. The Python compiler remains the bootstrap implementation;
 Zig handles generated code and runtime/native integration. L73 also requires
 structured concurrency, CPU AI, actual GPU execution and self-hosting parity.
 These requirements remain unqualified. A package registry stays outside scope.
