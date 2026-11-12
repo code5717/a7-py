@@ -837,17 +837,26 @@ class A7Compiler:
                 if module_resolver.is_virtual_module(module_path):
                     for item in decl.imported_items:
                         canonical = module_resolver.stdlib.resolve_call(module_path, item)
+                        type_symbol = None
                         if canonical is None:
-                            errors.append(SemanticError.from_type(
-                                SemanticErrorType.UNDEFINED_IDENTIFIER,
-                                span=decl.span,
-                                filename=importing_file,
-                                source_lines=source_lines,
-                                context=(
-                                    f"Stdlib module '{module_path}' has no declaration '{item}'"
-                                ),
-                            ))
-                            continue
+                            # Public types such as IoErr live in stdlib_type_symbols
+                            # after prelude load; they are not registry operations.
+                            candidate = symbols.stdlib_type_symbols.get(item)
+                            owner = getattr(getattr(candidate, "node", None), "file_scope", "") or ""
+                            module_leaf = module_path.rsplit("/", 1)[-1]
+                            if candidate is not None and owner == f"<stdlib/{module_leaf}>":
+                                type_symbol = candidate
+                            else:
+                                errors.append(SemanticError.from_type(
+                                    SemanticErrorType.UNDEFINED_IDENTIFIER,
+                                    span=decl.span,
+                                    filename=importing_file,
+                                    source_lines=source_lines,
+                                    context=(
+                                        f"Stdlib module '{module_path}' has no declaration '{item}'"
+                                    ),
+                                ))
+                                continue
                         if importer_scope is not None and item in importer_scope.symbols:
                             errors.append(SemanticError.from_type(
                                 SemanticErrorType.ALREADY_DEFINED,
@@ -856,6 +865,12 @@ class A7Compiler:
                                 source_lines=source_lines,
                                 context=f"Selected import '{item}'",
                             ))
+                            continue
+                        if type_symbol is not None:
+                            if importer_scope is not None:
+                                importer_scope.symbols[item] = type_symbol
+                            else:
+                                symbols.current_scope.symbols[item] = type_symbol
                             continue
                         marker = ASTNode(
                             kind=NodeKind.IMPORT,
@@ -918,6 +933,19 @@ class A7Compiler:
                             source_lines=source_lines,
                             context=(
                                 f"Module '{module_path}' has no declaration '{item}'"
+                            ),
+                        ))
+                        continue
+                    if exported.kind == SymbolKind.MODULE:
+                        # L76: import aliases stay local to the declaring file.
+                        errors.append(SemanticError.from_type(
+                            SemanticErrorType.UNSUPPORTED_FEATURE,
+                            span=decl.span,
+                            filename=importing_file,
+                            source_lines=source_lines,
+                            context=(
+                                f"Import alias '{item}' cannot be selected from module "
+                                f"'{module_path}'; import the target module directly"
                             ),
                         ))
                         continue

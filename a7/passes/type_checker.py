@@ -993,6 +993,10 @@ class TypeCheckingPass:
         symbol = self.symbols.lookup(node.name or node.type_name or "")
         if symbol is None or symbol.kind != SymbolKind.CONSTANT or symbol.node is None:
             return None
+        # Record the use so module lowering rewrites selected constants in
+        # annotations such as `Buf(SIZE)` to the emitted identity name.
+        self.symbols.resolved_uses[id(node)] = symbol
+        self.symbols.mark_used(symbol.name)
         return self._extract_value_arg(symbol.node.value)
 
     def _resolve_type_or_value_arg(self, node: Optional[ASTNode]) -> Type:
@@ -1071,6 +1075,19 @@ class TypeCheckingPass:
                     context=(
                         f"Generic parameter '${param_name}' of {owner_name} takes a type, "
                         f"got value {concrete}"
+                    ),
+                )
+            elif (
+                isinstance(concrete, GenericParamType)
+                and concrete.name in self._active_value_params
+            ):
+                # `$N` must not occupy a type-parameter slot (`Box($N)`).
+                self.add_semantic_error(
+                    SemanticErrorType.CONSTRAINT_VIOLATION,
+                    span,
+                    context=(
+                        f"Generic parameter '${param_name}' of {owner_name} takes a type, "
+                        f"got value parameter '${concrete.name}'"
                     ),
                 )
 
@@ -2688,7 +2705,10 @@ class TypeCheckingPass:
                     first = current.function
                     # Module operations have backend lowering only at direct call
                     # sites; the callee is typed before its call, so mark it here.
-                    if first is not None and first.kind == NodeKind.FIELD_ACCESS:
+                    if first is not None and first.kind in (
+                        NodeKind.FIELD_ACCESS,
+                        NodeKind.IDENTIFIER,
+                    ):
                         setattr(first, "direct_call_target", True)
                 else:
                     break
@@ -3046,9 +3066,47 @@ class TypeCheckingPass:
                     node.stdlib_canonical = canonical
                     self.symbols.resolved_uses[id(callee)] = selected
                     if canonical.startswith("std.io."):
-                        self._validate_io_call(node, arg_types)
+                        method_name = getattr(selected_node, "stdlib_selected_name", None) or ""
+                        hook = self.stdlib.modules["io"].functions.get(method_name)
                         signature = self._stdlib_signatures.get(canonical)
-                        return signature.return_type if signature is not None else UNKNOWN
+                        if hook is not None and hook.argument_policy == "format":
+                            self._validate_io_call(node, arg_types)
+                        elif signature is None:
+                            return UNKNOWN
+                        elif len(arg_types) != len(signature.param_types):
+                            self.add_type_error(
+                                TypeErrorType.WRONG_ARGUMENT_COUNT,
+                                node.span,
+                                context=(
+                                    f"io.{method_name} expects "
+                                    f"{len(signature.param_types)} arguments, "
+                                    f"got {len(arg_types)}"
+                                ),
+                            )
+                        else:
+                            for arg, actual, expected in zip(
+                                node.arguments or [], arg_types, signature.param_types
+                            ):
+                                if not (yield (
+                                    '_is_initializer_assignable_to',
+                                    (arg, actual, expected, arg.span,
+                                     f'io.{method_name} argument'),
+                                )):
+                                    self.add_type_error(
+                                        TypeErrorType.ARGUMENT_TYPE_MISMATCH,
+                                        arg.span,
+                                        expected_type=str(expected),
+                                        got_type=str(actual),
+                                        context=f"io.{method_name} argument",
+                                    )
+                        if signature is not None:
+                            self.set_type(callee, signature)
+                            return (
+                                signature.return_type
+                                if signature.return_type is not None
+                                else VOID
+                            )
+                        return UNKNOWN
                     if canonical.startswith("std.math."):
                         return self._validate_math_call(node, canonical, arg_types)
                     return UNKNOWN
@@ -3176,6 +3234,18 @@ class TypeCheckingPass:
             # A callback signature already uses its enclosing function's bindings.
             if not bound_callback:
                 self._check_generic_constraints(func_type, generic_mapping, node.span)
+                # Inferred `$N` lengths must still fit the declared value kind
+                # (`fill($N: u8)` rejecting `[300]u8`).
+                if callee_declaration is not None and generic_mapping:
+                    value_kinds = self._value_param_types_from_params(
+                        callee_declaration.generic_params or []
+                    )
+                    owner = callee_declaration.name or "function"
+                    for name, kind in value_kinds.items():
+                        concrete = generic_mapping.get(name)
+                        if concrete is None or isinstance(concrete, UnknownType):
+                            continue
+                        self._check_value_arg(name, owner, kind, concrete, node.span)
             # Substitute generic types in param_types for type checking
             resolved_param_types = [self._substitute_generic(pt, generic_mapping) for pt in func_type.param_types]
             inference_failed = len(self.errors) > errors_before_inference
@@ -4417,6 +4487,20 @@ class TypeCheckingPass:
                     TypeErrorType.TYPE_USED_AS_VALUE,
                     node.span,
                     context=f"'{ident_name}' is a type",
+                )
+                return UNKNOWN
+            # Selected stdlib ops lower only at direct call sites.
+            if (
+                getattr(symbol.node, "stdlib_selected_canonical", None) is not None
+                and not getattr(node, "direct_call_target", False)
+            ):
+                self.add_semantic_error(
+                    SemanticErrorType.UNSUPPORTED_FEATURE,
+                    node.span,
+                    context=(
+                        "Standard-library operations must be called directly; "
+                        "function values are unavailable"
+                    ),
                 )
                 return UNKNOWN
         if id(symbol.node) in self._bound_callback_values:

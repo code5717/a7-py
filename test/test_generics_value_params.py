@@ -338,6 +338,27 @@ class TestValueParamsOnFunctions:
         """
         assert expect_error(source, "Conflicting")
 
+    def test_function_value_param_inferred_out_of_range_rejected(self):
+        source = """
+        fill($N: u8) :: fn(buf: [$N]u8) {
+        }
+        main :: fn() {
+            b: [300]u8
+            fill(b)
+        }
+        """
+        assert expect_error(source, "out of range")
+
+    def test_value_param_forwarded_into_type_param_rejected(self):
+        source = """
+        Box($T) :: struct { x: $T }
+        Holder($N: usize) :: struct { b: Box($N) }
+        main :: fn() {
+            h: Holder(4)
+        }
+        """
+        assert expect_error(source, "takes a type")
+
 
 class TestWhereClauseStage:
     def test_where_clause_parses_and_checks(self, tmp_path):

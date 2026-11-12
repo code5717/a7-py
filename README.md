@@ -216,8 +216,10 @@ debug, release and fast. The combined gate passed on frozen source `e0c6235a`.
 The [verification record](docs/audits/2026-10-07/stdio-integration-verification.json)
 records the complete source hash. Ordinary user void bindings are unchanged.
 
-File imports share one emitted Zig file after per-file semantic checking. Selected imports and `using import`
-remain incomplete. Forwarding another file's import alias is rejected under
+File imports share one emitted Zig file after per-file semantic checking. Selected
+imports (`import "m" { A, B }`) bind public names from file modules and virtual
+stdlib modules. `using import` rejects at semantic exit 6 with alias-form
+guidance. Forwarding another file's import alias is rejected under
 L76. Unsupported multi-dot type annotations and struct literals still fail
 parsing. Some accepted forms
 still fail later in compilation. The [gap list](docs/STATUS.md) records those

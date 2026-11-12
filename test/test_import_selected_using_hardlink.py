@@ -105,6 +105,96 @@ def test_using_import_exits_6_with_alias_guidance(tmp_path):
     assert 'alias :: import' in text
 
 
+def test_selected_import_stdlib_ioerr_compiles(tmp_path):
+    main = tmp_path / "main.a7"
+    main.write_text(
+        'import "std/io" { IoErr, println_ok }\n'
+        "main :: fn() {\n"
+        "    r: Result(usize, IoErr) = println_ok(\"ok\")\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "main.zig"
+    result = run_cli(["--mode", "compile", "--output", str(out), str(main)])
+    assert result.returncode == 0, result.stdout + result.stderr
+    emitted = out.read_text()
+    assert "IoErr" in emitted
+
+
+def test_selected_import_module_alias_exits_6(tmp_path):
+    (tmp_path / "leaf.a7").write_text("foo :: fn() i32 { ret 1 }\n", encoding="utf-8")
+    (tmp_path / "mid.a7").write_text('l :: import "leaf"\n', encoding="utf-8")
+    main = tmp_path / "main.a7"
+    main.write_text(
+        'import "mid" { l }\n'
+        "main :: fn() { x := l.foo() }\n",
+        encoding="utf-8",
+    )
+    result = run_cli(["--mode", "semantic", str(main)])
+    assert result.returncode == 6, result.stdout + result.stderr
+    text = (result.stdout + result.stderr).lower()
+    assert "import alias" in text or "cannot be selected" in text
+
+
+def test_selected_stdlib_op_as_value_exits_6(tmp_path):
+    main = tmp_path / "main.a7"
+    main.write_text(
+        'import "std/io" { println }\n'
+        "main :: fn() {\n"
+        "    f := println\n"
+        '    f("hello")\n'
+        "}\n",
+        encoding="utf-8",
+    )
+    result = run_cli(["--mode", "semantic", str(main)])
+    assert result.returncode == 6, result.stdout + result.stderr
+    assert "function values are unavailable" in (result.stdout + result.stderr)
+
+
+def test_selected_read_line_uses_fixed_signature(tmp_path):
+    main = tmp_path / "main.a7"
+    main.write_text(
+        'import "std/io" { read_line }\n'
+        "main :: fn() {\n"
+        "    buf: [8]u8\n"
+        "    _ := read_line(buf[0..])\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "main.zig"
+    ok = run_cli(["--mode", "compile", "--output", str(out), str(main)])
+    assert ok.returncode == 0, ok.stdout + ok.stderr
+
+    bad = tmp_path / "bad.a7"
+    bad.write_text(
+        'import "std/io" { read_line }\n'
+        'main :: fn() { _ := read_line("hello") }\n',
+        encoding="utf-8",
+    )
+    rejected = run_cli(["--mode", "semantic", str(bad)])
+    assert rejected.returncode == 6, rejected.stdout + rejected.stderr
+    assert "[]u8" in (rejected.stdout + rejected.stderr)
+
+
+def test_selected_constant_in_generic_type_arg_lowers(tmp_path):
+    (tmp_path / "lib.a7").write_text("SIZE :: 3\n", encoding="utf-8")
+    main = tmp_path / "main.a7"
+    main.write_text(
+        'import "lib" { SIZE }\n'
+        "Buf($N: usize) :: struct { data: [$N]u8 }\n"
+        "main :: fn() {\n"
+        "    b: Buf(SIZE)\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "main.zig"
+    result = run_cli(["--mode", "compile", "--output", str(out), str(main)])
+    assert result.returncode == 0, result.stdout + result.stderr
+    emitted = out.read_text()
+    assert "Buf(3)" in emitted
+    assert "Buf(SIZE)" not in emitted
+
+
 def test_hardlink_duplicate_import_exits_6(tmp_path):
     helper = tmp_path / "helper.a7"
     helper.write_text("pub value :: fn() i32 { ret 7 }\n", encoding="utf-8")
