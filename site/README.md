@@ -41,12 +41,17 @@ production HTTP headers. Deployment is a separate operation.
 
 ## Design
 
-The approved minimal documentation layout uses a 240px navigation rail, a reading
-column, and a 180px outline. Native disclosures replace the rail below 900px and
-the outline below 1200px. Article prose uses Inter Variable at 17px and 1.65 line
-height. Literal code uses JetBrains Mono at 15px and 1.6 line height without
-ligatures. Both fonts are pinned dependencies, copied locally with their
-licenses. Only the prose font is preloaded.
+The shared documentation shell uses a 240px navigation rail, a reading column,
+and a 180px outline. Native disclosures replace the rail below 900px and the
+outline below 1200px. The landing page (`index`) adds a brand-first full-bleed
+hero before that shell: large **A7** mark, one lede, Get started / Tour CTAs, and
+a full-width code sample. Safe-area insets, short-height orientation compaction, and
+fold / dual-segment spanning rules live in `src/tailwind.css`.
+
+Article prose uses Inter Variable at 17px and 1.65 line height. Literal code
+uses JetBrains Mono at 15px and 1.6 line height without ligatures. Both fonts
+are pinned dependencies, copied locally with their licenses. Only the prose
+font is preloaded.
 
 Light and dark tokens live in `src/tailwind.css`. The initial theme follows the
 system; explicit preferences apply before paint and persist when storage is

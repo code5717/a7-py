@@ -1,10 +1,16 @@
 const navigation = document.querySelector(".navigation");
 const mobileNavigation = matchMedia("(max-width: 899px)");
+const foldNavigation = matchMedia(
+  "(spanning: single-fold-vertical), (horizontal-viewport-segments: 2)",
+);
 function adaptNavigation() {
-  if (navigation) navigation.open = !mobileNavigation.matches;
+  if (!navigation) return;
+  // Dual-pane fold layouts keep the rail open even when the CSS width is mid-range.
+  navigation.open = foldNavigation.matches || !mobileNavigation.matches;
 }
 adaptNavigation();
 mobileNavigation.addEventListener("change", adaptNavigation);
+foldNavigation.addEventListener("change", adaptNavigation);
 const base = "/a7-py";
 const known = [
   "start",
