@@ -358,20 +358,25 @@ def workflow(argv: list[str]) -> int:
         return int(result.exit_code)
 
     # Reject source conflicts before the Zig lookup so exit 3 stays
-    # stage-specific even when the toolchain is missing.
+    # stage-specific even when the toolchain is missing. Keep the check
+    # inside I/O handling: Path.is_dir() can raise OSError (e.g. ENAMETOOLONG).
     destination = None
-    if command == "build":
-        destination = Path(
-            args.output or (Path(args.file).stem + (".exe" if os.name == "nt" else ""))
-        ).absolute()
-        if destination.suffix == ".a7" or native_output_conflict(
-            result.input_paths, destination
-        ):
-            print(
-                f"Native output conflicts with a source file or directory: {destination}",
-                file=sys.stderr,
-            )
-            return 3
+    try:
+        if command == "build":
+            destination = Path(
+                args.output or (Path(args.file).stem + (".exe" if os.name == "nt" else ""))
+            ).absolute()
+            if destination.suffix == ".a7" or native_output_conflict(
+                result.input_paths, destination
+            ):
+                print(
+                    f"Native output conflicts with a source file or directory: {destination}",
+                    file=sys.stderr,
+                )
+                return 3
+    except OSError as exc:
+        print(f"Native {command} failed: {exc}", file=sys.stderr)
+        return 3
 
     zig, message = find_zig()
     if zig is None:
