@@ -102,11 +102,11 @@ These findings are recorded with source programs and diagnostics in
 | 5.4 Jump Statements | limited | [language/control-flow](../public/docs/language/control-flow.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 6. Functions | limited | [language/functions](../public/docs/language/functions.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 6.1 Function Declarations | limited | [language/functions](../public/docs/language/functions.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
-| 6.2 Recursion | unavailable | [language/functions](../public/docs/language/functions.md) | Recursion is banned; user variadic runtime lowering is unavailable. See the function restrictions. |
+| 6.2 Recursion | unavailable | [language/functions](../public/docs/language/functions.md) | Recursion is banned; user variadic parameters are cut. See the function restrictions. |
 | 6.3 Function Parameter Immutability | limited | [language/functions](../public/docs/language/functions.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 6.4 Function Types | limited | [language/functions](../public/docs/language/functions.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 6.5 Methods | limited | [language/functions](../public/docs/language/functions.md) | Explicit receiver functions exist; dot-call method sugar is planned. |
-| 6.6 Variadic Functions | unavailable | [language/functions](../public/docs/language/functions.md) | Recursion is banned; user variadic runtime lowering is unavailable. See the function restrictions. |
+| 6.6 Variadic Functions | unavailable | [language/functions](../public/docs/language/functions.md) | Cut: user variadic parameters fail at semantic exit 6. See the function restrictions. |
 | 7. Generics | limited | [language/generics](../public/docs/language/generics.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 7.1 Generic System Design | limited | [language/generics](../public/docs/language/generics.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
 | 7.2 Generic Types | limited | [language/generics](../public/docs/language/generics.md) | Documented with current implementation restrictions; SPEC prose alone is not native execution evidence. |
