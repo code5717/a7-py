@@ -297,7 +297,7 @@ main :: fn() {
 
 E4_IF_CHAIN_ARMS = {
     "ranges-without-else": "case 1..5: {\n}\ncase 6..10: {\n}",
-    "capture": "case 1: {\n}\ncase v: {\n}",
+    "wildcard-rest": "case 1: {\n}\ncase _: {\n}",
 }
 
 

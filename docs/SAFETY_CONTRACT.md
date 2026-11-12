@@ -99,10 +99,17 @@ elements. These slot facts retain allocation identity through reference and arra
 copies and represented conditional paths. Replacing a slot does not retarget a
 saved reference. Represented replacement and cleanup paths preserve known
 allocation identity; accesses to known deleted allocations still reject.
+Bounded dynamic-index stores on those arrays join or invalidate possibly-affected
+element facts. Stores through a selected multi-allocation holder join old and new
+candidate field facts; heap-field sync updates selected binding paths that share
+storage, not independent by-value struct copies that only hold the same
+reference. Joined-allocation nil-writes invalidate overlapping selected paths.
 Unrepresented joins and loop effects do not gain general lifetime proofs.
 Unknown writes, views and mutable array borrows prevent stale exact slot identities from causing
-new rejections. General array/slice lifetime analysis and fields reached through
-joined allocation sets remain incomplete. Earlier reviewed callee summaries
+new rejections. Broader container identity (slices, correlated selections)
+remains gated on
+[P-REF-container-identities](plan/packets/P-REF-container-identities.md).
+Earlier reviewed callee summaries
 missed deletion through borrowed aggregates and retained stale allocation
 identity after field replacement. They rejected valid parent/sibling uses after
 child-only deletion and parent use after an unrelated local allocation was
@@ -165,9 +172,12 @@ readonly summary that proves a reachable nil read adds semantic exit 6. Existing
 fatal diagnostics retain priority. An imported or nested declaration named
 `main` does not replace the selected entry; `--lib` supplies no execution root.
 Missing, incomplete and unresolved summaries add no proof or new acceptance.
-The entry diagnostic includes the originating callee line and column but not
-its source filename. Twelve native build/run controls and the repaired
-full release gate passed on the identified source snapshot.
+The entry diagnostic includes the originating callee source filename, line and
+column. Twelve native build/run controls and the repaired
+full release gate passed on the identified source snapshot. Function-pointer
+locals without an initializer are rejected on proved-uninitialized use
+(semantic exit 6); uncertain joins after partial assignment are not yet
+rejected.
 Effectful entries, ordered mutation and general caller-local truth remain open.
 
 A bounded direct-call repair selects return facts for bodies containing only

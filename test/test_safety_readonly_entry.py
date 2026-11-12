@@ -19,7 +19,7 @@ def test_known_entry_path_to_nil_read_is_rejected(tmp_path, body):
     result = expect_exit(HEADER+'main::fn(){'+body+'}', tmp_path, 6,
                          'readonly executable entry field access')
     assert len(result.failure.details) == 1
-    assert 'callee use at line 2' in result.failure.details[0]['message']
+    assert 'callee use in main.a7 at line 2' in result.failure.details[0]['message']
     assert result.failure.details[0]['span']['start_line'] == 4
 
 

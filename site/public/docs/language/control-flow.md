@@ -76,7 +76,7 @@ Statements after a terminating `ret`, valid jump, or fully terminating branch ar
 
 ## Matching
 
-`match value { case pattern: body ... else: body }` supports literal, enum, range, wildcard, and identifier patterns. A visible identifier names an existing constant or value pattern. An otherwise unresolved identifier captures the matched value as an immutable branch-local binding and covers the remaining values. A capture must be the only pattern in its case.
+`match value { case pattern: body ... else: body }` supports literal, enum, range, wildcard, and identifier patterns. A visible identifier names an existing constant or value pattern. An unresolved identifier is an undefined-name error (semantic exit 6). Use `_` for a wildcard and read the scrutinee in the arm when a binding is needed. Tagged-union payload bindings still use `case .tag(name):`.
 
 Integer literal/range overlap checks preserve the fitted integer value,
 including values beyond 2^53. Adjacent values remain distinct, while a literal
@@ -100,19 +100,19 @@ match value {
 ```
 
 The fragment assumes an `io` import and an enclosing function. It prints
-`range`. A match expression supplies a value. This function captures the
-scrutinee in its only branch:
+`range`. A match expression supplies a value. This function uses a wildcard and
+the scrutinee in its only branch:
 
 ```a7
 score :: fn(x: i32) i32 {
     ret match x {
-        case value: value + 1
+        case _: x + 1
     }
 }
 ```
 
-`score(4)` returns 5. Do not confuse a new capture name with an existing visible
-binding used as a value pattern.
+`score(4)` returns 5. Do not confuse a value-pattern name with `_` or with a
+tagged-union payload binding.
 
 `fall` enters the next case body. It must be the final statement of a non-final case. It is unavailable in a match expression and cannot appear in a nested context that violates that restriction. Ordinary cases do not fall through automatically.
 

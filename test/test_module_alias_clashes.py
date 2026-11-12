@@ -94,8 +94,8 @@ def test_identifier_comparison_is_not_reported_as_alias_capture(tmp_path):
     assert "conflicts with this file's import alias" not in output
 
 
-def test_non_alias_match_comparison_and_capture_remain_valid(tmp_path):
-    code, output = compile_source(tmp_path, 'h :: import "helper"\nLIMIT :: 1\nmain :: fn() { match 1 { case LIMIT: {} case captured: {} } }\n')
+def test_non_alias_match_comparison_and_wildcard_remain_valid(tmp_path):
+    code, output = compile_source(tmp_path, 'h :: import "helper"\nLIMIT :: 1\nmain :: fn() { match 1 { case LIMIT: {} case _: {} } }\n')
     assert code == 0, output
 
 

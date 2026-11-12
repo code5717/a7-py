@@ -1157,10 +1157,15 @@ SAF-8 repeated field deletion, and direct reference alias use after deletion
 earlier safety.py revision, as recorded in the
 [qualification boundary](audits/2026-10-07/qualification.md). Later nested-record,
 wrapper and match repairs are included in the passing integration gate.
-Exact literal-index fixed-array aliases participate in deleted-allocation checks
-on represented straight-line paths. Independent slot copies and fresh replacements
-retain valid behavior. General array/slice identities and joined allocation field
-paths remain open release blockers. On the reviewed snapshot, deletion through a
+Exact array-element aliases at proven indices now track allocation identity for
+fixed local arrays of references: stale element reads after deleting the source
+allocation exit 6, while before-delete and distinct-slot controls remain
+accepted. Independent slot copies and fresh replacements retain valid behavior.
+Bounded dynamic-index stores on those arrays join or invalidate every tracked
+element fact that the store may hit. Slice-element identity and arrays inside
+records remain outside this slice; see
+[P-REF-container-identities](plan/packets/P-REF-container-identities.md) (not
+approved for broader policy). On the reviewed snapshot, deletion through a
 borrowed aggregate left a caller alias alive in the proof state; callee field replacement
 could retain the previous allocation's identity. The same snapshot rejected
 valid parent/sibling use after child-only deletion and valid parent use when a
@@ -1171,11 +1176,17 @@ until after argument evaluation. These repairs are included in the passing
 integration gate.
 Exact replay permits at most one transitive conditional and source-sized expanded
 work. A doubling call chain can exceed this budget at depth three; this is a
-work bound, not a fixed depth guarantee. Selected-child lifetime dependencies
+work bound, not a fixed depth guarantee. Over-budget callees fail closed to the
+legacy summaries. Selected-child lifetime dependencies
 now preserve the represented aliases without marking every possible child
 deleted. Focused and independent compile-only checks, native controls in all
-profiles and the integration gate pass. Stores through a selected holder can still leave an original base's
-field facts stale, and joined-holder nil-write invalidation remains incomplete.
+profiles and the integration gate pass. Stores through a selected holder join
+old and new facts for each concrete candidate rather than overwriting all to the
+new value; heap-field sync still reaches selected binding paths that share
+storage, but independent by-value struct copies that merely hold the same
+reference stay separate. Joined-holder nil-write invalidation clears overlapping
+selected binding paths. Unapproved P-REF cases (correlated complementary
+selections, unknown-callee container effects) remain ledger-deferred.
 Other paths retain incomplete legacy analysis. A later candidate repairs
 loop-head deletion through a reference-field argument and a loop-local alias.
 It preserves unrelated allocations, fresh factory returns and valid one-trip
@@ -1532,8 +1543,11 @@ research request. Existing memory and language decisions remain in force.
   a value. A function that is itself used as a value and calls through a
   value of its own type exits 6 even when it never recurses. Pinned in
   `test/test_recursion_ban_function_values.py`.
-- A function-pointer local without an initializer has no zero value;
-  calling it before assignment passes `a7` and fails the Zig build.
+- A function-pointer local without an initializer has no callable zero value.
+  Proved-uninitialized calls and copies now exit 6 before Zig (partial local
+  check; uncertain joins after partial assignment remain accepted). Aggregate
+  field/array function slots stay outside this first slice
+  ([P-FN-initialization](plan/packets/P-FN-initialization.md)).
 - `main` cannot return an exit status: a program exits 0, or 134 on a
   panic.
 - Collections and fuller string/memory helpers are planned
@@ -1592,12 +1606,12 @@ The focused native probes record these repaired behaviors and remaining limits:
   escapes (`docs/SPEC.md`; phases 2a/2b/2c).
 - Call, index, slice, field-access, unary, assignment and parenthesised
   nodes carry spans from their first to their last token.
-- An undefined bare identifier in a `case` pattern silently becomes a capture
-  binding instead of an undefined-name error (probed: `case Blu:` matches
-  everything; capture rule owned by packet P5/NR-03).
-- Some failure payloads carry no span: a failed JSON `stages.parse` reports
-  `ok: false` with no message or span, and several parse diagnostics lack
-  source context (PAR-14).
+- An undefined bare identifier in a `case` pattern exits 6 as an undefined-name
+  error. Use `_` for a wildcard; bind from the scrutinee in the arm. Explicit
+  capture syntax beyond tagged-union `case .tag(name):` is not approved.
+- Failed JSON `stages.parse` entries include `message` and `span` alongside the
+  top-level `error` object. Remaining parse diagnostics that lack source
+  excerpts are tracked under PAR-14.
 
 See [documentation verification](../site/docs/content-verification.md) for source,
 commands, diagnostics, and supported alternatives. Historical audit reports retain
@@ -1704,7 +1718,7 @@ its complete readonly summary. It rejects a represented nil read reached through
 a known local selector. `--lib` has no implicit executable root. General
 caller-local Boolean and effect proofs remain incomplete.
 The check retains existing entry-signature diagnostic priority. Its callee
-origin text reports line and column without the originating source filename.
+origin text reports source filename, line and column.
 Independent compile-only review found six new rejections in 26 paired sources;
 15 jointly accepted sources emit identical Zig. This does not qualify native
 behavior or close the unresolved cases above. The native controls establish

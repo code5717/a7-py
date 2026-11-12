@@ -3769,7 +3769,7 @@
     {
       "id": "loops-match",
       "status": "supported",
-      "qualification": "Native probes verify literal/range/capture matches and statement fallthrough; example suite covers labels and loops. Fall placement is restricted.",
+      "qualification": "Native probes verify literal/range/wildcard matches and statement fallthrough; bare undefined identifiers are exit 6; example suite covers labels and loops. Fall placement is restricted.",
       "topic": "language/control-flow",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/examples/036_control_flow_edges.a7",
