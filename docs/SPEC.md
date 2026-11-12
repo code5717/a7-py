@@ -833,20 +833,20 @@ match r {
     else: print("other")
 }
 
-// Identifier capture patterns
+// Wildcard covers remaining values; bind from the scrutinee in the arm body
 score :: fn(x: i32) i32 {
     ret match x {
-        case value: value + 1  // value is branch-local and has type i32
+        case _: x + 1
     }
 }
 ```
 
 An identifier pattern refers to an existing visible symbol when one exists,
 which preserves constant/value-pattern matching. If no visible symbol with that
-name exists, the identifier is a capture pattern: it matches the scrutinee,
-binds an immutable branch-local value with the scrutinee type, and covers all
-remaining values like `_`. A capture pattern must be the only pattern in its
-case.
+name exists, the pattern is an undefined-name error (semantic exit 6). Silent
+capture of bare undefined identifiers is rejected; use `_` for a wildcard and
+read the scrutinee in the arm when a binding is needed. Tagged-union payload
+bindings still use `case .tag(name):`.
 
 A leading-dot arm names a tag of the scrutinee's tagged union type.
 `case .tag:` tests the tag without binding. `case .tag(name):` binds
@@ -1554,8 +1554,8 @@ readonly summary that proves a reachable nil read adds semantic exit 6. Existing
 fatal diagnostics retain priority. An imported or nested declaration named
 `main` does not replace the selected entry; `--lib` supplies no execution root.
 Missing, incomplete and unresolved summaries add no proof or new acceptance.
-The entry diagnostic includes the originating callee line and column but not
-its source filename. Twelve native build/run controls and the repaired
+The entry diagnostic includes the originating callee source filename, line and
+column. Twelve native build/run controls and the repaired
 full release gate passed on the identified source snapshot.
 Effectful entries, ordered mutation and general caller-local truth remain open.
 
@@ -2537,8 +2537,8 @@ feature list does not establish that the current tree passes these checks.
      remain distinct; a literal equal to a singleton range endpoint overlaps it.
    - Conservative non-constant symbolic interval overlaps are diagnosed when
      inclusive ranges share an endpoint symbol.
-   - Identifier capture patterns bind the scrutinee in branch-local scope when
-     no existing symbol with that name is visible.
+   - Bare undefined identifier patterns are undefined-name errors; use `_` for
+     wildcards and bind from the scrutinee in the arm body when needed.
 
 3. **Memory/lifetime model depth**
    - Basic `new`/`del` validation and direct use-after-`del` rejection exist;

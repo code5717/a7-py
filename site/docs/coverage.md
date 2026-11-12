@@ -37,7 +37,7 @@ These findings are recorded with source programs and diagnostics in
 | numeric-types | limited | [language/types](../public/docs/language/types.md) | Explicit-width scalars and usize/isize. Integer addition, subtraction, and multiplication wrap; shift safety and other numeric edge cases remain incomplete. |
 | casts | limited | [language/types](../public/docs/language/types.md) | Primitive casts require classification and range proof. |
 | evaluation-order | unverified | [language/operators](../public/docs/language/operators.md) | SPEC states evaluation order; no exhaustive side-effect-order qualification is claimed. |
-| loops-match | supported | [language/control-flow](../public/docs/language/control-flow.md) | Native probes verify literal/range/capture matches and statement fallthrough; example suite covers labels and loops. Fall placement is restricted. |
+| loops-match | supported | [language/control-flow](../public/docs/language/control-flow.md) | Native probes verify literal/range/wildcard matches and statement fallthrough; bare undefined identifiers are exit 6; example suite covers labels and loops. Fall placement is restricted. |
 | recursion | unavailable | [language/functions](../public/docs/language/functions.md) | Direct and mutual recursion and known indirect cycles are rejected. |
 | variadics | unavailable | [language/functions](../public/docs/language/functions.md) | Declarations may parse but user variadic runtime lowering is rejected. |
 | multiple-returns | unavailable | [language/functions](../public/docs/language/functions.md) | Multiple returns and destructuring are not backend features; use a result struct. |

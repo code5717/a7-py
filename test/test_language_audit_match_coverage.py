@@ -44,9 +44,9 @@ by_else :: fn(x: i32) i32 { ret match x { case 1: 10; else: 20 } }
 by_wildcard :: fn(x: i32) i32 { ret match x { case 1: 10; case _: 30 } }
 by_bool :: fn(x: bool) i32 { ret match x { case true: 40; case false: 50 } }
 by_enum :: fn(x: Color) i32 { ret match x { case Color.Red: 60; case Color.Blue: 70 } }
-by_capture :: fn(x: i32) i32 { ret match x { case 1: 10; case value: value } }
+by_rest :: fn(x: i32) i32 { ret match x { case 1: 10; case _: x } }
 main :: fn() {
-    io.println("{} {} {} {} {}", by_else(2), by_wildcard(2), by_bool(false), by_enum(Color.Blue), by_capture(80))
+    io.println("{} {} {} {} {}", by_else(2), by_wildcard(2), by_bool(false), by_enum(Color.Blue), by_rest(80))
     x := 9
     match x { case 1: { io.println("unmatched") } }
     io.println("done")

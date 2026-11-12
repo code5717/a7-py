@@ -279,7 +279,7 @@ class TestKeywordNames:
             }
             match k {
                 case Kind.error: { io.println("is error") }
-                case other: { io.println("not error") }
+                case _: { io.println("not error") }
             }
         }
         main :: fn() {

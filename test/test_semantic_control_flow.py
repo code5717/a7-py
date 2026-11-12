@@ -930,8 +930,8 @@ class TestMatchStatements:
         """
         assert expect_success(source)
 
-    def test_identifier_capture_pattern_binds_scrutinee(self):
-        """An unresolved identifier pattern should bind the scrutinee in its branch."""
+    def test_identifier_capture_pattern_is_undefined_name(self):
+        """An unresolved identifier pattern is an undefined-name error, not a capture."""
         source = """
         pick :: fn() i32 {
             n: i32 = 7
@@ -940,7 +940,7 @@ class TestMatchStatements:
             }
         }
         """
-        assert expect_success(source)
+        assert expect_error(source, "Undefined identifier")
 
     def test_existing_identifier_pattern_stays_value_pattern(self):
         """Existing identifiers should keep their comparison-pattern behavior."""
@@ -956,39 +956,39 @@ class TestMatchStatements:
         """
         assert expect_success(source)
 
-    def test_capture_pattern_must_be_only_case_pattern(self):
-        """Capture patterns are catch-all bindings and cannot be mixed in a case."""
+    def test_undefined_pattern_mixed_with_literal_is_undefined_name(self):
+        """Bare undefined identifiers stay undefined even beside other patterns."""
         source = """
         main :: fn() {
             n: i32 = 7
             match n {
-                case value, 7: x := value
+                case value, 7: x := 1
                 else: x := 0
             }
         }
         """
-        assert expect_error(source, "must be the only pattern")
+        assert expect_error(source, "Undefined identifier")
 
-    def test_capture_pattern_does_not_leak_after_match(self):
-        """Capture bindings are scoped to their branch."""
+    def test_undefined_case_identifier_does_not_bind(self):
+        """A rejected capture name must not introduce a branch-local binding."""
         source = """
         main :: fn() {
             n: i32 = 7
             match n {
-                case value: x := value
+                case value: x := 1
             }
             y := value
         }
         """
-        assert expect_error(source, "Undefined identifier: 'value'")
+        assert expect_error(source, "Undefined identifier")
 
-    def test_capture_pattern_makes_later_case_unreachable(self):
-        """A capture pattern covers all remaining values."""
+    def test_wildcard_makes_later_case_unreachable(self):
+        """A wildcard covers all remaining values."""
         source = """
         main :: fn() {
             n: i32 = 7
             match n {
-                case value: x := value
+                case _: x := 1
                 case 7: x := 0
             }
         }
@@ -997,13 +997,13 @@ class TestMatchStatements:
             source, "Unreachable code: match pattern '7' is unreachable because a previous wildcard pattern covers all values"
         )
 
-    def test_capture_pattern_makes_else_unreachable(self):
-        """Else after a capture pattern is unreachable."""
+    def test_wildcard_makes_else_unreachable(self):
+        """Else after a wildcard is unreachable."""
         source = """
         main :: fn() {
             n: i32 = 7
             match n {
-                case value: x := value
+                case _: x := 1
                 else: x := 0
             }
         }
@@ -1022,26 +1022,12 @@ class TestMatchStatements:
         """
         assert expect_error(source, "Undefined identifier: '_'")
 
-    def test_capture_pattern_assignment_is_rejected(self):
-        """Capture bindings are immutable branch-local values."""
-        source = """
-        main :: fn() {
-            n: i32 = 7
-            match n {
-                case value: {
-                    value = 1
-                }
-            }
-        }
-        """
-        assert expect_error(source, "'value' is immutable")
-
-    def test_capture_pattern_covers_bool_exhaustiveness(self):
-        """Capture patterns are exhaustive for bool matches too."""
+    def test_wildcard_covers_bool_exhaustiveness(self):
+        """Wildcards are exhaustive for bool matches too."""
         source = """
         pick :: fn(flag: bool) i32 {
             ret match flag {
-                case value: 1
+                case _: 1
             }
         }
         """

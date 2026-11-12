@@ -57,7 +57,7 @@ main :: fn() {
     if true { unused :: 1 }
     if false { unused :: 2 } else if true { unused :: 3 } else { unused :: 4 }
     { value :: 5; match 5 { case value: io.println("match"); else: io.println("wrong") } }
-    match 3 { case value: io.println("outer") }
+    match 3 { case value: io.println("outer"); else: io.println("miss") }
     io.println("{}", value)
 }
 ''', "match\nouter\n3\n"),
@@ -98,8 +98,8 @@ main :: fn() {
     value :: 40
     values: [2]i32 = [2, 3]
     for value in values { { value :: value + 1; io.println("{}", value) } }
-    match 5 { case captured: { value :: captured; io.println("{}", value) } }
-    result := match 6 { case captured: captured + 1 }
+    match 5 { else: { value :: 5; io.println("{}", value) } }
+    result := match 6 { else: 6 + 1 }
     io.println("{} {}", result, value)
     match 1 { case 1: { value :: 9; io.println("{}", value) }; else: { value :: 8 } }
     io.println("{}", value)

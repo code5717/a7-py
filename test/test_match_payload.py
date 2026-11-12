@@ -296,7 +296,7 @@ class TestOptOutsUnaffected:
         """)
         assert code == 0, out
 
-    def test_untagged_union_unaffected(self, tmp_path: Path):
+    def test_untagged_union_uses_wildcard(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "untagged.a7", IO_IMPORT + """
         Both :: union {
             a: i32
@@ -306,7 +306,7 @@ class TestOptOutsUnaffected:
         main :: fn() {
             r := Both{a: 1}
             match r {
-                case a: {
+                case _: {
                     io.println("a")
                 }
             }
@@ -314,7 +314,7 @@ class TestOptOutsUnaffected:
         """)
         assert code == 0, out
 
-    def test_non_union_scrutinee_unaffected(self, tmp_path: Path):
+    def test_non_union_scrutinee_rejects_undefined_case_name(self, tmp_path: Path):
         code, out = cli_exit_and_output(tmp_path, "boolok.a7", IO_IMPORT + """
         main :: fn() {
             flag := true
@@ -325,7 +325,8 @@ class TestOptOutsUnaffected:
             }
         }
         """)
-        assert code == 0, out
+        assert code == 6, out
+        assert "Undefined identifier" in out
 
 
 class TestGenericUnionInterop:

@@ -12,7 +12,7 @@ def test_loop_read_error_is_located_at_call(tmp_path):
     errors = [d for d in result.failure.details if 'readonly callee' in d['message']]
     assert len(errors) == 1
     assert errors[0]['span']['start_line'] == 4
-    assert 'callee use at' in errors[0]['message']
+    assert 'callee use in main.a7 at' in errors[0]['message']
 
 
 @pytest.mark.parametrize('body', [

@@ -95,7 +95,8 @@ main :: fn() {
     __a7_io := 9
     __a7_match_2 := 3
     match __a7_match_2 {
-        case seen: { io.println("{}", seen) }
+        case 3: { io.println("{}", __a7_match_2) }
+        else: { io.println("miss") }
     }
     io.println("{} {}", __a7_io, __a7_stdout_print(1))
 }
@@ -120,7 +121,8 @@ main :: fn() {
     __a7_io := 9
     __a7_match_1 := 3
     match __a7_match_1 {
-        case seen: { io.println("{}", seen) }
+        case 3: { io.println("{}", __a7_match_1) }
+        else: { io.println("miss") }
     }
     io.println("{} {}", __a7_io, __a7_stdout_print(1))
 }

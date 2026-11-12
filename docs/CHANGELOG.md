@@ -5,6 +5,21 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Safety/diagnostics track: proved-uninitialized function-pointer locals exit 6
+  before Zig; bare undefined `case Ident:` patterns are undefined-name errors;
+  failed JSON `stages.parse` carries `message` and `span`; readonly entry/callee
+  origin text includes the source filename. Exact fixed-array element aliases at
+  proven indices reject use-after-delete; selected-holder stores join old and new
+  candidate field facts; heap-field sync does not rewrite independent by-value
+  struct copies; dynamic-index stores join or invalidate possibly-affected
+  element facts; plain indexed overwrite does not UAF-check the old element;
+  function init is marked only at bare declarations. Joined-holder nil-writes
+  invalidate overlapping selected paths. Site control-flow docs and
+  `llms-full.txt` match the `_`/undefined-name match rule. SAF-2/3/6/8 pins
+  remain. Slice container identity and excluded trials `68f`/`f521` stay
+  deferred
+  ([P-REF-container-identities](plan/packets/P-REF-container-identities.md)).
+
 - Report repeated exact-resource failures once per initializer and resource
   category, preserving the first location, unrelated errors and budget accounting.
 

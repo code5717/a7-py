@@ -521,7 +521,12 @@ class NameResolutionPass:
         self._define_declaration(node, var_symbol, "Variable")
 
     def _enter_match_case_scope(self, case: ASTNode) -> None:
-        """Enter a match-case scope and predeclare capture-pattern names."""
+        """Enter a match-case scope and predeclare explicit capture-pattern names.
+
+        Bare undefined identifiers are no longer silent captures; the type
+        checker reports them as undefined names. Tagged-union payload bindings
+        still arrive as `PATTERN_ENUM` captures.
+        """
         self.symbols.enter_scope("match_case")
 
         for pattern in case.patterns or []:
@@ -530,9 +535,8 @@ class NameResolutionPass:
             name = pattern.name or ""
             if not name or name == "_":
                 continue
-            if self.symbols.lookup(name) is not None:
+            if not getattr(pattern, "is_capture_pattern", False):
                 continue
-            setattr(pattern, "is_capture_pattern", True)
             capture_symbol = Symbol(
                 name=name,
                 kind=SymbolKind.VARIABLE,

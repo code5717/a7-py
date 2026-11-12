@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from enum import Enum, auto
 import math
+from pathlib import Path
 from typing import Optional
 
 from a7.ast_nodes import ASTNode, AssignOp, BinaryOp, LiteralKind, NodeKind, UnaryOp
@@ -78,6 +79,7 @@ OBLIGATION_MESSAGES = {
     "INDEX_IN_BOUNDS": "Index not proven in bounds",
     "SLICE_IN_BOUNDS": "Slice bounds not proven",
     "REF_NON_NIL": "Reference not proven non-nil",
+    "INITIALIZED": "Function value may be used before assignment",
 }
 
 
@@ -358,6 +360,7 @@ class ObligationKind(Enum):
     INTEGER_OVERFLOW = auto()
     UNION_FIELD = auto()
     MOVE_VALID = auto()
+    INITIALIZED = auto()
 
 
 @dataclass(frozen=True)
@@ -585,10 +588,12 @@ class SafetyProofPass:
                 origin_span = getattr(origin, "span", None)
                 required = "readonly executable entry field access must remain non-nil"
                 if origin_span is not None:
-                    required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column}"
-                    if origin_span.origin_file:
-                        required += f" in {origin_span.origin_file}"
-                    required += ")"
+                    origin_file = getattr(origin_span, "origin_file", None) or self.current_file
+                    origin_name = Path(origin_file).name if origin_file else "<unknown>"
+                    required += (
+                        f" (callee use in {origin_name} at line {origin_span.start_line}, "
+                        f"column {origin_span.start_column})"
+                    )
                 obligation = self._obligation(ObligationKind.REF_NON_NIL, executable_entry,
                     "readonly_entry_precondition", None, required, TypeErrorType.CANNOT_DEREFERENCE)
                 self._error(obligation, "reachable readonly callee read receives nil",
@@ -2300,8 +2305,30 @@ class SafetyProofPass:
                     key = extra or (places.get(id(target)) if target.kind == NodeKind.FIELD_ACCESS else
                                     bindings[-1].get(self._key(target), self._key(target)))
                     fact = values.get(id(node.value), ValueFact())
-                    storage[key] = fact if isinstance(self._type(node.value), ReferenceType) or fact.maybe_nil else ValueFact()
+                    fact = fact if isinstance(self._type(node.value), ReferenceType) or fact.maybe_nil else ValueFact()
+                    previous = storage.get(key, ValueFact())
+                    previous_ids = previous.allocations | previous.selected_allocations
+                    storage[key] = fact
                     self._clear_moved_slot(key, moved)
+                    field = key.rsplit(".", 1)[-1] if isinstance(key, str) and "." in key else None
+                    if (isinstance(key, str) and key.startswith("@allocation:") and field and previous_ids
+                            and previous_ids != (fact.allocations | fact.selected_allocations)):
+                        suffix = "." + field
+                        for name, existing in list(storage.items()):
+                            if not isinstance(name, str) or name == key or not name.endswith(suffix):
+                                continue
+                            if name.startswith("@allocation:"):
+                                continue
+                            held = existing.allocations | existing.selected_allocations
+                            if not (held & previous_ids):
+                                continue
+                            storage[name] = replace(
+                                existing,
+                                non_nil=fact.non_nil,
+                                maybe_nil=fact.maybe_nil or not fact.non_nil,
+                                allocations=fact.allocations,
+                                selected_allocations=fact.selected_allocations,
+                            )
                     continue
                 if action == "delete":
                     fact = values.get(id(node.expression), ValueFact())
@@ -3530,9 +3557,34 @@ class SafetyProofPass:
                 self._clear_moved_slot(name)
         if "." in key and not isinstance(self._type(value), ReferenceType) and not fact.maybe_nil:
             fact = ValueFact()
+        previous = self.facts.symbol(key)
+        previous_ids = previous.allocations | previous.selected_allocations
         self.facts.set_symbol(key, fact)
         self.facts.by_symbol.update(children)
         self._clear_moved_slot(key)
+        # Only heap-field stores share storage with selected binding paths.
+        # Independent by-value struct copies that hold the same reference keep
+        # separate field slots and must not be rewritten.
+        field = key.rsplit(".", 1)[-1] if "." in key else None
+        if (key.startswith("@allocation:") and field and previous_ids
+                and previous_ids != (fact.allocations | fact.selected_allocations)):
+            suffix = "." + field
+            for name, existing in list(self.facts.by_symbol.items()):
+                if name == key or not name.endswith(suffix) or name.startswith("@allocation:"):
+                    continue
+                held = existing.allocations | existing.selected_allocations
+                if not (held & previous_ids):
+                    continue
+                self.facts.set_symbol(
+                    name,
+                    replace(
+                        existing,
+                        non_nil=fact.non_nil,
+                        maybe_nil=fact.maybe_nil or not fact.non_nil,
+                        allocations=fact.allocations,
+                        selected_allocations=fact.selected_allocations,
+                    ),
+                )
 
     def _slot_moved(self, key, moved=None):
         moved = self.moved_symbols if moved is None else moved
@@ -3595,6 +3647,23 @@ class SafetyProofPass:
             name = node.name if node.kind == NodeKind.IDENTIFIER else node.field if node.kind == NodeKind.FIELD_ACCESS else "array element"
             self._error_moved_symbol(node, name, "moved/deleted values cannot be read")
 
+    def _check_function_initialized(self, node: ASTNode, fact: ValueFact, key: Optional[str]) -> None:
+        if not isinstance(self._type(node), FunctionType):
+            return
+        if fact.initialized is not False:
+            return
+        name = node.name if node.kind == NodeKind.IDENTIFIER else key or "<function>"
+        obligation = self._obligation(
+            ObligationKind.INITIALIZED,
+            node,
+            "initialized",
+            self._type(node),
+            "function value must be assigned before use",
+            None,
+        )
+        self._error(obligation, f"Function value '{name}' may be used before assignment",
+                    "Assign a function value before calling or copying it")
+
     def _visit_stmt(self, node: ASTNode) -> None:
         work = [self._statement_steps(node)]
         error = None
@@ -3639,7 +3708,13 @@ class SafetyProofPass:
                 self.facts.by_symbol.pop(key, None)
                 self._clear_moved_slot(key)
         elif node.kind in {NodeKind.VAR, NodeKind.CONST}:
-            fact = self._visit_expr(node.value) if node.value else self._default_fact_for_type(self._type(node))
+            if node.value:
+                fact = self._visit_expr(node.value)
+            else:
+                fact = self._default_fact_for_type(self._type(node))
+                if isinstance(self._type(node), FunctionType):
+                    # No callable zero value: proved-uninitialized until assigned.
+                    fact = replace(fact, initialized=False)
             if node.name:
                 key = self._key(node)
                 self._invalidate_length_relations(key)
@@ -3660,19 +3735,19 @@ class SafetyProofPass:
         elif node.kind == NodeKind.ASSIGNMENT:
             rhs = self._visit_expr(node.value) if node.value else ValueFact()
             if node.target:
-                # A slot replacement evaluates its address and bounds, not the
-                # lifetime of the old reference stored there.
-                if node.target.kind == NodeKind.INDEX and node.operator == AssignOp.ASSIGN:
-                    obj_fact = self._visit_expr(node.target.object)
+                # Plain indexed assignment overwrites the slot; do not prove the
+                # old element alive. Compound forms still read the old value.
+                if node.target.kind == NodeKind.IDENTIFIER and not getattr(node, "implicit_deref_target", False):
+                    target_fact = self.facts.symbol(self._key(node.target))
+                elif node.target.kind == NodeKind.FIELD_ACCESS:
+                    target_fact = self._visit_expr(node.target.object)
+                elif node.target.kind == NodeKind.INDEX and node.operator == AssignOp.ASSIGN:
+                    # Prove bounds without reading the old element identity.
+                    target_fact = self._visit_expr(node.target.object)
                     idx_fact = self._visit_expr(node.target.index)
-                    self._prove_index(node.target, obj_fact, idx_fact)
-                    target_fact = ValueFact()
+                    self._prove_index(node.target, target_fact, idx_fact)
                 else:
-                    target_fact = (
-                        self._visit_expr(node.target.object if node.target.kind == NodeKind.FIELD_ACCESS else node.target)
-                        if getattr(node, "implicit_deref_target", False) or node.target.kind != NodeKind.IDENTIFIER
-                        else self.facts.symbol(self._key(node.target))
-                    )
+                    target_fact = self._visit_expr(node.target)
                 if getattr(node, "implicit_deref_target", False):
                     self._prove_ref_non_nil_for_node(
                         node,
@@ -3708,20 +3783,39 @@ class SafetyProofPass:
                         key = self._key(node.target)
                         self._invalidate_length_relations(key)
                         self._store_value(key, node.value, rhs)
-                elif (node.target.kind == NodeKind.FIELD_ACCESS
-                      or (node.target.kind == NodeKind.INDEX and node.operator == AssignOp.ASSIGN)):
-                    if node.target.kind == NodeKind.FIELD_ACCESS:
-                        if node.operator != AssignOp.ASSIGN:
-                            self._visit_expr(node.target)
-                        if getattr(node.target, "implicit_deref_object", False):
-                            self._prove_ref_non_nil_for_node(
-                                node.target, target_fact, self._type(node.target.object),
-                                "reference must be proven non-nil before field assignment", node.target.object)
+                elif node.target.kind == NodeKind.FIELD_ACCESS:
+                    if node.operator != AssignOp.ASSIGN:
+                        self._visit_expr(node.target)
+                    if getattr(node.target, "implicit_deref_object", False):
+                        self._prove_ref_non_nil_for_node(
+                            node.target, target_fact, self._type(node.target.object),
+                            "reference must be proven non-nil before field assignment", node.target.object)
+                    key = self._place_key(node.target, exact_indices=True, current_indices=True)
+                    if key:
+                        self._store_value(key, node.value, rhs)
+                    # Uncertain holders: each concrete candidate may keep its old
+                    # field value or receive the store. Join; do not overwrite all.
+                    object_fact = self.facts.node(node.target.object)
+                    if (isinstance(self._type(node.target.object), ReferenceType)
+                            and self._allocation_count(object_fact.allocations) > 1
+                            and node.target.field):
+                        for prefix in self._allocation_prefixes(object_fact.allocations):
+                            place = prefix + "." + node.target.field
+                            old = self.facts.symbol(place)
+                            joined = self._join_facts({"value": old}, {"value": rhs})["value"]
+                            if isinstance(self._type(node.value), ReferenceType) or joined.maybe_nil:
+                                self.facts.set_symbol(place, joined)
+                            else:
+                                self.facts.set_symbol(place, ValueFact())
+                            self._clear_moved_slot(place)
+                elif node.target.kind == NodeKind.INDEX and node.operator == AssignOp.ASSIGN:
+                    # Plain ASSIGN already visited object/index above.
                     key = self._place_key(node.target, exact_indices=True, current_indices=True)
                     if key:
                         self._store_value(key, node.value, rhs)
                     else:
-                        # Match unknown indices while retaining the written field path.
+                        # Dynamic index: every tracked element may be the target.
+                        # Join; do not overwrite-all or drop exact element facts.
                         accesses = [node.target]
                         container = node.target.object
                         base = self._place_key(container, exact_indices=True, current_indices=True)
@@ -3748,10 +3842,19 @@ class SafetyProofPass:
                                             next_prefixes.add(prefix + "." + cell)
                             prefixes = next_prefixes
                         for name in list(self.facts.by_symbol):
-                            if any(name == prefix or name.startswith(prefix + ".") for prefix in prefixes):
-                                self._invalidate_length_relations(name)
-                                self.facts.by_symbol.pop(name)
-                                self._clear_moved_slot(name)
+                            if not any(name == prefix or name.startswith(prefix + ".") for prefix in prefixes):
+                                continue
+                            self._invalidate_length_relations(name)
+                            old = self.facts.symbol(name)
+                            joined = self._join_facts({"value": old}, {"value": rhs})["value"]
+                            if isinstance(self._type(node.value), ReferenceType) or rhs.maybe_nil:
+                                self.facts.set_symbol(name, joined)
+                            else:
+                                self.facts.set_symbol(name, ValueFact(maybe_nil=True))
+                            self._clear_moved_slot(name)
+                elif node.target.kind == NodeKind.INDEX:
+                    if node.operator != AssignOp.ASSIGN:
+                        self._visit_expr(node.target)
             if node.operator in {AssignOp.DIV_ASSIGN, AssignOp.MOD_ASSIGN} and node.value:
                 self._prove_nonzero_divisor(node, node.value, node.operator.name.lower())
         elif node.kind == NodeKind.EXPRESSION_STMT and node.expression:
@@ -4135,10 +4238,12 @@ class SafetyProofPass:
                                 if origin is not None and origin.kind == NodeKind.INDEX
                                 else "readonly callee field access must remain non-nil")
                     if origin_span is not None:
-                        required += f" (callee use at line {origin_span.start_line}, column {origin_span.start_column}"
-                        if origin_span.origin_file:
-                            required += f" in {origin_span.origin_file}"
-                        required += ")"
+                        origin_file = getattr(origin_span, "origin_file", None) or self.current_file
+                        origin_name = Path(origin_file).name if origin_file else "<unknown>"
+                        required += (
+                            f" (callee use in {origin_name} at line {origin_span.start_line}, "
+                            f"column {origin_span.start_column})"
+                        )
                     obligation = self._obligation(ObligationKind.REF_NON_NIL, node,
                         "readonly_call_precondition", None, required, TypeErrorType.CANNOT_DEREFERENCE)
                     self._error(obligation, "reachable readonly callee read receives nil",
@@ -4232,7 +4337,12 @@ class SafetyProofPass:
                 elif i in borrowed and arg.kind == NodeKind.IDENTIFIER:
                     self._invalidate_length_relations(self._key(arg))
                     key = self._key(arg)
-                    self.facts.set_symbol(key, replace(self._default_fact_for_type(self._type(arg)),
+                    refreshed = self._default_fact_for_type(self._type(arg))
+                    # Ref arguments can overwrite storage, but a function local
+                    # that was already assigned does not become unassigned.
+                    if isinstance(self._type(arg), FunctionType):
+                        refreshed = replace(refreshed, initialized=True)
+                    self.facts.set_symbol(key, replace(refreshed,
                                                        allocations=self.facts.symbol(key).allocations,
                                                    selected_allocations=self.facts.symbol(key).selected_allocations))
                 continue
@@ -4290,6 +4400,7 @@ class SafetyProofPass:
                 elif key not in self.local_boolean_keys or key in self.borrowed_keys:
                     fact = replace(fact, boolean=None)
                 self._check_reference_alive(node, fact, key)
+                self._check_function_initialized(node, fact, key)
             elif node.kind == NodeKind.UNARY:
                 operand = self.facts.node(node.operand)
                 fact = self._unary_fact(node, operand)
@@ -4405,6 +4516,9 @@ class SafetyProofPass:
         return self.facts.node(root)
 
     def _default_fact_for_type(self, type_: Optional[Type]) -> ValueFact:
+        # FunctionType stays initialized=True here: loop forget/for-in/borrow
+        # refresh use this helper. Uninitialized locals are marked only at
+        # declarations without an initializer.
         if isinstance(type_, PrimitiveType) and type_.name in INTEGER_RANGES:
             lo, hi = INTEGER_RANGES[type_.name]
             return ValueFact(interval=IntegerInterval(lo, hi), nonzero=False)

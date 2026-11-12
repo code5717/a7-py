@@ -310,7 +310,13 @@ class A7Compiler:
                     parse_error = e
 
                 if parse_error is not None:
-                    result.stages["parse"] = {"ok": False}
+                    detail = self._error_to_detail(parse_error, result.input_path, "parse")
+                    result.stages["parse"] = {
+                        "ok": False,
+                        "message": detail.get("message") or str(parse_error),
+                        "span": detail.get("span"),
+                        "file": detail.get("file") or result.input_path,
+                    }
                     return self._finish_with_failure(
                         result,
                         ExitCode.PARSE,
@@ -1229,10 +1235,17 @@ class A7Compiler:
             }
 
         if "parse" in result.stages:
-            payload["stages"]["parse"] = {
+            parse_stage = {
                 **result.stages["parse"],
                 "ast": formatted["ast"] if result.stages["parse"].get("ok") else None,
             }
+            if not parse_stage.get("ok"):
+                # Always expose message+span on failed parse stages (PAR-14).
+                if not parse_stage.get("message") and result.failure is not None:
+                    parse_stage["message"] = result.failure.message
+                if not parse_stage.get("span") and result.failure is not None:
+                    parse_stage["span"] = result.failure.span
+            payload["stages"]["parse"] = parse_stage
 
         if result.semantic_results is not None:
             payload["stages"]["semantic"] = {

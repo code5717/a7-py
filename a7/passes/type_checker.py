@@ -5281,18 +5281,18 @@ class TypeCheckingPass:
         return (start_kind, low, high)
 
     def _is_match_capture_pattern(self, pattern: ASTNode) -> bool:
-        """Return true when an identifier pattern introduces a case-local binding."""
+        """Return true when an identifier pattern introduces a case-local binding.
+
+        Undefined bare identifiers are errors, not silent captures. Only an
+        already-marked capture pattern (for example a future explicit form)
+        binds here; `_` remains the wildcard.
+        """
         if pattern.kind != NodeKind.PATTERN_IDENTIFIER:
             return False
         name = pattern.name or ""
         if not name or name == "_":
             return False
-        if getattr(pattern, "is_capture_pattern", False):
-            return True
-        if self.symbols.lookup(name) is None:
-            pattern.is_capture_pattern = True
-            return True
-        return False
+        return bool(getattr(pattern, "is_capture_pattern", False))
 
     def _match_capture_patterns(self, patterns: List[ASTNode]) -> List[ASTNode]:
         return [pattern for pattern in patterns if self._is_match_capture_pattern(pattern)]
