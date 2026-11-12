@@ -58,7 +58,7 @@ An untagged union literal requires exactly one named field. The field must exist
 
 ## Status and restrictions
 
-Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` supports leading-dot match arms and copyable payload capture; broader lifetime and payload-safety guarantees remain incomplete. Multiple return values and destructuring remain unavailable; use a named result struct.
+Status: supported for example-backed value structs and plain enums; limited for unions. `union(tag)` supports leading-dot match arms and copyable payload capture; broader lifetime and payload-safety guarantees remain incomplete. Multiple return values and destructuring are cut; use a named result struct.
 
 `pub` on a struct field is accepted without changing field visibility. Broader cross-module aggregate checking is limited. Generic aggregate specialization is covered in [generics](generics.md).
 

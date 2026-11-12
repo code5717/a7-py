@@ -39,8 +39,8 @@ These findings are recorded with source programs and diagnostics in
 | evaluation-order | unverified | [language/operators](../public/docs/language/operators.md) | SPEC states evaluation order; no exhaustive side-effect-order qualification is claimed. |
 | loops-match | supported | [language/control-flow](../public/docs/language/control-flow.md) | Native probes verify literal/range/wildcard matches and statement fallthrough; bare undefined identifiers are exit 6; example suite covers labels and loops. Fall placement is restricted. |
 | recursion | unavailable | [language/functions](../public/docs/language/functions.md) | Direct and mutual recursion and known indirect cycles are rejected. |
-| variadics | unavailable | [language/functions](../public/docs/language/functions.md) | Declarations may parse but user variadic runtime lowering is rejected. |
-| multiple-returns | unavailable | [language/functions](../public/docs/language/functions.md) | Multiple returns and destructuring are not backend features; use a result struct. |
+| variadics | unavailable | [language/functions](../public/docs/language/functions.md) | Cut: declarations parse then fail at semantic exit 6; pass a slice instead. |
+| multiple-returns | unavailable | [language/functions](../public/docs/language/functions.md) | Cut: multi-return and destructuring fail at parse exit 5; use a result struct. |
 | method-call-sugar | planned | [language/functions](../public/docs/language/functions.md) | Use explicit receiver functions; dot-call methods are not current semantic support. |
 | fixed-arrays | supported | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Native probes verify exactly sized nested/value array literals and zero initialization without an initializer. Scalar-fill initializers such as [3]i32 = 7 are rejected. |
 | array-addition | limited | [language/arrays-strings](../public/docs/language/arrays-strings.md) | Native probe verifies same-shape [2]f64 addition. This does not establish tensor broadcasting or every numeric array shape. |

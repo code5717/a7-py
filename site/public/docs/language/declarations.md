@@ -56,7 +56,7 @@ Aliases name an existing type. They do not establish a separately owned resource
 
 ## Status and restrictions
 
-Status: supported for ordinary bindings and local shadowing. Multiple declarations, tuple returns, and destructuring are unavailable in the runnable backend. Do not use `var` or `const` as declaration keywords. A7 uses the declaration operators above.
+Status: supported for ordinary bindings and local shadowing. Multiple declarations, tuple returns, and destructuring are cut (parse exit 5). Do not use `var` or `const` as declaration keywords. A7 uses the declaration operators above.
 
 ## Evidence
 

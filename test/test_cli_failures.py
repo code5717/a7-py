@@ -229,9 +229,8 @@ main :: fn() {
         payload = json.loads(result.stdout)
         assert payload["error"]["category"] == "semantic"
         message = payload["error"]["details"][0]["message"].lower()
-        assert "variadic parameters" in message
-        assert f"{backend} backend" in message
-        assert "not implemented yet" in message
+        assert "variadic parameters are not supported" in message
+        assert "slice" in message
         assert not out.exists()
 
 
@@ -253,7 +252,8 @@ main :: fn() {
     payload = json.loads(result.stdout)
     assert payload["error"]["category"] == "semantic"
     message = payload["error"]["details"][0]["message"].lower()
-    assert "variadic parameters" in message
+    assert "variadic parameters are not supported" in message
+    assert "slice" in message
     pass_names = [item["name"] for item in payload["stages"]["semantic"]["passes"]]
     assert "Backend Feature Support" in pass_names
 

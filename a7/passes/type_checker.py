@@ -1736,8 +1736,8 @@ class TypeCheckingPass:
                         filename=self.current_file,
                         source_lines=self.source_lines,
                         custom_message=(
-                            "Variadic function pointers are parsed for future support, "
-                            "but Zig ABI/lowering is not implemented yet"
+                            "Variadic function pointers are not supported; "
+                            "pass a slice instead"
                         ),
                     )
                 )
@@ -1870,8 +1870,8 @@ class TypeCheckingPass:
                         filename=self.current_file,
                         source_lines=self.source_lines,
                         custom_message=(
-                            "Variadic parameters are parsed for future support, "
-                            "but Zig ABI/lowering is not implemented yet"
+                            "Variadic parameters are not supported; "
+                            "pass a slice instead"
                         ),
                     )
                 )

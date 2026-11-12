@@ -38,15 +38,15 @@ source rules live in `AGENTS.md`. Follow them as written.
 
 User-facing docs (`README.md`, `docs/SPEC.md`, `docs/STATUS.md`,
 `site/public/llms*.txt`, `site/public/docs/`) must clearly distinguish
-**currently supported** features from syntax that is only **parsed or
-reserved** but not yet implemented. In particular, mark these as
-parsed-only/reserved rather than working features:
+**currently supported** features from cut, reserved, or parsed-only forms.
+In particular, do not describe these as working features:
 
-- variadic parameters
-- intrinsics other than `@type_set`
-- multiple-declaration and destructuring binding syntax
+- variadic parameters (parsed, then semantic exit 6; cut — use a slice)
+- multiple-declaration / destructuring binding (parse exit 5; cut)
+- multiple return values (parse exit 5; cut — return a named struct)
+- intrinsics other than `@type_set` (parsed/reserved, not shipped)
 
-Adding examples, snippets, or claims that imply the parsed-only forms work
+Adding examples, snippets, or claims that imply cut or reserved forms work
 end-to-end is treated the same as a doc/code drift bug.
 
 ## Out of Scope

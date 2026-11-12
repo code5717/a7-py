@@ -4000,10 +4000,11 @@
     {
       "id": "variadics",
       "status": "unavailable",
-      "qualification": "Declarations may parse but user variadic runtime lowering is rejected.",
+      "qualification": "Cut: declarations parse then fail at semantic exit 6; pass a slice instead.",
       "topic": "language/functions",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
+        "https://github.com/code5717/a7-py/blob/master/test/test_surface_cut_parsed_only.py"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/functions/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/functions.md"
@@ -4011,10 +4012,11 @@
     {
       "id": "multiple-returns",
       "status": "unavailable",
-      "qualification": "Multiple returns and destructuring are not backend features; use a result struct.",
+      "qualification": "Cut: multi-return and destructuring fail at parse exit 5; use a result struct.",
       "topic": "language/functions",
       "evidence": [
-        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md"
+        "https://github.com/code5717/a7-py/blob/master/docs/STATUS.md",
+        "https://github.com/code5717/a7-py/blob/master/test/test_surface_cut_parsed_only.py"
       ],
       "documentationUrl": "https://code5717.github.io/a7-py/language/functions/",
       "markdownUrl": "https://code5717.github.io/a7-py/docs/language/functions.md"
@@ -4060,7 +4062,7 @@
     {
       "id": "spec-6-2-recursion",
       "status": "unavailable",
-      "qualification": "Recursion is banned; user variadic runtime lowering is unavailable. See the function restrictions.",
+      "qualification": "Recursion is banned; user variadic parameters are cut. See the function restrictions.",
       "topic": "language/functions",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",
@@ -4112,7 +4114,7 @@
     {
       "id": "spec-6-6-variadic-functions",
       "status": "unavailable",
-      "qualification": "Recursion is banned; user variadic runtime lowering is unavailable. See the function restrictions.",
+      "qualification": "Cut: user variadic parameters fail at semantic exit 6. See the function restrictions.",
       "topic": "language/functions",
       "evidence": [
         "https://github.com/code5717/a7-py/blob/master/docs/SPEC.md",

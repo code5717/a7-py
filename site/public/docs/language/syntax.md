@@ -37,7 +37,7 @@ Recognized escapes are `\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\0`, and `\xHH` with
 
 ## Punctuation and reserved words
 
-Parentheses group expressions and arguments. Braces contain blocks and aggregate initializers. Brackets express arrays, indexing, and slices. `:` introduces a type, `::` declares a constant, and `:=` declares an inferred variable. `.` selects a field or imported member. `..` separates slice bounds and appears in restricted variadic syntax. `$T` denotes a generic type parameter. `@` introduces type-set intrinsics or loop labels.
+Parentheses group expressions and arguments. Braces contain blocks and aggregate initializers. Brackets express arrays, indexing, and slices. `:` introduces a type, `::` declares a constant, and `:=` declares an inferred variable. `.` selects a field or imported member. `..` separates slice bounds. Variadic parameter spellings that reuse `..` are cut. `$T` denotes a generic type parameter. `@` introduces type-set intrinsics or loop labels.
 
 The [keyword index](builtins.md#keyword-index) lists the tokenizer's actual reserved words. Some specification spellings, including `cast`, are context-sensitive identifiers rather than lexer keywords. A token being recognized does not mean every use can run.
 

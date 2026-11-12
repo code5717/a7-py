@@ -325,7 +325,7 @@ def get_semantic_error_advice(error_type: SemanticErrorType) -> str:
         SemanticErrorType.CONSTRAINT_VIOLATION: "Ensure the type satisfies the generic constraint",
 
         # General
-        SemanticErrorType.UNSUPPORTED_FEATURE: "This syntax is parsed for future support but is not runnable in the current backends",
+        SemanticErrorType.UNSUPPORTED_FEATURE: "This form is not part of the current runnable language surface",
         SemanticErrorType.UNEXPECTED_NODE_KIND: "This is likely a compiler bug, please report it",
         SemanticErrorType.UNKNOWN: "Please report this error",
     }
