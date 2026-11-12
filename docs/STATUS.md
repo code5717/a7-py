@@ -1269,7 +1269,12 @@ research request. Existing memory and language decisions remain in force.
    arithmetic or casts. Decisions L3 and L4 retain explicit-width integers and
    reject `int`, `uint`, and `number`.
 4. Split safety proofing into internal CFG, fact, obligation, proof-discharge,
-   and backend-plan stages.
+   and backend-plan stages. Rewrite-facing milestones and the thin
+   `a7/proof_discharge.py` boundary are in
+   [P-PROOF](plan/packets/P-PROOF-discharge-milestones.md) (constant-fold
+   congruence, recursion-ban graph, tagged-union exhaustiveness, obligation
+   records). No CompCert claim. Coordinate invasive CFG/fact splits with
+   Track 1 safety/alias work.
 5. Finish generic specialization before broad cross-module generic workflows.
 6. Maintain installed-distribution checks for `a7 check`, `a7 build`, `a7 run`,
    `a7 doctor` and `a7 --version`. Wheel and source-distribution workflows pass

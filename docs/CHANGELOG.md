@@ -5,6 +5,11 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- Proof-discharge boundary: `a7/proof_discharge.py` owns obligation records,
+  `BackendPlan`, and named milestone discharges (constant-fold congruence,
+  recursion ban, match exhaustiveness). Safety re-exports the moved types.
+  See [P-PROOF](plan/packets/P-PROOF-discharge-milestones.md). No CompCert claim.
+
 - Variadic parameters, multi-declaration/destructuring, and multi-return
   spellings are cut from the runnable surface. Variadics still parse so the
   compiler can reject them at semantic exit 6 with slice guidance.

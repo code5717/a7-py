@@ -6,6 +6,9 @@ Implements multi-pass semantic analysis:
 2. Type checking - Infer and check types
 3. Semantic validation - Validate control flow, memory management, etc.
 4. Safety proof - Prove risky operations and create a backend plan
+
+Proof-discharge records and BackendPlan live in ``a7.proof_discharge``;
+safety re-exports the types it historically owned.
 """
 
 from .name_resolution import NameResolutionPass

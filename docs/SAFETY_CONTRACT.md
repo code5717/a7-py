@@ -26,8 +26,14 @@ The frontend stages have separate responsibilities:
 3. **Safety proof analysis** tracks internal facts and collects obligations for
    risky operations.
 4. **Proof discharge** either proves an obligation or emits a compile-time
-   diagnostic.
-5. **Backend planning** records the exact approved lowering for codegen.
+   diagnostic. The thin boundary in `a7/proof_discharge.py` records kind,
+   evidence, or reject outcomes (including named milestones for constant-fold
+   congruence, recursion-ban call/value graph soundness, and tagged-union
+   match exhaustiveness). See
+   [P-PROOF](plan/packets/P-PROOF-discharge-milestones.md). This is not a
+   verified-compiler or CompCert claim.
+5. **Backend planning** records the exact approved lowering for codegen
+   (`BackendPlan` in `a7/proof_discharge.py`).
 6. **Zig codegen** consumes the `BackendPlan`; it must not independently accept
    an unsafe lowering.
 

@@ -15,6 +15,7 @@ from a7.symbol_table import SymbolTable
 from a7.semantic_context import SemanticContext
 from a7.types import Type, ReferenceType, EnumType, UnionType, GenericInstanceType, FunctionType, UnknownType
 from a7.errors import SemanticError, SemanticErrorType, SourceSpan
+from a7.proof_discharge import DischargeKind, DischargeLedger
 
 
 class SemanticValidationPass:
@@ -28,16 +29,25 @@ class SemanticValidationPass:
     4. A7-specific semantic rules
     """
 
-    def __init__(self, symbols: SymbolTable, node_types: dict):
+    def __init__(
+        self,
+        symbols: SymbolTable,
+        node_types: dict,
+        *,
+        discharge_ledger: Optional[DischargeLedger] = None,
+    ):
         """
         Initialize semantic validation pass.
 
         Args:
             symbols: Symbol table from name resolution
             node_types: Type information from type checker
+            discharge_ledger: optional shared proof-discharge ledger
         """
         self.symbols = symbols
         self.node_types = node_types
+        self._owns_discharge_ledger = discharge_ledger is None
+        self.discharge_ledger = discharge_ledger if discharge_ledger is not None else DischargeLedger()
         self.context = SemanticContext()
         self.errors: List[SemanticError] = []
         self.current_file: str = "<unknown>"
@@ -74,6 +84,9 @@ class SemanticValidationPass:
         """
         self.current_file = filename
         self.errors = []
+        # Keep a shared pipeline ledger intact; only clear a pass-owned ledger.
+        if self._owns_discharge_ledger:
+            self.discharge_ledger = DischargeLedger()
         self._tagged_union_tags = self._collect_tagged_union_tags(program)
 
         self._validate_fall_usage(program)
@@ -495,6 +508,12 @@ class SemanticValidationPass:
                         validated.update(id(function) for function in functions.values())
                     work.extend(reversed(children))
         self._validate_function_value_recursion(program, reported_top_level)
+        if not self.discharge_ledger.rejected_of(DischargeKind.RECURSION_BAN):
+            self.discharge_ledger.discharge(
+                DischargeKind.RECURSION_BAN,
+                "call/value graph has no reported cycle",
+                subject=self.current_file,
+            )
 
     def _validate_function_value_recursion(self, program: ASTNode, reported: set[str]) -> None:
         """Reject cycles that go through function values.
@@ -619,10 +638,17 @@ class SemanticValidationPass:
             if not path:
                 continue
             reported_nodes.update(path)
+            cycle = " -> ".join(path)
             self.add_error(
                 SemanticErrorType.RECURSION_NOT_ALLOWED,
                 self._function_spans.get(name),
-                f"Cycle: {' -> '.join(path)}{note}",
+                f"Cycle: {cycle}{note}",
+            )
+            self.discharge_ledger.reject(
+                DischargeKind.RECURSION_BAN,
+                f"Cycle: {cycle}{note}",
+                subject=name,
+                span=self._function_spans.get(name),
             )
         return reported_nodes
 
@@ -1705,18 +1731,46 @@ class SemanticValidationPass:
         tag_set = set(tags)
         self._validate_union_tag_patterns(node, union_name)
         if node.else_case:
+            self.discharge_ledger.discharge(
+                DischargeKind.MATCH_EXHAUSTIVENESS,
+                f"tagged union '{union_name}' covered by else",
+                subject=union_name,
+                span=node.span,
+            )
             return
         if self._union_match_has_explicit_wildcard(node):
+            self.discharge_ledger.discharge(
+                DischargeKind.MATCH_EXHAUSTIVENESS,
+                f"tagged union '{union_name}' covered by wildcard",
+                subject=union_name,
+                span=node.span,
+            )
             return
         covered = self._union_covered_tags(node, union_name, tag_set)
         missing = [tag for tag in tags if tag not in covered]
         if missing:
+            evidence = (
+                f"match over tagged union '{union_name}' misses tag(s): "
+                f"{', '.join(missing)}; cover every tag or add an else branch"
+            )
             self.add_error(
                 SemanticErrorType.NON_EXHAUSTIVE_MATCH,
                 node.span,
-                f"match over tagged union '{union_name}' misses tag(s): "
-                f"{', '.join(missing)}; cover every tag or add an else branch",
+                evidence,
             )
+            self.discharge_ledger.reject(
+                DischargeKind.MATCH_EXHAUSTIVENESS,
+                evidence,
+                subject=union_name,
+                span=node.span,
+            )
+            return
+        self.discharge_ledger.discharge(
+            DischargeKind.MATCH_EXHAUSTIVENESS,
+            f"tagged union '{union_name}' tag set covered",
+            subject=union_name,
+            span=node.span,
+        )
 
     def _is_match_exhaustive(self, node: ASTNode) -> bool:
         """Check a fallback or complete bool/enum coverage."""
