@@ -45,7 +45,7 @@ The shared documentation shell uses a 240px navigation rail, a reading column,
 and a 180px outline. Native disclosures replace the rail below 900px and the
 outline below 1200px. The landing page (`index`) adds a brand-first full-bleed
 hero before that shell: large **A7** mark, one lede, Get started / Tour CTAs, and
-a dominant code plane. Safe-area insets, short-landscape compaction, and
+a full-width code sample. Safe-area insets, short-height orientation compaction, and
 fold / dual-segment spanning rules live in `src/tailwind.css`.
 
 Article prose uses Inter Variable at 17px and 1.65 line height. Literal code
