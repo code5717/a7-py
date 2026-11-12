@@ -13,10 +13,11 @@ import sys
 import tempfile
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from time import perf_counter
 
 from .backends import list_backends
 from .backends.zig import ZIG_OPTIMIZE_MODE
-from .compile import A7Compiler, CompileMode, OutputFormat, _safe_json_dumps, display_failure, error_console
+from .compile import A7Compiler, CompileMode, OutputFormat, _elapsed_ms, _safe_json_dumps, display_failure, error_console
 
 PROFILE_HELP = (
     "build profiles:\n"
@@ -111,6 +112,11 @@ def workflow(argv: list[str]) -> int:
         return 0 if zig and supported else 2
 
     parser.add_argument("file", help="A7 source file")
+    parser.add_argument(
+        "--timings",
+        action="store_true",
+        help="Report per-stage wall times (frontend stages; Zig for build/run)",
+    )
     if command == "check":
         parser.add_argument("--format", choices=["human", "json"], default="human")
         parser.add_argument("--layout", action="store_true",
@@ -137,6 +143,7 @@ def workflow(argv: list[str]) -> int:
         build_profile=getattr(args, "profile", "debug"),
         no_nonwrap=getattr(args, "no_nonwrap", False),
         is_library=getattr(args, "lib", False),
+        report_timings=args.timings,
     )
     captured = io.StringIO()
     with contextlib.redirect_stdout(captured):
@@ -155,6 +162,8 @@ def workflow(argv: list[str]) -> int:
             print(f"Checked {args.file}")
             if want_layout:
                 print(format_report(_struct_layouts(result)))
+            if args.timings:
+                print(f"timings: {compiler._format_stage_timings(result)}")
         else:
             display_failure(result.failure, error_console)
         return int(result.exit_code)
@@ -181,14 +190,18 @@ def workflow(argv: list[str]) -> int:
             generated = root / "program.zig"
             generated.write_text(result.codegen_result["output_code"], encoding="utf-8")
             binary = root / ("program.exe" if os.name == "nt" else "program")
+            zig_start = perf_counter()
             build = subprocess.run(
                 [zig, "build-exe", str(generated), "-O", ZIG_OPTIMIZE_MODE[args.profile],
                  f"-femit-bin={binary}"],
                 capture_output=True, text=True,
             )
+            zig_ms = _elapsed_ms(zig_start)
             if build.returncode != 0:
                 print(build.stderr or build.stdout or "Zig build failed", file=sys.stderr, end="\n")
                 return 7
+            if args.timings:
+                print(f"timings: {compiler._format_stage_timings(result)} zig={zig_ms}ms")
             if destination is not None:
                 os.replace(binary, destination)
                 print(f"Built {destination}")
@@ -286,6 +299,12 @@ def main() -> None:
         help="Enable verbose output",
     )
 
+    parser.add_argument(
+        "--timings",
+        action="store_true",
+        help="Report per-stage wall times (tokenize/parse/semantic/safety/codegen)",
+    )
+
     args = parser.parse_args()
 
     mode = CompileMode(args.mode)
@@ -317,6 +336,7 @@ def main() -> None:
         build_profile=args.build_profile,
         no_nonwrap=args.no_nonwrap,
         is_library=args.lib,
+        report_timings=args.timings,
     )
     result = compiler.compile_file_detailed(str(input_path), args.output)
     sys.exit(result.exit_code)

@@ -41,6 +41,7 @@ Run these commands from the checkout after `uv sync`:
 ```bash
 uv run a7 check examples/001_hello.a7
 uv run a7 check examples/001_hello.a7 --format json
+uv run a7 check examples/001_hello.a7 --timings
 uv run a7 build examples/001_hello.a7 --profile release -o hello
 ./hello
 uv run a7 run examples/001_hello.a7 --profile release
@@ -49,7 +50,8 @@ uv run a7 --version
 
 `check` runs through code generation without writing files or invoking Zig.
 An entry file needs `main :: fn()`; use `check --lib` for a library without an
-entry point. Imported modules do not need `main`.
+entry point. Imported modules do not need `main`. `--timings` prints per-stage
+wall times; `build`/`run --timings` also report the Zig hop.
 
 `build` defaults to `./<source-stem>`. `run` builds a temporary executable and
 runs it in the current directory. Arguments after `a7 run FILE --` go to the

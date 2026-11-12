@@ -51,6 +51,11 @@ _CATEGORY_DETAIL_TYPES = {
 }
 
 
+def _elapsed_ms(start: float) -> float:
+    """Wall milliseconds since `start` (perf_counter), three decimal places."""
+    return round((perf_counter() - start) * 1000, 3)
+
+
 _JSON_INDENT_LEVELS = 100
 
 
@@ -185,6 +190,7 @@ class A7Compiler:
         build_profile: str = "debug",
         no_nonwrap: bool = False,
         is_library: bool = False,
+        report_timings: bool = False,
     ):
         self.backend = backend
         self.verbose = verbose
@@ -194,6 +200,10 @@ class A7Compiler:
         self.build_profile = build_profile
         self.no_nonwrap = no_nonwrap
         self.is_library = is_library
+        # When True, human mode prints per-stage wall times after a run.
+        # Timings are always recorded on result.stages[*].ms; they do not
+        # change emitted Zig.
+        self.report_timings = report_timings
 
         self.json_formatter = JSONFormatter(backend=backend)
         self.console_formatter = ConsoleFormatter(mode=self.mode.value, backend=backend)
@@ -267,6 +277,7 @@ class A7Compiler:
 
             # Stage 1: Tokenization
             try:
+                stage_start = perf_counter()
                 tokenizer = Tokenizer(source_code, filename=str(input_path))
                 tokens = tokenizer.tokenize()
                 result.tokens = tokens
@@ -275,6 +286,7 @@ class A7Compiler:
                 result.stages["tokenize"] = {
                     "ok": True,
                     "token_count": len([t for t in tokens if t.type.name != "EOF"]),
+                    "ms": _elapsed_ms(stage_start),
                 }
             except CompilerError as e:
                 return self._finish_with_failure(
@@ -292,13 +304,14 @@ class A7Compiler:
             needs_parse = self.mode != CompileMode.TOKENS
             if needs_parse:
                 try:
+                    stage_start = perf_counter()
                     source_lines = source_code.splitlines() if source_code else []
                     parser = Parser(
                         tokens, filename=str(input_path), source_lines=source_lines
                     )
                     ast = parser.parse()
                     result.ast = ast
-                    result.stages["parse"] = {"ok": True}
+                    result.stages["parse"] = {"ok": True, "ms": _elapsed_ms(stage_start)}
                 except CompilerError as e:
                     # Covers ParseError (subclass) and any other compiler-level
                     # error surfaced from the parser. Unexpected exceptions
@@ -314,6 +327,7 @@ class A7Compiler:
                     detail = self._error_to_detail(parse_error, result.input_path, "parse")
                     result.stages["parse"] = {
                         "ok": False,
+                        "ms": _elapsed_ms(stage_start),
                         "message": detail.get("message") or str(parse_error),
                         "span": detail.get("span"),
                         "file": detail.get("file") or result.input_path,
@@ -343,6 +357,7 @@ class A7Compiler:
             }
             needs_semantic = self.mode in semantic_modes
             if needs_semantic and ast is not None:
+                semantic_start = perf_counter()
                 source_lines = source_code.splitlines() if source_code else []
 
                 # Non-fatal import processing
@@ -553,6 +568,10 @@ class A7Compiler:
                             all_errors.extend(validator.errors)
 
                         if sv_ok:
+                            # Safety is timed as its own stage; semantic.ms
+                            # excludes this wall time so stages do not overlap.
+                            semantic_ms = _elapsed_ms(semantic_start)
+                            safety_start = perf_counter()
                             safety = SafetyProofPass(
                                 symbol_table,
                                 type_checker.node_types,
@@ -561,15 +580,28 @@ class A7Compiler:
                             safety.source_lines = source_lines
                             backend_plan = safety.analyze(ast, str(input_path), executable_entry=executable_entry)
                             sp_ok = len(safety.errors) == 0
+                            safety_ms = _elapsed_ms(safety_start)
+                            result.stages["safety"] = {
+                                "ok": sp_ok,
+                                "ms": safety_ms,
+                                "error_count": len(safety.errors),
+                            }
                             semantic_passes.append(
                                 {
                                     "name": "Safety Proof",
                                     "ok": sp_ok,
                                     "errors": len(safety.errors),
+                                    "ms": safety_ms,
                                 }
                             )
                             if safety.errors:
                                 all_errors.extend(safety.errors)
+                        else:
+                            semantic_ms = _elapsed_ms(semantic_start)
+                    else:
+                        semantic_ms = _elapsed_ms(semantic_start)
+                else:
+                    semantic_ms = _elapsed_ms(semantic_start)
 
                 semantic_ok = len(all_errors) == 0
                 result.semantic_results = {
@@ -580,10 +612,14 @@ class A7Compiler:
                     "backend_plan": backend_plan,
                     "discharge_ledger": discharge_ledger,
                 }
+                # stages["semantic"].ok is the overall semantic pipeline
+                # (including safety). stages["semantic"].ms excludes safety
+                # wall time when safety ran; see stages["safety"].ms.
                 result.stages["semantic"] = {
                     "ok": semantic_ok,
                     "passes": semantic_passes,
                     "error_count": len(all_errors),
+                    "ms": semantic_ms,
                 }
                 if not semantic_ok:
                     return self._finish_with_failure(
@@ -613,6 +649,7 @@ class A7Compiler:
             codegen_modes = {CompileMode.COMPILE, CompileMode.PIPELINE, CompileMode.DOC}
             needs_codegen = self.mode in codegen_modes
             if needs_codegen and ast is not None:
+                codegen_start = perf_counter()
                 preprocessor = ASTPreprocessor(
                     symbol_table=symbol_table,
                     type_map=type_map,
@@ -634,6 +671,10 @@ class A7Compiler:
                     language_name = codegen.language_name
                     syntax = self.backend
                 except Exception as e:
+                    result.stages["codegen"] = {
+                        "ok": False,
+                        "ms": _elapsed_ms(codegen_start),
+                    }
                     if self.output_format == OutputFormat.HUMAN and self.verbose:
                         traceback.print_exc()
                     if isinstance(e, CompilerError):
@@ -662,6 +703,7 @@ class A7Compiler:
                     "ok": True,
                     "bytes": len(target_code),
                     "changes": preprocessor.changes_made,
+                    "ms": _elapsed_ms(codegen_start),
                 }
 
                 if self.mode == CompileMode.COMPILE:
@@ -752,6 +794,18 @@ class A7Compiler:
             protected.append(destination)
         return None
 
+    def _format_stage_timings(self, result: CompilationResult) -> str:
+        """One-line per-stage wall times for --timings / report_timings."""
+        order = ("tokenize", "parse", "semantic", "safety", "codegen")
+        parts: list[str] = []
+        for name in order:
+            stage = result.stages.get(name)
+            if not stage or "ms" not in stage:
+                continue
+            parts.append(f"{name}={stage['ms']}ms")
+        parts.append(f"total={result.timing_ms}ms")
+        return " ".join(parts)
+
     def _emit_success(self, result: CompilationResult) -> None:
         if self.output_format == OutputFormat.JSON:
             print(_safe_json_dumps(self.to_json_payload(result)))
@@ -768,6 +822,8 @@ class A7Compiler:
             )
             if result.doc_path:
                 console.print(f"[blue]Documentation written to {escape(result.doc_path)}[/blue]")
+            if self.report_timings:
+                console.print(f"[dim]timings: {self._format_stage_timings(result)}[/dim]")
             return
 
         if self.mode in {CompileMode.TOKENS, CompileMode.AST}:
@@ -800,6 +856,9 @@ class A7Compiler:
                 f"[green]Compiled[/green] {escape(result.input_path)} -> {escape(output)} "
                 f"[dim]({size} bytes, {result.timing_ms} ms)[/dim]"
             )
+
+        if self.report_timings:
+            console.print(f"[dim]timings: {self._format_stage_timings(result)}[/dim]")
 
         if result.doc_path:
             console.print(f"[blue]Documentation written to {escape(result.doc_path)}[/blue]")
@@ -1436,21 +1495,34 @@ class A7Compiler:
             payload["stages"]["parse"] = parse_stage
 
         if result.semantic_results is not None:
+            semantic_stage = result.stages.get("semantic", {})
             payload["stages"]["semantic"] = {
-                "ok": result.stages.get("semantic", {}).get("ok", False),
+                "ok": semantic_stage.get("ok", False),
                 "passes": result.semantic_results.get("passes", []),
                 "errors": [
                     self._error_to_detail(err, result.input_path, "semantic")
                     for err in result.semantic_results.get("errors", [])
                 ],
             }
+            if "ms" in semantic_stage:
+                payload["stages"]["semantic"]["ms"] = semantic_stage["ms"]
+
+        if "safety" in result.stages:
+            payload["stages"]["safety"] = {
+                "ok": result.stages["safety"].get("ok", False),
+                "ms": result.stages["safety"].get("ms", 0),
+                "error_count": result.stages["safety"].get("error_count", 0),
+            }
 
         if result.codegen_result is not None:
+            codegen_stage = result.stages.get("codegen", {})
             payload["stages"]["codegen"] = {
                 "ok": True,
                 "bytes": result.codegen_result.get("bytes", 0),
                 "output_code": result.codegen_result.get("output_code", ""),
             }
+            if "ms" in codegen_stage:
+                payload["stages"]["codegen"]["ms"] = codegen_stage["ms"]
 
         if result.output_path and Path(result.output_path).exists():
             payload["artifacts"]["output_path"] = result.output_path

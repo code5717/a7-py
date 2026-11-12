@@ -1284,6 +1284,9 @@ research request. Existing memory and language decisions remain in force.
    generated-method cycles are removed. Dynamic external Python callbacks remain
    outside the structural traversal guarantee. See the
    [delivery roadmap](plan/delivery-roadmap.md).
+8. Keep compile-perf baselines documented for the rewrite (`--timings` / stage
+   `ms` in JSON). Do not deep-parallelize this Python frontend; see Planned
+   work.
 
 ## Known Gaps
 
@@ -1649,6 +1652,15 @@ Python-to-A7 generation chain and proposes exact Zig comparison across all
 three compilers. It is not approved. Python-specific CLI compatibility needs
 a separate disposition before replacement; four report probes do not establish
 self-hosting.
+
+Compile performance for the rewrite is measured, not optimized here: on the
+2026-11-12 example corpus the Python frontend is ~3–43 ms while
+`zig build-exe` release/fast is ~11–14 s per program. Use `a7 check --timings`
+or `a7 build --timings`. Stage share on larger examples is roughly semantic
+40%, codegen 27%, safety 20%, lex/parse under 10%. Rewrite work should attack
+the Zig hop and safety-graph scaling, not deep parallelization of this tree.
+Project baseline write-up: store doc `docs/perf-baseline-for-rewrite.md`
+(Track 6).
 
 Small standalone arena/RC foundation fixtures passed 134 checks using Debug
 LLVM/LLD and a shared C-O0 allocation shim. The instrumented revision records

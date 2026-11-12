@@ -5,6 +5,11 @@ belong in git history, not in long Markdown logs.
 
 ## Unreleased
 
+- `--timings` reports per-stage wall times (tokenize, parse, semantic, safety,
+  codegen; plus Zig on `build`/`run`). JSON payloads include `stages.*.ms`.
+  Emitted Zig is unchanged. Use this to compare frontend cost to the Zig hop;
+  do not treat it as a throughput optimization of the Python compiler.
+
 - Proof-discharge boundary: `a7/proof_discharge.py` owns obligation records,
   `BackendPlan`, and named milestone discharges (constant-fold congruence,
   recursion ban, match exhaustiveness). Safety re-exports the moved types.
